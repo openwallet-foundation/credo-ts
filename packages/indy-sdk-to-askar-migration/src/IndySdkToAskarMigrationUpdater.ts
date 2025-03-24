@@ -1,11 +1,11 @@
 import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
 import type { Agent, FileSystem, WalletConfig } from '@credo-ts/core'
-import type { EntryObject } from '@hyperledger/aries-askar-shared'
+import type { EntryObject } from '@openwallet-foundation/askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
 import { AskarWallet } from '@credo-ts/askar'
-import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
-import { Migration, Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
+import { InjectionSymbols, JsonTransformer, KeyDerivationMethod, TypedArrayEncoder } from '@credo-ts/core'
+import { Key, KeyAlgorithm, Migration, Store } from '@openwallet-foundation/askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
 import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } from './utils'
@@ -267,7 +267,7 @@ export class IndySdkToAskarMigrationUpdater {
         const signKey: string = JSON.parse(row.value as string).signkey
         const keySk = TypedArrayEncoder.fromBase58(signKey)
         const key = Key.fromSecretBytes({
-          algorithm: KeyAlgs.Ed25519,
+          algorithm: KeyAlgorithm.Ed25519,
           secretKey: new Uint8Array(keySk.slice(0, 32)),
         })
         await txn.insertKey({ name: row.name, key })
@@ -298,11 +298,10 @@ export class IndySdkToAskarMigrationUpdater {
       if (!keys || keys.length === 0) {
         await txn.close()
         break
-      } else {
-        // This will be entered if there are credential definitions in the wallet
-        await txn.close()
-        throw new IndySdkToAskarMigrationError('Migration of Credential Definitions is not yet supported')
       }
+      // This will be entered if there are credential definitions in the wallet
+      await txn.close()
+      throw new IndySdkToAskarMigrationError('Migration of Credential Definitions is not yet supported')
     }
   }
 

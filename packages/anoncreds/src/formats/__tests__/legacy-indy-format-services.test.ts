@@ -1,22 +1,24 @@
-import type { AnonCredsCredentialRequest } from '../../models'
 import type { DidRepository } from '@credo-ts/core'
+import type { AnonCredsCredentialRequest } from '../../models'
 
 import {
-  CredentialState,
-  CredentialExchangeRecord,
-  KeyType,
-  CredentialPreviewAttribute,
-  ProofExchangeRecord,
-  ProofState,
-  EventEmitter,
-  InjectionSymbols,
-  SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
   DidResolverService,
   DidsModuleConfig,
-  ProofRole,
-  CredentialRole,
+  EventEmitter,
+  InjectionSymbols,
+  KeyType,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
+import {
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  CredentialRole,
+  CredentialState,
+  ProofExchangeRecord,
+  ProofRole,
+  ProofState,
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
@@ -66,7 +68,7 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 const wallet = new InMemoryWallet()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)

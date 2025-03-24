@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { Agent } from '@credo-ts/core'
@@ -14,6 +13,7 @@ const aliceInMemoryAgentOptions = getAskarSqliteAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   true
 )
 const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
@@ -21,6 +21,7 @@ const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
   {
     endpoints: ['rxjs:bob'],
   },
+  {},
   true
 )
 
@@ -50,13 +51,13 @@ describe('Askar In Memory agents', () => {
     }
 
     aliceAgent = new Agent(aliceInMemoryAgentOptions)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobInMemoryAgentOptions)
-    bobAgent.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     await e2eTest(aliceAgent, bobAgent)

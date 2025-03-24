@@ -5,17 +5,18 @@ import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
 import { askarModule } from '../../../../../askar/tests/helpers'
+import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
-import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup | Aries Askar',
+  {},
   {
     walletConfig: getAskarWalletConfig('UpdateAssistant | Backup | Aries Askar', { inMemory: false }),
   },
@@ -70,7 +71,7 @@ describe('UpdateAssistant | Backup | Aries Askar', () => {
   it('should create a backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
@@ -113,7 +114,7 @@ describe('UpdateAssistant | Backup | Aries Askar', () => {
   it('should restore the backup if an error occurs during the update', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 

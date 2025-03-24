@@ -35,7 +35,7 @@ describe('keyDidJsonWebKey', () => {
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidJsonWebKey.getKeyFromVerificationMethod(verificationMethod)).toThrowError(
+    expect(() => keyDidJsonWebKey.getKeyFromVerificationMethod(verificationMethod)).toThrow(
       'Invalid verification method passed'
     )
   })

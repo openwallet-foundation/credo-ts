@@ -11,7 +11,7 @@
  * limitations under the License.
  */
 
-import type { VerificationMethod, JsonObject, Proof, DocumentLoader } from '@credo-ts/core'
+import type { DocumentLoader, JsonObject, Proof, VerificationMethod } from '@credo-ts/core'
 
 /**
  * Options for verifying a signature

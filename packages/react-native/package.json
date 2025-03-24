@@ -3,9 +3,7 @@
   "main": "src/index",
   "types": "src/index",
   "version": "0.5.13",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
     "main": "build/index",
@@ -31,7 +29,7 @@
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.71.4",
+    "react-native": "^0.78.1",
     "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^1.8.0",
     "rimraf": "^4.4.0",

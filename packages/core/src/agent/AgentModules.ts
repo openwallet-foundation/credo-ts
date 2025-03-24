@@ -1,20 +1,13 @@
-import type { Module, DependencyManager, ApiModule } from '../plugins'
+import type { ApiModule, DependencyManager, Module } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
-import { BasicMessagesModule } from '../modules/basic-messages'
 import { CacheModule } from '../modules/cache'
-import { ConnectionsModule } from '../modules/connections'
-import { CredentialsModule } from '../modules/credentials'
+import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
-import { DiscoverFeaturesModule } from '../modules/discover-features'
 import { GenericRecordsModule } from '../modules/generic-records'
 import { MdocModule } from '../modules/mdoc/MdocModule'
-import { MessagePickupModule } from '../modules/message-pickup'
-import { OutOfBandModule } from '../modules/oob'
-import { ProofsModule } from '../modules/proofs'
-import { MediationRecipientModule, MediatorModule } from '../modules/routing'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { X509Module } from '../modules/x509'
@@ -25,25 +18,14 @@ import { WalletModule } from '../wallet'
  */
 export type ModulesMap = { [key: string]: Module }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// biome-ignore lint/complexity/noBannedTypes: <explanation>
 export type EmptyModuleMap = {}
 
 /**
  * Default modules can be optionally defined to provide custom configuration. This type makes it so that it is not
  * possible to use a different key for the default modules
  */
-export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
-
-/**
- * Defines the input type for the default agent modules. This is overwritten as we
- * want the input type to allow for generics to be passed in for the credentials module.
- */
-export type DefaultAgentModulesInput = Omit<DefaultAgentModules, 'credentials' | 'proofs'> & {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  credentials: CredentialsModule<any>
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  proofs: ProofsModule<any>
-}
+export type AgentModulesInput = ModulesMap
 
 /**
  * Type that represents the default agent modules. This is the {@link ModulesMap} variant for the default modules in the framework.
@@ -106,14 +88,14 @@ export type AgentApi<Modules extends ModulesMap> = {
  */
 export type CustomOrDefaultApi<
   CustomModuleType,
-  DefaultModuleType extends ApiModule
+  DefaultModuleType extends ApiModule,
 > = IsAny<CustomModuleType> extends true
   ? InstanceType<DefaultModuleType['api']>
   : CustomModuleType extends ApiModule
-  ? InstanceType<CustomModuleType['api']>
-  : CustomModuleType extends Module
-  ? never
-  : InstanceType<DefaultModuleType['api']>
+    ? InstanceType<CustomModuleType['api']>
+    : CustomModuleType extends Module
+      ? never
+      : InstanceType<DefaultModuleType['api']>
 
 /**
  * Method to get the default agent modules to be registered on any agent instance. It doens't configure the modules in any way,
@@ -121,18 +103,10 @@ export type CustomOrDefaultApi<
  */
 function getDefaultAgentModules() {
   return {
-    connections: () => new ConnectionsModule(),
-    credentials: () => new CredentialsModule(),
-    proofs: () => new ProofsModule(),
-    mediator: () => new MediatorModule(),
-    mediationRecipient: () => new MediationRecipientModule(),
-    messagePickup: () => new MessagePickupModule(),
-    basicMessages: () => new BasicMessagesModule(),
+    dcql: () => new DcqlModule(),
     genericRecords: () => new GenericRecordsModule(),
-    discovery: () => new DiscoverFeaturesModule(),
     dids: () => new DidsModule(),
     wallet: () => new WalletModule(),
-    oob: () => new OutOfBandModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),
@@ -157,7 +131,7 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
   // Register all default modules, if not registered yet
   for (const [moduleKey, getConfiguredModule] of Object.entries(defaultAgentModules)) {
     // Do not register if the module is already registered.
-    if (modules && modules[moduleKey]) continue
+    if (modules?.[moduleKey]) continue
 
     extendedModules[moduleKey] = getConfiguredModule()
   }
@@ -213,6 +187,7 @@ export function getAgentApi<AgentModules extends ModulesMap>(
 
     // Api is excluded
     if (excludedApis.includes(apiInstance)) return api
+    // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
     return { ...api, [moduleKey]: apiInstance }
   }, {}) as AgentApi<AgentModules>
 

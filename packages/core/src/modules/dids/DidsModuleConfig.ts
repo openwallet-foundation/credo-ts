@@ -1,13 +1,13 @@
 import type { DidRegistrar, DidResolver } from './domain'
 
 import {
-  KeyDidRegistrar,
-  PeerDidRegistrar,
-  KeyDidResolver,
-  PeerDidResolver,
-  WebDidResolver,
   JwkDidRegistrar,
   JwkDidResolver,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  PeerDidRegistrar,
+  PeerDidResolver,
+  WebDidResolver,
 } from './methods'
 
 /**

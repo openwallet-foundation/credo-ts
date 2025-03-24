@@ -11,6 +11,7 @@ import { W3cCredentialRepository } from '../repository'
 const agentOptions = getInMemoryAgentOptions(
   'W3cCredentialsApi',
   {},
+  {},
   {
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
@@ -68,7 +69,7 @@ describe('W3cCredentialsApi', () => {
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     expect(repoSpy).toHaveBeenCalledWith((agent as any).agentContext, storedCredential.id)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
   })

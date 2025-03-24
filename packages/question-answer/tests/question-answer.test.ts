@@ -1,8 +1,8 @@
-import type { ConnectionRecord } from '@credo-ts/core'
+import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { setupSubjectTransports, testLogger, makeConnection, getInMemoryAgentOptions } from '../../core/tests'
+import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
@@ -17,6 +17,7 @@ const bobAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:bob'],
   },
+  {},
   modules
 )
 
@@ -25,12 +26,13 @@ const aliceAgentOptions = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   modules
 )
 
 describe('Question Answer', () => {
-  let bobAgent: Agent<typeof modules>
-  let aliceAgent: Agent<typeof modules>
+  let bobAgent: Agent<typeof bobAgentOptions.modules>
+  let aliceAgent: Agent<typeof aliceAgentOptions.modules>
   let aliceConnection: ConnectionRecord
 
   beforeEach(async () => {

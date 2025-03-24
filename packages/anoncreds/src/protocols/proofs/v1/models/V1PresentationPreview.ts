@@ -1,4 +1,5 @@
-import { JsonTransformer, IsValidMessageType, replaceLegacyDidSovPrefix, parseMessageType } from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
+import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '@credo-ts/didcomm'
 import { Expose, Transform, Type } from 'class-transformer'
 import {
   IsIn,
@@ -12,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { anonCredsPredicateType, AnonCredsPredicateType } from '../../../../models'
+import { AnonCredsPredicateType, anonCredsPredicateType } from '../../../../models'
 import { unqualifiedCredentialDefinitionIdRegex } from '../../../../utils'
 
 export interface V1PresentationPreviewAttributeOptions {

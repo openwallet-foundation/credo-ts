@@ -1,12 +1,15 @@
-import type { DummyStateChangedEvent } from './dummy'
 import type { Socket } from 'net'
+import type { DummyStateChangedEvent } from './dummy'
 
-import { Agent, ConnectionsModule, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { agentDependencies, HttpInboundTransport, WsInboundTransport } from '@credo-ts/node'
+import { AskarModule } from '@credo-ts/askar'
+import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
+import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
+import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
 
-import { DummyModule, DummyEventTypes, DummyState } from './dummy'
+import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 
 const run = async () => {
   // Create transports
@@ -22,7 +25,6 @@ const run = async () => {
   const agent = new Agent({
     config: {
       label: 'Dummy-powered agent - responder',
-      endpoints: [`http://localhost:${port}`],
       walletConfig: {
         id: 'responder',
         key: 'responder',
@@ -30,6 +32,10 @@ const run = async () => {
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
+      askar: new AskarModule({ askar }),
+      didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
+      oob: new OutOfBandModule(),
+      messagePickup: new MessagePickupModule(),
       dummy: new DummyModule({ autoAcceptRequests }),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
@@ -39,12 +45,12 @@ const run = async () => {
   })
 
   // Register transports
-  agent.registerInboundTransport(httpInboundTransport)
-  agent.registerInboundTransport(wsInboundTransport)
+  agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
+  agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
 
   // Allow to create invitation, no other way to ask for invitation yet
-  app.get('/invitation', async (req, res) => {
-    const { outOfBandInvitation } = await agent.oob.createInvitation()
+  app.get('/invitation', async (_req, res) => {
+    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 

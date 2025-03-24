@@ -1,3 +1,9 @@
+import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
+import type {
+  OpenId4VciCredentialConfigurationSupported,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -12,32 +18,11 @@ import type {
   OpenId4VciSupportedCredentialFormats,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
 
-import {
-  getAuthorizationServerMetadataFromList,
-  JwtSigner,
-  Oauth2Client,
-  preAuthorizedCodeGrantIdentifier,
-  RequestDpopOptions,
-} from '@animo-id/oauth2'
-import {
-  AuthorizationFlow,
-  CredentialResponse,
-  IssuerMetadataResult,
-  Oid4vciClient,
-  Oid4vciRetrieveCredentialsError,
-} from '@animo-id/oid4vci'
 import {
   CredoError,
   InjectionSymbols,
   Jwk,
-  JwsService,
   Logger,
   Mdoc,
   MdocApi,
@@ -54,9 +39,23 @@ import {
   injectable,
   parseDid,
 } from '@credo-ts/core'
+import {
+  JwtSigner,
+  Oauth2Client,
+  RequestDpopOptions,
+  getAuthorizationServerMetadataFromList,
+  preAuthorizedCodeGrantIdentifier,
+} from '@openid4vc/oauth2'
+import {
+  AuthorizationFlow,
+  CredentialResponse,
+  IssuerMetadataResult,
+  Openid4vciClient,
+  Openid4vciRetrieveCredentialsError,
+} from '@openid4vc/openid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOid4vciCallbacks } from '../shared/callbacks'
+import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
@@ -66,15 +65,9 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
-  private jwsService: JwsService
 
-  public constructor(
-    @inject(InjectionSymbols.Logger) logger: Logger,
-    w3cCredentialService: W3cCredentialService,
-    jwsService: JwsService
-  ) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
     this.w3cCredentialService = w3cCredentialService
-    this.jwsService = jwsService
     this.logger = logger
   }
 
@@ -102,7 +95,9 @@ export class OpenId4VciHolderService {
 
     const credentialConfigurationsSupported = getOfferedCredentials(
       credentialOfferObject.credential_configuration_ids,
-      client.getKnownCredentialConfigurationsSupported(metadata.credentialIssuer)
+      client.getKnownCredentialConfigurationsSupported(metadata.credentialIssuer),
+      // We only filter for known configurations, so it's ok if not found
+      { ignoreNotFoundIds: true }
     )
 
     return {
@@ -137,7 +132,7 @@ export class OpenId4VciHolderService {
     if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {
       return {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
-        oid4vpRequestUrl: authorizationResult.oid4vpRequestUrl,
+        openid4vpRequestUrl: authorizationResult.openid4vpRequestUrl,
         authSession: authorizationResult.authSession,
       }
     }
@@ -344,7 +339,7 @@ export class OpenId4VciHolderService {
     if (possibleProofOfPossessionSigAlgs.length === 0) {
       throw new CredoError(
         [
-          `No possible proof of possession signature algorithm found.`,
+          'No possible proof of possession signature algorithm found.',
           `Signature algorithms supported by the Agent '${supportedJwaSignatureAlgorithms.join(', ')}'`,
           `Allowed Signature algorithms '${allowedProofOfPossessionSigAlgs?.join(', ')}'`,
         ].join('\n')
@@ -369,7 +364,7 @@ export class OpenId4VciHolderService {
     // If we don't have a nonce yet, we need to first get one
     if (!cNonce) {
       // Best option is to use nonce endpoint (draft 14+)
-      if (!metadata.credentialIssuer.nonce_endpoint) {
+      if (metadata.credentialIssuer.nonce_endpoint) {
         const nonceResponse = await client.requestNonce({ issuerMetadata: metadata })
         cNonce = nonceResponse.c_nonce
       } else {
@@ -388,8 +383,8 @@ export class OpenId4VciHolderService {
               : undefined,
           })
           .catch((e) => {
-            if (e instanceof Oid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
-              cNonce = e.response.credentialErrorResponseResult.output.c_nonce
+            if (e instanceof Openid4vciRetrieveCredentialsError && e.response.credentialErrorResponseResult?.success) {
+              cNonce = e.response.credentialErrorResponseResult.data.c_nonce
             }
           })
       }
@@ -403,7 +398,7 @@ export class OpenId4VciHolderService {
     // If number not 0: use the number
     // Else: use 1
     const batchSize =
-      requestBatch === true ? metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1 : requestBatch || 1
+      requestBatch === true ? (metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1) : requestBatch || 1
     if (typeof requestBatch === 'number' && requestBatch > 1 && !metadata.credentialIssuer.batch_credential_issuance) {
       throw new CredoError(
         `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not support batch credential issuance using the 'proofs' request property. Onlt 'proof' supported.`
@@ -411,18 +406,21 @@ export class OpenId4VciHolderService {
     }
 
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-      // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
-      const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
-        possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
-        offeredCredential: {
-          id: offeredCredentialId,
-          configuration: offeredCredentialConfiguration,
-        },
-        credentialBindingResolver,
-      })
-
       const jwts: string[] = []
+
       for (let i = 0; i < batchSize; i++) {
+        // TODO: we should call this method once with a keyLength. Gives more control to the user and better aligns with key attestations
+        // Get a key instance for each entry in the batch.
+        // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
+        const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
+          possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
+          offeredCredential: {
+            id: offeredCredentialId,
+            configuration: offeredCredentialConfiguration,
+          },
+          credentialBindingResolver,
+        })
+
         const { jwt } = await client.createCredentialRequestJwtProof({
           credentialConfigurationId: offeredCredentialId,
           issuerMetadata: resolvedCredentialOffer.metadata,
@@ -686,7 +684,7 @@ export class OpenId4VciHolderService {
           })
           break
         default:
-          throw new CredoError(`Unsupported credential format.`)
+          throw new CredoError('Unsupported credential format.')
       }
     }
 
@@ -770,7 +768,8 @@ export class OpenId4VciHolderService {
         notificationId,
         credentialConfigurationId,
       }
-    } else if (
+    }
+    if (
       options.format === OpenId4VciCredentialFormatProfile.JwtVcJson ||
       options.format === OpenId4VciCredentialFormatProfile.JwtVcJsonLd
     ) {
@@ -805,7 +804,8 @@ export class OpenId4VciHolderService {
       }
 
       return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
-    } else if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
+    }
+    if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
       if (!credentials.every((c) => typeof c === 'object')) {
         throw new CredoError(
           `Received credential(s) of format ${format}, but not all credential(s) are an object. ${JSON.stringify(
@@ -836,7 +836,8 @@ export class OpenId4VciHolderService {
       }
 
       return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
-    } else if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+    }
+    if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
       if (!credentials.every((c) => typeof c === 'string')) {
         throw new CredoError(
           `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(
@@ -873,14 +874,14 @@ export class OpenId4VciHolderService {
   }
 
   private getClient(agentContext: AgentContext) {
-    return new Oid4vciClient({
-      callbacks: getOid4vciCallbacks(agentContext),
+    return new Openid4vciClient({
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 
   private getOauth2Client(agentContext: AgentContext) {
     return new Oauth2Client({
-      callbacks: getOid4vciCallbacks(agentContext),
+      callbacks: getOid4vcCallbacks(agentContext),
     })
   }
 }

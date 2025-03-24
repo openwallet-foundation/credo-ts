@@ -1,10 +1,11 @@
+import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { MdocDeviceResponsePresentationDefinitionOptions } from './MdocOptions'
 import type {
-  MdocSignOptions,
-  MdocDeviceResponseOpenId4VpOptions,
+  MdocDeviceResponseOptions,
   MdocDeviceResponseVerifyOptions,
+  MdocSignOptions,
   MdocVerifyOptions,
 } from './MdocOptions'
-import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { injectable } from 'tsyringe'
 
@@ -37,8 +38,15 @@ export class MdocService {
     return await mdoc.verify(agentContext, options)
   }
 
-  public async createOpenId4VpDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOpenId4VpOptions) {
-    return MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, options)
+  public async createDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseOptions) {
+    return MdocDeviceResponse.createDeviceResponse(agentContext, options)
+  }
+
+  public async createPresentationDefinitionDeviceResponse(
+    agentContext: AgentContext,
+    options: MdocDeviceResponsePresentationDefinitionOptions
+  ) {
+    return MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, options)
   }
 
   public async verifyDeviceResponse(agentContext: AgentContext, options: MdocDeviceResponseVerifyOptions) {

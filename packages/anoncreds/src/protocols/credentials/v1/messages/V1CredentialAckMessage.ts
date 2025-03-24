@@ -1,6 +1,6 @@
-import type { AckMessageOptions } from '@credo-ts/core'
+import type { AckMessageOptions } from '@credo-ts/didcomm'
 
-import { AckMessage, IsValidMessageType, parseMessageType } from '@credo-ts/core'
+import { AckMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 
 export type V1CredentialAckMessageOptions = AckMessageOptions
 
@@ -9,14 +9,6 @@ export type V1CredentialAckMessageOptions = AckMessageOptions
  */
 export class V1CredentialAckMessage extends AckMessage {
   public readonly allowDidSovPrefix = true
-
-  /**
-   * Create new CredentialAckMessage instance.
-   * @param options
-   */
-  public constructor(options: V1CredentialAckMessageOptions) {
-    super(options)
-  }
 
   @IsValidMessageType(V1CredentialAckMessage.type)
   public readonly type = V1CredentialAckMessage.type.messageTypeUri

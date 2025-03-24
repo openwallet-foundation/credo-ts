@@ -9,8 +9,7 @@ export class WalletModule implements Module {
   /**
    * Registers the dependencies of the wallet module on the injection dependencyManager.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public register(dependencyManager: DependencyManager) {
+  public register(_dependencyManager: DependencyManager) {
     // no-op, only API needs to be registered
   }
 }

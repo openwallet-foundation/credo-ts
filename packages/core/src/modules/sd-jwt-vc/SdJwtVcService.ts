@@ -1,33 +1,38 @@
+import type { SDJwt } from '@sd-jwt/core'
+import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
+import type { JwkJson, Key } from '../../crypto'
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  SdJwtVcSignOptions,
-  SdJwtVcPresentOptions,
-  SdJwtVcVerifyOptions,
-  SdJwtVcPayload,
   SdJwtVcHeader,
   SdJwtVcHolderBinding,
   SdJwtVcIssuer,
+  SdJwtVcPayload,
+  SdJwtVcPresentOptions,
+  SdJwtVcSignOptions,
+  SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { JwkJson, Key } from '../../crypto'
-import type { Query, QueryOptions } from '../../storage/StorageService'
-import type { SDJwt } from '@sd-jwt/core'
-import type { Signer, Verifier, PresentationFrame, DisclosureFrame } from '@sd-jwt/types'
 
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { JwtPayload, Jwk, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { Hasher, Jwk, JwtPayload, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
+import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, parseDid, getKeyFromVerificationMethod } from '../dids'
-import { X509Certificate, X509ModuleConfig } from '../x509'
+import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
+import { ClaimFormat } from '../vc/index'
+import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
@@ -35,14 +40,27 @@ type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
 export interface SdJwtVc<
   Header extends SdJwtVcHeader = SdJwtVcHeader,
-  Payload extends SdJwtVcPayload = SdJwtVcPayload
+  Payload extends SdJwtVcPayload = SdJwtVcPayload,
 > {
+  /**
+   * claim format is convenience method added to all credential instances
+   */
+  claimFormat: ClaimFormat.SdJwtVc
+  /**
+   * encoded is convenience method added to all credential instances
+   */
+  encoded: string
   compact: string
   header: Header
 
   // TODO: payload type here is a lie, as it is the signed payload (so fields replaced with _sd)
   payload: Payload
   prettyClaims: Payload
+
+  kbJwt?: {
+    header: Record<string, unknown>
+    payload: Record<string, unknown>
+  }
 
   typeMetadata?: SdJwtVcTypeMetadata
 }
@@ -133,6 +151,8 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
   }
 
@@ -143,9 +163,35 @@ export class SdJwtVcService {
     return decodeSdJwtVc(compactSdJwtVc, typeMetadata)
   }
 
+  public applyDisclosuresForPayload(compactSdJwtVc: string, requestedPayload: JsonObject): SdJwtVc {
+    const decoded = decodeSdJwtSync(compactSdJwtVc, Hasher.hash)
+    const presentationFrame = buildDisclosureFrameForPayload(requestedPayload) ?? {}
+
+    if (decoded.kbJwt) {
+      throw new SdJwtVcError('Cannot apply limit disclosure on an sd-jwt with key binding jwt')
+    }
+
+    const requiredDisclosures = selectDisclosures(
+      decoded.jwt.payload,
+      // Map to sd-jwt disclosure format
+      decoded.disclosures.map((d) => ({
+        digest: d.digestSync({ alg: 'sha-256', hasher: Hasher.hash }),
+        encoded: d.encode(),
+        key: d.key,
+        salt: d.salt,
+        value: d.value,
+      })),
+      presentationFrame as { [key: string]: boolean }
+    )
+    const [jwt] = compactSdJwtVc.split('~')
+    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosedDecoded = decodeSdJwtVc(sdJwt)
+    return disclosedDecoded
+  }
+
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, presentationFrame, verifierMetadata }: SdJwtVcPresentOptions<Payload>
+    { compactSdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
 
@@ -169,6 +215,7 @@ export class SdJwtVcService {
               iat: verifierMetadata.issuedAt,
               nonce: verifierMetadata.nonce,
               aud: verifierMetadata.audience,
+              ...additionalPayload,
             },
           }
         : undefined,
@@ -191,7 +238,7 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata }: SdJwtVcVerifyOptions
+    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates }: SdJwtVcVerifyOptions
   ): Promise<
     | { isValid: true; verification: VerificationResult; sdJwtVc: SdJwtVc<Header, Payload> }
     | { isValid: false; verification: VerificationResult; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
@@ -226,10 +273,24 @@ export class SdJwtVcService {
       header: sdJwtVc.jwt.header as Header,
       compact: compactSdJwtVc,
       prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+
+      kbJwt: sdJwtVc.kbJwt
+        ? {
+            payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
+            header: sdJwtVc.kbJwt.header as Record<string, unknown>,
+          }
+        : undefined,
+      claimFormat: ClaimFormat.SdJwtVc,
+      encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
     try {
-      const credentialIssuer = await this.parseIssuerFromCredential(agentContext, sdJwtVc)
+      const credentialIssuer = await this.parseIssuerFromCredential(
+        agentContext,
+        sdJwtVc,
+        returnSdJwtVc,
+        trustedCertificates
+      )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
       const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
       const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
@@ -303,7 +364,7 @@ export class SdJwtVcService {
             returnSdJwtVc.typeMetadata = typeMetadata as SdJwtVcTypeMetadata
           }
         }
-      } catch (error) {
+      } catch (_error) {
         // we allow vct without type metadata for now
       }
     } catch (error) {
@@ -316,7 +377,6 @@ export class SdJwtVcService {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { isValid: _, ...allVerifications } = verificationResult
     verificationResult.isValid = Object.values(allVerifications).every((verification) => verification === true)
 
@@ -455,17 +515,20 @@ export class SdJwtVcService {
 
   private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
     agentContext: AgentContext,
-    sdJwtVc: SDJwt<Header, Payload>
+    sdJwtVc: SDJwt<Header, Payload>,
+    credoSdJwtVc: SdJwtVc<Header, Payload>,
+    _trustedCertificates?: EncodedX509Certificate[]
   ): Promise<SdJwtVcIssuer> {
+    const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
     if (!sdJwtVc.jwt?.payload) {
       throw new SdJwtVcError('Credential not exist')
     }
 
-    if (!sdJwtVc.jwt?.payload['iss']) {
+    if (!sdJwtVc.jwt?.payload.iss) {
       throw new SdJwtVcError('Credential does not contain an issuer')
     }
 
-    const iss = sdJwtVc.jwt.payload['iss'] as string
+    const iss = sdJwtVc.jwt.payload.iss as string
 
     if (sdJwtVc.jwt.header?.x5c) {
       if (!Array.isArray(sdJwtVc.jwt.header.x5c)) {
@@ -478,7 +541,20 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Invalid x5c header in credential. Not an array of strings.')
       }
 
-      const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
+      let trustedCertificates = _trustedCertificates
+      const certificateChain = sdJwtVc.jwt.header.x5c.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      if (!trustedCertificates) {
+        trustedCertificates =
+          (await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'credential',
+              credential: credoSdJwtVc,
+            },
+          })) ?? x509Config.trustedCertificates
+      }
+
       if (!trustedCertificates) {
         throw new SdJwtVcError(
           'No trusted certificates configured for X509 certificate chain validation. Issuer cannot be verified.'
@@ -505,11 +581,11 @@ export class SdJwtVcService {
         throw new SdJwtVcError('Credential does not contain a header')
       }
 
-      if (!sdJwtVc.jwt.header['kid']) {
+      if (!sdJwtVc.jwt.header.kid) {
         throw new SdJwtVcError('Credential does not contain a kid in the header')
       }
 
-      const issuerKid = sdJwtVc.jwt.header['kid'] as string
+      const issuerKid = sdJwtVc.jwt.header.kid as string
 
       let didUrl: string
       if (issuerKid.startsWith('#')) {
@@ -544,17 +620,18 @@ export class SdJwtVcService {
       throw new SdJwtVcError('Credential not exist')
     }
 
-    if (!sdJwtVc.jwt?.payload['cnf']) {
+    if (!sdJwtVc.jwt?.payload.cnf) {
       return null
     }
-    const cnf: CnfPayload = sdJwtVc.jwt.payload['cnf']
+    const cnf: CnfPayload = sdJwtVc.jwt.payload.cnf
 
     if (cnf.jwk) {
       return {
         method: 'jwk',
         jwk: cnf.jwk,
       }
-    } else if (cnf.kid) {
+    }
+    if (cnf.kid) {
       if (!cnf.kid.startsWith('did:') || !cnf.kid.includes('#')) {
         throw new SdJwtVcError('Invalid holder kid for did. Only absolute KIDs for cnf are supported')
       }
@@ -593,7 +670,8 @@ export class SdJwtVcService {
           kid: holder.didUrl,
         },
       }
-    } else if (holder.method === 'jwk') {
+    }
+    if (holder.method === 'jwk') {
       const jwk = holder.jwk instanceof Jwk ? holder.jwk : getJwkFromJson(holder.jwk)
       const key = jwk.key
       const alg = jwk.supportedSignatureAlgorithms[0]

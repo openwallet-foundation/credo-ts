@@ -1,10 +1,10 @@
+import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '@credo-ts/core'
 
-import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState } from '@credo-ts/core'
+import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, MessageReceiver } from '@credo-ts/didcomm'
 
-import { waitForCredentialRecordSubject, testLogger } from '../../../../../../core/tests'
+import { testLogger, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1CredentialPreview } from '../messages'
 
@@ -47,8 +47,7 @@ describe('V1 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {
         indy: {
@@ -59,13 +58,13 @@ describe('V1 Connectionless Credentials', () => {
       protocolVersion: 'v1',
     })
 
-    const { invitationUrl } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -76,7 +75,7 @@ describe('V1 Connectionless Credentials', () => {
     const acceptOfferOptions: AcceptCredentialOfferOptions = {
       credentialRecordId: aliceCredentialRecord.id,
     }
-    const credentialRecord = await aliceAgent.credentials.acceptOffer(acceptOfferOptions)
+    const credentialRecord = await aliceAgent.modules.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -89,7 +88,7 @@ describe('V1 Connectionless Credentials', () => {
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.credentials.acceptRequest(options)
+    faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -98,7 +97,7 @@ describe('V1 Connectionless Credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.credentials.acceptCredential({
+    aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -148,8 +147,7 @@ describe('V1 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    // eslint-disable-next-line prefer-const
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V1 Out of Band offer',
       credentialFormats: {
         indy: {
@@ -161,13 +159,14 @@ describe('V1 Connectionless Credentials', () => {
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })
 
-    const { message: offerMessage } = await faberAgent.oob.createLegacyConnectionlessInvitation({
+    const { message: offerMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       message,
       domain: 'https://a-domain.com',
     })
 
     // Receive Message
-    await aliceAgent.receiveMessage(offerMessage.toJSON())
+    const messageReceiver = aliceAgent.context.dependencyManager.resolve(MessageReceiver)
+    await messageReceiver.receiveMessage(offerMessage.toJSON())
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -175,7 +174,7 @@ describe('V1 Connectionless Credentials', () => {
       state: CredentialState.OfferReceived,
     })
 
-    await aliceAgent.credentials.acceptOffer({
+    await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: AutoAcceptCredential.ContentApproved,
     })

@@ -1,19 +1,17 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { tmpdir } from 'os'
+import path from 'path'
 import {
   Agent,
-  BasicMessageRecord,
-  BasicMessageRepository,
-  BasicMessageRole,
   KeyDerivationMethod,
   TypedArrayEncoder,
-  utils,
   WalletDuplicateError,
   WalletInvalidKeyError,
   WalletNotFoundError,
+  utils,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
-import { tmpdir } from 'os'
-import path from 'path'
+import { Store } from '@openwallet-foundation/askar-shared'
+
+import { BasicMessageRecord, BasicMessageRepository, BasicMessageRole } from '../..//didcomm'
 
 import { getAskarSqliteAgentOptions } from './helpers'
 
@@ -124,8 +122,7 @@ describe('Askar SQLite agents', () => {
 
     // Initialize the wallet again and assert record does not exist
     // This should create a new wallet
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    await bobAgent.wallet.initialize(bobAgent.config.walletConfig!)
+    await bobAgent.wallet.initialize(bobAgent.config.walletConfig)
     expect(await bobBasicMessageRepository.findById(bobAgent.context, basicMessageRecord.id)).toBeNull()
     await bobAgent.wallet.delete()
 
@@ -163,7 +160,7 @@ describe('Askar SQLite agents', () => {
     await expect(
       bobAgent.wallet.import({ id: backupWalletName, key: backupWalletName }, { path: backupPath, key: backupKey })
     ).rejects.toThrow(
-      `Error importing wallet '${backupWalletName}': Trying to import wallet with walletConfig.id ${backupWalletName}, however the wallet contains a default profile with id ${bobAgent.config.walletConfig.id}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/hyperledger/aries-askar/issues/221 for more information.`
+      `Error importing wallet '${backupWalletName}': Trying to import wallet with walletConfig.id ${backupWalletName}, however the wallet contains a default profile with id ${bobAgent.config.walletConfig.id}. The walletConfig.id MUST match with the default profile. In the future this behavior may be changed. See https://github.com/openwallet-foundation/askar/issues/221 for more information.`
     )
   })
 

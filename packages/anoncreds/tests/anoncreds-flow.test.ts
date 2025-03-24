@@ -2,19 +2,21 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
-  CredentialRole,
-  ProofRole,
-  InjectionSymbols,
-  ProofState,
-  ProofExchangeRecord,
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialState,
   DidResolverService,
   DidsModuleConfig,
+  InjectionSymbols,
   SignatureSuiteToken,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
+import {
+  CredentialExchangeRecord,
+  CredentialPreviewAttribute,
+  CredentialRole,
+  CredentialState,
+  ProofExchangeRecord,
+  ProofRole,
+  ProofState,
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'

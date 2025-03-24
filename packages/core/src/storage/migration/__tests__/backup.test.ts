@@ -5,17 +5,18 @@ import { readFileSync, unlinkSync } from 'fs'
 import path from 'path'
 
 import { askarModule } from '../../../../../askar/tests/helpers'
+import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
-import { CredentialExchangeRecord, CredentialRepository } from '../../../modules/credentials'
 import { JsonTransformer } from '../../../utils'
 import { StorageUpdateService } from '../StorageUpdateService'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup',
+  {},
   {
     walletConfig: getAskarWalletConfig('UpdateAssistant | Backup', {
       inMemory: false,
@@ -23,8 +24,6 @@ const agentOptions = getAgentOptions(
   },
   { askar: askarModule }
 )
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-agentOptions.config.walletConfig!.storage!.inMemory = false
 
 const aliceCredentialRecordsString = readFileSync(
   path.join(__dirname, '__fixtures__/alice-4-credentials-0.1.json'),
@@ -72,7 +71,7 @@ describe('UpdateAssistant | Backup', () => {
   it('should create a backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 
@@ -115,7 +114,7 @@ describe('UpdateAssistant | Backup', () => {
   it('should restore the backup if an error occurs during the update', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
 

@@ -3,7 +3,7 @@ import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../s
 import { OpenId4VciCredentialFormatProfile } from '../src'
 
 export const openBadgeCredential = {
-  id: `/credentials/OpenBadgeCredential`,
+  id: '/credentials/OpenBadgeCredential',
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   credential_definition: {
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
@@ -11,7 +11,7 @@ export const openBadgeCredential = {
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredential = {
-  id: `/credentials/UniversityDegreeCredential`,
+  id: '/credentials/UniversityDegreeCredential',
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   credential_definition: {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
@@ -19,7 +19,7 @@ export const universityDegreeCredential = {
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialLd = {
-  id: `/credentials/UniversityDegreeCredentialLd`,
+  id: '/credentials/UniversityDegreeCredentialLd',
   format: OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   credential_definition: {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],

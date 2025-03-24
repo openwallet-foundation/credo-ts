@@ -1,4 +1,5 @@
-import type { JwkJson, Jwk, HashName } from '../../crypto'
+import type { HashName, Jwk, JwkJson } from '../../crypto'
+import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -73,8 +74,7 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
 }
 
 // TODO: use the payload type once types are fixed
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
+export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPayload> = {
   compactSdJwtVc: string
 
   /**
@@ -93,6 +93,11 @@ export type SdJwtVcPresentOptions<Payload extends SdJwtVcPayload = SdJwtVcPayloa
     nonce: string
     issuedAt: number
   }
+
+  /**
+   * Additional payload to include in the KB JWT
+   */
+  additionalPayload?: Record<string, unknown>
 }
 
 export type SdJwtVcVerifyOptions = {
@@ -125,4 +130,6 @@ export type SdJwtVcVerifyOptions = {
    * It will will not influence the verification result if fetching of type metadata fails
    */
   fetchTypeMetadata?: boolean
+
+  trustedCertificates?: EncodedX509Certificate[]
 }

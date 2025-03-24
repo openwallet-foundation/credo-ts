@@ -1,7 +1,7 @@
+import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import type { DummyService } from '../services'
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/core'
 
-import { getOutboundMessageContext } from '@credo-ts/core'
+import { getOutboundMessageContext } from '@credo-ts/didcomm'
 
 import { DummyRequestMessage } from '../messages'
 

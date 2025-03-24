@@ -3,9 +3,7 @@
   "main": "src/index",
   "types": "src/index",
   "version": "0.5.13",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
     "main": "build/index",
@@ -32,12 +30,12 @@
     "@credo-ts/node": "workspace:*"
   },
   "devDependencies": {
-    "@hyperledger/aries-askar-nodejs": "^0.2.3",
-    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@openwallet-foundation/askar-nodejs": "^0.3.1",
+    "@openwallet-foundation/askar-shared": "^0.3.1",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.3"
+    "@openwallet-foundation/askar-shared": "^0.3.1"
   }
 }

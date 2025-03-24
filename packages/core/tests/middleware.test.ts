@@ -1,19 +1,18 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord, InboundMessageContext } from '../src'
+import type { ConnectionRecord, InboundMessageContext } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
-  TrustPingResponseMessage,
-  BasicMessage,
-  getOutboundMessageContext,
-  MessageSender,
   AgentMessage,
-  JsonTransformer,
-  Agent,
-} from '../src'
+  BasicMessage,
+  MessageSender,
+  TrustPingResponseMessage,
+  getOutboundMessageContext,
+} from '../../didcomm/src'
+import { Agent, JsonTransformer } from '../src'
 
 import {
   getInMemoryAgentOptions,
@@ -22,20 +21,21 @@ import {
   waitForBasicMessage,
 } from './helpers'
 
-const faberConfig = getInMemoryAgentOptions('Faber Message Handler Middleware', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgent = new Agent(
+  getInMemoryAgentOptions('Faber Message Handler Middleware', {
+    endpoints: ['rxjs:faber'],
+  })
+)
 
-const aliceConfig = getInMemoryAgentOptions('Alice Message Handler Middleware', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgent = new Agent(
+  getInMemoryAgentOptions('Alice Message Handler Middleware', {
+    endpoints: ['rxjs:alice'],
+  })
+)
 
 describe('Message Handler Middleware E2E', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
   let faberConnection: ConnectionRecord
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  let aliceConnection: ConnectionRecord
+  let _aliceConnection: ConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -45,16 +45,14 @@ describe('Message Handler Middleware E2E', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent = new Agent(faberConfig)
-    faberAgent.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent = new Agent(aliceConfig)
-    aliceAgent.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-    ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
+    ;[_aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
 
   afterEach(async () => {
@@ -66,7 +64,7 @@ describe('Message Handler Middleware E2E', () => {
 
   test('Correctly calls the fallback message handler if no message handler is defined', async () => {
     // Fallback message handler
-    aliceAgent.dependencyManager.setFallbackMessageHandler((messageContext) => {
+    aliceAgent.modules.didcomm.setFallbackMessageHandler((messageContext) => {
       return getOutboundMessageContext(messageContext.agentContext, {
         connectionRecord: messageContext.connection,
         message: new BasicMessage({
@@ -98,7 +96,7 @@ describe('Message Handler Middleware E2E', () => {
   })
 
   test('Correctly calls the registered message handler middleware', async () => {
-    aliceAgent.dependencyManager.registerMessageHandlerMiddleware(
+    aliceAgent.modules.didcomm.registerMessageHandlerMiddleware(
       async (inboundMessageContext: InboundMessageContext, next) => {
         await next()
 
@@ -110,7 +108,7 @@ describe('Message Handler Middleware E2E', () => {
       }
     )
 
-    await faberAgent.connections.sendPing(faberConnection.id, {})
+    await faberAgent.modules.connections.sendPing(faberConnection.id, {})
     const receiveMessage = await waitForAgentMessageProcessedEvent(faberAgent, {
       messageType: TrustPingResponseMessage.type.messageTypeUri,
     })

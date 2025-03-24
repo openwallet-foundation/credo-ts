@@ -1,18 +1,17 @@
-import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
-import type { OpenId4VcVerificationRequest } from './router'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { NextFunction } from 'express'
+import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
+import type { OpenId4VcVerificationRequest } from './router'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
-import { OpenId4VcSiopVerifierService } from './OpenId4VcSiopVerifierService'
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
+import { OpenId4VpVerifierService } from './OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from './repository'
-import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { configureAuthorizationEndpoint, configureFederationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
@@ -48,13 +47,10 @@ export class OpenId4VcVerifierModule implements Module {
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(OpenId4VcSiopVerifierService)
+    dependencyManager.registerSingleton(OpenId4VpVerifierService)
 
     // Repository
     dependencyManager.registerSingleton(OpenId4VcVerifierRepository)
-
-    // Global event emitter
-    dependencyManager.registerSingleton(OpenId4VcRelyingPartyEventHandler)
   }
 
   public async initialize(rootAgentContext: AgentContext): Promise<void> {
@@ -121,8 +117,8 @@ export class OpenId4VcVerifierModule implements Module {
     contextRouter.use('/:verifierId', endpointRouter)
 
     // Configure endpoints
-    configureAuthorizationEndpoint(endpointRouter, this.config.authorizationEndpoint)
-    configureAuthorizationRequestEndpoint(endpointRouter, this.config.authorizationRequestEndpoint)
+    configureAuthorizationEndpoint(endpointRouter, this.config)
+    configureAuthorizationRequestEndpoint(endpointRouter, this.config)
 
     // TODO: The keys needs to be passed down to the federation endpoint to be used in the entity configuration for the openid relying party
     // TODO: But the keys also needs to be available for the request signing. They also needs to get saved because it needs to survive a restart of the agent.

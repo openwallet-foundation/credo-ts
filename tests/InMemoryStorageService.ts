@@ -1,15 +1,15 @@
 import type { AgentContext } from '../packages/core/src/agent'
 import type { BaseRecord, TagsBase } from '../packages/core/src/storage/BaseRecord'
 import type {
-  StorageService,
   BaseRecordConstructor,
   Query,
   QueryOptions,
+  StorageService,
 } from '../packages/core/src/storage/StorageService'
 
 import { InMemoryWallet } from './InMemoryWallet'
 
-import { RecordNotFoundError, RecordDuplicateError, JsonTransformer, injectable } from '@credo-ts/core'
+import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, injectable } from '@credo-ts/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -30,7 +30,7 @@ interface ContextCorrelationIdToRecords {
 }
 
 @injectable()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRecord<any, any, any>>
   implements StorageService<T>
 {
@@ -92,6 +92,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   public async update(agentContext: AgentContext, record: T): Promise<void> {
     record.updatedAt = new Date()
     const value = JsonTransformer.toJSON(record)
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete value._tags
 
     if (!this.getRecordsForContext(agentContext)[record.id]) {
@@ -175,7 +176,7 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
   const { $and, $or, $not, ...restQuery } = query
 
@@ -201,7 +202,7 @@ function filterByQuery<T extends BaseRecord<any, any, any>>(record: StorageRecor
   return true
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function matchSimpleQuery<T extends BaseRecord<any, any, any>>(record: StorageRecord, query: Query<T>) {
   const tags = record.tags as TagsBase
 

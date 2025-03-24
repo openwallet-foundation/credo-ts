@@ -1,12 +1,11 @@
-import type { Key } from './Key'
 import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
 import type { Wallet } from '../wallet'
+import type { Key } from './Key'
 
 import { VerificationMethod } from '../modules/dids'
 import { getKeyFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
 import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
-import { JsonTransformer } from '../utils'
-import { MessageValidator } from '../utils/MessageValidator'
+import { JsonTransformer, MessageValidator } from '../utils'
 import { Buffer } from '../utils/buffer'
 
 interface WalletKeyPairOptions extends LdKeyPairOptions {
@@ -35,8 +34,7 @@ export function createWalletKeyPairClass(wallet: Wallet) {
       throw new Error('Method not implemented.')
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public verifyFingerprint(fingerprint: string): boolean {
+    public verifyFingerprint(_fingerprint: string): boolean {
       throw new Error('Method not implemented.')
     }
 

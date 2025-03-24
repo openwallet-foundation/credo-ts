@@ -1,13 +1,13 @@
+import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
-import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
 
-import { credentialsSupportedToCredentialConfigurationsSupported } from '@animo-id/oid4vci'
 import { BaseRecord, utils } from '@credo-ts/core'
+import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import { Transform, TransformationType } from 'class-transformer'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
@@ -66,7 +66,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     if (this.credentialConfigurationsSupported) return
 
     this.credentialConfigurationsSupported =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
       credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
   }
 

@@ -1,15 +1,8 @@
-import type {
-  Agent,
-  InboundTransport,
-  Logger,
-  TransportSession,
-  EncryptedMessage,
-  AgentContext,
-  AgentMessageReceivedEvent,
-} from '@credo-ts/core'
+import type { AgentContext, Logger } from '@credo-ts/core'
+import type { AgentMessageReceivedEvent, EncryptedMessage, InboundTransport, TransportSession } from '@credo-ts/didcomm'
 
-import { CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
-// eslint-disable-next-line import/no-named-as-default
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
+import { AgentEventTypes, DidCommModuleConfig, TransportService } from '@credo-ts/didcomm'
 import WebSocket, { Server } from 'ws'
 
 export class WsInboundTransport implements InboundTransport {
@@ -23,13 +16,14 @@ export class WsInboundTransport implements InboundTransport {
     this.socketServer = server ?? new Server({ port })
   }
 
-  public async start(agent: Agent) {
-    const transportService = agent.dependencyManager.resolve(TransportService)
+  public async start(agentContext: AgentContext) {
+    const transportService = agentContext.dependencyManager.resolve(TransportService)
 
-    this.logger = agent.config.logger
+    this.logger = agentContext.config.logger
 
-    const wsEndpoint = agent.config.endpoints.find((e) => e.startsWith('ws'))
-    this.logger.debug(`Starting WS inbound transport`, {
+    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    const wsEndpoint = didcommConfig.endpoints.find((e) => e.startsWith('ws'))
+    this.logger.debug('Starting WS inbound transport', {
       endpoint: wsEndpoint,
     })
 
@@ -41,7 +35,7 @@ export class WsInboundTransport implements InboundTransport {
         this.logger.debug(`Saving new socket with id ${socketId}.`)
         this.socketIds[socketId] = socket
         const session = new WebSocketTransportSession(socketId, socket, this.logger)
-        this.listenOnWebSocketMessages(agent, socket, session)
+        this.listenOnWebSocketMessages(agentContext, socket, session)
         socket.on('close', () => {
           this.logger.debug('Socket closed.')
           transportService.removeSession(session)
@@ -65,14 +59,15 @@ export class WsInboundTransport implements InboundTransport {
     })
   }
 
-  private listenOnWebSocketMessages(agent: Agent, socket: WebSocket, session: TransportSession) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private listenOnWebSocketMessages(agentContext: AgentContext, socket: WebSocket, session: TransportSession) {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
         const encryptedMessage = JSON.parse(event.data) as EncryptedMessage
 
-        agent.events.emit<AgentMessageReceivedEvent>(agent.context, {
+        const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
+        eventEmitter.emit<AgentMessageReceivedEvent>(agentContext, {
           type: AgentEventTypes.AgentMessageReceived,
           payload: {
             message: encryptedMessage,
@@ -98,17 +93,17 @@ export class WebSocketTransportSession implements TransportSession {
     this.logger = logger
   }
 
-  public async send(agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }
     this.socket.send(JSON.stringify(encryptedMessage), (error?) => {
+      // biome-ignore lint/suspicious/noDoubleEquals: If error check is added as '!==' it fails the check
       if (error != undefined) {
         this.logger.debug(`Error sending message: ${error}`)
         throw new CredoError(`${this.type} send message failed.`, { cause: error })
-      } else {
-        this.logger.debug(`${this.type} sent message successfully.`)
       }
+      this.logger.debug(`${this.type} sent message successfully.`)
     })
   }
 

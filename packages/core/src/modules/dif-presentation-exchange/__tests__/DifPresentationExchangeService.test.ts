@@ -1,5 +1,3 @@
-import type { DifPresentationExchangeDefinitionV2 } from '../models'
-
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
@@ -7,12 +5,15 @@ import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { agentDependencies, getAgentContext } from '../../../../tests'
 import { AgentContext } from '../../../agent'
 import { InjectionSymbols } from '../../../constants'
+import { Buffer } from '../../../utils'
 import { Mdoc, MdocRecord, MdocRepository } from '../../mdoc'
 import { sprindFunkeTestVectorBase64Url } from '../../mdoc/__tests__/mdoc.fixtures'
 import { SdJwtVcRecord, SdJwtVcRepository } from '../../sd-jwt-vc'
 import { SignatureSuiteToken, W3cCredentialService, W3cCredentialsModuleConfig } from '../../vc'
 import { DifPresentationExchangeService } from '../DifPresentationExchangeService'
+import { type DifPresentationExchangeDefinitionV2, DifPresentationExchangeSubmissionLocation } from '../models'
 
+const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.StorageService, new InMemoryStorageService()],
@@ -21,7 +22,7 @@ const agentContext = getAgentContext({
     [SignatureSuiteToken, 'default'],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
   ],
-  wallet: new InMemoryWallet(),
+  wallet,
 })
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 const sdJwtVcRecord = new SdJwtVcRecord({
@@ -31,6 +32,13 @@ const sdJwtVcRecord = new SdJwtVcRecord({
 const mdocRecord = new MdocRecord({
   mdoc: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url),
 })
+
+const randomMdoc = new MdocRecord({
+  mdoc: Mdoc.fromBase64Url(
+    'uQACam5hbWVTcGFjZXOhZWhlbGxvg9gYWGOkaGRpZ2VzdElEAHFlbGVtZW50SWRlbnRpZmllcmV3b3JsZGxlbGVtZW50VmFsdWVpZnJvbS1tZG9jZnJhbmRvbVgg-8edSGZ4_YYWy4zTRYy_R2_-env6K0QPZV6bx5VrIvfYGFhgpGhkaWdlc3RJRAFxZWxlbWVudElkZW50aWZpZXJmc2VjcmV0bGVsZW1lbnRWYWx1ZWV2YWx1ZWZyYW5kb21YIFeRZQch_uztS3BgwZU1lOy1HnvbtisuakBr4dut_Q1e2BhYX6RoZGlnZXN0SUQCcWVsZW1lbnRJZGVudGlmaWVyZW5pY2VybGVsZW1lbnRWYWx1ZWVkaWNlcmZyYW5kb21YICeD0ZWG4LX7SgTdsaXHbs-zbkOdZ2pGAHr0Ki-YT-ugamlzc3VlckF1dGiEQ6EBJqIEWDF6RG5hZVQ2SGZWTGVqSmpYRTU4Wnd6ejlVUDVGNVNHWjE4b0hWZlpFTUhVTjRFcXRqGCFZASQwggEgMIHGoAMCAQICEERn7erWTVemixMortrLsmcwCgYIKoZIzj0EAwIwEDEOMAwGA1UEAxMFY3JlZG8wHhcNMjUwMzIwMTc1MjUxWhcNMjUwMzIyMTc1MjUxWjAQMQ4wDAYDVQQDEwVjcmVkbzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeIfw1uOR6lHNOnTHUmDCCOoEUiV-8CD_XlkFm7R0qQRblyGCRyPASBQTkMDSBRutyU51-guQc8o2Ows8T5B4qjAjAAMAoGCCqGSM49BAMCA0kAMEYCIQDISRFJVg_c57Zeya_7ET8lZboClKEs3Ah2w9yTICP2awIhAOE1U5l6_siMKc3XoFtSSZNEaJL4L5j3cfaRt35mzNWyWQGc2BhZAZe5AAZndmVyc2lvbmMxLjBvZGlnZXN0QWxnb3JpdGhtZ1NIQS0yNTZsdmFsdWVEaWdlc3RzoWVoZWxsb6MAWCAqyMbsL2ne4fnZR-9F4ljmVALkkEO3ldc-3wR3FJfy1AFYIErI8BMR8z_mn8TnxaAGlnXCO7UsMuRWryEeGqd7KveOAlggGHwP3C0oNTFjnE5Y8d9NfWqAylZC5_bY4TFmATRwpqFtZGV2aWNlS2V5SW5mb7kAAWlkZXZpY2VLZXmkAQIgASFYIJZf9Yt9eS7hVbR956b8n21Cb83jn4AYLfH6s40uT1FLIlggWA6ogfJFJiOhH8j0-XNaLrr_Z2ALnt-nwzK0HTbiTjpnZG9jVHlwZXVvcmcuaXNvLjE4MDEzLjUuMS5tRExsdmFsaWRpdHlJbmZvuQADZnNpZ25lZMB0MjAyNS0wMy0yMVQxNzo1Mjo1MVppdmFsaWRGcm9twHQyMDI1LTAzLTIxVDE3OjUyOjUxWmp2YWxpZFVudGlswHQyMDI2LTAzLTIxVDE3OjUyOjUxWlhAMZsBgn9Pxs_0V-1X23zskwQgBcw20UxOHZBXlPQAUhwMIc9EnG2IPoSkHDsJMw3kNIEXrzJd5avegle2Pv4nTQ'
+  ),
+})
+
 const sdJwtVcRepository = agentContext.dependencyManager.resolve(SdJwtVcRepository)
 const mdocRepository = agentContext.dependencyManager.resolve(MdocRepository)
 const pexService = new DifPresentationExchangeService(agentContext.dependencyManager.resolve(W3cCredentialService))
@@ -136,7 +144,7 @@ const presentationDefinition: DifPresentationExchangeDefinitionV2 = {
         fields: [
           {
             intent_to_retain: false,
-            path: ["$['org.iso.18013.5.1']['given_name']"],
+            path: ["$['hello']['world']"],
           },
         ],
       },
@@ -200,7 +208,7 @@ describe('DifPresentationExchangeService', () => {
                     place_of_birth: {},
                     vct: 'https://example.bmi.bund.de/credential/pid/1.0',
                   },
-                  type: 'vc+sd-jwt',
+                  claimFormat: 'vc+sd-jwt',
                 },
               ],
             },
@@ -224,7 +232,7 @@ describe('DifPresentationExchangeService', () => {
                       birth_date: '1984-01-26',
                     },
                   },
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                 },
               ],
             },
@@ -322,7 +330,7 @@ describe('DifPresentationExchangeService', () => {
                     place_of_birth: {},
                     vct: 'https://example.bmi.bund.de/credential/pid/1.0',
                   },
-                  type: 'vc+sd-jwt',
+                  claimFormat: 'vc+sd-jwt',
                 },
               ],
             },
@@ -346,7 +354,7 @@ describe('DifPresentationExchangeService', () => {
                       birth_date: '1984-01-26',
                     },
                   },
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                 },
               ],
             },
@@ -370,5 +378,426 @@ describe('DifPresentationExchangeService', () => {
       name: 'PID and MDL - Rent a Car (vc+sd-jwt)',
       purpose: 'To secure your car reservations and finalize the transaction, we require the following attributes',
     })
+  })
+
+  test('handles request with request for one of two mdocs with submission requirements', async () => {
+    await mdocRepository.save(agentContext, randomMdoc)
+    const presentationDefinition = {
+      id: 'OverAgeCheck',
+      purpose: 'Age check',
+      submission_requirements: [
+        {
+          name: 'Proof of age and photo',
+          rule: 'pick',
+          count: 1,
+          from: 'validAgeCheckInputDescriptor',
+        },
+      ],
+      input_descriptors: [
+        {
+          name: 'Mdoc proof of age and photo',
+          id: 'eu.europa.ec.eudi.pid.1',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['eu.europa.ec.eudi.pid.1']['age_in_years']`],
+                filter: {
+                  type: 'number',
+                  minimum: 18,
+                },
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+        {
+          name: 'Driving licence Mdoc date of birth and photo',
+          id: 'org.iso.18013.5.1.mDL',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['hello']['world']`],
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(credentialsForRequest).toEqual({
+      requirements: [
+        {
+          rule: 'pick',
+          needsCount: 1,
+          purpose: undefined,
+          name: 'Proof of age and photo',
+          submissionEntry: [
+            {
+              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
+              name: 'Mdoc proof of age and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    'eu.europa.ec.eudi.pid.1': {
+                      age_in_years: 40,
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              inputDescriptorId: 'org.iso.18013.5.1.mDL',
+              name: 'Driving licence Mdoc date of birth and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    hello: {
+                      world: 'from-mdoc',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          isRequirementSatisfied: true,
+        },
+      ],
+      areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: 'Age check',
+    })
+
+    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+
+    jest.spyOn(wallet, 'sign').mockImplementation(async () => Buffer.from('signed'))
+
+    const presentation = await pexService.createPresentation(agentContext, {
+      credentialsForInputDescriptor: selectedCredentials,
+      challenge: 'something',
+      presentationDefinition,
+      domain: 'hello',
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
+    })
+
+    expect(presentation).toMatchObject({
+      presentationSubmission: {
+        id: expect.stringContaining('MdocPresentationSubmission'),
+        definition_id: 'OverAgeCheck',
+        descriptor_map: [{ id: 'eu.europa.ec.eudi.pid.1', format: 'mso_mdoc', path: '$' }],
+      },
+    })
+    await mdocRepository.deleteById(agentContext, randomMdoc.id)
+  })
+
+  test('handles request with request containing optional properties', async () => {
+    await mdocRepository.save(agentContext, randomMdoc)
+    const presentationDefinition = {
+      id: 'OverAgeCheck',
+      purpose: 'Age check',
+      submission_requirements: [
+        {
+          name: 'Proof of age and photo',
+          rule: 'pick',
+          count: 1,
+          from: 'validAgeCheckInputDescriptor',
+        },
+      ],
+      input_descriptors: [
+        {
+          name: 'Mdoc proof of age and photo',
+          id: 'eu.europa.ec.eudi.pid.1',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['eu.europa.ec.eudi.pid.1']['age_in_years']`],
+                filter: {
+                  type: 'number',
+                  minimum: 18,
+                },
+                optional: false,
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+        {
+          name: 'Driving licence Mdoc date of birth and photo',
+          id: 'org.iso.18013.5.1.mDL',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                optional: true,
+                path: [`$['hello']['not_available']`],
+                intent_to_retain: false,
+              },
+              {
+                optional: false,
+                path: [`$['hello']['world']`],
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(credentialsForRequest).toEqual({
+      requirements: [
+        {
+          rule: 'pick',
+          needsCount: 1,
+          purpose: undefined,
+          name: 'Proof of age and photo',
+          submissionEntry: [
+            {
+              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
+              name: 'Mdoc proof of age and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    'eu.europa.ec.eudi.pid.1': {
+                      age_in_years: 40,
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              inputDescriptorId: 'org.iso.18013.5.1.mDL',
+              name: 'Driving licence Mdoc date of birth and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    hello: {
+                      world: 'from-mdoc',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          isRequirementSatisfied: true,
+        },
+      ],
+      areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: 'Age check',
+    })
+
+    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+
+    jest.spyOn(wallet, 'sign').mockImplementation(async () => Buffer.from('signed'))
+
+    const presentation = await pexService.createPresentation(agentContext, {
+      credentialsForInputDescriptor: selectedCredentials,
+      challenge: 'something',
+      presentationDefinition,
+      domain: 'hello',
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
+    })
+
+    expect(presentation).toMatchObject({
+      presentationSubmission: {
+        id: expect.stringContaining('MdocPresentationSubmission'),
+        definition_id: 'OverAgeCheck',
+        descriptor_map: [{ id: 'eu.europa.ec.eudi.pid.1', format: 'mso_mdoc', path: '$' }],
+      },
+    })
+    await mdocRepository.deleteById(agentContext, randomMdoc.id)
+  })
+
+  test('handles request with request for two mdocs with submission requirements', async () => {
+    await mdocRepository.save(agentContext, randomMdoc)
+
+    const presentationDefinition = {
+      id: 'OverAgeCheck',
+      purpose: 'Age check',
+      submission_requirements: [
+        {
+          name: 'Proof of age and photo',
+          rule: 'pick',
+          count: 1,
+          from: 'validAgeCheckInputDescriptor',
+        },
+        {
+          name: 'Proof of age and photo 2',
+          rule: 'pick',
+          count: 1,
+          from: 'validAgeCheckInputDescriptor2',
+        },
+      ],
+      input_descriptors: [
+        {
+          name: 'Mdoc proof of age and photo',
+          id: 'eu.europa.ec.eudi.pid.1',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['eu.europa.ec.eudi.pid.1']['age_in_years']`],
+                filter: {
+                  type: 'number',
+                  minimum: 18,
+                },
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+        {
+          name: 'Driving licence Mdoc date of birth and photo',
+          id: 'org.iso.18013.5.1.mDL',
+          group: ['validAgeCheckInputDescriptor2'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['hello']['world']`],
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(credentialsForRequest).toEqual({
+      requirements: [
+        {
+          rule: 'pick',
+          needsCount: 1,
+          purpose: undefined,
+          name: 'Proof of age and photo',
+          submissionEntry: [
+            {
+              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
+              name: 'Mdoc proof of age and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    'eu.europa.ec.eudi.pid.1': {
+                      age_in_years: 40,
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          isRequirementSatisfied: true,
+        },
+        {
+          rule: 'pick',
+          needsCount: 1,
+          purpose: undefined,
+          name: 'Proof of age and photo 2',
+          submissionEntry: [
+            {
+              inputDescriptorId: 'org.iso.18013.5.1.mDL',
+              name: 'Driving licence Mdoc date of birth and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    hello: {
+                      world: 'from-mdoc',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          isRequirementSatisfied: true,
+        },
+      ],
+      areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: 'Age check',
+    })
+
+    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+
+    jest.spyOn(wallet, 'sign').mockImplementation(async () => Buffer.from('signed'))
+
+    const presentation = await pexService.createPresentation(agentContext, {
+      credentialsForInputDescriptor: selectedCredentials,
+      challenge: 'something',
+      presentationDefinition,
+      domain: 'hello',
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
+    })
+
+    expect(presentation).toMatchObject({
+      presentationSubmission: {
+        id: expect.stringContaining('MdocPresentationSubmission'),
+        definition_id: 'OverAgeCheck',
+        descriptor_map: [
+          {
+            id: 'eu.europa.ec.eudi.pid.1',
+            format: 'mso_mdoc',
+            path: '$[0]',
+          },
+          {
+            format: 'mso_mdoc',
+            id: 'org.iso.18013.5.1.mDL',
+            path: '$[1]',
+          },
+        ],
+      },
+    })
+    await mdocRepository.deleteById(agentContext, randomMdoc.id)
   })
 })

@@ -1,3 +1,4 @@
+import type { AgentContext } from '@credo-ts/core'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -17,29 +18,28 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '../src'
-import type { AgentContext } from '@credo-ts/core'
 
 import { Hasher, utils } from '@credo-ts/core'
-import BigNumber from 'bn.js'
 
 import {
   getDidIndyCredentialDefinitionId,
   getDidIndyRevocationRegistryDefinitionId,
   getDidIndySchemaId,
 } from '../../indy-vdr/src/anoncreds/utils/identifiers'
+import { bytesToBigint } from '../src/utils/bytesToBigint'
 import {
   getUnQualifiedDidIndyDid,
-  getUnqualifiedRevocationRegistryDefinitionId,
   getUnqualifiedCredentialDefinitionId,
-  getUnqualifiedSchemaId,
-  parseIndyDid,
   getUnqualifiedDidIndySchema,
-  parseIndyCredentialDefinitionId,
-  parseIndyRevocationRegistryId,
-  parseIndySchemaId,
+  getUnqualifiedRevocationRegistryDefinitionId,
+  getUnqualifiedSchemaId,
   isIndyDid,
   isUnqualifiedCredentialDefinitionId,
   isUnqualifiedSchemaId,
+  parseIndyCredentialDefinitionId,
+  parseIndyDid,
+  parseIndyRevocationRegistryId,
+  parseIndySchemaId,
 } from '../src/utils/indyIdentifiers'
 import { dateToTimestamp } from '../src/utils/timestamp'
 
@@ -117,7 +117,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       schemaId = getDidIndySchemaId(namespace, namespaceIdentifier, options.schema.name, options.schema.version)
       this.schemas[getUnQualifiedDidIndyDid(schemaId)] = getUnqualifiedDidIndySchema(options.schema)
     } else if (issuerId.startsWith('did:cheqd:')) {
-      schemaId = issuerId + '/resources/' + utils.uuid()
+      schemaId = `${issuerId}/resources/${utils.uuid()}`
     } else {
       throw new Error(`Cannot register Schema. Unsupported issuerId '${issuerId}'`)
     }
@@ -205,7 +205,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
       credentialDefinitionId = didIndyCredentialDefinitionId
     } else if (schemaId.startsWith('did:cheqd:')) {
-      credentialDefinitionId = options.credentialDefinition.issuerId + '/resources/' + utils.uuid()
+      credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${utils.uuid()}`
     } else {
       throw new Error(`Cannot register Credential Definition. Unsupported schemaId '${schemaId}'`)
     }
@@ -377,7 +377,6 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
  * Does this by hashing the schema id, transforming the hash to a number and taking the first 6 digits.
  */
 function getSeqNoFromSchemaId(schemaId: string) {
-  const seqNo = Number(new BigNumber(Hasher.hash(schemaId, 'sha-256')).toString().slice(0, 5))
-
-  return seqNo
+  const hash = Hasher.hash(schemaId, 'sha-256')
+  return bytesToBigint(hash).toString().slice(0, 5)
 }

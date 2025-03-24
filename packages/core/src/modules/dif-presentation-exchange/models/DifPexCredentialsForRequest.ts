@@ -1,3 +1,4 @@
+import { JsonObject } from '../../../types'
 import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'
@@ -61,20 +62,16 @@ export interface DifPexCredentialsForRequestRequirement {
    * Array of objects, where each entry contains one or more credentials that will be part
    * of the submission.
    *
-   * NOTE: if the `isRequirementSatisfied` is `false` the submission list will
-   * contain entries where the verifiable credential list is empty. In this case it could also
+   * NOTE: Make sure to check the `needsCount` value
+   * to see how many of those submissions needed. if the `isRequirementSatisfied` is `false` the submission list will
+   * contain entries where the verifiable credential list is empty. It could also
    * contain more entries than are actually needed (as you sometimes can choose from
-   * e.g. 4 types of credentials and need to submit at least two). If
-   * `isRequirementSatisfied` is `false`, make sure to check the `needsCount` value
-   * to see how many of those submissions needed.
+   * e.g. 4 types of credentials and need to submit at least two).
    */
   submissionEntry: DifPexCredentialsForRequestSubmissionEntry[]
 
   /**
    * The number of submission entries that are needed to fulfill the requirement.
-   * If `isRequirementSatisfied` is `true`, the submission list will always be equal
-   * to the number of `needsCount`. If `isRequirementSatisfied` is `false` the list of
-   * submissions could be longer.
    */
   needsCount: number
 
@@ -117,21 +114,27 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
 
 export type SubmissionEntryCredential =
   | {
-      type: ClaimFormat.SdJwtVc
+      claimFormat: ClaimFormat.SdJwtVc
       credentialRecord: SdJwtVcRecord
 
       /**
        * The payload that will be disclosed, including always disclosed attributes
        * and disclosures for the presentation definition
        */
-      disclosedPayload: Record<string, unknown>
+      disclosedPayload: JsonObject
+
+      /**
+       * Additional payload that will be added to the Key Binding JWT. This can overwrite
+       * existing parameters for KB-JWT so ensure you are only using this for non-default properties.
+       */
+      additionalPayload?: JsonObject
     }
   | {
-      type: ClaimFormat.JwtVc | ClaimFormat.LdpVc
+      claimFormat: ClaimFormat.JwtVc | ClaimFormat.LdpVc
       credentialRecord: W3cCredentialRecord
     }
   | {
-      type: ClaimFormat.MsoMdoc
+      claimFormat: ClaimFormat.MsoMdoc
       credentialRecord: MdocRecord
       disclosedPayload: MdocNameSpaces
     }
@@ -139,4 +142,4 @@ export type SubmissionEntryCredential =
 /**
  * Mapping of selected credentials for an input descriptor
  */
-export type DifPexInputDescriptorToCredentials = Record<string, Array<W3cCredentialRecord | SdJwtVcRecord | MdocRecord>>
+export type DifPexInputDescriptorToCredentials = Record<string, SubmissionEntryCredential[]>

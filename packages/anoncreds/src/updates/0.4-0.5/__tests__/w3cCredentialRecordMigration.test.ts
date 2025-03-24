@@ -1,11 +1,8 @@
 import type { DidRepository, Wallet } from '@credo-ts/core'
 
 import {
-  CredentialState,
   Agent,
   CacheModuleConfig,
-  CredentialExchangeRecord,
-  CredentialRole,
   CredoError,
   DidResolverService,
   DidsModuleConfig,
@@ -14,8 +11,8 @@ import {
   SignatureSuiteToken,
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
-  CredentialRepository,
 } from '@credo-ts/core'
+import { CredentialExchangeRecord, CredentialRepository, CredentialRole, CredentialState } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
@@ -25,7 +22,7 @@ import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService } from '../../../anoncreds-rs'
 import { AnonCredsCredentialRecord } from '../../../repository'
 import { AnonCredsHolderServiceSymbol, AnonCredsRegistryService } from '../../../services'
-import { getUnQualifiedDidIndyDid, getQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../../../utils/indyIdentifiers'
+import { getQualifiedDidIndyDid, getUnQualifiedDidIndyDid, isUnqualifiedIndyDid } from '../../../utils/indyIdentifiers'
 import * as testModule from '../anonCredsCredentialRecord'
 
 import { anoncreds } from './../../../../tests/helpers'
@@ -98,7 +95,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         resolve: jest.fn((repo: any) => {
           if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
             return anonCredsRepo
@@ -379,8 +376,8 @@ async function testMigration(
     expect(inMemoryLruCache.get).toHaveBeenCalledWith(
       agent.context,
       options.shouldBeInCache === 'sov' || !options.shouldBeInCache
-        ? 'IndySdkPoolService:' + issuerId
-        : 'IndyVdrPoolService:' + issuerId
+        ? `IndySdkPoolService:${issuerId}`
+        : `IndyVdrPoolService:${issuerId}`
     )
   } else {
     expect(inMemoryLruCache.get).toHaveBeenCalledTimes(0)

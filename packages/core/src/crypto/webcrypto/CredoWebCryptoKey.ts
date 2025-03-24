@@ -1,5 +1,5 @@
-import type { KeyGenAlgorithm, KeyType, KeyUsage } from './types'
 import type { Key } from '../Key'
+import type { KeyGenAlgorithm, KeyType, KeyUsage } from './types'
 
 import * as core from 'webcrypto-core'
 

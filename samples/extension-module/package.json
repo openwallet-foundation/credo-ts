@@ -20,10 +20,11 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
+    "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@credo-ts/askar": "workspace:*",
     "class-validator": "0.14.1",
     "rxjs": "^7.8.0",
-    "@hyperledger/aries-askar-nodejs": "^0.2.3"
+    "@openwallet-foundation/askar-nodejs": "^0.3.1"
   }
 }

@@ -1,5 +1,5 @@
-import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { CheqdModuleConfigOptions } from './CheqdModuleConfig'
 
 import { AgentConfig, Buffer } from '@credo-ts/core'
 
@@ -37,6 +37,7 @@ export class CheqdModule implements Module {
   public async initialize(agentContext: AgentContext): Promise<void> {
     // not required
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
-    await cheqdLedgerService.connect()
+    // We don't await it, as it impact startup time
+    void cheqdLedgerService.connect()
   }
 }

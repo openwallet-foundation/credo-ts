@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '../../core/src/modules/connections'
+import type { ConnectionRecord } from '@credo-ts/didcomm'
 import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 
 import { Agent } from '../../core/src/agent/Agent'
@@ -17,6 +17,7 @@ const faberConfig = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:faber'],
   },
+  {},
   modules
 )
 
@@ -25,6 +26,7 @@ const aliceConfig = getInMemoryAgentOptions(
   {
     endpoints: ['rxjs:alice'],
   },
+  {},
   modules
 )
 

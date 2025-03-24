@@ -1,5 +1,5 @@
-import type { AgentType } from './utils'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 
 import { getJwkFromKey } from '@credo-ts/core'
 import express, { type Express } from 'express'
@@ -14,7 +14,7 @@ import {
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
-import { waitForCredentialIssuanceSessionRecordSubject, createAgentFromModules } from './utils'
+import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
 const baseUrl = 'http://localhost:3991'
@@ -79,8 +79,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       askar: new AskarModule(askarModuleConfig),
     })
 
-    await holder.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
-    await issuer.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
+    holder.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
+    issuer.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
 
     // We let AFJ create the router, so we have a fresh one each time
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)

@@ -1,8 +1,8 @@
-import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import type { RecordTags, TagsBase } from '@credo-ts/core'
+import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
-import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
-import { CredoError, BaseRecord, utils, isJsonObject } from '@credo-ts/core'
+import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
+import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
@@ -60,6 +60,7 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   cNonce?: string
   state: OpenId4VcIssuanceSessionState
   credentialOfferUri?: string
+  credentialOfferId?: string
 
   // pre-auth flow
   preAuthorizedCode?: string
@@ -109,6 +110,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   presentation?: OpenId4VcIssuanceSessionPresentation
 
   credentialOfferUri?: string
+  credentialOfferId: string
 
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
 
@@ -218,6 +220,14 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferUri?: string
 
   /**
+   * The public id for the credential offer. This is used in the credential
+   * offer uri.
+   *
+   * @since 0.6
+   */
+  public credentialOfferId?: string
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -237,6 +247,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.pkce = props.pkce
       this.authorization = props.authorization
       this.credentialOfferUri = props.credentialOfferUri
+      this.credentialOfferId = props.credentialOfferId
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
       this.state = props.state
@@ -246,6 +257,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
   public assertState(expectedStates: OpenId4VcIssuanceSessionState | OpenId4VcIssuanceSessionState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 
@@ -263,6 +275,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       ...this._tags,
       issuerId: this.issuerId,
       credentialOfferUri: this.credentialOfferUri,
+      credentialOfferId: this.credentialOfferId,
       state: this.state,
 
       // Pre-auth flow

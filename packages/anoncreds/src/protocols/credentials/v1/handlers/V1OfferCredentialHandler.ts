@@ -1,7 +1,7 @@
+import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
-import type { MessageHandler, MessageHandlerInboundMessage, CredentialExchangeRecord } from '@credo-ts/core'
 
-import { getOutboundMessageContext } from '@credo-ts/core'
+import { getOutboundMessageContext } from '@credo-ts/didcomm'
 
 import { V1OfferCredentialMessage } from '../messages'
 
@@ -30,7 +30,7 @@ export class V1OfferCredentialHandler implements MessageHandler {
     credentialRecord: CredentialExchangeRecord,
     messageContext: MessageHandlerInboundMessage<V1OfferCredentialHandler>
   ) {
-    messageContext.agentContext.config.logger.info(`Automatically sending request with autoAccept`)
+    messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
     const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, { credentialRecord })
 
     return getOutboundMessageContext(messageContext.agentContext, {

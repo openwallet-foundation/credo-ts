@@ -1,46 +1,49 @@
+import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
+import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
-  AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsOfferCredentialFormat,
-  AnonCredsSchema,
-  RegisterCredentialDefinitionReturnStateFinished,
-  RegisterSchemaReturnStateFinished,
-  AnonCredsRegistry,
+  AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturnStateFinished,
   AnonCredsRegisterRevocationStatusListOptions,
-  RegisterRevocationStatusListReturnStateFinished,
+  AnonCredsRegistry,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
+  AnonCredsSchema,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterRevocationRegistryDefinitionReturnStateFinished,
+  RegisterRevocationStatusListReturnStateFinished,
+  RegisterSchemaReturnStateFinished,
 } from '../src'
-import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/core'
 
+import { randomUUID } from 'crypto'
 import {
-  DidDocumentBuilder,
-  CacheModule,
-  InMemoryLruCache,
   Agent,
+  CacheModule,
   CredoError,
+  DidDocumentBuilder,
+  DidsModule,
+  InMemoryLruCache,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
+import {
   AutoAcceptCredential,
   CredentialEventTypes,
-  CredentialsModule,
   CredentialState,
+  CredentialsModule,
+  DifPresentationExchangeProofFormatService,
   ProofEventTypes,
+  ProofState,
   ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
-  DidsModule,
-  DifPresentationExchangeProofFormatService,
-  TypedArrayEncoder,
-  ProofState,
-} from '@credo-ts/core'
-import { randomUUID } from 'crypto'
+} from '@credo-ts/didcomm'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
 import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
-import { setupSubjectTransports, setupEventReplaySubjects } from '../../core/tests'
+import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getInMemoryAgentOptions,
   makeConnection,
@@ -48,7 +51,7 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsProofFormatService, AnonCredsModule } from '../src'
+import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService } from '../src'
 import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
@@ -58,10 +61,7 @@ import { anoncreds } from './helpers'
 import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ReturnType<typeof getAnonCredsModules> & { mediationRecipient?: any; mediator?: any }
->
+export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsModules> & DefaultAgentModulesInput>
 
 export const getAnonCredsModules = ({
   autoAcceptCredentials,
@@ -150,7 +150,7 @@ export async function issueAnonCredsCredential({
   revocationRegistryDefinitionId: string | null
   offer: AnonCredsOfferCredentialFormat
 }) {
-  let issuerCredentialExchangeRecord = await issuerAgent.credentials.offerCredential({
+  let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
@@ -169,7 +169,7 @@ export async function issueAnonCredsCredential({
     state: CredentialState.OfferReceived,
   })
 
-  await holderAgent.credentials.acceptOffer({
+  await holderAgent.modules.credentials.acceptOffer({
     credentialRecordId: holderCredentialExchangeRecord.id,
     autoAcceptCredential: AutoAcceptCredential.ContentApproved,
   })
@@ -250,7 +250,7 @@ export async function presentAnonCredsProof({
     state: ProofState.RequestReceived,
   })
 
-  let verifierProofExchangeRecord = await verifierAgent.proofs.requestProof({
+  let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
       anoncreds: {
@@ -265,7 +265,7 @@ export async function presentAnonCredsProof({
 
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const selectedCredentials = await holderAgent.proofs.selectCredentialsForRequest({
+  const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
     proofRecordId: holderProofExchangeRecord.id,
   })
 
@@ -274,7 +274,7 @@ export async function presentAnonCredsProof({
     state: ProofState.PresentationReceived,
   })
 
-  await holderAgent.proofs.acceptRequest({
+  await holderAgent.modules.proofs.acceptRequest({
     proofRecordId: holderProofExchangeRecord.id,
     proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
@@ -289,7 +289,7 @@ export async function presentAnonCredsProof({
     state: ProofState.Done,
   })
 
-  verifierProofExchangeRecord = await verifierAgent.proofs.acceptPresentation({
+  verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
     proofRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
@@ -302,7 +302,7 @@ export async function presentAnonCredsProof({
 
 export async function setupAnonCredsTests<
   VerifierName extends string | undefined = undefined,
-  CreateConnections extends boolean = true
+  CreateConnections extends boolean = true,
 >({
   issuerId,
   issuerName,
@@ -337,6 +337,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -352,6 +353,7 @@ export async function setupAnonCredsTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
@@ -368,6 +370,7 @@ export async function setupAnonCredsTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           getAnonCredsModules({
             autoAcceptCredentials,
             autoAcceptProofs,
@@ -494,8 +497,8 @@ export async function prepareForAnonCredsIssuance(
   // Wait some time pass to let ledger settle the object
   await sleep(1000)
 
-  let revocationRegistryDefinition
-  let revocationStatusList
+  let revocationRegistryDefinition: RegisterRevocationRegistryDefinitionReturnStateFinished | undefined
+  let revocationStatusList: RegisterRevocationStatusListReturnStateFinished | undefined
   if (supportRevocation) {
     revocationRegistryDefinition = await registerRevocationRegistryDefinition(agent, {
       issuerId,

@@ -1,15 +1,15 @@
-import type { CheqdDidCreateOptions } from '../src'
 import type { DidDocument } from '@credo-ts/core'
+import type { CheqdDidCreateOptions } from '../src'
 
 import {
-  SECURITY_JWS_CONTEXT_URL,
+  Agent,
   DidDocumentBuilder,
+  KeyType,
+  SECURITY_JWS_CONTEXT_URL,
+  TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
-  KeyType,
   utils,
-  Agent,
-  TypedArrayEncoder,
 } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
@@ -18,7 +18,7 @@ import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 import { validService } from './setup'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, getCheqdModules(cheqdPayerSeeds[0]))
+const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
 
 describe('Cheqd DID registrar', () => {
   let agent: Agent<ReturnType<typeof getCheqdModules>>
@@ -38,7 +38,7 @@ describe('Cheqd DID registrar', () => {
     // but still check if the created output document is as expected.
     const privateKey = TypedArrayEncoder.fromString(
       Array(32 + 1)
-        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
     )
     const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey

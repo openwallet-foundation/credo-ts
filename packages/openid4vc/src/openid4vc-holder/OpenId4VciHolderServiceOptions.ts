@@ -1,12 +1,12 @@
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
+import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciAccessTokenResponse,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from '../shared'
-import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
 
-import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
@@ -48,7 +48,7 @@ export type OpenId4VciRequestTokenResponse = {
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 type UnionToArrayUnion<T> = T extends any ? T[] : never
 
 export interface OpenId4VciCredentialResponse {
@@ -69,7 +69,7 @@ export interface OpenId4VciResolvedCredentialOffer {
 
 export type OpenId4VciResolvedAuthorizationRequest =
   | {
-      oid4vpRequestUrl: string
+      openid4vpRequestUrl: string
       authorizationFlow: OpenId4VciAuthorizationFlow.PresentationDuringIssuance
       authSession: string
     }
@@ -162,7 +162,7 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
   credentialConfigurationIds?: string[]
 
   /**
-   * Whether to request a batch of credentials if supported by the crednetial issuer.
+   * Whether to request a batch of credentials if supported by the credential issuer.
    *
    * You can also provide a number to indicate the batch size. If `true` is provided
    * the max size from the credential issuer will be used.

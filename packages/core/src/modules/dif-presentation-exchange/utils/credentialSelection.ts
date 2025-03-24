@@ -1,15 +1,15 @@
+import type { IPresentationDefinition, PEX, SelectResults, SubmissionRequirementMatch } from '@animo-id/pex'
+import type {
+  SubmissionRequirementMatchFrom,
+  SubmissionRequirementMatchInputDescriptor,
+} from '@animo-id/pex/dist/main/lib/evaluation/core'
+import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 import type {
   DifPexCredentialsForRequest,
   DifPexCredentialsForRequestRequirement,
   DifPexCredentialsForRequestSubmissionEntry,
   SubmissionEntryCredential,
 } from '../models'
-import type { IPresentationDefinition, SelectResults, SubmissionRequirementMatch, PEX } from '@animo-id/pex'
-import type {
-  SubmissionRequirementMatchFrom,
-  SubmissionRequirementMatchInputDescriptor,
-} from '@animo-id/pex/dist/main/lib/evaluation/core'
-import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 
 import { Status } from '@animo-id/pex'
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core'
@@ -26,6 +26,7 @@ import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
+import { JsonObject } from '../../../types'
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(
@@ -55,24 +56,25 @@ export async function getCredentialsForRequest(
           const prettyClaims = getClaimsSync(jwt.payload, disclosures, Hasher.hash)
 
           return {
-            type: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtVc,
             credentialRecord,
-            disclosedPayload: prettyClaims as Record<string, unknown>,
+            disclosedPayload: prettyClaims as JsonObject,
           }
-        } else if (credentialRecord instanceof MdocRecord) {
+        }
+        if (credentialRecord instanceof MdocRecord) {
           return {
-            type: ClaimFormat.MsoMdoc,
+            claimFormat: ClaimFormat.MsoMdoc,
             credentialRecord,
             disclosedPayload: {},
           }
-        } else if (credentialRecord instanceof W3cCredentialRecord) {
+        }
+        if (credentialRecord instanceof W3cCredentialRecord) {
           return {
-            type: credentialRecord.credential.claimFormat,
+            claimFormat: credentialRecord.credential.claimFormat,
             credentialRecord,
           }
-        } else {
-          throw new CredoError(`Unrecognized credential record type`)
         }
+        throw new CredoError('Unrecognized credential record type')
       }) ?? [],
   }
 
@@ -98,7 +100,7 @@ export async function getCredentialsForRequest(
   const inputDescriptorsForMdocCredential = new Map<SubmissionEntryCredential, Set<string>>()
   for (const entry of allEntries)
     for (const verifiableCredential of entry.verifiableCredentials) {
-      if (verifiableCredential.type !== ClaimFormat.MsoMdoc) continue
+      if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
 
       const set = inputDescriptorsForMdocCredential.get(verifiableCredential) ?? new Set()
       set.add(entry.inputDescriptorId)
@@ -110,7 +112,7 @@ export async function getCredentialsForRequest(
   // different disclosed attributes
   // Apply limit disclosure for all mdocs
   for (const [verifiableCredential, inputDescriptorIds] of inputDescriptorsForMdocCredential.entries()) {
-    if (verifiableCredential.type !== ClaimFormat.MsoMdoc) continue
+    if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
 
     const inputDescriptorsForCredential = presentationDefinition.input_descriptors.filter(({ id }) =>
       inputDescriptorIds.has(id)

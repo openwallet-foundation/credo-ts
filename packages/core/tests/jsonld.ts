@@ -1,30 +1,28 @@
+import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type { EventReplaySubject } from './events'
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../src'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import {
-  DifPresentationExchangeProofFormatService,
-  V2ProofProtocol,
-  CacheModule,
   CredentialEventTypes,
-  InMemoryLruCache,
-  ProofEventTypes,
-  Agent,
-  ProofsModule,
   CredentialsModule,
+  DifPresentationExchangeProofFormatService,
   JsonLdCredentialFormatService,
+  ProofEventTypes,
+  ProofsModule,
   V2CredentialProtocol,
-  W3cCredentialsModule,
-} from '../src'
+  V2ProofProtocol,
+} from '../../didcomm/src'
+import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 
 import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
+export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
 
 export const getJsonLdModules = ({
   autoAcceptCredentials,
@@ -55,7 +53,7 @@ export const getJsonLdModules = ({
       : {
           inMemory: new InMemoryWalletModule(),
         }),
-  } as const)
+  }) as const
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
   issuerAgent: JsonLdTestsAgent
@@ -86,7 +84,7 @@ interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, Create
 
 export async function setupJsonLdTests<
   VerifierName extends string | undefined = undefined,
-  CreateConnections extends boolean = true
+  CreateConnections extends boolean = true,
 >({
   issuerName,
   holderName,
@@ -116,6 +114,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:issuer'],
       },
+      {},
       modules
     )
   )
@@ -126,6 +125,7 @@ export async function setupJsonLdTests<
       {
         endpoints: ['rxjs:holder'],
       },
+      {},
       modules
     )
   )
@@ -137,6 +137,7 @@ export async function setupJsonLdTests<
           {
             endpoints: ['rxjs:verifier'],
           },
+          {},
           modules
         )
       )

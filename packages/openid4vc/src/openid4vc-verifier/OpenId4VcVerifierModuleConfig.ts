@@ -1,9 +1,7 @@
-import type { OpenId4VcSiopAuthorizationEndpointConfig } from './router/authorizationEndpoint'
-import type { OpenId4VcSiopAuthorizationRequestEndpointConfig } from './router/authorizationRequestEndpoint'
-import type { AgentContext, Optional } from '@credo-ts/core'
 import type { Router } from 'express'
 
 import { importExpress } from '../shared/router'
+import { AgentContext } from '@credo-ts/core'
 
 export interface OpenId4VcVerifierModuleConfigOptions {
   /**
@@ -21,9 +19,25 @@ export interface OpenId4VcVerifierModuleConfigOptions {
    */
   router?: Router
 
+  /**
+   * The number of seconds after which a created authorization request will expire.
+   *
+   * This is used for the `exp` field of a signed authorization request.
+   *
+   * @default 300
+   */
+  authorizationRequestExpirationInSeconds?: number
+
   endpoints?: {
-    authorization?: Optional<OpenId4VcSiopAuthorizationEndpointConfig, 'endpointPath'>
-    authorizationRequest?: Optional<OpenId4VcSiopAuthorizationRequestEndpointConfig, 'endpointPath'>
+    /**
+     * @default /authorize
+     */
+    authorization?: string
+
+    /**
+     * @default /authorization-requests
+     */
+    authorizationRequest?: string
   }
 
   /**
@@ -65,24 +79,27 @@ export class OpenId4VcVerifierModuleConfig {
     return this.options.baseUrl
   }
 
-  public get authorizationRequestEndpoint(): OpenId4VcSiopAuthorizationRequestEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints?.authorizationRequest
-
-    return {
-      ...userOptions,
-      endpointPath: this.options.endpoints?.authorizationRequest?.endpointPath ?? '/authorization-requests',
-    }
+  /**
+   * @default /authorize
+   */
+  public get authorizationRequestEndpoint(): string {
+    return this.options.endpoints?.authorizationRequest ?? '/authorization-requests'
   }
 
-  public get authorizationEndpoint(): OpenId4VcSiopAuthorizationEndpointConfig {
-    // Use user supplied options, or return defaults.
-    const userOptions = this.options.endpoints?.authorization
+  /**
+   * @default /authorize
+   */
+  public get authorizationEndpoint(): string {
+    return this.options.endpoints?.authorization ?? '/authorize'
+  }
 
-    return {
-      ...userOptions,
-      endpointPath: userOptions?.endpointPath ?? '/authorize',
-    }
+  /**
+   * Time in seconds after which an authorization request will expire
+   *
+   * @default 300
+   */
+  public get authorizationRequestExpiresInSeconds() {
+    return this.options.authorizationRequestExpirationInSeconds ?? 300
   }
 
   public get federation() {

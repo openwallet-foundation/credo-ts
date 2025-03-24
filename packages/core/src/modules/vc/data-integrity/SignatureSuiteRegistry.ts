@@ -1,7 +1,7 @@
 import type { KeyType } from '../../../crypto'
 
 import { CredoError } from '../../../error'
-import { injectable, injectAll } from '../../../plugins'
+import { injectAll, injectable } from '../../../plugins'
 
 import { suites } from './libraries/jsonld-signatures'
 

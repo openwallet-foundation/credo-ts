@@ -1,3 +1,6 @@
+import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
+import type { SingleOrArray } from '../../utils/type'
+import type { EncodedX509Certificate } from '../x509'
 import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -5,27 +8,25 @@ import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePres
 import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
-import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
-import type { SingleOrArray } from '../../utils/type'
 
 export type W3cSignCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
   Format extends ClaimFormat.JwtVc
     ? W3cJwtSignCredentialOptions
     : Format extends ClaimFormat.LdpVc
-    ? W3cJsonLdSignCredentialOptions
-    : W3cJwtSignCredentialOptions | W3cJsonLdSignCredentialOptions
+      ? W3cJsonLdSignCredentialOptions
+      : W3cJwtSignCredentialOptions | W3cJsonLdSignCredentialOptions
 export type W3cVerifyCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
   Format extends ClaimFormat.JwtVc
     ? W3cJwtVerifyCredentialOptions
     : Format extends ClaimFormat.LdpVc
-    ? W3cJsonLdVerifyCredentialOptions
-    : W3cJwtVerifyCredentialOptions | W3cJsonLdVerifyCredentialOptions
+      ? W3cJsonLdVerifyCredentialOptions
+      : W3cJwtVerifyCredentialOptions | W3cJsonLdVerifyCredentialOptions
 export type W3cSignPresentationOptions<Format extends ClaimFormat.JwtVp | ClaimFormat.LdpVp | undefined = undefined> =
   Format extends ClaimFormat.JwtVp
     ? W3cJwtSignPresentationOptions
     : Format extends ClaimFormat.LdpVp
-    ? W3cJsonLdSignPresentationOptions
-    : W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
+      ? W3cJsonLdSignPresentationOptions
+      : W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
 export type W3cVerifyPresentationOptions = W3cJwtVerifyPresentationOptions | W3cJsonLdVerifyPresentationOptions
 
 interface W3cSignCredentialOptionsBase {
@@ -179,22 +180,9 @@ interface W3cVerifyPresentationOptionsBase {
   verifyCredentialStatus?: boolean
 }
 
-export interface VerificationContext {
-  /**
-   * The `id` of the `ProofRecord` that this verification is bound to.
-   */
-  didcommProofRecordId?: string
-
-  /**
-   * The `id` of the `OpenId4VcVerificationSessionRecord` that this verification is bound to.
-   */
-  openId4VcVerificationSessionId?: string
-}
-
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJwtVerifiablePresentation | string // string must be encoded VP JWT
-  trustedCertificates?: [string, ...string[]]
-  verificationContext?: VerificationContext
+  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

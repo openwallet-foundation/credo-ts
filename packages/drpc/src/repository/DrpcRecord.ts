@@ -1,6 +1,6 @@
+import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { DrpcRequest, DrpcResponse } from '../messages'
 import type { DrpcRole, DrpcState } from '../models'
-import type { RecordTags, TagsBase } from '@credo-ts/core'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
@@ -65,6 +65,7 @@ export class DrpcRecord extends BaseRecord<DefaultDrpcMessageTags, CustomDrpcMes
 
   public assertState(expectedStates: DrpcState | DrpcState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

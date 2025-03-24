@@ -4,7 +4,7 @@ import nock, { cleanAll } from 'nock'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
 
-import { Agent, DidKey, getJwkFromKey, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent, DidKey, KeyType, TypedArrayEncoder, getJwkFromKey } from '@credo-ts/core'
 
 describe('sd-jwt-vc end to end test', () => {
   const issuer = new Agent(getInMemoryAgentOptions('sd-jwt-vc-issuer-agent'))
@@ -94,7 +94,9 @@ describe('sd-jwt-vc end to end test', () => {
     // parse SD-JWT
     const sdJwtVc = holder.sdJwtVc.fromCompact<Header, Payload>(compact)
     expect(sdJwtVc).toEqual({
+      claimFormat: 'vc+sd-jwt',
       compact: expect.any(String),
+      encoded: expect.any(String),
       header: {
         alg: 'EdDSA',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',

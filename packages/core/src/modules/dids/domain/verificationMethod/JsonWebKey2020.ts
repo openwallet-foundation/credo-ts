@@ -1,6 +1,6 @@
-import type { VerificationMethod } from './VerificationMethod'
 import type { Key } from '../../../../crypto/Key'
 import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
+import type { VerificationMethod } from './VerificationMethod'
 
 import { getJwkFromJson, getJwkFromKey } from '../../../../crypto/jose/jwk'
 import { CredoError } from '../../../../error'

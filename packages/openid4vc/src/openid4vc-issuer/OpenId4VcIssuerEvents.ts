@@ -1,6 +1,6 @@
+import type { BaseEvent } from '@credo-ts/core'
 import type { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import type { OpenId4VcIssuanceSessionRecord } from './repository'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum OpenId4VcIssuerEvents {
   IssuanceSessionStateChanged = 'OpenId4VcIssuer.IssuanceSessionStateChanged',

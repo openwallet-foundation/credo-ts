@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { createHash } from 'crypto'
-import express from 'express'
 import fs from 'fs'
+import { ConsoleLogger, LogLevel } from '@credo-ts/core'
+import express from 'express'
 import multer, { diskStorage } from 'multer'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
@@ -25,29 +24,30 @@ function fileHash(filePath: string, algorithm = 'sha256') {
     const shasum = createHash(algorithm)
     try {
       const s = fs.createReadStream(filePath)
-      s.on('data', function (data) {
+      s.on('data', (data) => {
         shasum.update(data)
       })
       // making digest
-      s.on('end', function () {
+      s.on('end', () => {
         const hash = shasum.digest('hex')
         return resolve(hash)
       })
-    } catch (error) {
+    } catch (_error) {
       return reject('error in calculation')
     }
   })
 }
 
 const fileStorage = diskStorage({
-  filename: (req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
-    cb(null, file.originalname + '-' + new Date().toISOString())
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  filename: (_req: any, file: { originalname: string }, cb: (arg0: null, arg1: string) => void) => {
+    cb(null, `${file.originalname}-${new Date().toISOString()}`)
   },
 })
 
 // Allow to create invitation, no other way to ask for invitation yet
 app.get('/:tailsFileId', async (req, res) => {
-  logger.debug(`requested file`)
+  logger.debug('requested file')
 
   const tailsFileId = req.params.tailsFileId
   if (!tailsFileId) {
@@ -76,7 +76,7 @@ app.get('/:tailsFileId', async (req, res) => {
     const file = fs.createReadStream(path)
     res.setHeader('Content-Disposition', `attachment: filename="${fileName}"`)
     file.pipe(res)
-  } catch (error) {
+  } catch (_error) {
     logger.debug(`error reading file: ${path}`)
     res.status(500).end()
   }

@@ -1,19 +1,14 @@
-import type { InitConfig, FileSystem } from '@credo-ts/core'
+import type { FileSystem, InitConfig } from '@credo-ts/core'
 
-import {
-  UpdateAssistant,
-  InjectionSymbols,
-  ConnectionsModule,
-  Agent,
-  CacheModule,
-  InMemoryLruCache,
-} from '@credo-ts/core'
-import { agentDependencies } from '@credo-ts/node'
 import path from 'path'
+import { Agent, CacheModule, InMemoryLruCache, InjectionSymbols, UpdateAssistant } from '@credo-ts/core'
+import { ConnectionsModule } from '@credo-ts/didcomm'
+import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
-import { ariesAskar } from '../../askar/tests/helpers'
+import { askar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
+import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinator'
 
 import { TenantsModule } from '@credo-ts/tenants'
@@ -21,16 +16,17 @@ import { TenantsModule } from '@credo-ts/tenants'
 const agentConfig = {
   label: 'Tenant Agent',
   walletConfig: {
-    id: `tenants-agent-04`,
-    key: `tenants-agent-04`,
+    id: 'tenants-agent-04',
+    key: 'tenants-agent-04',
   },
   logger: testLogger,
 } satisfies InitConfig
 
 const modules = {
+  ...getDefaultDidcommModules(),
   tenants: new TenantsModule(),
   askar: new AskarModule({
-    ariesAskar,
+    askar: askar,
     multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
   }),
   connections: new ConnectionsModule({

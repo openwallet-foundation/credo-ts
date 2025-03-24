@@ -1,28 +1,135 @@
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
+import type { AgentContext } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
+  DecryptJweCallback,
+  EncryptJweCallback,
   SignJwtCallback,
   VerifyJwtCallback,
-} from '@animo-id/oauth2'
-import type { AgentContext } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 
-import { clientAuthenticationDynamic, clientAuthenticationNone } from '@animo-id/oauth2'
-import { CredoError, getJwkFromJson, getJwkFromKey, Hasher, JsonEncoder, JwsService } from '@credo-ts/core'
+import {
+  Buffer,
+  CredoError,
+  Hasher,
+  JsonEncoder,
+  JwsService,
+  JwtPayload,
+  Key,
+  KeyType,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+  X509Service,
+  getJwkFromJson,
+  getJwkFromKey,
+} from '@credo-ts/core'
+import { clientAuthenticationDynamic, clientAuthenticationNone, decodeJwtHeader } from '@openid4vc/oauth2'
 
 import { getKeyFromDid } from './utils'
+import { fetchEntityConfiguration, resolveTrustChains } from '@openid-federation/core'
 
-export function getOid4vciJwtVerifyCallback(agentContext: AgentContext): VerifyJwtCallback {
+export function getOid4vcJwtVerifyCallback(
+  agentContext: AgentContext,
+  options?: {
+    trustedCertificates?: string[]
+    trustedFederationEntityIds?: string[]
+
+    /**
+     * Whether this verification callback should assume a JAR authorization is verified
+     * Starting from OID4VP draft 24 the JAR must use oauth-authz-req+jwt header typ
+     * but for backwards compatiblity we need to also handle the case where the header typ is different
+     * @default false
+     */
+    isAuthorizationRequestJwt?: boolean
+  }
+): VerifyJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-  return async (signer, { compact }) => {
-    const { isValid } = await jwsService.verifyJws(agentContext, {
+  return async (signer, { compact, header, payload }) => {
+    let trustedCertificates = options?.trustedCertificates
+    if (
+      signer.method === 'x5c' &&
+      (header.typ === 'oauth-authz-req+jwt' || options?.isAuthorizationRequestJwt) &&
+      !trustedCertificates
+    ) {
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+        certificateChain,
+        verification: {
+          type: 'oauth2SecuredAuthorizationRequest',
+          authorizationRequest: {
+            jwt: compact,
+            payload: JwtPayload.fromJson(payload),
+          },
+        },
+      })
+    }
+
+    if (signer.method === 'trustChain') {
+      const trustedEntityIds = options?.trustedFederationEntityIds
+      if (!trustedEntityIds) {
+        agentContext.config.logger.error(
+          'No trusted entity ids provided but is required for verification of JWTs signed by a federation entity.'
+        )
+        return { verified: false }
+      }
+
+      // TODO: we need to extract the entity Id in OpenID Federation
+      const entityId = 'TODO'
+
+      const validTrustChains = await resolveTrustChains({
+        entityId,
+        trustAnchorEntityIds: trustedEntityIds,
+        verifyJwtCallback: async ({ jwt, jwk }) => {
+          const res = await jwsService.verifyJws(agentContext, {
+            jws: jwt,
+            jwkResolver: () => getJwkFromJson(jwk),
+          })
+
+          return res.isValid
+        },
+      })
+      // When the chain is already invalid we can return false immediately
+      if (validTrustChains.length === 0) {
+        agentContext.config.logger.error(`${entityId} is not part of a trusted federation.`)
+        return { verified: false }
+      }
+
+      // Pick the first valid trust chain for validation of the leaf entity jwks
+      const { leafEntityConfiguration } = validTrustChains[0]
+      // TODO: No support yet for signed jwks and external jwks
+      const rpSigningKeys = leafEntityConfiguration?.metadata?.openid_relying_party?.jwks?.keys
+      if (!rpSigningKeys || rpSigningKeys.length === 0)
+        throw new CredoError('No rp signing keys found in the entity configuration.')
+      const rpSignerJwk = getJwkFromJson(rpSigningKeys[0])
+
+      const res = await jwsService.verifyJws(agentContext, {
+        jws: compact,
+        // FIXME: we should ensure the key is used, as if the jwt contains a jwk we will just
+        // use that, and that is quite a security risk
+        jwkResolver: () => rpSignerJwk,
+      })
+      if (!res.isValid) {
+        agentContext.config.logger.error(`${entityId} does not match the expected signing key.`)
+      }
+
+      // TODO: There is no check yet for the policies
+      return res.isValid ? { verified: res.isValid, signerJwk: rpSignerJwk.toJson() } : { verified: false }
+    }
+
+    const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
       jws: compact,
+      trustedCertificates,
       // Only handles kid as did resolution. JWK is handled by jws service
       jwkResolver: async () => {
         if (signer.method === 'jwk') {
           return getJwkFromJson(signer.publicJwk)
-        } else if (signer.method === 'did') {
+        }
+        if (signer.method === 'did') {
           const key = await getKeyFromDid(agentContext, signer.didUrl)
           return getJwkFromKey(key)
         }
@@ -31,16 +138,154 @@ export function getOid4vciJwtVerifyCallback(agentContext: AgentContext): VerifyJ
       },
     })
 
-    return isValid
+    if (!isValid) {
+      return { verified: false, signerJwk: undefined }
+    }
+
+    const signerKey = signerKeys[0]
+    const signerJwk = getJwkFromKey(signerKey).toJson()
+    if (signer.method === 'did') {
+      signerJwk.kid = signer.didUrl
+    }
+
+    return { verified: true, signerJwk }
   }
 }
 
-export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCallback {
+export function getOid4vcEncryptJweCallback(agentContext: AgentContext): EncryptJweCallback {
+  return async (jweEncryptor, compact) => {
+    if (jweEncryptor.method !== 'jwk') {
+      throw new CredoError(
+        `Jwt encryption method '${jweEncryptor.method}' is not supported for jwt signer. Only 'jwk' is supported.`
+      )
+    }
+
+    const jwk = getJwkFromJson(jweEncryptor.publicJwk)
+    const key = jwk.key
+
+    if (jweEncryptor.alg !== 'ECDH-ES') {
+      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
+    }
+
+    if (jweEncryptor.enc !== 'A256GCM' && jweEncryptor.enc !== 'A128GCM' && jweEncryptor.enc !== 'A128CBC-HS256') {
+      throw new CredoError(
+        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response encryption"
+      )
+    }
+
+    if (key.keyType !== KeyType.P256) {
+      throw new CredoError(`Only '${KeyType.P256}' key type is supported for JARM response encryption`)
+    }
+
+    if (!agentContext.wallet.directEncryptCompactJweEcdhEs) {
+      throw new CredoError(
+        'Cannot decrypt Jarm Response, wallet does not support directEncryptCompactJweEcdhEs. You need to upgrade your wallet implementation.'
+      )
+    }
+
+    const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
+      data: Buffer.from(compact),
+      recipientKey: key,
+      header: { kid: jweEncryptor.publicJwk.kid },
+      encryptionAlgorithm: jweEncryptor.enc,
+      apu: jweEncryptor.apu ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apu)) : undefined,
+      apv: jweEncryptor.apv ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apv)) : undefined,
+    })
+
+    return { encryptionJwk: jweEncryptor.publicJwk, jwe }
+  }
+}
+
+export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
+  return async (jwe, options) => {
+    const { header } = decodeJwtHeader({ jwt: jwe })
+
+    const kid = options?.jwk?.kid ?? header.kid
+    if (!kid) {
+      throw new CredoError('Uanbel to decrypt jwe. No kid or jwk found')
+    }
+
+    const key = Key.fromFingerprint(kid)
+    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
+      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
+    }
+
+    let decryptedPayload: string
+
+    try {
+      const decrypted = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe: jwe, recipientKey: key })
+      decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
+    } catch (_error) {
+      return {
+        decrypted: false,
+        encryptionJwk: options?.jwk,
+        payload: undefined,
+        header,
+      }
+    }
+
+    return {
+      decrypted: true,
+      decryptionJwk: getJwkFromKey(key).toJson(),
+      payload: decryptedPayload,
+      header,
+    }
+  }
+}
+
+export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCallback {
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { payload, header }) => {
-    if (signer.method === 'custom' || signer.method === 'x5c') {
-      throw new CredoError(`Jwt signer method 'custom' and 'x5c' are not supported for jwt signer.`)
+    if (signer.method === 'custom') {
+      throw new CredoError(`Jwt signer method 'custom' is not supported for jwt signer.`)
+    }
+
+    if (signer.method === 'trustChain') {
+      const entityId = 'TODO'
+
+      const entityConfiguration = await fetchEntityConfiguration({
+        entityId,
+        verifyJwtCallback: async ({ jwt, jwk }) => {
+          const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
+          return res.isValid
+        },
+      })
+
+      // TODO: Not really sure if this is also used for the issuer so if so we need to change this logic. But currently it's not possible to specify a issuer method with issuance so I think it's fine.
+      // NOTE: Hardcoded part for the verifier
+      const openIdRelyingParty = entityConfiguration.metadata?.openid_relying_party
+      if (!openIdRelyingParty) throw new CredoError('No openid-relying-party found in the entity configuration.')
+
+      // NOTE: No support for signed jwks and external jwks
+      const jwks = openIdRelyingParty.jwks
+      if (!jwks) throw new CredoError('No jwks found in the openid-relying-party.')
+
+      const jwkJson = jwks.keys.find((jwk) => jwk.kid === signer.kid)
+      if (!jwkJson) {
+        throw new CredoError(`Could not find jwk with kid '${signer.kid}' in openid_relying_party metadata jwks.`)
+      }
+      const jwk = getJwkFromJson(jwkJson)
+
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...header, alg: signer.alg, jwk },
+        payload: JwtPayload.fromJson(payload),
+        key: jwk.key,
+      })
+
+      return { jwt: jws, signerJwk: jwk.toJson() }
+    }
+
+    if (signer.method === 'x5c') {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: signer.x5c })
+
+      const jws = await jwsService.createJwsCompact(agentContext, {
+        protectedHeaderOptions: { ...header, alg: signer.alg, jwk: undefined },
+        payload: JwtPayload.fromJson(payload),
+        key: leafCertificate.publicKey,
+      })
+
+      return { jwt: jws, signerJwk: getJwkFromKey(leafCertificate.publicKey).toJson() }
     }
 
     const key =
@@ -60,18 +305,38 @@ export function getOid4vciJwtSignCallback(agentContext: AgentContext): SignJwtCa
       key,
     })
 
-    return jwt
+    return { jwt, signerJwk: getJwkFromKey(key).toJson() }
   }
 }
 
-export function getOid4vciCallbacks(agentContext: AgentContext) {
+export function getOid4vcCallbacks(
+  agentContext: AgentContext,
+  options?: {
+    trustedCertificates?: string[]
+    trustedFederationEntityIds?: string[]
+    isVerifyOpenId4VpAuthorizationRequest?: boolean
+  }
+) {
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
-    signJwt: getOid4vciJwtSignCallback(agentContext),
+    signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: clientAuthenticationNone(),
-    verifyJwt: getOid4vciJwtVerifyCallback(agentContext),
+    verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
+      trustedCertificates: options?.trustedCertificates,
+      trustedFederationEntityIds: options?.trustedCertificates,
+      isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
+    }),
     fetch: agentContext.config.agentDependencies.fetch,
+    encryptJwe: getOid4vcEncryptJweCallback(agentContext),
+    decryptJwe: getOid4vcDecryptJweCallback(agentContext),
+    getX509CertificateMetadata: (certificate: string) => {
+      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: [certificate] })
+      return {
+        sanDnsNames: leafCertificate.sanDnsNames,
+        sanUriNames: leafCertificate.sanUriNames,
+      }
+    },
   } satisfies Partial<CallbackContext>
 }
 

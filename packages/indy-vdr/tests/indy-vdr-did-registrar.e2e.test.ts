@@ -2,16 +2,16 @@ import type { IndyVdrDidCreateOptions, IndyVdrDidCreateResult } from '../src/did
 
 import { didIndyRegex } from '@credo-ts/anoncreds'
 import {
-  Key,
-  JsonTransformer,
-  KeyType,
-  TypedArrayEncoder,
-  DidCommV1Service,
-  NewDidCommV2Service,
-  DidDocumentService,
   Agent,
+  DidCommV1Service,
+  DidDocumentService,
   DidsModule,
+  JsonTransformer,
+  Key,
+  KeyType,
+  NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
@@ -32,6 +32,7 @@ const endorser = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
+    {},
     {
       indyVdr: new IndyVdrModule({
         networks: indyVdrModuleConfig.networks,
@@ -47,6 +48,7 @@ const endorser = new Agent(
 const agent = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID Registrar',
+    {},
     {},
     {
       indyVdr: new IndyVdrModule({
@@ -166,7 +168,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     // Generate a seed and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
     const seed = Array(32 + 1)
-      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+      .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
       .slice(0, 32)
 
     const keyPair = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed))
@@ -266,7 +268,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     // Generate a seed and the indy did. This allows us to create a new did every time
     // but still check if the created output document is as expected.
     const seed = Array(32 + 1)
-      .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+      .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
       .slice(0, 32)
 
     const keyPair = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed))
@@ -345,7 +347,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     // but still check if the created output document is as expected.
     const privateKey = TypedArrayEncoder.fromString(
       Array(32 + 1)
-        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
     )
 
@@ -471,7 +473,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     // but still check if the created output document is as expected.
     const privateKey = TypedArrayEncoder.fromString(
       Array(32 + 1)
-        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
     )
 

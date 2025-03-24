@@ -1,10 +1,12 @@
-import type { AgentContext } from '../../..'
+import type { AgentContext } from '../../../agent'
 
-import { KeyType, X509Service } from '../../..'
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { KeyType } from '../../../crypto'
+import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 
+import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 
 describe('mdoc service test', () => {
@@ -14,9 +16,9 @@ describe('mdoc service test', () => {
   beforeAll(async () => {
     const agentConfig = getAgentConfig('mdoc')
     wallet = new InMemoryWallet()
-    agentContext = getAgentContext({ wallet })
+    agentContext = getAgentContext({ wallet, registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]] })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
   })
 
@@ -28,6 +30,13 @@ describe('mdoc service test', () => {
   test('can get doctype', async () => {
     const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
     expect(mdoc.docType).toBe('eu.europa.ec.eudi.pid.1')
+  })
+
+  test('can get device key', async () => {
+    const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
+    const deviceKey = mdoc.deviceKey
+    expect(deviceKey?.keyType).toBe(KeyType.P256)
+    expect(deviceKey?.fingerprint).toBe('zDnaeq8nbXthvXNTYAzxdyvdWXgm5ev5xLEUtjZpfj1YtQ5g2')
   })
 
   test('can create and verify mdoc', async () => {
@@ -43,15 +52,16 @@ describe('mdoc service test', () => {
     const nextDay = new Date(currentDate)
     nextDay.setDate(currentDate.getDate() + 2)
 
-    const selfSignedCertificate = await X509Service.createSelfSignedCertificate(agentContext, {
-      key: issuerKey,
-      notBefore: currentDate,
-      notAfter: nextDay,
-      extensions: [],
-      name: 'C=DE',
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: 'C=DE',
     })
 
-    const issuerCertificate = selfSignedCertificate.toString('pem')
+    const issuerCertificate = certificate.toString('pem')
 
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
@@ -74,12 +84,120 @@ describe('mdoc service test', () => {
       },
     })
 
-    expect(() => mdoc.deviceSignedNamespaces).toThrow()
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
 
     const { isValid } = await mdoc.verify(agentContext, {
-      trustedCertificates: [selfSignedCertificate.toString('base64')],
+      trustedCertificates: [certificate.toString('base64')],
     })
     expect(isValid).toBeTruthy()
+  })
+
+  test('throws error when mdoc is invalid (missing C= in cert)', async () => {
+    const holderKey = await agentContext.wallet.createKey({
+      keyType: KeyType.P256,
+    })
+    const issuerKey = await agentContext.wallet.createKey({
+      keyType: KeyType.P256,
+    })
+
+    const currentDate = new Date()
+    currentDate.setDate(currentDate.getDate() - 1)
+    const nextDay = new Date(currentDate)
+    nextDay.setDate(currentDate.getDate() + 2)
+
+    const certificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: issuerKey,
+      validity: {
+        notBefore: currentDate,
+        notAfter: nextDay,
+      },
+      issuer: { commonName: 'hello' },
+    })
+
+    const issuerCertificate = certificate.toString('pem')
+
+    const mdoc = await Mdoc.sign(agentContext, {
+      docType: 'org.iso.18013.5.1.mDL',
+      holderKey: holderKey,
+      namespaces: {
+        hello: {
+          world: 'world',
+          nicer: 'dicer',
+        },
+      },
+      issuerCertificate,
+    })
+
+    expect(mdoc.alg).toBe('ES256')
+    expect(mdoc.docType).toBe('org.iso.18013.5.1.mDL')
+    expect(mdoc.issuerSignedNamespaces).toStrictEqual({
+      hello: {
+        world: 'world',
+        nicer: 'dicer',
+      },
+    })
+
+    expect(mdoc.deviceSignedNamespaces).toBeNull()
+
+    const verifyResult = await mdoc.verify(agentContext, {
+      trustedCertificates: [certificate.toString('base64')],
+    })
+    expect(verifyResult).toEqual({
+      error: "Country name (C) must be present in the issuer certificate's subject distinguished name",
+      isValid: false,
+    })
+
+    const { deviceResponseBase64Url } = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(
+      agentContext,
+      {
+        mdocs: [mdoc],
+        presentationDefinition: {
+          id: 'something',
+          input_descriptors: [
+            {
+              id: 'org.iso.18013.5.1.mDL',
+              format: {
+                mso_mdoc: {
+                  alg: ['EdDSA', 'ES256'],
+                },
+              },
+              constraints: {
+                limit_disclosure: 'required',
+                fields: [
+                  {
+                    path: ["$['hello']['world']"],
+                    intent_to_retain: false,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+        sessionTranscriptOptions: {
+          type: 'openId4Vp',
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+      }
+    )
+
+    const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
+    expect(
+      deviceResponse.verify(agentContext, {
+        sessionTranscriptOptions: {
+          type: 'openId4Vp',
+          mdocGeneratedNonce: 'something',
+          verifierGeneratedNonce: 'something-else',
+          clientId: 'something',
+          responseUri: 'something',
+        },
+        trustedCertificates: [certificate.toString('pem')],
+      })
+    ).rejects.toThrow(
+      "Mdoc at index 0 is not valid. Country name (C) must be present in the issuer certificate's subject distinguished name"
+    )
   })
 
   test('can decode claims from namespaces', async () => {

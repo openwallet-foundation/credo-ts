@@ -1,3 +1,4 @@
+import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   StoreCredentialOptions,
   W3cCreatePresentationOptions,
@@ -6,9 +7,8 @@ import type {
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'
-import type { W3cVerifiableCredential, ClaimFormat } from './models'
+import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredentialRecord } from './repository'
-import type { Query, QueryOptions } from '../../storage/StorageService'
 
 import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'

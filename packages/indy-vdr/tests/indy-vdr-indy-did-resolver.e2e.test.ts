@@ -1,4 +1,4 @@
-import { DidsModule, Agent, TypedArrayEncoder, JsonTransformer } from '@credo-ts/core'
+import { Agent, DidsModule, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { getInMemoryAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
@@ -10,6 +10,7 @@ import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 const agent = new Agent(
   getInMemoryAgentOptions(
     'Indy VDR Indy DID resolver',
+    {},
     {},
     {
       indyVdr: new IndyVdrModule({

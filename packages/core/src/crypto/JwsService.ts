@@ -1,3 +1,4 @@
+import type { AgentContext } from '../agent'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -8,13 +9,11 @@ import type {
 import type { Key } from './Key'
 import type { Jwk } from './jose/jwk'
 import type { JwkJson } from './jose/jwk/Jwk'
-import type { AgentContext } from '../agent'
-import type { Buffer } from '../utils'
 
 import { CredoError } from '../error'
-import { X509ModuleConfig } from '../modules/x509'
+import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
-import { isJsonObject, JsonEncoder, TypedArrayEncoder } from '../utils'
+import { Buffer, JsonEncoder, TypedArrayEncoder, isJsonObject } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { X509Service } from './../modules/x509/X509Service'
@@ -33,15 +32,19 @@ export class JwsService {
       const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: x5c })
       if (
         certificate.publicKey.keyType !== options.key.keyType ||
-        !certificate.publicKey.publicKey.equals(options.key.publicKey)
+        !Buffer.from(certificate.publicKey.publicKey).equals(Buffer.from(options.key.publicKey))
       ) {
-        throw new CredoError(`Protected header x5c does not match key for signing.`)
+        throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwk && (jwk.key.keyType !== options.key.keyType || !jwk.key.publicKey.equals(options.key.publicKey))) {
-      throw new CredoError(`Protected header JWK does not match key for signing.`)
+    if (
+      jwk &&
+      (jwk.key.keyType !== options.key.keyType ||
+        !Buffer.from(jwk.key.publicKey).equals(Buffer.from(options.key.publicKey)))
+    ) {
+      throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
@@ -208,8 +211,15 @@ export class JwsService {
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
-    if ([options.jwk, options.kid, options.x5c].filter(Boolean).length != 1) {
-      throw new CredoError('Only one of JWK, kid or x5c can and must be provided.')
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (options.kid?.startsWith('did:')) {
+      if (options.jwk || options.x5c) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if ((options.jwk && options.x5c) || (!options.jwk && !options.x5c && !options.kid)) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     return {
@@ -227,13 +237,26 @@ export class JwsService {
       protectedHeader: { alg: string; [key: string]: unknown }
       payload: string
       jwkResolver?: JwsJwkResolver
-      trustedCertificates?: [string, ...string[]]
+      trustedCertificates?: EncodedX509Certificate[]
     }
   ): Promise<Jwk> {
-    const { protectedHeader, jwkResolver, jws, payload, trustedCertificates: trustedCertificatesFromOptions } = options
+    const {
+      protectedHeader,
+      jwkResolver,
+      jws,
+      payload,
+      trustedCertificates: trustedCertificatesFromOptions = undefined,
+    } = options
 
-    if ([protectedHeader.jwk, protectedHeader.kid, protectedHeader.x5c].filter(Boolean).length > 1) {
-      throw new CredoError('Only one of jwk, kid and x5c headers can and must be provided.')
+    // FIXME: checking for kid starting with '#' is not good.
+    // but now we don't really limit that kid (did key reference)
+    // cannot be combined with x5c/jwk
+    if (typeof protectedHeader.kid === 'string' && protectedHeader.kid?.startsWith('did:')) {
+      if (protectedHeader.jwk || protectedHeader.x5c) {
+        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      }
+    } else if (protectedHeader.jwk && protectedHeader.x5c) {
+      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
     }
 
     if (protectedHeader.x5c) {
@@ -241,11 +264,12 @@ export class JwsService {
         !Array.isArray(protectedHeader.x5c) ||
         protectedHeader.x5c.some((certificate) => typeof certificate !== 'string')
       ) {
-        throw new CredoError('x5c header is not a valid JSON array of string.')
+        throw new CredoError('x5c header is not a valid JSON array of strings.')
       }
 
-      const trustedCertificatesFromConfig = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-      const trustedCertificates = [...(trustedCertificatesFromConfig ?? []), ...(trustedCertificatesFromOptions ?? [])]
+      const trustedCertificatesFromConfig =
+        agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates ?? []
+      const trustedCertificates = trustedCertificatesFromOptions ?? trustedCertificatesFromConfig
       if (trustedCertificates.length === 0) {
         throw new CredoError(
           `trustedCertificates is required when the JWS protected header contains an 'x5c' property.`
@@ -254,7 +278,7 @@ export class JwsService {
 
       await X509Service.validateCertificateChain(agentContext, {
         certificateChain: protectedHeader.x5c,
-        trustedCertificates: trustedCertificates as [string, ...string[]], // Already validated that it has at least one certificate
+        trustedCertificates,
       })
 
       const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: protectedHeader.x5c })
@@ -268,7 +292,9 @@ export class JwsService {
     }
 
     if (!jwkResolver) {
-      throw new CredoError(`jwkResolver is required when the JWS protected header does not contain a 'jwk' property.`)
+      throw new CredoError(
+        `jwkResolver is required when the JWS protected header does not contain a 'jwk' or 'x5c' property.`
+      )
     }
 
     try {
@@ -315,7 +341,7 @@ export interface VerifyJwsOptions {
    */
   jwkResolver?: JwsJwkResolver
 
-  trustedCertificates?: [string, ...string[]]
+  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export type JwsJwkResolver = (options: {

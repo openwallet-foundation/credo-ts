@@ -1,65 +1,74 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import type { Observable } from 'rxjs'
 import type { AskarWalletSqliteStorageConfig } from '../../askar/src/wallet'
 import type {
-  AgentDependencies,
-  BaseEvent,
+  AgentMessageProcessedEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
+  ConnectionDidRotatedEvent,
   ConnectionRecordProps,
+  ConnectionStateChangedEvent,
+  CredentialState,
   CredentialStateChangedEvent,
+  ProofStateChangedEvent,
+  RevocationNotificationReceivedEvent,
+} from '../../didcomm/src'
+import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
+import type {
+  TrustPingReceivedEvent,
+  TrustPingResponseReceivedEvent,
+} from '../../didcomm/src/modules/connections/TrustPingEvents'
+import type { ProofState } from '../../didcomm/src/modules/proofs'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
+import type {
+  Agent,
+  AgentDependencies,
+  BaseEvent,
+  Buffer,
   InitConfig,
   InjectionToken,
-  ProofStateChangedEvent,
-  Wallet,
-  Agent,
-  CredentialState,
-  ConnectionStateChangedEvent,
-  Buffer,
-  AgentMessageProcessedEvent,
-  RevocationNotificationReceivedEvent,
   KeyDidCreateOptions,
-  ConnectionDidRotatedEvent,
+  Wallet,
 } from '../src'
 import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../src/modules/connections/TrustPingEvents'
-import type { ProofState } from '../src/modules/proofs/models/ProofState'
 import type { WalletConfig } from '../src/types'
-import type { Observable } from 'rxjs'
 
 import { readFileSync } from 'fs'
 import path from 'path'
-import { lastValueFrom, firstValueFrom, ReplaySubject } from 'rxjs'
+import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { agentDependencies } from '../../node/src'
 import {
   AgentEventTypes,
-  OutOfBandDidCommService,
-  ConnectionsModule,
-  ConnectionEventTypes,
-  TypedArrayEncoder,
-  AgentConfig,
-  AgentContext,
   BasicMessageEventTypes,
+  ConnectionEventTypes,
   ConnectionRecord,
+  ConnectionsModule,
   CredentialEventTypes,
-  DependencyManager,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
-  InjectionSymbols,
+  OutOfBandDidCommService,
   ProofEventTypes,
   TrustPingEventTypes,
+} from '../../didcomm/src'
+import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRole'
+import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
+import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
+import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
+import { agentDependencies } from '../../node/src'
+import {
+  AgentConfig,
+  AgentContext,
+  DependencyManager,
   DidsApi,
+  InjectionSymbols,
+  TypedArrayEncoder,
   X509Api,
 } from '../src'
 import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
-import { OutOfBandRole } from '../src/modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../src/modules/oob/domain/OutOfBandState'
-import { OutOfBandInvitation } from '../src/modules/oob/messages'
-import { OutOfBandRecord } from '../src/modules/oob/repository'
 import { KeyDerivationMethod } from '../src/types'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -102,10 +111,16 @@ export function getAskarWalletConfig(
 
 export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
   inMemoryWallet = true
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies; inMemory?: boolean } {
+): {
+  config: InitConfig
+  modules: AgentModules & DefaultAgentModulesInput
+  dependencies: AgentDependencies
+  inMemory?: boolean
+} {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
@@ -118,6 +133,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
+    ...getDefaultDidcommModules(didcommConfig),
     ...m,
     // Make sure connections module is always defined so we can set autoAcceptConnections
     connections:
@@ -127,14 +143,25 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       }),
   }
 
-  return { config, modules: modules as AgentModules, dependencies: agentDependencies } as const
+  return {
+    config,
+    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
+    dependencies: agentDependencies,
+  } as const
 }
 
-export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+export function getInMemoryAgentOptions<
+  AgentModules extends DefaultAgentModulesInput | AgentModulesInput | EmptyModuleMap,
+>(
   name: string,
+  didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules
-): { config: InitConfig; modules: AgentModules; dependencies: AgentDependencies } {
+): {
+  config: InitConfig
+  modules: AgentModules & DefaultAgentModulesInput
+  dependencies: AgentDependencies
+} {
   const random = uuid().slice(0, 4)
   const config: InitConfig = {
     label: `Agent: ${name} - ${random}`,
@@ -148,8 +175,11 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
     ...extraConfig,
   }
 
+  const didcommConfig: DidCommModuleConfigOptions = { ...didcommExtraConfig }
+
   const m = (inputModules ?? {}) as AgentModulesInput
   const modules = {
+    ...getDefaultDidcommModules(didcommConfig),
     ...m,
     inMemory: new InMemoryWalletModule(),
     // Make sure connections module is always defined so we can set autoAcceptConnections
@@ -160,7 +190,11 @@ export function getInMemoryAgentOptions<AgentModules extends AgentModulesInput |
       }),
   }
 
-  return { config, modules: modules as unknown as AgentModules, dependencies: agentDependencies } as const
+  return {
+    config,
+    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
+    dependencies: agentDependencies,
+  } as const
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
@@ -180,9 +214,10 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
 
 export function getAgentConfig(
   name: string,
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {}
 ): AgentConfig & { walletConfig: WalletConfig } {
-  const { config, dependencies } = getAgentOptions(name, extraConfig)
+  const { config, dependencies } = getAgentOptions(name, didcommConfig, extraConfig)
   return new AgentConfig(config, dependencies) as AgentConfig & { walletConfig: WalletConfig }
 }
 
@@ -665,7 +700,7 @@ export function getMockOutOfBand({
     handshakeProtocols: [HandshakeProtocol.DidExchange],
     services: [
       new OutOfBandDidCommService({
-        id: `#inline-0`,
+        id: '#inline-0',
         serviceEndpoint: serviceEndpoint ?? 'http://example.com',
         recipientKeys,
         routingKeys: [],
@@ -687,16 +722,19 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
-export async function makeConnection(agentA: Agent, agentB: Agent) {
-  const agentAOutOfBand = await agentA.oob.createInvitation({
+export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, agentB: Agent<DefaultAgentModulesInput>) {
+  const agentAOutOfBand = await agentA.modules.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.oob.receiveInvitation(agentAOutOfBand.outOfBandInvitation)
+  let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
+    agentAOutOfBand.outOfBandInvitation
+  )
 
-  agentBConnection = await agentB.connections.returnWhenIsConnected(agentBConnection!.id)
-  let [agentAConnection] = await agentA.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.connections.returnWhenIsConnected(agentAConnection!.id)
+  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id!)
+  let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection?.id)
 
   return [agentAConnection, agentBConnection]
 }
@@ -708,7 +746,7 @@ export async function makeConnection(agentA: Agent, agentB: Agent) {
  * @param fn function you want to mock
  * @returns mock function with type annotations
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
   return fn as jest.MockedFunction<T>
 }
@@ -716,7 +754,6 @@ export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.Moc
 /**
  * Set a property using a getter value on a mocked oject.
  */
-// eslint-disable-next-line @typescript-eslint/ban-types
 export function mockProperty<T extends {}, K extends keyof T>(object: T, property: K, value: T[K]) {
   Object.defineProperty(object, property, { get: () => value })
 }
@@ -765,14 +802,20 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
 
 export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: Key) {
   const x509 = agentContext.dependencyManager.resolve(X509Api)
-  const certificate = await x509.createSelfSignedCertificate({
-    key:
+  const certificate = await x509.createCertificate({
+    authorityKey:
       key ??
       (await agentContext.wallet.createKey({
         keyType: KeyType.Ed25519,
       })),
-    name: 'C=DE',
-    extensions: [[{ type: 'dns', value: dns }]],
+    issuer: {
+      countryName: 'DE',
+    },
+    extensions: {
+      subjectAlternativeName: {
+        name: [{ type: 'dns', value: dns }],
+      },
+    },
   })
 
   return { certificate, base64Certificate: certificate.toString('base64') }

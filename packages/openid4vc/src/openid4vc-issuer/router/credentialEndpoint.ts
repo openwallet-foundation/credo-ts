@@ -1,16 +1,16 @@
-import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { HttpMethod } from '@openid4vc/oauth2'
+import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { HttpMethod } from '@animo-id/oauth2'
-import type { Router, Response } from 'express'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
-  Oauth2ServerErrorResponseError,
   Oauth2ResourceUnauthorizedError,
+  Oauth2ServerErrorResponseError,
   SupportedAuthenticationScheme,
-} from '@animo-id/oauth2'
-import { getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
-import { joinUriParts } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
+import { getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
 
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
 import {
@@ -151,10 +151,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           )
         }
       }
-      // Statefull session expired
+      // Stateful session expired
       else if (
         Date.now() >
-        addSecondsToDate(issuanceSession.createdAt, config.statefullCredentialOfferExpirationInSeconds).getTime()
+        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds).getTime()
       ) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
@@ -212,6 +212,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           credential_configuration_ids: Object.keys(credentialConfigurationsForToken),
           credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
         },
+        credentialOfferId: utils.uuid(),
         issuerId: issuer.issuerId,
         state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
         clientId: tokenPayload.client_id,
@@ -233,7 +234,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
             error: Oauth2ErrorCodes.CredentialRequestDenied,
           },
           {
-            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a statefull credential offer, or enable 'allowDynamicIssuanceSessions'.`,
+            internalMessage: `Access token without 'issuer_state' or 'pre-authorized_code' issued by external authorization server provided, but 'allowDynamicIssuanceSessions' is disabled. Either bind the access token to a stateful credential offer, or enable 'allowDynamicIssuanceSessions'.`,
           }
         )
       )
