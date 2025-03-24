@@ -26,6 +26,7 @@ import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
+import { JsonObject } from '../../../types'
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(
@@ -55,21 +56,21 @@ export async function getCredentialsForRequest(
           const prettyClaims = getClaimsSync(jwt.payload, disclosures, Hasher.hash)
 
           return {
-            type: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtVc,
             credentialRecord,
-            disclosedPayload: prettyClaims as Record<string, unknown>,
+            disclosedPayload: prettyClaims as JsonObject,
           }
         }
         if (credentialRecord instanceof MdocRecord) {
           return {
-            type: ClaimFormat.MsoMdoc,
+            claimFormat: ClaimFormat.MsoMdoc,
             credentialRecord,
             disclosedPayload: {},
           }
         }
         if (credentialRecord instanceof W3cCredentialRecord) {
           return {
-            type: credentialRecord.credential.claimFormat,
+            claimFormat: credentialRecord.credential.claimFormat,
             credentialRecord,
           }
         }
@@ -99,7 +100,7 @@ export async function getCredentialsForRequest(
   const inputDescriptorsForMdocCredential = new Map<SubmissionEntryCredential, Set<string>>()
   for (const entry of allEntries)
     for (const verifiableCredential of entry.verifiableCredentials) {
-      if (verifiableCredential.type !== ClaimFormat.MsoMdoc) continue
+      if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
 
       const set = inputDescriptorsForMdocCredential.get(verifiableCredential) ?? new Set()
       set.add(entry.inputDescriptorId)
@@ -111,7 +112,7 @@ export async function getCredentialsForRequest(
   // different disclosed attributes
   // Apply limit disclosure for all mdocs
   for (const [verifiableCredential, inputDescriptorIds] of inputDescriptorsForMdocCredential.entries()) {
-    if (verifiableCredential.type !== ClaimFormat.MsoMdoc) continue
+    if (verifiableCredential.claimFormat !== ClaimFormat.MsoMdoc) continue
 
     const inputDescriptorsForCredential = presentationDefinition.input_descriptors.filter(({ id }) =>
       inputDescriptorIds.has(id)
