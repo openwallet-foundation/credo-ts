@@ -1,6 +1,6 @@
 import type { Jwk } from '@credo-ts/core'
 
-interface OpenId4VcJwtIssuerDid {
+export interface OpenId4VcJwtIssuerDid {
   method: 'did'
   didUrl: string
 }
@@ -25,7 +25,7 @@ export interface OpenId4VcIssuerX5c {
   issuer: string
 }
 
-interface OpenId4VcJwtIssuerJwk {
+export interface OpenId4VcJwtIssuerJwk {
   method: 'jwk'
   jwk: Jwk
 }
