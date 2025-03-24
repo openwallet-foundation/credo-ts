@@ -69,7 +69,7 @@ export class X509Service {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
-    let _previousCertificate: X509Certificate | undefined = undefined
+    let previousCertificate: X509Certificate | undefined = undefined
 
     if (trustedCertificates) {
       const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
@@ -88,14 +88,13 @@ export class X509Service {
         // When we trust a certificate other than the first certificate in the provided chain we keep a reference to the
         // previous certificate as we need the key of this certificate to verify the first certificate in the chain as
         // it's not self-sigend.
-        _previousCertificate = parsedChain[trustedCertificateIndex - 1]
+        previousCertificate = parsedChain[trustedCertificateIndex - 1]
 
         // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
         parsedChain = parsedChain.slice(trustedCertificateIndex)
       }
     }
 
-    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
