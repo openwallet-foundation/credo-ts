@@ -6,9 +6,9 @@ import { JwsService, KeyType, getJwkFromJson, getJwkFromKey } from '@credo-ts/co
 import { createEntityConfiguration, createEntityStatement, fetchEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
-import { addSecondsToDate } from '../../shared/utils'
 
 export function configureFederationEndpoint(
   router: Router,
