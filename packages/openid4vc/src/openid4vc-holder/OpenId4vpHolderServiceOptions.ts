@@ -6,7 +6,7 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import { ClientIdScheme, ClientMetadata, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp
@@ -32,6 +32,20 @@ export interface OpenId4VpResolvedAuthorizationRequest {
 
   dcql?: {
     queryResult: DcqlQueryResult
+  }
+
+  verifier: {
+    /**
+     * The client id scheme
+     */
+    clientIdScheme: ClientIdScheme
+
+    /**
+     * The client id metadata.
+     *
+     * In case of 'https' (federation) client id scheme, this will be the metadata from the federation.
+     */
+    clientMetadata?: ClientMetadata
   }
 
   /**

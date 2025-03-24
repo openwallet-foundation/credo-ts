@@ -175,6 +175,10 @@ export class OpenId4VpHolderService {
         throw new CredoError(`Federation entity '${client.identifier}' does not have 'openid_relying_party' metadata.`)
       }
 
+      // FIXME: we probably don't want to override this, but otherwise the accept logic doesn't have
+      // access to the correct metadata. Should we also pass client to accept?
+      // @ts-ignore
+      verifiedAuthorizationRequest.authorizationRequestPayload.client_metadata = openidRelyingPartyMetadata
       // FIXME: we should not just override the metadata?
       // When federation is used we need to use the federation metadata
       // @ts-ignore
@@ -194,6 +198,10 @@ export class OpenId4VpHolderService {
       authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
+      verifier: {
+        clientIdScheme: client.scheme,
+        clientMetadata: client.clientMetadata,
+      },
       dcql: dcqlResult?.dcql,
       origin: options?.origin,
       signedAuthorizationRequest: verifiedAuthorizationRequest.jar
