@@ -1,5 +1,4 @@
 import type { DidRepository } from '@credo-ts/core'
-import type { AnonCredsCredentialRequest } from '../../models'
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -19,6 +18,7 @@ import {
   ProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
+import type { AnonCredsCredentialRequest } from '../../models'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
@@ -46,10 +46,7 @@ import {
   AnonCredsVerifierServiceSymbol,
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
-import {
-  getUnqualifiedCredentialDefinitionId,
-  parseIndyCredentialDefinitionId,
-} from '../../utils/indyIdentifiers'
+import { getUnqualifiedCredentialDefinitionId, parseIndyCredentialDefinitionId } from '../../utils/indyIdentifiers'
 import { AnonCredsCredentialFormatService } from '../AnonCredsCredentialFormatService'
 import { AnonCredsProofFormatService } from '../AnonCredsProofFormatService'
 
@@ -287,7 +284,7 @@ describe('Anoncreds format services', () => {
 
     const credentialId = holderCredentialRecord.credentials[0].credentialRecordId
     const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
-      id: credentialId
+      id: credentialId,
     })
 
     expect(anonCredsCredential).toEqual({

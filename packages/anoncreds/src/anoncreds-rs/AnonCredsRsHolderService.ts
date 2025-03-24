@@ -144,10 +144,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
         }
 
         const proofUsesUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
-        const { linkSecretId, schemaId, credentialDefinitionId, revocationRegistryId, credentialRevocationId } = getAnoncredsCredentialInfoFromRecord(
-          credentialRecord,
-          proofUsesUnqualifiedIdentifiers
-        )
+        const { linkSecretId, schemaId, credentialDefinitionId, revocationRegistryId, credentialRevocationId } =
+          getAnoncredsCredentialInfoFromRecord(credentialRecord, proofUsesUnqualifiedIdentifiers)
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -187,11 +185,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
                   credential: credentialRecord.credential as W3cJsonLdVerifiableCredential,
                 })
               : (credentialRecord.credential as AnonCredsCredential)
-          
+
           if (proofUsesUnqualifiedIdentifiers) {
             credential.schema_id = schemaId
             credential.cred_def_id = credentialDefinitionId
-            credential.rev_reg_id = credentialRevocationId != null ? credentialDefinitionId : undefined 
+            credential.rev_reg_id = credentialRevocationId != null ? credentialDefinitionId : undefined
           }
           return {
             linkSecretId,
