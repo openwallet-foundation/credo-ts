@@ -395,7 +395,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     const credentialObjects = await Promise.all(
       [...Object.values(selectedCredentials.attributes), ...Object.values(selectedCredentials.predicates)].map(
-        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { id: c.credentialId })
+        async (c) => holderService.getCredential(agentContext, { id: c.credentialId, useUnqualifiedIdentifiersIfPresent: true })
       )
     )
 
