@@ -42,6 +42,7 @@ import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
+import { DidCommDocumentService } from '../../services'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
@@ -286,6 +287,7 @@ export class DidExchangeProtocol {
       ? getNumAlgoFromPeerDid(theirDid)
       : config.peerNumAlgoForDidExchangeRequests
 
+    const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
     const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
@@ -298,8 +300,8 @@ export class DidExchangeProtocol {
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       invitationRecipientKeys.push(
-        ...(await getDidDocumentForCreatedDid(agentContext, parseDid(did).did)).recipientKeys.map(
-          (key) => key.publicKeyBase58
+        ...(await didcommDocumentService.resolveServicesFromDid(agentContext, parseDid(did).did)).flatMap((service) =>
+          service.recipientKeys.map((key) => key.publicKeyBase58)
         )
       )
     }
