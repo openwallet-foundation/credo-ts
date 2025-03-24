@@ -65,7 +65,7 @@ export class X509Certificate {
   public privateKey?: Uint8Array
   private x509Certificate: x509.X509Certificate
 
-  public constructor(options: X509CertificateOptions) {
+  private constructor(options: X509CertificateOptions) {
     this.publicKey = options.publicKey
     this.privateKey = options.privateKey
     this.x509Certificate = options.x509Certificate
