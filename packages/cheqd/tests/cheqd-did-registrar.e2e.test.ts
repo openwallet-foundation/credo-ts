@@ -149,6 +149,8 @@ describe('Cheqd DID registrar', () => {
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
+        .addController(did)
+        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
@@ -188,6 +190,8 @@ describe('Cheqd DID registrar', () => {
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
+        .addController(did)
+        .addAuthentication(`${did}#${p256Key.fingerprint}`)
         .addVerificationMethod(
           getJsonWebKey2020({
             did,
