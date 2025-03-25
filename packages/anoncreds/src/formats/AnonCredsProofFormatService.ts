@@ -43,6 +43,7 @@ import {
 } from '../utils'
 import { encodeCredentialValue } from '../utils/credential'
 import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
+import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
@@ -395,7 +396,11 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
 
     const credentialObjects = await Promise.all(
       [...Object.values(selectedCredentials.attributes), ...Object.values(selectedCredentials.predicates)].map(
-        async (c) => c.credentialInfo ?? holderService.getCredential(agentContext, { id: c.credentialId })
+        async (c) =>
+          holderService.getCredential(agentContext, {
+            id: c.credentialId,
+            useUnqualifiedIdentifiersIfPresent: proofRequestUsesUnqualifiedIdentifiers(proofRequest),
+          })
       )
     )
 
