@@ -11,6 +11,8 @@ import type {
 } from '@credo-ts/core'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpFetchEntityConfigurationOptions,
+  OpenId4VpResolveTrustChainsOptions,
   OpenId4VpResolvedAuthorizationRequest,
   ParsedTransactionDataEntry,
   ResolveOpenId4VpAuthorizationRequestOptions,
@@ -23,9 +25,15 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  JwsService,
   TypedArrayEncoder,
+  getJwkFromJson,
   injectable,
 } from '@credo-ts/core'
+import {
+  fetchEntityConfiguration as federationFetchEntityConfiguration,
+  resolveTrustChains as federationResolveTrustChains,
+} from '@openid-federation/core'
 import {
   Openid4vpAuthorizationResponse,
   Openid4vpClient,
@@ -47,10 +55,15 @@ export class OpenId4VpHolderService {
 
   private getOpenid4vpClient(
     agentContext: AgentContext,
-    options?: { trustedCertificates?: EncodedX509Certificate[]; isVerifyOpenId4VpAuthorizationRequest?: boolean }
+    options?: {
+      trustedCertificates?: EncodedX509Certificate[]
+      trustedFederationEntityIds?: string[]
+      isVerifyOpenId4VpAuthorizationRequest?: boolean
+    }
   ) {
     const callbacks = getOid4vcCallbacks(agentContext, {
       trustedCertificates: options?.trustedCertificates,
+      trustedFederationEntityIds: options?.trustedFederationEntityIds,
       isVerifyOpenId4VpAuthorizationRequest: options?.isVerifyOpenId4VpAuthorizationRequest,
     })
     return new Openid4vpClient({ callbacks })
@@ -119,6 +132,7 @@ export class OpenId4VpHolderService {
   ): Promise<OpenId4VpResolvedAuthorizationRequest> {
     const openid4vpClient = this.getOpenid4vpClient(agentContext, {
       trustedCertificates: options?.trustedCertificates,
+      trustedFederationEntityIds: options?.trustedFederationEntityIds,
       isVerifyOpenId4VpAuthorizationRequest: true,
     })
     const { params } = openid4vpClient.parseOpenid4vpAuthorizationRequest({ authorizationRequest })
@@ -130,8 +144,45 @@ export class OpenId4VpHolderService {
 
     const { client, pex, transactionData, dcql } = verifiedAuthorizationRequest
 
-    if (client.scheme !== 'x509_san_dns' && client.scheme !== 'did' && client.scheme !== 'web-origin') {
+    if (
+      client.scheme !== 'x509_san_dns' &&
+      client.scheme !== 'did' &&
+      client.scheme !== 'web-origin' &&
+      client.scheme !== 'https'
+    ) {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
+    }
+
+    if (client.scheme === 'https') {
+      const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+      const entityConfiguration = await federationFetchEntityConfiguration({
+        entityId: client.identifier,
+        verifyJwtCallback: async ({ jwt, jwk }) => {
+          const res = await jwsService.verifyJws(agentContext, {
+            jws: jwt,
+            jwkResolver: () => getJwkFromJson(jwk),
+          })
+
+          return res.isValid
+        },
+      })
+      if (!entityConfiguration)
+        throw new CredoError(`Unable to fetch entity configuration for entityId '${client.identifier}'`)
+
+      const openidRelyingPartyMetadata = entityConfiguration.metadata?.openid_relying_party
+      if (!openidRelyingPartyMetadata) {
+        throw new CredoError(`Federation entity '${client.identifier}' does not have 'openid_relying_party' metadata.`)
+      }
+
+      // FIXME: we probably don't want to override this, but otherwise the accept logic doesn't have
+      // access to the correct metadata. Should we also pass client to accept?
+      // @ts-ignore
+      verifiedAuthorizationRequest.authorizationRequestPayload.client_metadata = openidRelyingPartyMetadata
+      // FIXME: we should not just override the metadata?
+      // When federation is used we need to use the federation metadata
+      // @ts-ignore
+      client.clientMetadata = openidRelyingPartyMetadata
     }
 
     const pexResult = pex?.presentation_definition
@@ -147,6 +198,10 @@ export class OpenId4VpHolderService {
       authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
+      verifier: {
+        clientIdScheme: client.scheme,
+        clientMetadata: client.clientMetadata,
+      },
       dcql: dcqlResult?.dcql,
       origin: options?.origin,
       signedAuthorizationRequest: verifiedAuthorizationRequest.jar
@@ -300,7 +355,12 @@ export class OpenId4VpHolderService {
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
     const { nonce } = authorizationRequestPayload
-    const parsedClientId = getOpenid4vpClientId({ authorizationRequestPayload, origin: options.origin })
+    const parsedClientId = getOpenid4vpClientId({
+      responseMode: authorizationRequestPayload.response_mode,
+      clientId: authorizationRequestPayload.client_id,
+      legacyClientIdScheme: authorizationRequestPayload.client_id_scheme,
+      origin: options.origin,
+    })
     // If client_id_scheme was used we need to use the legacy client id.
     const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
 
@@ -477,5 +537,45 @@ export class OpenId4VpHolderService {
       redirectUri: responseJson?.redirect_uri as string | undefined,
       presentationDuringIssuanceSession: responseJson?.presentation_during_issuance_session as string | undefined,
     } as const
+  }
+
+  public async resolveOpenIdFederationChains(agentContext: AgentContext, options: OpenId4VpResolveTrustChainsOptions) {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const { entityId, trustAnchorEntityIds } = options
+
+    return federationResolveTrustChains({
+      entityId,
+      trustAnchorEntityIds,
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwkResolver: () => getJwkFromJson(jwk),
+        })
+
+        return res.isValid
+      },
+    })
+  }
+
+  public async fetchOpenIdFederationEntityConfiguration(
+    agentContext: AgentContext,
+    options: OpenId4VpFetchEntityConfigurationOptions
+  ) {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const { entityId } = options
+
+    return federationFetchEntityConfiguration({
+      entityId,
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwkResolver: () => getJwkFromJson(jwk),
+        })
+
+        return res.isValid
+      },
+    })
   }
 }

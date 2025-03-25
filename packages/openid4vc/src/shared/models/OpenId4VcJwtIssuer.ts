@@ -30,4 +30,13 @@ export interface OpenId4VcJwtIssuerJwk {
   jwk: Jwk
 }
 
-export type OpenId4VcJwtIssuer = OpenId4VcJwtIssuerDid | OpenId4VcIssuerX5c | OpenId4VcJwtIssuerJwk
+export interface OpenId4VcJwtIssuerFederation {
+  method: 'federation'
+  entityId: string
+}
+
+export type OpenId4VcJwtIssuer =
+  | OpenId4VcJwtIssuerDid
+  | OpenId4VcIssuerX5c
+  | OpenId4VcJwtIssuerJwk
+  | OpenId4VcJwtIssuerFederation
