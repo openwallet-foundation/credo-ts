@@ -698,7 +698,12 @@ export class SdJwtVcService {
 
   private getStatusListFetcher(agentContext: AgentContext) {
     return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri)
+      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+        headers: {
+          Accept: 'application/statuslist+jwt',
+        },
+      })
+
       if (!response.ok) {
         throw new CredoError(
           `Received invalid response with status ${
