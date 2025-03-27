@@ -13,5 +13,7 @@ export class V2CredentialProblemReportHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V2CredentialProblemReportHandler>) {
     await this.credentialProtocol.processProblemReport(messageContext)
+
+    return undefined
   }
 }

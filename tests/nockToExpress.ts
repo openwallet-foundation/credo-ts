@@ -1,6 +1,7 @@
 import type { Express } from 'express'
 import type { Body, ReplyFnContext } from 'nock'
 
+import { Buffer } from '@credo-ts/core'
 import nock, { cleanAll } from 'nock'
 import request from 'supertest'
 
@@ -64,10 +65,6 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
     .reply(reply)
     .patch(() => true)
     .reply(reply)
-
-  jest.mock('cross-fetch', () => ({
-    fetch,
-  }))
 
   return () => {
     cleanAll()

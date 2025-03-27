@@ -24,8 +24,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
 
   const oldIdNewIdMapping: { [key: string]: string } = {}
 
-  // biome-ignore lint/complexity/noForEach: <explanation>
-  didDoc.authentication.forEach((auth) => {
+  for (const auth of didDoc.authentication) {
     const { publicKey: pk } = auth
 
     // did:peer did documents can only use referenced keys.
@@ -42,10 +41,9 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
         didDocumentBuilder.addVerificationMethod(ed25519VerificationMethod)
       }
     }
-  })
+  }
 
-  // biome-ignore lint/complexity/noForEach: <explanation>
-  didDoc.publicKey.forEach((pk) => {
+  for (const pk of didDoc.publicKey) {
     if (pk.type === 'Ed25519VerificationKey2018' && pk.value) {
       const ed25519VerificationMethod = convertPublicKeyToVerificationMethod(pk)
 
@@ -53,14 +51,14 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
       oldIdNewIdMapping[oldKeyId] = ed25519VerificationMethod.id
       didDocumentBuilder.addVerificationMethod(ed25519VerificationMethod)
     }
-  })
+  }
 
   // FIXME: we reverse the didCommServices here, as the previous implementation was wrong
   // and we need to keep the same order to not break the did creation process.
   // When we implement the migration to did:peer:2 and did:peer:3 according to the
   // RFCs we can change it.
-  // biome-ignore lint/complexity/noForEach: <explanation>
-  didDoc.didCommServices.reverse().forEach((service) => {
+
+  for (let service of didDoc.didCommServices.reverse()) {
     const serviceId = normalizeId(service.id)
 
     // For didcommv1, we need to replace the old id with the new ones
@@ -70,7 +68,6 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
         return oldIdNewIdMapping[oldKeyId]
       })
 
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       service = new DidCommV1Service({
         id: serviceId,
         recipientKeys,
@@ -80,7 +77,6 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
         priority: service.priority,
       })
     } else if (service instanceof IndyAgentService) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       service = new IndyAgentService({
         id: serviceId,
         recipientKeys: service.recipientKeys,
@@ -91,7 +87,7 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
     }
 
     didDocumentBuilder.addService(service)
-  })
+  }
 
   const didDocument = didDocumentBuilder.build()
 

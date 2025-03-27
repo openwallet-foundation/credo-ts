@@ -198,6 +198,7 @@ export async function migrateInternalCredentialRecordProperties<Agent extends Ba
       },
     ]
 
+    // biome-ignore lint/performance/noDelete: <explanation>
     delete untypedCredentialRecord.credentialId
   }
 

@@ -120,8 +120,19 @@ export interface BaseOpenId4VcIssuerModuleConfigOptions {
 export class BaseOpenId4VcIssuerModuleConfig {
   private options: BaseOpenId4VcIssuerModuleConfigOptions
 
+  /**
+   * Callback to get a verification session that needs to be fulfilled for the authorization of
+   * of a credential issuance session. Once the verification session has been completed the user can
+   * retrieve an authorization code and access token and retrieve the credential(s).
+   *
+   * Required if presentation during issuance flow is used
+   */
+  public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
+
   public constructor(options: BaseOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
+    this.getVerificationSessionForIssuanceSessionAuthorization =
+      options.getVerificationSessionForIssuanceSessionAuthorization
   }
 
   public get baseUrl() {
@@ -133,17 +144,6 @@ export class BaseOpenId4VcIssuerModuleConfig {
    */
   public get credentialRequestToCredentialMapper() {
     return this.options.credentialRequestToCredentialMapper
-  }
-
-  /**
-   * Callback to get a verification session that needs to be fulfilled for the authorization of
-   * of a credential issuance session. Once the verification session has been completed the user can
-   * retrieve an authorization code and access token and retrieve the credential(s).
-   *
-   * Required if presentation during issuance flow is used
-   */
-  public get getVerificationSessionForIssuanceSessionAuthorization() {
-    return this.options.getVerificationSessionForIssuanceSessionAuthorization
   }
 
   /**

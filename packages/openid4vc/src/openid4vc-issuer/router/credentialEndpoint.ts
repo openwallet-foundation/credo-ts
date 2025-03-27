@@ -1,15 +1,15 @@
-import type { HttpMethod } from '@animo-id/oauth2'
+import type { HttpMethod } from '@openid4vc/oauth2'
 import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuancePostRequest } from './requestContext'
 
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ResourceUnauthorizedError,
   Oauth2ServerErrorResponseError,
   SupportedAuthenticationScheme,
-} from '@animo-id/oauth2'
-import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@animo-id/oid4vci'
-import { joinUriParts } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
+import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/oid4vci'
 
 import createHttpError from 'http-errors'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
@@ -203,6 +203,7 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
           credential_configuration_ids: Object.keys(credentialConfigurationsForToken),
           credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
         },
+        credentialOfferId: utils.uuid(),
         issuerId: issuer.issuerId,
         state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
         clientId: tokenPayload.client_id,

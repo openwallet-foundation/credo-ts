@@ -80,10 +80,9 @@ export function didDocumentToNumAlgo4Did(didDocument: DidDocument) {
   // reference to controller
   const deleteControllerIfPresent = (item: unknown) => {
     if (Array.isArray(item)) {
-      // biome-ignore lint/complexity/noForEach: <explanation>
-      item.forEach((method: { controller?: string }) => {
+      for (const method of item) {
         if (method.controller === '#id' || method.controller === didDocument.id) method.controller = undefined
-      })
+      }
     }
   }
   didDocumentJson.id = undefined

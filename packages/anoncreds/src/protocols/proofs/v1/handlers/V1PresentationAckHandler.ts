@@ -13,5 +13,7 @@ export class V1PresentationAckHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationAckHandler>) {
     await this.proofProtocol.processAck(messageContext)
+
+    return undefined
   }
 }

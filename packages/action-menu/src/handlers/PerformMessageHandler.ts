@@ -18,5 +18,7 @@ export class PerformMessageHandler implements MessageHandler {
     inboundMessage.assertReadyConnection()
 
     await this.actionMenuService.processPerform(inboundMessage)
+
+    return undefined
   }
 }

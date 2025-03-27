@@ -64,7 +64,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void> {
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined> {
     const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 
@@ -141,8 +141,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
 
-    // biome-ignore lint/complexity/noForEach: <explanation>
-    messages.forEach((message) => {
+    for (const message of messages) {
       eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
         type: AgentEventTypes.AgentMessageReceived,
         payload: {
@@ -150,7 +149,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
           contextCorrelationId: messageContext.agentContext.contextCorrelationId,
         },
       })
-    })
+    }
 
     // A Batch message without messages at all means that we are done with the
     // message pickup process (Note: this is not optimal since we'll always doing an extra

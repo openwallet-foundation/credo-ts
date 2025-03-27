@@ -1,14 +1,18 @@
-import { setGlobalConfig } from '@animo-id/oauth2'
-import { AgentConfig, type AgentContext, type DependencyManager, InjectionSymbols, type Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
+import type { RouterFactory, SupportedRouterTypes,  } from '../shared/router'
+
+import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 import createHttpError from 'http-errors'
-import {
-  OpenId4VcIssuerApi,
-  OpenId4VcIssuerModuleConfig,
-  type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcIssuerService,
-} from '.'
-import { type RouterFactory, type SupportedRouterTypes, getAgentContextForActorId } from '../shared/router'
-import { OpenId4VcIssuanceSessionRepository, OpenId4VcIssuerRepository } from './repository'
+
+import { getAgentContextForActorId } from '../shared/router'
+import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
+import { OpenId4VcIssuanceSessionRepository } from './repository'
+import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
+
 
 export abstract class OpenId4VcIssuerModule<RouterType extends SupportedRouterTypes> implements Module {
   public readonly api = OpenId4VcIssuerApi<RouterType>
