@@ -20,6 +20,7 @@ import {
   ClaimFormat,
   CredoError,
   EventEmitter,
+  InjectionSymbols,
   JwsService,
   Jwt,
   JwtPayload,
@@ -66,7 +67,7 @@ import { addSecondsToDate, dateToSeconds, getKeyFromDid, getProofTypeFromKey } f
 
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { BaseOpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
   OpenId4VcIssuanceSessionRecord,
   OpenId4VcIssuanceSessionRepository,
@@ -81,13 +82,13 @@ import { generateTxCode } from './util/txCode'
 @injectable()
 export class OpenId4VcIssuerService {
   private w3cCredentialService: W3cCredentialService
-  private openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig
+  private openId4VcIssuerConfig: BaseOpenId4VcIssuerModuleConfig
   private openId4VcIssuerRepository: OpenId4VcIssuerRepository
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
 
   public constructor(
     w3cCredentialService: W3cCredentialService,
-    openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig,
+    openId4VcIssuerConfig: BaseOpenId4VcIssuerModuleConfig,
     openId4VcIssuerRepository: OpenId4VcIssuerRepository,
     openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   ) {
@@ -442,7 +443,9 @@ export class OpenId4VcIssuerService {
     issuerRecord: OpenId4VcIssuerRecord,
     fetchExternalAuthorizationServerMetadata = false
   ): Promise<OpenId4VciMetadata> {
-    const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
+    const config: BaseOpenId4VcIssuerModuleConfig = agentContext.dependencyManager.resolve(
+      InjectionSymbols.OpenId4VcIssuerModuleConfig
+    )
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
 

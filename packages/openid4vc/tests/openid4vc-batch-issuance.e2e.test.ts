@@ -10,10 +10,9 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VciCredentialFormatProfile,
 } from '../src'
-
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
@@ -25,7 +24,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
     askar: AskarModule
   }>
 
@@ -38,7 +37,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     expressApp = express()
 
     issuer = await createAgentFromModules('issuer', {
-      openId4VcIssuer: new OpenId4VcIssuerModule({
+      openId4VcIssuer: new OpenId4VcIssuerExpressModule({
         baseUrl: issuerBaseUrl,
         credentialRequestToCredentialMapper: async ({
           credentialRequestFormat,
