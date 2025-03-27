@@ -5,13 +5,13 @@ import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNo
 import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
 import {
+  CredoError,
   EventEmitter,
   InjectionSymbols,
-  CredoError,
   Logger,
+  W3cCredentialRepository,
   inject,
   injectable,
-  W3cCredentialRepository,
 } from '@credo-ts/core'
 
 import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
@@ -72,7 +72,7 @@ export class RevocationNotificationService {
       ],
     }
 
-    this.logger.trace(`Getting Credential Exchange record by query for revocation notification:`, query)
+    this.logger.trace('Getting Credential Exchange record by query for revocation notification:', query)
     let credentialExchangeRecord = await this.credentialRepository.findSingleByQuery(agentContext, query)
 
     if (!credentialExchangeRecord) {
@@ -89,7 +89,7 @@ export class RevocationNotificationService {
         ],
       }
       this.logger.trace(
-        `Credential Exchange Record not found. Getting W3C credential record by query for revocation notification:`,
+        'Credential Exchange Record not found. Getting W3C credential record by query for revocation notification:',
         w3cCredentialQuery
       )
 
