@@ -9,7 +9,7 @@ import {
   Oauth2ServerErrorResponseError,
   SupportedAuthenticationScheme,
 } from '@openid4vc/oauth2'
-import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/oid4vci'
+import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
 
 import createHttpError from 'http-errors'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'

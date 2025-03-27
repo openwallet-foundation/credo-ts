@@ -1,8 +1,9 @@
-import type { DependencyManager } from '@credo-ts/core'
+import { DependencyManager, InjectionSymbols } from '@credo-ts/core'
 
 import { Router } from 'express'
 
 import { getAgentContext } from '../../../../core/tests'
+import { ExpressRouterFactory } from '../../shared/router'
 import { OpenId4VcIssuerExpressModule } from '../OpenId4VcIssuerExpressModule'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -32,8 +33,8 @@ describe('OpenId4VcIssuerModule', () => {
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(
-      OpenId4VcIssuerModuleConfig,
-      new OpenId4VcIssuerModuleConfig(options)
+      InjectionSymbols.OpenId4VcIssuerModuleConfig,
+      new OpenId4VcIssuerModuleConfig(options, new ExpressRouterFactory())
     )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
