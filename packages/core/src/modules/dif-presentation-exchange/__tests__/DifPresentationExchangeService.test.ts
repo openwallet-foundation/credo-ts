@@ -35,7 +35,7 @@ const mdocRecord = new MdocRecord({
 
 const randomMdoc = new MdocRecord({
   mdoc: Mdoc.fromBase64Url(
-    'uQACam5hbWVTcGFjZXOhZWhlbGxvg9gYWGOkaGRpZ2VzdElEAHFlbGVtZW50SWRlbnRpZmllcmV3b3JsZGxlbGVtZW50VmFsdWVpZnJvbS1tZG9jZnJhbmRvbVggykhTxfNlSKof8C76L0PbEicRNyvvtkLK2tk5_B9szZfYGFhgpGhkaWdlc3RJRAFxZWxlbWVudElkZW50aWZpZXJmc2VjcmV0bGVsZW1lbnRWYWx1ZWV2YWx1ZWZyYW5kb21YIEnaTGtx_X06jnK1gwhM_F5mWx9smnHlOpwEAoO_yhfS2BhYX6RoZGlnZXN0SUQCcWVsZW1lbnRJZGVudGlmaWVyZW5pY2VybGVsZW1lbnRWYWx1ZWVkaWNlcmZyYW5kb21YIFMhbyABKjRO5hwvhuOw7t--_Y-DsTrbQmSrO3lKlc2Uamlzc3VlckF1dGiEQ6EBJqIEWDF6RG5hZVVVRDg5Rkh4Sk1QWXdkOTZVM0RMV3g4UGczVUxETHNGRGlxcURpV1lweWhBGCGBWQFKMIIBRjCB7aADAgECAhAMuKdk7KygttyPJUktOlcsMAoGCCqGSM49BAMCMAAwHhcNMjUwMTE5MTIyNzM3WhcNMjUwMTIxMTIyNzM3WjAAMDkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDIgACPAHTvdNcCar4tHhZfOWvgxlbAKOkyw_KO1VI0pFrEKGjaTBnMCoGA1UdDgQjBCECPAHTvdNcCar4tHhZfOWvgxlbAKOkyw_KO1VI0pFrEKEwCwYDVR0PBAQDAgKEMCwGA1UdIwQlMCOAIQI8AdO901wJqvi0eFl85a-DGVsAo6TLD8o7VUjSkWsQoTAKBggqhkjOPQQDAgNIADBFAiAY7g2u0qO3UKz7yyV3hh9IzDfvht_jz-1wTpy3LsyyswIhALslr_rb11V5J1kmr7D0MOcY7DuQUZP-wlXvzY_YtOteWQGs2BhZAae5AAZndmVyc2lvbmMxLjBvZGlnZXN0QWxnb3JpdGhtZ1NIQS0yNTZsdmFsdWVEaWdlc3RzoWVoZWxsb6MAWCDWNYt9om-Teg88Vz14AQvCrijzlZa9MXXI9GjcStZbGwFYIBIGkp2cYU3jRG4RhqOpzcn28XbZcqmEOZaJ18akqXcFAlggdO0W0KteWaNQKdPYlaRX8nzDoHsPWcpo1g9k76mLnARtZGV2aWNlS2V5SW5mb7kAAWlkZXZpY2VLZXmkAQIgASFYIDUO6wyneiIQ90Fg03iwcOXLEkDeimIMiV2R4K0X-QsxIlggvEfFpe3_rayQf8N_bFTH33gU7h9MJBYtU2lGVoLRGcVnZG9jVHlwZXVvcmcuaXNvLjE4MDEzLjUuMS5tRExsdmFsaWRpdHlJbmZvuQAEZnNpZ25lZMB0MjAyNS0wMS0yMFQxMjoyNzozN1ppdmFsaWRGcm9twHQyMDI1LTAxLTIwVDEyOjI3OjM3Wmp2YWxpZFVudGlswHQyMDI2LTAxLTIwVDEyOjI3OjM3Wm5leHBlY3RlZFVwZGF0ZfdYQG2HNQU7OSOWi2x4L8qjePNcJGi4RR0L9IVTEiD3EvkfDmsdSfiyAHJniMU8bAgYSwxTpMh1-N-LI_5Xi743Zl0'
+    'uQACam5hbWVTcGFjZXOhZWhlbGxvg9gYWGOkaGRpZ2VzdElEAHFlbGVtZW50SWRlbnRpZmllcmV3b3JsZGxlbGVtZW50VmFsdWVpZnJvbS1tZG9jZnJhbmRvbVgg-8edSGZ4_YYWy4zTRYy_R2_-env6K0QPZV6bx5VrIvfYGFhgpGhkaWdlc3RJRAFxZWxlbWVudElkZW50aWZpZXJmc2VjcmV0bGVsZW1lbnRWYWx1ZWV2YWx1ZWZyYW5kb21YIFeRZQch_uztS3BgwZU1lOy1HnvbtisuakBr4dut_Q1e2BhYX6RoZGlnZXN0SUQCcWVsZW1lbnRJZGVudGlmaWVyZW5pY2VybGVsZW1lbnRWYWx1ZWVkaWNlcmZyYW5kb21YICeD0ZWG4LX7SgTdsaXHbs-zbkOdZ2pGAHr0Ki-YT-ugamlzc3VlckF1dGiEQ6EBJqIEWDF6RG5hZVQ2SGZWTGVqSmpYRTU4Wnd6ejlVUDVGNVNHWjE4b0hWZlpFTUhVTjRFcXRqGCFZASQwggEgMIHGoAMCAQICEERn7erWTVemixMortrLsmcwCgYIKoZIzj0EAwIwEDEOMAwGA1UEAxMFY3JlZG8wHhcNMjUwMzIwMTc1MjUxWhcNMjUwMzIyMTc1MjUxWjAQMQ4wDAYDVQQDEwVjcmVkbzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCeIfw1uOR6lHNOnTHUmDCCOoEUiV-8CD_XlkFm7R0qQRblyGCRyPASBQTkMDSBRutyU51-guQc8o2Ows8T5B4qjAjAAMAoGCCqGSM49BAMCA0kAMEYCIQDISRFJVg_c57Zeya_7ET8lZboClKEs3Ah2w9yTICP2awIhAOE1U5l6_siMKc3XoFtSSZNEaJL4L5j3cfaRt35mzNWyWQGc2BhZAZe5AAZndmVyc2lvbmMxLjBvZGlnZXN0QWxnb3JpdGhtZ1NIQS0yNTZsdmFsdWVEaWdlc3RzoWVoZWxsb6MAWCAqyMbsL2ne4fnZR-9F4ljmVALkkEO3ldc-3wR3FJfy1AFYIErI8BMR8z_mn8TnxaAGlnXCO7UsMuRWryEeGqd7KveOAlggGHwP3C0oNTFjnE5Y8d9NfWqAylZC5_bY4TFmATRwpqFtZGV2aWNlS2V5SW5mb7kAAWlkZXZpY2VLZXmkAQIgASFYIJZf9Yt9eS7hVbR956b8n21Cb83jn4AYLfH6s40uT1FLIlggWA6ogfJFJiOhH8j0-XNaLrr_Z2ALnt-nwzK0HTbiTjpnZG9jVHlwZXVvcmcuaXNvLjE4MDEzLjUuMS5tRExsdmFsaWRpdHlJbmZvuQADZnNpZ25lZMB0MjAyNS0wMy0yMVQxNzo1Mjo1MVppdmFsaWRGcm9twHQyMDI1LTAzLTIxVDE3OjUyOjUxWmp2YWxpZFVudGlswHQyMDI2LTAzLTIxVDE3OjUyOjUxWlhAMZsBgn9Pxs_0V-1X23zskwQgBcw20UxOHZBXlPQAUhwMIc9EnG2IPoSkHDsJMw3kNIEXrzJd5avegle2Pv4nTQ'
   ),
 })
 
@@ -144,7 +144,7 @@ const presentationDefinition: DifPresentationExchangeDefinitionV2 = {
         fields: [
           {
             intent_to_retain: false,
-            path: ["$['org.iso.18013.5.1']['given_name']"],
+            path: ["$['hello']['world']"],
           },
         ],
       },
@@ -208,7 +208,7 @@ describe('DifPresentationExchangeService', () => {
                     place_of_birth: {},
                     vct: 'https://example.bmi.bund.de/credential/pid/1.0',
                   },
-                  type: 'vc+sd-jwt',
+                  claimFormat: 'vc+sd-jwt',
                 },
               ],
             },
@@ -232,7 +232,7 @@ describe('DifPresentationExchangeService', () => {
                       birth_date: '1984-01-26',
                     },
                   },
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                 },
               ],
             },
@@ -330,7 +330,7 @@ describe('DifPresentationExchangeService', () => {
                     place_of_birth: {},
                     vct: 'https://example.bmi.bund.de/credential/pid/1.0',
                   },
-                  type: 'vc+sd-jwt',
+                  claimFormat: 'vc+sd-jwt',
                 },
               ],
             },
@@ -354,7 +354,7 @@ describe('DifPresentationExchangeService', () => {
                       birth_date: '1984-01-26',
                     },
                   },
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                 },
               ],
             },
@@ -447,7 +447,7 @@ describe('DifPresentationExchangeService', () => {
               verifiableCredentials: [
                 {
                   credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                   disclosedPayload: {
                     'eu.europa.ec.eudi.pid.1': {
                       age_in_years: 40,
@@ -463,7 +463,7 @@ describe('DifPresentationExchangeService', () => {
               verifiableCredentials: [
                 {
                   credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                   disclosedPayload: {
                     hello: {
                       world: 'from-mdoc',
@@ -491,7 +491,148 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: { mdocGeneratedNonce: 'something', responseUri: 'https://response.com' },
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
+    })
+
+    expect(presentation).toMatchObject({
+      presentationSubmission: {
+        id: expect.stringContaining('MdocPresentationSubmission'),
+        definition_id: 'OverAgeCheck',
+        descriptor_map: [{ id: 'eu.europa.ec.eudi.pid.1', format: 'mso_mdoc', path: '$' }],
+      },
+    })
+    await mdocRepository.deleteById(agentContext, randomMdoc.id)
+  })
+
+  test('handles request with request containing optional properties', async () => {
+    await mdocRepository.save(agentContext, randomMdoc)
+    const presentationDefinition = {
+      id: 'OverAgeCheck',
+      purpose: 'Age check',
+      submission_requirements: [
+        {
+          name: 'Proof of age and photo',
+          rule: 'pick',
+          count: 1,
+          from: 'validAgeCheckInputDescriptor',
+        },
+      ],
+      input_descriptors: [
+        {
+          name: 'Mdoc proof of age and photo',
+          id: 'eu.europa.ec.eudi.pid.1',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: [`$['eu.europa.ec.eudi.pid.1']['age_in_years']`],
+                filter: {
+                  type: 'number',
+                  minimum: 18,
+                },
+                optional: false,
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+        {
+          name: 'Driving licence Mdoc date of birth and photo',
+          id: 'org.iso.18013.5.1.mDL',
+          group: ['validAgeCheckInputDescriptor'],
+          format: { mso_mdoc: { alg: ['EdDSA', 'ES256'] } },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                optional: true,
+                path: [`$['hello']['not_available']`],
+                intent_to_retain: false,
+              },
+              {
+                optional: false,
+                path: [`$['hello']['world']`],
+                intent_to_retain: false,
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    const credentialsForRequest = await pexService.getCredentialsForRequest(agentContext, presentationDefinition)
+    expect(credentialsForRequest).toEqual({
+      requirements: [
+        {
+          rule: 'pick',
+          needsCount: 1,
+          purpose: undefined,
+          name: 'Proof of age and photo',
+          submissionEntry: [
+            {
+              inputDescriptorId: 'eu.europa.ec.eudi.pid.1',
+              name: 'Mdoc proof of age and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    'eu.europa.ec.eudi.pid.1': {
+                      age_in_years: 40,
+                    },
+                  },
+                },
+              ],
+            },
+            {
+              inputDescriptorId: 'org.iso.18013.5.1.mDL',
+              name: 'Driving licence Mdoc date of birth and photo',
+              purpose: undefined,
+              verifiableCredentials: [
+                {
+                  credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
+                  claimFormat: 'mso_mdoc',
+                  disclosedPayload: {
+                    hello: {
+                      world: 'from-mdoc',
+                    },
+                  },
+                },
+              ],
+            },
+          ],
+          isRequirementSatisfied: true,
+        },
+      ],
+      areRequirementsSatisfied: true,
+      name: undefined,
+      purpose: 'Age check',
+    })
+
+    const selectedCredentials = pexService.selectCredentialsForRequest(credentialsForRequest)
+
+    jest.spyOn(wallet, 'sign').mockImplementation(async () => Buffer.from('signed'))
+
+    const presentation = await pexService.createPresentation(agentContext, {
+      credentialsForInputDescriptor: selectedCredentials,
+      challenge: 'something',
+      presentationDefinition,
+      domain: 'hello',
+      presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
     })
 
     expect(presentation).toMatchObject({
@@ -578,7 +719,7 @@ describe('DifPresentationExchangeService', () => {
               verifiableCredentials: [
                 {
                   credentialRecord: await mdocRepository.getById(agentContext, mdocRecord.id),
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                   disclosedPayload: {
                     'eu.europa.ec.eudi.pid.1': {
                       age_in_years: 40,
@@ -603,7 +744,7 @@ describe('DifPresentationExchangeService', () => {
               verifiableCredentials: [
                 {
                   credentialRecord: await mdocRepository.getById(agentContext, randomMdoc.id),
-                  type: 'mso_mdoc',
+                  claimFormat: 'mso_mdoc',
                   disclosedPayload: {
                     hello: {
                       world: 'from-mdoc',
@@ -631,7 +772,12 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: { mdocGeneratedNonce: 'something', responseUri: 'https://response.com' },
+      openid4vp: {
+        type: 'openId4Vp',
+        clientId: 'hello',
+        mdocGeneratedNonce: 'something',
+        responseUri: 'https://response.com',
+      },
     })
 
     expect(presentation).toMatchObject({
