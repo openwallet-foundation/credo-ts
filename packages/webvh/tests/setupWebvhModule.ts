@@ -1,6 +1,6 @@
 import { DidsModule } from '@credo-ts/core'
 
-import { WebvhModule, WebvhDidRegistrar, WebvhDidResolver, WebvhModuleConfig } from '../src'
+import { WebvhModule, WebvhDidResolver, WebvhModuleConfig } from '../src'
 
 export const getWebvhModules = (baseUrl?: string) => ({
   webvhSdk: new WebvhModule(
@@ -9,7 +9,6 @@ export const getWebvhModules = (baseUrl?: string) => ({
     })
   ),
   dids: new DidsModule({
-    registrars: [new WebvhDidRegistrar()],
     resolvers: [new WebvhDidResolver()],
   }),
 })
