@@ -67,29 +67,46 @@ export function getOid4vcJwtVerifyCallback(
       })
     }
 
-    const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+    const alg = signer.alg as JwaSignatureAlgorithm
+    if (!Object.values(JwaSignatureAlgorithm).includes(alg)) {
+      throw new CredoError(`Unsupported jwa signatre algorithm '${alg}'`)
+    }
+
+    const jwsSigner: JwsSignerWithJwk | undefined =
+      signer.method === 'did'
+        ? {
+            method: 'did',
+            didUrl: signer.didUrl,
+            jwk: getJwkFromKey(await getKeyFromDid(agentContext, signer.didUrl)),
+          }
+        : signer.method === 'jwk'
+          ? {
+              method: 'jwk',
+              jwk: getJwkFromJson(signer.publicJwk),
+            }
+          : signer.method === 'x5c'
+            ? {
+                method: 'x5c',
+                x5c: signer.x5c,
+                jwk: getJwkFromKey(X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicKey),
+              }
+            : undefined
+
+    if (!jwsSigner) {
+      throw new CredoError(`Unable to verify jws with unsupported jws signer method '${signer.method}'`)
+    }
+
+    const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
       jws: compact,
       trustedCertificates,
-      // Only handles kid as did resolution. JWK is handled by jws service
-      jwkResolver: async () => {
-        if (signer.method === 'jwk') {
-          return getJwkFromJson(signer.publicJwk)
-        }
-        if (signer.method === 'did') {
-          const key = await getKeyFromDid(agentContext, signer.didUrl)
-          return getJwkFromKey(key)
-        }
-
-        throw new CredoError(`Unexpected call to jwk resolver for signer method ${signer.method}`)
-      },
+      jwsSigner,
     })
 
     if (!isValid) {
       return { verified: false, signerJwk: undefined }
     }
 
-    const signerKey = signerKeys[0]
-    const signerJwk = getJwkFromKey(signerKey).toJson()
+    const signerJwk = jwsSigners[0].jwk.toJson()
     if (signer.method === 'did') {
       signerJwk.kid = signer.didUrl
     }

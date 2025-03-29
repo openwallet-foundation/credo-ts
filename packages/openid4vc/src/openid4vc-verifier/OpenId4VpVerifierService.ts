@@ -967,29 +967,10 @@ export class OpenId4VpVerifierService {
         }
 
         verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
-        const certificateChain = extractX509CertificatesFromJwt(verifiablePresentation.jwt)
-
-        let trustedCertificates: string[] | undefined = undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: verifiablePresentation,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
-          })
-        }
-
-        if (!trustedCertificates) {
-          trustedCertificates = x509Config.trustedCertificates ?? []
-        }
-
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
           challenge: options.nonce,
           domain: options.audience,
-          trustedCertificates,
         })
 
         isValid = verificationResult.isValid

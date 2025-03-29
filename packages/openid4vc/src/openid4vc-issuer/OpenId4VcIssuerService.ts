@@ -557,14 +557,13 @@ export class OpenId4VcIssuerService {
 
     const verification = await jwsService.verifyJws(agentContext, {
       jws: cNonce,
-      jwkResolver: () => jwk,
+      jwsSigner: {
+        method: 'jwk',
+        jwk,
+      },
     })
 
-    if (
-      !verification.signerKeys
-        .map((singerKey) => singerKey.fingerprint)
-        .includes(issuer.accessTokenPublicKeyFingerprint)
-    ) {
+    if (!verification.isValid) {
       throw new CredoError('Invalid nonce')
     }
   }
