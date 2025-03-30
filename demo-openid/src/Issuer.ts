@@ -1,7 +1,5 @@
 import type { DidKey } from '@credo-ts/core'
 import type {
-  OpenId4VcCredentialHolderBinding,
-  OpenId4VcCredentialHolderDidBinding,
   OpenId4VcIssuerRecord,
   OpenId4VcVerifierRecord,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -9,6 +7,7 @@ import type {
   OpenId4VciSignMdocCredentials,
   OpenId4VciSignSdJwtCredentials,
   OpenId4VciSignW3cCredentials,
+  VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
@@ -83,7 +82,7 @@ function getCredentialRequestToCredentialMapper({
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
   return async ({
-    holderBindings,
+    holderBinding,
     credentialConfigurationIds,
     credentialConfigurationsSupported: supported,
     agentContext,
@@ -101,14 +100,14 @@ function getCredentialRequestToCredentialMapper({
       return {
         credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
             authorized_user: authorization.accessToken.payload.sub,
           },
-          holder: holderBinding,
+          holder: binding,
           issuer:
-            holderBindings[0].method === 'did'
+            binding.method === 'did'
               ? {
                   method: 'did',
                   didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
@@ -119,15 +118,12 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      for (const holderBinding of holderBindings) {
-        assertDidBasedHolderBinding(holderBinding)
-      }
+      assertDidBasedHolderBinding(holderBinding)
 
       return {
         credentialConfigurationId,
         format: ClaimFormat.JwtVc,
-        credentials: holderBindings.map((holderBinding) => {
-          assertDidBasedHolderBinding(holderBinding)
+        credentials: holderBinding.keys.map((binding) => {
           return {
             credential: new W3cCredential({
               type: credentialConfiguration.credential_definition.type,
@@ -136,7 +132,7 @@ function getCredentialRequestToCredentialMapper({
               }),
               credentialSubject: JsonTransformer.fromJSON(
                 {
-                  id: parseDid(holderBinding.didUrl).did,
+                  id: parseDid(binding.didUrl).did,
                   authorizedUser: authorization.accessToken.payload.sub,
                 },
                 W3cCredentialSubject
@@ -153,14 +149,14 @@ function getCredentialRequestToCredentialMapper({
       return {
         credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
             authorized_user: authorization.accessToken.payload.sub,
           },
-          holder: holderBinding,
+          holder: binding,
           issuer: {
             method: 'did',
             didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
@@ -171,12 +167,14 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      assertJwkBasedHolderBinding(holderBinding)
+
       return {
         credentialConfigurationId,
         format: ClaimFormat.MsoMdoc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate: trustedCertificates[0],
-          holderKey: holderBinding.key,
+          holderKey: binding.key,
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
@@ -363,9 +361,17 @@ export class Issuer extends BaseAgent<{
 }
 
 function assertDidBasedHolderBinding(
-  holderBinding: OpenId4VcCredentialHolderBinding
-): asserts holderBinding is OpenId4VcCredentialHolderDidBinding {
-  if (holderBinding.method !== 'did') {
+  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+): asserts holderBinding is VerifiedOpenId4VcCredentialHolderBinding & { bindingMethod: 'did' } {
+  if (holderBinding.bindingMethod !== 'did') {
     throw new CredoError('Only did based holder bindings supported for this credential type')
+  }
+}
+
+function assertJwkBasedHolderBinding(
+  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+): asserts holderBinding is VerifiedOpenId4VcCredentialHolderBinding & { bindingMethod: 'jwk' } {
+  if (holderBinding.bindingMethod !== 'jwk') {
+    throw new CredoError('Only jwk based holder bindings supported for this credential type')
   }
 }

@@ -12,7 +12,7 @@ import { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } fro
 export class X509Api {
   public constructor(
     private agentContext: AgentContext,
-    private x509ModuleConfig: X509ModuleConfig
+    public config: X509ModuleConfig
   ) {}
 
   /**
@@ -21,7 +21,7 @@ export class X509Api {
    * @param certificate
    */
   public addTrustedCertificate(certificate: string) {
-    this.x509ModuleConfig.addTrustedCertificate(certificate)
+    this.config.addTrustedCertificate(certificate)
   }
 
   /**
@@ -30,7 +30,7 @@ export class X509Api {
    * @param certificate
    */
   public async setTrustedCertificates(certificates?: [string, ...string[]]) {
-    this.x509ModuleConfig.setTrustedCertificates(certificates)
+    this.config.setTrustedCertificates(certificates)
   }
 
   /**

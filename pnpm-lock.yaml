@@ -728,17 +728,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250322171044
-        version: 0.3.0-alpha-20250322171044
+        specifier: 0.3.0-alpha-20250330133535
+        version: 0.3.0-alpha-20250330133535
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250322171044
-        version: 0.3.0-alpha-20250322171044
+        specifier: 0.3.0-alpha-20250330133535
+        version: 0.3.0-alpha-20250330133535
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250322171044
-        version: 0.3.0-alpha-20250322171044
+        specifier: 0.3.0-alpha-20250330133535
+        version: 0.3.0-alpha-20250330133535
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250322171044
-        version: 0.3.0-alpha-20250322171044
+        specifier: 0.3.0-alpha-20250330133535
+        version: 0.3.0-alpha-20250330133535
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -746,8 +746,8 @@ importers:
         specifier: ^7.8.0
         version: 7.8.1
       zod:
-        specifier: ^3.23.8
-        version: 3.24.1
+        specifier: ^3.24.2
+        version: 3.24.2
     devDependencies:
       '@credo-ts/tenants':
         specifier: workspace:*
@@ -2487,17 +2487,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250322171044':
-    resolution: {integrity: sha512-NylLLsYhj2239CgQW20WyR5bHfyqm+8VpMeXKrN0b9ds+ViHaNMpwtouYCK2rGzg8lnY7ugacfdo8RmnC49T3Q==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250330133535':
+    resolution: {integrity: sha512-A5UgxQDJobddp0utxQqALG4dyzrQHo8DCjaHuKtrnoAcZWJFXmYFBvKbiKoiHjSLuTcME5mDC/+m46hchGiIQA==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250322171044':
-    resolution: {integrity: sha512-mhNNuI6xinAX7VOFqnhoUGr9IFQswU/5ZCWNW++INbNAJxgjIDYLwCnpx2F4Nx0B+jbZbUpOwnHnVEIGdQAP8A==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250330133535':
+    resolution: {integrity: sha512-QNgpoPOQ/Viyq24xFbSlFccayChP6kcthjiyEuK7TPA5cU693BVgjGfyyzStgWf0MoL3aoJ47OQwYels7+MBvA==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250322171044':
-    resolution: {integrity: sha512-BkvTegk4hsULPXRf7qOJrcFRevg2fziE79DlmAUa2xOmn+9V9VVZO5PMBfpEp0wKvBNkXyCZ0C6A24U9z75TuA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250330133535':
+    resolution: {integrity: sha512-yJ/8ZnSFC3GSokGTafXYIsdCM/h38PhHWaGan7T6TuJaeDrZW8l44HV2Cbod82drgyQ3IL10bpaX1bm+K3lQyw==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250322171044':
-    resolution: {integrity: sha512-OBYnixgHR+NA5ssQBUnfyq/9Gq7xaICaJk3OmlAFMfxxhZmkCcSbeCkR2q9DSbmwCucmu6pEqHaSI8A7WGGP9Q==}
+  '@openid4vc/utils@0.3.0-alpha-20250330133535':
+    resolution: {integrity: sha512-yx/dar8DqqXhhJ2oyKTFPHG0vj73kgQdBLH5oR6IrAZ5b8MSSaRSOjnYKWAvEDtS7ZLBIEbYnC+OF34fcIOW+g==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -7675,8 +7675,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+  zod@3.24.2:
+    resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
 
 snapshots:
 
@@ -10097,27 +10097,27 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250322171044':
+  '@openid4vc/oauth2@0.3.0-alpha-20250330133535':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250322171044
-      zod: 3.24.1
+      '@openid4vc/utils': 0.3.0-alpha-20250330133535
+      zod: 3.24.2
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250322171044':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250330133535':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250322171044
-      '@openid4vc/utils': 0.3.0-alpha-20250322171044
-      zod: 3.24.1
+      '@openid4vc/oauth2': 0.3.0-alpha-20250330133535
+      '@openid4vc/utils': 0.3.0-alpha-20250330133535
+      zod: 3.24.2
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250322171044':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250330133535':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250322171044
-      '@openid4vc/utils': 0.3.0-alpha-20250322171044
-      zod: 3.24.1
+      '@openid4vc/oauth2': 0.3.0-alpha-20250330133535
+      '@openid4vc/utils': 0.3.0-alpha-20250330133535
+      zod: 3.24.2
 
-  '@openid4vc/utils@0.3.0-alpha-20250322171044':
+  '@openid4vc/utils@0.3.0-alpha-20250330133535':
     dependencies:
       buffer: 6.0.3
-      zod: 3.24.1
+      zod: 3.24.2
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     dependencies:
@@ -16637,4 +16637,4 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zod@3.24.1: {}
+  zod@3.24.2: {}

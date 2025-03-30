@@ -16,11 +16,11 @@ import { Buffer, JsonEncoder, TypedArrayEncoder, isJsonObject } from '../utils'
 import { WalletError } from '../wallet/error'
 
 import { X509Service } from './../modules/x509/X509Service'
+import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
+import { JwaSignatureAlgorithm } from './jose'
 import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
 import { JwtPayload } from './jose/jwt'
-import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
-import { JwaSignatureAlgorithm } from './jose'
 
 @injectable()
 export class JwsService {
@@ -232,17 +232,6 @@ export class JwsService {
   }
 
   private buildProtected(options: JwsProtectedHeaderOptions) {
-    // FIXME: checking for kid starting with '#' is not good.
-    // but now we don't really limit that kid (did key reference)
-    // cannot be combined with x5c/jwk
-    if (options.kid?.startsWith('did:')) {
-      if (options.jwk || options.x5c) {
-        throw new CredoError("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
-      }
-    } else if ((options.jwk && options.x5c) || (!options.jwk && !options.x5c && !options.kid)) {
-      throw new CredoError("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
-    }
-
     return {
       ...options,
       alg: options.alg,

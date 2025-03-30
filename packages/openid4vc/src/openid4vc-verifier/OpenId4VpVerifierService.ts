@@ -396,7 +396,9 @@ export class OpenId4VpVerifierService {
 
     try {
       const parsedClientId = getOpenid4vpClientId({
-        authorizationRequestPayload: authorizationRequest,
+        responseMode: authorizationRequest.response_mode,
+        clientId: authorizationRequest.client_id,
+        legacyClientIdScheme: authorizationRequest.client_id_scheme,
         origin: options.origin,
       })
 
