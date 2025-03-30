@@ -277,7 +277,7 @@ describe('OpenId4Vc', () => {
             length: 4,
           },
         },
-        version: 'v1.draft13',
+        version: 'v1.draft15',
       })
 
     const { issuanceSession: issuanceSession2, credentialOffer: credentialOffer2 } =
@@ -287,7 +287,7 @@ describe('OpenId4Vc', () => {
         preAuthorizedCodeFlowConfig: {
           txCode: {},
         },
-        version: 'v1.draft11-13',
+        version: 'v1.draft11-15',
       })
 
     await issuerTenant2.endSession()
@@ -548,7 +548,7 @@ describe('OpenId4Vc', () => {
         authorizationServerUrl: 'http://localhost:4747',
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
-      version: 'v1.draft13',
+      version: 'v1.draft15',
     })
 
     await issuerTenant.endSession()
@@ -1853,7 +1853,7 @@ describe('OpenId4Vc', () => {
         issuerId: openIdIssuerTenant1.issuerId,
         credentialConfigurationIds: ['universityDegree'],
         preAuthorizedCodeFlowConfig: {},
-        version: 'v1.draft13',
+        version: 'v1.draft15',
       })
 
     await issuerTenant1.endSession()

@@ -379,7 +379,7 @@ describe('OpenId4VcIssuer', () => {
           input_mode: 'text',
         },
       },
-      version: 'v1.draft13',
+      version: 'v1.draft15',
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
@@ -764,10 +764,10 @@ describe('OpenId4VcIssuer', () => {
     expect(payload.credentials).toEqual([openBadgeCredential.id, universityDegreeCredential.id])
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
-      credentialConfigurationIds,
+      credentialConfigurationId,
     }) => {
       const credential =
-        credentialConfigurationIds[0] === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
+        credentialConfigurationId === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
       return {
         format: 'jwt_vc',
         credentials: [
@@ -781,7 +781,6 @@ describe('OpenId4VcIssuer', () => {
             verificationMethod: issuerVerificationMethod.id,
           },
         ],
-        credentialConfigurationId: credential.id,
       }
     }
 
