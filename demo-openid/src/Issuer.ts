@@ -81,24 +81,14 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({
-    holderBinding,
-    credentialConfigurationIds,
-    credentialConfigurationsSupported: supported,
-    agentContext,
-    authorization,
-  }) => {
+  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, agentContext, authorization }) => {
     const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
     if (trustedCertificates?.length !== 1) {
       throw new Error(`Expected exactly one trusted certificate. Received ${trustedCertificates?.length}.`)
     }
 
-    const credentialConfigurationId = credentialConfigurationIds[0]
-    const credentialConfiguration = supported[credentialConfigurationId]
-
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
-        credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
@@ -121,7 +111,6 @@ function getCredentialRequestToCredentialMapper({
       assertDidBasedHolderBinding(holderBinding)
 
       return {
-        credentialConfigurationId,
         format: ClaimFormat.JwtVc,
         credentials: holderBinding.keys.map((binding) => {
           return {
@@ -147,7 +136,6 @@ function getCredentialRequestToCredentialMapper({
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
-        credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
@@ -170,7 +158,6 @@ function getCredentialRequestToCredentialMapper({
       assertJwkBasedHolderBinding(holderBinding)
 
       return {
-        credentialConfigurationId,
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate: trustedCertificates[0],
@@ -321,7 +308,7 @@ export class Issuer extends BaseAgent<{
 
     const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
-      offeredCredentials: options.credentialConfigurationIds,
+      credentialConfigurationIds: options.credentialConfigurationIds,
       // Pre-auth using our own server
       preAuthorizedCodeFlowConfig: !options.requireAuthorization
         ? {

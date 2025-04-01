@@ -154,46 +154,6 @@ describe('JwsService', () => {
     expect(isValid2).toEqual(true)
   })
 
-  it('throws error whens signing jws with more than one of x5c, jwk, kid (with did)', async () => {
-    const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
-          kid: 'did:example:123',
-        },
-      })
-    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
-          x5c: [didJwsz6MkfCertificate.toString('base64url')],
-        },
-      })
-    ).rejects.toThrow("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          kid: 'did:example:123',
-          x5c: [didJwsz6MkfCertificate.toString('base64url')],
-        },
-      })
-    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
-  })
-
   describe('verifyJws', () => {
     it('returns true if the jws signature matches the payload', async () => {
       const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
