@@ -189,7 +189,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           if (proofUsesUnqualifiedIdentifiers) {
             credential.schema_id = schemaId
             credential.cred_def_id = credentialDefinitionId
-            credential.rev_reg_id = credentialRevocationId != null ? credentialDefinitionId : undefined
+            credential.rev_reg_id = revocationRegistryId != null ? revocationRegistryId : undefined
           }
           return {
             linkSecretId,
