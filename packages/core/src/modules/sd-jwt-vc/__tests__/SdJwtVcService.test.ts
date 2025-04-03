@@ -933,7 +933,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({
@@ -972,7 +975,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({
@@ -1012,7 +1018,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({
