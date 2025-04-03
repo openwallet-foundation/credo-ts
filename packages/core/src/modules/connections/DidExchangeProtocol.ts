@@ -3,7 +3,6 @@ import type { Routing } from './services/ConnectionService'
 import type { AgentContext } from '../../agent'
 import type { InboundMessageContext } from '../../agent/models/InboundMessageContext'
 import type { ParsedMessageType } from '../../utils/messageType'
-import type { ResolvedDidCommService } from '../didcomm'
 import type { OutOfBandRecord } from '../oob/repository'
 
 import { InjectionSymbols } from '../../constants'
@@ -19,6 +18,7 @@ import { TypedArrayEncoder, isDid, Buffer } from '../../utils'
 import { JsonEncoder } from '../../utils/JsonEncoder'
 import { JsonTransformer } from '../../utils/JsonTransformer'
 import { base64ToBase64URL } from '../../utils/base64'
+import { DidCommDocumentService, type ResolvedDidCommService } from '../didcomm'
 import {
   DidDocument,
   DidKey,
@@ -29,8 +29,8 @@ import {
   getAlternativeDidsForPeerDid,
 } from '../dids'
 import { getKeyFromVerificationMethod } from '../dids/domain/key-type'
-import { tryParseDid } from '../dids/domain/parse'
-import { didKeyToInstanceOfKey } from '../dids/helpers'
+import { parseDid, tryParseDid } from '../dids/domain/parse'
+import { didKeyToInstanceOfKey, didKeyToVerkey } from '../dids/helpers'
 import { DidRepository } from '../dids/repository'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
@@ -295,17 +295,26 @@ export class DidExchangeProtocol {
       )
     } else {
       // We assume any other case is a resolvable did (e.g. did:peer:2 or did:peer:4)
+      const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
+
+      const invitationRecipientKeys = outOfBandRecord.outOfBandInvitation
+        .getInlineServices()
+        .map((s) => s.recipientKeys)
+        .reduce((acc, curr) => acc.concat(curr), [])
+
+      // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
+      for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
+        invitationRecipientKeys.push(
+          ...(await didcommDocumentService.resolveServicesFromDid(agentContext, parseDid(did).did)).flatMap((service) =>
+            service.recipientKeys.map((key) => key.publicKeyBase58)
+          )
+        )
+      }
+
       message.didRotate = await this.createSignedAttachment(
         agentContext,
         didDocument.id,
-        Array.from(
-          new Set(
-            services
-              .map((s) => s.recipientKeys)
-              .reduce((acc, curr) => acc.concat(curr), [])
-              .map((key) => key.publicKeyBase58)
-          )
-        )
+        Array.from(new Set(invitationRecipientKeys.map(didKeyToVerkey)))
       )
     }
 
