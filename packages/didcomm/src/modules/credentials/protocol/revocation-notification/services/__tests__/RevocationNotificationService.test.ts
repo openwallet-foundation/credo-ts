@@ -87,7 +87,7 @@ describe('RevocationNotificationService', () => {
       credentialRecord.setTag('anonCredsUnqualifiedRevocationRegistryId', metadata.revocationRegistryId)
       credentialRecord.setTag('anonCredsCredentialRevocationId', metadata.credentialRevocationId)
 
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
+      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValueOnce(credentialRecord)
 
       const revocationNotificationThreadId = `indy::${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
@@ -135,7 +135,7 @@ describe('RevocationNotificationService', () => {
       const credentialRevocationId = '2'
       const revocationNotificationThreadId = `indy::${revocationRegistryId}::${credentialRevocationId}`
 
-      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
+      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValueOnce(null)
 
       const revocationNotificationMessage = new V1RevocationNotificationMessage({
         issueThread: revocationNotificationThreadId,
@@ -196,7 +196,7 @@ describe('RevocationNotificationService', () => {
         credentialRevocationId: '1',
       }
 
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
+      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValueOnce(credentialRecord)
       const revocationNotificationCredentialId = `${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
 
       const revocationNotificationMessage = new V2RevocationNotificationMessage({
@@ -242,7 +242,7 @@ describe('RevocationNotificationService', () => {
       const credentialRevocationId = '2'
       const credentialId = `${revocationRegistryId}::${credentialRevocationId}`
 
-      mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
+      mockFunction(credentialRepository.findSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
       const revocationNotificationMessage = new V2RevocationNotificationMessage({
         credentialId,
