@@ -110,12 +110,7 @@ describe('OpenId4Vc', () => {
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
 
-          credentialRequestToCredentialMapper: async ({
-            agentContext,
-            credentialRequest,
-            holderBindings,
-            credentialConfigurationIds,
-          }) => {
+          credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
             // We sign the request with the first did:key did we have
             const didsApi = agentContext.dependencyManager.resolve(DidsApi)
             const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
@@ -124,13 +119,11 @@ describe('OpenId4Vc', () => {
             if (!verificationMethod) {
               throw new Error('No verification method found')
             }
-            const credentialConfigurationId = credentialConfigurationIds[0]
 
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
-                credentialConfigurationId,
                 format: credentialRequest.format,
-                credentials: holderBindings.map((holderBinding) => ({
+                credentials: holderBinding.keys.map((holderBinding) => ({
                   payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                   holder: holderBinding,
                   issuer: {
@@ -148,9 +141,8 @@ describe('OpenId4Vc', () => {
               }
 
               return {
-                credentialConfigurationId,
                 format: ClaimFormat.MsoMdoc,
-                credentials: holderBindings.map((holderBinding) => ({
+                credentials: holderBinding.keys.map((holderBinding) => ({
                   docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
                   issuerCertificate: trustedCertificates[0],
                   holderKey: holderBinding.key,
@@ -227,7 +219,7 @@ describe('OpenId4Vc', () => {
     if (supportedDidMethods?.includes('did:key')) {
       return {
         method: 'did',
-        didUrl: holder1.verificationMethod.id,
+        didUrls: [holder1.verificationMethod.id],
       }
     }
 
@@ -235,7 +227,7 @@ describe('OpenId4Vc', () => {
     if (supportsJwk) {
       return {
         method: 'jwk',
-        jwk: getJwkFromKey(getKeyFromVerificationMethod(holder1.verificationMethod)),
+        keys: [getJwkFromKey(getKeyFromVerificationMethod(holder1.verificationMethod))],
       }
     }
 
@@ -278,24 +270,24 @@ describe('OpenId4Vc', () => {
     const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
       await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
-        offeredCredentials: ['universityDegree'],
+        credentialConfigurationIds: ['universityDegree'],
         preAuthorizedCodeFlowConfig: {
           txCode: {
             input_mode: 'numeric',
             length: 4,
           },
         },
-        version: 'v1.draft13',
+        version: 'v1.draft15',
       })
 
     const { issuanceSession: issuanceSession2, credentialOffer: credentialOffer2 } =
       await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant2.issuerId,
-        offeredCredentials: [universityDegreeCredentialSdJwt2.id],
+        credentialConfigurationIds: [universityDegreeCredentialSdJwt2.id],
         preAuthorizedCodeFlowConfig: {
           txCode: {},
         },
-        version: 'v1.draft11-13',
+        version: 'v1.draft11-15',
       })
 
     await issuerTenant2.endSession()
@@ -551,12 +543,12 @@ describe('OpenId4Vc', () => {
 
     const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openIdIssuerTenant.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         authorizationServerUrl: 'http://localhost:4747',
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
-      version: 'v1.draft13',
+      version: 'v1.draft15',
     })
 
     await issuerTenant.endSession()
@@ -1859,9 +1851,9 @@ describe('OpenId4Vc', () => {
     const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
       await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openIdIssuerTenant1.issuerId,
-        offeredCredentials: ['universityDegree'],
+        credentialConfigurationIds: ['universityDegree'],
         preAuthorizedCodeFlowConfig: {},
-        version: 'v1.draft13',
+        version: 'v1.draft15',
       })
 
     await issuerTenant1.endSession()

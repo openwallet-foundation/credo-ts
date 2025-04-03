@@ -116,7 +116,7 @@ describe('OpenId4VcHolder', () => {
         credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+        credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
@@ -166,7 +166,7 @@ describe('OpenId4VcHolder', () => {
           credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
             .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
             .map(([id]) => id),
-          credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+          credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
         })
       )
         // FIXME: walt.id issues jwt where nbf and issuanceDate do not match
@@ -220,7 +220,7 @@ describe('OpenId4VcHolder', () => {
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'jwk', jwk: getJwkFromKey(holderKey) }),
+        credentialBindingResolver: () => ({ method: 'jwk', keys: [getJwkFromKey(holderKey)] }),
       })
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
@@ -344,7 +344,7 @@ describe('OpenId4VcHolder', () => {
           resolvedCredentialOffer,
           ...tokenResponse,
           allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+          credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
           verifyCredentialStatus: false,
         })
       )

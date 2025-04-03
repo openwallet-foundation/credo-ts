@@ -1,4 +1,4 @@
-import type { AgentContext } from '@credo-ts/core'
+import { AgentContext, JwaSignatureAlgorithm, JwsSignerWithJwk } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
@@ -25,7 +25,7 @@ import {
   getJwkFromJson,
   getJwkFromKey,
 } from '@credo-ts/core'
-import { clientAuthenticationDynamic, clientAuthenticationNone, decodeJwtHeader } from '@openid4vc/oauth2'
+import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 
 import { getKeyFromDid } from './utils'
 
@@ -33,6 +33,8 @@ export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
   options?: {
     trustedCertificates?: string[]
+
+    issuanceSessionId?: string
 
     /**
      * Whether this verification callback should assume a JAR authorization is verified
@@ -67,29 +69,90 @@ export function getOid4vcJwtVerifyCallback(
       })
     }
 
-    const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+    if (
+      signer.method === 'x5c' &&
+      (header.typ === 'keyattestation+jwt' || header.typ === 'key-attestation+jwt') &&
+      options?.issuanceSessionId &&
+      !trustedCertificates
+    ) {
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+        certificateChain,
+        verification: {
+          type: 'openId4VciKeyAttestation',
+          openId4VcIssuanceSessionId: options.issuanceSessionId,
+          keyAttestation: {
+            jwt: compact,
+            payload: JwtPayload.fromJson(payload),
+          },
+        },
+      })
+    }
+
+    if (
+      signer.method === 'x5c' &&
+      header.typ === 'oauth-client-attestation+jwt' &&
+      options?.issuanceSessionId &&
+      !trustedCertificates
+    ) {
+      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
+      const certificateChain = signer.x5c?.map((cert) => X509Certificate.fromEncodedCertificate(cert))
+
+      trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+        certificateChain,
+        verification: {
+          type: 'oauth2ClientAttestation',
+          openId4VcIssuanceSessionId: options.issuanceSessionId,
+          clientAttestation: {
+            jwt: compact,
+            payload: JwtPayload.fromJson(payload),
+          },
+        },
+      })
+    }
+
+    const alg = signer.alg as JwaSignatureAlgorithm
+    if (!Object.values(JwaSignatureAlgorithm).includes(alg)) {
+      throw new CredoError(`Unsupported jwa signatre algorithm '${alg}'`)
+    }
+
+    const jwsSigner: JwsSignerWithJwk | undefined =
+      signer.method === 'did'
+        ? {
+            method: 'did',
+            didUrl: signer.didUrl,
+            jwk: getJwkFromKey(await getKeyFromDid(agentContext, signer.didUrl)),
+          }
+        : signer.method === 'jwk'
+          ? {
+              method: 'jwk',
+              jwk: getJwkFromJson(signer.publicJwk),
+            }
+          : signer.method === 'x5c'
+            ? {
+                method: 'x5c',
+                x5c: signer.x5c,
+                jwk: getJwkFromKey(X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicKey),
+              }
+            : undefined
+
+    if (!jwsSigner) {
+      throw new CredoError(`Unable to verify jws with unsupported jws signer method '${signer.method}'`)
+    }
+
+    const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
       jws: compact,
       trustedCertificates,
-      // Only handles kid as did resolution. JWK is handled by jws service
-      jwkResolver: async () => {
-        if (signer.method === 'jwk') {
-          return getJwkFromJson(signer.publicJwk)
-        }
-        if (signer.method === 'did') {
-          const key = await getKeyFromDid(agentContext, signer.didUrl)
-          return getJwkFromKey(key)
-        }
-
-        throw new CredoError(`Unexpected call to jwk resolver for signer method ${signer.method}`)
-      },
+      jwsSigner,
     })
 
     if (!isValid) {
       return { verified: false, signerJwk: undefined }
     }
 
-    const signerKey = signerKeys[0]
-    const signerJwk = getJwkFromKey(signerKey).toJson()
+    const signerJwk = jwsSigners[0].jwk.toJson()
     if (signer.method === 'did') {
       signerJwk.kid = signer.didUrl
     }
@@ -183,8 +246,8 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
   return async (signer, { payload, header }) => {
-    if (signer.method === 'custom' || signer.method === 'trustChain') {
-      throw new CredoError(`Jwt signer method 'custom' and 'x5c' are not supported for jwt signer.`)
+    if (signer.method === 'custom' || signer.method === 'federation') {
+      throw new CredoError(`Jwt signer method 'custom' and 'federation' are not supported for jwt signer.`)
     }
 
     if (signer.method === 'x5c') {
@@ -225,16 +288,20 @@ export function getOid4vcCallbacks(
   options?: {
     trustedCertificates?: string[]
     isVerifyOpenId4VpAuthorizationRequest?: boolean
+    issuanceSessionId?: string
   }
 ) {
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
     generateRandom: (length) => agentContext.wallet.getRandomValues(length),
     signJwt: getOid4vcJwtSignCallback(agentContext),
-    clientAuthentication: clientAuthenticationNone(),
+    clientAuthentication: () => {
+      throw new CredoError('Did not expect client authentication to be called.')
+    },
     verifyJwt: getOid4vcJwtVerifyCallback(agentContext, {
       trustedCertificates: options?.trustedCertificates,
       isAuthorizationRequestJwt: options?.isVerifyOpenId4VpAuthorizationRequest,
+      issuanceSessionId: options?.issuanceSessionId,
     }),
     fetch: agentContext.config.agentDependencies.fetch,
     encryptJwe: getOid4vcEncryptJweCallback(agentContext),
@@ -259,13 +326,13 @@ export function dynamicOid4vciClientAuthentication(
 ): ClientAuthenticationCallback {
   return (callbackOptions) => {
     const authorizationServer = issuerRecord.authorizationServerConfigs?.find(
-      (a) => a.issuer === callbackOptions.authorizationServerMetata.issuer
+      (a) => a.issuer === callbackOptions.authorizationServerMetadata.issuer
     )
 
     if (!authorizationServer) {
       // No client authentication if authorization server is not configured
       agentContext.config.logger.debug(
-        `Unknown authorization server '${callbackOptions.authorizationServerMetata.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'`
+        `Unknown authorization server '${callbackOptions.authorizationServerMetadata.issuer}' for issuer '${issuerRecord.issuerId}' for request to '${callbackOptions.url}'`
       )
       return
     }

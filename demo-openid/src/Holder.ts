@@ -8,6 +8,7 @@ import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
+  KeyType,
   Mdoc,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
@@ -138,9 +139,9 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       resolvedCredentialOffer,
       clientId: options.clientId,
       credentialConfigurationIds: options.credentialsToRequest,
-      credentialBindingResolver: async ({ keyTypes, supportedDidMethods, supportsAllDidMethods }) => {
+      credentialBindingResolver: async ({ supportedDidMethods, supportsAllDidMethods, proofTypes }) => {
         const key = await this.agent.wallet.createKey({
-          keyType: keyTypes[0],
+          keyType: proofTypes.jwt?.supportedKeyTypes[0] ?? KeyType.Ed25519,
         })
 
         if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
@@ -148,7 +149,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
 
           return {
             method: 'did',
-            didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+            didUrls: [`${didKey.did}#${didKey.key.fingerprint}`],
           }
         }
         if (supportedDidMethods?.includes('did:jwk')) {
@@ -156,14 +157,14 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
 
           return {
             method: 'did',
-            didUrl: `${didJwk.did}#0`,
+            didUrls: [`${didJwk.did}#0`],
           }
         }
 
         // We fall back on jwk binding
         return {
           method: 'jwk',
-          jwk: getJwkFromKey(key),
+          keys: [getJwkFromKey(key)],
         }
       },
       ...tokenResponse,

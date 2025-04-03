@@ -282,7 +282,7 @@ describe('OpenId4VcIssuer', () => {
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
-      offeredCredentials: [universityDegreeCredentialSdJwt.id],
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
       },
@@ -370,7 +370,7 @@ describe('OpenId4VcIssuer', () => {
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
-      offeredCredentials: [universityDegreeCredentialSdJwt.id],
+      credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
         txCode: {
@@ -379,7 +379,7 @@ describe('OpenId4VcIssuer', () => {
           input_mode: 'text',
         },
       },
-      version: 'v1.draft13',
+      version: 'v1.draft15',
     })
 
     const issuanceSessionRepository = issuer.context.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
@@ -470,7 +470,7 @@ describe('OpenId4VcIssuer', () => {
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
-      offeredCredentials: [openBadgeCredential.id],
+      credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
       },
@@ -550,7 +550,7 @@ describe('OpenId4VcIssuer', () => {
     await expect(
       issuer.modules.openId4VcIssuer.createCredentialOffer({
         issuerId: openId4VcIssuer.issuerId,
-        offeredCredentials: ['invalid id'],
+        credentialConfigurationIds: ['invalid id'],
         preAuthorizedCodeFlowConfig: {
           preAuthorizedCode,
         },
@@ -565,7 +565,7 @@ describe('OpenId4VcIssuer', () => {
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
-      offeredCredentials: [openBadgeCredential.id],
+      credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
       },
@@ -610,7 +610,7 @@ describe('OpenId4VcIssuer', () => {
     const preAuthorizedCode = '1234567890'
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      offeredCredentials: [openBadgeCredential.id, universityDegreeCredentialLd.id],
+      credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredentialLd.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
@@ -677,7 +677,7 @@ describe('OpenId4VcIssuer', () => {
     const preAuthorizedCode = '1234567890'
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      offeredCredentials: [openBadgeCredential.id],
+      credentialConfigurationIds: [openBadgeCredential.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
@@ -730,7 +730,7 @@ describe('OpenId4VcIssuer', () => {
 
     const { credentialOffer } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
-      offeredCredentials: [openBadgeCredential.id],
+      credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
       },
@@ -747,7 +747,7 @@ describe('OpenId4VcIssuer', () => {
     const preAuthorizedCode = '1234567890'
 
     const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
-      offeredCredentials: [openBadgeCredential.id, universityDegreeCredential.id],
+      credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredential.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
         preAuthorizedCode,
@@ -764,10 +764,10 @@ describe('OpenId4VcIssuer', () => {
     expect(payload.credentials).toEqual([openBadgeCredential.id, universityDegreeCredential.id])
 
     const credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper = ({
-      credentialConfigurationIds,
+      credentialConfigurationId,
     }) => {
       const credential =
-        credentialConfigurationIds[0] === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
+        credentialConfigurationId === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
       return {
         format: 'jwt_vc',
         credentials: [
@@ -781,7 +781,6 @@ describe('OpenId4VcIssuer', () => {
             verificationMethod: issuerVerificationMethod.id,
           },
         ],
-        credentialConfigurationId: credential.id,
       }
     }
 

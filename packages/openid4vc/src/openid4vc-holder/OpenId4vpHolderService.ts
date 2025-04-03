@@ -95,7 +95,7 @@ export class OpenId4VpHolderService {
     const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
-    // for each transaction data entry, get all credentials that can be used to sign the respective transaction
+    // for each transaction data entry, get all credentials that can fore used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter(
@@ -300,7 +300,12 @@ export class OpenId4VpHolderService {
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const authorizationResponseNonce = await agentContext.wallet.generateNonce()
     const { nonce } = authorizationRequestPayload
-    const parsedClientId = getOpenid4vpClientId({ authorizationRequestPayload, origin: options.origin })
+    const parsedClientId = getOpenid4vpClientId({
+      responseMode: authorizationRequestPayload.response_mode,
+      clientId: authorizationRequestPayload.client_id,
+      legacyClientIdScheme: authorizationRequestPayload.client_id_scheme,
+      origin: options.origin,
+    })
     // If client_id_scheme was used we need to use the legacy client id.
     const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
 

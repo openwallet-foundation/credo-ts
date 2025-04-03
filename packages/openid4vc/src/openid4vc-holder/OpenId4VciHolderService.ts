@@ -1,24 +1,4 @@
-import type { AgentContext, JwaSignatureAlgorithm, KeyType } from '@credo-ts/core'
-import type {
-  OpenId4VciCredentialConfigurationSupported,
-  OpenId4VciCredentialIssuerMetadata,
-  OpenId4VciMetadata,
-} from '../shared'
-import type {
-  OpenId4VciAcceptCredentialOfferOptions,
-  OpenId4VciAuthCodeFlowOptions,
-  OpenId4VciCredentialBindingResolver,
-  OpenId4VciCredentialResponse,
-  OpenId4VciDpopRequestOptions,
-  OpenId4VciNotificationEvent,
-  OpenId4VciProofOfPossessionRequirements,
-  OpenId4VciResolvedAuthorizationRequest,
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
-  OpenId4VciSupportedCredentialFormats,
-  OpenId4VciTokenRequestOptions,
-} from './OpenId4VciHolderServiceOptions'
-
+import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
 import {
   CredoError,
   InjectionSymbols,
@@ -34,25 +14,48 @@ import {
   getJwkClassFromJwaSignatureAlgorithm,
   getJwkFromJson,
   getJwkFromKey,
-  getSupportedVerificationMethodTypesFromKeyType,
   inject,
   injectable,
   parseDid,
 } from '@credo-ts/core'
 import {
-  JwtSigner,
   Oauth2Client,
   RequestDpopOptions,
+  authorizationCodeGrantIdentifier,
+  clientAuthenticationAnonymous,
+  clientAuthenticationClientAttestationJwt,
+  clientAuthenticationNone,
   getAuthorizationServerMetadataFromList,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
+import { determineAuthorizationServerForCredentialOffer, parseKeyAttestationJwt } from '@openid4vc/openid4vci'
 import {
   AuthorizationFlow,
   CredentialResponse,
   IssuerMetadataResult,
   Openid4vciClient,
+  Openid4vciDraftVersion,
   Openid4vciRetrieveCredentialsError,
 } from '@openid4vc/openid4vci'
+import type {
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialIssuerMetadata,
+  OpenId4VciMetadata,
+} from '../shared'
+import type {
+  OpenId4VciAcceptCredentialOfferOptions,
+  OpenId4VciAuthCodeFlowOptions,
+  OpenId4VciCredentialBindingResolver,
+  OpenId4VciCredentialResponse,
+  OpenId4VciDpopRequestOptions,
+  OpenId4VciProofOfPossessionRequirements,
+  OpenId4VciResolvedAuthorizationRequest,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
+  OpenId4VciSendNotificationOptions,
+  OpenId4VciSupportedCredentialFormats,
+  OpenId4VciTokenRequestOptions,
+} from './OpenId4VciHolderServiceOptions'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
@@ -115,11 +118,38 @@ export class OpenId4VciHolderService {
     const { clientId, redirectUri } = authCodeFlowOptions
     const { metadata, credentialOfferPayload, offeredCredentialConfigurations } = resolvedCredentialOffer
 
-    const client = this.getClient(agentContext)
+    const oauth2Client = this.getOauth2Client(agentContext)
+    const client = this.getClient(agentContext, {
+      clientId: authCodeFlowOptions.clientId,
+      clientAttestation: authCodeFlowOptions.walletAttestationJwt,
+    })
 
     // If scope is not provided, we request scope for all offered credentials
     const scope =
       authCodeFlowOptions.scope ?? getScopesFromCredentialConfigurationsSupported(offeredCredentialConfigurations)
+
+    if (!credentialOfferPayload.grants?.[authorizationCodeGrantIdentifier]) {
+      throw new CredoError(`Provided credential offer does not include the 'authorization_code' grant.`)
+    }
+
+    const authorizationCodeGrant = credentialOfferPayload.grants[authorizationCodeGrantIdentifier]
+    const authorizationServer = determineAuthorizationServerForCredentialOffer({
+      issuerMetadata: metadata,
+      grantAuthorizationServer: authorizationCodeGrant.authorization_server,
+    })
+
+    const authorizationServerMetadata = getAuthorizationServerMetadataFromList(
+      metadata.authorizationServers,
+      authorizationServer
+    )
+
+    // TODO: should we allow key reuse between dpop and wallet attestation?
+    const isDpopSupported = oauth2Client.isDpopSupported({ authorizationServerMetadata })
+    const dpop = isDpopSupported.supported
+      ? await this.getDpopOptions(agentContext, {
+          dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
+        })
+      : undefined
 
     const authorizationResult = await client.initiateAuthorization({
       clientId,
@@ -127,6 +157,7 @@ export class OpenId4VciHolderService {
       credentialOffer: credentialOfferPayload,
       scope: scope.join(' '),
       redirectUri,
+      dpop,
     })
 
     if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {
@@ -134,6 +165,13 @@ export class OpenId4VciHolderService {
         authorizationFlow: AuthorizationFlow.PresentationDuringIssuance,
         openid4vpRequestUrl: authorizationResult.openid4vpRequestUrl,
         authSession: authorizationResult.authSession,
+        // FIXME: return dpop result from this endpoint (dpop nonce)
+        dpop: dpop
+          ? {
+              alg: dpop.signer.alg as JwaSignatureAlgorithm,
+              jwk: getJwkFromJson(dpop.signer.publicJwk),
+            }
+          : undefined,
       }
     }
 
@@ -142,19 +180,17 @@ export class OpenId4VciHolderService {
       authorizationFlow: AuthorizationFlow.Oauth2Redirect,
       codeVerifier: authorizationResult.pkce?.codeVerifier,
       authorizationRequestUrl: authorizationResult.authorizationRequestUrl,
+      // FIXME: return dpop result from this endpoint (dpop nonce)
+      dpop: dpop
+        ? {
+            alg: dpop.signer.alg as JwaSignatureAlgorithm,
+            jwk: getJwkFromJson(dpop.signer.publicJwk),
+          }
+        : undefined,
     }
   }
 
-  public async sendNotification(
-    agentContext: AgentContext,
-    options: {
-      metadata: IssuerMetadataResult
-      notificationId: string
-      notificationEvent: OpenId4VciNotificationEvent
-      accessToken: string
-      dpop?: { jwk: Jwk; alg: JwaSignatureAlgorithm; nonce?: string }
-    }
-  ) {
+  public async sendNotification(agentContext: AgentContext, options: OpenId4VciSendNotificationOptions) {
     const client = this.getClient(agentContext)
     await client.sendNotification({
       accessToken: options.accessToken,
@@ -229,32 +265,43 @@ export class OpenId4VciHolderService {
     agentContext: AgentContext,
     options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
   ) {
-    const client = this.getClient(agentContext)
-    // TODO: support dpop on this endpoint as well
-    // const dpop = options.dpop
-    //   ? await this.getDpopOptions(agentContext, {
-    //       ...options.dpop,
-    //       dpopSigningAlgValuesSupported: [options.dpop.alg],
-    //     })
-    //   : undefined
-
-    // TODO: we should support DPoP in this request as well
-    const { authorizationChallengeResponse } = await client.retrieveAuthorizationCodeUsingPresentation({
-      authSession: options.authSession,
-      presentationDuringIssuanceSession: options.presentationDuringIssuanceSession,
-      credentialOffer: options.resolvedCredentialOffer.credentialOfferPayload,
-      issuerMetadata: options.resolvedCredentialOffer.metadata,
-      // dpop
+    const client = this.getClient(agentContext, {
+      clientAttestation: options.walletAttestationJwt,
     })
+    const dpop = options.dpop
+      ? await this.getDpopOptions(agentContext, {
+          ...options.dpop,
+          dpopSigningAlgValuesSupported: [options.dpop.alg],
+        })
+      : undefined
+
+    const { authorizationChallengeResponse, dpop: dpopResult } =
+      await client.retrieveAuthorizationCodeUsingPresentation({
+        authSession: options.authSession,
+        presentationDuringIssuanceSession: options.presentationDuringIssuanceSession,
+        credentialOffer: options.resolvedCredentialOffer.credentialOfferPayload,
+        issuerMetadata: options.resolvedCredentialOffer.metadata,
+        dpop,
+      })
 
     return {
       authorizationCode: authorizationChallengeResponse.authorization_code,
+      dpop: dpop
+        ? {
+            ...dpopResult,
+            alg: dpop.signer.alg as JwaSignatureAlgorithm,
+            jwk: getJwkFromJson(dpop.signer.publicJwk),
+          }
+        : undefined,
     }
   }
 
   public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
     const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
-    const client = this.getClient(agentContext)
+    const client = this.getClient(agentContext, {
+      clientAttestation: options.walletAttestationJwt,
+      clientId: 'clientId' in options ? options.clientId : undefined,
+    })
     const oauth2Client = this.getOauth2Client(agentContext)
 
     const authorizationServer = options.code
@@ -265,15 +312,23 @@ export class OpenId4VciHolderService {
       authorizationServer ?? metadata.authorizationServers[0].issuer
     )
 
-    // TODO: should allow dpop input parameter for if it was already bound earlier
     const isDpopSupported = oauth2Client.isDpopSupported({
       authorizationServerMetadata,
     })
-    const dpop = isDpopSupported.supported
+
+    const dpop = options.dpop
       ? await this.getDpopOptions(agentContext, {
-          dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
+          ...options.dpop,
+          dpopSigningAlgValuesSupported: [options.dpop.alg],
         })
-      : undefined
+      : // We should be careful about this case. It could just be the user didn't correctly
+        // provide the DPoP from the auth response. In whic case different DPoP will be used
+        // However it might be that they only use DPoP for the token request (esp in pre-auth case)
+        isDpopSupported.supported
+        ? await this.getDpopOptions(agentContext, {
+            dpopSigningAlgValuesSupported: isDpopSupported.dpopSigningAlgValuesSupported,
+          })
+        : undefined
 
     const result = options.code
       ? await client.retrieveAuthorizationCodeAccessTokenFromOffer({
@@ -283,11 +338,6 @@ export class OpenId4VciHolderService {
           dpop,
           pkceCodeVerifier: options.codeVerifier,
           redirectUri: options.redirectUri,
-          additionalRequestPayload: {
-            // TODO: handle it as part of client auth once we support
-            // assertion based client authentication
-            client_id: options.clientId,
-          },
         })
       : await client.retrievePreAuthorizedCodeAccessTokenFromOffer({
           credentialOffer: credentialOfferPayload,
@@ -321,29 +371,16 @@ export class OpenId4VciHolderService {
   ) {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
     const { metadata, offeredCredentialConfigurations } = resolvedCredentialOffer
-    const { credentialConfigurationIds, credentialBindingResolver, verifyCredentialStatus, requestBatch } =
-      acceptCredentialOfferOptions
+    const {
+      credentialConfigurationIds,
+      credentialBindingResolver,
+      verifyCredentialStatus,
+      allowedProofOfPossessionSignatureAlgorithms,
+    } = acceptCredentialOfferOptions
     const client = this.getClient(agentContext)
 
     if (credentialConfigurationIds?.length === 0) {
       throw new CredoError(`'credentialConfigurationIds' may not be empty`)
-    }
-
-    const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
-
-    const allowedProofOfPossessionSigAlgs = acceptCredentialOfferOptions.allowedProofOfPossessionSignatureAlgorithms
-    const possibleProofOfPossessionSigAlgs = allowedProofOfPossessionSigAlgs
-      ? allowedProofOfPossessionSigAlgs.filter((algorithm) => supportedJwaSignatureAlgorithms.includes(algorithm))
-      : supportedJwaSignatureAlgorithms
-
-    if (possibleProofOfPossessionSigAlgs.length === 0) {
-      throw new CredoError(
-        [
-          'No possible proof of possession signature algorithm found.',
-          `Signature algorithms supported by the Agent '${supportedJwaSignatureAlgorithms.join(', ')}'`,
-          `Allowed Signature algorithms '${allowedProofOfPossessionSigAlgs?.join(', ')}'`,
-        ].join('\n')
-      )
     }
 
     const receivedCredentials: Array<OpenId4VciCredentialResponse> = []
@@ -394,43 +431,35 @@ export class OpenId4VciHolderService {
       throw new CredoError('No cNonce provided and unable to acquire cNonce from the credential issuer')
     }
 
-    // If true: use max from issuer or otherwise 1
-    // If number not 0: use the number
-    // Else: use 1
-    const batchSize =
-      requestBatch === true ? (metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1) : requestBatch || 1
-    if (typeof requestBatch === 'number' && requestBatch > 1 && !metadata.credentialIssuer.batch_credential_issuance) {
-      throw new CredoError(
-        `Credential issuer '${metadata.credentialIssuer.credential_issuer}' does not support batch credential issuance using the 'proofs' request property. Onlt 'proof' supported.`
-      )
-    }
-
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-      const jwts: string[] = []
+      const proofs = await this.getCredentialRequestOptions(agentContext, {
+        allowedProofOfPossesionAlgorithms:
+          allowedProofOfPossessionSignatureAlgorithms ?? getSupportedJwaSignatureAlgorithms(agentContext),
+        metadata,
+        offeredCredential: {
+          id: offeredCredentialId,
+          configuration: offeredCredentialConfiguration,
+        },
+        clientId: options.clientId,
+        // We already checked whether nonce exists above
+        cNonce: cNonce as string,
+        credentialBindingResolver,
+      })
 
-      for (let i = 0; i < batchSize; i++) {
-        // TODO: we should call this method once with a keyLength. Gives more control to the user and better aligns with key attestations
-        // Get a key instance for each entry in the batch.
-        // Get all options for the credential request (such as which kid to use, the signature algorithm, etc)
-        const { jwtSigner } = await this.getCredentialRequestOptions(agentContext, {
-          possibleProofOfPossessionSignatureAlgorithms: possibleProofOfPossessionSigAlgs,
-          offeredCredential: {
-            id: offeredCredentialId,
-            configuration: offeredCredentialConfiguration,
-          },
-          credentialBindingResolver,
-        })
+      this.logger.debug('Generated credential request proof of possesion', { proofs })
 
-        const { jwt } = await client.createCredentialRequestJwtProof({
-          credentialConfigurationId: offeredCredentialId,
-          issuerMetadata: resolvedCredentialOffer.metadata,
-          signer: jwtSigner,
-          clientId: options.clientId,
-          nonce: cNonce,
-        })
-        this.logger.debug('Generated credential request proof of possesion jwt', { jwt })
-        jwts.push(jwt)
-      }
+      const proof =
+        // Draft 11 ALWAYS uses proof
+        (metadata.originalDraftVersion === Openid4vciDraftVersion.Draft11 ||
+          // Draft 14 allows both proof and proofs. Try to use proof when it makes to improve interoperability
+          (metadata.originalDraftVersion === Openid4vciDraftVersion.Draft14 &&
+            metadata.credentialIssuer.batch_credential_issuance === undefined)) &&
+        proofs.jwt?.length === 1
+          ? ({
+              proof_type: 'jwt',
+              jwt: proofs.jwt[0],
+            } as const)
+          : undefined
 
       const { credentialResponse, dpop } = await client.retrieveCredentials({
         issuerMetadata: metadata,
@@ -443,14 +472,9 @@ export class OpenId4VciHolderService {
               dpopSigningAlgValuesSupported: [options.dpop.alg],
             })
           : undefined,
-        proofs: batchSize > 1 ? { jwt: jwts } : undefined,
-        proof:
-          batchSize === 1
-            ? {
-                proof_type: 'jwt',
-                jwt: jwts[0],
-              }
-            : undefined,
+        // Only include proofs if we don't add proof
+        proofs: !proof ? proofs : undefined,
+        proof,
       })
 
       // Set new nonce values
@@ -463,6 +487,7 @@ export class OpenId4VciHolderService {
         credentialIssuerMetadata: metadata.credentialIssuer,
         format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
         credentialConfigurationId: offeredCredentialId,
+        credentialConfiguration: offeredCredentialConfiguration,
       })
 
       this.logger.debug(
@@ -471,7 +496,7 @@ export class OpenId4VciHolderService {
           c instanceof Mdoc ? { issuerSignedNamespaces: c.issuerSignedNamespaces, base64Url: c.base64Url } : c
         )
       )
-      receivedCredentials.push({ ...credential, credentialConfigurationId: offeredCredentialId })
+      receivedCredentials.push(credential)
     }
 
     return {
@@ -495,117 +520,274 @@ export class OpenId4VciHolderService {
   private async getCredentialRequestOptions(
     agentContext: AgentContext,
     options: {
+      metadata: OpenId4VciResolvedCredentialOffer['metadata']
       credentialBindingResolver: OpenId4VciCredentialBindingResolver
-      possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
+      allowedProofOfPossesionAlgorithms: JwaSignatureAlgorithm[]
+      clientId?: string
+      cNonce: string
       offeredCredential: {
         id: string
-        configuration: OpenId4VciCredentialConfigurationSupported
+        configuration: OpenId4VciCredentialConfigurationSupportedWithFormats
       }
     }
   ) {
-    const { signatureAlgorithms, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
+    const { allowedProofOfPossesionAlgorithms, offeredCredential } = options
+    const { configuration, id: configurationId } = offeredCredential
+    const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
+
+    const possibleProofOfPossessionSignatureAlgorithms = allowedProofOfPossesionAlgorithms
+      ? allowedProofOfPossesionAlgorithms.filter((algorithm) => supportedJwaSignatureAlgorithms.includes(algorithm))
+      : supportedJwaSignatureAlgorithms
+
+    if (possibleProofOfPossessionSignatureAlgorithms.length === 0) {
+      throw new CredoError(
+        [
+          'No possible proof of possession signature algorithm found.',
+          `Signature algorithms supported by the Agent '${supportedJwaSignatureAlgorithms.join(', ')}'`,
+          `Allowed Signature algorithms '${allowedProofOfPossesionAlgorithms?.join(', ')}'`,
+        ].join('\n')
+      )
+    }
+
+    const { proofTypes, supportedDidMethods, supportsAllDidMethods, supportsJwk } =
       this.getProofOfPossessionRequirements(agentContext, {
         credentialToRequest: options.offeredCredential,
-        possibleProofOfPossessionSignatureAlgorithms: options.possibleProofOfPossessionSignatureAlgorithms,
+        metadata: options.metadata,
+        possibleProofOfPossessionSignatureAlgorithms,
       })
 
-    const JwkClasses = signatureAlgorithms.map((signatureAlgorithm) => {
-      const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-      if (!JwkClass) {
-        throw new CredoError(`Could not determine JWK key type of the JWA signature algorithm '${signatureAlgorithm}'`)
-      }
-      return JwkClass
-    })
-    const keyTypes = JwkClasses.map((JwkClass): KeyType => JwkClass.keyType)
-
-    const supportedVerificationMethods = keyTypes.flatMap((keyType) =>
-      getSupportedVerificationMethodTypesFromKeyType(keyType)
-    )
-    const format = options.offeredCredential.configuration.format as OpenId4VciSupportedCredentialFormats
+    const format = configuration.format satisfies `${OpenId4VciSupportedCredentialFormats}`
     const supportsAnyMethod = supportedDidMethods !== undefined || supportsAllDidMethods || supportsJwk
+    const issuerMaxBatchSize = options.metadata.credentialIssuer.batch_credential_issuance?.batch_size ?? 1
 
     // Now we need to determine how the credential will be bound to us
     const credentialBinding = await options.credentialBindingResolver({
       agentContext,
-      credentialFormat: format,
-      signatureAlgorithms,
-      supportedVerificationMethods,
-      keyTypes: JwkClasses.map((JwkClass): KeyType => JwkClass.keyType),
-      credentialConfigurationId: options.offeredCredential.id,
+      credentialFormat: format as OpenId4VciSupportedCredentialFormats,
+      credentialConfigurationId: configurationId,
+      credentialConfiguration: configuration,
+      metadata: options.metadata,
+      issuerMaxBatchSize,
+      proofTypes,
       supportsAllDidMethods,
       supportedDidMethods,
       supportsJwk,
     })
 
-    let jwk: Jwk
+    const client = this.getClient(agentContext)
+
     // Make sure the issuer of proof of possession is valid according to openid issuer metadata
     if (credentialBinding.method === 'did') {
-      // Test binding method
+      if (!proofTypes.jwt) {
+        throw new CredoError(
+          `JWT proof type is not supported for configuration '${configurationId}', which is required for did based credential binding.`
+        )
+      }
+
+      if (proofTypes.jwt.keyAttestationsRequired) {
+        throw new CredoError(
+          `Credential binding returned list of DID urls, but credential configuration '${configurationId}' requires key attestations. Key attestations and DIDs are not compatible.`
+        )
+      }
+
+      if (credentialBinding.didUrls.length > issuerMaxBatchSize) {
+        throw new CredoError(
+          `Issuer supports issuing a batch of maximum ${issuerMaxBatchSize} credential(s). Binding resolver returned ${credentialBinding.didUrls.length} DID urls. Make sure the returned value does not exceed the max batch issuance.`
+        )
+      }
+
+      if (credentialBinding.didUrls.length === 0) {
+        throw new CredoError('Credential binding with method did returned empty didUrls list')
+      }
+
+      const firstDid = parseDid(credentialBinding.didUrls[0])
+      if (!credentialBinding.didUrls.every((didUrl) => parseDid(didUrl).method === firstDid.method)) {
+        throw new CredoError('Expected all did urls for binding method did to use the same did method')
+      }
+
       if (
         !supportsAllDidMethods &&
         // If supportedDidMethods is undefined, it means the issuer didn't include the binding methods in the metadata
         // The user can still select a verification method, but we can't validate it
         supportedDidMethods !== undefined &&
         !supportedDidMethods.find(
-          (supportedDidMethod) => credentialBinding.didUrl.startsWith(supportedDidMethod) && supportsAnyMethod
+          (supportedDidMethod) => firstDid.did.startsWith(supportedDidMethod) && supportsAnyMethod
         )
       ) {
-        const { method } = parseDid(credentialBinding.didUrl)
+        // Test binding method
         const supportedDidMethodsString = supportedDidMethods.join(', ')
         throw new CredoError(
-          `Resolved credential binding for proof of possession uses did method '${method}', but issuer only supports '${supportedDidMethodsString}'`
+          `Resolved credential binding for proof of possession uses did method '${firstDid.method}', but issuer only supports '${supportedDidMethodsString}'`
         )
       }
 
-      const key = await getKeyFromDid(agentContext, credentialBinding.didUrl)
-      jwk = getJwkFromKey(key)
-      if (!keyTypes.includes(key.keyType)) {
+      const firstKey = await getKeyFromDid(agentContext, firstDid.didUrl)
+      if (!proofTypes.jwt.supportedKeyTypes.includes(firstKey.keyType)) {
         throw new CredoError(
           `Credential binding returned did url that points to key with type '${
-            key.keyType
-          }', but one of '${keyTypes.join(', ')}' was expected`
+            firstKey.keyType
+          }', but one of '${proofTypes.jwt.supportedKeyTypes.join(', ')}' was expected`
         )
       }
-    } else if (credentialBinding.method === 'jwk') {
+
+      // This will/should leverage the caching, so it's ok to resolve the did here
+      const keys = await Promise.all(
+        credentialBinding.didUrls.map(async (didUrl, index) =>
+          index === 0
+            ? // We already fetched the first did
+              { key: firstKey, didUrl: firstDid.didUrl }
+            : { key: await getKeyFromDid(agentContext, didUrl), didUrl }
+        )
+      )
+      if (!keys.every((key) => key.key.keyType === firstKey.keyType)) {
+        throw new CredoError('Expected all did urls to point to the same key type')
+      }
+
+      const alg = getJwkFromKey(firstKey).supportedSignatureAlgorithms[0]
+      if (!alg) {
+        // Should not happen, to make ts happy
+        throw new CredoError(`Unable to determine alg for key type ${firstKey.keyType}`)
+      }
+
+      return {
+        jwt: await Promise.all(
+          keys.map((key) =>
+            client
+              .createCredentialRequestJwtProof({
+                credentialConfigurationId: configurationId,
+                issuerMetadata: options.metadata,
+                signer: {
+                  method: 'did',
+                  didUrl: key.didUrl,
+                  alg,
+                },
+                nonce: options.cNonce,
+                clientId: options.clientId,
+              })
+              .then(({ jwt }) => jwt)
+          )
+        ),
+      }
+    }
+
+    if (credentialBinding.method === 'jwk') {
       if (!supportsJwk && supportsAnyMethod) {
         throw new CredoError(
           `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
         )
       }
 
-      jwk = credentialBinding.jwk
-      if (!keyTypes.includes(credentialBinding.jwk.key.keyType)) {
+      if (!proofTypes.jwt) {
         throw new CredoError(
-          `Credential binding returned jwk with key with type '${
-            credentialBinding.jwk.key.keyType
-          }', but one of '${keyTypes.join(', ')}' was expected`
+          `JWT proof type is not supported for configuration '${configurationId}', which is required for jwk based credential binding.`
         )
       }
-    } else {
-      // @ts-expect-error currently if/else if exhaustive, but once we add new option it will give ts error
-      throw new CredoError(`Unsupported credential binding method ${credentialBinding.method}`)
+
+      if (proofTypes.jwt.keyAttestationsRequired) {
+        throw new CredoError(
+          `Credential binding returned list of JWK keys, but credential configuration '${configurationId}' requires key attestations. Return a key attestation with binding method 'attestation'.`
+        )
+      }
+
+      if (credentialBinding.keys.length > issuerMaxBatchSize) {
+        throw new CredoError(
+          `Issuer supports issuing a batch of maximum ${issuerMaxBatchSize} credential(s). Binding resolver returned ${credentialBinding.keys.length} keys. Make sure the returned value does not exceed the max batch issuance.`
+        )
+      }
+
+      if (credentialBinding.keys.length === 0) {
+        throw new CredoError('Credential binding with method jwk returned empty keys list')
+      }
+
+      const firstJwk = credentialBinding.keys[0]
+      if (!credentialBinding.keys.every((key) => key.keyType === firstJwk.keyType)) {
+        throw new CredoError('Expected all keys for binding method jwk to use the same key type')
+      }
+      if (!proofTypes.jwt.supportedKeyTypes.includes(firstJwk.keyType)) {
+        throw new CredoError(
+          `Credential binding returned jwk with key with type '${
+            firstJwk.keyType
+          }', but one of '${proofTypes.jwt.supportedKeyTypes.join(', ')}' was expected`
+        )
+      }
+
+      const alg = firstJwk.supportedSignatureAlgorithms[0]
+      if (!alg) {
+        // Should not happen, to make ts happy
+        throw new CredoError(`Unable to determine alg for key type ${firstJwk.keyType}`)
+      }
+
+      return {
+        jwt: await Promise.all(
+          credentialBinding.keys.map((jwk) =>
+            client
+              .createCredentialRequestJwtProof({
+                credentialConfigurationId: configurationId,
+                issuerMetadata: options.metadata,
+                signer: {
+                  method: 'jwk',
+                  publicJwk: jwk.toJson(),
+                  alg,
+                },
+                nonce: options.cNonce,
+                clientId: options.clientId,
+              })
+              .then(({ jwt }) => jwt)
+          )
+        ),
+      }
     }
 
-    const alg = jwk.supportedSignatureAlgorithms.find((alg) => signatureAlgorithms.includes(alg))
-    if (!alg) {
-      // Should not happen, to make ts happy
-      throw new CredoError(`Unable to determine alg for key type ${jwk.keyType}`)
+    if (credentialBinding.method === 'attestation') {
+      const { payload } = parseKeyAttestationJwt({ keyAttestationJwt: credentialBinding.keyAttestationJwt })
+
+      // TODO: check client_id matches in payload
+
+      if (payload.attested_keys.length > issuerMaxBatchSize) {
+        throw new CredoError(
+          `Issuer supports issuing a batch of maximum ${issuerMaxBatchSize} credential(s). Binding resolver returned key attestation with ${payload.attested_keys.length} attested keys. Make sure the returned value does not exceed the max batch issuance.`
+        )
+      }
+
+      // TODO: check nonce matches cNonce
+      if (proofTypes.attestation && payload.nonce) {
+        // If attestation is supported and the attestation contains a nonce, we can use the attestation directly
+        return {
+          attestation: [credentialBinding.keyAttestationJwt],
+        }
+      }
+
+      if (proofTypes.jwt) {
+        const jwk = getJwkFromJson(payload.attested_keys[0])
+
+        return {
+          jwt: [
+            await client
+              .createCredentialRequestJwtProof({
+                credentialConfigurationId: configurationId,
+                issuerMetadata: options.metadata,
+                signer: {
+                  method: 'jwk',
+                  publicJwk: payload.attested_keys[0],
+                  // TODO: we should probably use the 'alg' from the jwk
+                  alg: jwk.supportedSignatureAlgorithms[0],
+                },
+                keyAttestationJwt: credentialBinding.keyAttestationJwt,
+                nonce: options.cNonce,
+                clientId: options.clientId,
+              })
+              .then(({ jwt }) => jwt),
+          ],
+        }
+      }
+
+      throw new CredoError(
+        `Unable to create credential request proofs. Configuration supports 'attestation' proof type, but attestation did not contain a 'nonce' value`
+      )
     }
 
-    const jwtSigner: JwtSigner =
-      credentialBinding.method === 'did'
-        ? {
-            method: credentialBinding.method,
-            didUrl: credentialBinding.didUrl,
-            alg,
-          }
-        : {
-            method: 'jwk',
-            publicJwk: credentialBinding.jwk.toJson(),
-            alg,
-          }
-
-    return { credentialBinding, signatureAlgorithm: alg, jwtSigner }
+    // @ts-expect-error currently if/else if exhaustive, but once we add new option it will give ts error
+    throw new CredoError(`Unsupported credential binding method ${credentialBinding.method}`)
   }
 
   /**
@@ -617,20 +799,18 @@ export class OpenId4VciHolderService {
   private getProofOfPossessionRequirements(
     agentContext: AgentContext,
     options: {
+      metadata: IssuerMetadataResult
       credentialToRequest: {
         id: string
-        configuration: OpenId4VciCredentialConfigurationSupported
+        configuration: OpenId4VciCredentialConfigurationSupportedWithFormats
       }
       possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
     }
   ): OpenId4VciProofOfPossessionRequirements {
-    const { credentialToRequest } = options
+    const { credentialToRequest, possibleProofOfPossessionSignatureAlgorithms, metadata } = options
+    const { configuration, id: configurationId } = credentialToRequest
 
-    if (
-      !openId4VciSupportedCredentialFormats.includes(
-        credentialToRequest.configuration.format as OpenId4VciSupportedCredentialFormats
-      )
-    ) {
+    if (!openId4VciSupportedCredentialFormats.includes(configuration.format as OpenId4VciSupportedCredentialFormats)) {
       throw new CredoError(
         [
           `Requested credential with format '${credentialToRequest.configuration.format}',`,
@@ -643,59 +823,83 @@ export class OpenId4VciHolderService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    let signatureAlgorithms: JwaSignatureAlgorithm[] = []
-
-    if (credentialToRequest.configuration.proof_types_supported) {
-      if (!credentialToRequest.configuration.proof_types_supported.jwt) {
+    let proofTypesSupported = configuration.proof_types_supported
+    if (!proofTypesSupported) {
+      // For draft above 11 we do not allow no proof_type (we do not support no key binding for now)
+      if (metadata.originalDraftVersion !== Openid4vciDraftVersion.Draft11) {
         throw new CredoError(
-          `Unsupported proof type(s) ${Object.keys(credentialToRequest.configuration.proof_types_supported).join(
-            ', '
-          )}. Supported proof type(s) are: jwt`
+          `Credential configuration '${configurationId}' does not specifcy proof_types_supported. Credentials not bound to keys are not supported at the moment`
         )
       }
-    }
 
-    const proofSigningAlgsSupported =
-      credentialToRequest.configuration.proof_types_supported?.jwt?.proof_signing_alg_values_supported
-
-    // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
-    // We just guess that the first one is supported
-    if (proofSigningAlgsSupported === undefined) {
-      signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms
-    } else {
-      switch (credentialToRequest.configuration.format) {
-        case OpenId4VciCredentialFormatProfile.JwtVcJson:
-        case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
-        case OpenId4VciCredentialFormatProfile.SdJwtVc:
-        case OpenId4VciCredentialFormatProfile.MsoMdoc:
-          signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) =>
-            proofSigningAlgsSupported.includes(signatureAlgorithm)
-          )
-          break
-        case OpenId4VciCredentialFormatProfile.LdpVc:
-          signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) => {
-            const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-            if (!JwkClass) return false
-
-            const matchingSuite = signatureSuiteRegistry.getAllByKeyType(JwkClass.keyType)
-            if (matchingSuite.length === 0) return false
-
-            return proofSigningAlgsSupported.includes(matchingSuite[0].proofType)
-          })
-          break
-        default:
-          throw new CredoError('Unsupported credential format.')
+      // For draft 11 we fall back to jwt proof type
+      proofTypesSupported = {
+        jwt: {
+          proof_signing_alg_values_supported: possibleProofOfPossessionSignatureAlgorithms,
+        },
       }
     }
 
-    if (signatureAlgorithms.length === 0) {
-      throw new CredoError(
-        `Could not establish signature algorithm for format ${credentialToRequest.configuration.format} and id ${
-          credentialToRequest.id
-        }. Server supported signature algorithms are '${
-          proofSigningAlgsSupported?.join(', ') ?? 'Not defined'
-        }', available are '${options.possibleProofOfPossessionSignatureAlgorithms.join(', ')}'`
-      )
+    const proofTypes: OpenId4VciProofOfPossessionRequirements['proofTypes'] = {
+      jwt: undefined,
+      attestation: undefined,
+    }
+
+    for (const [proofType, proofTypeConfig] of Object.entries(proofTypesSupported)) {
+      if (proofType !== 'jwt' && proofType !== 'attestation') continue
+
+      let signatureAlgorithms: JwaSignatureAlgorithm[] = []
+
+      const proofSigningAlgsSupported = proofTypeConfig?.proof_signing_alg_values_supported
+      if (proofSigningAlgsSupported === undefined) {
+        // If undefined, it means the issuer didn't include the cryptographic suites in the metadata
+        // We just guess that the first one is supported
+        signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms
+      } else {
+        switch (credentialToRequest.configuration.format) {
+          case OpenId4VciCredentialFormatProfile.JwtVcJson:
+          case OpenId4VciCredentialFormatProfile.JwtVcJsonLd:
+          case OpenId4VciCredentialFormatProfile.SdJwtVc:
+          case OpenId4VciCredentialFormatProfile.SdJwtDc:
+          case OpenId4VciCredentialFormatProfile.MsoMdoc:
+            signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) =>
+              proofSigningAlgsSupported.includes(signatureAlgorithm)
+            )
+            break
+          case OpenId4VciCredentialFormatProfile.LdpVc:
+            signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) => {
+              const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
+              if (!JwkClass) return false
+
+              const matchingSuite = signatureSuiteRegistry.getAllByKeyType(JwkClass.keyType)
+              if (matchingSuite.length === 0) return false
+
+              return proofSigningAlgsSupported.includes(matchingSuite[0].proofType)
+            })
+            break
+          default:
+            throw new CredoError('Unsupported credential format.')
+        }
+      }
+
+      proofTypes[proofType] = {
+        supportedSignatureAlgorithms: signatureAlgorithms,
+        supportedKeyTypes: signatureAlgorithms
+          .map((algorithm) => getJwkClassFromJwaSignatureAlgorithm(algorithm)?.keyType)
+          .filter((keyType) => keyType !== undefined),
+        keyAttestationsRequired: proofTypeConfig.key_attestations_required
+          ? {
+              keyStorage: proofTypeConfig.key_attestations_required.key_storage,
+              userAuthentication: proofTypeConfig.key_attestations_required.user_authentication,
+            }
+          : undefined,
+      }
+    }
+
+    const { jwt, attestation } = proofTypes
+    if (!jwt && !attestation) {
+      const supported = Object.keys(proofTypesSupported).join(', ')
+      throw new CredoError(`Unsupported proof type(s) ${supported}. Supported proof type(s) are: jwt, attestation`)
     }
 
     const issuerSupportedBindingMethods = credentialToRequest.configuration.cryptographic_binding_methods_supported
@@ -707,7 +911,7 @@ export class OpenId4VciHolderService {
     const supportsJwk = issuerSupportedBindingMethods?.includes('jwk') || supportsCoseKey
 
     return {
-      signatureAlgorithms,
+      proofTypes,
       supportedDidMethods,
       supportsAllDidMethods,
       supportsJwk,
@@ -722,9 +926,10 @@ export class OpenId4VciHolderService {
       credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata
       format: OpenId4VciCredentialFormatProfile
       credentialConfigurationId: string
+      credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
     }
   ): Promise<OpenId4VciCredentialResponse> {
-    const { verifyCredentialStatus, credentialConfigurationId } = options
+    const { verifyCredentialStatus, credentialConfigurationId, credentialConfiguration } = options
     this.logger.debug('Credential response', credentialResponse)
 
     const credentials =
@@ -736,7 +941,7 @@ export class OpenId4VciHolderService {
     const notificationId = credentialResponse.notification_id
 
     const format = options.format
-    if (format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
+    if (format === OpenId4VciCredentialFormatProfile.SdJwtVc || format === OpenId4VciCredentialFormatProfile.SdJwtDc) {
       if (!credentials.every((c) => typeof c === 'string')) {
         throw new CredoError(
           `Received credential(s) of format ${format}, but not all credential(s) are a string. ${JSON.stringify(
@@ -767,6 +972,7 @@ export class OpenId4VciHolderService {
         credentials: verificationResults.map((result) => result.sdJwtVc),
         notificationId,
         credentialConfigurationId,
+        credentialConfiguration,
       }
     }
     if (
@@ -803,7 +1009,12 @@ export class OpenId4VciHolderService {
         )
       }
 
-      return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
+      return {
+        credentials: result.map((r) => r.credential),
+        notificationId,
+        credentialConfigurationId,
+        credentialConfiguration,
+      }
     }
     if (format === OpenId4VciCredentialFormatProfile.LdpVc) {
       if (!credentials.every((c) => typeof c === 'object')) {
@@ -835,7 +1046,12 @@ export class OpenId4VciHolderService {
         )
       }
 
-      return { credentials: result.map((r) => r.credential), notificationId, credentialConfigurationId }
+      return {
+        credentials: result.map((r) => r.credential),
+        notificationId,
+        credentialConfigurationId,
+        credentialConfiguration,
+      }
     }
     if (format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
       if (!credentials.every((c) => typeof c === 'string')) {
@@ -867,15 +1083,72 @@ export class OpenId4VciHolderService {
         )
       }
 
-      return { credentials: result.map((c) => c.mdoc), notificationId, credentialConfigurationId }
+      return {
+        credentials: result.map((c) => c.mdoc),
+        notificationId,
+        credentialConfigurationId,
+        credentialConfiguration,
+      }
     }
 
     throw new CredoError(`Unsupported credential format ${options.format}`)
   }
 
-  private getClient(agentContext: AgentContext) {
+  private getClient(
+    agentContext: AgentContext,
+    { clientAttestation, clientId }: { clientAttestation?: string; clientId?: string } = {}
+  ) {
+    const callbacks = getOid4vcCallbacks(agentContext)
     return new Openid4vciClient({
-      callbacks: getOid4vcCallbacks(agentContext),
+      callbacks: {
+        ...callbacks,
+        clientAuthentication: (options) => {
+          const { authorizationServerMetadata, url, body } = options
+          const oauth2Client = this.getOauth2Client(agentContext)
+          const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
+            authorizationServerMetadata,
+          })
+
+          // Client attestations
+          if (clientAttestation && clientAttestationSupported) {
+            return clientAuthenticationClientAttestationJwt({
+              clientAttestationJwt: clientAttestation,
+              callbacks,
+            })(options)
+          }
+
+          // Pre auth flow
+          if (
+            url === authorizationServerMetadata.token_endpoint &&
+            authorizationServerMetadata['pre-authorized_grant_anonymous_access_supported'] &&
+            body.grant_type === preAuthorizedCodeGrantIdentifier
+          ) {
+            return clientAuthenticationAnonymous()(options)
+          }
+
+          // Just a client id (no auth)
+          if (clientId) {
+            return clientAuthenticationNone({ clientId })(options)
+          }
+
+          // NOTE: we fall back to anonymous authentication for pre-auth for now, as there's quite some
+          // issuers that do not have pre-authorized_grant_anonymous_access_supported defined
+          if (
+            url === authorizationServerMetadata.token_endpoint &&
+            body.grant_type === preAuthorizedCodeGrantIdentifier
+          ) {
+            return clientAuthenticationAnonymous()(options)
+          }
+
+          // TODO: We should still look at auth_methods_supported
+          // If there is an auth session for the auth challenge endpoint, we don't have to include the client_id
+          if (url === authorizationServerMetadata.authorization_challenge_endpoint && body.auth_session) {
+            return clientAuthenticationAnonymous()(options)
+          }
+
+          throw new CredoError('Unable to perform client authentication.')
+        },
+      },
     })
   }
 

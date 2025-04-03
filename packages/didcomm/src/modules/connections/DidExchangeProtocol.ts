@@ -564,25 +564,33 @@ export class DidExchangeProtocol {
         )
       }
 
-      const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await this.jwsService.verifyJws(agentContext, {
         jws: {
           ...jws,
           payload: base64UrlPayload,
         },
-        jwkResolver: ({ jws: { header } }) => {
+        allowedJwsSignerMethods: ['did'],
+        resolveJwsSigner: ({ jws: { header } }) => {
           if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
             throw new CredoError('JWS header kid must be a did:key DID.')
           }
 
           const didKey = DidKey.fromDid(header.kid)
-          return getJwkFromKey(didKey.key)
+          return {
+            method: 'did',
+            didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+            jwk: getJwkFromKey(didKey.key),
+          }
         },
       })
 
-      if (!isValid || !signerKeys.every((key) => invitationKeysBase58?.includes(key.publicKeyBase58))) {
+      if (
+        !isValid ||
+        !jwsSigners.every((jwsSigner) => invitationKeysBase58?.includes(jwsSigner.jwk.key.publicKeyBase58))
+      ) {
         throw new DidExchangeProblemReportError(
           `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
-            signerKeys
+            jwsSigners.map((jwsSigner) => jwsSigner.jwk.key.publicKeyBase58)
           )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
           {
             problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
@@ -643,18 +651,23 @@ export class DidExchangeProtocol {
     // JWS payload must be base64url encoded
     const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
 
-    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+    const { isValid, jwsSigners } = await this.jwsService.verifyJws(agentContext, {
       jws: {
         ...jws,
         payload: base64UrlPayload,
       },
-      jwkResolver: ({ jws: { header } }) => {
+      allowedJwsSignerMethods: ['did'],
+      resolveJwsSigner: ({ jws: { header } }) => {
         if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
           throw new CredoError('JWS header kid must be a did:key DID.')
         }
 
         const didKey = DidKey.fromDid(header.kid)
-        return getJwkFromKey(didKey.key)
+        return {
+          method: 'did',
+          didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+          jwk: getJwkFromKey(didKey.key),
+        }
       },
     })
 
@@ -671,9 +684,12 @@ export class DidExchangeProtocol {
       })
       .concat(invitationKeysBase58)
 
-    this.logger.trace('JWS verification result', { isValid, signerKeys, didDocumentKeysBase58 })
+    this.logger.trace('JWS verification result', { isValid, jwsSigners, didDocumentKeysBase58 })
 
-    if (!isValid || !signerKeys.every((key) => didDocumentKeysBase58?.includes(key.publicKeyBase58))) {
+    if (
+      !isValid ||
+      !jwsSigners.every((jwsSigner) => didDocumentKeysBase58?.includes(jwsSigner.jwk.key.publicKeyBase58))
+    ) {
       const problemCode =
         message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted

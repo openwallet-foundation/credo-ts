@@ -1,11 +1,15 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationChallengeRequest } from '@openid4vc/oauth2'
+import type {
+  HttpMethod,
+  ParseAuthorizationChallengeRequestOptions,
+  ParseAuthorizationChallengeRequestResult,
+} from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
 import type { OpenId4VcIssuerRecord } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { TypedArrayEncoder } from '@credo-ts/core'
+import { TypedArrayEncoder, joinUriParts } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 
 import {
@@ -39,30 +43,40 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
 
       try {
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+        const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
         const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
+        const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
+          config.authorizationChallengeEndpointPath,
+        ])
 
-        const { authorizationChallengeRequest } = authorizationServer.parseAuthorizationChallengeRequest({
+        const requestLike = {
+          headers: new Headers(request.headers as Record<string, string>),
+          method: request.method as HttpMethod,
+          url: fullRequestUrl,
+        } as const
+
+        const parseResult = authorizationServer.parseAuthorizationChallengeRequest({
           authorizationChallengeRequest: request.body,
+          request: requestLike,
         })
+        const { authorizationChallengeRequest } = parseResult
 
         if (authorizationChallengeRequest.auth_session) {
           await handleAuthorizationChallengeWithAuthSession({
             response,
             next,
-            authorizationChallengeRequest: {
-              // For type inference
-              ...authorizationChallengeRequest,
-              auth_session: authorizationChallengeRequest.auth_session,
-            },
+            parseResult,
+            request: requestLike,
             agentContext,
             issuer,
           })
         } else {
           // First call, no auth_sesion yet
           await handleAuthorizationChallengeNoAuthSession({
-            authorizationChallengeRequest,
             agentContext,
             issuer,
+            parseResult,
+            request: requestLike,
           })
         }
       } catch (error) {
@@ -78,16 +92,18 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
 async function handleAuthorizationChallengeNoAuthSession(options: {
   agentContext: AgentContext
   issuer: OpenId4VcIssuerRecord
-  authorizationChallengeRequest: AuthorizationChallengeRequest
+  parseResult: ParseAuthorizationChallengeRequestResult
+  // FIXME: export in oid4vc-ts
+  request: ParseAuthorizationChallengeRequestOptions['request']
 }) {
-  const { agentContext, issuer, authorizationChallengeRequest } = options
+  const { agentContext, issuer, parseResult, request } = options
+  const { authorizationChallengeRequest } = parseResult
 
   // First call, no auth_sesion yet
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
   if (!config.getVerificationSessionForIssuanceSessionAuthorization) {
     throw new Oauth2ServerErrorResponseError(
@@ -100,13 +116,6 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     )
   }
 
-  if (!authorizationChallengeRequest.scope) {
-    throw new Oauth2ServerErrorResponseError({
-      error: Oauth2ErrorCodes.InvalidScope,
-      error_description: `Missing required 'scope' parameter`,
-    })
-  }
-
   if (!authorizationChallengeRequest.issuer_state) {
     throw new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.InvalidRequest,
@@ -114,16 +123,12 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
-  // FIXME: we need to authenticate the client. Could be either using client_id/client_secret
-  // but that doesn't make sense for wallets. So for now we just allow any client_id and we will
-  // need OAuth2 Attestation Based Client Auth and dynamically allow client_ids based on wallet providers
-  // we trust. Will add this in a follow up PR (basically we do no client authentication at the moment)
-  // if (!authorizationChallengeRequest.client_id) {
-  //   throw new Oauth2ServerErrorResponseError({
-  //     error: Oauth2ErrorCodes.InvalidRequest,
-  //     error_description: `Missing required 'client_id' parameter..`,
-  //   })
-  // }
+  if (!authorizationChallengeRequest.scope) {
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.InvalidScope,
+      error_description: `Missing required 'scope' parameter`,
+    })
+  }
 
   const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
@@ -145,6 +150,38 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
       }
     )
   }
+
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
+    issuanceSessionId: issuanceSession.id,
+  })
+  const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
+    authorizationChallengeRequest,
+    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    request,
+    clientAttestation: {
+      ...parseResult.clientAttestation,
+      // First session config, fall back to global config
+      required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+    },
+    dpop: {
+      ...parseResult.dpop,
+      // First session config, fall back to global config
+      required: issuanceSession.dpop?.required ?? config.dpopRequired,
+    },
+  })
+
+  // Bind dpop jwk thumbprint to session
+  if (dpop)
+    issuanceSession.dpop = {
+      // If dpop is provided at the start, it's required from now on.
+      required: true,
+      dpopJkt: dpop.jwkThumbprint,
+    }
+  if (clientAttestation)
+    issuanceSession.walletAttestation = {
+      // If dpop is provided at the start, it's required from now on.
+      required: true,
+    }
 
   const offeredCredentialConfigurations = getOfferedCredentials(
     issuanceSession.credentialOfferPayload.credential_configuration_ids,
@@ -198,8 +235,9 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     openId4VcVerificationSessionId: verificationSession.id,
   }
 
-  // NOTE: should only allow authenticated clients in the future.
-  issuanceSession.clientId = authorizationChallengeRequest.client_id
+  // If client attestation is used we have verified this client_id matches with the sub
+  // of the wallet attestation
+  issuanceSession.clientId = clientAttestation?.clientAttestation.payload.sub ?? authorizationChallengeRequest.client_id
 
   await openId4VcIssuerService.updateState(
     agentContext,
@@ -221,18 +259,22 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   response: Response
   agentContext: AgentContext
   issuer: OpenId4VcIssuerRecord
-  authorizationChallengeRequest: AuthorizationChallengeRequest & { auth_session: string }
   next: NextFunction
+  parseResult: ParseAuthorizationChallengeRequestResult
+  // FIXME: export in oid4vc-ts
+  request: ParseAuthorizationChallengeRequestOptions['request']
 }) {
-  const { agentContext, issuer, authorizationChallengeRequest, response, next } = options
+  const { agentContext, issuer, parseResult, request, response, next } = options
+  const { authorizationChallengeRequest } = parseResult
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
+  const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+
   const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
 
   // NOTE: we ignore scope, issuer_state etc.. parameters if auth_session is present
-  // should we validate that these are not in the request? I'm not sure what best practive would be here
+  // should we validate that these are not in the request? I'm not sure what best practice would be here
 
   const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
@@ -258,6 +300,51 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
             : `Issuance session '${issuanceSession.id}' has state '${
                 issuanceSession.state
               }' but expected one of ${allowedStates.join(', ')}`,
+      }
+    )
+  }
+
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
+    issuanceSessionId: issuanceSession.id,
+  })
+  const { clientAttestation, dpop } = await authorizationServer.verifyAuthorizationChallengeRequest({
+    authorizationChallengeRequest,
+    authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+    request,
+    clientAttestation: {
+      ...parseResult.clientAttestation,
+      // We only look at the issuance session here. If it is required
+      // it will be defined on the issuance session now.
+      required: issuanceSession.walletAttestation?.required,
+    },
+    dpop: {
+      ...parseResult.dpop,
+      // We only look at the issuance session here. If it is required
+      // it will be defined on the issuance session now.
+      required: issuanceSession.dpop?.required,
+    },
+  })
+
+  if (dpop && dpop.jwkThumbprint !== issuanceSession.dpop?.dpopJkt) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.InvalidDpopProof,
+        error_description: 'Invalid jwk thubmprint',
+      },
+      {
+        internalMessage: `DPoP JWK thumbprint '${dpop.jwkThumbprint}' does not match expected value '${issuanceSession.dpop?.dpopJkt}'`,
+      }
+    )
+  }
+
+  if (clientAttestation && clientAttestation.clientAttestation.payload.sub !== issuanceSession.clientId) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.InvalidClient,
+        error_description: 'Invalid client',
+      },
+      {
+        internalMessage: `Client id '${authorizationChallengeRequest.client_id}' from authorization challenge request does not match client id '${issuanceSession.clientId}' on issuance session`,
       }
     )
   }

@@ -1,3 +1,4 @@
+import { JwaSignatureAlgorithm } from '@credo-ts/core'
 import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
@@ -8,6 +9,9 @@ export const openBadgeCredential = {
   credential_definition: {
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
   },
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+  },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredential = {
@@ -15,6 +19,9 @@ export const universityDegreeCredential = {
   format: OpenId4VciCredentialFormatProfile.JwtVcJson,
   credential_definition: {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+  },
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -25,6 +32,9 @@ export const universityDegreeCredentialLd = {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
     '@context': ['context'],
   },
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+  },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialSdJwt = {
@@ -32,6 +42,9 @@ export const universityDegreeCredentialSdJwt = {
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential',
   cryptographic_binding_methods_supported: ['did:key'],
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+  },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 export const universityDegreeCredentialConfigurationSupported = {
@@ -39,7 +52,7 @@ export const universityDegreeCredentialConfigurationSupported = {
   scope: 'UniversityDegreeCredential',
   vct: 'UniversityDegreeCredential',
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: ['EdDSA', 'ES256'] },
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
   },
   cryptographic_binding_methods_supported: ['did:key', 'jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
@@ -58,6 +71,9 @@ export const universityDegreeCredentialSdJwt2 = {
   id: 'https://openid4vc-issuer.com/credentials/UniversityDegreeCredentialSdJwt2',
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential2',
+  proof_types_supported: {
+    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+  },
   // FIXME: should this be dynamically generated? I think static is fine for now
   cryptographic_binding_methods_supported: ['jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats

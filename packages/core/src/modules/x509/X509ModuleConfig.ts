@@ -6,7 +6,7 @@ import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '.
 
 import { X509Certificate } from './X509Certificate'
 
-type X509VerificationTypeCredential = {
+export type X509VerificationTypeCredential = {
   type: 'credential'
   credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
 
@@ -21,9 +21,46 @@ type X509VerificationTypeCredential = {
   openId4VcVerificationSessionId?: string
 }
 
-type X509VerificationTypeOauth2SecuredAuthorizationRequest = {
+// NOTE: we should probably move these to the OpenID4VC module
+// but have to think about the typing. Probably the base interface should just contain
+// the `verification` with a `type`. And extension modules can extend the verification
+export type X509VerificationTypeOauth2SecuredAuthorizationRequest = {
   type: 'oauth2SecuredAuthorizationRequest'
   authorizationRequest: {
+    jwt: string
+    payload: JwtPayload
+  }
+}
+
+export type X509VerificationTypeOpenId4VciKeyAttestation = {
+  type: 'openId4VciKeyAttestation'
+
+  /**
+   * The `id` of the `OpenId4VcIssuanceSessionRecord` that this key
+   * attestation verification is bound to.
+   */
+  // TODO: should be the record, but we don't have access to the record type here.
+  openId4VcIssuanceSessionId: string
+
+  // NOTE: it would be more helpful to have the typed JWT payload from openid4vc here?
+  keyAttestation: {
+    jwt: string
+    payload: JwtPayload
+  }
+}
+
+export type X509VerificationTypeOauth2ClientAttestation = {
+  type: 'oauth2ClientAttestation'
+
+  /**
+   * The `id` of the `OpenId4VcIssuanceSessionRecord` that this client
+   * attestation verification is bound to.
+   */
+  // TODO: should be the record, but we don't have access to the record type here.
+  openId4VcIssuanceSessionId: string
+
+  // NOTE: it would be more helpful to have the typed JWT payload from openid4vc here?
+  clientAttestation: {
     jwt: string
     payload: JwtPayload
   }
@@ -39,7 +76,11 @@ export interface X509VerificationContext {
    */
   certificateChain: X509Certificate[]
 
-  verification: X509VerificationTypeCredential | X509VerificationTypeOauth2SecuredAuthorizationRequest
+  verification:
+    | X509VerificationTypeCredential
+    | X509VerificationTypeOauth2SecuredAuthorizationRequest
+    | X509VerificationTypeOauth2ClientAttestation
+    | X509VerificationTypeOpenId4VciKeyAttestation
 }
 
 export interface X509ModuleConfigOptions {
