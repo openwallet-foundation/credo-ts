@@ -217,11 +217,15 @@ export class OpenId4VpVerifierService {
           : clientIdScheme
         : undefined
 
-    const client_metadata = await this.getClientMetadata(agentContext, {
-      responseMode,
-      verifier: options.verifier,
-      version,
-    })
+    // Do not add client metadata if OpenID Federation is used.
+    const client_metadata =
+      clientIdScheme !== 'https'
+        ? await this.getClientMetadata(agentContext, {
+            responseMode,
+            verifier: options.verifier,
+            version,
+          })
+        : undefined
 
     const requestParamsBase = {
       nonce,

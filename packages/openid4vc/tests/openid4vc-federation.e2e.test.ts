@@ -69,8 +69,8 @@ describe('OpenId4Vc-federation', () => {
           credentialRequestToCredentialMapper: async ({
             agentContext,
             credentialRequest,
-            holderBindings,
-            credentialConfigurationIds,
+            holderBinding,
+            credentialConfigurationId,
           }) => {
             // We sign the request with the first did:key did we have
             const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -80,13 +80,12 @@ describe('OpenId4Vc-federation', () => {
             if (!verificationMethod) {
               throw new Error('No verification method found')
             }
-            const credentialConfigurationId = credentialConfigurationIds[0]
 
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
                 credentialConfigurationId,
                 format: credentialRequest.format,
-                credentials: holderBindings.map((holderBinding) => ({
+                credentials: holderBinding.keys.map((holderBinding) => ({
                   payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                   holder: holderBinding,
                   issuer: {

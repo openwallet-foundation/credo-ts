@@ -464,6 +464,9 @@ export class OpenId4VpHolderService {
 
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       authorizationRequestPayload,
+      // We overwrite the client metadata on the authorization request payload when using OpenID Federation
+      clientMetadata: authorizationRequestPayload.client_metadata,
+      origin: options.origin,
       authorizationResponsePayload: {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,

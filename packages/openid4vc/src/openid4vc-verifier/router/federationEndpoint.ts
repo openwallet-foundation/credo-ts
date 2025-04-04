@@ -67,7 +67,6 @@ export function configureFederationEndpoint(
         })
 
         const clientMetadataKeys = clientMetadata.jwks?.keys ?? []
-
         const entityConfiguration = await createEntityConfiguration({
           header: {
             kid,
