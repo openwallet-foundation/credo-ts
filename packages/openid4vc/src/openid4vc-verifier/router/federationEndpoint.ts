@@ -177,7 +177,10 @@ export function configureFederationEndpoint(
       verifyJwtCallback: async ({ jwt, jwk }) => {
         const res = await jwsService.verifyJws(agentContext, {
           jws: jwt,
-          jwkResolver: () => getJwkFromJson(jwk),
+          jwsSigner: {
+            method: 'jwk',
+            jwk: getJwkFromJson(jwk),
+          },
         })
 
         return res.isValid

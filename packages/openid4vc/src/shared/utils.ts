@@ -137,7 +137,10 @@ export async function requestSignerToJwtIssuer(
       entityId: requestSigner.entityId,
       // Why do we need to fetch/verify our own entity configuration?
       verifyJwtCallback: async ({ jwt, jwk }) => {
-        const res = await jwsService.verifyJws(agentContext, { jws: jwt, jwkResolver: () => getJwkFromJson(jwk) })
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwsSigner: { method: 'jwk', jwk: getJwkFromJson(jwk) },
+        })
         return res.isValid
       },
     })

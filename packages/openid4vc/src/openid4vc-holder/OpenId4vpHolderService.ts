@@ -108,7 +108,7 @@ export class OpenId4VpHolderService {
     const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
-    // for each transaction data entry, get all credentials that can be used to sign the respective transaction
+    // for each transaction data entry, get all credentials that can fore used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter(
@@ -161,7 +161,10 @@ export class OpenId4VpHolderService {
         verifyJwtCallback: async ({ jwt, jwk }) => {
           const res = await jwsService.verifyJws(agentContext, {
             jws: jwt,
-            jwkResolver: () => getJwkFromJson(jwk),
+            jwsSigner: {
+              method: 'jwk',
+              jwk: getJwkFromJson(jwk),
+            },
           })
 
           return res.isValid
@@ -550,7 +553,10 @@ export class OpenId4VpHolderService {
       verifyJwtCallback: async ({ jwt, jwk }) => {
         const res = await jwsService.verifyJws(agentContext, {
           jws: jwt,
-          jwkResolver: () => getJwkFromJson(jwk),
+          jwsSigner: {
+            method: 'jwk',
+            jwk: getJwkFromJson(jwk),
+          },
         })
 
         return res.isValid
@@ -571,7 +577,10 @@ export class OpenId4VpHolderService {
       verifyJwtCallback: async ({ jwt, jwk }) => {
         const res = await jwsService.verifyJws(agentContext, {
           jws: jwt,
-          jwkResolver: () => getJwkFromJson(jwk),
+          jwsSigner: {
+            method: 'jwk',
+            jwk: getJwkFromJson(jwk),
+          },
         })
 
         return res.isValid
