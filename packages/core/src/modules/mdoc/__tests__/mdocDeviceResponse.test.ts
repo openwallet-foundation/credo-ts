@@ -9,7 +9,7 @@ import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
 describe('mdoc device-response test', () => {
   const agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
-  beforeEach(async () => {
+  beforeAll(async () => {
     await agent.initialize()
   })
 
@@ -127,8 +127,14 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       trustedCertificates: [rootCertificate],
       verificationDate: new Date('2025-04-04'),
     })
-
     expect(chain.length).toEqual(2)
+
+    const chainWithSignerCertificateTrusted = await X509Service.validateCertificateChain(agent.context, {
+      certificateChain: [documentSignerCertificate],
+      trustedCertificates: [documentSignerCertificate],
+      verificationDate: new Date('2025-04-04'),
+    })
+    expect(chainWithSignerCertificateTrusted.length).toEqual(1)
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64url)
 
