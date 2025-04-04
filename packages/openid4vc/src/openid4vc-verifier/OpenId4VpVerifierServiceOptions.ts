@@ -10,7 +10,7 @@ import type {
   VerifiablePresentation,
 } from '@credo-ts/core'
 import type { TransactionDataEntry, createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid, OpenId4VcJwtIssuerFederation } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
@@ -23,6 +23,7 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
   requestSigner:
     | OpenId4VcJwtIssuerDid
     | Omit<OpenId4VcIssuerX5c, 'issuer'>
+    | Omit<OpenId4VcJwtIssuerFederation, 'entityId'>
     | {
         /**
          * Do not sign the request. Only available for DC API (responseMode is `dc_api` or `dc_api.jwt`)
