@@ -134,6 +134,7 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
 
     await deviceResponse.verify(agent.context, {
       trustedCertificates: [rootCertificate],
+      now: new Date('2025-04-04'),
       sessionTranscriptOptions: {
         type: 'openId4VpDcApi',
         clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
