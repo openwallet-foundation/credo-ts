@@ -112,9 +112,6 @@ export class W3cJsonLdCredentialService {
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
         checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
           if (verifyCredentialStatus && credential.credentialStatus) {
-            // await verifyBitStringCredentialStatus(credential, agentContext)
-            // Add a verification function that then checks which type of credentailStatus we have
-            // If the type is supported, we validate it and return the result
             await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
@@ -271,9 +268,6 @@ export class W3cJsonLdCredentialService {
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
         checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
           if (verifyCredentialStatus && credential.credentialStatus) {
-            // await verifyBitStringCredentialStatus(credential, agentContext)
-            // Add a verification function that then checks which type of credentailStatus we have
-            // If the type is supported, we validate it and return the result
             await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
