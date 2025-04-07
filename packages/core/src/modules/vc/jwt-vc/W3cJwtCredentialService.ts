@@ -547,11 +547,4 @@ export class W3cJwtCredentialService {
 
     return verificationMethod
   }
-
-  // temporarily disable no unused var
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async revokeCredential(_agentContext: AgentContext, _options: W3cJwtRevokeCredentialOptions) {
-    // revoke jwt cred
-    throw new CredoError(`Revocation support not implemented for jwtVc`)
-  }
 }

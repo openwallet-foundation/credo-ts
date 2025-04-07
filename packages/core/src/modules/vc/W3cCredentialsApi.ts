@@ -47,13 +47,6 @@ export class W3cCredentialsApi {
     return this.w3cCredentialService.getCredentialRecordById(this.agentContext, id)
   }
 
-  // Revoke Credential Methods
-  public async revokeCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
-    options: RevokeCredentialOptions<Format>
-  ): Promise<W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential> {
-    return this.w3cCredentialService.revokeCredential<Format>(this.agentContext, options)
-  }
-
   public async findCredentialRecordsByQuery(
     query: Query<W3cCredentialRecord>,
     queryOptions?: QueryOptions

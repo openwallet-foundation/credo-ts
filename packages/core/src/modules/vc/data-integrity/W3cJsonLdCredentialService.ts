@@ -332,13 +332,6 @@ export class W3cJsonLdCredentialService {
     return proof
   }
 
-  // temporarily disable no unused var
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public async revokeCredential(_agentContext: AgentContext, _options: W3cJsonLdRevokeCredentialOptions) {
-    // revoke jwt cred
-    throw new CredoError(`Revocation support not implemented for JsonLd`)
-  }
-
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
     return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
   }
