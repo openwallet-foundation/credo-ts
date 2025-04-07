@@ -14,8 +14,6 @@ import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
 import { W3cCredentialService } from './W3cCredentialService'
-import { W3cJsonLdVerifiableCredential } from './data-integrity'
-import { W3cJwtVerifiableCredential } from './jwt-vc'
 
 /**
  * @public
