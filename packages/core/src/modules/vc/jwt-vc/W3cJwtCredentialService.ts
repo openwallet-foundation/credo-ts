@@ -197,10 +197,6 @@ export class W3cJwtCredentialService {
         }
       } else if (verifyCredentialStatus && credential.credentialStatus) {
         // TODO: Add similar verification for JWT VCs
-        // validationResults.validations.credentialStatus = {
-        //   isValid: false,
-        //   error: new CredoError('Verifying credential status is not supported for JWT VCs'),
-        // }
         validationResults.validations.credentialStatus = {
           isValid: await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.JwtVc)
         }
