@@ -1,6 +1,5 @@
 import type { ValidationOptions } from 'class-validator'
 import type { JsonObject } from '../../../../types'
-import type { W3cCredentialSubjectOptions } from './W3cCredentialSubject'
 import type { W3cIssuerOptions } from './W3cIssuer'
 
 import { Expose, Type } from 'class-transformer'
