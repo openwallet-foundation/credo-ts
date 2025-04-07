@@ -43,7 +43,7 @@ export type ProofFormatPayload<PFs extends ProofFormat[], M extends keyof ProofF
 export type ProofFormatCredentialForRequestPayload<
   PFs extends ProofFormat[],
   M extends 'selectCredentialsForRequest' | 'getCredentialsForRequest',
-  IO extends 'input' | 'output'
+  IO extends 'input' | 'output',
 > = {
   [ProofFormat in PFs[number] as ProofFormat['formatKey']]?: ProofFormat['proofFormats'][M][IO]
 }

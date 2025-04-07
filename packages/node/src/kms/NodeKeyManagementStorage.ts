@@ -1,4 +1,4 @@
-import type { Kms, CanBePromise, AgentContext } from '@credo-ts/core'
+import type { AgentContext, CanBePromise, Kms } from '@credo-ts/core'
 
 export interface NodeKeyManagementStorage {
   get(agentContext: AgentContext, keyId: string): CanBePromise<Kms.KmsJwkPrivate | null>

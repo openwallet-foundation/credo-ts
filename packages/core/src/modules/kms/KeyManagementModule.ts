@@ -1,5 +1,5 @@
-import type { KeyManagementModuleConfigOptions } from './KeyManagementModuleConfig'
 import type { DependencyManager, Module } from '../../plugins'
+import type { KeyManagementModuleConfigOptions } from './KeyManagementModuleConfig'
 
 import { KeyManagementApi } from './KeyManagementApi'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'

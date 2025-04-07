@@ -6,7 +6,7 @@ import {
 import { JsonTransformer } from '../../../../../utils'
 import { DidDocument } from '../../../domain'
 import { isValidPeerDid } from '../didPeer'
-import { didToNumAlgo2DidDocument, didDocumentToNumAlgo2Did } from '../peerDidNumAlgo2'
+import { didDocumentToNumAlgo2Did, didToNumAlgo2DidDocument } from '../peerDidNumAlgo2'
 
 import didPeer2Ez6L from './__fixtures__/didPeer2Ez6L.json'
 import didPeer2Ez6LMoreServices from './__fixtures__/didPeer2Ez6LMoreServices.json'

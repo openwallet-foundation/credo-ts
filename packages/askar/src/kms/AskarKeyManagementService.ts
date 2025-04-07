@@ -1,8 +1,8 @@
 import type { JwkProps, KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
 
-import { Kms, utils, type AgentContext } from '@credo-ts/core'
-import { ariesAskar, Jwk, Key, KeyAlgs, KeyEntryList, SigAlgs } from '@hyperledger/aries-askar-shared'
 import { randomUUID } from 'node:crypto'
+import { type AgentContext, Kms, utils } from '@credo-ts/core'
+import { Jwk, Key, KeyAlgs, KeyEntryList, SigAlgs, ariesAskar } from '@hyperledger/aries-askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError } from '../utils'
@@ -92,7 +92,8 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         //   algorithm: KeyAlgs.AesA128Gcm,
         //   secretKey: TypedArrayEncoder.fromBase64(privateJwk.k),
         // })
-      } else if (privateJwk.kty === 'EC' || privateJwk.kty === 'OKP') {
+      }
+      if (privateJwk.kty === 'EC' || privateJwk.kty === 'OKP') {
         // Throws error if not supported
         this.assertAskarAlgForJwkCrv(privateJwk.kty, privateJwk.crv)
 

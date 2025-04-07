@@ -1,3 +1,7 @@
+import type { AgentContext } from '@credo-ts/core'
+import type { AgentMessage } from '../../../AgentMessage'
+import type { FeatureRegistry } from '../../../FeatureRegistry'
+import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -6,10 +10,6 @@ import type {
   SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from './MessagePickupProtocolOptions'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
-import type { AgentContext } from '@credo-ts/core'
 
 export interface MessagePickupProtocol {
   readonly version: string
@@ -22,7 +22,7 @@ export interface MessagePickupProtocol {
   createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | void>
+  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined>
 
   setLiveDeliveryMode(
     agentContext: AgentContext,

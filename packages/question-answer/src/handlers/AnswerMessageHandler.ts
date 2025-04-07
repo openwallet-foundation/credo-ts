@@ -1,5 +1,5 @@
-import type { QuestionAnswerService } from '../services'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { QuestionAnswerService } from '../services'
 
 import { AnswerMessage } from '../messages'
 
@@ -13,5 +13,7 @@ export class AnswerMessageHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<AnswerMessageHandler>) {
     await this.questionAnswerService.receiveAnswer(messageContext)
+
+    return undefined
   }
 }

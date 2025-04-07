@@ -1,15 +1,16 @@
 import type { CanBePromise, Kms } from '@credo-ts/core'
 
-import { TypedArrayEncoder } from '@credo-ts/core'
+import { Buffer } from 'node:buffer'
 import {
   constants,
-  createHmac,
   verify as _verify,
+  createHmac,
   createPublicKey,
-  timingSafeEqual,
   createSecretKey,
+  timingSafeEqual,
 } from 'node:crypto'
 import { promisify } from 'node:util'
+import { TypedArrayEncoder } from '@credo-ts/core'
 
 import { mapJwaSignatureAlgorithmToNode } from './sign'
 
@@ -34,7 +35,7 @@ export function performVerify(
           {
             key: nodeKey,
             padding: constants.RSA_PKCS1_PSS_PADDING,
-            saltLength: parseInt(algorithm.slice(2)) / 8,
+            saltLength: Number.parseInt(algorithm.slice(2)) / 8,
           }
         : nodeKey
 

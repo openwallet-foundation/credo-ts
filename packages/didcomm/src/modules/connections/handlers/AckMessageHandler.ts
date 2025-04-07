@@ -13,5 +13,7 @@ export class AckMessageHandler implements MessageHandler {
 
   public async handle(inboundMessage: MessageHandlerInboundMessage<AckMessageHandler>) {
     await this.connectionService.processAck(inboundMessage)
+
+    return undefined
   }
 }

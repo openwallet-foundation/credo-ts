@@ -6,26 +6,29 @@ import { parseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KmsDecryptOptions, KmsDeleteKeyOptions, KmsGetPublicKeyOptions, KmsImportKeyOptions } from './options'
-import { KmsCreateKeyOptions, KmsCreateKeyType, vKmsCreateKeyOptions } from './options/KmsCreateKeyOptions'
-import { vKmsDecryptOptions } from './options/KmsDecryptOptions'
-import { vKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
-import { KmsEncryptOptions, vKmsEncryptOptions } from './options/KmsEncryptOptions'
-import { vKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
-import { vKmsImportKeyOptions } from './options/KmsImportKeyOptions'
-import { KmsSignOptions, vKmsSignOptions } from './options/KmsSignOptions'
-import { KmsVerifyOptions, vKmsVerifyOptions } from './options/KmsVerifyOptions'
-import { zWithBackend, WithBackend } from './options/backend'
+import { KmsCreateKeyOptions, KmsCreateKeyType, zKmsCreateKeyOptions } from './options/KmsCreateKeyOptions'
+import { zKmsDecryptOptions } from './options/KmsDecryptOptions'
+import { zKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
+import { KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
+import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
+import { zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
+import { KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
+import { KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
+import { WithBackend, zWithBackend } from './options/backend'
 
 @injectable()
 export class KeyManagementApi {
-  public constructor(private keyManagementConfig: KeyManagementModuleConfig, private agentContext: AgentContext) {}
+  public constructor(
+    private keyManagementConfig: KeyManagementModuleConfig,
+    private agentContext: AgentContext
+  ) {}
 
   /**
    * Create a key.
    */
   public async createKey<Type extends KmsCreateKeyType>(options: WithBackend<KmsCreateKeyOptions<Type>>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsCreateKeyOptions),
+      zWithBackend(zKmsCreateKeyOptions),
       options,
       'Invalid options provided to createKey method'
     )
@@ -39,7 +42,7 @@ export class KeyManagementApi {
    */
   public async sign(options: WithBackend<KmsSignOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsSignOptions),
+      zWithBackend(zKmsSignOptions),
       options,
       'Invalid options provided to sign method'
     )
@@ -53,7 +56,7 @@ export class KeyManagementApi {
    */
   public async verify(options: WithBackend<KmsVerifyOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsVerifyOptions),
+      zWithBackend(zKmsVerifyOptions),
       options,
       'Invalid options provided to verify method'
     )
@@ -71,7 +74,7 @@ export class KeyManagementApi {
    */
   public async encrypt(options: WithBackend<KmsEncryptOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsEncryptOptions),
+      zWithBackend(zKmsEncryptOptions),
       options,
       'Invalid options provided to encrypt method'
     )
@@ -87,7 +90,7 @@ export class KeyManagementApi {
    */
   public async decrypt(options: WithBackend<KmsDecryptOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsDecryptOptions),
+      zWithBackend(zKmsDecryptOptions),
       options,
       'Invalid options provided to decrypt method'
     )
@@ -103,7 +106,7 @@ export class KeyManagementApi {
    */
   public async importKey(options: WithBackend<KmsImportKeyOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsImportKeyOptions),
+      zWithBackend(zKmsImportKeyOptions),
       options,
       'Invalid options provided to importKey method'
     )
@@ -117,7 +120,7 @@ export class KeyManagementApi {
    */
   public async getPublicKey(options: WithBackend<KmsGetPublicKeyOptions>) {
     const { backend, keyId } = parseWithErrorHandling(
-      zWithBackend(vKmsGetPublicKeyOptions),
+      zWithBackend(zKmsGetPublicKeyOptions),
       options,
       'Invalid options provided to getPublicKey method'
     )
@@ -136,7 +139,7 @@ export class KeyManagementApi {
    */
   public async deleteKey(options: WithBackend<KmsDeleteKeyOptions>) {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
-      zWithBackend(vKmsDeleteKeyOptions),
+      zWithBackend(zKmsDeleteKeyOptions),
       options,
       'Invalid options provided to deleteKey method'
     )

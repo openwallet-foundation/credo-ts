@@ -45,10 +45,10 @@ export function allowedKeyDerivationAlgsForKey(
     ? // If no `alg` specified on jwk, return all supported algs
       supportedAlgs
     : // If `alg` is specified and supported, return the allowed alg
-    allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaKeyManagementAlgorithm)
-    ? [allowedAlg as KnownJwaKeyManagementAlgorithm]
-    : // Otherwise nothing is allowed (`alg` is specified but not supported)
-      []
+      allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaKeyManagementAlgorithm)
+      ? [allowedAlg as KnownJwaKeyManagementAlgorithm]
+      : // Otherwise nothing is allowed (`alg` is specified but not supported)
+        []
 }
 
 export function assertAllowedKeyDerivationAlgForKey(

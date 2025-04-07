@@ -1,16 +1,16 @@
 import { AgentContext, FileSystem, InjectionSymbols } from '@credo-ts/core'
-import { KdfMethod, Session, Store, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
+import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
-import { AskarStoreRotateKeyOptions, AskarStoreExportOptions, AskarStoreImportOptions } from './AskarApiOptions'
+import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
 import { AskarModuleConfig, AskarModuleConfigStoreOptions, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import {
-  AskarStoreExportPathExistsError,
-  AskarStoreInvalidKeyError,
   AskarStoreDuplicateError,
   AskarStoreError,
-  AskarStoreNotFoundError,
+  AskarStoreExportPathExistsError,
   AskarStoreImportPathExistsError,
+  AskarStoreInvalidKeyError,
+  AskarStoreNotFoundError,
 } from './error'
 import {
   AskarErrorCode,
@@ -184,7 +184,9 @@ export class AskarStoreManager {
         throw new AskarStoreNotFoundError(errorMessage, {
           cause: error,
         })
-      } else if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
+      }
+
+      if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
         const errorMessage = `Incorrect key for store '${storeConfig.id}'`
         agentContext.config.logger.debug(errorMessage)
         throw new AskarStoreInvalidKeyError(errorMessage, {
@@ -461,7 +463,7 @@ export class AskarStoreManager {
   private async _withSession<Return>(
     agentContext: AgentContext,
     callback: (session: Session) => Return,
-    transaction: boolean = false
+    transaction = false
   ): Promise<Awaited<Return>> {
     let session: Session | undefined = undefined
     try {

@@ -1,4 +1,4 @@
-import { NodeKeyManagementService, NodeInMemoryKeyManagementStorage } from '../../../../../node/src'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getInMemoryAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ZodValidationError } from '../../../error/ZodValidationError'

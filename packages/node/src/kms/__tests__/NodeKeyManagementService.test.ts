@@ -1,6 +1,6 @@
-import { Kms, ZodValidationError } from '@credo-ts/core'
+import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
-
+import { Kms, ZodValidationError } from '@credo-ts/core'
 import { getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../NodeKeyManagementService'

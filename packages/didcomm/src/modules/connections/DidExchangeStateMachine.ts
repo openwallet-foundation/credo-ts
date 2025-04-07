@@ -1,13 +1,14 @@
-import type { ConnectionRecord } from './repository'
 import type { ParsedMessageType } from '../../util/messageType'
+import type { ConnectionRecord } from './repository'
 
 import { CredoError } from '@credo-ts/core'
 
 import { canHandleMessageType } from '../../util/messageType'
 
-import { DidExchangeRequestMessage, DidExchangeResponseMessage, DidExchangeCompleteMessage } from './messages'
-import { DidExchangeState, DidExchangeRole } from './models'
+import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
+import { DidExchangeRole, DidExchangeState } from './models'
 
+// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {
@@ -52,7 +53,9 @@ export class DidExchangeStateMachine {
   ]
 
   public static assertCreateMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
-    const rule = this.createMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
+    const rule = DidExchangeStateMachine.createMessageStateRules.find((r) =>
+      canHandleMessageType(r.message, messageType)
+    )
     if (!rule) {
       throw new CredoError(`Could not find create message rule for ${messageType}`)
     }
@@ -64,7 +67,9 @@ export class DidExchangeStateMachine {
   }
 
   public static assertProcessMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
-    const rule = this.processMessageStateRules.find((r) => canHandleMessageType(r.message, messageType))
+    const rule = DidExchangeStateMachine.processMessageStateRules.find((r) =>
+      canHandleMessageType(r.message, messageType)
+    )
     if (!rule) {
       throw new CredoError(`Could not find create message rule for ${messageType}`)
     }
@@ -76,8 +81,8 @@ export class DidExchangeStateMachine {
   }
 
   public static nextState(messageType: ParsedMessageType, record: ConnectionRecord) {
-    const rule = this.createMessageStateRules
-      .concat(this.processMessageStateRules)
+    const rule = DidExchangeStateMachine.createMessageStateRules
+      .concat(DidExchangeStateMachine.processMessageStateRules)
       .find((r) => canHandleMessageType(r.message, messageType) && r.role === record.role)
     if (!rule) {
       throw new CredoError(

@@ -1,4 +1,4 @@
-import type { ProblemReportErrorOptions, CredentialProblemReportReason } from '@credo-ts/didcomm'
+import type { CredentialProblemReportReason, ProblemReportErrorOptions } from '@credo-ts/didcomm'
 
 import { ProblemReportError } from '@credo-ts/didcomm'
 

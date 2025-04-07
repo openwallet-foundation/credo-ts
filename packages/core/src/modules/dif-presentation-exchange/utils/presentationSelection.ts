@@ -45,13 +45,14 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: ClaimFormat.MsoMdoc,
+        claimFormat: ClaimFormat.MsoMdoc,
         descriptor,
         presentation,
         credential: document,
         inputDescriptor,
       } as const
-    } else if (
+    }
+    if (
       presentation instanceof W3cJwtVerifiablePresentation ||
       presentation instanceof W3cJsonLdVerifiablePresentation
     ) {
@@ -74,20 +75,19 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: presentation.claimFormat,
+        claimFormat: presentation.claimFormat,
         descriptor,
         presentation,
         credential: verifiableCredential,
         inputDescriptor,
       } as const
-    } else {
-      return {
-        format: ClaimFormat.SdJwtVc,
-        descriptor,
-        presentation,
-        credential: presentation,
-        inputDescriptor,
-      } as const
     }
+    return {
+      claimFormat: ClaimFormat.SdJwtVc,
+      descriptor,
+      presentation,
+      credential: presentation,
+      inputDescriptor,
+    } as const
   })
 }

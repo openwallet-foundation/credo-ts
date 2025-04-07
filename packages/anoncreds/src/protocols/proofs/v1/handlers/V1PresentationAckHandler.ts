@@ -1,5 +1,5 @@
-import type { V1ProofProtocol } from '../V1ProofProtocol'
 import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { V1PresentationAckMessage } from '../messages'
 
@@ -13,5 +13,7 @@ export class V1PresentationAckHandler implements MessageHandler {
 
   public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationAckHandler>) {
     await this.proofProtocol.processAck(messageContext)
+
+    return undefined
   }
 }

@@ -1,5 +1,5 @@
-import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 import type { WalletConfig } from '@credo-ts/core'
+import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 
 import { KeyDerivationMethod, WalletError } from '@credo-ts/core'
 import { KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
@@ -28,7 +28,7 @@ export const uriFromStoreConfig = (
   credoDataPath: string
 ): { uri: string; path?: string } => {
   let uri = ''
-  let path
+  let path: string | undefined
 
   const urlParams = []
 

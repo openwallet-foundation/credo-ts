@@ -1,10 +1,10 @@
-import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 
 import { AgentConfig, CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
 
 import { AskarApi } from './AskarApi'
-import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
+import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
 import { AksarKeyManagementService } from './kms/AskarKeyManagementService'
 import { AskarStorageService } from './storage'
@@ -50,7 +50,9 @@ export class AskarModule implements Module {
       const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
       await storeManager.getInitializedStoreWithProfile(agentContext)
       return
-    } else if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet) {
+    }
+
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet) {
       agentContext.dependencyManager.registerInstance('AskarContextMetadata', metadata)
       const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
       await storeManager.getInitializedStoreWithProfile(agentContext)

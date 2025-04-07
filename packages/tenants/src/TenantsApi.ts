@@ -1,3 +1,4 @@
+import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
 import type {
   CreateTenantOptions,
   GetTenantAgentOptions,
@@ -5,16 +6,15 @@ import type {
   WithTenantAgentCallback,
 } from './TenantsApiOptions'
 import type { TenantRecord } from './repository'
-import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
 
 import {
-  isStorageUpToDate,
   AgentContext,
-  inject,
-  injectable,
   InjectionSymbols,
   Logger,
   UpdateAssistant,
+  inject,
+  injectable,
+  isStorageUpToDate,
 } from '@credo-ts/core'
 
 import { TenantAgent } from './TenantAgent'
@@ -77,7 +77,7 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   public async createTenant(options: CreateTenantOptions) {
     this.logger.debug(`Creating tenant with label ${options.config.label}`)
 
-    const a: number = 'TODO: store persitedModuleMetadata'
+    const _a: number = 'TODO: store persitedModuleMetadata'
     const tenantRecord = await this.tenantRecordService.createTenant(this.rootAgentContext, options.config)
 
     // This initializes the tenant agent, creates the wallet etc...

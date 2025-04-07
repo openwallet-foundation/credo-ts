@@ -1,8 +1,9 @@
-/* eslint-disable no-console,@typescript-eslint/no-explicit-any */
-
 import { BaseLogger } from './BaseLogger'
 import { LogLevel } from './Logger'
 import { replaceError } from './replaceError'
+
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type LogData = Record<string, any>
 
 export class ConsoleLogger extends BaseLogger {
   // Map our log levels to console levels
@@ -16,7 +17,7 @@ export class ConsoleLogger extends BaseLogger {
     [LogLevel.fatal]: 'error',
   } as const
 
-  private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: Record<string, any>): void {
+  private log(level: Exclude<LogLevel, LogLevel.off>, message: string, data?: LogData): void {
     // Get console method from mapping
     const consoleLevel = this.consoleLogMap[level]
 
@@ -28,37 +29,39 @@ export class ConsoleLogger extends BaseLogger {
 
     // Log, with or without data
     if (data) {
+      // biome-ignore lint/suspicious/noConsole: ConsoleLogger
       console[consoleLevel](`${prefix}: ${message}`, JSON.stringify(data, replaceError, 2))
     } else {
+      // biome-ignore lint/suspicious/noConsole: ConsoleLogger
       console[consoleLevel](`${prefix}: ${message}`)
     }
   }
 
-  public test(message: string, data?: Record<string, any>): void {
+  public test(message: string, data?: LogData): void {
     this.log(LogLevel.test, message, data)
   }
 
-  public trace(message: string, data?: Record<string, any>): void {
+  public trace(message: string, data?: LogData): void {
     this.log(LogLevel.trace, message, data)
   }
 
-  public debug(message: string, data?: Record<string, any>): void {
+  public debug(message: string, data?: LogData): void {
     this.log(LogLevel.debug, message, data)
   }
 
-  public info(message: string, data?: Record<string, any>): void {
+  public info(message: string, data?: LogData): void {
     this.log(LogLevel.info, message, data)
   }
 
-  public warn(message: string, data?: Record<string, any>): void {
+  public warn(message: string, data?: LogData): void {
     this.log(LogLevel.warn, message, data)
   }
 
-  public error(message: string, data?: Record<string, any>): void {
+  public error(message: string, data?: LogData): void {
     this.log(LogLevel.error, message, data)
   }
 
-  public fatal(message: string, data?: Record<string, any>): void {
+  public fatal(message: string, data?: LogData): void {
     this.log(LogLevel.fatal, message, data)
   }
 }

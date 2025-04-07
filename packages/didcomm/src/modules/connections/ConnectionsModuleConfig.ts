@@ -20,7 +20,7 @@ export interface ConnectionsModuleConfigOptions {
    * Peer did num algo to use in requests for DID exchange protocol (RFC 0023). It will be also used by default
    * in responses in case that the request does not use a peer did.
    *
-   * @default PeerDidNumAlgo.GenesisDoc
+   * @default PeerDidNumAlgo.ShortFormAndLongForm
    */
   peerNumAlgoForDidExchangeRequests?: PeerDidNumAlgo
 
@@ -72,9 +72,9 @@ export class ConnectionsModuleConfig {
   }
 
   /** See {@link ConnectionsModuleConfigOptions.peerNumAlgoForDidRotation} */
-  public set peerNumAlgoForDidRotation(
-    peerNumAlgoForDidRotation: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc | PeerDidNumAlgo.ShortFormAndLongForm
-  ) {
+  public set peerNumAlgoForDidRotation(peerNumAlgoForDidRotation:
+    | PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+    | PeerDidNumAlgo.ShortFormAndLongForm) {
     this.#peerNumAlgoForDidRotation = peerNumAlgoForDidRotation
   }
 }

@@ -1,7 +1,7 @@
-import type { OutOfBandState } from './OutOfBandState'
+import type { BaseEvent } from '@credo-ts/core'
 import type { ConnectionRecord } from '../../connections'
 import type { OutOfBandRecord } from '../repository'
-import type { BaseEvent } from '@credo-ts/core'
+import type { OutOfBandState } from './OutOfBandState'
 
 export enum OutOfBandEventTypes {
   OutOfBandStateChanged = 'OutOfBandStateChanged',

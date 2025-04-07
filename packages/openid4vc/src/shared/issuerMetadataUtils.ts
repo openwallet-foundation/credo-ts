@@ -3,7 +3,7 @@ import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from './models'
 
-import { type CredentialConfigurationsSupported } from '@animo-id/oid4vci'
+import { type CredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 
 /**
  * Returns all entries from the credential offer with the associated metadata resolved.
@@ -11,7 +11,7 @@ import { type CredentialConfigurationsSupported } from '@animo-id/oid4vci'
 export function getOfferedCredentials<
   Configurations extends
     | OpenId4VciCredentialConfigurationsSupported
-    | OpenId4VciCredentialConfigurationsSupportedWithFormats
+    | OpenId4VciCredentialConfigurationsSupportedWithFormats,
 >(
   offeredCredentialConfigurationIds: Array<string>,
   credentialConfigurationsSupported: Configurations,

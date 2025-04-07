@@ -1,9 +1,9 @@
-import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { Response, Request, NextFunction } from 'express'
+import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import type { NextFunction, Request, Response } from 'express'
 
-import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@animo-id/oauth2'
 import { CredoError } from '@credo-ts/core'
+import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
   requestContext?: RC & OpenId4VcRequestContext
@@ -54,7 +54,7 @@ export function sendOauth2ErrorResponse(
   next(error)
 }
 export function sendUnknownServerErrorResponse(response: Response, next: NextFunction, logger: Logger, error: unknown) {
-  logger.error(`[OID4VC] Sending unknown server error response`, {
+  logger.error('[OID4VC] Sending unknown server error response', {
     error,
   })
 
@@ -79,11 +79,16 @@ export function sendErrorResponse(
   next: NextFunction,
   logger: Logger,
   status: number,
-  message: Oauth2ErrorCodes | string,
-  error: unknown,
-  additionalPayload?: Record<string, unknown>
+  errorCode: Oauth2ErrorCodes | string,
+  errorDescription?: string,
+  additionalPayload?: Record<string, unknown>,
+  error?: Error
 ) {
-  const body = { error: message, ...(error instanceof Error && { cause: error.message }), ...additionalPayload }
+  const body = {
+    error: errorCode,
+    error_description: errorDescription,
+    ...additionalPayload,
+  }
   logger.warn(`[OID4VC] Sending error response: ${JSON.stringify(body)}`, {
     error,
   })
@@ -98,7 +103,7 @@ export function sendErrorResponse(
 export function sendJsonResponse(
   response: Response,
   next: NextFunction,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   body: any,
   contentType?: string,
   status?: number
@@ -111,7 +116,7 @@ export function sendJsonResponse(
   next()
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function getRequestContext<T extends OpenId4VcRequest<any>>(request: T): NonNullable<T['requestContext']> {
   const requestContext = request.requestContext
   if (!requestContext) throw new CredoError('Request context not set.')

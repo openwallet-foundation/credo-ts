@@ -1,3 +1,4 @@
+import type { ProofFormat } from '@credo-ts/didcomm'
 import type {
   AnonCredsNonRevokedInterval,
   AnonCredsPredicateType,
@@ -9,7 +10,6 @@ import type {
   AnonCredsRequestedPredicateMatch,
   AnonCredsSelectedCredentials,
 } from '../models'
-import type { ProofFormat } from '@credo-ts/didcomm'
 
 export interface AnonCredsPresentationPreviewAttribute {
   name: string

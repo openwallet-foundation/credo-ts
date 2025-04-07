@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { ZodValidationError } from '../error'
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export type BaseSchema = z.Schema<any, any, any>
 
 export function parseWithErrorHandling<Schema extends BaseSchema>(

@@ -1,47 +1,47 @@
 import * as z from '../../../utils/zod'
 
-import { vKmsJwkPrivateEc, vKmsJwkPrivateToPublicEc, vKmsJwkPublicEc } from './kty/ec'
-import { vKmsJwkPrivateOct, vKmsJwkPrivateToPublicOct, vKmsJwkPublicOct } from './kty/oct'
-import { vKmsJwkPrivateOkp, vKmsJwkPrivateToPublicOkp, vKmsJwkPublicOkp } from './kty/okp'
-import { vKmsJwkPrivateRsa, vKmsJwkPrivateToPublicRsa, vKmsJwkPublicRsa } from './kty/rsa'
+import { zKmsJwkPrivateEc, zKmsJwkPrivateToPublicEc, zKmsJwkPublicEc } from './kty/ec'
+import { zKmsJwkPrivateOct, zKmsJwkPrivateToPublicOct, zKmsJwkPublicOct } from './kty/oct'
+import { zKmsJwkPrivateOkp, zKmsJwkPrivateToPublicOkp, zKmsJwkPublicOkp } from './kty/okp'
+import { zKmsJwkPrivateRsa, zKmsJwkPrivateToPublicRsa, zKmsJwkPublicRsa } from './kty/rsa'
 
-export const vKmsJwkPublicAsymmetric = z.discriminatedUnion('kty', [
-  vKmsJwkPublicEc,
-  vKmsJwkPublicRsa,
-  vKmsJwkPublicOkp,
+export const zKmsJwkPublicAsymmetric = z.discriminatedUnion('kty', [
+  zKmsJwkPublicEc,
+  zKmsJwkPublicRsa,
+  zKmsJwkPublicOkp,
 ])
-export type KmsJwkPublicAsymmetric = z.output<typeof vKmsJwkPublicAsymmetric>
+export type KmsJwkPublicAsymmetric = z.output<typeof zKmsJwkPublicAsymmetric>
 
-export const vKmsJwkPublicCrv = z.discriminatedUnion('kty', [vKmsJwkPublicEc, vKmsJwkPublicOkp])
-export type KmsJwkPublicCrv = z.output<typeof vKmsJwkPublicCrv>
+export const zKmsJwkPublicCrv = z.discriminatedUnion('kty', [zKmsJwkPublicEc, zKmsJwkPublicOkp])
+export type KmsJwkPublicCrv = z.output<typeof zKmsJwkPublicCrv>
 
-export const vKmsJwkPublic = z.discriminatedUnion('kty', [
-  vKmsJwkPublicEc,
-  vKmsJwkPublicRsa,
-  vKmsJwkPublicOct,
-  vKmsJwkPublicOkp,
+export const zKmsJwkPublic = z.discriminatedUnion('kty', [
+  zKmsJwkPublicEc,
+  zKmsJwkPublicRsa,
+  zKmsJwkPublicOct,
+  zKmsJwkPublicOkp,
 ])
-export type KmsJwkPublic = z.output<typeof vKmsJwkPublic>
+export type KmsJwkPublic = z.output<typeof zKmsJwkPublic>
 
-const vKmsJwkPrivateToPublic = z.discriminatedUnion('kty', [
-  vKmsJwkPrivateToPublicEc,
-  vKmsJwkPrivateToPublicRsa,
-  vKmsJwkPrivateToPublicOct,
-  vKmsJwkPrivateToPublicOkp,
+const zKmsJwkPrivateToPublic = z.discriminatedUnion('kty', [
+  zKmsJwkPrivateToPublicEc,
+  zKmsJwkPrivateToPublicRsa,
+  zKmsJwkPrivateToPublicOct,
+  zKmsJwkPrivateToPublicOkp,
 ])
 
-export const vKmsJwkPrivateCrv = z.discriminatedUnion('kty', [vKmsJwkPrivateEc, vKmsJwkPrivateOkp])
-export type KmsJwkPrivateCrv = z.output<typeof vKmsJwkPrivateCrv>
+export const zKmsJwkPrivateCrv = z.discriminatedUnion('kty', [zKmsJwkPrivateEc, zKmsJwkPrivateOkp])
+export type KmsJwkPrivateCrv = z.output<typeof zKmsJwkPrivateCrv>
 
-export const vKmsJwkPrivate = z.discriminatedUnion('kty', [
-  vKmsJwkPrivateEc,
-  vKmsJwkPrivateRsa,
-  vKmsJwkPrivateOct,
-  vKmsJwkPrivateOkp,
+export const zKmsJwkPrivate = z.discriminatedUnion('kty', [
+  zKmsJwkPrivateEc,
+  zKmsJwkPrivateRsa,
+  zKmsJwkPrivateOct,
+  zKmsJwkPrivateOkp,
 ])
-export type KmsJwkPrivate = z.output<typeof vKmsJwkPrivate>
+export type KmsJwkPrivate = z.output<typeof zKmsJwkPrivate>
 
 export function publicJwkFromPrivateJwk(privateJwk: KmsJwkPrivate | KmsJwkPublic): KmsJwkPublic {
   // This will remove any private properties
-  return z.parseWithErrorHandling(vKmsJwkPrivateToPublic, privateJwk)
+  return z.parseWithErrorHandling(zKmsJwkPrivateToPublic, privateJwk)
 }

@@ -43,10 +43,10 @@ export function allowedEncryptionAlgsForKey(
     ? // If no `alg` specified on jwk, return all supported algs
       supportedAlgs
     : // If `alg` is specified and supported, return the allowed alg
-    allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaContentEncryptionAlgorithm)
-    ? [allowedAlg as KnownJwaContentEncryptionAlgorithm | KnownJwaKeyEncryptionAlgorithm]
-    : // Otherwise nothing is allowed (`alg` is specified but not supported)
-      []
+      allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaContentEncryptionAlgorithm)
+      ? [allowedAlg as KnownJwaContentEncryptionAlgorithm | KnownJwaKeyEncryptionAlgorithm]
+      : // Otherwise nothing is allowed (`alg` is specified but not supported)
+        []
 }
 
 export function assertAllowedEncryptionAlgForKey(

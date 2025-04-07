@@ -1,4 +1,3 @@
-import type { W3cJsonLdDeriveProofOptions } from './deriveProof'
 import type { AgentContext } from '../../../agent/context'
 import type { Key } from '../../../crypto/Key'
 import type { SingleOrArray } from '../../../utils'
@@ -10,11 +9,12 @@ import type {
 } from '../W3cCredentialServiceOptions'
 import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
+import type { W3cJsonLdDeriveProofOptions } from './deriveProof'
 
 import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { asArray, JsonTransformer } from '../../../utils'
+import { JsonTransformer, asArray } from '../../../utils'
 import { VerificationMethod } from '../../dids'
 import { getKeyFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
@@ -122,7 +122,7 @@ export class W3cJsonLdCredentialService {
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
       if (options.proofPurpose) {
-        verifyOptions['purpose'] = options.proofPurpose
+        verifyOptions.purpose = options.proofPurpose
       }
 
       const result = await vc.verifyCredential(verifyOptions)
@@ -189,7 +189,7 @@ export class W3cJsonLdCredentialService {
     >
 
     const keyPair = new WalletKeyPair({
-      controller: verificationMethodObject['controller'] as string,
+      controller: verificationMethodObject.controller as string,
       id: options.verificationMethod,
       key: signingKey,
       wallet: agentContext.wallet,
@@ -269,7 +269,7 @@ export class W3cJsonLdCredentialService {
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
       if (options.purpose) {
-        verifyOptions['presentationPurpose'] = options.purpose
+        verifyOptions.presentationPurpose = options.purpose
       }
 
       const result = await vc.verify(verifyOptions)

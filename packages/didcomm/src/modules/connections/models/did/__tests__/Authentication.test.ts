@@ -2,7 +2,7 @@ import type { Authentication } from '../authentication'
 
 import { instanceToPlain, plainToInstance } from 'class-transformer'
 
-import { AuthenticationTransformer, ReferencedAuthentication, EmbeddedAuthentication } from '../authentication'
+import { AuthenticationTransformer, EmbeddedAuthentication, ReferencedAuthentication } from '../authentication'
 import { PublicKey, RsaSig2018 } from '../publicKey'
 
 describe('Did | Authentication', () => {
@@ -55,7 +55,7 @@ describe('Did | Authentication', () => {
 
       const [referencedAuthentication, embeddedAuthentication] = authenticationWrapper.authentication as [
         ReferencedAuthentication,
-        EmbeddedAuthentication
+        EmbeddedAuthentication,
       ]
       expect(referencedAuthentication.publicKey).toBeInstanceOf(PublicKey)
       expect(embeddedAuthentication.publicKey).toBeInstanceOf(PublicKey)

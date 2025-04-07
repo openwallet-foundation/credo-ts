@@ -14,6 +14,8 @@ export class KeylistUpdateResponseHandler implements MessageHandler {
   public async handle(messageContext: MessageHandlerInboundMessage<KeylistUpdateResponseHandler>) {
     messageContext.assertReadyConnection()
 
-    return await this.mediationRecipientService.processKeylistUpdateResults(messageContext)
+    await this.mediationRecipientService.processKeylistUpdateResults(messageContext)
+
+    return undefined
   }
 }

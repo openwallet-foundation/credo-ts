@@ -1,5 +1,4 @@
-import { cborEncode, DeviceRequest, parseDeviceResponse } from '@animo-id/mdoc'
-// eslint-disable-next-line import/no-extraneous-dependencies
+import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { Agent, KeyType } from '../../..'
@@ -8,6 +7,7 @@ import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
 import { Buffer, TypedArrayEncoder } from '../../../utils'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { namespacesMapToRecord } from '../mdocUtil'
 
 const DEVICE_JWK_PUBLIC = {
   kty: 'EC',
@@ -22,6 +22,7 @@ const DEVICE_JWK_PRIVATE = {
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
 }
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const ISSUER_PRIVATE_KEY_JWK = {
   kty: 'EC',
   kid: '1234',
@@ -93,60 +94,64 @@ describe('mdoc device-response proximity test', () => {
       keyType: KeyType.P256,
       privateKey: Buffer.from(issuerPrivateAskar.secretBytes),
     })
+    mdoc = await Mdoc.sign(agent.context, {
+      docType: 'org.iso.18013.5.1.mDL',
+      validityInfo: {
+        signed: new Date('2023-10-24'),
+        validUntil: new Date('2050-10-24'),
+      },
+      holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
+      issuerCertificate: ISSUER_CERTIFICATE,
+      namespaces: {
+        'org.iso.18013.5.1': {
+          family_name: 'Jones',
+          given_name: 'Ava',
+          birth_date: '2007-03-25',
+          issue_date: '2023-09-01',
+          expiry_date: '2028-09-31',
+          issuing_country: 'US',
+          issuing_authority: 'NY DMV',
+          document_number: '01-856-5050',
+          portrait: 'bstr',
+          driving_privileges: [
+            {
+              vehicle_category_code: 'C',
+              issue_date: '2023-09-01',
+              expiry_date: '2028-09-31',
+            },
+          ],
+          un_distinguishing_sign: 'tbd-us.ny.dmv',
 
-    // this is the ISSUER side
-    {
-      mdoc = await Mdoc.sign(agent.context, {
-        docType: 'org.iso.18013.5.1.mDL',
-        validityInfo: {
-          signed: new Date('2023-10-24'),
-          validUntil: new Date('2050-10-24'),
+          sex: 'F',
+          height: '5\' 8"',
+          weight: '120lb',
+          eye_colour: 'brown',
+          hair_colour: 'brown',
+          resident_addres: '123 Street Rd',
+          resident_city: 'Brooklyn',
+          resident_state: 'NY',
+          resident_postal_code: '19001',
+          resident_country: 'US',
+          issuing_jurisdiction: 'New York',
         },
-        holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
-        issuerCertificate: ISSUER_CERTIFICATE,
-        namespaces: {
-          'org.iso.18013.5.1': {
-            family_name: 'Jones',
-            given_name: 'Ava',
-            birth_date: '2007-03-25',
-            issue_date: '2023-09-01',
-            expiry_date: '2028-09-31',
-            issuing_country: 'US',
-            issuing_authority: 'NY DMV',
-            document_number: '01-856-5050',
-            portrait: 'bstr',
-            driving_privileges: [
-              {
-                vehicle_category_code: 'C',
-                issue_date: '2023-09-01',
-                expiry_date: '2028-09-31',
-              },
-            ],
-            un_distinguishing_sign: 'tbd-us.ny.dmv',
-
-            sex: 'F',
-            height: '5\' 8"',
-            weight: '120lb',
-            eye_colour: 'brown',
-            hair_colour: 'brown',
-            resident_addres: '123 Street Rd',
-            resident_city: 'Brooklyn',
-            resident_state: 'NY',
-            resident_postal_code: '19001',
-            resident_country: 'US',
-            issuing_jurisdiction: 'New York',
-          },
-        },
-      })
-    }
+      },
+    })
 
     //  This is the Device side
     {
       const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
         mdocs: [mdoc],
-        deviceRequest: DEVICE_REQUEST_1,
-        // TODO: we should also add methods for Credo to create device requests with session transcript bytes.
-        sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+
+        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+          return {
+            docType: v.itemsRequest.data.docType,
+            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
+          }
+        }),
+        sessionTranscriptOptions: {
+          type: 'sesionTranscriptBytes',
+          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+        },
         deviceNameSpaces: {
           'com.foobar-device': { test: 1234 },
         },

@@ -1,11 +1,11 @@
-import type { AbstractCheqdSDKModule, CheqdSDK, DidStdFee, DIDDocument } from '@cheqd/sdk'
+import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork } from '@cheqd/sdk'
-import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
+import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
+import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
@@ -52,7 +52,7 @@ export class CheqdLedgerService {
 
   public async disconnect() {
     for (const network of this.networks) {
-      const a = await network.sdk
+      const _a = await network.sdk
       if (!network.sdk) {
         await this.initializeSdkForNetwork(network)
       } else {
@@ -93,7 +93,11 @@ export class CheqdLedgerService {
     try {
       // Initialize cheqd sdk with promise
       network.sdk = createCheqdSDK({
-        modules: [DIDModule as unknown as AbstractCheqdSDKModule, ResourceModule as unknown as AbstractCheqdSDKModule],
+        modules: [
+          FeemarketModule as unknown as AbstractCheqdSDKModule,
+          DIDModule as unknown as AbstractCheqdSDKModule,
+          ResourceModule as unknown as AbstractCheqdSDKModule,
+        ],
         rpcUrl: network.rpcUrl,
         wallet: await network.cosmosPayerWallet.catch((error) => {
           throw new CredoError(`Error initializing cosmos payer wallet: ${error.message}`, { cause: error })

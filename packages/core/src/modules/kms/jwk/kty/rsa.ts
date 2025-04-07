@@ -1,7 +1,7 @@
 import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-const vKmsJwkPrivateRsaOth = z.array(
+const zKmsJwkPrivateRsaOth = z.array(
   z
     .object({
       d: z.optional(z.base64Url),
@@ -11,7 +11,7 @@ const vKmsJwkPrivateRsaOth = z.array(
     .passthrough()
 )
 
-export const vKmsJwkPublicRsa = z.object({
+export const zKmsJwkPublicRsa = z.object({
   ...vJwkCommon.shape,
   kty: z.literal('RSA'),
 
@@ -28,10 +28,10 @@ export const vKmsJwkPublicRsa = z.object({
   qi: z.optional(z.undefined()), // First CRT coefficient
   oth: z.optional(z.undefined()),
 })
-export type KmsJwkPublicRsa = z.output<typeof vKmsJwkPublicRsa>
+export type KmsJwkPublicRsa = z.output<typeof zKmsJwkPublicRsa>
 
-export const vKmsJwkPrivateToPublicRsa = z.object({
-  ...vKmsJwkPublicRsa.shape,
+export const zKmsJwkPrivateToPublicRsa = z.object({
+  ...zKmsJwkPublicRsa.shape,
 
   d: z.optionalToUndefined(z.base64Url), // Private exponent
   p: z.optionalToUndefined(z.base64Url), // First prime factor
@@ -39,11 +39,11 @@ export const vKmsJwkPrivateToPublicRsa = z.object({
   dp: z.optionalToUndefined(z.base64Url), // First factor CRT exponent
   dq: z.optionalToUndefined(z.base64Url), // Second factor CRT exponent
   qi: z.optionalToUndefined(z.base64Url), // First CRT coefficient
-  oth: z.optionalToUndefined(vKmsJwkPrivateRsaOth),
+  oth: z.optionalToUndefined(zKmsJwkPrivateRsaOth),
 })
 
-export const vKmsJwkPrivateRsa = z.object({
-  ...vKmsJwkPublicRsa.shape,
+export const zKmsJwkPrivateRsa = z.object({
+  ...zKmsJwkPublicRsa.shape,
 
   // Private
   d: z.base64Url, // Private exponent
@@ -52,6 +52,6 @@ export const vKmsJwkPrivateRsa = z.object({
   dp: z.base64Url, // First factor CRT exponent
   dq: z.base64Url, // Second factor CRT exponent
   qi: z.base64Url, // First CRT coefficient
-  oth: z.optional(vKmsJwkPrivateRsaOth),
+  oth: z.optional(zKmsJwkPrivateRsaOth),
 })
-export type KmsJwkPrivateRsa = z.output<typeof vKmsJwkPrivateRsa>
+export type KmsJwkPrivateRsa = z.output<typeof zKmsJwkPrivateRsa>

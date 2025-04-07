@@ -1,7 +1,8 @@
 import type { DecipherGCM } from 'node:crypto'
 
+import { Buffer } from 'node:buffer'
+import { createDecipheriv, createSecretKey, timingSafeEqual } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
-import { createSecretKey, createDecipheriv, timingSafeEqual } from 'node:crypto'
 
 import { performSign } from './sign'
 
@@ -23,7 +24,8 @@ export async function performDecrypt(
     const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
-  } else if (
+  }
+  if (
     dataDecryption.algorithm === 'A128GCM' ||
     dataDecryption.algorithm === 'A192GCM' ||
     dataDecryption.algorithm === 'A256GCM'
@@ -32,8 +34,8 @@ export async function performDecrypt(
       dataDecryption.algorithm === 'A128GCM'
         ? 'aes-128-gcm'
         : dataDecryption.algorithm === 'A192GCM'
-        ? 'aes-192-gcm'
-        : 'aes-256-gcm'
+          ? 'aes-192-gcm'
+          : 'aes-256-gcm'
 
     const decipher = createDecipheriv(nodeAlgorithm, nodeKey, dataDecryption.iv)
 
@@ -49,7 +51,8 @@ export async function performDecrypt(
     const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
-  } else if (
+  }
+  if (
     dataDecryption.algorithm === 'A128CBC-HS256' ||
     dataDecryption.algorithm === 'A192CBC-HS384' ||
     dataDecryption.algorithm === 'A256CBC-HS512'
@@ -89,7 +92,8 @@ export async function performDecrypt(
     const data = Buffer.concat([decipher.update(encrypted), decipher.final()])
 
     return { data }
-  } else if (dataDecryption.algorithm === 'C20P') {
+  }
+  if (dataDecryption.algorithm === 'C20P') {
     const decipher: DecipherGCM = createDecipheriv('chacha20-poly1305', nodeKey, dataDecryption.iv, {
       authTagLength: 16,
     })

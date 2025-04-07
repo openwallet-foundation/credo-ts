@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Kms, P256Jwk, utils, Buffer } from '@credo-ts/core'
+import { Buffer, Kms, P256Jwk, utils } from '@credo-ts/core'
 
 import { importSecureEnvironment } from './secureEnvironment'
 
@@ -8,7 +8,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   public readonly backend = 'secureEnvironment'
   private readonly secureEnvironment = importSecureEnvironment()
 
-  public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
+  public async getPublicKey(_agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
     try {
       return await this.getKeyAsserted(keyId)
     } catch (error) {
@@ -29,7 +29,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   }
 
   public async createKey(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options: Kms.KmsCreateKeyOptions
   ): Promise<Kms.KmsCreateKeyReturn> {
     if (options.type.kty !== 'EC') {
@@ -61,7 +61,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     }
   }
 
-  public async sign(agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
+  public async sign(_agentContext: AgentContext, options: Kms.KmsSignOptions): Promise<Kms.KmsSignReturn> {
     if (options.algorithm !== 'ES256') {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(
         `algorithm '${options.algorithm}'. Only 'ES256' supported.`,
@@ -114,7 +114,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     try {
       const publicKeyBytes = await this.secureEnvironment.getPublicBytesForKeyId(keyId)
       return this.publicJwkFromPublicKeyBytes(publicKeyBytes, keyId)
-    } catch (error) {
+    } catch (_error) {
       // The library doesn't have a specific key not found error so we just assume
       // if an error is thrown this is because the key couldn't be found.
       // @see https://github.com/animo/expo-secure-environment/issues/21

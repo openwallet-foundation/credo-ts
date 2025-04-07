@@ -5,13 +5,13 @@ import { KeyManagementError } from '../error/KeyManagementError'
 
 import { getJwkHumanDescription } from './humanDescription'
 
-export const vKnownJwkUse = z.union([z.literal('sig').describe('signature'), z.literal('enc').describe('encryption')])
-export type KnownJwkUse = z.output<typeof vKnownJwkUse>
+export const zKnownJwkUse = z.union([z.literal('sig').describe('signature'), z.literal('enc').describe('encryption')])
+export type KnownJwkUse = z.output<typeof zKnownJwkUse>
 
-export const vJwkUse = z.union([vKnownJwkUse, z.string()])
-export type JwkUse = z.output<typeof vJwkUse>
+export const zJwkUse = z.union([zKnownJwkUse, z.string()])
+export type JwkUse = z.output<typeof zJwkUse>
 
-export const vKnownJwkKeyOps = z.union([
+export const zKnownJwkKeyOps = z.union([
   z.literal('sign').describe('compute digital signature or MAC'),
   z.literal('verify').describe('verify digital signature or MAC'),
   z.literal('encrypt').describe('encrypt content'),
@@ -21,10 +21,10 @@ export const vKnownJwkKeyOps = z.union([
   z.literal('deriveKey').describe('derive key'),
   z.literal('deriveBits').describe('derive bits not to be used as a key'),
 ])
-export type KnownJwkKeyOps = z.output<typeof vKnownJwkKeyOps>
+export type KnownJwkKeyOps = z.output<typeof zKnownJwkKeyOps>
 
-export const vJwkKeyOps = z.uniqueArray(z.union([vKnownJwkKeyOps, z.string()]))
-export type JwkKeyOps = z.output<typeof vJwkKeyOps>
+export const zJwkKeyOps = z.uniqueArray(z.union([zKnownJwkKeyOps, z.string()]))
+export type JwkKeyOps = z.output<typeof zJwkKeyOps>
 
 export function keyAllowsDerive(key: KmsJwkPublic | KmsJwkPrivate): boolean {
   // Check if key has use/key_ops restrictions
@@ -111,12 +111,12 @@ export function assertKeyAllowsDecrypt(jwk: KmsJwkPrivate | KmsJwkPublic) {
   }
 }
 
-const allowedUseKeyOpsMapping = {
+const _allowedUseKeyOpsMapping = {
   sig: ['sign', 'verify'],
   enc: ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey'],
 } satisfies Record<KnownJwkUse, KnownJwkKeyOps[]>
 
-const allowedKeyOpsCombinations = [
+const _allowedKeyOpsCombinations = [
   ['sign', 'verify'],
   ['encrypt', 'decrypt'],
   ['wrapKey', 'unwrapKey'],

@@ -10,7 +10,7 @@ import type {
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DiscoverFeaturesServiceOptions'
 
-import { EventEmitter, InjectionSymbols, CredoError, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../../../FeatureRegistry'
 import { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
@@ -20,7 +20,7 @@ import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig
 import { DiscoverFeaturesService } from '../../services'
 
 import { V1DiscloseMessageHandler, V1QueryMessageHandler } from './handlers'
-import { V1QueryMessage, V1DiscloseMessage, DiscloseProtocol } from './messages'
+import { DiscloseProtocol, V1DiscloseMessage, V1QueryMessage } from './messages'
 
 @injectable()
 export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
@@ -67,7 +67,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
 
   public async processQuery(
     messageContext: InboundMessageContext<V1QueryMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | void> {
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined> {
     const { query, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

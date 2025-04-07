@@ -5,34 +5,34 @@ import type { KmsJwkPublicOkp } from '../jwk/kty/okp'
 import type { KmsJwkPublicRsa } from '../jwk/kty/rsa'
 
 import * as z from '../../../utils/zod'
-import { vKmsJwkPublicEc } from '../jwk/kty/ec'
-import { vKmsJwkPublicOct } from '../jwk/kty/oct'
-import { vKmsJwkPublicOkp } from '../jwk/kty/okp'
-import { vKmsJwkPublicRsa } from '../jwk/kty/rsa'
+import { zKmsJwkPublicEc } from '../jwk/kty/ec'
+import { zKmsJwkPublicOct } from '../jwk/kty/oct'
+import { zKmsJwkPublicOkp } from '../jwk/kty/okp'
+import { zKmsJwkPublicRsa } from '../jwk/kty/rsa'
 
-const vKmsCreateKeyTypeEc = vKmsJwkPublicEc.pick({ kty: true, crv: true })
-export type KmsCreateKeyTypeEc = z.output<typeof vKmsCreateKeyTypeEc>
+const zKmsCreateKeyTypeEc = zKmsJwkPublicEc.pick({ kty: true, crv: true })
+export type KmsCreateKeyTypeEc = z.output<typeof zKmsCreateKeyTypeEc>
 
 /**
  * Octer key pair, commonly used for Ed25519 and X25519 key types
  */
-const vKmsCreateKeyTypeOkp = vKmsJwkPublicOkp.pick({ kty: true, crv: true })
-export type KmsCreateKeyTypeOkp = z.output<typeof vKmsCreateKeyTypeOkp>
+const zKmsCreateKeyTypeOkp = zKmsJwkPublicOkp.pick({ kty: true, crv: true })
+export type KmsCreateKeyTypeOkp = z.output<typeof zKmsCreateKeyTypeOkp>
 
 /**
  * RSA key pair.
  */
-const vKmsCreateKeyTypeRsa = vKmsJwkPublicRsa.pick({ kty: true }).extend({
+const zKmsCreateKeyTypeRsa = zKmsJwkPublicRsa.pick({ kty: true }).extend({
   modulusLength: z.union([z.literal(2048), z.literal(3072), z.literal(4096)]),
 })
-export type KmsCreateKeyTypeRsa = z.output<typeof vKmsCreateKeyTypeRsa>
+export type KmsCreateKeyTypeRsa = z.output<typeof zKmsCreateKeyTypeRsa>
 
 /**
  * Represents an octect sequence for symmetric keys
  */
-export const vKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
+export const zKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
   z.object({
-    kty: vKmsJwkPublicOct.shape.kty,
+    kty: zKmsJwkPublicOct.shape.kty,
     algorithm: z.literal('aes'),
     length: z.union([
       z.literal(128),
@@ -45,29 +45,29 @@ export const vKmsCreateKeyTypeOct = z.discriminatedUnion('algorithm', [
     ]),
   }),
   z.object({
-    kty: vKmsJwkPublicOct.shape.kty,
+    kty: zKmsJwkPublicOct.shape.kty,
     algorithm: z.literal('hmac').describe('For usage with HS256, HS384 and HS512'),
     length: z.union([z.literal(256), z.literal(384), z.literal(512)]),
   }),
   z.object({
-    kty: vKmsJwkPublicOct.shape.kty,
+    kty: zKmsJwkPublicOct.shape.kty,
     algorithm: z.literal('c20p').describe('For usage with ChaCha20-Poly1305 and XChaCha20-Poly1305'),
   }),
 ])
-export type KmsCreateKeyTypeOct = z.output<typeof vKmsCreateKeyTypeOct>
+export type KmsCreateKeyTypeOct = z.output<typeof zKmsCreateKeyTypeOct>
 
 // TOOD: see if we can use nested discriminated union with zod?
-export const vKmsCreateKeyType = z.union([
-  vKmsCreateKeyTypeEc,
-  vKmsCreateKeyTypeOkp,
-  vKmsCreateKeyTypeRsa,
-  vKmsCreateKeyTypeOct,
+export const zKmsCreateKeyType = z.union([
+  zKmsCreateKeyTypeEc,
+  zKmsCreateKeyTypeOkp,
+  zKmsCreateKeyTypeRsa,
+  zKmsCreateKeyTypeOct,
 ])
-export type KmsCreateKeyType = z.output<typeof vKmsCreateKeyType>
+export type KmsCreateKeyType = z.output<typeof zKmsCreateKeyType>
 
-export const vKmsCreateKeyOptions = z.object({
+export const zKmsCreateKeyOptions = z.object({
   keyId: z.optional(z.string()),
-  type: vKmsCreateKeyType,
+  type: zKmsCreateKeyType,
 })
 
 export interface KmsCreateKeyOptions<Type extends KmsCreateKeyType = KmsCreateKeyType> {
@@ -85,12 +85,12 @@ export interface KmsCreateKeyOptions<Type extends KmsCreateKeyType = KmsCreateKe
 export type KmsJwkPublicFromCreateType<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa
   ? KmsJwkPublicRsa
   : Type extends KmsCreateKeyTypeOct
-  ? KmsJwkPublicOct
-  : Type extends KmsCreateKeyTypeOkp
-  ? KmsJwkPublicOkp & { crv: Type['crv'] }
-  : Type extends KmsCreateKeyTypeEc
-  ? KmsJwkPublicEc & { crv: Type['crv'] }
-  : KmsJwkPublic
+    ? KmsJwkPublicOct
+    : Type extends KmsCreateKeyTypeOkp
+      ? KmsJwkPublicOkp & { crv: Type['crv'] }
+      : Type extends KmsCreateKeyTypeEc
+        ? KmsJwkPublicEc & { crv: Type['crv'] }
+        : KmsJwkPublic
 
 export interface KmsCreateKeyReturn<Type extends KmsCreateKeyType = KmsCreateKeyType> {
   keyId: string

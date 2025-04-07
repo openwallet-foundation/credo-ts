@@ -1,17 +1,17 @@
-import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 import type { AgentContext } from '@credo-ts/core'
+import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 
+import { createPrivateKey, createSecretKey, randomUUID } from 'node:crypto'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { randomUUID, createPrivateKey, createSecretKey } from 'node:crypto'
 
 import {
-  createEcKey,
-  createRsaKey,
-  createOkpKey,
-  createOctKey,
   assertNodeSupportedEcCrv,
-  assertNodeSupportedOkpCrv,
   assertNodeSupportedOctAlgorithm,
+  assertNodeSupportedOkpCrv,
+  createEcKey,
+  createOctKey,
+  createOkpKey,
+  createRsaKey,
 } from './crypto/createKey'
 import { performDecrypt } from './crypto/decrypt'
 import { deriveKey } from './crypto/deriveKey'
@@ -254,7 +254,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     }
   }
 
-  public async deriveKey(agentContext: AgentContext, options: Kms.KmsDeriveKeyOptions) {
+  public async deriveKey(_agentContext: AgentContext, options: Kms.KmsDeriveKeyOptions) {
     // We don't retrieve key from KMS. This is needed for X20C derivation
     // But not for the algorithms we currently support in Node.JS
 

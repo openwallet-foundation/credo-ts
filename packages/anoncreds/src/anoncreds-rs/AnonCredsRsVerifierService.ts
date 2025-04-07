@@ -1,6 +1,3 @@
-import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsNonRevokedInterval } from '../models'
-import type { CredentialWithRevocationMetadata } from '../models/utils'
-import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 import type { AgentContext } from '@credo-ts/core'
 import type {
   JsonObject,
@@ -8,9 +5,12 @@ import type {
   RevocationRegistryDefinition,
   VerifyW3cPresentationOptions as VerifyAnonCredsW3cPresentationOptions,
 } from '@hyperledger/anoncreds-shared'
+import type { AnonCredsNonRevokedInterval, AnonCredsProof, AnonCredsProofRequest } from '../models'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsVerifierService, VerifyProofOptions, VerifyW3cPresentationOptions } from '../services'
 
 import { JsonTransformer, injectable } from '@credo-ts/core'
-import { Presentation, W3cPresentation, W3cCredential as AnonCredsW3cCredential } from '@hyperledger/anoncreds-shared'
+import { W3cCredential as AnonCredsW3cCredential, Presentation, W3cPresentation } from '@hyperledger/anoncreds-shared'
 
 import { fetchRevocationStatusList } from '../utils'
 
@@ -92,14 +92,14 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
     ]) {
       const nonRevokedInterval = value.non_revoked ?? globalNonRevokedInterval
       if (nonRevokedInterval) {
-        value.restrictions?.forEach((restriction) =>
+        for (const restriction of value.restrictions ?? []) {
           requestedNonRevokedRestrictions.push({
             nonRevokedInterval,
             schemaId: restriction.schema_id,
             credentialDefinitionId: restriction.cred_def_id,
             revocationRegistryDefinitionId: restriction.rev_reg_id,
           })
-        )
+        }
       }
     }
 
@@ -109,9 +109,9 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
       }
       const relatedNonRevokedRestrictionItem = requestedNonRevokedRestrictions.find(
         (item) =>
-          item.revocationRegistryDefinitionId === item.revocationRegistryDefinitionId ||
+          item.revocationRegistryDefinitionId === identifier.rev_reg_id ||
           item.credentialDefinitionId === identifier.cred_def_id ||
-          item.schemaId === item.schemaId
+          item.schemaId === identifier.schema_id
       )
 
       const requestedFrom = relatedNonRevokedRestrictionItem?.nonRevokedInterval.from
@@ -175,9 +175,9 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
     )
 
     const revocationRegistryDefinitions: Record<string, RevocationRegistryDefinition> = {}
-    revocationMetadata.forEach(
-      (rm) => (revocationRegistryDefinitions[rm.revocationRegistryId] = rm.revocationRegistryDefinition)
-    )
+    for (const rm of revocationMetadata) {
+      revocationRegistryDefinitions[rm.revocationRegistryId] = rm.revocationRegistryDefinition
+    }
 
     const verificationOptions: VerifyAnonCredsW3cPresentationOptions = {
       presentationRequest: options.proofRequest as unknown as JsonObject,
@@ -192,7 +192,7 @@ export class AnonCredsRsVerifierService implements AnonCredsVerifierService {
 
     let result = false
     const presentationJson = JsonTransformer.toJSON(options.presentation)
-    if ('presentation_submission' in presentationJson) delete presentationJson.presentation_submission
+    if ('presentation_submission' in presentationJson) presentationJson.presentation_submission = undefined
 
     let w3cPresentation: W3cPresentation | undefined
     try {

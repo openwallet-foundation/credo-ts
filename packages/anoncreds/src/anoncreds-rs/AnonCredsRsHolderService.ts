@@ -1,27 +1,35 @@
+import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
 import type {
+  CredentialEntry,
+  CredentialProve,
+  CredentialRequestMetadata,
+  JsonObject,
+  W3cCredentialEntry,
+} from '@hyperledger/anoncreds-shared'
+import type {
+  AnonCredsCredential,
   AnonCredsCredentialDefinition,
+  AnonCredsCredentialInfo,
+  AnonCredsCredentialRequest,
   AnonCredsProof,
+  AnonCredsProofRequestRestriction,
   AnonCredsRequestedAttributeMatch,
   AnonCredsRequestedPredicateMatch,
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
-  AnonCredsCredentialRequest,
-  AnonCredsCredential,
-  AnonCredsCredentialInfo,
-  AnonCredsProofRequestRestriction,
 } from '../models'
 import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsCredentialRecord } from '../repository'
 import type {
-  GetCredentialsForProofRequestOptions,
-  GetCredentialsForProofRequestReturn,
   AnonCredsHolderService,
+  CreateCredentialRequestOptions,
+  CreateCredentialRequestReturn,
   CreateLinkSecretOptions,
   CreateLinkSecretReturn,
   CreateProofOptions,
-  CreateCredentialRequestOptions,
-  CreateCredentialRequestReturn,
   GetCredentialOptions,
+  GetCredentialsForProofRequestOptions,
+  GetCredentialsForProofRequestReturn,
   GetCredentialsOptions,
   StoreCredentialOptions,
 } from '../services'
@@ -32,37 +40,29 @@ import type {
   W3cToLegacyCredentialOptions,
 } from '../services/AnonCredsHolderServiceOptions'
 import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
-import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
-import type {
-  CredentialEntry,
-  CredentialProve,
-  CredentialRequestMetadata,
-  JsonObject,
-  W3cCredentialEntry,
-} from '@hyperledger/anoncreds-shared'
 
 import {
   CredoError,
   JsonTransformer,
-  W3cCredentialRecord,
   TypedArrayEncoder,
+  W3cCredentialRecord,
   W3cCredentialRepository,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
+  W3cJsonLdVerifiablePresentation,
   injectable,
   utils,
-  W3cJsonLdVerifiablePresentation,
 } from '@credo-ts/core'
 import {
   Credential,
-  W3cPresentation as W3cAnonCredsPresentation,
-  W3cCredential as W3cAnonCredsCredential,
   CredentialRequest,
   CredentialRevocationState,
   LinkSecret,
   Presentation,
   RevocationRegistryDefinition,
   RevocationStatusList,
+  W3cCredential as W3cAnonCredsCredential,
+  W3cPresentation as W3cAnonCredsPresentation,
   anoncreds,
 } from '@hyperledger/anoncreds-shared'
 
@@ -87,7 +87,7 @@ import { getRevocationMetadata } from './utils'
 @injectable()
 export class AnonCredsRsHolderService implements AnonCredsHolderService {
   public async createLinkSecret(
-    agentContext: AgentContext,
+    _agentContext: AgentContext,
     options?: CreateLinkSecretOptions
   ): Promise<CreateLinkSecretReturn> {
     return {
@@ -137,16 +137,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
             agentContext.config.logger.warn(
               [
                 `Creating AnonCreds proof with legacy credential ${attribute.credentialId}.`,
-                `Please run the migration script to migrate credentials to the new w3c format. See https://credo.js.org/guides/updating/versions/0.4-to-0.5 for information on how to migrate.`,
+                'Please run the migration script to migrate credentials to the new w3c format. See https://credo.js.org/guides/updating/versions/0.4-to-0.5 for information on how to migrate.',
               ].join('\n')
             )
           }
         }
 
-        const { linkSecretId, revocationRegistryId, credentialRevocationId } = getAnoncredsCredentialInfoFromRecord(
-          credentialRecord,
-          proofRequestUsesUnqualifiedIdentifiers(proofRequest)
-        )
+        const proofUsesUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+        const { linkSecretId, schemaId, credentialDefinitionId, revocationRegistryId, credentialRevocationId } =
+          getAnoncredsCredentialInfoFromRecord(credentialRecord, proofUsesUnqualifiedIdentifiers)
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -187,6 +186,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
                 })
               : (credentialRecord.credential as AnonCredsCredential)
 
+          if (proofUsesUnqualifiedIdentifiers) {
+            credential.schema_id = schemaId
+            credential.cred_def_id = credentialDefinitionId
+            credential.rev_reg_id = revocationRegistryId != null ? revocationRegistryId : undefined
+          }
           return {
             linkSecretId,
             credentialId: attribute.credentialId,
@@ -329,7 +333,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
-  public async w3cToLegacyCredential(agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
+  public async w3cToLegacyCredential(_agentContext: AgentContext, options: W3cToLegacyCredentialOptions) {
     const credentialJson = JsonTransformer.toJSON(options.credential)
     const w3cAnonCredsCredentialObj = W3cAnonCredsCredential.fromJson(credentialJson)
     const w3cCredentialObj = w3cAnonCredsCredentialObj.toLegacy()
@@ -508,7 +512,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     agentContext.config.logger.warn(
       [
         `Querying legacy credential repository for credential with id ${options.id}.`,
-        `Please run the migration script to migrate credentials to the new w3c format.`,
+        'Please run the migration script to migrate credentials to the new w3c format.',
       ].join('\n')
     )
 
@@ -572,7 +576,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
 
     if (legacyCredentials.length > 0) {
       agentContext.config.logger.warn(
-        `Queried credentials include legacy credentials. Please run the migration script to migrate credentials to the new w3c format.`
+        'Queried credentials include legacy credentials. Please run the migration script to migrate credentials to the new w3c format.'
       )
     }
     return [...legacyCredentials, ...credentials]
@@ -602,7 +606,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       proofRequest.requested_attributes[referent] ?? proofRequest.requested_predicates[referent]
 
     if (!requestedAttribute) {
-      throw new AnonCredsRsError(`Referent not found in proof request`)
+      throw new AnonCredsRsError('Referent not found in proof request')
     }
 
     const $and = []
@@ -653,7 +657,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       proofRequest.requested_attributes[referent] ?? proofRequest.requested_predicates[referent]
 
     if (!requestedAttribute) {
-      throw new AnonCredsRsError(`Referent not found in proof request`)
+      throw new AnonCredsRsError('Referent not found in proof request')
     }
 
     const $and = []
@@ -688,8 +692,8 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     if (legacyCredentialWithMetadata.length > 0) {
       agentContext.config.logger.warn(
         [
-          `Including legacy credentials in proof request.`,
-          `Please run the migration script to migrate credentials to the new w3c format.`,
+          'Including legacy credentials in proof request.',
+          'Please run the migration script to migrate credentials to the new w3c format.',
         ].join('\n')
       )
     }

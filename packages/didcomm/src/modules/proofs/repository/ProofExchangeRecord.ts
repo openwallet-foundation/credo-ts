@@ -1,8 +1,8 @@
+import type { TagsBase } from '@credo-ts/core'
 import type { ProofRole, ProofState } from '../models'
 import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
-import type { TagsBase } from '@credo-ts/core'
 
-import { CredoError, BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
 export interface ProofExchangeRecordProps {
   id?: string
@@ -75,6 +75,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
 
   public assertState(expectedStates: ProofState | ProofState[]) {
     if (!Array.isArray(expectedStates)) {
+      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 
@@ -96,9 +97,10 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
   public assertConnection(currentConnectionId: string) {
     if (!this.connectionId) {
       throw new CredoError(
-        `Proof record is not associated with any connection. This is often the case with connection-less presentation exchange`
+        'Proof record is not associated with any connection. This is often the case with connection-less presentation exchange'
       )
-    } else if (this.connectionId !== currentConnectionId) {
+    }
+    if (this.connectionId !== currentConnectionId) {
       throw new CredoError(
         `Proof record is associated with connection '${this.connectionId}'. Current connection is '${currentConnectionId}'`
       )

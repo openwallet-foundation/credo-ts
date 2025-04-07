@@ -1,9 +1,9 @@
-import { vKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
+import { zKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
 
 describe('CreateKeyOptions', () => {
   test('should throw error for invalid create key type', async () => {
     await expect(
-      vKmsCreateKeyType.parseAsync({
+      zKmsCreateKeyType.parseAsync({
         kty: 'oct',
         algorithm: 'AES',
       })
@@ -12,7 +12,7 @@ describe('CreateKeyOptions', () => {
 
   test('should correctly parse create key type', async () => {
     expect(() =>
-      vKmsCreateKeyType.parse({
+      zKmsCreateKeyType.parse({
         kty: 'oct',
         algorithm: 'AES',
         length: 128,
@@ -20,21 +20,21 @@ describe('CreateKeyOptions', () => {
     ).not.toThrow()
 
     expect(() =>
-      vKmsCreateKeyType.parse({
+      zKmsCreateKeyType.parse({
         kty: 'RSA',
         modulusLength: 4096,
       })
     ).not.toThrow()
 
     expect(() =>
-      vKmsCreateKeyType.parse({
+      zKmsCreateKeyType.parse({
         kty: 'EC',
         crv: 'P-256',
       })
     ).not.toThrow()
 
     expect(() =>
-      vKmsCreateKeyType.parse({
+      zKmsCreateKeyType.parse({
         kty: 'OKP',
         crv: 'Ed25519',
       })

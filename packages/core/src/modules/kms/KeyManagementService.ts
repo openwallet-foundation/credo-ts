@@ -1,3 +1,4 @@
+import type { AgentContext } from '../../agent'
 import type { KmsJwkPublic } from './jwk/knownJwk'
 import type { KmsDecryptOptions, KmsDecryptReturn } from './options'
 import type { KmsCreateKeyOptions, KmsCreateKeyReturn, KmsCreateKeyType } from './options/KmsCreateKeyOptions'
@@ -6,7 +7,6 @@ import type { KmsEncryptOptions, KmsEncryptReturn } from './options/KmsEncryptOp
 import type { KmsImportKeyOptions, KmsImportKeyReturn } from './options/KmsImportKeyOptions'
 import type { KmsSignOptions, KmsSignReturn } from './options/KmsSignOptions'
 import type { KmsVerifyOptions, KmsVerifyReturn } from './options/KmsVerifyOptions'
-import type { AgentContext } from '../../agent'
 
 export interface KeyManagementService {
   /**

@@ -1,5 +1,5 @@
 import { InjectionSymbols, Kms } from '@credo-ts/core'
-import { ariesAskar, Store } from '@hyperledger/aries-askar-shared'
+import { Store, ariesAskar } from '@hyperledger/aries-askar-shared'
 
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'

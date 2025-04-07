@@ -1,6 +1,6 @@
 import * as z from '../../../utils/zod'
 
-import { vJwkKeyOps, vJwkUse } from './keyOps'
+import { zJwkKeyOps, zJwkUse } from './keyOps'
 
 export const vJwkCommon = z
   .object({
@@ -8,8 +8,8 @@ export const vJwkCommon = z
     kid: z.optional(z.string()),
     alg: z.optional(z.string()),
 
-    key_ops: z.optional(vJwkKeyOps),
-    use: z.optional(vJwkUse),
+    key_ops: z.optional(zJwkKeyOps),
+    use: z.optional(zJwkUse),
 
     ext: z.optional(z.boolean()),
 

@@ -1,7 +1,8 @@
 import type { CipherGCM } from 'node:crypto'
 
+import { Buffer } from 'node:buffer'
+import { createCipheriv, createSecretKey, randomBytes } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
-import { createSecretKey, randomBytes, createCipheriv } from 'node:crypto'
 
 import { performSign } from './sign'
 
@@ -26,7 +27,8 @@ export async function performEncrypt(
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
 
     return { encrypted, iv }
-  } else if (
+  }
+  if (
     dataEncryption.algorithm === 'A128CBC-HS256' ||
     dataEncryption.algorithm === 'A192CBC-HS384' ||
     dataEncryption.algorithm === 'A256CBC-HS512'
@@ -68,7 +70,8 @@ export async function performEncrypt(
     const tag = Buffer.from(hmac).subarray(0, algSettings.keySize) // Truncate to appropriate size
 
     return { encrypted, tag, iv }
-  } else if (
+  }
+  if (
     dataEncryption.algorithm === 'A128GCM' ||
     dataEncryption.algorithm === 'A192GCM' ||
     dataEncryption.algorithm === 'A256GCM'
@@ -77,8 +80,8 @@ export async function performEncrypt(
       dataEncryption.algorithm === 'A128GCM'
         ? 'aes-128-gcm'
         : dataEncryption.algorithm === 'A192GCM'
-        ? 'aes-192-gcm'
-        : 'aes-256-gcm'
+          ? 'aes-192-gcm'
+          : 'aes-256-gcm'
 
     // IV should be exactly 12 bytes (96 bits) for GCM
     const iv = dataEncryption.iv ?? randomBytes(12)
@@ -101,7 +104,8 @@ export async function performEncrypt(
       tag,
       iv,
     }
-  } else if (dataEncryption.algorithm === 'C20P') {
+  }
+  if (dataEncryption.algorithm === 'C20P') {
     // IV should be exactly 12 bytes (96 bits) for C20P
     const iv = dataEncryption.iv ?? randomBytes(12)
 

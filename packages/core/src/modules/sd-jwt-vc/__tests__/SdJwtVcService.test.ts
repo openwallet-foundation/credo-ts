@@ -1,9 +1,9 @@
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 import type { AgentContext, Jwk, Key } from '@credo-ts/core'
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
-import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
-import { SDJWTException } from '@sd-jwt/utils'
 import { randomUUID } from 'crypto'
+import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
+import { SDJWTException } from '@sd-jwt/utils'
 
 import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
@@ -17,6 +17,7 @@ import {
   expiredSdJwtVc,
   funkeX509,
   notBeforeInFutureSdJwtVc,
+  sdJwtVcPid,
   sdJwtVcWithSingleDisclosure,
   sdJwtVcWithSingleDisclosurePresentation,
   signatureInvalidSdJwtVc,
@@ -32,21 +33,21 @@ import {
   CredoError,
   DidKey,
   DidsModule,
-  getDomainFromUrl,
-  getJwkFromKey,
   JwsService,
   JwtPayload,
   KeyDidRegistrar,
   KeyDidResolver,
   KeyType,
-  parseDid,
   TypedArrayEncoder,
   X509ModuleConfig,
+  getDomainFromUrl,
+  getJwkFromKey,
+  parseDid,
 } from '@credo-ts/core'
 
 const jwkJsonWithoutUse = (jwk: Jwk) => {
   const jwkJson = jwk.toJson()
-  delete jwkJson.use
+  jwkJson.use = undefined
   return jwkJson
 }
 
@@ -668,6 +669,39 @@ describe('SdJwtVcService', () => {
     })
   })
 
+  describe('SdJwtVcService.applyDisclosuresForPayload', () => {
+    test('Applies disclosures for given payload', async () => {
+      const presentation = sdJwtVcService.applyDisclosuresForPayload(sdJwtVcPid, {
+        given_name: 'ERIKA',
+        birthdate: '1964-08-12',
+        family_name: 'MUSTERMANN',
+      })
+
+      expect(presentation.prettyClaims).toStrictEqual({
+        place_of_birth: {},
+        address: {},
+        issuing_country: 'DE',
+        vct: 'https://example.bmi.bund.de/credential/pid/1.0',
+        issuing_authority: 'DE',
+        iss: 'https://demo.pid-issuer.bundesdruckerei.de/c1',
+        cnf: {
+          jwk: {
+            kty: 'EC',
+            crv: 'P-256',
+            x: 'NeX_ZniwxDOJD_Kyqf678V-Yx3f3-DZ0yD9XerpFmcc',
+            y: 'gpo5H0zWaPM9yc7M2rex4IZ6Geb9J2842T3t6X8frAM',
+          },
+        },
+        exp: 1733709514,
+        iat: 1732499914,
+        age_equal_or_over: {},
+        given_name: 'ERIKA',
+        birthdate: '1964-08-12',
+        family_name: 'MUSTERMANN',
+      })
+    })
+  })
+
   describe('SdJwtVcService.present', () => {
     test('Present sd-jwt-vc from a basic payload without disclosures', async () => {
       const presentation = await sdJwtVcService.present(agent.context, {
@@ -899,7 +933,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({
@@ -938,7 +975,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({
@@ -978,7 +1018,10 @@ describe('SdJwtVcService', () => {
       })
       expect(fetchUtils.fetchWithTimeout).toHaveBeenCalledWith(
         agentDependencies.fetch,
-        'https://example.com/status-list'
+        'https://example.com/status-list',
+        {
+          headers: { Accept: 'application/statuslist+jwt' },
+        }
       )
 
       expect(verificationResult).toEqual({

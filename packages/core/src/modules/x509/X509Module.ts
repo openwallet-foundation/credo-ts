@@ -1,5 +1,5 @@
+import type { DependencyManager, Module } from '../../plugins'
 import type { X509ModuleConfigOptions } from './X509ModuleConfig'
-import type { Module, DependencyManager } from '../../plugins'
 
 import { AgentConfig } from '../../agent/AgentConfig'
 

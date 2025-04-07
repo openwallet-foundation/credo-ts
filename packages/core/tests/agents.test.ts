@@ -1,11 +1,9 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
 import type { ConnectionRecord } from '../../didcomm/src'
 
 import { HandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { waitForBasicMessage, getInMemoryAgentOptions } from './helpers'
+import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const aliceAgentOptions = getInMemoryAgentOptions('Agents Alice', {
@@ -44,12 +42,12 @@ describe('agents', () => {
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.modules.oob.receiveInvitation(
       aliceBobOutOfBandRecord.outOfBandInvitation
     )
-    bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionAtBobAlice!.id)
+    bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionAtBobAlice?.id)
 
     const [aliceConnectionAtAliceBob] = await aliceAgent.modules.connections.findAllByOutOfBandId(
       aliceBobOutOfBandRecord.id
     )
-    aliceConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionAtAliceBob!.id)
+    aliceConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionAtAliceBob?.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)

@@ -1,4 +1,4 @@
-import type { NodeKmsSupportedEcCrvs } from './createKey'
+import { Buffer } from 'node:buffer'
 import type {
   KmsJwkPrivateEc,
   KmsJwkPrivateOkp,
@@ -6,9 +6,10 @@ import type {
   KmsJwkPublicOkp,
   KnownJwaContentEncryptionAlgorithm,
 } from '@credo-ts/core/src/modules/kms'
+import type { NodeKmsSupportedEcCrvs } from './createKey'
 
+import { createECDH, createHash, createPrivateKey, createPublicKey } from 'node:crypto'
 import { Kms } from '@credo-ts/core'
-import { createPrivateKey, createECDH, createPublicKey, createHash } from 'node:crypto'
 
 import { createEcKey, createOkpKey } from './createKey'
 
@@ -48,10 +49,10 @@ export async function deriveKey(options: Exclude<Kms.KmsDeriveKeyOptions, 'keyId
       options.algorithm === 'ECDH-ES'
         ? mapContentEncryptionAlgorithmToKeyLength(options.encryptionAlgorithm)
         : options.algorithm === 'ECDH-ES+A128KW'
-        ? 128
-        : options.algorithm === 'ECDH-ES+A192KW'
-        ? 192
-        : 256
+          ? 128
+          : options.algorithm === 'ECDH-ES+A192KW'
+            ? 192
+            : 256
 
     const { privateJwk } =
       options.publicJwk.kty === 'OKP'

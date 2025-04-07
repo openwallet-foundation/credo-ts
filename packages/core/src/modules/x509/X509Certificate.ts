@@ -1,14 +1,16 @@
-import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 import type { AgentContext } from '../../agent'
+import type { X509CreateCertificateOptions } from './X509ServiceOptions'
+import type { IssuerAlternativeNameExtension } from './extensions'
 
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
+  SubjectPublicKeyInfo,
   id_ce_authorityKeyIdentifier,
   id_ce_extKeyUsage,
+  id_ce_issuerAltName,
   id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
-  SubjectPublicKeyInfo,
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
@@ -22,30 +24,13 @@ import {
   convertName,
   createAuthorityKeyIdentifierExtension,
   createBasicConstraintsExtension,
+  createCrlDistributionPointsExtension,
   createExtendedKeyUsagesExtension,
   createIssuerAlternativeNameExtension,
   createKeyUsagesExtension,
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
 } from './utils'
-
-type ExtensionObjectIdentifier = string
-type CanBeCritical<T> = T & { critical?: boolean }
-
-type SubjectAlternativeNameExtension = CanBeCritical<{ name: Array<{ type: 'url' | 'dns'; value: string }> }>
-type AuthorityKeyIdentifierExtension = CanBeCritical<{ keyId: string }>
-type SubjectKeyIdentifierExtension = CanBeCritical<{ keyId: string }>
-type KeyUsageExtension = CanBeCritical<{ usage: number }>
-type ExtendedKeyUsageExtension = CanBeCritical<{ usage: Array<X509ExtendedKeyUsage> }>
-
-type ExtensionValues =
-  | SubjectAlternativeNameExtension
-  | AuthorityKeyIdentifierExtension
-  | SubjectKeyIdentifierExtension
-  | KeyUsageExtension
-  | ExtendedKeyUsageExtension
-
-type Extension = Record<ExtensionObjectIdentifier, ExtensionValues>
 
 export enum X509KeyUsage {
   DigitalSignature = 1,
@@ -72,32 +57,28 @@ export enum X509ExtendedKeyUsage {
 export type X509CertificateOptions = {
   publicKey: Key
   privateKey?: Uint8Array
-  extensions?: Array<Extension>
-  rawCertificate: Uint8Array
+  x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicKey: Key
   public privateKey?: Uint8Array
-  public extensions?: Array<Extension>
+  private x509Certificate: x509.X509Certificate
 
-  public readonly rawCertificate: Uint8Array
-
-  public constructor(options: X509CertificateOptions) {
-    this.extensions = options.extensions
+  private constructor(options: X509CertificateOptions) {
     this.publicKey = options.publicKey
     this.privateKey = options.privateKey
-    this.rawCertificate = options.rawCertificate
+    this.x509Certificate = options.x509Certificate
   }
 
   public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
-    return this.parseCertificate(certificate)
+    return X509Certificate.parseCertificate(certificate)
   }
 
   public static fromEncodedCertificate(encodedCertificate: string): X509Certificate {
     const certificate = new x509.X509Certificate(encodedCertificate)
-    return this.parseCertificate(certificate)
+    return X509Certificate.parseCertificate(certificate)
   }
 
   private static parseCertificate(certificate: x509.X509Certificate): X509Certificate {
@@ -109,65 +90,49 @@ export class X509Certificate {
 
     const key = new Key(publicKeyBytes, keyType)
 
-    const extensions = certificate.extensions
-      .map((e) => {
-        if (e instanceof x509.AuthorityKeyIdentifierExtension) {
-          return { [e.type]: { keyId: e.keyId as string, critical: e.critical } }
-        } else if (e instanceof x509.SubjectKeyIdentifierExtension) {
-          return { [e.type]: { keyId: e.keyId, critical: e.critical } }
-        } else if (e instanceof x509.SubjectAlternativeNameExtension) {
-          return {
-            [e.type]: {
-              name: JSON.parse(JSON.stringify(e.names)) as SubjectAlternativeNameExtension['name'],
-              critical: e.critical,
-            },
-          }
-        } else if (e instanceof x509.KeyUsagesExtension) {
-          return { [e.type]: { usage: e.usages as number, critical: e.critical } }
-        } else if (e instanceof x509.ExtendedKeyUsageExtension) {
-          return { [e.type]: { usage: e.usages as Array<X509ExtendedKeyUsage>, critical: e.critical } }
-        }
-
-        // TODO: We could throw an error when we don't understand the extension?
-        // This will break everytime we do not understand an extension though
-        return undefined
-      })
-      .filter((e): e is Exclude<typeof e, undefined> => e !== undefined)
-
     return new X509Certificate({
       publicKey: key,
       privateKey,
-      extensions: extensions.length > 0 ? extensions : undefined,
-      rawCertificate: new Uint8Array(certificate.rawData),
+      x509Certificate: certificate,
     })
   }
 
-  private getMatchingExtensions<T extends ExtensionValues>(objectIdentifier: string): Array<T> | undefined {
-    return this.extensions?.map((e) => e[objectIdentifier])?.filter(Boolean) as Array<T> | undefined
+  private getMatchingExtensions<T = { critical: boolean }>(objectIdentifier: string): Array<T> | undefined {
+    return this.x509Certificate.extensions.filter((e) => e.type === objectIdentifier) as Array<T> | undefined
+  }
+
+  public get rawCertificate() {
+    return new Uint8Array(this.x509Certificate.rawData)
+  }
+
+  public get subjectAlternativeNames() {
+    const san = this.getMatchingExtensions<x509.SubjectAlternativeNameExtension>(id_ce_subjectAltName)
+    return san?.flatMap((s) => s.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
+  }
+
+  public get issuerAlternativeNames() {
+    const ian = this.getMatchingExtensions<IssuerAlternativeNameExtension>(id_ce_issuerAltName)
+    return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
   public get sanDnsNames() {
-    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
-    return (
-      san
-        ?.flatMap((e) => e.name)
-        ?.filter((e) => e.type === 'dns')
-        ?.map((e) => e.value) ?? []
-    )
+    return this.subjectAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
   }
 
   public get sanUriNames() {
-    const san = this.getMatchingExtensions<SubjectAlternativeNameExtension>(id_ce_subjectAltName)
-    return (
-      san
-        ?.flatMap((e) => e.name)
-        ?.filter((e) => e.type === 'url')
-        ?.map((e) => e.value) ?? []
-    )
+    return this.subjectAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
+  }
+
+  public get ianDnsNames() {
+    return this.issuerAlternativeNames.filter((san) => san.type === 'dns').map((san) => san.value)
+  }
+
+  public get ianUriNames() {
+    return this.issuerAlternativeNames.filter((ian) => ian.type === 'url').map((ian) => ian.value)
   }
 
   public get authorityKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
+    const keyIds = this.getMatchingExtensions<x509.AuthorityKeyIdentifierExtension>(id_ce_authorityKeyIdentifier)?.map(
       (e) => e.keyId
     )
 
@@ -179,7 +144,7 @@ export class X509Certificate {
   }
 
   public get subjectKeyIdentifier() {
-    const keyIds = this.getMatchingExtensions<SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
+    const keyIds = this.getMatchingExtensions<x509.SubjectKeyIdentifierExtension>(id_ce_subjectKeyIdentifier)?.map(
       (e) => e.keyId
     )
 
@@ -190,8 +155,9 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  public get keyUsage(): Array<X509KeyUsage> {
-    const keyUsages = this.getMatchingExtensions<KeyUsageExtension>(id_ce_keyUsage)?.map((e) => e.usage)
+  // biome-ignore lint/suspicious/useGetterReturn: <explanation>
+  public get keyUsage() {
+    const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 
     if (keyUsages && keyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
@@ -203,20 +169,18 @@ export class X509Certificate {
         .filter((flagValue) => (keyUsages[0] & flagValue) === flagValue)
         .map((flagValue) => flagValue as X509KeyUsage)
     }
-
-    return []
   }
 
-  public get extendedKeyUsage(): Array<X509ExtendedKeyUsage> | undefined {
-    const extendedKeyUsages = this.getMatchingExtensions<ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
-      (e) => e.usage
+  public get extendedKeyUsage() {
+    const extendedKeyUsages = this.getMatchingExtensions<x509.ExtendedKeyUsageExtension>(id_ce_extKeyUsage)?.map(
+      (e) => e.usages
     )
 
     if (extendedKeyUsages && extendedKeyUsages.length > 1) {
       throw new X509Error('Multiple Key Usages are not allowed')
     }
 
-    return extendedKeyUsages?.[0]
+    return extendedKeyUsages?.[0] as X509ExtendedKeyUsage | undefined
   }
 
   public isExtensionCritical(id: string): boolean {
@@ -261,6 +225,7 @@ export class X509Certificate {
     extensions.push(createIssuerAlternativeNameExtension(options.extensions?.issuerAlternativeName))
     extensions.push(createSubjectAlternativeNameExtension(options.extensions?.subjectAlternativeName))
     extensions.push(createBasicConstraintsExtension(options.extensions?.basicConstraints))
+    extensions.push(createCrlDistributionPointsExtension(options.extensions?.crlDistributionPoints))
 
     if (isSelfSignedCertificate) {
       if (options.subject) {
@@ -305,21 +270,36 @@ export class X509Certificate {
   }
 
   public get subject() {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-    return certificate.subject
+    return this.x509Certificate.subject
   }
 
   public get issuer() {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-    return certificate.issuer
+    return this.x509Certificate.issuer
   }
 
   public async verify(
-    { verificationDate = new Date(), publicKey }: { verificationDate: Date; publicKey?: Key },
+    {
+      verificationDate = new Date(),
+      publicKey,
+      skipSignatureVerification = false,
+    }: {
+      verificationDate: Date
+      publicKey?: Key
+
+      /**
+       * Whether to skip the verification of the signature and only perform other checks (such
+       * as whether the certificate is not expired).
+       *
+       * This can be useful when an non-self-signed certificate is directly trusted, and it may
+       * not be possible to verify the certifcate as the root/intermediate certificate containing
+       * the key of the signer/intermediate is not present.
+       *
+       * @default false
+       */
+      skipSignatureVerification?: boolean
+    },
     webCrypto: CredoWebCrypto
   ) {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-
     let publicCryptoKey: CredoWebCryptoKey | undefined
     if (publicKey) {
       const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(publicKey.keyType)
@@ -327,22 +307,24 @@ export class X509Certificate {
     }
 
     // We use the library to validate the signature, but the date is manually verified
-    const isSignatureValid = await certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
+    const isSignatureValid = skipSignatureVerification
+      ? true
+      : await this.x509Certificate.verify({ signatureOnly: true, publicKey: publicCryptoKey }, webCrypto)
     const time = verificationDate.getTime()
 
-    const isNotBeforeValid = certificate.notBefore.getTime() <= time
-    const isNotAfterValid = time <= certificate.notAfter.getTime()
+    const isNotBeforeValid = this.x509Certificate.notBefore.getTime() <= time
+    const isNotAfterValid = time <= this.x509Certificate.notAfter.getTime()
 
     if (!isSignatureValid) {
-      throw new X509Error(`Certificate: '${certificate.subject}' has an invalid signature`)
+      throw new X509Error(`Certificate: '${this.x509Certificate.subject}' has an invalid signature`)
     }
 
     if (!isNotBeforeValid) {
-      throw new X509Error(`Certificate: '${certificate.subject}' used before it is allowed`)
+      throw new X509Error(`Certificate: '${this.x509Certificate.subject}' used before it is allowed`)
     }
 
     if (!isNotAfterValid) {
-      throw new X509Error(`Certificate: '${certificate.subject}' used after it is allowed`)
+      throw new X509Error(`Certificate: '${this.x509Certificate.subject}' used after it is allowed`)
     }
   }
 
@@ -350,9 +332,7 @@ export class X509Certificate {
    * Get the thumprint of the X509 certificate in hex format.
    */
   public async getThumprintInHex(agentContext: AgentContext) {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-
-    const thumbprint = await certificate.getThumbprint(new CredoWebCrypto(agentContext))
+    const thumbprint = await this.x509Certificate.getThumbprint(new CredoWebCrypto(agentContext))
     const thumbprintHex = TypedArrayEncoder.toHex(new Uint8Array(thumbprint))
 
     return thumbprintHex
@@ -362,34 +342,29 @@ export class X509Certificate {
    * Get the data elements of the x509 certificate
    */
   public get data() {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-
     return {
-      issuerName: certificate.issuerName.toString(),
-      issuer: certificate.issuer,
-      subjectName: certificate.subjectName.toString(),
-      subject: certificate.subject,
-      serialNumber: certificate.serialNumber,
-      pem: certificate.toString(),
-      notBefore: certificate.notBefore,
-      notAfter: certificate.notAfter,
+      issuerName: this.x509Certificate.issuerName.toString(),
+      issuer: this.x509Certificate.issuer,
+      subjectName: this.x509Certificate.subjectName.toString(),
+      subject: this.x509Certificate.subject,
+      serialNumber: this.x509Certificate.serialNumber,
+      pem: this.x509Certificate.toString(),
+      notBefore: this.x509Certificate.notBefore,
+      notAfter: this.x509Certificate.notAfter,
     }
   }
 
   public getIssuerNameField(field: string) {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-    return certificate.issuerName.getField(field)
+    return this.x509Certificate.issuerName.getField(field)
   }
 
   public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
-    const certificate = new x509.X509Certificate(this.rawCertificate)
-    return certificate.toString(format)
+    return this.x509Certificate.toString(format)
   }
 
   public equal(certificate: X509Certificate) {
-    const parsedThis = new x509.X509Certificate(this.rawCertificate)
     const parsedOther = new x509.X509Certificate(certificate.rawCertificate)
 
-    return parsedThis.equal(parsedOther)
+    return this.x509Certificate.equal(parsedOther)
   }
 }

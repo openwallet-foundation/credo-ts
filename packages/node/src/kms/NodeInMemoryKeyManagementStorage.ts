@@ -1,5 +1,5 @@
-import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 import type { AgentContext, Kms } from '@credo-ts/core'
+import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 
 export class NodeInMemoryKeyManagementStorage implements NodeKeyManagementStorage {
   #storage = new Map<string, Map<string, Kms.KmsJwkPrivate>>()

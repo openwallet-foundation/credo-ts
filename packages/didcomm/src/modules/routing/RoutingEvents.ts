@@ -1,8 +1,8 @@
+import type { BaseEvent } from '@credo-ts/core'
+import type { Routing } from '../../models'
 import type { KeylistUpdate } from './messages/KeylistUpdateMessage'
 import type { MediationState } from './models/MediationState'
 import type { MediationRecord } from './repository/MediationRecord'
-import type { Routing } from '../../models'
-import type { BaseEvent } from '@credo-ts/core'
 
 export enum RoutingEventTypes {
   MediationStateChanged = 'MediationStateChanged',

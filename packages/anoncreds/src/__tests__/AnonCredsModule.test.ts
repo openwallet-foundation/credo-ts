@@ -1,5 +1,5 @@
-import type { AnonCredsRegistry } from '../services'
 import type { DependencyManager } from '@credo-ts/core'
+import type { AnonCredsRegistry } from '../services'
 
 import { AnonCredsDataIntegrityServiceSymbol } from '@credo-ts/core'
 
@@ -9,13 +9,13 @@ import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../anoncreds-rs'
 import { AnonCredsDataIntegrityService } from '../anoncreds-rs/AnonCredsDataIntegrityService'
 import {
-  AnonCredsSchemaRepository,
-  AnonCredsCredentialDefinitionRepository,
   AnonCredsCredentialDefinitionPrivateRepository,
+  AnonCredsCredentialDefinitionRepository,
   AnonCredsKeyCorrectnessProofRepository,
   AnonCredsLinkSecretRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRepository,
+  AnonCredsSchemaRepository,
 } from '../repository'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'

@@ -1,9 +1,9 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 import type { AgentMessageProcessedEvent, AgentMessageSentEvent } from '@credo-ts/didcomm'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { filter, firstValueFrom, map } from 'rxjs'
 
-import { presentAnonCredsProof, issueAnonCredsCredential } from '../packages/anoncreds/tests/anoncredsSetup'
+import { issueAnonCredsCredential, presentAnonCredsProof } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
@@ -12,17 +12,17 @@ import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
-  V2CredentialPreview,
-  V1BatchMessage,
-  V1BatchPickupMessage,
-  V2DeliveryRequestMessage,
-  V2MessageDeliveryMessage,
+  AgentEventTypes,
+  CredentialEventTypes,
   CredentialState,
   MediationState,
-  ProofState,
-  CredentialEventTypes,
   ProofEventTypes,
-  AgentEventTypes,
+  ProofState,
+  V1BatchMessage,
+  V1BatchPickupMessage,
+  V2CredentialPreview,
+  V2DeliveryRequestMessage,
+  V2MessageDeliveryMessage,
 } from '@credo-ts/didcomm'
 
 export async function e2eTest({
@@ -49,9 +49,8 @@ export async function e2eTest({
   expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
 
   // Request mediation from mediator
-  const mediationRecord = await recipientAgent.modules.mediationRecipient.requestAndAwaitGrant(
-    recipientMediatorConnection
-  )
+  const mediationRecord =
+    await recipientAgent.modules.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
   expect(mediationRecord.state).toBe(MediationState.Granted)
 
   // Set mediator as default for recipient, start picking up messages
@@ -142,6 +141,7 @@ export async function e2eTest({
       filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
       map((e) => e.payload.message.message.threadId)
     )
+    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
     .subscribe((threadId) => (lastSentPickupMessageThreadId = threadId))
 
   // Wait for the response to the pickup message to be processed

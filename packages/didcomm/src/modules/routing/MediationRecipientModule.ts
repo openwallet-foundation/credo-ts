@@ -1,16 +1,17 @@
+import { CredoError } from '@credo-ts/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { MediationRecipientModuleConfigOptions } from './MediationRecipientModuleConfig'
-import { CredoError, type AgentContext, type DependencyManager, type Module } from '@credo-ts/core'
 
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
 
+import { ConnectionsApi } from '../connections'
+import { OutOfBandApi } from '../oob'
 import { MediationRecipientApi } from './MediationRecipientApi'
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediationRole } from './models'
 import { MediationRepository } from './repository'
 import { MediationRecipientService, RoutingService } from './services'
-import { OutOfBandApi } from '../oob'
-import { ConnectionsApi } from '../connections'
 
 export class MediationRecipientModule implements Module {
   public readonly config: MediationRecipientModuleConfig
@@ -99,7 +100,7 @@ export class MediationRecipientModule implements Module {
       const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {
         routing,
       })
-      agentContext.config.logger.debug(`Mediation invitation processed`, { outOfBandInvitation })
+      agentContext.config.logger.debug('Mediation invitation processed', { outOfBandInvitation })
 
       if (!newConnection) {
         throw new CredoError('No connection record to provision mediation.')

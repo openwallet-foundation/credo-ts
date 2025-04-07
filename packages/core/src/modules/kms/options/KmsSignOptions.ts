@@ -1,9 +1,7 @@
-import type { KnownJwaSignatureAlgorithm } from '../jwk/jwa'
-
 import * as z from '../../../utils/zod'
-import { vKnownJwaSignatureAlgorithm } from '../jwk/jwa'
+import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 
-export const vKmsSignOptions = z.object({
+export const zKmsSignOptions = z.object({
   /**
    * The key to use for signing
    */
@@ -12,7 +10,7 @@ export const vKmsSignOptions = z.object({
   /**
    * The JWA signature algorithm to use for signing
    */
-  algorithm: vKnownJwaSignatureAlgorithm.describe('The JWA signature algorithm to use for signing'),
+  algorithm: zKnownJwaSignatureAlgorithm.describe('The JWA signature algorithm to use for signing'),
 
   /**
    * The data to sign
@@ -20,7 +18,7 @@ export const vKmsSignOptions = z.object({
   data: z.instanceof(Uint8Array).describe('The data to sign'),
 })
 
-export type KmsSignOptions = z.output<typeof vKmsSignOptions>
+export type KmsSignOptions = z.output<typeof zKmsSignOptions>
 export interface KmsSignReturn {
   signature: Uint8Array
 }

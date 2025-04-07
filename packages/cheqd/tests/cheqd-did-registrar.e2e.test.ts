@@ -1,15 +1,15 @@
-import type { CheqdDidCreateOptions } from '../src'
 import type { DidDocument } from '@credo-ts/core'
+import type { CheqdDidCreateOptions } from '../src'
 
 import {
-  SECURITY_JWS_CONTEXT_URL,
+  Agent,
   DidDocumentBuilder,
+  KeyType,
+  SECURITY_JWS_CONTEXT_URL,
+  TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
-  KeyType,
   utils,
-  Agent,
-  TypedArrayEncoder,
 } from '@credo-ts/core'
 import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
@@ -38,7 +38,7 @@ describe('Cheqd DID registrar', () => {
     // but still check if the created output document is as expected.
     const privateKey = TypedArrayEncoder.fromString(
       Array(32 + 1)
-        .join((Math.random().toString(36) + '00000000000000000').slice(2, 18))
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
     )
     const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
@@ -149,6 +149,8 @@ describe('Cheqd DID registrar', () => {
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
+        .addController(did)
+        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
@@ -188,6 +190,8 @@ describe('Cheqd DID registrar', () => {
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
+        .addController(did)
+        .addAuthentication(`${did}#${p256Key.fingerprint}`)
         .addVerificationMethod(
           getJsonWebKey2020({
             did,

@@ -15,9 +15,7 @@ describe('peerDidNumAlgo0', () => {
         const key = Key.fromFingerprint(didDocument.id.split(':')[2])
 
         const didPeerDocument = keyToNumAlgo0DidDocument(key)
-        const expectedDidPeerDocument = JSON.parse(
-          JSON.stringify(didDocument).replace(new RegExp('did:key:', 'g'), 'did:peer:0')
-        )
+        const expectedDidPeerDocument = JSON.parse(JSON.stringify(didDocument).replace(/did:key:/g, 'did:peer:0'))
 
         expect(didPeerDocument.toJSON()).toMatchObject(expectedDidPeerDocument)
       }
@@ -30,9 +28,7 @@ describe('peerDidNumAlgo0', () => {
 
       for (const didDocument of didDocuments) {
         const didPeer = didToNumAlgo0DidDocument(didDocument.id.replace('did:key:', 'did:peer:0'))
-        const expectedDidPeerDocument = JSON.parse(
-          JSON.stringify(didDocument).replace(new RegExp('did:key:', 'g'), 'did:peer:0')
-        )
+        const expectedDidPeerDocument = JSON.parse(JSON.stringify(didDocument).replace(/did:key:/g, 'did:peer:0'))
 
         expect(didPeer.toJSON()).toMatchObject(expectedDidPeerDocument)
       }

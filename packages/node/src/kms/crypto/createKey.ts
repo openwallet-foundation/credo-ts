@@ -1,6 +1,6 @@
-import { Kms } from '@credo-ts/core'
-import { generateKeyPair as _generateKeyPair, generateKey as _generateKey } from 'node:crypto'
+import { generateKey as _generateKey, generateKeyPair as _generateKeyPair } from 'node:crypto'
 import { promisify } from 'node:util'
+import { Kms } from '@credo-ts/core'
 
 const generateKeyPair = promisify(_generateKeyPair)
 const generateKey = promisify(_generateKey)

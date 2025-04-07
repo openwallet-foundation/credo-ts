@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { ParsedDid, DidResolutionResult, DidResolutionOptions } from '../types'
+import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 export interface DidResolver {
   readonly supportedMethods: string[]

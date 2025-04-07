@@ -1,17 +1,16 @@
 import type { AgentContext } from '../../../agent'
 
-import { id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
+import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
 import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { KeyType } from '../../../crypto/KeyType'
-import { getJwkFromKey, P256Jwk } from '../../../crypto/jose/jwk'
-import { CredoWebCrypto } from '../../../crypto/webcrypto'
+import { P256Jwk, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
-import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@credo-ts/core'
+import { CredoWebCrypto, Hasher, Key, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 
 /**
  *
@@ -21,7 +20,7 @@ import { X509KeyUsage, TypedArrayEncoder, X509ExtendedKeyUsage, Key } from '@cre
 const getNextMonth = () => {
   const now = new Date()
   let nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1)
-  if (now.getMonth() == 11) {
+  if (now.getMonth() === 11) {
     nextMonth = new Date(now.getFullYear() + 1, 0, 1)
   }
 
@@ -36,7 +35,7 @@ const getNextMonth = () => {
 const getLastMonth = () => {
   const now = new Date()
   let lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  if (now.getMonth() == 0) {
+  if (now.getMonth() === 0) {
     lastMonth = new Date(now.getFullYear() - 1, 0, 1)
   }
   return lastMonth
@@ -52,7 +51,7 @@ describe('X509Service', () => {
     wallet = new InMemoryWallet()
     agentContext = getAgentContext({ wallet })
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await wallet.createAndOpen(agentConfig.walletConfig!)
 
     const rootKey = await wallet.createKey({ keyType: KeyType.P256 })
@@ -122,7 +121,6 @@ describe('X509Service', () => {
     expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
     expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
     expect(certificate.subject).toStrictEqual('CN=credo')
-    expect(certificate.extensions).toBeUndefined()
   })
 
   it('should create a valid self-signed certificate with a critical extension', async () => {
@@ -170,13 +168,122 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate).toMatchObject({
-      sanDnsNames: expect.arrayContaining(['paradym.id']),
-      sanUriNames: expect.arrayContaining(['animo.id']),
+    expect(certificate.sanDnsNames).toStrictEqual(expect.arrayContaining(['paradym.id']))
+    expect(certificate.sanUriNames).toStrictEqual(expect.arrayContaining(['animo.id']))
+    expect(certificate.keyUsage).toStrictEqual(expect.arrayContaining([X509KeyUsage.DigitalSignature]))
+    expect(certificate.extendedKeyUsage).toStrictEqual(expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]))
+    expect(certificate.subjectKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1'))
+    )
+  })
+
+  it('should create a valid self-signed certifcate as IACA Root + DCS for mDoc', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const documentSignerKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const mdocRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        issuerAlternativeName: {
+          name: [{ type: 'url', value: 'animo.id' }],
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    expect(mdocRootCertificate.isExtensionCritical(id_ce_basicConstraints)).toStrictEqual(true)
+    expect(mdocRootCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+
+    expect(mdocRootCertificate).toMatchObject({
+      ianUriNames: expect.arrayContaining(['animo.id']),
+      keyUsage: expect.arrayContaining([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign]),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
+    })
+
+    const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(documentSignerKey.publicKey, KeyType.P256),
+      issuer: mdocRootCertificate.issuer,
+      subject: { commonName: 'credo dcs', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        subjectAlternativeName: {
+          name: [{ type: 'url', value: 'paradym.id' }],
+        },
+        issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          name: mdocRootCertificate.issuerAlternativeNames!,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_keyUsage)).toStrictEqual(true)
+    expect(mdocDocumentSignerCertificate.isExtensionCritical(id_ce_extKeyUsage)).toStrictEqual(true)
+
+    expect(mdocDocumentSignerCertificate).toMatchObject({
+      ianUriNames: expect.arrayContaining(['animo.id']),
+      sanUriNames: expect.arrayContaining(['paradym.id']),
       keyUsage: expect.arrayContaining([X509KeyUsage.DigitalSignature]),
       extendedKeyUsage: expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(documentSignerKey.publicKey, 'SHA-1')),
+      authorityKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
     })
+
+    // Verify chain where the root cert is trusted, but not in the chain
+    // This is the case in ISO 18013-5 mDL
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [mdocDocumentSignerCertificate.toString('pem'), mdocRootCertificate.toString('pem')],
+        trustedCertificates: [mdocRootCertificate.toString('pem')],
+      })
+    ).resolves.toHaveLength(2)
+
+    // Can verify it with only the signer certificate trusted.
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: [mdocDocumentSignerCertificate.toString('pem')],
+        trustedCertificates: [mdocDocumentSignerCertificate.toString('pem')],
+      })
+    ).resolves.toHaveLength(1)
   })
 
   it('should create a valid leaf certificate', async () => {
@@ -194,15 +301,15 @@ describe('X509Service', () => {
       },
     })
 
-    expect(certificate.subjectKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(subjectKey.publicKey))
-    expect(certificate.authorityKeyIdentifier).toStrictEqual(TypedArrayEncoder.toHex(authorityKey.publicKey))
+    expect(certificate.subjectKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(subjectKey.publicKey, 'SHA-1'))
+    )
+    expect(certificate.authorityKeyIdentifier).toStrictEqual(
+      TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1'))
+    )
     expect(certificate.publicKey.keyType).toStrictEqual(KeyType.P256)
     expect(certificate.publicKey.publicKey.length).toStrictEqual(65)
     expect(certificate.subject).toStrictEqual('CN=DCS credo')
-    expect(certificate).toMatchObject({
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(subjectKey.publicKey),
-      authorityKeyIdentifier: TypedArrayEncoder.toHex(authorityKey.publicKey),
-    })
   })
 
   it('should correctly parse an X.509 certificate with an uncompressed key to a JWK', async () => {
@@ -250,6 +357,82 @@ describe('X509Service', () => {
         keyType: KeyType.P256,
       }),
       privateKey: undefined,
+    })
+  })
+
+  it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
+    const authorityKey = await wallet.createKey({ keyType: KeyType.P256 })
+    const documentSignerKey = await wallet.createKey({ keyType: KeyType.P256 })
+
+    const mdocRootCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      issuer: { commonName: 'credo', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign],
+          markAsCritical: true,
+        },
+        issuerAlternativeName: {
+          name: [{ type: 'url', value: 'animo.id' }],
+        },
+        basicConstraints: {
+          ca: true,
+          pathLenConstraint: 0,
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    const mdocDocumentSignerCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey,
+      subjectPublicKey: new Key(documentSignerKey.publicKey, KeyType.P256),
+      issuer: mdocRootCertificate.issuer,
+      subject: { commonName: 'credo dcs', countryName: 'NL' },
+      validity: {
+        notBefore: getLastMonth(),
+        notAfter: getNextMonth(),
+      },
+      extensions: {
+        authorityKeyIdentifier: {
+          include: true,
+        },
+        subjectKeyIdentifier: {
+          include: true,
+        },
+        keyUsage: {
+          usages: [X509KeyUsage.DigitalSignature],
+          markAsCritical: true,
+        },
+        subjectAlternativeName: {
+          name: [{ type: 'url', value: 'paradym.id' }],
+        },
+        issuerAlternativeName: {
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          name: mdocRootCertificate.issuerAlternativeNames!,
+        },
+        extendedKeyUsage: {
+          usages: [X509ExtendedKeyUsage.MdlDs],
+          markAsCritical: true,
+        },
+        crlDistributionPoints: {
+          urls: ['https://animo.id'],
+        },
+      },
+    })
+
+    await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: [mdocDocumentSignerCertificate.toString('base64url')],
+      trustedCertificates: [mdocRootCertificate.toString('pem')],
     })
   })
 
@@ -302,5 +485,60 @@ describe('X509Service', () => {
           certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],
         })
     ).rejects.toThrow(X509Error)
+  })
+
+  it('should correctly parse test vector from verifier.eudiw.dev', async () => {
+    const x5c = [
+      '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',
+    ]
+
+    // Works without trusted certificates
+    const chain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: x5c,
+    })
+    expect(chain.length).toStrictEqual(2)
+    expect(chain[0].publicKey.keyType).toStrictEqual(KeyType.P384)
+    expect(chain[1].publicKey.keyType).toStrictEqual(KeyType.P256)
+
+    // Works with root certificate as trusted certificate
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: x5c,
+        trustedCertificates: [x5c[1]],
+      })
+    ).resolves.toHaveLength(2)
+
+    // Errors when trusted certificates is empty
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: x5c,
+        trustedCertificates: [],
+      })
+    ).rejects.toThrow('No trusted certificate was found while validating the X.509 chain')
+
+    // Works with leaf certificate as trusted certificate
+    await expect(
+      X509Service.validateCertificateChain(agentContext, {
+        certificateChain: x5c,
+        trustedCertificates: [x5c[0]],
+      })
+    ).resolves.toHaveLength(1)
+  })
+
+  it('should correctly parse test vector from ws.davidz25.net', async () => {
+    const x5c = [
+      'MIIBvTCCAUOgAwIBAgIBATAKBggqhkjOPQQDAzAlMSMwIQYDVQQDDBpPV0YgSUMgVGVzdEFwcCBSZWFkZXIgUm9vdDAeFw0yNTAzMjEyMjEyNDBaFw0yNTAzMjEyMjMyNDBaMDcxNTAzBgNVBAMMLE9XRiBJQyBPbmxpbmUgVmVyaWZpZXIgU2luZ2xlLVVzZSBSZWFkZXIgS2V5MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuDXThD1zImM3KfAzJqFVrMT7a0Io0vNfv4/ZaD9inUib9BGPgZ/QbDaTzB71td8hwl8ao2YuQs1BZJTDaVPqh6NSMFAwHwYDVR0jBBgwFoAUq2Ub4FbCkFPx3X9s5Ie+aN5gyfUwDgYDVR0PAQH/BAQDAgeAMB0GA1UdDgQWBBS7v3hFCgJmXtpqJY8xCroK+aD8OjAKBggqhkjOPQQDAwNoADBlAjAa+qdP84Gv4MeSzfOGaKaJYQ2lQuVMFgJBl/Fwh5VtJKFnxs1tRSXilzG0/957xY0CMQDPChxTVcGYaroaOm2XPYTfrwcMBSnGIuz4IbgWQVsx9EI0jFR2XeoHIP9LkEu6wUo=',
+      'MIIBujCCAUGgAwIBAgIBATAKBggqhkjOPQQDAzAlMSMwIQYDVQQDDBpPV0YgSUMgVGVzdEFwcCBSZWFkZXIgUm9vdDAeFw0yNDEyMDEwMDAwMDBaFw0zNDEyMDEwMDAwMDBaMCUxIzAhBgNVBAMMGk9XRiBJQyBUZXN0QXBwIFJlYWRlciBSb290MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE+QDye70m2O0llPXMjVjxVZz3m5k6agT+wih+L79b7jyqUl99sbeUnpxaLD+cmB3HK3twkA7fmVJSobBc+9CDhkh3mx6n+YoH5RulaSWThWBfMyRjsfVODkosHLCDnbPVo0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBADAdBgNVHQ4EFgQUq2Ub4FbCkFPx3X9s5Ie+aN5gyfUwCgYIKoZIzj0EAwMDZwAwZAIweZ71amQTYTv5uegmHkKYNdgfJvWk7Dbuh+YSiUL/yMNDORurXjmmio4mxxHR+wudAjAfQr1dk9vigdhlE4dsglgYtsBbGl/1hCqigHVjZQqS/bpV3aj9zgpAypcYI13vUUU=',
+    ]
+
+    const chain = await X509Service.validateCertificateChain(agentContext, {
+      certificateChain: x5c,
+      verificationDate: new Date('2025-03-21T22:30Z'),
+    })
+
+    expect(chain.length).toStrictEqual(2)
+    expect(chain[0].publicKey.keyType).toStrictEqual(KeyType.P384)
+    expect(chain[1].publicKey.keyType).toStrictEqual(KeyType.P256)
   })
 })

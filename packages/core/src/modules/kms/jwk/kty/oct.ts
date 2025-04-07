@@ -1,25 +1,25 @@
 import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-export const vKmsJwkPublicOct = z.object({
+export const zKmsJwkPublicOct = z.object({
   ...vJwkCommon.shape,
   kty: z.literal('oct'),
 
   // Private
   k: z.optional(z.undefined()), // Key
 })
-export type KmsJwkPublicOct = z.output<typeof vKmsJwkPublicOct>
+export type KmsJwkPublicOct = z.output<typeof zKmsJwkPublicOct>
 
-export const vKmsJwkPrivateToPublicOct = z.object({
-  ...vKmsJwkPublicOct.shape,
+export const zKmsJwkPrivateToPublicOct = z.object({
+  ...zKmsJwkPublicOct.shape,
 
   k: z.optionalToUndefined(z.base64Url), // Key
 })
 
-export const vKmsJwkPrivateOct = z.object({
-  ...vKmsJwkPublicOct.shape,
+export const zKmsJwkPrivateOct = z.object({
+  ...zKmsJwkPublicOct.shape,
 
   // Private
   k: z.base64Url, // Key
 })
-export type KmsJwkPrivateOct = z.output<typeof vKmsJwkPrivateOct>
+export type KmsJwkPrivateOct = z.output<typeof zKmsJwkPrivateOct>

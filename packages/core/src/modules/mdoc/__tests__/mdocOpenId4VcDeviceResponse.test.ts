@@ -1,7 +1,6 @@
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { getInMemoryAgentOptions } from '../../../../tests'
@@ -25,6 +24,7 @@ const DEVICE_JWK_PRIVATE_P256 = {
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
 }
 
+// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const ISSUER_PRIVATE_KEY_JWK_P256 = {
   kty: 'EC',
   kid: '1234',
@@ -148,59 +148,56 @@ describe('mdoc device-response openid4vp test', () => {
         keyType: KeyType.P256,
         privateKey: Buffer.from(issuerPrivateAskar.secretBytes),
       })
+      mdoc = await Mdoc.sign(agent.context, {
+        docType: 'org.iso.18013.5.1.mDL',
+        validityInfo: {
+          signed: new Date('2023-10-24'),
+          validUntil: new Date('2050-10-24'),
+        },
+        holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC_P256).key,
+        issuerCertificate: ISSUER_CERTIFICATE_P256,
+        namespaces: {
+          'org.iso.18013.5.1': {
+            family_name: 'Jones',
+            given_name: 'Ava',
+            birth_date: '2007-03-25',
+            issue_date: '2023-09-01',
+            expiry_date: '2028-09-31',
+            issuing_country: 'US',
+            issuing_authority: 'NY DMV',
+            document_number: '01-856-5050',
+            portrait: 'bstr',
+            driving_privileges: [
+              {
+                vehicle_category_code: 'C',
+                issue_date: '2023-09-01',
+                expiry_date: '2028-09-31',
+              },
+            ],
+            un_distinguishing_sign: 'tbd-us.ny.dmv',
 
-      // this is the ISSUER side
-      {
-        mdoc = await Mdoc.sign(agent.context, {
-          docType: 'org.iso.18013.5.1.mDL',
-          validityInfo: {
-            signed: new Date('2023-10-24'),
-            validUntil: new Date('2050-10-24'),
+            sex: 'F',
+            height: '5\' 8"',
+            weight: '120lb',
+            eye_colour: 'brown',
+            hair_colour: 'brown',
+            resident_addres: '123 Street Rd',
+            resident_city: 'Brooklyn',
+            resident_state: 'NY',
+            resident_postal_code: '19001',
+            resident_country: 'US',
+            issuing_jurisdiction: 'New York',
           },
-          holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC_P256).key,
-          issuerCertificate: ISSUER_CERTIFICATE_P256,
-          namespaces: {
-            'org.iso.18013.5.1': {
-              family_name: 'Jones',
-              given_name: 'Ava',
-              birth_date: '2007-03-25',
-              issue_date: '2023-09-01',
-              expiry_date: '2028-09-31',
-              issuing_country: 'US',
-              issuing_authority: 'NY DMV',
-              document_number: '01-856-5050',
-              portrait: 'bstr',
-              driving_privileges: [
-                {
-                  vehicle_category_code: 'C',
-                  issue_date: '2023-09-01',
-                  expiry_date: '2028-09-31',
-                },
-              ],
-              un_distinguishing_sign: 'tbd-us.ny.dmv',
-
-              sex: 'F',
-              height: '5\' 8"',
-              weight: '120lb',
-              eye_colour: 'brown',
-              hair_colour: 'brown',
-              resident_addres: '123 Street Rd',
-              resident_city: 'Brooklyn',
-              resident_state: 'NY',
-              resident_postal_code: '19001',
-              resident_country: 'US',
-              issuing_jurisdiction: 'New York',
-            },
-          },
-        })
-      }
+        },
+      })
 
       //  This is the Device side
       {
-        const result = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agent.context, {
+        const result = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agent.context, {
           mdocs: [mdoc],
           presentationDefinition: PRESENTATION_DEFINITION_1,
           sessionTranscriptOptions: {
+            type: 'openId4Vp',
             clientId,
             responseUri,
             verifierGeneratedNonce,
@@ -232,6 +229,7 @@ describe('mdoc device-response openid4vp test', () => {
       const res = await mdocDeviceResponse.verify(agent.context, {
         trustedCertificates: [ISSUER_CERTIFICATE_P256],
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -244,7 +242,7 @@ describe('mdoc device-response openid4vp test', () => {
     describe('should not be verifiable', () => {
       const testCases = ['clientId', 'responseUri', 'verifierGeneratedNonce', 'mdocGeneratedNonce']
 
-      testCases.forEach((name) => {
+      for (const name of testCases) {
         const values = {
           clientId,
           responseUri,
@@ -258,6 +256,7 @@ describe('mdoc device-response openid4vp test', () => {
             await mdocDeviceResponse.verify(agent.context, {
               trustedCertificates: [ISSUER_CERTIFICATE_P256],
               sessionTranscriptOptions: {
+                type: 'openId4Vp',
                 clientId: values.clientId,
                 responseUri: values.responseUri,
                 verifierGeneratedNonce: values.verifierGeneratedNonce,
@@ -271,7 +270,7 @@ describe('mdoc device-response openid4vp test', () => {
             )
           }
         })
-      })
+      }
     })
 
     it('should contain the validity info', () => {
@@ -359,10 +358,11 @@ describe('mdoc device-response openid4vp test', () => {
 
       //  This is the Device side
 
-      const result = await MdocDeviceResponse.createOpenId4VpDeviceResponse(agent.context, {
+      const result = await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agent.context, {
         mdocs: [mdoc],
         presentationDefinition: PRESENTATION_DEFINITION_1,
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -391,6 +391,7 @@ describe('mdoc device-response openid4vp test', () => {
       await MdocDeviceResponse.fromBase64Url(result.deviceResponseBase64Url).verify(agent.context, {
         trustedCertificates: [issuerCertificate.toString('pem')],
         sessionTranscriptOptions: {
+          type: 'openId4Vp',
           clientId,
           responseUri,
           verifierGeneratedNonce,

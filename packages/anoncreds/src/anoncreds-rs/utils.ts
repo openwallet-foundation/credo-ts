@@ -1,13 +1,13 @@
-import type { AnonCredsNonRevokedInterval } from '../models'
 import type { AgentContext, JsonObject, W3cJsonLdVerifiableCredential } from '@credo-ts/core'
 import type { NonRevokedIntervalOverride } from '@hyperledger/anoncreds-shared'
+import type { AnonCredsNonRevokedInterval } from '../models'
 
 import { CredoError, JsonTransformer } from '@credo-ts/core'
 import {
   W3cCredential as AnonCredsW3cCredential,
+  CredentialRevocationState,
   RevocationRegistryDefinition,
   RevocationStatusList,
-  CredentialRevocationState,
 } from '@hyperledger/anoncreds-shared'
 
 import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'

@@ -1,10 +1,10 @@
-import type { UpdateToVersion } from './updates'
 import type { AgentContext } from '../../agent'
 import type { VersionString } from '../../utils/version'
+import type { UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
 import { Logger } from '../../logger'
-import { injectable, inject } from '../../plugins'
+import { inject, injectable } from '../../plugins'
 
 import { isStorageUpToDate } from './isUpToDate'
 import { StorageVersionRecord } from './repository/StorageVersionRecord'

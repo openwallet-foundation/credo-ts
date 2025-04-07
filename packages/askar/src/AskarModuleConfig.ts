@@ -1,5 +1,5 @@
-import type { AskarWalletPostgresStorageConfig, AskarWalletSqliteStorageConfig } from './wallet'
 import type { Askar, KdfMethod } from '@openwallet-foundation/askar-shared'
+import type { AskarWalletPostgresStorageConfig, AskarWalletSqliteStorageConfig } from './wallet'
 
 export enum AskarMultiWalletDatabaseScheme {
   /**

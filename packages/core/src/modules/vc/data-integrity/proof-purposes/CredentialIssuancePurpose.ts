@@ -1,7 +1,7 @@
 import type { JsonObject } from '../../../../types'
-import type { Proof, DocumentLoader } from '../jsonldUtil'
+import type { DocumentLoader, Proof } from '../jsonldUtil'
 
-import { suites, purposes } from '../libraries/jsonld-signatures'
+import { purposes, suites } from '../libraries/jsonld-signatures'
 
 const AssertionProofPurpose = purposes.AssertionProofPurpose
 const LinkedDataProof = suites.LinkedDataProof
@@ -21,7 +21,7 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
    *   of seconds that the date on the signature can deviate from.
    */
   public constructor(options: { controller?: Record<string, unknown>; date: string; maxTimestampDelta?: number }) {
-    options.maxTimestampDelta = options.maxTimestampDelta || Infinity
+    options.maxTimestampDelta = options.maxTimestampDelta || Number.POSITIVE_INFINITY
     super(options)
   }
 
@@ -54,7 +54,7 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       verificationMethod: string
       documentLoader?: DocumentLoader
     }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   ): Promise<{ valid: boolean; error?: any }> {
     try {
       const result = await super.validate(proof, options)
@@ -64,7 +64,6 @@ export class CredentialIssuancePurpose extends AssertionProofPurpose {
       }
 
       // This @ts-ignore is necessary because the .getValues() method is not part of the public API.
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       //@ts-ignore
       const issuer = jsonld.util.getValues(options.document, 'issuer')
 

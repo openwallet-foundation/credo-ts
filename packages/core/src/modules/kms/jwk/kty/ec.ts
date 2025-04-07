@@ -1,7 +1,7 @@
 import * as z from '../../../../utils/zod'
 import { vJwkCommon } from '../jwk'
 
-export const vKmsJwkPublicEc = z.object({
+export const zKmsJwkPublicEc = z.object({
   ...vJwkCommon.shape,
   kty: z.literal('EC'),
   crv: z.enum(['P-256', 'P-384', 'P-521', 'secp256k1', 'BLS12381G1', 'BLS12381G2']),
@@ -13,17 +13,17 @@ export const vKmsJwkPublicEc = z.object({
   // Private
   d: z.optional(z.undefined()),
 })
-export type KmsJwkPublicEc = z.output<typeof vKmsJwkPublicEc>
+export type KmsJwkPublicEc = z.output<typeof zKmsJwkPublicEc>
 
-export const vKmsJwkPrivateToPublicEc = z.object({
-  ...vKmsJwkPublicEc.shape,
+export const zKmsJwkPrivateToPublicEc = z.object({
+  ...zKmsJwkPublicEc.shape,
   d: z.optionalToUndefined(z.base64Url),
 })
 
-export const vKmsJwkPrivateEc = z.object({
-  ...vKmsJwkPublicEc.shape,
+export const zKmsJwkPrivateEc = z.object({
+  ...zKmsJwkPublicEc.shape,
 
   // Private
   d: z.base64Url,
 })
-export type KmsJwkPrivateEc = z.output<typeof vKmsJwkPrivateEc>
+export type KmsJwkPrivateEc = z.output<typeof zKmsJwkPrivateEc>
