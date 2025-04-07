@@ -27,12 +27,6 @@ export type W3cSignPresentationOptions<Format extends ClaimFormat.JwtVp | ClaimF
       ? W3cJsonLdSignPresentationOptions
       : W3cJwtSignPresentationOptions | W3cJsonLdSignPresentationOptions
 export type W3cVerifyPresentationOptions = W3cJwtVerifyPresentationOptions | W3cJsonLdVerifyPresentationOptions
-export type RevokeCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
-  Format extends ClaimFormat.JwtVc
-    ? W3cJwtRevokeCredentialOptions
-    : Format extends ClaimFormat.LdpVc
-    ? W3cJsonLdRevokeCredentialOptions
-    : W3cJwtRevokeCredentialOptions | W3cJsonLdRevokeCredentialOptions
 
 interface W3cSignCredentialOptionsBase {
   /**
@@ -196,19 +190,4 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
 
 export interface StoreCredentialOptions {
   credential: W3cVerifiableCredential
-}
-
-/**
- * Interface for W3cCredentialsApi.revokeCredential. revoke a w3c credential.
- */
-export interface RevokeCredentialOptionsBase {
-  credentialRecordId: string
-}
-
-export interface W3cJwtRevokeCredentialOptions extends RevokeCredentialOptionsBase {
-  format: ClaimFormat.JwtVc
-}
-
-export interface W3cJsonLdRevokeCredentialOptions extends RevokeCredentialOptionsBase {
-  format: ClaimFormat.LdpVc
 }

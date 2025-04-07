@@ -2,7 +2,6 @@ import type { AgentContext } from '../../../agent/context'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
 import type { DidPurpose, VerificationMethod } from '../../dids'
 import type {
-  W3cJwtRevokeCredentialOptions,
   W3cJwtSignCredentialOptions,
   W3cJwtSignPresentationOptions,
   W3cJwtVerifyCredentialOptions,

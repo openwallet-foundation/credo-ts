@@ -2,7 +2,6 @@ import type { AgentContext } from '../../../agent/context'
 import type { Key } from '../../../crypto/Key'
 import type { SingleOrArray } from '../../../utils'
 import type {
-  W3cJsonLdRevokeCredentialOptions,
   W3cJsonLdSignCredentialOptions,
   W3cJsonLdSignPresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
