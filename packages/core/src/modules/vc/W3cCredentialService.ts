@@ -22,7 +22,6 @@ import type {
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
 
-import { RevokeCredentialOptions } from './W3cCredentialServiceOptions'
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
 import { W3cJsonLdVerifiableCredential } from './data-integrity'
 import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
