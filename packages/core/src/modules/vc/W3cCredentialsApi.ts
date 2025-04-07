@@ -1,5 +1,6 @@
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
+  RevokeCredentialOptions,
   StoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cSignCredentialOptions,
@@ -14,6 +15,8 @@ import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
 import { W3cCredentialService } from './W3cCredentialService'
+import { W3cJsonLdVerifiableCredential } from './data-integrity'
+import { W3cJwtVerifiableCredential } from './jwt-vc'
 
 /**
  * @public
@@ -42,6 +45,13 @@ export class W3cCredentialsApi {
 
   public async getCredentialRecordById(id: string): Promise<W3cCredentialRecord> {
     return this.w3cCredentialService.getCredentialRecordById(this.agentContext, id)
+  }
+
+  // Revoke Credential Methods
+  public async revokeCredential<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc>(
+    options: RevokeCredentialOptions<Format>
+  ): Promise<W3cJwtVerifiableCredential | W3cJsonLdVerifiableCredential> {
+    return this.w3cCredentialService.revokeCredential<Format>(this.agentContext, options)
   }
 
   public async findCredentialRecordsByQuery(

@@ -2,12 +2,13 @@ import type { AgentContext } from '../../../agent/context'
 import type { Key } from '../../../crypto/Key'
 import type { SingleOrArray } from '../../../utils'
 import type {
+  W3cJsonLdRevokeCredentialOptions,
   W3cJsonLdSignCredentialOptions,
   W3cJsonLdSignPresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import { ClaimFormat, type W3cVerifyCredentialResult, type W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 import type { W3cJsonLdDeriveProofOptions } from './deriveProof'
 
@@ -23,6 +24,7 @@ import { w3cDate } from '../util'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { deriveProof } from './deriveProof'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
+import { validateStatus } from './libraries/credentialStatus'
 import jsonld from './libraries/jsonld'
 import vc from './libraries/vc'
 import { W3cJsonLdVerifiableCredential } from './models'
@@ -109,10 +111,12 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-        checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
-          // Only throw error if credentialStatus is present
-          if (verifyCredentialStatus && 'credentialStatus' in credential) {
-            throw new CredoError('Verifying credential status for JSON-LD credentials is currently not supported')
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
+          if (verifyCredentialStatus && credential.credentialStatus) {
+            // await verifyBitStringCredentialStatus(credential, agentContext)
+            // Add a verification function that then checks which type of credentailStatus we have
+            // If the type is supported, we validate it and return the result
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
             verified: true,
@@ -259,12 +263,24 @@ export class W3cJsonLdCredentialService {
       )
       const allSuites = presentationSuites.concat(...credentialSuites)
 
+      const verifyCredentialStatus = options.verifyCredentialStatus ?? true
       const verifyOptions: Record<string, unknown> = {
         presentation: JsonTransformer.toJSON(options.presentation),
         suite: allSuites,
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
+          if (verifyCredentialStatus && credential.credentialStatus) {
+            // await verifyBitStringCredentialStatus(credential, agentContext)
+            // Add a verification function that then checks which type of credentailStatus we have
+            // If the type is supported, we validate it and return the result
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
+          }
+          return {
+            verified: true,
+          }
+        },
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null
@@ -314,6 +330,13 @@ export class W3cJsonLdCredentialService {
     })
 
     return proof
+  }
+
+  // temporarily disable no unused var
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public async revokeCredential(_agentContext: AgentContext, _options: W3cJsonLdRevokeCredentialOptions) {
+    // revoke jwt cred
+    throw new CredoError(`Revocation support not implemented for JsonLd`)
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {
