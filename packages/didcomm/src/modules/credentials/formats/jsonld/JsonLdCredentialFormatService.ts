@@ -34,6 +34,7 @@ import {
   W3cCredentialService,
   W3cJsonLdCredentialService,
   W3cJsonLdVerifiableCredential,
+  deepEquality,
   findVerificationMethodByKeyType,
   utils,
 } from '@credo-ts/core'
