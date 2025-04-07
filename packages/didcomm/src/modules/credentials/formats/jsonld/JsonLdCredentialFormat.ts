@@ -9,6 +9,7 @@ export interface JsonCredential {
   issuanceDate: string
   expirationDate?: string
   credentialSubject: SingleOrArray<JsonObject>
+  credentialStatus?: SingleOrArray<CredentialStatusBasedOnType>
   [key: string]: unknown
 }
 
