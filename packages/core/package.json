@@ -20,7 +20,8 @@
     "build": "pnpm run clean && pnpm run compile",
     "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "test": "jest"
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",
