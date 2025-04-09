@@ -28,7 +28,7 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
 export class Mdoc {
   public base64Url: string
 
-  private constructor(private issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
+  private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
     const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
     this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
   }
