@@ -22,12 +22,17 @@
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --config jest.config.js"
   },
   "dependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "didwebvh-ts": "^2.0.0",
+    "@multiformats/base-x": "^4.0.1",
+    "class-transformer": "^0.5.1",
+    "class-validator": "0.14.1",
+    "didwebvh-ts": "file:/Users/brian/Projects/bcgov/didwebvh-ts",
+    "json-canonicalize": "^1.0.6",
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
     "rimraf": "^4.4.0",
     "typescript": "~4.9.5"
   }
-} 
+}
