@@ -12,6 +12,8 @@ export interface AskarWalletSqliteConfig {
   // TODO: add other sqlite config options
   maxConnections?: number
   minConnections?: number
+
+  // TODO: split this up into two separate types SqliteInMemory and Sqlite
   inMemory?: boolean
   path?: string
 }
