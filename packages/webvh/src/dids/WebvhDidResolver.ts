@@ -36,9 +36,9 @@ export class WebvhDidResolver implements DidResolver {
       const metadata = { created: new Date().toISOString() }
 
       return {
-        resource: result,
-        resourceMetadata: metadata,
-        resourceResolutionMetadata: {},
+        content: result,
+        contentMetadata: metadata,
+        dereferencingMetadata: {},
       }
     } catch (error) {
       return {
