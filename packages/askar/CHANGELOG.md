@@ -1,5 +1,114 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 297d209: - Rely on Uint8Array instead of Buffer for internal key bytes representation
+  - Remove dependency on external Big Number libraries
+  - Default to use of uncompressed keys for Secp256k1, Secp256r1, Secp384r1 and Secp521r1
+- 9df09fa: - messagehandler should return undefined if it doesn't want to response with a message
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.modules.didcomm.registerInboundTransport`).
+
+  **Example of DIDComm Agent**
+
+  Previously:
+
+  ```ts
+       const config = {
+        label: name,
+        endpoints: ['https://myendpoint'],
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+
+  ```
+
+  Now:
+
+  ```ts
+       const config = {
+        label: name,
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+      agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+  ```
+
+- 281471e: - depend on @openwallet-foundation/askar instead of @hyperledger/aries-askar
+
+### Patch Changes
+
+- 297d209: - Remove usage of Big Number libraries and rely on native implementations
+  - By default rely on uncompressed keys instead of compressed (for P256, P384, P521 and K256)
+  - Utilze Uint8Array more instead of Buffer (i.e. for internally representing a key)
+- 13cd8cb: feat: support node 22
+- 9f78a6e: allow A128GCM as allowed value for ECDH encryption
+- a53fc54: feat: support A128CBC-HS256 encryption algorithm for JWE
+- Updated dependencies [2d10ec3]
+- Updated dependencies [6d83136]
+- Updated dependencies [312a7b2]
+- Updated dependencies [297d209]
+- Updated dependencies [11827cc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [297d209]
+- Updated dependencies [bea846b]
+- Updated dependencies [13cd8cb]
+- Updated dependencies [15acc49]
+- Updated dependencies [90caf61]
+- Updated dependencies [dca4fdf]
+- Updated dependencies [14673b1]
+- Updated dependencies [607659a]
+- Updated dependencies [44b1866]
+- Updated dependencies [5f08bc6]
+- Updated dependencies [27f971d]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [1a4182e]
+- Updated dependencies [90caf61]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [9df09fa]
+- Updated dependencies [70c849d]
+- Updated dependencies [897c834]
+- Updated dependencies [a53fc54]
+- Updated dependencies [edd2edc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [e80794b]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [27f971d]
+  - @credo-ts/core@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes

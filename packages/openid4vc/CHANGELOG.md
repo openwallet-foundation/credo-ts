@@ -1,5 +1,87 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 81dbbec: fix: typo statefull -> stateful in configuration of OpenID4VCI module
+- 9f78a6e: feat(openid4vc): openid4vp alpha
+- 5f08bc6: feat: allow dynamicaly providing x509 certificates for all types of verifications
+- 9f78a6e: resolveIssuanceAuthorizationRequest has been renamed to resolveOpenId4VciAuthorizationRequest
+- 9f78a6e: feat(openid4vc): add support for new dcql query syntax for oid4vp
+- 9f78a6e: refactor: Support for SIOPv2 has been removed and all interfaces and classes that included Siop in the name (such as OpenId4VcSiopHolderService) have been renamed to OpenId4Vp (so OpenId4VpHolderService)
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 8baa7d7: changed the `v1.draft11-13` and `v1.draft13` versions for credential offers to `v1.draft11-15` and `v1.draft15`. `v1.draft15` is compatible with draft 13, but you're responsible for correctly configuring the credential configurations supported.
+- 17ec6b8: feat(openid4vc): oid4vci authorization code flow, presentation during issuance and batch issuance.
+
+  This is a big change to OpenID4VCI in Credo, with the neccsary breaking changes since we first added it to the framework. Over time the spec has changed significantly, but also our understanding of the standards and protocols.
+
+  **Authorization Code Flow**
+  Credo now supports the authorization code flow, for both issuer and holder. An issuer can configure multiple authorization servers, and work with external authorization servers as well. The integration is based on OAuth2, with several extension specifications, mainly the OAuth2 JWT Access Token Profile, as well as Token Introspection (for opaque access tokens). Verification works out of the box, as longs as the authorization server has a `jwks_uri` configured. For Token Introspection it's also required to provide a `clientId` and `clientSecret` in the authorization server config.
+
+  To use an external authorization server, the authorization server MUST include the `issuer_state` parameter from the credential offer in the access token. Otherwise it's not possible for Credo to correlate the authorization session to the offer session.
+
+  The demo-openid contains an example with external authorization server, which can be used as reference. The Credo authorization server supports DPoP and PKCE.
+
+  **Batch Issuance**
+  The credential request to credential mapper has been updated to support multiple proofs, and also multiple credential instances. The client can now also handle batch issuance.
+
+  **Presentation During Issuance**
+  The presenation during issuance allows to request presentation using OID4VP before granting authorization for issuance of one or more credentials. This flow is automatically handled by the `resolveAuthorizationRequest` method on the oid4vci holder service.
+
+- 9f78a6e: OpenID4VP draft 24 is supported along with transaction data, DCQL, and other features. This has impact on the API, but draft 21 is still supported by providing the `version` param when creating a request
+- 9f78a6e: the default value for `responseMode` has changed from `direct_post` (unencrypted) to `direct_post.jwt` (encrypted)
+- 9f78a6e: fixed an issue where expectedUpdate in an mdoc would be set to undefined. This is a breaking change as previously issued mDOCs containing expectedUpdate values of undefined are not valid anymore, and will cause issues during verification
+- 9f78a6e: refactor: changed the DIF Presentation Exchnage returned credential entry `type` to `claimFormat` to better align with the DC API. In addition the selected credentials type for DIF PEX was changes from an array of credential records, to an object containig the record, claimFormat and disclosed payload
+- 8baa7d7: add support for OID4VCI draft 15, including wallet and key attestations. With this we have made changes to several APIs to better align with key attestations, and how credential binding resolving works. Instead of calling the holder binding resolver for each credential that will be requested once, it will in total be called once and you can return multiple keys, or a single key attestation. APIs have been simplified to better align with changes in the OID4VCI protocols, but OID4VCI draft 11 and 13 are still fully supported. Support for dc+sd-jwt format has also been added. Note that there have been incompatible metadata display/claim changes in the metadata structure between draft 14 and 15 and thus if you want to support both draft 15 and older drafts you have to make sure you're handling this correctly (e.g. by creating separate configurations to be used with draft 13 or 15), and make sure you're using dc+sd-jwt with draft and vc+sd-jwt with draft 13.
+- decbcac: The mdoc device response now verifies each document separately based on the trusted certificates callback. This ensures only the trusted certificates for that specific document are used. In addition, only ONE document per device response is supported for openid4vp verifications from now on, this is expected behaviour according to ISO 18013-7
+- 9f78a6e: support for creating authorization requests based on `x509_san_uri` client id scheme has been removed. The holder services still support the client id scheme. The client id scheme is removed starting from draft 25 (and replaced with x509_hash, which will be supported in a future version), and is incompatible with the new url structure of Credo.
+
+### Patch Changes
+
+- 13cd8cb: feat: support node 22
+- 17ec6b8: fix(openid4vc): use `vp_formats` in client_metadata instead of `vp_formats supported` (#2089)
+- 607659a: feat: fetch sd-jwt type metadata
+- 90caf61: feat: support mdoc device response containing multiple documents for OpenID4VP presentation
+- 17ec6b8: feat(openid4vc): support jwk thumbprint for openid token issuer
+- 27f971d: fix: only include supported mdoc algs in vp_formats metadata
+- Updated dependencies [2d10ec3]
+- Updated dependencies [6d83136]
+- Updated dependencies [312a7b2]
+- Updated dependencies [297d209]
+- Updated dependencies [11827cc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [297d209]
+- Updated dependencies [bea846b]
+- Updated dependencies [13cd8cb]
+- Updated dependencies [15acc49]
+- Updated dependencies [90caf61]
+- Updated dependencies [dca4fdf]
+- Updated dependencies [14673b1]
+- Updated dependencies [607659a]
+- Updated dependencies [44b1866]
+- Updated dependencies [5f08bc6]
+- Updated dependencies [27f971d]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [1a4182e]
+- Updated dependencies [90caf61]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [9df09fa]
+- Updated dependencies [70c849d]
+- Updated dependencies [897c834]
+- Updated dependencies [a53fc54]
+- Updated dependencies [edd2edc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [e80794b]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [27f971d]
+  - @credo-ts/core@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes
