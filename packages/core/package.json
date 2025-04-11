@@ -20,11 +20,12 @@
     "build": "pnpm run clean && pnpm run compile",
     "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "test": "jest"
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",
-    "@animo-id/pex": "5.2.0",
+    "@animo-id/pex": "^6.1.0",
     "@astronautlabs/jsonpath": "^1.1.2",
     "@digitalcredentials/jsonld": "^6.0.0",
     "@digitalcredentials/jsonld-signatures": "^9.4.0",

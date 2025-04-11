@@ -404,8 +404,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -571,8 +571,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@sphereon/pex-models':
         specifier: ^2.3.2
         version: 2.3.2
@@ -944,8 +944,8 @@ packages:
   '@animo-id/mdoc@0.5.2':
     resolution: {integrity: sha512-EQVsNOOeXFfBaEHkiKoh24jbSEQ1MORB/kUu0rnNrAEETpY5GK/H9iWevYFdmNDIqQTIEJlkU7S+sIj3pe66eA==}
 
-  '@animo-id/pex@5.2.0':
-    resolution: {integrity: sha512-W0nopdAS1boDOuhH1L5yUyNOo4LJwIqVc3x90ua0ypNXuOv6gDkr78nNTqIjaF0eBKakagTYegbDZrfQrlmRBQ==}
+  '@animo-id/pex@6.1.0':
+    resolution: {integrity: sha512-qlfbTAASA3B8DFwKV9nIe6ZSTg/UkgyQ2fUKkyO/D+sNPDgAP33JXtUmTG/uPDRJrhxhodSpwQ6I9seAlSTmUA==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -7718,8 +7718,9 @@ snapshots:
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@5.2.0':
+  '@animo-id/pex@6.1.0':
     dependencies:
+      '@animo-id/mdoc': 0.5.2
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
       '@sd-jwt/present': 0.7.2

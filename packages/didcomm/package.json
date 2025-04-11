@@ -32,7 +32,7 @@
     "rxjs": "^7.8.0"
   },
   "devDependencies": {
-    "@animo-id/pex": "5.2.0",
+    "@animo-id/pex": "^6.1.0",
     "@sphereon/pex-models": "^2.3.2",
     "@types/luxon": "^3.2.0",
     "reflect-metadata": "^0.1.13",
