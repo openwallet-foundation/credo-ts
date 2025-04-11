@@ -1,5 +1,57 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 281471e: - depend on @openwallet-foundation/askar instead of @hyperledger/aries-askar
+
+### Patch Changes
+
+- 13cd8cb: feat: support node 22
+- Updated dependencies [2d10ec3]
+- Updated dependencies [6d83136]
+- Updated dependencies [312a7b2]
+- Updated dependencies [297d209]
+- Updated dependencies [11827cc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [297d209]
+- Updated dependencies [bea846b]
+- Updated dependencies [13cd8cb]
+- Updated dependencies [15acc49]
+- Updated dependencies [90caf61]
+- Updated dependencies [dca4fdf]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [14673b1]
+- Updated dependencies [607659a]
+- Updated dependencies [44b1866]
+- Updated dependencies [5f08bc6]
+- Updated dependencies [27f971d]
+- Updated dependencies [2d10ec3]
+- Updated dependencies [1a4182e]
+- Updated dependencies [90caf61]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [9df09fa]
+- Updated dependencies [70c849d]
+- Updated dependencies [897c834]
+- Updated dependencies [a53fc54]
+- Updated dependencies [edd2edc]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [281471e]
+- Updated dependencies [e80794b]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [9f78a6e]
+- Updated dependencies [8baa7d7]
+- Updated dependencies [decbcac]
+- Updated dependencies [27f971d]
+  - @credo-ts/core@0.6.0
+  - @credo-ts/anoncreds@0.6.0
+  - @credo-ts/askar@0.6.0
+  - @credo-ts/node@0.6.0
+
 ## 0.5.13
 
 ### Patch Changes
