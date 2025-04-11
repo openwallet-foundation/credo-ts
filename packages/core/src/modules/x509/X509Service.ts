@@ -114,7 +114,7 @@ export class X509Service {
       // In this case we could skip the signature verification (not other verifications), as we already trust the signer certificate,
       // but i think the purpose of ISO 18013-5 mDL is that you trust the root certificate. If we can't verify the whole chain e.g.
       // when we receive a credential we have the chance it will fail later on.
-      const skipSignatureVerification = i === 0 && trustedCertificates && cert.issuer !== cert.subject && !publicKey
+      const skipSignatureVerification = i === 0 && trustedCertificates && !publicKey
       // NOTE: at some point we might want to change this to throw an error instead of skipping the signature verification of the trusted
       // but it would basically prevent mDOCs from unknown issuers to be verified in the wallet. Verifiers should only trust the root certificate
       // anyway.
