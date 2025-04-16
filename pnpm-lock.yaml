@@ -355,8 +355,8 @@ importers:
   packages/cheqd:
     dependencies:
       '@cheqd/sdk':
-        specifier: ^5.1.4
-        version: 5.1.4
+        specifier: ^5.2.1
+        version: 5.2.1
       '@cheqd/ts-proto':
         specifier: ~2.4.1
         version: 2.4.1
@@ -1866,8 +1866,8 @@ packages:
   '@changesets/write@0.3.1':
     resolution: {integrity: sha512-SyGtMXzH3qFqlHKcvFY2eX+6b0NGiFcNav8AFsYwy5l8hejOeoeTDemu5Yjmke2V5jpzY+pBvM0vCCQ3gdZpfw==}
 
-  '@cheqd/sdk@5.1.4':
-    resolution: {integrity: sha512-GuVGyilBCSxJ9jwj1Grpnkxs7GcAs/JJoIFufF6ZQ+REQ9G3QXSufUAeEB08Ho36TRzuFzvggAmY6Wv1SjkSGg==}
+  '@cheqd/sdk@5.2.1':
+    resolution: {integrity: sha512-R6lpEEF0fTpDr4yebT/WUIs7AUgvVbR/V3RMGudcq2nVRv248fD2zpcJroKOpUKsoTUCa9Fw5PkWz01VvdmUEw==}
     engines: {node: '>=20.0.0'}
 
   '@cheqd/ts-proto@2.4.1':
@@ -8918,7 +8918,7 @@ snapshots:
       human-id: 1.0.2
       prettier: 2.8.8
 
-  '@cheqd/sdk@5.1.4':
+  '@cheqd/sdk@5.2.1':
     dependencies:
       '@cheqd/ts-proto': 4.0.2
       '@cheqd/ts-proto-cjs': '@cheqd/ts-proto@2.4.1'
