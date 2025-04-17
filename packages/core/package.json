@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",
-    "@animo-id/pex": "5.2.0",
+    "@animo-id/pex": "^6.1.0",
     "@astronautlabs/jsonpath": "^1.1.2",
     "@digitalcredentials/jsonld": "^6.0.0",
     "@digitalcredentials/jsonld-signatures": "^9.4.0",
