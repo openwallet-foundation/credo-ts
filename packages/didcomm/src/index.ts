@@ -9,7 +9,7 @@ export * from './transport'
 export * from './types'
 
 export * from './Events'
-export type { TransportSession } from './TransportService'
+export type { TransportSession } from './transport'
 export { TransportService } from './TransportService'
 export { Attachment, AttachmentData } from './decorators/attachment/Attachment'
 export { ServiceDecorator, ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'

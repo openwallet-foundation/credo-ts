@@ -17,6 +17,7 @@ import { MessageReceiver } from './MessageReceiver'
 import { MessageSender } from './MessageSender'
 import { TransportService } from './TransportService'
 import { DidCommMessageRepository } from './repository'
+import { InMemoryTransportSessionRepository } from './transport'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -49,6 +50,20 @@ export class DidCommModule implements Module {
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)
+
+    if (this.config.transportSessionRepository) {
+      dependencyManager.registerInstance(
+        InjectionSymbols.TransportSessionRepository,
+        this.config.transportSessionRepository
+      )
+    } else {
+      if (!dependencyManager.isRegistered(InjectionSymbols.TransportSessionRepository)) {
+        dependencyManager.registerSingleton(
+          InjectionSymbols.TransportSessionRepository,
+          InMemoryTransportSessionRepository
+        )
+      }
+    }
 
     // Features
     // TODO: Constraints?

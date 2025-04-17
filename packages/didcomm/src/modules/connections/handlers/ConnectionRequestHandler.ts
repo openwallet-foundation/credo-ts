@@ -71,7 +71,7 @@ export class ConnectionRequestHandler implements MessageHandler {
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
       const transportService = agentContext.dependencyManager.resolve(TransportService)
-      transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+      await transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
     if (connectionRecord?.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {

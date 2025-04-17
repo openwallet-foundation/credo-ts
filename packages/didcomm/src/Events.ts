@@ -1,8 +1,8 @@
 import type { BaseEvent } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
-import type { TransportSession } from './TransportService'
 import type { OutboundMessageContext, OutboundMessageSendStatus } from './models'
 import type { ConnectionRecord } from './modules/connections/repository'
+import type { TransportSession } from './transport'
 import type { EncryptedMessage } from './types'
 
 export enum AgentEventTypes {
