@@ -4,11 +4,12 @@ import type {
   Wallet,
   WalletConfig,
   WalletCreateKeyOptions,
+  WalletDirectEncryptCompactJwtEcdhEsOptions,
   WalletSignOptions,
   WalletVerifyOptions,
 } from '@credo-ts/core'
 
-import { Key as AskarKey, CryptoBox, Store, keyAlgorithmFromString } from '@openwallet-foundation/askar-nodejs'
+import { Key as AskarKey, CryptoBox, keyAlgorithmFromString } from '@openwallet-foundation/askar-nodejs'
 
 import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
@@ -50,6 +51,11 @@ interface InMemoryWallets {
 
 @injectable()
 export class InMemoryWallet implements Wallet {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  public directEncryptCompactJweEcdhEs?(_options: WalletDirectEncryptCompactJwtEcdhEsOptions): Promise<string> {
+    throw new Error('Method not implemented.')
+  }
+
   // activeWalletId can be set even if wallet is closed. So make sure to also look at
   // isInitialized to see if the wallet is actually open
   public activeWalletId?: string
@@ -133,10 +139,6 @@ export class InMemoryWallet implements Wallet {
 
   public async import() {
     throw new Error('Method not implemented.')
-  }
-
-  public async dispose() {
-    this.isInitialized = false
   }
 
   /**
@@ -366,14 +368,6 @@ export class InMemoryWallet implements Wallet {
         throw new CredoError('Attempted to throw error, but it was not of type Error', { cause: error })
       }
       throw new WalletError('Error generating nonce', { cause: error })
-    }
-  }
-
-  public async generateWalletKey() {
-    try {
-      return Store.generateRawKey()
-    } catch (error) {
-      throw new WalletError('Error generating wallet key', { cause: error })
     }
   }
 }

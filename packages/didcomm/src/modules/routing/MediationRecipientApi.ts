@@ -98,27 +98,6 @@ export class MediationRecipientApi {
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
-  public async initialize() {
-    // Connect to mediator through provided invitation if provided in config
-    // Also requests mediation ans sets as default mediator
-    // Because this requires the connections module, we do this in the agent constructor
-    if (this.config.mediatorInvitationUrl) {
-      this.agentContext.config.logger.debug('Provision mediation with invitation', {
-        mediatorInvitationUrl: this.config.mediatorInvitationUrl,
-      })
-      const mediationConnection = await this.getMediationConnection(this.config.mediatorInvitationUrl)
-      await this.provision(mediationConnection)
-    }
-
-    // Poll for messages from mediator
-    const defaultMediator = await this.findDefaultMediator()
-    if (defaultMediator) {
-      this.initiateMessagePickup(defaultMediator).catch((error) => {
-        this.logger.warn(`Error initiating message pickup with mediator ${defaultMediator.id}`, { error })
-      })
-    }
-  }
-
   private async sendMessage(outboundMessageContext: OutboundMessageContext, pickupStrategy?: MediatorPickupStrategy) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
@@ -488,6 +467,7 @@ export class MediationRecipientApi {
    * @param connection connection record which will be used for mediation
    * @returns mediation record
    */
+  // TODO: we should rename this method, to something that is more descriptive
   public async provision(connection: ConnectionRecord) {
     this.logger.debug('Connection completed, requesting mediation')
 

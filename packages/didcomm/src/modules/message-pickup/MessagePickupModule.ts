@@ -68,8 +68,8 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
       protocol.register(messageHandlerRegistry, featureRegistry)
     }
 
+    // FIXME: this does not take into account multi-tenant agents, need to think how to separate based on context
     const messagePickupSessionService = agentContext.dependencyManager.resolve(MessagePickupSessionService)
-
     messagePickupSessionService.start(agentContext)
   }
 }

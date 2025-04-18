@@ -7,6 +7,8 @@ export {
   AskarProfileWallet,
 } from './wallet'
 
+export { AksarKeyManagementService } from './kms/AskarKeyManagementService'
+
 // Storage
 export { AskarStorageService } from './storage'
 

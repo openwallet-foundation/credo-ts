@@ -22,8 +22,8 @@ import type {
 } from './models'
 import type { PresentationToCreate } from './utils'
 
-import { PEVersion, PEX, Status } from '@animo-id/pex'
-import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
+// import { PEVersion, PEX, Status } from '@animo-id/pex'
+// import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
 import { getJwkFromKey } from '../../crypto'

@@ -235,9 +235,10 @@ describe('connections', () => {
     let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
+
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
-    await faberAgent.modules.mediationRecipient.initialize()
+    const mediationRecord = await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
+    faberAgent.modules.mediationRecipient.initiateMessagePickup(mediationRecord)
 
     // Create observable for event
     const keyAddMessageObservable = mediatorAgent.events

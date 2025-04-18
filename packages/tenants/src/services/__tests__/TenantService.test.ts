@@ -1,5 +1,3 @@
-import type { Wallet } from '@credo-ts/core'
-
 import { Key } from '@credo-ts/core'
 
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
@@ -13,13 +11,9 @@ const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
 jest.mock('../../repository/TenantRoutingRepository')
 const TenantRoutingRepositoryMock = TenantRoutingRepository as jest.Mock<TenantRoutingRepository>
 
-const wallet = {
-  generateWalletKey: jest.fn(() => Promise.resolve('walletKey')),
-} as unknown as Wallet
-
 const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
-const agentContext = getAgentContext({ wallet })
+const agentContext = getAgentContext({})
 
 const tenantRecordService = new TenantRecordService(tenantRepository, tenantRoutingRepository)
 
@@ -49,7 +43,6 @@ describe('TenantRecordService', () => {
         },
       })
 
-      expect(agentContext.wallet.generateWalletKey).toHaveBeenCalled()
       expect(tenantRepository.save).toHaveBeenCalledWith(agentContext, tenantRecord)
     })
   })
@@ -70,10 +63,6 @@ describe('TenantRecordService', () => {
         id: 'tenant-id',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'tenant-wallet-id',
-            key: 'tenant-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -90,10 +79,6 @@ describe('TenantRecordService', () => {
         id: 'tenant-id',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'tenant-wallet-id',
-            key: 'tenant-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })

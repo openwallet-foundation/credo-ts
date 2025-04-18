@@ -11,7 +11,7 @@ import type {
   SubmissionEntryCredential,
 } from '../models'
 
-import { Status } from '@animo-id/pex'
+// import { Status } from '@animo-id/pex'
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core'
 import { JSONPath } from '@astronautlabs/jsonpath'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
