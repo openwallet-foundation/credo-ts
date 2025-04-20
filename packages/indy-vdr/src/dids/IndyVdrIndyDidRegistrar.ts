@@ -322,7 +322,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           await this.saveDidRecord(agentContext, did, didDocument, [
             {
               didDocumentRelativeKeyId: '#verkey',
-              kmsKeyId: verificationKey.getKeyId(),
+              kmsKeyId: verificationKey.keyId,
             },
           ])
           const didAction: EndorseDidTxAction = {
@@ -347,7 +347,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         await this.saveDidRecord(agentContext, did, didDocument, [
           {
             didDocumentRelativeKeyId: '#verkey',
-            kmsKeyId: verificationKey.getKeyId(),
+            kmsKeyId: verificationKey.keyId,
           },
         ])
       }

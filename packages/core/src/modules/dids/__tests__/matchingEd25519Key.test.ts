@@ -1,8 +1,5 @@
-import type { VerificationMethod } from '@credo-ts/core'
-
-import { DidDocument, Key, KeyType } from '@credo-ts/core'
-
-import { findMatchingEd25519Key } from '../matchingEd25519Key'
+import { DidDocument, VerificationMethod } from '../domain'
+import { findMatchingEd25519Key } from '../helpers'
 
 describe('findMatchingEd25519Key', () => {
   const publicKeyBase58Ed25519 = 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'

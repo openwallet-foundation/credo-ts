@@ -120,15 +120,18 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   /**
    * Get the key id for a public jwk. If the public jwk does not have
    */
-  public getKeyId(allowLegacyDerivedKeyId = true): string {
+  public get keyId(): string {
     if (this.jwk.jwk.kid) return this.jwk.jwk.kid
-    if (allowLegacyDerivedKeyId) return legacyKeyIdFromPublicJwk(this)
 
     throw new KeyManagementError('Unable to determine keyId for jwk')
   }
 
-  public setKeyId(keyId: string) {
+  public set keyId(keyId: string) {
     this.jwk.jwk.kid = keyId
+  }
+
+  public get legacyKeyId() {
+    return legacyKeyIdFromPublicJwk(this)
   }
 
   public get publicKey(): Jwk['publicKey'] {

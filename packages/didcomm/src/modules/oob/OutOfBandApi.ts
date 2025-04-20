@@ -1,4 +1,4 @@
-import type { Query, QueryOptions } from '@credo-ts/core'
+import type { DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Routing } from '../../models'
@@ -201,12 +201,19 @@ export class OutOfBandApi {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
     }
 
+    const keys: DidDocumentKey[] = []
     if (config.invitationDid) {
       services = [config.invitationDid]
     } else {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
+
       services = routing.endpoints.map((endpoint, index) => {
+        // Store the key id for the recipient key
+        keys.push({
+          kmsKeyId: routing.recipientKey.keyId,
+          didDocumentRelativeKeyId: `#inline-${index}`,
+        })
         return new OutOfBandDidCommService({
           id: `#inline-${index}`,
           serviceEndpoint: endpoint,
@@ -249,6 +256,10 @@ export class OutOfBandApi {
       tags: {
         recipientKeyFingerprints,
       },
+    })
+
+    outOfBandRecord.metadata.set('_internal/outOfBandInvitationServicesKmsKeys', {
+      keys,
     })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

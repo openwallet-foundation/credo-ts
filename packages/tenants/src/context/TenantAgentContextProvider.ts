@@ -1,4 +1,4 @@
-import type { AgentContextProvider, UpdateAssistantUpdateOptions } from '@credo-ts/core'
+import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
 import type { EncryptedMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
 import type { TenantRecord } from '../repository'
 
@@ -8,8 +8,6 @@ import {
   EventEmitter,
   InjectionSymbols,
   JsonEncoder,
-  Key,
-  KeyType,
   Logger,
   UpdateAssistant,
   inject,
@@ -98,7 +96,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       this.tenantSessionCoordinator.isTenantContextCorrelationId(options.contextCorrelationId)
         ? this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(options.contextCorrelationId)
         : undefined
-    let recipientKeys: Key[] = []
+    let recipientKeys: Kms.PublicJwk[] = []
 
     if (!tenantId && isValidJweStructure(inboundMessage)) {
       this.logger.trace("Inbound message is a JWE, extracting tenant id from JWE's protected header")
@@ -147,26 +145,31 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     await this.tenantSessionCoordinator.deleteAgentContext(agentContext)
   }
 
-  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {
+  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Kms.PublicJwk[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
 
-    const recipientKeys: Key[] = []
+    const recipientKeys: Kms.PublicJwk[] = []
 
     for (const recipient of jweProtected.recipients) {
       // Check if recipient.header.kid is a string
       if (isJsonObject(recipient) && isJsonObject(recipient.header) && typeof recipient.header.kid === 'string') {
         // This won't work with other key types, we should detect what the encoding is of kid, and based on that
         // determine how we extract the key from the message
-        const key = Key.fromPublicKeyBase58(recipient.header.kid, KeyType.Ed25519)
-        recipientKeys.push(key)
+        const publicJwk = Kms.PublicJwk.fromPublicKey({
+          crv: 'Ed25519',
+          kty: 'OKP',
+          publicKey: TypedArrayEncoder.fromBase58(recipient.header.kid),
+        })
+
+        recipientKeys.push(publicJwk)
       }
     }
 
     return recipientKeys
   }
 
-  private async registerRecipientKeyForTenant(tenantId: string, recipientKey: Key) {
+  private async registerRecipientKeyForTenant(tenantId: string, recipientKey: Kms.PublicJwk) {
     this.logger.debug(`Registering recipient key ${recipientKey.fingerprint} for tenant ${tenantId}`)
     const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
     await this.tenantRecordService.addTenantRoutingRecord(this.rootAgentContext, tenantRecord.id, recipientKey)

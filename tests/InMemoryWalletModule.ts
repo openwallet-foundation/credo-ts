@@ -7,6 +7,11 @@ import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../p
 
 export class InMemoryWalletModule implements Module {
   private inMemoryStorageService = new InMemoryStorageService()
+  private enableKms: boolean
+
+  public constructor(config: { enableKms?: boolean } = {}) {
+    this.enableKms = config.enableKms ?? true
+  }
 
   public register(dependencyManager: DependencyManager) {
     if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
@@ -15,8 +20,12 @@ export class InMemoryWalletModule implements Module {
 
     dependencyManager.registerInstance(InjectionSymbols.StorageService, this.inMemoryStorageService)
 
-    const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
-    kmsConfig.registerBackend(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()))
+    if (this.enableKms) {
+      const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
+
+      // TODO: prevent double registration
+      kmsConfig.registerBackend(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()))
+    }
   }
 
   public async onProvisionContext(agentContext: AgentContext): Promise<void> {

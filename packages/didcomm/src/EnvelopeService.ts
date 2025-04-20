@@ -1,11 +1,22 @@
-import { AgentContext, CredoError, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  AgentContext,
+  CredoError,
+  DidDocumentKey,
+  DidsApi,
+  JsonEncoder,
+  Kms,
+  RecordNotFoundError,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EncryptedMessage, PlaintextMessage } from './types'
 
 import { InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
+import { OutOfBandDidCommService, OutOfBandRepository, OutOfBandRole } from './modules'
 import { ForwardMessage } from './modules/routing/messages'
+import { DidCommDocumentService } from './services'
 
 export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
@@ -16,9 +27,11 @@ export interface EnvelopeKeys {
 @injectable()
 export class EnvelopeService {
   private logger: Logger
+  private didcommDocumentService: DidCommDocumentService
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
+  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, didcommDocumentService: DidCommDocumentService) {
     this.logger = logger
+    this.didcommDocumentService = didcommDocumentService
   }
 
   private async encryptDidcommV1Message(
@@ -71,7 +84,7 @@ export class EnvelopeService {
           externalPublicJwk: recipientKey.jwk.toX25519PublicJwk(),
 
           // Sender key only needed for Authcrypt
-          keyId: senderKey?.getKeyId(),
+          keyId: senderKey?.keyId,
         },
         data: contentEncryptionKey,
         encryption: {
@@ -123,7 +136,7 @@ export class EnvelopeService {
 
   private async decryptDidcommV1Message(agentContext: AgentContext, encryptedMessage: EncryptedMessage) {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    // const didRepository = agentContext.dependencyManager.resolve(DidRepository)
+    const _dids = agentContext.dependencyManager.resolve(DidsApi)
     const protectedJson = JsonEncoder.fromBase64(encryptedMessage.protected)
 
     const alg = protectedJson.alg as 'Anoncrypt' | 'Authcrypt'
@@ -143,7 +156,7 @@ export class EnvelopeService {
             iv?: string
             sender?: string
           }
-          enrypted_key: string
+          encrypted_key: string
         }
       | undefined = undefined
 
@@ -154,28 +167,56 @@ export class EnvelopeService {
         publicKey: TypedArrayEncoder.fromBase58(_recipient.header.kid),
       })
 
-      // // We need to find the associated did based on the recipient key
-      // // so we can extract the kms key id from the did record.
-      // const did = await didRepository.findCreatedDidByRecipientKey(agentContext, publicKey)
+      // We need to find the associated did based on the recipient key
+      // so we can extract the kms key id from the did record.
+      try {
+        const { didDocument, didRecord } =
+          await this.didcommDocumentService.resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext, publicKey)
 
-      // if (did) {
-      //   recipientKey = publicKey
-      //   recipient = _recipient
+        const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
+        const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+          verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId
 
-      //   // If we don't have a did document we can be sure legacy key id is used
-      //   if (did.didDocument) {
-      //     const verificationMethod = did.didDocument.findVerificationMethodByPublicKey(publicKey)
+        publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
+        recipientKey = publicKey
+        recipient = _recipient
+        break
+      } catch (error) {
+        // If there is no did record yet, we need to look at the out of band record
+        if (error instanceof RecordNotFoundError) {
+          const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
+          const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
+            recipientKeyFingerprints: [publicKey.fingerprint],
+            role: OutOfBandRole.Sender,
+            // Include state?
+            // state: ''
+          })
 
-      //     const kmsKeyId = did.keys?.find(({ didDocumentRelativeKeyId }) =>
-      //       verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-      //     )?.kmsKeyId
-      //     if (kmsKeyId) {
-      //       recipientKey.setKeyId(kmsKeyId)
-      //     }
-      //   }
+          if (!outOfBandRecord) continue
 
-      //   break
-      // }
+          const service = outOfBandRecord.outOfBandInvitation.getServices().find((s): s is OutOfBandDidCommService => {
+            if (typeof s === 'string') return false
+            const recipientKey = s.resolvedDidCommService.recipientKeys[0]
+            return recipientKey.equals(publicKey)
+          })
+
+          if (!service) continue
+
+          const metadata = outOfBandRecord.metadata.get<{ keys: DidDocumentKey[] }>(
+            '_internal/outOfBandInvitationServicesKmsKeys'
+          )
+
+          const kmsKeyId = metadata?.keys.find(({ didDocumentRelativeKeyId }) =>
+            service.id.endsWith(didDocumentRelativeKeyId)
+          )?.kmsKeyId
+
+          publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
+          recipientKey = publicKey
+          recipient = _recipient
+          break
+        }
+      }
     }
 
     if (!recipientKey || !recipient) {
@@ -191,7 +232,7 @@ export class EnvelopeService {
       const { data } = await kms.decrypt({
         key: {
           algorithm: 'ECDH-HSALSA20',
-          keyId: recipientKey.getKeyId(),
+          keyId: recipientKey.keyId,
         },
         decryption: {
           algorithm: 'XSALSA20-POLY1305',
@@ -212,10 +253,10 @@ export class EnvelopeService {
         algorithm: 'XSALSA20-POLY1305',
         iv: recipient.header.iv ? TypedArrayEncoder.fromBase64(recipient.header.iv) : undefined,
       },
-      encrypted: TypedArrayEncoder.fromBase64(recipient.enrypted_key),
+      encrypted: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
       key: {
         algorithm: 'ECDH-HSALSA20',
-        keyId: recipientKey.getKeyId(),
+        keyId: recipientKey.keyId,
 
         // Optionally we have a sender
         externalPublicJwk: senderPublicJwk?.jwk.toX25519PublicJwk(),

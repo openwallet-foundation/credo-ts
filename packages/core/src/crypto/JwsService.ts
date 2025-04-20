@@ -53,7 +53,7 @@ export class JwsService {
     }
 
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwk && assymetricPublicJwkMatches(jwk.toJson(), publicJwk)) {
+    if (jwk && !assymetricPublicJwkMatches(jwk.toJson(), publicJwk)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 

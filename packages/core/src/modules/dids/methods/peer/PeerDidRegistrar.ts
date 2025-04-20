@@ -9,13 +9,8 @@ import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
 import { XOR } from '../../../../types'
-import {
-  KeyManagementApi,
-  KmsCreateKeyOptions,
-  KmsCreateKeyTypeAssymetric,
-  KmsJwkPublicAsymmetric,
-  PublicJwk,
-} from '../../../kms'
+import { KeyManagementApi, KmsCreateKeyOptions, KmsCreateKeyTypeAssymetric, PublicJwk } from '../../../kms'
+import { DidDocumentKey } from '../../DidsApiOptions'
 import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
 import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
@@ -39,22 +34,26 @@ export class PeerDidRegistrar implements DidRegistrar {
     let did: string
     let didDocument: DidDocument
 
-    // FIXME: we need to extract the key IDS for the other
-    let keyId: string | undefined
+    let keys: DidDocumentKey[]
 
     try {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
-        let publicJwk: KmsJwkPublicAsymmetric
+        let publicJwk: PublicJwk
 
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
-          publicJwk = createKeyResult.publicJwk
-          keyId = createKeyResult.keyId
+          publicJwk = PublicJwk.fromPublicJwk(createKeyResult.publicJwk)
+          keys = [
+            {
+              didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+              kmsKeyId: createKeyResult.keyId,
+            },
+          ]
         } else {
           const _publicJwk = await kms.getPublicKey({
             keyId: options.options.keyId,
           })
-          keyId = options.options.keyId
+
           if (!_publicJwk) {
             return {
               didDocumentMetadata: {},
@@ -77,24 +76,32 @@ export class PeerDidRegistrar implements DidRegistrar {
             }
           }
 
-          publicJwk = _publicJwk
+          publicJwk = PublicJwk.fromPublicJwk(_publicJwk)
+          keys = [
+            {
+              didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+              kmsKeyId: options.options.keyId,
+            },
+          ]
         }
 
-        const jwk = PublicJwk.fromPublicJwk(publicJwk)
-        didDocument = publicJwkToNumAlgo0DidDocument(jwk)
+        didDocument = publicJwkToNumAlgo0DidDocument(publicJwk)
         did = didDocument.id
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
         did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
+        keys = options.options.keys
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
         did = didDocumentToNumAlgo2Did(options.didDocument)
+        keys = options.options.keys
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo4CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
+        keys = options.options.keys
 
         const { longFormDid, shortFormDid } = didDocumentToNumAlgo4Did(options.didDocument)
 
@@ -114,12 +121,23 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
+      if (!keys || keys.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: `Missing required 'keys' linking did document verification method id to the kms key id. Provide at least one key in the create options`,
+          },
+        }
+      }
+
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
         did,
         role: DidDocumentRole.Created,
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
-        keys: 'FIXME',
+        keys,
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
@@ -136,9 +154,6 @@ export class PeerDidRegistrar implements DidRegistrar {
           state: 'finished',
           did: didDocument.id,
           didDocument,
-          secret: {
-            keyId,
-          },
         },
       }
     } catch (error) {
@@ -214,6 +229,14 @@ export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.GenesisDoc
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
   secret?: never
 }
@@ -224,6 +247,14 @@ export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
   secret?: never
 }
@@ -234,6 +265,14 @@ export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.ShortFormAndLongForm
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
   secret?: never
 }

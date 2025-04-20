@@ -1,25 +1,28 @@
-import type { AgentContext, ResolvedDidCommService } from '@credo-ts/core'
+import { AgentContext, ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
 
 import {
   CredoError,
   DidCommV1Service,
+  DidRecord,
+  DidRepository,
   DidResolverService,
   IndyAgentService,
   Kms,
+  RecordNotFoundError,
   getPublicJwkFromVerificationMethod,
   injectable,
   parseDid,
   verkeyToPublicJwk,
 } from '@credo-ts/core'
 
-import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
-
 @injectable()
 export class DidCommDocumentService {
   private didResolverService: DidResolverService
+  private didRepository: DidRepository
 
-  public constructor(didResolverService: DidResolverService) {
+  public constructor(didResolverService: DidResolverService, didRepository: DidRepository) {
     this.didResolverService = didResolverService
+    this.didRepository = didRepository
   }
 
   public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {
@@ -76,7 +79,7 @@ export class DidCommDocumentService {
           // removing the need to also include the Ed25519 key in the did document.
           if (publicJwk.is(Kms.X25519PublicJwk)) {
             const matchingEd25519Key = findMatchingEd25519Key(publicJwk, didDocument)
-            if (matchingEd25519Key) return matchingEd25519Key
+            if (matchingEd25519Key) return matchingEd25519Key.publicJwk
           }
 
           if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
@@ -96,5 +99,57 @@ export class DidCommDocumentService {
     }
 
     return resolvedServices
+  }
+
+  public async resolveCreatedDidRecordWithDocument(agentContext: AgentContext, did: string) {
+    const [didRecord] = await this.didRepository.getCreatedDids(agentContext, { did })
+
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+
+    if (didRecord.didDocument) {
+      return {
+        didRecord,
+        didDocument: didRecord.didDocument,
+      }
+    }
+
+    // TODO: we should somehow store the did document on the record if the did method allows it
+    // E.g. for did:key we don't want to store it, but if we still have a did:indy record we do want to store it
+    // If the did document is not stored on the did record, we resolve it
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didRecord.did)
+
+    return {
+      didRecord,
+      didDocument,
+    }
+  }
+
+  public async resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
+    const didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
+
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did for public jwk ${publicJwk.jwkTypehumanDescription} not found`, {
+        recordType: DidRecord.type,
+      })
+    }
+
+    if (didRecord.didDocument) {
+      return {
+        didRecord,
+        didDocument: didRecord.didDocument,
+      }
+    }
+
+    // TODO: we should somehow store the did document on the record if the did method allows it
+    // E.g. for did:key we don't want to store it, but if we still have a did:indy record we do want to store it
+    // If the did document is not stored on the did record, we resolve it
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didRecord.did)
+
+    return {
+      didRecord,
+      didDocument,
+    }
   }
 }

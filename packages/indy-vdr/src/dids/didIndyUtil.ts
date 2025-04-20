@@ -187,7 +187,8 @@ export async function verificationPublicJwkForIndyDid(agentContext: AgentContext
     const verificationMethod = didRecord.didDocument.dereferenceKey('#verkey')
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     const key = didRecord.keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
-    if (key) publicJwk.setKeyId(key.kmsKeyId)
+
+    publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
 
     return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
   }

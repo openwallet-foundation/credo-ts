@@ -49,7 +49,7 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       const tenantRecord = new TenantRecord({
@@ -104,7 +104,7 @@ describe('TenantSessionCoordinator', () => {
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))
 
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext,
         mutex: expect.objectContaining({
           acquire: expect.any(Function),
@@ -117,7 +117,7 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       })
 
-      expect(tenantAgentContext.contextCorrelationId).toBe('tenant1')
+      expect(tenantAgentContext.contextCorrelationId).toBe('tenant-tenant1')
       createChildSpy.mockClear()
       createChildSpy.mockReset()
     })
@@ -148,11 +148,11 @@ describe('TenantSessionCoordinator', () => {
       // Start two context session creations (but don't await). It should set the mutex property on the tenant agent context mapping.
       const tenantAgentContext1Promise = tenantSessionCoordinator.getContextForSession(tenantRecord)
       const tenantAgentContext2Promise = tenantSessionCoordinator.getContextForSession(tenantRecord)
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toBeUndefined()
 
       // Await first session promise, should have 1 session
       const tenantAgentContext1 = await tenantAgentContext1Promise
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext1,
         sessionCount: 1,
         mutex: expect.objectContaining({
@@ -167,7 +167,7 @@ describe('TenantSessionCoordinator', () => {
 
       // There should be two sessions active now
       const tenantAgentContext2 = await tenantAgentContext2Promise
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext1,
         sessionCount: 2,
         mutex: expect.objectContaining({
@@ -194,21 +194,22 @@ describe('TenantSessionCoordinator', () => {
       const rootAgentContextMock = {
         contextCorrelationId: 'mock',
         dependencyManager: { dispose: jest.fn() },
+        isRootAgentContext: true,
       } as unknown as AgentContext
       await tenantSessionCoordinator.endAgentContextSession(rootAgentContextMock)
 
       expect(tenantSessionMutexMock.releaseSession).not.toHaveBeenCalled()
     })
 
-    test('throws an error if not agent context session exists for the tenant', async () => {
-      const tenantAgentContextMock = { contextCorrelationId: 'does-not-exist' } as unknown as AgentContext
-      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrowError(
-        `Unknown agent context with contextCorrelationId 'does-not-exist'. Cannot end session`
+    test('throws an error if no agent context session exists for the tenant', async () => {
+      const tenantAgentContextMock = { contextCorrelationId: 'tenant-does-not-exist' } as unknown as AgentContext
+      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
+        `Unknown agent context with contextCorrelationId 'tenant-does-not-exist'. Cannot end session`
       )
     })
 
     test('decreases the tenant session count and calls release session', async () => {
-      const tenant1AgentContext = { contextCorrelationId: 'tenant1' } as unknown as AgentContext
+      const tenant1AgentContext = { contextCorrelationId: 'tenant-tenant1' } as unknown as AgentContext
 
       const tenant1 = {
         agentContext: tenant1AgentContext,
@@ -216,13 +217,13 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 2,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have reduced session count by one
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenant1AgentContext,
         mutex: tenant1.mutex,
         sessionCount: 1,
@@ -233,7 +234,7 @@ describe('TenantSessionCoordinator', () => {
     test('closes the agent context and removes the agent context mapping if the number of sessions reaches 0', async () => {
       const tenant1AgentContext = {
         dependencyManager: { closeAgentContext: jest.fn() },
-        contextCorrelationId: 'tenant1',
+        contextCorrelationId: 'tenant-tenant1',
       } as unknown as AgentContext
 
       const tenant1 = {
@@ -242,13 +243,13 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have removed tenant1
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toBeUndefined()
       expect(tenant1AgentContext.dependencyManager.closeAgentContext).toHaveBeenCalledTimes(1)
       expect(tenantSessionMutexMock.releaseSession).toHaveBeenCalledTimes(1)
     })

@@ -9,9 +9,9 @@ import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 
+import { PublicJwk } from '../../kms'
 import { DidDocumentKey } from '../DidsApiOptions'
 import { DidRecord } from './DidRecord'
-import { PublicJwk } from '../../kms'
 
 @injectable()
 export class DidRepository extends Repository<DidRecord> {

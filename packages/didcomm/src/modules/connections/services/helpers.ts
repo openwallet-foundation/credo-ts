@@ -1,4 +1,4 @@
-import type { AgentContext, DidDocument, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
+import { AgentContext, DidDocument, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
 
@@ -10,13 +10,13 @@ import {
   DidRepository,
   DidsApi,
   IndyAgentService,
-  Key,
-  KeyType,
+  TypedArrayEncoder,
   createPeerDidDocumentFromServices,
   didDocumentJsonToNumAlgo1Did,
   getEd25519VerificationKey2018,
 } from '@credo-ts/core'
 
+import { DidCommDocumentService } from '../../../services'
 import { EmbeddedAuthentication } from '../models'
 
 export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
@@ -115,10 +115,14 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
     throw new CredoError(`Public key ${publicKey.id} does not have value property`)
   }
   const publicKeyBase58 = publicKey.value
-  const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)
+  const ed25519Key = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+    kty: 'OKP',
+    crv: 'Ed25519',
+    publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),
+  })
   return getEd25519VerificationKey2018({
     id: `#${publicKeyBase58.slice(0, 8)}`,
-    key: ed25519Key,
+    publicJwk: ed25519Key,
     controller: '#id',
   })
 }
@@ -148,7 +152,7 @@ export async function getDidDocumentForCreatedDid(agentContext: AgentContext, di
  * Due to how DIDComm v1 works (only reference the key not the did in encrypted message) we can't have multiple dids containing
  * the same key as we won't know which did (and thus which connection) a message is intended for.
  */
-export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext, recipientKeys: Key[]) {
+export async function assertNoCreatedDidExistsForKeys(agentContext: AgentContext, recipientKeys: Kms.PublicJwk[]) {
   const didRepository = agentContext.dependencyManager.resolve(DidRepository)
   const recipientKeyFingerprints = recipientKeys.map((key) => key.fingerprint)
 
@@ -178,10 +182,11 @@ export async function createPeerDidFromServices(
   services: ResolvedDidCommService[],
   numAlgo: PeerDidNumAlgo
 ) {
+  const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
   // Create did document without the id property
-  const didDocument = createPeerDidDocumentFromServices(services)
+  const { didDocument, keys } = createPeerDidDocumentFromServices(services, true)
 
   // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
   await assertNoCreatedDidExistsForKeys(agentContext, didDocument.recipientKeys)
@@ -192,6 +197,7 @@ export async function createPeerDidFromServices(
     didDocument,
     options: {
       numAlgo,
+      keys,
     },
   })
 
@@ -199,5 +205,6 @@ export async function createPeerDidFromServices(
     throw new CredoError(`Did document creation failed: ${JSON.stringify(result.didState)}`)
   }
 
-  return result.didState.didDocument
+  // FIXME: didApi.create should return the did document
+  return didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, result.didState.did)
 }

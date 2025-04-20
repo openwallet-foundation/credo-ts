@@ -30,7 +30,11 @@ export class AskarModule implements Module {
 
     if (this.config.enableKms) {
       const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
-      kmsConfig.registerBackend(new AksarKeyManagementService())
+
+      // Register askar backend if not registered yet
+      if (!kmsConfig.backends.find((backend) => backend.backend === AksarKeyManagementService.backend)) {
+        kmsConfig.registerBackend(new AksarKeyManagementService())
+      }
     }
 
     if (this.config.enableStorage) {

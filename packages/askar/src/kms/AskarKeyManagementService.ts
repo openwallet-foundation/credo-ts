@@ -24,7 +24,8 @@ const askarSupportedEncryptionAlgorithms = [
 ] satisfies Array<Kms.KnownJwaContentEncryptionAlgorithm | Kms.KnownJwaKeyEncryptionAlgorithm>
 
 export class AksarKeyManagementService implements Kms.KeyManagementService {
-  public readonly backend = 'askar'
+  public static readonly backend = 'askar'
+  public readonly backend = AksarKeyManagementService.backend
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
     EdDSA: SignatureAlgorithm.EdDSA,
@@ -388,7 +389,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         Kms.assertKeyAllowsDerive(key.externalPublicJwk)
         Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
 
-        const privateKey = key.keyId ? (await this.getKeyAsserted(agentContext, key.keyId)).key : undefined
+        let privateKey = key.keyId ? (await this.getKeyAsserted(agentContext, key.keyId)).key : undefined
         if (privateKey) keysToFree.push(privateKey)
 
         const privateJwk = privateKey ? this.privateJwkFromKey(privateKey) : undefined
@@ -396,7 +397,12 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
           Kms.assertJwkAsymmetric(privateJwk, key.keyId)
           Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
           Kms.assertKeyAllowsDerive(privateJwk)
-          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+
+          // Special case, for DIDComm v1 we often use an X25519 for the external key
+          // but we use an Ed25519 for our key
+          if (key.algorithm !== 'ECDH-HSALSA20') {
+            Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+          }
         }
 
         const recipientKey = this.keyFromJwk(key.externalPublicJwk)
@@ -419,6 +425,13 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
                 message: data,
               }),
             }
+          }
+
+          // Special case. For DIDComm v1 we basically use the Ed25519 key also
+          // for X25519 operations.
+          if (privateKey.algorithm === KeyAlgorithm.Ed25519) {
+            privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+            keysToFree.push(privateKey)
           }
 
           const nonce = CryptoBox.randomNonce()
@@ -517,7 +530,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         }
         Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
 
-        const privateKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
+        let privateKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
         keysToFree.push(privateKey)
 
         const privateJwk = this.privateJwkFromKey(privateKey)
@@ -526,7 +539,8 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
         Kms.assertKeyAllowsDerive(privateJwk)
 
-        if (key.externalPublicJwk) {
+        // Special case for ECDH-HSALSA as we can have mismatch between keys because of DIDComm v1
+        if (key.externalPublicJwk && key.algorithm !== 'ECDH-HSALSA20') {
           Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
         }
 
@@ -540,6 +554,13 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
               `key agreement algorithm '${key.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
               this.backend
             )
+          }
+
+          // Special case. For DIDComm v1 we basically use the Ed25519 key also
+          // for X25519 operations.
+          if (privateKey.algorithm === KeyAlgorithm.Ed25519) {
+            privateKey = privateKey.convertkey({ algorithm: KeyAlgorithm.X25519 })
+            keysToFree.push(privateKey)
           }
 
           if (!senderKey) {

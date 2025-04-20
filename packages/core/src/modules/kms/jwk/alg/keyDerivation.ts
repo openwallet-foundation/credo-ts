@@ -22,7 +22,9 @@ export function supportedKeyDerivationAlgsForKey(
     algs.push('ECDH-ES', 'ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW')
   }
 
-  if (jwk.kty === 'OKP' && jwk.crv === 'X25519') {
+  // Special case where we allow Ed25519 for X25519 based operation, since that is
+  // how DIDComm v1 works.
+  if (jwk.kty === 'OKP' && (jwk.crv === 'X25519' || jwk.crv === 'Ed25519')) {
     algs.push('ECDH-HSALSA20')
   }
 

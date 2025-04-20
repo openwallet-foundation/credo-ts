@@ -15,6 +15,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
+agentContextProvider.getContextCorrelationIdForTenantId = (tenantId) => `tenant-${tenantId}`
 const agentOptions = getInMemoryAgentOptions('TenantsApi', undefined, { autoUpdateStorageOnStartup: true })
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
@@ -41,7 +42,9 @@ describe('TenantsApi', () => {
       expect(tenantAgent.isInitialized).toBe(true)
       expect(tenantAgent.config.label).toEqual('tenant-agent')
 
-      expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
+      expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
+        provisionContext: false,
+      })
       expect(tenantAgent).toBeInstanceOf(TenantAgent)
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -71,7 +74,9 @@ describe('TenantsApi', () => {
         expect(tenantAgent.isInitialized).toBe(true)
         expect(tenantAgent.config.label).toEqual('tenant-agent')
 
-        expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
+        expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
+          provisionContext: false,
+        })
         expect(tenantAgent).toBeInstanceOf(TenantAgent)
         expect(tenantAgent.context).toBe(tenantAgentContext)
       })
@@ -101,7 +106,9 @@ describe('TenantsApi', () => {
           expect(tenantAgent.isInitialized).toBe(true)
           expect(tenantAgent.config.label).toEqual('tenant-agent')
 
-          expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
+          expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
+            provisionContext: false,
+          })
           expect(tenantAgent).toBeInstanceOf(TenantAgent)
           expect(tenantAgent.context).toBe(tenantAgentContext)
 
@@ -125,14 +132,13 @@ describe('TenantsApi', () => {
       })
 
       const tenantAgentMock = {
-        wallet: {
-          delete: jest.fn(),
-        },
         endSession: jest.fn(),
       } as unknown as TenantAgent
 
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
-      const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
+
+      // @ts-ignore
+      const getTenantAgentSpy = jest.spyOn(tenantsApi, '_getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       const createdTenantRecord = await tenantsApi.createTenant({
         config: {
@@ -140,7 +146,7 @@ describe('TenantsApi', () => {
         },
       })
 
-      expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
+      expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id', provisionContext: true })
       expect(createdTenantRecord).toBe(tenantRecord)
       expect(tenantAgentMock.endSession).toHaveBeenCalled()
       expect(tenantRecordService.createTenant).toHaveBeenCalledWith(rootAgent.context, {
@@ -176,8 +182,7 @@ describe('TenantsApi', () => {
       await tenantsApi.deleteTenantById('tenant-id')
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
-      expect(tenantAgentMock.endSession).toHaveBeenCalled()
-      expect(tenantAgentMock.context.dependencyManager.deleteAgentContext).toHaveBeenCalled()
+      expect(agentContextProvider.deleteAgentContext).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
     })
   })

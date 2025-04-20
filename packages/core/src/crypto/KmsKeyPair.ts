@@ -68,7 +68,7 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
         const result = await kms.sign({
           // FIXME: need to handle array of data
           data: converted,
-          keyId: this.publicJwk.getKeyId(),
+          keyId: this.publicJwk.keyId,
           algorithm: this.publicJwk.signatureAlgorithm,
         })
 

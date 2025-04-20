@@ -1,5 +1,4 @@
-import { Key } from '@credo-ts/core'
-
+import { Kms } from '@credo-ts/core'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
@@ -109,7 +108,7 @@ describe('TenantRecordService', () => {
       const tenantRoutingRecord = jest.fn() as unknown as TenantRoutingRecord
       mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
-      const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+      const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
       const returnedTenantRoutingRecord = await tenantRecordService.findTenantRoutingRecordByRecipientKey(
         agentContext,
         recipientKey
@@ -122,7 +121,7 @@ describe('TenantRecordService', () => {
 
   describe('addTenantRoutingRecord', () => {
     test('creates a tenant routing record and stores it in the tenant routing repository', async () => {
-      const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+      const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
       const tenantRoutingRecord = await tenantRecordService.addTenantRoutingRecord(
         agentContext,
         'tenant-id',

@@ -38,14 +38,17 @@ export function outOfBandServiceToInlineKeysNumAlgo2Did(service: OutOfBandDidCom
 }
 
 export function outOfBandServiceToNumAlgo2Did(service: OutOfBandDidCommService) {
-  const didDocument = createPeerDidDocumentFromServices([
-    {
-      id: service.id,
-      recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
-      serviceEndpoint: service.serviceEndpoint,
-      routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) ?? [],
-    },
-  ])
+  const { didDocument } = createPeerDidDocumentFromServices(
+    [
+      {
+        id: service.id,
+        recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+        serviceEndpoint: service.serviceEndpoint,
+        routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) ?? [],
+      },
+    ],
+    false
+  )
 
   const did = didDocumentToNumAlgo2Did(didDocument)
 

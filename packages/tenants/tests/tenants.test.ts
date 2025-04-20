@@ -44,7 +44,7 @@ const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
     oob: new OutOfBandModule(),
     messagePickup: new MessagePickupModule(),
     tenants: new TenantsModule(),
-    inMemory: new InMemoryWalletModule(),
+    inMemory: new InMemoryWalletModule({ enableKms: false }),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
@@ -215,8 +215,8 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId)
-    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId.replace('tenant-', ''))
+    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId.replace('tenant-', ''))
   })
 
   test('create a connection between two tenants within different agents', async () => {

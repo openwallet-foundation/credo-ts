@@ -113,10 +113,10 @@ export class IndyVdrPool {
       request.setEndorser({ endorser: parseIndyDid(endorserDid).namespaceIdentifier })
     }
 
-    const signature = await kms.sign({
+    const { signature } = await kms.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
       algorithm: 'EdDSA',
-      keyId: signingKey.getKeyId(),
+      keyId: signingKey.keyId,
     })
 
     request.setSignature({
