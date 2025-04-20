@@ -4,9 +4,19 @@ import type { VerificationMethod } from '../verificationMethod'
 import { KeyType } from '../../../../crypto/KeyType'
 import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { CredoError } from '../../../../error'
-import { VERIFICATION_METHOD_TYPE_MULTIKEY, getKeyFromMultikey, isMultikey } from '../verificationMethod'
-import { VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
+import {
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
+  getKeyFromMultikey,
+  getPublicJwkFromMultikey,
+  isMultikey,
+} from '../verificationMethod'
+import {
+  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  getPublicJwkFromJsonWebKey2020,
+  isJsonWebKey2020,
+} from '../verificationMethod/JsonWebKey2020'
 
+import { PublicJwk } from '../../../kms'
 import { keyDidBls12381g1 } from './bls12381g1'
 import { keyDidBls12381g1g2 } from './bls12381g1g2'
 import { keyDidBls12381g2 } from './bls12381g2'
@@ -18,6 +28,7 @@ import { keyDidX25519 } from './x25519'
 export interface KeyDidMapping {
   getVerificationMethods: (did: string, key: Key) => VerificationMethod[]
   getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key
+  getPublicJwkFromVerificationMethod(verificationMethod: VerificationMethod): PublicJwk
   supportedVerificationMethodTypes: string[]
 }
 
@@ -101,6 +112,24 @@ export function getKeyFromVerificationMethod(verificationMethod: VerificationMet
   }
 
   return keyDid.getKeyFromVerificationMethod(verificationMethod)
+}
+
+export function getPublicJwkFromVerificationMethod(verificationMethod: VerificationMethod): PublicJwk {
+  // This is a special verification method, as it supports basically all key types.
+  if (isJsonWebKey2020(verificationMethod)) {
+    return getPublicJwkFromJsonWebKey2020(verificationMethod)
+  }
+
+  if (isMultikey(verificationMethod)) {
+    return getPublicJwkFromMultikey(verificationMethod)
+  }
+
+  const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
+  if (!keyDid) {
+    throw new CredoError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
+  }
+
+  return keyDid.getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
 export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType) {

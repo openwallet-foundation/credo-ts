@@ -83,9 +83,7 @@ describe('Action Menu', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice requests menu to Faber and selects an option once received', async () => {

@@ -4,9 +4,10 @@ import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistra
 import {
   DidCommV1Service,
   DidDocumentService,
-  KeyType,
+  Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
@@ -27,8 +28,14 @@ export const indyVdrModuleConfig = new IndyVdrModuleConfig({
 })
 
 export async function createDidOnLedger(agent: Agent, endorserDid: string) {
-  const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
+  const key = await agent.kms.createKey({
+    type: {
+      kty: 'OKP',
+      crv: 'Ed25519',
+    },
+  })
 
+  const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
   const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
     options: {
@@ -36,7 +43,7 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
       endorserDid: endorserDid,
       alias: 'Alias',
       role: 'TRUSTEE',
-      verkey: key.publicKeyBase58,
+      verkey: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
       useEndpointAttrib: true,
       services: [
         new DidDocumentService({

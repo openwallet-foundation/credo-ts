@@ -33,4 +33,7 @@ export const keyDidBls12381g1g2: KeyDidMapping = {
   getKeyFromVerificationMethod: () => {
     throw new CredoError('Not supported for bls12381g1g2 key')
   },
+  getPublicJwkFromVerificationMethod: () => {
+    throw new CredoError('Not supported for bls12381g1g2 key')
+  },
 }

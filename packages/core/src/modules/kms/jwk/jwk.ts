@@ -13,7 +13,7 @@ export const vJwkCommon = z
 
     ext: z.optional(z.boolean()),
 
-    x5c: z.optional(z.string()),
+    x5c: z.optional(z.array(z.string())),
     x5t: z.optional(z.string()),
     'x5t#S256': z.optional(z.string()),
     x5u: z.optional(z.string()),

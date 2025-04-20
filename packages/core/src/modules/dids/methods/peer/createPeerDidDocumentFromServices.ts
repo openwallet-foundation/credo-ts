@@ -2,9 +2,7 @@ import type { ResolvedDidCommService } from '../../../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { Key } from '../../../../crypto/Key'
-import { KeyType } from '../../../../crypto/KeyType'
-import { CredoError } from '../../../../error'
+import { PublicJwk, X25519PublicJwk } from '../../../kms'
 import { getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'
@@ -23,22 +21,21 @@ export function createPeerDidDocumentFromServices(services: ResolvedDidCommServi
       // Key already added to the did document
       if (recipientKeyIdMapping[recipientKey.fingerprint]) return recipientKeyIdMapping[recipientKey.fingerprint]
 
-      if (recipientKey.keyType !== KeyType.Ed25519) {
-        throw new CredoError(
-          `Unable to create did document from services. recipient key type ${recipientKey.keyType} is not supported. Supported key types are ${KeyType.Ed25519}`
-        )
-      }
-      const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(recipientKey.publicKey), KeyType.X25519)
+      const x25519Key = PublicJwk.fromPublicKey<X25519PublicJwk>({
+        crv: 'X25519',
+        kty: 'OKP',
+        publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),
+      })
 
       // key ids follow the #key-N pattern to comply with did:peer:2 spec
       const ed25519VerificationMethod = getEd25519VerificationKey2018({
         id: `#key-${keyIndex++}`,
-        key: recipientKey,
+        publicJwk: recipientKey,
         controller: '#id',
       })
       const x25519VerificationMethod = getX25519KeyAgreementKey2019({
         id: `#key-${keyIndex++}`,
-        key: x25519Key,
+        publicJwk: x25519Key,
         controller: '#id',
       })
 

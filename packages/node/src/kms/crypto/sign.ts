@@ -42,6 +42,23 @@ export function performSign(
   }
 }
 
+export const nodeSupportedJwaAlgorithm = [
+  'RS256',
+  'PS256',
+  'HS256',
+  'ES256',
+  'ES256K',
+  'RS384',
+  'PS384',
+  'HS384',
+  'ES384',
+  'RS512',
+  'PS512',
+  'HS512',
+  'ES512',
+  'EdDSA',
+] as const satisfies Kms.KnownJwaSignatureAlgorithm[]
+
 export function mapJwaSignatureAlgorithmToNode(algorithm: Kms.KnownJwaSignatureAlgorithm) {
   switch (algorithm) {
     case 'RS256':

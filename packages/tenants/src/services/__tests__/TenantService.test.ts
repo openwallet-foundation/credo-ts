@@ -36,10 +36,6 @@ describe('TenantRecordService', () => {
         config: {
           label: 'Test Tenant',
           //connectionImageUrl: 'https://example.com/connection.png',
-          walletConfig: {
-            id: expect.any(String),
-            key: 'walletKey',
-          },
         },
       })
 

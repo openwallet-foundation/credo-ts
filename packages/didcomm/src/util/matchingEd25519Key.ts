@@ -1,6 +1,6 @@
-import type { DidDocument, VerificationMethod } from '@credo-ts/core'
+import { DidDocument, Kms, VerificationMethod } from '@credo-ts/core'
 
-import { Key, KeyType, convertPublicKeyToX25519, getKeyFromVerificationMethod } from '@credo-ts/core'
+import { convertPublicKeyToX25519, getPublicJwkFromVerificationMethod } from '@credo-ts/core'
 
 /**
  * Tries to find a matching Ed25519 key to the supplied X25519 key
@@ -8,9 +8,10 @@ import { Key, KeyType, convertPublicKeyToX25519, getKeyFromVerificationMethod } 
  * @param didDocument Did document containing all the keys
  * @returns a matching Ed25519 key or `undefined` (if no matching key found)
  */
-export function findMatchingEd25519Key(x25519Key: Key, didDocument: DidDocument): Key | undefined {
-  if (x25519Key.keyType !== KeyType.X25519) return undefined
-
+export function findMatchingEd25519Key(
+  x25519Key: Kms.PublicJwk<Kms.X25519PublicJwk>,
+  didDocument: DidDocument
+): Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined {
   const verificationMethods = didDocument.verificationMethod ?? []
   const keyAgreements = didDocument.keyAgreement ?? []
   const authentications = didDocument.authentication ?? []
@@ -21,10 +22,14 @@ export function findMatchingEd25519Key(x25519Key: Key, didDocument: DidDocument)
   ]
 
   return allKeyReferences
-    .map((keyReference) => getKeyFromVerificationMethod(didDocument.dereferenceKey(keyReference.id)))
-    .filter((key) => key?.keyType === KeyType.Ed25519)
+    .map((keyReference) => getPublicJwkFromVerificationMethod(didDocument.dereferenceKey(keyReference.id)))
+    .filter((publicJwk) => publicJwk.is(Kms.Ed25519PublicJwk))
     .find((keyEd25519) => {
-      const keyX25519 = Key.fromPublicKey(convertPublicKeyToX25519(keyEd25519.publicKey), KeyType.X25519)
-      return keyX25519.publicKeyBase58 === x25519Key.publicKeyBase58
+      const keyX25519 = Kms.PublicJwk.fromPublicKey({
+        crv: 'X25519',
+        kty: 'OKP',
+        publicKey: convertPublicKeyToX25519(keyEd25519.publicKey.publicKey),
+      })
+      return Kms.assymetricPublicJwkMatches(keyX25519.toJson(), x25519Key.toJson())
     })
 }

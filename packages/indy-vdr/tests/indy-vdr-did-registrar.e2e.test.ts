@@ -79,9 +79,7 @@ describe('Indy VDR Indy Did Registrar', () => {
 
   afterAll(async () => {
     await endorser.shutdown()
-    await endorser.wallet.delete()
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('can register a did:indy without services', async () => {

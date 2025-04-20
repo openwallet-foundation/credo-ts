@@ -6,6 +6,18 @@ import { Kms } from '@credo-ts/core'
 
 import { performSign } from './sign'
 
+export const nodeSupportedEncryptionAlgorithms = [
+  'A128CBC',
+  'A256CBC',
+  'A128CBC-HS256',
+  'A192CBC-HS384',
+  'A256CBC-HS512',
+  'A128GCM',
+  'A192GCM',
+  'A256GCM',
+  'C20P',
+] as const satisfies Kms.KnownJwaContentEncryptionAlgorithm[]
+
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
   dataEncryption: Kms.KmsEncryptDataEncryption,

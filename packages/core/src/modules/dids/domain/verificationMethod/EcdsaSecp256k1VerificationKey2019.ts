@@ -1,6 +1,8 @@
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import { TypedArrayEncoder } from '../../../../utils'
+import { PublicJwk } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -48,4 +50,21 @@ export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: 
   }
 
   return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
+}
+
+/**
+ * Get a public jwk from a EcdsaSecp256k1VerificationKey2019 verification method.
+ */
+export function getPublicJwkFromEcdsaSecp256k1VerificationKey2019(
+  verificationMethod: EcdsaSecp256k1VerificationKey2019
+) {
+  if (!verificationMethod.publicKeyBase58) {
+    throw new CredoError('verification method is missing publicKeyBase58')
+  }
+
+  return PublicJwk.fromPublicKey({
+    kty: 'EC',
+    crv: 'secp256k1',
+    publicKey: TypedArrayEncoder.fromBase58(verificationMethod.publicKeyBase58),
+  })
 }

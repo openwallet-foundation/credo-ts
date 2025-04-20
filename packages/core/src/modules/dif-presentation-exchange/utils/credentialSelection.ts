@@ -1,4 +1,10 @@
-import type { IPresentationDefinition, PEX, SelectResults, SubmissionRequirementMatch } from '@animo-id/pex'
+import {
+  type IPresentationDefinition,
+  type PEX,
+  type SelectResults,
+  Status,
+  type SubmissionRequirementMatch,
+} from '@animo-id/pex'
 import type {
   SubmissionRequirementMatchFrom,
   SubmissionRequirementMatchInputDescriptor,

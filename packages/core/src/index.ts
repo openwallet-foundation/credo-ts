@@ -12,17 +12,13 @@ export type { AgentDependencies } from './agent/AgentDependencies'
 
 export type {
   InitConfig,
-  WalletConfig,
   JsonArray,
   JsonObject,
   JsonValue,
   ResolvedDidCommService,
-  WalletConfigRekey,
-  WalletExportImportConfig,
-  WalletStorageConfig,
+  XOR,
 } from './types'
 export type { CanBePromise } from './utils/type'
-export { KeyDerivationMethod, EncryptedMessage, PlaintextMessage } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { Repository } from './storage/Repository'
@@ -34,7 +30,6 @@ export { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/update
 
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
-export * from './wallet'
 export { VersionString } from './utils/version'
 
 export * from './plugins'
@@ -65,17 +60,16 @@ export {
 } from './utils'
 export * from './logger'
 export * from './error'
-export * from './wallet/error'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto'
 
 // TODO: Clean up these exports used by DIDComm module
 export {
-  didKeyToInstanceOfKey,
+  didKeyToEd25519PublicJwk,
   didKeyToVerkey,
   verkeyToDidKey,
-  verkeyToInstanceOfKey,
+  verkeyToPublicJwk,
   isDidKey,
 } from './modules/dids/helpers'
 export { tryParseDid } from './modules/dids/domain/parse'

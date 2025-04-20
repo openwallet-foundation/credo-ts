@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent/context'
-import type { Key } from '../../../crypto/Key'
 import type { SingleOrArray } from '../../../utils'
 import type {
   W3cJsonLdSignCredentialOptions,
@@ -11,15 +10,16 @@ import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 import type { W3cJsonLdDeriveProofOptions } from './deriveProof'
 
-import { createWalletKeyPairClass } from '../../../crypto/WalletKeyPair'
+import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer, asArray } from '../../../utils'
 import { VerificationMethod } from '../../dids'
-import { getKeyFromVerificationMethod } from '../../dids/domain/key-type'
+import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { w3cDate } from '../util'
 
+import { PublicJwk } from '../../kms'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { deriveProof } from './deriveProof'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
@@ -52,20 +52,21 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     options: W3cJsonLdSignCredentialOptions
   ): Promise<W3cJsonLdVerifiableCredential> {
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
+    const WalletKeyPair = createKmsKeyPairClass(agentContext)
 
-    const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
+    const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
-    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwk(signingKey)
+
+    if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')
     }
 
     const keyPair = new WalletKeyPair({
       controller: options.credential.issuerId, // should we check this against the verificationMethod.controller?
       id: options.verificationMethod,
-      key: signingKey,
-      wallet: agentContext.wallet,
+      publicJwk: signingKey,
     })
 
     const SuiteClass = suiteInfo.suiteClass
@@ -168,7 +169,7 @@ export class W3cJsonLdCredentialService {
     options: W3cJsonLdSignPresentationOptions
   ): Promise<W3cJsonLdVerifiablePresentation> {
     // create keyPair
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
+    const WalletKeyPair = createKmsKeyPairClass(agentContext)
 
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
@@ -176,9 +177,10 @@ export class W3cJsonLdCredentialService {
       throw new CredoError(`The requested proofType ${options.proofType} is not supported`)
     }
 
-    const signingKey = await this.getPublicKeyFromVerificationMethod(agentContext, options.verificationMethod)
+    const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwk(signingKey)
 
-    if (!suiteInfo.keyTypes.includes(signingKey.keyType)) {
+    if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')
     }
 
@@ -191,8 +193,7 @@ export class W3cJsonLdCredentialService {
     const keyPair = new WalletKeyPair({
       controller: verificationMethodObject.controller as string,
       id: options.verificationMethod,
-      key: signingKey,
-      wallet: agentContext.wallet,
+      publicJwk: signingKey,
     })
 
     const suite = new suiteInfo.suiteClass({
@@ -228,7 +229,7 @@ export class W3cJsonLdCredentialService {
   ): Promise<W3cVerifyPresentationResult> {
     try {
       // create keyPair
-      const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
+      const WalletKeyPair = createKmsKeyPairClass(agentContext)
 
       let proofs = options.presentation.proof
 
@@ -320,10 +321,6 @@ export class W3cJsonLdCredentialService {
     return this.signatureSuiteRegistry.getByProofType(proofType).verificationMethodTypes
   }
 
-  public getKeyTypesByProofType(proofType: string): string[] {
-    return this.signatureSuiteRegistry.getByProofType(proofType).keyTypes
-  }
-
   public async getExpandedTypesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
     // Get the expanded types
     const expandedTypes: SingleOrArray<string> = (
@@ -335,20 +332,19 @@ export class W3cJsonLdCredentialService {
     return asArray(expandedTypes)
   }
 
-  private async getPublicKeyFromVerificationMethod(
+  private async getPublicJwkFromVerificationMethod(
     agentContext: AgentContext,
     verificationMethod: string
-  ): Promise<Key> {
+  ): Promise<PublicJwk> {
     const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
     const verificationMethodObject = await documentLoader(verificationMethod)
     const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
 
-    const key = getKeyFromVerificationMethod(verificationMethodClass)
-    return key
+    return getPublicJwkFromVerificationMethod(verificationMethodClass)
   }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
-    const WalletKeyPair = createWalletKeyPairClass(agentContext.wallet)
+    const WalletKeyPair = createKmsKeyPairClass(agentContext)
 
     let proofs = credential.proof
 

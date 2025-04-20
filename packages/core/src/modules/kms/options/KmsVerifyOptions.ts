@@ -3,6 +3,7 @@ import type { KmsJwkPublic } from '../jwk/knownJwk'
 import * as z from '../../../utils/zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { zKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
+import { zKmsKeyId } from './common'
 
 export const zKmsVerifyOptions = z.object({
   /**
@@ -12,7 +13,7 @@ export const zKmsVerifyOptions = z.object({
    * It is currently not possible to verify a signature with symmetric a
    * key that is not already present in the KMS.
    */
-  key: z.union([z.string(), zKmsJwkPublicAsymmetric]),
+  key: z.union([zKmsKeyId, zKmsJwkPublicAsymmetric]),
 
   /**
    * The JWA signature algorithm to use for verification

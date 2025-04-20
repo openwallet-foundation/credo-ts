@@ -1,4 +1,4 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Kms } from '@credo-ts/core'
 import type { IndyVdrPool } from '../pool'
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 
@@ -14,7 +14,7 @@ import {
   KeyType,
   TypedArrayEncoder,
   convertPublicKeyToX25519,
-  getKeyFromVerificationMethod,
+  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
@@ -177,10 +177,22 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
  *
  * @throws {@link CredoError} if the did could not be resolved or the key could not be extracted
  */
-export async function verificationKeyForIndyDid(agentContext: AgentContext, did: string) {
-  // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
-  // from the ledger to know which key is associated with the did
+export async function verificationPublicJwkForIndyDid(agentContext: AgentContext, did: string) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const [didRecord] = await didsApi.getCreatedDids({
+    did,
+  })
+
+  if (didRecord.didDocument) {
+    const verificationMethod = didRecord.didDocument.dereferenceKey('#verkey')
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const key = didRecord.keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
+    if (key) publicJwk.setKeyId(key.kmsKeyId)
+
+    return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  }
+
+  // FIXME: There was a period where we did not store the didDocument in the DidRecord, so in this case we need to resolve
   const didResult = await didsApi.resolve(did)
 
   if (!didResult.didDocument) {
@@ -191,9 +203,7 @@ export async function verificationKeyForIndyDid(agentContext: AgentContext, did:
 
   // did:indy dids MUST have a verificationMethod with #verkey
   const verificationMethod = didResult.didDocument.dereferenceKey(`${did}#verkey`)
-  const key = getKeyFromVerificationMethod(verificationMethod)
-
-  return key
+  return getPublicJwkFromVerificationMethod(verificationMethod) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }
 
 export async function getPublicDid(pool: IndyVdrPool, unqualifiedDid: string) {
@@ -246,7 +256,6 @@ export async function getEndpointsForDid(agentContext: AgentContext, pool: IndyV
 
 export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdrPool, did: string) {
   const { namespaceIdentifier } = parseIndyDid(did)
-
   const nym = await getPublicDid(pool, namespaceIdentifier)
 
   // Create base Did Document

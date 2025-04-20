@@ -15,11 +15,12 @@ import {
   DidResolverService,
   EventEmitter,
   InjectionSymbols,
+  Kms,
   Logger,
   MessageValidator,
   ResolvedDidCommService,
-  didKeyToInstanceOfKey,
-  getKeyFromVerificationMethod,
+  didKeyToEd25519PublicJwk,
+  getPublicJwkFromVerificationMethod,
   inject,
   injectable,
   utils,
@@ -284,9 +285,6 @@ export class MessageSender {
       })
     }
 
-    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
-
-    // TODO We're selecting just the first authentication key. Is it ok?
     // We can probably learn something from the didcomm-rust implementation, which looks at crypto compatibility to make sure the
     // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
     // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
@@ -295,7 +293,22 @@ export class MessageSender {
     // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
     // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
     // an incoming message.
-    const [firstOurAuthenticationKey] = ourAuthenticationKeys
+    // TODO: we should probably pick the first authentication key that we have in the KMS. We should not assume all keys are managed by the Credo KMS
+    // TODO: should we store on the did document which key to use for message sending?
+    // TODO: we should pick the first X25519 key rather than Ed25519, but need to think about how to deal with that in the KMS
+    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
+    const authenticationKey = ourAuthenticationKeys.find(
+      (key): key is Kms.PublicJwk<Kms.Ed25519PublicJwk> => key.jwk instanceof Kms.Ed25519PublicJwk
+    )
+    if (!authenticationKey) {
+      throw new MessageSendingError(
+        `Unable to determine sender key for did ${ourDidDocument.id}, no available Ed25519 keys`,
+        {
+          outboundMessageContext,
+        }
+      )
+    }
+
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
     const shouldAddReturnRoute =
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
@@ -309,7 +322,7 @@ export class MessageSender {
             agentContext,
             serviceParams: {
               service,
-              senderKey: firstOurAuthenticationKey,
+              senderKey: authenticationKey,
               returnRoute: shouldAddReturnRoute,
             },
             connection,
@@ -337,7 +350,7 @@ export class MessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
-        senderKey: firstOurAuthenticationKey,
+        senderKey: authenticationKey,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
@@ -507,8 +520,8 @@ export class MessageSender {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({
               id: service.id,
-              recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
-              routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) || [],
+              recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+              routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) || [],
               serviceEndpoint: service.serviceEndpoint,
             })
           }
@@ -565,8 +578,7 @@ function getAuthenticationKeys(didDocument: DidDocument) {
     didDocument.authentication?.map((authentication) => {
       const verificationMethod =
         typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
+      return getPublicJwkFromVerificationMethod(verificationMethod)
     }) ?? []
   )
 }

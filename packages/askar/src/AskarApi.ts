@@ -2,13 +2,15 @@ import { AgentContext } from '@credo-ts/core'
 import { injectable } from 'tsyringe'
 
 import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
+import { AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
 
 @injectable()
 export class AskarApi {
   public constructor(
     private agentContext: AgentContext,
-    private askarStoreManager: AskarStoreManager
+    private askarStoreManager: AskarStoreManager,
+    public readonly config: AskarModuleConfig
   ) {}
 
   public get isStoreOpen() {

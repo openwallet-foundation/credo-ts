@@ -12,7 +12,6 @@ import { MdocModule } from '../modules/mdoc/MdocModule'
 import { SdJwtVcModule } from '../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../modules/vc'
 import { X509Module } from '../modules/x509'
-import { WalletModule } from '../wallet'
 
 /**
  * Simple utility type that represent a map of modules. This is used to map from moduleKey (api key) to the api in the framework.
@@ -107,7 +106,6 @@ function getDefaultAgentModules() {
     dcql: () => new DcqlModule(),
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
-    wallet: () => new WalletModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
     cache: () => new CacheModule(),
     pex: () => new DifPresentationExchangeModule(),

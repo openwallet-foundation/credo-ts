@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { Key, KeyType } from '../../../../crypto'
-import type { Buffer } from '../../../../utils'
+
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
@@ -9,8 +8,16 @@ import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
+import { XOR } from '../../../../types'
+import {
+  KeyManagementApi,
+  KmsCreateKeyOptions,
+  KmsCreateKeyTypeAssymetric,
+  KmsJwkPublicAsymmetric,
+  PublicJwk,
+} from '../../../kms'
 import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
-import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
+import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
@@ -26,52 +33,55 @@ export class PeerDidRegistrar implements DidRegistrar {
       | PeerDidNumAlgo2CreateOptions
       | PeerDidNumAlgo4CreateOptions
   ): Promise<DidCreateResult> {
+    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
 
     let did: string
     let didDocument: DidDocument
 
+    // FIXME: we need to extract the key IDS for the other
+    let keyId: string | undefined
+
     try {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
-        const keyType = options.options.keyType
-        const seed = options.secret?.seed
-        const privateKey = options.secret?.privateKey
+        let publicJwk: KmsJwkPublicAsymmetric
 
-        let key = options.options.key
-
-        if (key && (keyType || seed || privateKey)) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Key instance cannot be combined with key type, seed or private key',
-            },
-          }
-        }
-
-        if (keyType) {
-          key = await agentContext.wallet.createKey({
-            keyType,
-            seed,
-            privateKey,
+        if (options.options.createKey) {
+          const createKeyResult = await kms.createKey(options.options.createKey)
+          publicJwk = createKeyResult.publicJwk
+          keyId = createKeyResult.keyId
+        } else {
+          const _publicJwk = await kms.getPublicKey({
+            keyId: options.options.keyId,
           })
-        }
-
-        if (!key) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Missing key type or key instance',
-            },
+          keyId = options.options.keyId
+          if (!_publicJwk) {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `notFound: key with key id '${options.options.keyId}' not found`,
+              },
+            }
           }
+
+          if (_publicJwk.kty === 'oct') {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `notFound: key with key id '${options.options.keyId}' uses unsupported kty 'oct' for did:key`,
+              },
+            }
+          }
+
+          publicJwk = _publicJwk
         }
 
-        // TODO: validate did:peer document
-
-        didDocument = keyToNumAlgo0DidDocument(key)
+        const jwk = PublicJwk.fromPublicJwk(publicJwk)
+        didDocument = publicJwkToNumAlgo0DidDocument(jwk)
         did = didDocument.id
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
@@ -109,6 +119,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         did,
         role: DidDocumentRole.Created,
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
+        keys: 'FIXME',
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
@@ -126,13 +137,7 @@ export class PeerDidRegistrar implements DidRegistrar {
           did: didDocument.id,
           didDocument,
           secret: {
-            // FIXME: the uni-registrar creates the seed in the registrar method
-            // if it doesn't exist so the seed can always be returned. Currently
-            // we can only return it if the seed was passed in by the user. Once
-            // we have a secure method for generating seeds we should use the same
-            // approach
-            seed: options.secret?.seed,
-            privateKey: options.secret?.privateKey,
+            keyId,
           },
         },
       }
@@ -198,14 +203,9 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   did?: never
   didDocument?: never
   options: {
-    keyType?: KeyType
-    key?: Key
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
-  }
-  secret?: {
-    seed?: Buffer
-    privateKey?: Buffer
-  }
+  } & XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAssymetric> }, { keyId: string }>
+  secret?: never
 }
 
 export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
@@ -215,7 +215,7 @@ export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
   options: {
     numAlgo: PeerDidNumAlgo.GenesisDoc
   }
-  secret?: undefined
+  secret?: never
 }
 
 export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
@@ -225,7 +225,7 @@ export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
   }
-  secret?: undefined
+  secret?: never
 }
 
 export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
@@ -235,7 +235,7 @@ export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
   options: {
     numAlgo: PeerDidNumAlgo.ShortFormAndLongForm
   }
-  secret?: undefined
+  secret?: never
 }
 
 // Update and Deactivate not supported for did:peer

@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { NodeKeyManagementStorage } from './NodeKeyManagementStorage'
 
-import { createPrivateKey, createSecretKey, randomUUID } from 'node:crypto'
+import { createPrivateKey, createSecretKey, randomBytes, randomUUID } from 'node:crypto'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 import {
@@ -14,9 +14,9 @@ import {
   createRsaKey,
 } from './crypto/createKey'
 import { performDecrypt } from './crypto/decrypt'
-import { deriveKey } from './crypto/deriveKey'
-import { performEncrypt } from './crypto/encrypt'
-import { performSign } from './crypto/sign'
+import { deriveDecryptionKey, deriveEncryptionKey, nodeSupportedKeyAgreementAlgorithms } from './crypto/deriveKey'
+import { nodeSupportedEncryptionAlgorithms, performEncrypt } from './crypto/encrypt'
+import { nodeSupportedJwaAlgorithm, performSign } from './crypto/sign'
 import { performVerify } from './crypto/verify'
 
 export class NodeKeyManagementService implements Kms.KeyManagementService {
@@ -26,6 +26,95 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
   public constructor(storage: NodeKeyManagementStorage) {
     this.#storage = storage
+  }
+
+  public isOperationSupported(_agentContext: AgentContext, operation: Kms.KmsOperation): boolean {
+    if (operation.operation === 'deleteKey') return true
+    if (operation.operation === 'randomBytes') return true
+
+    if (operation.operation === 'createKey') {
+      // TODO: probably clean to split the assert methods so we don't need try/catch here
+      try {
+        if (operation.type.kty === 'RSA') {
+          return true
+        }
+
+        if (operation.type.kty === 'EC') {
+          assertNodeSupportedEcCrv(operation.type)
+          return true
+        }
+
+        if (operation.type.kty === 'OKP') {
+          assertNodeSupportedOkpCrv(operation.type)
+          return true
+        }
+
+        if (operation.type.kty === 'oct') {
+          assertNodeSupportedOctAlgorithm(operation.type)
+          return true
+        }
+      } catch {
+        return false
+      }
+
+      return false
+    }
+
+    if (operation.operation === 'importKey') {
+      try {
+        if (operation.privateJwk.kty === 'RSA' || operation.privateJwk.kty === 'oct') {
+          return true
+        }
+
+        if (operation.privateJwk.kty === 'EC') {
+          assertNodeSupportedEcCrv({ kty: operation.privateJwk.kty, crv: operation.privateJwk.crv })
+          return true
+        }
+
+        if (operation.privateJwk.kty === 'OKP') {
+          assertNodeSupportedOkpCrv({ kty: operation.privateJwk.kty, crv: operation.privateJwk.crv })
+          return true
+        }
+      } catch {
+        return false
+      }
+    }
+
+    if (operation.operation === 'sign' || operation.operation === 'verify') {
+      return nodeSupportedJwaAlgorithm.includes(operation.algorithm)
+    }
+
+    if (operation.operation === 'encrypt') {
+      const isSupportedEncryptionAlgorithm = nodeSupportedEncryptionAlgorithms.includes(
+        operation.encryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
+      )
+      if (!isSupportedEncryptionAlgorithm) return false
+      if (!operation.keyAgreement) return true
+
+      return nodeSupportedKeyAgreementAlgorithms.includes(
+        operation.keyAgreement.algorithm as (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    if (operation.operation === 'decrypt') {
+      const isSupportedEncryptionAlgorithm = nodeSupportedEncryptionAlgorithms.includes(
+        operation.decryption.algorithm as (typeof nodeSupportedEncryptionAlgorithms)[number]
+      )
+      if (!isSupportedEncryptionAlgorithm) return false
+      if (!operation.keyAgreement) return true
+
+      return nodeSupportedKeyAgreementAlgorithms.includes(
+        operation.keyAgreement.algorithm as (typeof nodeSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    return false
+  }
+
+  public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
+    return {
+      bytes: randomBytes(options.length),
+    }
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -212,19 +301,56 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public async encrypt(agentContext: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
-    const { data, encryption } = options
+    const { data, encryption, key } = options
 
-    const key = typeof options.key === 'string' ? await this.getKeyAsserted(agentContext, options.key) : options.key
-    if (key.kty !== 'oct') {
-      throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty} for content encryption'`, this.backend)
+    Kms.assertSupportedEncryptionAlgorithm(encryption, nodeSupportedEncryptionAlgorithms, this.backend)
+
+    let encryptionKey: Kms.KmsJwkPrivate
+    let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
+
+    if (typeof key === 'string') {
+      encryptionKey = await this.getKeyAsserted(agentContext, key)
+    } else if ('kty' in key) {
+      encryptionKey = key
+    } else {
+      Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
+      Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+      Kms.assertSupportedKeyAgreementAlgorithm(key, nodeSupportedKeyAgreementAlgorithms, this.backend)
+
+      const privateJwk = await this.getKeyAsserted(agentContext, key.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, key.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+
+      const { contentEncryptionKey, encryptedContentEncryptionKey } = await deriveEncryptionKey({
+        keyAgreement: key,
+        encryption,
+        privateJwk,
+      })
+
+      encryptionKey = contentEncryptionKey
+      encryptedKey = encryptedContentEncryptionKey
     }
+
+    if (encryptionKey.kty !== 'oct') {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(
+        `kty '${encryptionKey.kty} for content encryption'`,
+        this.backend
+      )
+    }
+
     try {
       // 2. Validate alg and use for key
-      Kms.assertAllowedEncryptionAlgForKey(key, encryption.algorithm)
-      Kms.assertKeyAllowsEncrypt(key)
+      Kms.assertAllowedEncryptionAlgForKey(encryptionKey, encryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(encryptionKey)
 
       // 3. Perform the encryption operation
-      return await performEncrypt(key, options.encryption, data)
+      const encrypted = await performEncrypt(encryptionKey, options.encryption, data)
+      return {
+        ...encrypted,
+        encryptedKey,
+      }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 
@@ -233,40 +359,49 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public async decrypt(agentContext: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
-    const { decryption, encrypted } = options
+    const { decryption, encrypted, key } = options
 
-    const key = typeof options.key === 'string' ? await this.getKeyAsserted(agentContext, options.key) : options.key
-    if (key.kty !== 'oct') {
-      throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty} for content encryption'`, this.backend)
+    Kms.assertSupportedEncryptionAlgorithm(decryption, nodeSupportedEncryptionAlgorithms, this.backend)
+
+    let decryptionKey: Kms.KmsJwkPrivate
+    if (typeof key === 'string') {
+      decryptionKey = await this.getKeyAsserted(agentContext, key)
+    } else if ('kty' in key) {
+      decryptionKey = key
+    } else {
+      Kms.assertSupportedKeyAgreementAlgorithm(key, nodeSupportedKeyAgreementAlgorithms, this.backend)
+      Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
+      Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+
+      const privateJwk = await this.getKeyAsserted(agentContext, key.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, key.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+
+      const { contentEncryptionKey } = await deriveDecryptionKey({
+        keyAgreement: key,
+        decryption,
+        privateJwk,
+      })
+
+      decryptionKey = contentEncryptionKey
+    }
+
+    if (decryptionKey.kty !== 'oct') {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(
+        `kty '${decryptionKey.kty}' for content encryption`,
+        this.backend
+      )
     }
 
     try {
       // 2. Validate alg and use for key
-      Kms.assertAllowedEncryptionAlgForKey(key, decryption.algorithm)
-      Kms.assertKeyAllowsEncrypt(key)
+      Kms.assertAllowedEncryptionAlgForKey(decryptionKey, decryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(decryptionKey)
 
       // 3. Perform the decryption operation
-      return await performDecrypt(key, decryption, encrypted)
-    } catch (error) {
-      if (error instanceof Kms.KeyManagementError) throw error
-
-      throw new Kms.KeyManagementError('Error decrypting', { cause: error })
-    }
-  }
-
-  public async deriveKey(_agentContext: AgentContext, options: Kms.KmsDeriveKeyOptions) {
-    // We don't retrieve key from KMS. This is needed for X20C derivation
-    // But not for the algorithms we currently support in Node.JS
-
-    try {
-      Kms.assertAllowedKeyDerivationAlgForKey(options.publicJwk, options.algorithm)
-      Kms.assertKeyAllowsDerive(options.publicJwk)
-
-      const derivedKey = await deriveKey(options)
-
-      return {
-        derivedKey,
-      }
+      return await performDecrypt(decryptionKey, decryption, encrypted)
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 

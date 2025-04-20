@@ -1,10 +1,11 @@
-import { AgentContext, FileSystem, InjectionSymbols } from '@credo-ts/core'
+import { AgentContext, FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
 import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
 import { AskarModuleConfig, AskarModuleConfigStoreOptions, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import {
+  AskarError,
   AskarStoreDuplicateError,
   AskarStoreError,
   AskarStoreExportPathExistsError,
@@ -12,6 +13,8 @@ import {
   AskarStoreInvalidKeyError,
   AskarStoreNotFoundError,
 } from './error'
+import { transformFromRecordTagValues } from './storage/utils'
+import { getAskarStoreConfigForContextCorrelationId } from './tenants'
 import {
   AskarErrorCode,
   isAskarError,
@@ -29,24 +32,43 @@ export class AskarStoreManager {
 
   public isStoreOpen(agentContext: AgentContext) {
     // TODO: check for handle?
-    return this.getStore(agentContext) !== null
+    return this.getStore(agentContext)?.handle !== null
   }
 
-  private getStoreConfig(agentContext: AgentContext): AskarModuleConfigStoreOptions {
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) {
+  private async getStoreConfig(agentContext: AgentContext): Promise<AskarModuleConfigStoreOptions> {
+    if (
+      agentContext.isRootAgentContext ||
+      this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet
+    ) {
       return this.config.store
     }
 
-    // Otherwise we need to get the wallet key from the askar context metadata
-    const askarContextMetadata = agentContext.dependencyManager.resolve<{ walletKey: string }>('AskarContextMetadata')
+    // Otherwise we need to get the wallet key from the tenant record
+    const storeConfig = await getAskarStoreConfigForContextCorrelationId(agentContext)
 
     return {
-      id: `wallet-${agentContext.contextCorrelationId}`,
-      key: askarContextMetadata.walletKey,
+      id: agentContext.contextCorrelationId,
+      key: storeConfig.key,
       // we always use raw at the moment
       keyDerivationMethod: 'raw',
       database: this.config.store.database,
     }
+  }
+
+  /**
+   * When we create storage for a context we need to store the version record
+   */
+  private async setCurrentFrameworkStorageVersionOnSession(session: Session) {
+    const record = new StorageVersionRecord({
+      storageVersion: StorageVersionRecord.frameworkStorageVersion,
+    })
+
+    await session.insert({
+      value: JsonTransformer.serialize(record),
+      name: record.id,
+      category: record.type,
+      tags: transformFromRecordTagValues(record.getTags()),
+    })
   }
 
   /**
@@ -93,7 +115,7 @@ export class AskarStoreManager {
   public async provisionStore(agentContext: AgentContext): Promise<void> {
     this.ensureStoreLevel(agentContext)
 
-    const storeConfig = this.getStoreConfig(agentContext)
+    const storeConfig = await this.getStoreConfig(agentContext)
     const askarStoreConfig = this.getAskarStoreConfig(storeConfig)
 
     agentContext.config.logger.debug(`Provisioning store '${storeConfig.id}`)
@@ -123,6 +145,9 @@ export class AskarStoreManager {
         passKey: askarStoreConfig.passKey,
       })
       agentContext.dependencyManager.registerInstance(Store, store)
+
+      // For new stores we need to set the framework storage version
+      await this.withSession(agentContext, (session) => this.setCurrentFrameworkStorageVersionOnSession(session))
     } catch (error) {
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
@@ -162,7 +187,7 @@ export class AskarStoreManager {
       throw new AskarStoreError('Store already opened. Close the currently opened store before re-opening the store')
     }
 
-    const storeConfig = this.getStoreConfig(agentContext)
+    const storeConfig = await this.getStoreConfig(agentContext)
     const askarStoreConfig = this.getAskarStoreConfig(storeConfig)
 
     try {
@@ -217,7 +242,7 @@ export class AskarStoreManager {
       throw new AskarStoreError('Store needs to be open to rotate the wallet key')
     }
 
-    const storeConfig = this.getStoreConfig(agentContext)
+    const storeConfig = await this.getStoreConfig(agentContext)
 
     try {
       await store.rekey({
@@ -251,7 +276,7 @@ export class AskarStoreManager {
       throw new AskarStoreError('Unable to export store. No store available on agent context')
     }
 
-    const currentStoreConfig = this.getStoreConfig(agentContext)
+    const currentStoreConfig = await this.getStoreConfig(agentContext)
     try {
       const newAskarStoreConfig = this.getAskarStoreConfig(options.exportToStore)
 
@@ -297,7 +322,7 @@ export class AskarStoreManager {
       throw new AskarStoreError('To import a store the current store needs to be closed first')
     }
 
-    const destinationStoreConfig = this.getStoreConfig(agentContext)
+    const destinationStoreConfig = await this.getStoreConfig(agentContext)
 
     const sourceAskarStoreConfig = this.getAskarStoreConfig(options.importFromStore)
     const destinationAskarStoreConfig = this.getAskarStoreConfig(destinationStoreConfig)
@@ -364,7 +389,7 @@ export class AskarStoreManager {
     const store = this.getStore(agentContext)
     if (store) await this.closeStore(agentContext)
 
-    const storeConfig = this.getStoreConfig(agentContext)
+    const storeConfig = await this.getStoreConfig(agentContext)
     const askarStoreConfig = this.getAskarStoreConfig(storeConfig)
 
     agentContext.config.logger.info(`Deleting store '${storeConfig.id}'`)
@@ -394,7 +419,7 @@ export class AskarStoreManager {
       throw new AskarStoreError('There is no open store.')
     }
 
-    const storeConfig = this.getStoreConfig(agentContext)
+    const storeConfig = await this.getStoreConfig(agentContext)
 
     try {
       await store.close()
@@ -453,11 +478,11 @@ export class AskarStoreManager {
   }
 
   private getStore(agentContext: AgentContext) {
-    try {
+    if (agentContext.dependencyManager.isRegistered(Store, false)) {
       return agentContext.dependencyManager.resolve(Store)
-    } catch {
-      return null
     }
+
+    return null
   }
 
   private async _withSession<Return>(
@@ -477,7 +502,17 @@ export class AskarStoreManager {
           // just create it if it doesn't exist yet.
           if (isAskarError(error, AskarErrorCode.NotFound) && profile) {
             await store.createProfile(profile)
-            return await store.session(profile).open()
+            const session = await store.session(profile).open()
+
+            try {
+              // For new profiles we need to set the framework storage version
+              await this.setCurrentFrameworkStorageVersionOnSession(session)
+            } catch (error) {
+              await session.close()
+              throw error
+            }
+
+            return session
           }
 
           throw error
@@ -525,10 +560,8 @@ export class AskarStoreManager {
     const store = agentContext.dependencyManager.resolve(Store)
     return {
       // If we're on store level the default profile can be used automatically
-      // otherwise we need to set the profile, which historically has been set
-      // to `wallet-${tenantId}`. To not make things more complex, we keep using
-      // that now.
-      profile: this.isStoreLevel(agentContext) ? undefined : `wallet-${agentContext.contextCorrelationId}`,
+      // otherwise we need to set the profile, which we do based on the context correlation id
+      profile: this.isStoreLevel(agentContext) ? undefined : agentContext.contextCorrelationId,
       store,
     }
   }
@@ -538,15 +571,18 @@ export class AskarStoreManager {
    * removing a whole store (and potentially other tennats).
    */
   private ensureStoreLevel(agentContext: AgentContext) {
-    if (agentContext.contextCorrelationId === 'default') return true
-    return this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet
+    if (this.isStoreLevel(agentContext)) return
+
+    throw new AskarError(
+      `Agent context ${agentContext.contextCorrelationId} is not on store level. Make sure to only perform askar store operations in the agent context managing the askar store`
+    )
   }
 
   /**
    * Checks whether the current agent context is on store level
    */
   private isStoreLevel(agentContext: AgentContext) {
-    if (agentContext.contextCorrelationId === 'default') return true
+    if (agentContext.isRootAgentContext) return true
     return this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet
   }
 }

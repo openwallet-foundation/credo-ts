@@ -15,7 +15,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
-const agentOptions = getInMemoryAgentOptions('TenantsApi')
+const agentOptions = getInMemoryAgentOptions('TenantsApi', undefined, { autoUpdateStorageOnStartup: true })
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 
@@ -30,10 +30,6 @@ describe('TenantsApi', () => {
         dependencyManager: tenantDependencyManager,
         agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
-          walletConfig: {
-            id: 'Wallet: TenantsApi: tenant-id',
-            key: 'Wallet: TenantsApi: tenant-id',
-          },
         }),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
@@ -43,16 +39,12 @@ describe('TenantsApi', () => {
       const tenantAgent = await tenantsApi.getTenantAgent({ tenantId: 'tenant-id' })
 
       expect(tenantAgent.isInitialized).toBe(true)
-      expect(tenantAgent.wallet.walletConfig).toEqual({
-        id: 'Wallet: TenantsApi: tenant-id',
-        key: 'Wallet: TenantsApi: tenant-id',
-      })
+      expect(tenantAgent.config.label).toEqual('tenant-agent')
 
       expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
       expect(tenantAgent).toBeInstanceOf(TenantAgent)
       expect(tenantAgent.context).toBe(tenantAgentContext)
 
-      await tenantAgent.wallet.delete()
       await tenantAgent.endSession()
     })
   })
@@ -67,10 +59,6 @@ describe('TenantsApi', () => {
         dependencyManager: tenantDependencyManager,
         agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
-          walletConfig: {
-            id: 'Wallet: TenantsApi: tenant-id',
-            key: 'Wallet: TenantsApi: tenant-id',
-          },
         }),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
@@ -81,16 +69,11 @@ describe('TenantsApi', () => {
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
         endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
         expect(tenantAgent.isInitialized).toBe(true)
-        expect(tenantAgent.wallet.walletConfig).toEqual({
-          id: 'Wallet: TenantsApi: tenant-id',
-          key: 'Wallet: TenantsApi: tenant-id',
-        })
+        expect(tenantAgent.config.label).toEqual('tenant-agent')
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
         expect(tenantAgent).toBeInstanceOf(TenantAgent)
         expect(tenantAgent.context).toBe(tenantAgentContext)
-
-        await tenantAgent.wallet.delete()
       })
 
       expect(endSessionSpy).toHaveBeenCalled()
@@ -105,10 +88,6 @@ describe('TenantsApi', () => {
         dependencyManager: tenantDependencyManager,
         agentConfig: rootAgent.config.extend({
           label: 'tenant-agent',
-          walletConfig: {
-            id: 'Wallet: TenantsApi: tenant-id',
-            key: 'Wallet: TenantsApi: tenant-id',
-          },
         }),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
@@ -120,16 +99,11 @@ describe('TenantsApi', () => {
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
           endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
           expect(tenantAgent.isInitialized).toBe(true)
-          expect(tenantAgent.wallet.walletConfig).toEqual({
-            id: 'Wallet: TenantsApi: tenant-id',
-            key: 'Wallet: TenantsApi: tenant-id',
-          })
+          expect(tenantAgent.config.label).toEqual('tenant-agent')
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-id')
           expect(tenantAgent).toBeInstanceOf(TenantAgent)
           expect(tenantAgent.context).toBe(tenantAgentContext)
-
-          await tenantAgent.wallet.delete()
 
           throw new Error('Uh oh something went wrong')
         })
@@ -146,10 +120,6 @@ describe('TenantsApi', () => {
         id: 'tenant-id',
         config: {
           label: 'test',
-          walletConfig: {
-            id: 'Wallet: TenantsApi: tenant-id',
-            key: 'Wallet: TenantsApi: tenant-id',
-          },
         },
         storageVersion: '0.5',
       })
@@ -194,18 +164,20 @@ describe('TenantsApi', () => {
   describe('deleteTenantById', () => {
     test('deletes the tenant and removes the wallet', async () => {
       const tenantAgentMock = {
-        wallet: {
-          delete: jest.fn(),
-        },
         endSession: jest.fn(),
+        context: {
+          dependencyManager: {
+            deleteAgentContext: jest.fn(),
+          },
+        },
       } as unknown as TenantAgent
       const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       await tenantsApi.deleteTenantById('tenant-id')
 
       expect(getTenantAgentSpy).toHaveBeenCalledWith({ tenantId: 'tenant-id' })
-      expect(tenantAgentMock.wallet.delete).toHaveBeenCalled()
       expect(tenantAgentMock.endSession).toHaveBeenCalled()
+      expect(tenantAgentMock.context.dependencyManager.deleteAgentContext).toHaveBeenCalled()
       expect(tenantRecordService.deleteTenantById).toHaveBeenCalledWith(rootAgent.context, 'tenant-id')
     })
   })

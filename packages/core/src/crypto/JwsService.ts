@@ -6,55 +6,63 @@ import type {
   JwsGeneralFormat,
   JwsProtectedHeaderOptions,
 } from './JwsTypes'
-import type { Key } from './Key'
-import type { JwkJson } from './jose/jwk/Jwk'
 
 import { CredoError } from '../error'
 import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
 import { Buffer, JsonEncoder, TypedArrayEncoder, isJsonObject } from '../utils'
-import { WalletError } from '../wallet/error'
 
+import {
+  KeyManagementApi,
+  KeyManagementError,
+  KnownJwaSignatureAlgorithm,
+  PublicJwk,
+  assertJwkAsymmetric,
+  assymetricPublicJwkMatches,
+  getJwkHumanDescription,
+} from '../modules/kms'
 import { X509Service } from './../modules/x509/X509Service'
 import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { JwaSignatureAlgorithm } from './jose'
-import { getJwkFromJson, getJwkFromKey } from './jose/jwk'
+import { getJwkFromJson } from './jose/jwk'
 import { JwtPayload } from './jose/jwt'
 
 @injectable()
 export class JwsService {
   private async createJwsBase(agentContext: AgentContext, options: CreateJwsBaseOptions) {
     const { jwk, alg, x5c } = options.protectedHeaderOptions
-    const keyJwk = getJwkFromKey(options.key)
+
+    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+
+    const publicJwk = await kms.getPublicKey({ keyId: options.keyId })
+    assertJwkAsymmetric(publicJwk)
+
+    // TODO: we need to think about how to deal with jwk json vs instance
+    const publicJwkInstance = getJwkFromJson(publicJwk)
 
     // Make sure the options.x5c and x5c from protectedHeader are the same.
     if (x5c) {
-      const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: x5c })
-      if (
-        certificate.publicKey.keyType !== options.key.keyType ||
-        !Buffer.from(certificate.publicKey.publicKey).equals(Buffer.from(options.key.publicKey))
-      ) {
+      const certificate = X509Service.getLeafCertificate(agentContext, {
+        certificateChain: x5c,
+      })
+
+      if (assymetricPublicJwkMatches(certificate.publicJwk.toJson(), publicJwk)) {
         throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (
-      jwk &&
-      (jwk.key.keyType !== options.key.keyType ||
-        !Buffer.from(jwk.key.publicKey).equals(Buffer.from(options.key.publicKey)))
-    ) {
+    if (jwk && assymetricPublicJwkMatches(jwk.toJson(), publicJwk)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
-    // We use keyJwk instead of jwk, as the user could also use kid instead of jwk
-    if (keyJwk && !keyJwk.supportsSignatureAlgorithm(alg)) {
+    if (!publicJwkInstance.supportsSignatureAlgorithm(alg)) {
       throw new CredoError(
-        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with keyType ${
-          keyJwk.keyType
-        }. Supported algorithms are ${keyJwk.supportedSignatureAlgorithms.join(', ')}`
+        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${getJwkHumanDescription(publicJwk)}. Supported algorithms are ${publicJwkInstance.supportedSignatureAlgorithms.join(
+          ', '
+        )}`
       )
     }
 
@@ -64,12 +72,12 @@ export class JwsService {
     const base64Payload = TypedArrayEncoder.toBase64URL(payload)
     const base64UrlProtectedHeader = JsonEncoder.toBase64URL(this.buildProtected(options.protectedHeaderOptions))
 
-    const signature = TypedArrayEncoder.toBase64URL(
-      await agentContext.wallet.sign({
-        data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`),
-        key: options.key,
-      })
-    )
+    const signResult = await kms.sign({
+      algorithm: alg,
+      data: TypedArrayEncoder.fromString(`${base64UrlProtectedHeader}.${base64Payload}`),
+      keyId: options.keyId,
+    })
+    const signature = TypedArrayEncoder.toBase64URL(signResult.signature)
 
     return {
       base64Payload,
@@ -80,11 +88,11 @@ export class JwsService {
 
   public async createJws(
     agentContext: AgentContext,
-    { payload, key, header, protectedHeaderOptions }: CreateJwsOptions
+    { payload, keyId, header, protectedHeaderOptions }: CreateJwsOptions
   ): Promise<JwsGeneralFormat> {
     const { base64UrlProtectedHeader, signature, base64Payload } = await this.createJwsBase(agentContext, {
       payload,
-      key,
+      keyId,
       protectedHeaderOptions,
     })
 
@@ -101,11 +109,11 @@ export class JwsService {
    * */
   public async createJwsCompact(
     agentContext: AgentContext,
-    { payload, key, protectedHeaderOptions }: CreateCompactJwsOptions
+    { payload, keyId, protectedHeaderOptions }: CreateCompactJwsOptions
   ): Promise<string> {
     const { base64Payload, base64UrlProtectedHeader, signature } = await this.createJwsBase(agentContext, {
       payload,
-      key,
+      keyId,
       protectedHeaderOptions,
     })
     return `${base64UrlProtectedHeader}.${base64Payload}.${signature}`
@@ -129,7 +137,9 @@ export class JwsService {
 
     if (expectedJwsSigner && !allowedJwsSignerMethods.includes(expectedJwsSigner.method)) {
       throw new CredoError(
-        `jwsSigner provided with method '${expectedJwsSigner.method}', but allowed jws signer methods are ${allowedJwsSignerMethods.join(', ')}.`
+        `jwsSigner provided with method '${
+          expectedJwsSigner.method
+        }', but allowed jws signer methods are ${allowedJwsSignerMethods.join(', ')}.`
       )
     }
 
@@ -191,11 +201,9 @@ export class JwsService {
         trustedCertificates,
       })
 
-      if (!jwsSigner.jwk.supportsSignatureAlgorithm(protectedJson.alg)) {
+      if (!jwsSigner.jwk.supportedSignatureAlgorithms.includes(protectedJson.alg as KnownJwaSignatureAlgorithm)) {
         throw new CredoError(
-          `alg '${protectedJson.alg}' is not a valid JWA signature algorithm for this jwk with keyType ${
-            jwsSigner.jwk.keyType
-          }. Supported algorithms are ${jwsSigner.jwk.supportedSignatureAlgorithms.join(', ')}`
+          `alg '${protectedJson.alg}' is not a valid JWA signature algorithm for this jwk ${getJwkHumanDescription(jwsSigner.jwk.toJson())}. Supported algorithms are ${jwsSigner.jwk.supportedSignatureAlgorithms.join(', ')}`
         )
       }
 
@@ -203,8 +211,15 @@ export class JwsService {
       const signature = TypedArrayEncoder.fromBase64(jws.signature)
       jwsSigners.push(jwsSigner)
 
+      const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+
       try {
-        const isValid = await agentContext.wallet.verify({ key: jwsSigner.jwk.key, data, signature })
+        const isValid = await kms.verify({
+          key: jwsSigner.jwk.toJson(),
+          data,
+          signature,
+          algorithm: protectedJson.alg as KnownJwaSignatureAlgorithm,
+        })
 
         if (!isValid) {
           return {
@@ -215,8 +230,8 @@ export class JwsService {
         }
       } catch (error) {
         // WalletError probably means signature verification failed. Would be useful to add
-        // more specific error type in wallet.verify method
-        if (error instanceof WalletError) {
+        // more specific error type in kms.verify method
+        if (error instanceof KeyManagementError) {
           return {
             isValid: false,
             jwsSigners: [],
@@ -291,10 +306,12 @@ export class JwsService {
         throw new CredoError('x5c header is not a valid JSON array of strings.')
       }
 
-      const certificate = X509Service.getLeafCertificate(agentContext, { certificateChain: protectedHeader.x5c })
+      const certificate = X509Service.getLeafCertificate(agentContext, {
+        certificateChain: protectedHeader.x5c,
+      })
       return {
         method: 'x5c',
-        jwk: getJwkFromKey(certificate.publicKey),
+        jwk: certificate.publicJwk,
         x5c: protectedHeader.x5c,
       }
     }
@@ -303,7 +320,7 @@ export class JwsService {
     if (protectedHeader.jwk && allowedJwsSignerMethods.includes('jwk')) {
       if (!isJsonObject(protectedHeader.jwk)) throw new CredoError('JWK is not a valid JSON object.')
 
-      const protectedJwk = getJwkFromJson(protectedHeader.jwk as JwkJson)
+      const protectedJwk = PublicJwk.fromUnknown(protectedHeader.jwk)
 
       return {
         method: 'jwk',
@@ -327,7 +344,9 @@ export class JwsService {
 
       if (!allowedJwsSignerMethods.includes(jwsSigner.method)) {
         throw new CredoError(
-          `resolveJwsSigner returned jws signer with method '${jwsSigner.method}', but allowed jws signer methods are ${allowedJwsSignerMethods.join(', ')}.`
+          `resolveJwsSigner returned jws signer with method '${
+            jwsSigner.method
+          }', but allowed jws signer methods are ${allowedJwsSignerMethods.join(', ')}.`
         )
       }
 
@@ -341,8 +360,8 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  key: Key
   payload: Buffer | JwtPayload
+  keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions
 }
@@ -385,7 +404,12 @@ export interface VerifyJwsOptions {
 export type JwsSignerResolver = (options: {
   jws: JwsDetachedFormat
   payload: string
-  protectedHeader: { alg: JwaSignatureAlgorithm; jwk?: string; kid?: string; [key: string]: unknown }
+  protectedHeader: {
+    alg: JwaSignatureAlgorithm
+    jwk?: string
+    kid?: string
+    [key: string]: unknown
+  }
 }) => Promise<JwsSignerWithJwk> | JwsSignerWithJwk
 
 export interface VerifyJwsResult {

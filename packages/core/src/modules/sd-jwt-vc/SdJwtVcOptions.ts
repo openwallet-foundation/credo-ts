@@ -1,4 +1,5 @@
-import type { HashName, Jwk, JwkJson } from '../../crypto'
+import type { HashName } from '../../crypto'
+import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
@@ -22,7 +23,7 @@ export interface SdJwtVcHolderDidBinding {
 
 export interface SdJwtVcHolderJwkBinding {
   method: 'jwk'
-  jwk: JwkJson | Jwk
+  jwk: PublicJwk
 }
 
 export interface SdJwtVcIssuerDid {

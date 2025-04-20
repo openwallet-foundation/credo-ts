@@ -1,5 +1,5 @@
 import type { Askar, KdfMethod } from '@openwallet-foundation/askar-shared'
-import type { AskarWalletPostgresStorageConfig, AskarWalletSqliteStorageConfig } from './wallet'
+import type { AskarPostgresStorageConfig, AskarSqliteStorageConfig } from './AskarStorageConfig'
 
 export enum AskarMultiWalletDatabaseScheme {
   /**
@@ -43,7 +43,7 @@ export interface AskarModuleConfigStoreOptions {
    *
    * If not provided SQLite will be used by default
    */
-  database?: AskarWalletSqliteStorageConfig | AskarWalletPostgresStorageConfig
+  database?: AskarSqliteStorageConfig | AskarPostgresStorageConfig
 }
 
 export interface AskarModuleConfigOptions {
@@ -141,10 +141,10 @@ export class AskarModuleConfig {
   }
 
   public get enableKms() {
-    return this.options.enableKms
+    return this.options.enableKms ?? true
   }
 
   public get enableStorage() {
-    return this.options.enableStorage
+    return this.options.enableStorage ?? true
   }
 }

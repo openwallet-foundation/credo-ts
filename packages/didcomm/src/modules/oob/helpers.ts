@@ -6,7 +6,7 @@ import {
   DidKey,
   createPeerDidDocumentFromServices,
   didDocumentToNumAlgo2Did,
-  didKeyToInstanceOfKey,
+  didKeyToEd25519PublicJwk,
 } from '@credo-ts/core'
 
 // This method is kept to support searching for existing connections created by
@@ -21,12 +21,12 @@ export function outOfBandServiceToInlineKeysNumAlgo2Did(service: OutOfBandDidCom
         accept: service.accept,
         recipientKeys: service.recipientKeys.map((recipientKey) => {
           const did = DidKey.fromDid(recipientKey)
-          return `${did.did}#${did.key.fingerprint}`
+          return `${did.did}#${did.publicJwk.fingerprint}`
         }),
         // Map did:key:xxx to actual did:key:xxx#123
         routingKeys: service.routingKeys?.map((routingKey) => {
           const did = DidKey.fromDid(routingKey)
-          return `${did.did}#${did.key.fingerprint}`
+          return `${did.did}#${did.publicJwk.fingerprint}`
         }),
       })
     )
@@ -41,9 +41,9 @@ export function outOfBandServiceToNumAlgo2Did(service: OutOfBandDidCommService) 
   const didDocument = createPeerDidDocumentFromServices([
     {
       id: service.id,
-      recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
+      recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
       serviceEndpoint: service.serviceEndpoint,
-      routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) ?? [],
+      routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) ?? [],
     },
   ])
 

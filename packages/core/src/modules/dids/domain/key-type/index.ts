@@ -2,6 +2,7 @@ export {
   getKeyDidMappingByKeyType,
   getKeyFromVerificationMethod,
   getSupportedVerificationMethodTypesFromKeyType,
+  getPublicJwkFromVerificationMethod,
 } from './keyDidMapping'
 
 export * from './bls12381g2'

@@ -1,20 +1,29 @@
-import type { DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { InMemoryStorageService } from './InMemoryStorageService'
-import { InMemoryWallet } from './InMemoryWallet'
 
-import { CredoError, InjectionSymbols } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../packages/node/src'
 
 export class InMemoryWalletModule implements Module {
-  public register(dependencyManager: DependencyManager) {
-    if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new CredoError('There is an instance of Wallet already registered')
-    }
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, InMemoryWallet)
+  private inMemoryStorageService = new InMemoryStorageService()
 
+  public register(dependencyManager: DependencyManager) {
     if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
       throw new CredoError('There is an instance of StorageService already registered')
     }
-    dependencyManager.registerSingleton(InjectionSymbols.StorageService, InMemoryStorageService)
+
+    dependencyManager.registerInstance(InjectionSymbols.StorageService, this.inMemoryStorageService)
+
+    const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
+    kmsConfig.registerBackend(new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage()))
+  }
+
+  public async onProvisionContext(agentContext: AgentContext): Promise<void> {
+    this.inMemoryStorageService.createRecordsForContext(agentContext)
+  }
+
+  public async onDeleteContext(agentContext: AgentContext): Promise<void> {
+    this.inMemoryStorageService.deleteRecordsForContext(agentContext)
   }
 }

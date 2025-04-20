@@ -12,8 +12,8 @@ import type {
 import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { injectable } from '../../plugins'
-import { WalletKeyExistsError } from '../../wallet/error'
 
+import { KeyManagementApi } from '../kms'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRepository } from './repository'
@@ -33,7 +33,8 @@ export class DidsApi {
     didRegistrarService: DidRegistrarService,
     didRepository: DidRepository,
     agentContext: AgentContext,
-    config: DidsModuleConfig
+    config: DidsModuleConfig,
+    _keyManagement: KeyManagementApi
   ) {
     this.didResolverService = didResolverService
     this.didRegistrarService = didRegistrarService
@@ -117,7 +118,7 @@ export class DidsApi {
    * By default, this method will throw an error if the did already exists in the wallet. You can override this behavior by setting
    * the `overwrite` option to `true`. This will update the did document in the record, and allows you to update the did over time.
    */
-  public async import({ did, didDocument, privateKeys = [], overwrite }: ImportDidOptions) {
+  public async import({ did, didDocument, keys = [], overwrite }: ImportDidOptions) {
     if (didDocument && didDocument.id !== did) {
       throw new CredoError(`Did document id ${didDocument.id} does not match did ${did}`)
     }
@@ -133,29 +134,15 @@ export class DidsApi {
       didDocument = await this.resolveDidDocument(did)
     }
 
-    // Loop over all private keys and store them in the wallet. We don't check whether the keys are actually associated
-    // with the did document, this is up to the user.
-    for (const key of privateKeys) {
-      try {
-        // We can't check whether the key already exists in the wallet, but we can try to create it and catch the error
-        // if the key already exists.
-        await this.agentContext.wallet.createKey({
-          keyType: key.keyType,
-          privateKey: key.privateKey,
-        })
-      } catch (error) {
-        if (error instanceof WalletKeyExistsError) {
-          // If the error is a WalletKeyExistsError, we can ignore it. This means the key
-          // already exists in the wallet. We don't want to throw an error in this case.
-        } else {
-          throw error
-        }
-      }
+    for (const key of keys) {
+      // Make sure the keys exists in the did document
+      didDocument.dereferenceKey(key.didDocumentRelativeKeyId)
     }
 
     // Update existing did record
     if (existingDidRecord) {
       existingDidRecord.didDocument = didDocument
+      existingDidRecord.keys = keys
       existingDidRecord.setTags({
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       })
@@ -168,6 +155,7 @@ export class DidsApi {
     await this.didRepository.storeCreatedDid(this.agentContext, {
       did,
       didDocument,
+      keys,
       tags: {
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },

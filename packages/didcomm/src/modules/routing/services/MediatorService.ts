@@ -8,9 +8,10 @@ import {
   CredoError,
   EventEmitter,
   InjectionSymbols,
-  KeyType,
+  Kms,
   Logger,
   RecordDuplicateError,
+  TypedArrayEncoder,
   didKeyToVerkey,
   inject,
   injectable,
@@ -246,14 +247,20 @@ export class MediatorService {
   }
 
   public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
-    const routingKey = await agentContext.wallet.createKey({
-      keyType: KeyType.Ed25519,
+    // FIXME: keyId
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const routingKey = await kms.createKey({
+      type: {
+        kty: 'OKP',
+        crv: 'X25519',
+      },
     })
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(routingKey.publicJwk)
 
     const routingRecord = new MediatorRoutingRecord({
       id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-      // FIXME: update to fingerprint to include the key type
-      routingKeys: [routingKey.publicKeyBase58],
+      // FIXME: update to list of JWKs including a kid
+      routingKeys: [TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)],
     })
 
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)

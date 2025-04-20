@@ -79,10 +79,7 @@ export class DependencyManager {
     }
   }
 
-  public async initializeAgentContext(
-    agentContext: AgentContext,
-    moduleMetadata?: { [moduleName: string]: Record<string, unknown> | undefined }
-  ) {
+  public async initializeAgentContext(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
         `Method 'initializeAgentContext' called on DependencyManager different from the agent context for which 'initializeAgentContext' is called. Make sure to call 'initializeAgentContext' on the DependencyManager associated with the agent context.`
@@ -91,7 +88,7 @@ export class DependencyManager {
 
     for (const [moduleName, module] of Object.entries(this.registeredModules)) {
       try {
-        await module.onInitializeContext?.(agentContext, moduleMetadata?.[moduleName] ?? null)
+        await module.onInitializeContext?.(agentContext)
       } catch (error) {
         throw new CredoError(
           `Error during call to 'onInitializeContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
@@ -108,15 +105,19 @@ export class DependencyManager {
       )
     }
 
-    for (const [moduleName, module] of Object.entries(this.registeredModules)) {
-      try {
-        await module.onDeleteContext?.(agentContext)
-      } catch (error) {
-        throw new CredoError(
-          `Error during call to 'onDeleteContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
-          { cause: error }
-        )
+    try {
+      for (const [moduleName, module] of Object.entries(this.registeredModules)) {
+        try {
+          await module.onDeleteContext?.(agentContext)
+        } catch (error) {
+          throw new CredoError(
+            `Error during call to 'onDeleteContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
+            { cause: error }
+          )
+        }
       }
+    } finally {
+      await this.container.dispose()
     }
   }
 
@@ -127,12 +128,9 @@ export class DependencyManager {
       )
     }
 
-    const moduleMetadata: Record<string, Record<string, unknown> | undefined> = {}
-
     for (const [moduleName, module] of Object.entries(this.registeredModules)) {
       try {
-        const metadata = await module.onProvisionContext?.(agentContext)
-        if (metadata) moduleMetadata[moduleName] = metadata
+        await module.onProvisionContext?.(agentContext)
       } catch (error) {
         throw new CredoError(
           `Error during call to 'onProvisionContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
@@ -151,16 +149,19 @@ export class DependencyManager {
       )
     }
 
-    await this.container.dispose()
-    for (const [moduleName, module] of Object.entries(this.registeredModules)) {
-      try {
-        await module.onCloseContext?.(agentContext)
-      } catch (error) {
-        throw new CredoError(
-          `Error during call to 'onCloseContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
-          { cause: error }
-        )
+    try {
+      for (const [moduleName, module] of Object.entries(this.registeredModules)) {
+        try {
+          await module.onCloseContext?.(agentContext)
+        } catch (error) {
+          throw new CredoError(
+            `Error during call to 'onCloseContext' method in module '${moduleName}' for agent context '${agentContext.contextCorrelationId}'.`,
+            { cause: error }
+          )
+        }
       }
+    } finally {
+      await this.container.dispose()
     }
   }
 

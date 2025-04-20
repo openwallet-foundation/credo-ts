@@ -99,17 +99,6 @@ describeSkipNode18('BBS W3cCredentialService', () => {
   })
 
   describe('Utility methods', () => {
-    describe('getKeyTypesByProofType', () => {
-      it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
-        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('BbsBlsSignature2020')
-        expect(keyTypes).toEqual([KeyType.Bls12381g2])
-      })
-      it('should return the correct key types for BbsBlsSignatureProof2020 proof type', async () => {
-        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('BbsBlsSignatureProof2020')
-        expect(keyTypes).toEqual([KeyType.Bls12381g2])
-      })
-    })
-
     describe('getVerificationMethodTypesByProofType', () => {
       it('should return the correct key types for BbsBlsSignature2020 proof type', async () => {
         const verificationMethodTypes =

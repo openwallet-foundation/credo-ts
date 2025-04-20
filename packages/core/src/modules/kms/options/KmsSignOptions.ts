@@ -1,11 +1,12 @@
 import * as z from '../../../utils/zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
+import { zKmsKeyId } from './common'
 
 export const zKmsSignOptions = z.object({
   /**
    * The key to use for signing
    */
-  keyId: z.string(),
+  keyId: zKmsKeyId,
 
   /**
    * The JWA signature algorithm to use for signing

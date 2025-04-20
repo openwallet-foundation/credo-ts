@@ -49,7 +49,7 @@ export class MediationRecipientModule implements Module {
 
   public async onCloseContext(agentContext: AgentContext): Promise<void> {
     // Q: Can we also just call stop for non-defult context?
-    if (agentContext.contextCorrelationId !== 'default') return
+    if (!agentContext.isRootAgentContext) return
 
     const mediationRecipientApi = agentContext.dependencyManager.resolve(MediationRecipientApi)
     await mediationRecipientApi.stopMessagePickup()
@@ -57,7 +57,7 @@ export class MediationRecipientModule implements Module {
 
   public async onInitializeContext(agentContext: AgentContext): Promise<void> {
     // We only support mediation config for the root agent context
-    if (agentContext.contextCorrelationId !== 'default') return
+    if (!agentContext.isRootAgentContext) return
 
     const mediationRecipientApi = agentContext.dependencyManager.resolve(MediationRecipientApi)
 

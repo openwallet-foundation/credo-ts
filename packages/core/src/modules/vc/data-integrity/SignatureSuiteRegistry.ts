@@ -1,7 +1,6 @@
-import type { KeyType } from '../../../crypto'
-
 import { CredoError } from '../../../error'
 import { injectAll, injectable } from '../../../plugins'
+import { PublicJwk, SupportedPublicJwks } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './libraries/jsonld-signatures'
 
@@ -12,7 +11,7 @@ export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
   verificationMethodTypes: string[]
-  keyTypes: KeyType[]
+  supportedPublicJwk: (typeof SupportedPublicJwks)[number][]
 }
 
 @injectable()
@@ -34,8 +33,8 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }
 
-  public getAllByKeyType(keyType: KeyType) {
-    return this.suiteMapping.filter((x) => x.keyTypes.includes(keyType))
+  public getAllByPublicJwk(publicJwk: PublicJwk) {
+    return this.suiteMapping.filter((x) => x.supportedPublicJwk.includes(publicJwk.jwk.constructor))
   }
 
   public getByProofType(proofType: string) {

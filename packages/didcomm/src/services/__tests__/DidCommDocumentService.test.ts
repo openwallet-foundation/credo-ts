@@ -3,7 +3,7 @@ import type { VerificationMethod } from '../../../../core/src/modules/dids'
 
 import { Key, KeyType } from '../../../../core/src/crypto'
 import { DidCommV1Service, DidDocument, IndyAgentService } from '../../../../core/src/modules/dids'
-import { verkeyToInstanceOfKey } from '../../../../core/src/modules/dids/helpers'
+import { verkeyToPublicJwk } from '../../../../core/src/modules/dids/helpers'
 import { DidResolverService } from '../../../../core/src/modules/dids/services/DidResolverService'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { DidCommDocumentService } from '../DidCommDocumentService'
@@ -57,8 +57,8 @@ describe('DidCommDocumentService', () => {
       expect(resolved[0]).toMatchObject({
         id: 'test-id',
         serviceEndpoint: 'https://test.com',
-        recipientKeys: [verkeyToInstanceOfKey('Q4zqM7aXqm7gDQkUVLng9h')],
-        routingKeys: [verkeyToInstanceOfKey('DADEajsDSaksLng9h')],
+        recipientKeys: [verkeyToPublicJwk('Q4zqM7aXqm7gDQkUVLng9h')],
+        routingKeys: [verkeyToPublicJwk('DADEajsDSaksLng9h')],
       })
     })
 

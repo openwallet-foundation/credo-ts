@@ -1,9 +1,10 @@
 import type { KnownJwaSignatureAlgorithm } from '../jwa'
 import type { KmsJwkPrivate, KmsJwkPublic } from '../knownJwk'
-import type { KmsJwkPublicOct } from '../kty/oct'
+import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
 
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
+import { KmsCreateKeyType } from '../../options'
 import { getJwkHumanDescription } from '../humanDescription'
 
 /**
@@ -44,6 +45,8 @@ export function assertAllowedSigningAlgForKey(
   }
 }
 
+// NOTE: this should be replaced by the PublicJwk class
+// but it woun't work for oct keys
 export function supportedSigningAlgsForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>
 ): KnownJwaSignatureAlgorithm[] {
@@ -89,4 +92,90 @@ export function supportedSigningAlgsForKey(
   }
 
   return []
+}
+
+// Can we move this to the JWK classes?
+export function createKeyTypeForSigningAlgorithm(algorithm: KnownJwaSignatureAlgorithm): KmsCreateKeyType {
+  // On JWK class we can have
+  if (algorithm === 'ES256') {
+    return {
+      kty: 'EC',
+      crv: 'P-256',
+    }
+  }
+
+  if (algorithm === 'ES384') {
+    return {
+      kty: 'EC',
+      crv: 'P-384',
+    }
+  }
+
+  if (algorithm === 'ES512') {
+    return {
+      kty: 'EC',
+      crv: 'P-521',
+    }
+  }
+
+  if (algorithm === 'ES256K') {
+    return {
+      kty: 'EC',
+      crv: 'secp256k1',
+    }
+  }
+
+  if (algorithm === 'EdDSA') {
+    return {
+      kty: 'OKP',
+      crv: 'Ed25519',
+    }
+  }
+
+  if (algorithm === 'HS256') {
+    return {
+      kty: 'oct',
+      algorithm: 'hmac',
+      length: 256,
+    }
+  }
+
+  if (algorithm === 'HS384') {
+    return {
+      kty: 'oct',
+      algorithm: 'hmac',
+      length: 384,
+    }
+  }
+
+  if (algorithm === 'HS512') {
+    return {
+      kty: 'oct',
+      algorithm: 'hmac',
+      length: 512,
+    }
+  }
+
+  if (algorithm === 'PS256' || algorithm === 'RS256') {
+    return {
+      kty: 'RSA',
+      modulusLength: 2048,
+    }
+  }
+
+  if (algorithm === 'PS384' || algorithm === 'RS384') {
+    return {
+      kty: 'RSA',
+      modulusLength: 3072,
+    }
+  }
+
+  if (algorithm === 'PS512' || algorithm === 'RS512') {
+    return {
+      kty: 'RSA',
+      modulusLength: 4096,
+    }
+  }
+
+  throw new KeyManagementError(`unknown signature algorithm '${algorithm}' for creating key `)
 }

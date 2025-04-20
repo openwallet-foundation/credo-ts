@@ -1,14 +1,46 @@
 export type {
   KnownJwaSignatureAlgorithm,
   KnownJwaContentEncryptionAlgorithm,
-  KnownJwaKeyManagementAlgorithm,
+  KnownJwaKeyEncryptionAlgorithm,
+  KnownJwaKeyAgreementAlgorithm,
 } from './jwa'
-export { type KmsJwkPrivate, type KmsJwkPublic, publicJwkFromPrivateJwk } from './knownJwk'
+export {
+  KnownJwaKeyAgreementAlgorithms,
+  KnownJwaContentEncryptionAlgorithms,
+  KnownJwaKeyEncryptionAlgorithms,
+  KnownJwaSignatureAlgorithms,
+} from './jwa'
+export {
+  type KmsJwkPrivate,
+  type KmsJwkPublic,
+  publicJwkFromPrivateJwk,
+  type KmsJwkPublicAsymmetric,
+  assertJwkAsymmetric,
+  isJwkAsymmetric,
+  type KmsJwkPrivateAsymmetric,
+} from './knownJwk'
 
-export type { KmsJwkPrivateEc, KmsJwkPublicEc } from './kty/ec'
-export type { KmsJwkPrivateOct, KmsJwkPublicOct } from './kty/oct'
-export type { KmsJwkPrivateOkp, KmsJwkPublicOkp } from './kty/okp'
-export type { KmsJwkPrivateRsa, KmsJwkPublicRsa } from './kty/rsa'
+export { assertSupportedKeyAgreementAlgorithm, assertSupportedEncryptionAlgorithm } from './assertSupported'
+export type {
+  KmsJwkPrivateEc,
+  KmsJwkPublicEc,
+  KmsJwkPrivateOct,
+  KmsJwkPublicOct,
+  KmsJwkPrivateOkp,
+  KmsJwkPublicOkp,
+  KmsJwkPrivateRsa,
+  KmsJwkPublicRsa,
+} from './kty'
+
+export {
+  Ed25519PublicJwk,
+  P256PublicJwk,
+  P384PublicJwk,
+  P521PublicJwk,
+  RsaPublicJwk,
+  X25519PublicJwk,
+  Secp256k1PublicJwk,
+} from './kty'
 
 export { Jwk, JwkCommon } from './jwk'
 export {
@@ -24,3 +56,6 @@ export {
 } from './keyOps'
 export * from './alg'
 export { getJwkHumanDescription } from './humanDescription'
+export { assymetricJwkKeyTypeMatches, assymetricPublicJwkMatches, assertAsymmetricJwkKeyTypeMatches } from './equals'
+export { publicJwkAsymmetricToPublicKey } from './publicKey'
+export { PublicJwk } from './PublicJwk'

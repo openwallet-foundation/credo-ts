@@ -2,6 +2,7 @@ import type { VerificationMethod } from './VerificationMethod'
 
 import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import { PublicJwk } from '../../../kms'
 
 export const VERIFICATION_METHOD_TYPE_MULTIKEY = 'Multikey'
 
@@ -47,4 +48,17 @@ export function getKeyFromMultikey(verificationMethod: VerificationMethod & { ty
   }
 
   return Key.fromFingerprint(verificationMethod.publicKeyMultibase)
+}
+
+/**
+ * Get a public jwk from a Multikey verification method.
+ */
+export function getPublicJwkFromMultikey(verificationMethod: VerificationMethod & { type: 'Multikey' }) {
+  if (!verificationMethod.publicKeyMultibase) {
+    throw new CredoError(
+      `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
+    )
+  }
+
+  return PublicJwk.fromFingerprint(verificationMethod.publicKeyMultibase)
 }

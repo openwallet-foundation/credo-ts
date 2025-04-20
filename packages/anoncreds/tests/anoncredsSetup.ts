@@ -55,6 +55,7 @@ import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormat
 import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
 import { anoncreds } from './helpers'
@@ -402,18 +403,23 @@ export async function setupAnonCredsTests<
     await issuerAgent.dids.import({ did: issuerId, didDocument })
   } else if (cheqd) {
     const privateKey = TypedArrayEncoder.fromString('000000000000000000000000001cheqd')
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+      privateKey,
+    })
+    const didDocumentKey = await issuerAgent.kms.importKey({
+      privateJwk,
+    })
+
     const did = await issuerAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-10',
-          type: 'Ed25519VerificationKey2020',
-          privateKey,
-        },
-      },
       options: {
         network: 'testnet',
         methodSpecificIdAlgo: 'uuid',
+        keyId: didDocumentKey.keyId,
       },
     })
     issuerId = did.didState.did as string

@@ -1,9 +1,8 @@
-import { generateKey as _generateKey, generateKeyPair as _generateKeyPair } from 'node:crypto'
+import { generateKeyPair as _generateKeyPair, randomBytes } from 'node:crypto'
 import { promisify } from 'node:util'
 import { Kms } from '@credo-ts/core'
 
 const generateKeyPair = promisify(_generateKeyPair)
-const generateKey = promisify(_generateKey)
 
 const nodeSupportedEcCrvs = ['P-256', 'P-384', 'P-521', 'secp256k1'] satisfies Kms.KmsJwkPublicEc['crv'][]
 export type NodeKmsSupportedEcCrvs = (typeof nodeSupportedEcCrvs)[number]
@@ -95,9 +94,12 @@ export function assertNodeSupportedOctAlgorithm(
 }
 
 export async function createOctKey(options: Kms.KmsCreateKeyTypeOct & { algorithm: NodeSupportedOctAlgorithms }) {
-  const key = await generateKey(options.algorithm, { length: options.length })
+  const secretBytes = randomBytes(options.length >> 3)
 
-  const privateJwk = key.export({ format: 'jwk' })
+  const privateJwk = {
+    kty: 'oct',
+    k: secretBytes.toString('base64url'),
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { k, ...publicJwk } = privateJwk

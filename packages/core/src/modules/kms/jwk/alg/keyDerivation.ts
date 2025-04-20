@@ -1,7 +1,7 @@
-import type { KnownJwaKeyManagementAlgorithm } from '../jwa'
+import type { KnownJwaKeyAgreementAlgorithm } from '../jwa'
 import type { KmsJwkPrivate, KmsJwkPublic, KmsJwkPublicCrv } from '../knownJwk'
-import type { KmsJwkPrivateOct, KmsJwkPublicOct } from '../kty/oct'
-import type { KmsJwkPrivateRsa, KmsJwkPublicRsa } from '../kty/rsa'
+import type { KmsJwkPrivateOct, KmsJwkPublicOct } from '../kty/oct/octJwk'
+import type { KmsJwkPrivateRsa, KmsJwkPublicRsa } from '../kty/rsa/rsaJwk'
 
 import { KeyManagementError } from '../../error/KeyManagementError'
 import { getJwkHumanDescription } from '../humanDescription'
@@ -14,8 +14,8 @@ function isCrvJwk<Jwk extends KmsJwkPrivate | KmsJwkPublic>(
 
 export function supportedKeyDerivationAlgsForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>
-): KnownJwaKeyManagementAlgorithm[] {
-  const algs: KnownJwaKeyManagementAlgorithm[] = []
+): KnownJwaKeyAgreementAlgorithm[] {
+  const algs: KnownJwaKeyAgreementAlgorithm[] = []
 
   const allowedCurves: KmsJwkPublicCrv['crv'][] = ['P-256', 'P-384', 'P-521', 'X25519', 'secp256k1']
   if (isCrvJwk(jwk) && allowedCurves.includes(jwk.crv)) {
@@ -37,7 +37,7 @@ export function supportedKeyDerivationAlgsForKey(
  */
 export function allowedKeyDerivationAlgsForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>
-): KnownJwaKeyManagementAlgorithm[] {
+): KnownJwaKeyAgreementAlgorithm[] {
   const supportedAlgs = supportedKeyDerivationAlgsForKey(jwk)
   const allowedAlg = jwk.alg
 
@@ -45,15 +45,15 @@ export function allowedKeyDerivationAlgsForKey(
     ? // If no `alg` specified on jwk, return all supported algs
       supportedAlgs
     : // If `alg` is specified and supported, return the allowed alg
-      allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaKeyManagementAlgorithm)
-      ? [allowedAlg as KnownJwaKeyManagementAlgorithm]
+      allowedAlg && supportedAlgs.includes(allowedAlg as KnownJwaKeyAgreementAlgorithm)
+      ? [allowedAlg as KnownJwaKeyAgreementAlgorithm]
       : // Otherwise nothing is allowed (`alg` is specified but not supported)
         []
 }
 
 export function assertAllowedKeyDerivationAlgForKey(
   jwk: KmsJwkPrivate | Exclude<KmsJwkPublic, KmsJwkPublicOct>,
-  algorithm: KnownJwaKeyManagementAlgorithm
+  algorithm: KnownJwaKeyAgreementAlgorithm
 ) {
   const allowedAlgs = allowedKeyDerivationAlgsForKey(jwk)
   if (!allowedAlgs.includes(algorithm)) {

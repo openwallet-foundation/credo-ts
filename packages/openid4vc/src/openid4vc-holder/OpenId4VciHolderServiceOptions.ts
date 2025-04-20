@@ -1,4 +1,4 @@
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
+import type { AgentContext, JwaSignatureAlgorithm, Jwk, Kms, VerifiableCredential } from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
@@ -372,14 +372,7 @@ export type OpenId4VciProofOfPressionProofTypes = Record<
        * to the request credential method, and the supported proof type signature
        * algorithms for the specific credential configuration
        */
-      supportedSignatureAlgorithms: JwaSignatureAlgorithm[]
-
-      /**
-       * The key type that can be used to create the proof of possession signature.
-       * This is related to the verification method and the signature algorithm, and
-       * is added for convenience.
-       */
-      supportedKeyTypes: KeyType[]
+      supportedSignatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
 
       /**
        * Whether key attestations are required and which level needs to be met. If the object

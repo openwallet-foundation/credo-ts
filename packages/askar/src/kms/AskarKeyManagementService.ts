@@ -1,70 +1,115 @@
-import type { JwkProps, KeyEntryObject, Session } from '@hyperledger/aries-askar-shared'
+import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
 
-import { randomUUID } from 'node:crypto'
-import { type AgentContext, Kms, utils } from '@credo-ts/core'
-import { Jwk, Key, KeyAlgs, KeyEntryList, SigAlgs, ariesAskar } from '@hyperledger/aries-askar-shared'
+import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import {
+  CryptoBox,
+  Jwk,
+  Key,
+  KeyAlgorithm,
+  KeyEntryList,
+  SignatureAlgorithm,
+  askar,
+} from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
-import { AskarErrorCode, isAskarError } from '../utils'
+import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
+import { decrypt } from './crypto/decrypt'
+import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
+import { AskarSupportedEncryptionOptions, encrypt } from './crypto/encrypt'
+import { randomBytes } from './crypto/randomBytes'
+
+const askarSupportedEncryptionAlgorithms = [
+  ...(Object.keys(jwkEncToAskarAlg) as Array<keyof typeof jwkEncToAskarAlg>),
+  'XSALSA20-POLY1305',
+] satisfies Array<Kms.KnownJwaContentEncryptionAlgorithm | Kms.KnownJwaKeyEncryptionAlgorithm>
 
 export class AksarKeyManagementService implements Kms.KeyManagementService {
   public readonly backend = 'askar'
 
-  private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SigAlgs>> = {
-    EdDSA: SigAlgs.EdDSA,
-    ES256K: SigAlgs.ES256K,
-    ES256: SigAlgs.ES256,
-    ES384: SigAlgs.ES384,
+  private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
+    EdDSA: SignatureAlgorithm.EdDSA,
+    ES256K: SignatureAlgorithm.ES256K,
+    ES256: SignatureAlgorithm.ES256,
+    ES384: SignatureAlgorithm.ES384,
   }
-
-  private static crvToAlg: Partial<
-    Record<Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv'], KeyAlgs | undefined>
-  > = {
-    // EC
-    secp256k1: KeyAlgs.EcSecp256k1,
-    'P-256': KeyAlgs.EcSecp256r1,
-    'P-384': KeyAlgs.EcSecp384r1,
-
-    // TODO: we need to get the JWK key representation right first
-    // BLS12381G1: KeyAlgs.Bls12381G1,
-    // BLS12381G2: KeyAlgs.Bls12381G2,
-
-    // P-521 not supported by askar
-    'P-521': undefined,
-
-    // OKP
-    X25519: KeyAlgs.X25519,
-    Ed25519: KeyAlgs.Ed25519,
-  }
-
-  private static symmetricAlgs = [
-    KeyAlgs.AesA128Kw,
-    KeyAlgs.AesA128CbcHs256,
-    KeyAlgs.AesA128Gcm,
-    KeyAlgs.AesA256Kw,
-    KeyAlgs.AesA256CbcHs512,
-    KeyAlgs.AesA256Gcm,
-    KeyAlgs.Chacha20C20P,
-    KeyAlgs.Chacha20XC20P,
-  ]
 
   private withSession<Return>(agentContext: AgentContext, callback: (session: Session) => Return) {
     return agentContext.dependencyManager.resolve(AskarStoreManager).withSession(agentContext, callback)
+  }
+
+  public isOperationSupported(_agentContext: AgentContext, operation: Kms.KmsOperation): boolean {
+    if (operation.operation === 'deleteKey') return true
+    if (operation.operation === 'randomBytes') return true
+
+    if (operation.operation === 'importKey') {
+      if (operation.privateJwk.kty === 'EC' || operation.privateJwk.kty === 'OKP') {
+        return jwkCrvToAskarAlg[operation.privateJwk.crv] !== undefined
+      }
+
+      // RSA/oct not supported
+      return false
+    }
+
+    if (operation.operation === 'createKey') {
+      if (operation.type.kty === 'EC' || operation.type.kty === 'OKP') {
+        return jwkCrvToAskarAlg[operation.type.crv] !== undefined
+      }
+
+      if (operation.type.kty === 'oct') {
+        if (operation.type.algorithm === 'C20P') return true
+
+        // TODO: sync with the createKey code
+        if (operation.type.algorithm === 'aes') {
+          return [128, 256].includes(operation.type.length)
+        }
+      }
+
+      return false
+    }
+
+    if (operation.operation === 'sign' || operation.operation === 'verify') {
+      return AksarKeyManagementService.algToSigType[operation.algorithm] !== undefined
+    }
+
+    if (operation.operation === 'encrypt') {
+      const isSupportedEncryptionAlgorithm = askarSupportedEncryptionAlgorithms.includes(
+        operation.encryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
+      )
+      if (!isSupportedEncryptionAlgorithm) return false
+      if (!operation.keyAgreement) return true
+
+      return askarSupportedKeyAgreementAlgorithms.includes(
+        operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    if (operation.operation === 'decrypt') {
+      const isSupportedEncryptionAlgorithm = askarSupportedEncryptionAlgorithms.includes(
+        operation.decryption.algorithm as (typeof askarSupportedEncryptionAlgorithms)[number]
+      )
+      if (!isSupportedEncryptionAlgorithm) return false
+      if (!operation.keyAgreement) return true
+
+      return askarSupportedKeyAgreementAlgorithms.includes(
+        operation.keyAgreement.algorithm as (typeof askarSupportedKeyAgreementAlgorithms)[number]
+      )
+    }
+
+    return false
+  }
+
+  public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
+    const buffer = randomBytes(options.length)
+
+    return {
+      bytes: buffer,
+    }
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
     const key = await this.fetchAskarKey(agentContext, keyId)
     if (!key) return null
 
-    // HACK: https://github.com/openwallet-foundation/askar/issues/329
-    if (!key.key) {
-      return {
-        kid: keyId,
-        kty: 'oct',
-      } satisfies Kms.KmsJwkPublicOct
-    }
-
-    // TODO: we should add extra properties on the JWK stored in the metadata
     return this.publicJwkFromKey(key.key, { kid: keyId })
   }
 
@@ -76,7 +121,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
 
     const privateJwk = {
       ...options.privateJwk,
-      kid: kid ?? randomUUID(),
+      kid: kid ?? utils.uuid(),
     }
 
     let key: Key | undefined = undefined
@@ -149,6 +194,8 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
   ): Promise<Kms.KmsCreateKeyReturn<Type>> {
     const { type, keyId } = options
 
+    // FIXME: we should maybe keep the default keyId as publicKeyBase58 for a while for now, so it doesn't break
+    // Or we need a way to query a key based on the public key?
     const kid = keyId ?? utils.uuid()
     let askarKey: Key | undefined = undefined
     try {
@@ -161,9 +208,10 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         // but as the keys are the same it's ok to just always pick one and if used for another
         // purpose we can see them as the same.
         if (type.algorithm === 'aes') {
-          const lengthToKeyAlg: Record<number, KeyAlgs | undefined> = {
-            128: KeyAlgs.AesA128Gcm,
-            256: KeyAlgs.AesA256Gcm,
+          const lengthToKeyAlg: Record<number, KeyAlgorithm | undefined> = {
+            128: KeyAlgorithm.AesA128Gcm,
+            256: KeyAlgorithm.AesA256Gcm,
+            512: KeyAlgorithm.AesA256CbcHs512,
 
             // Not supported by askar
             192: undefined,
@@ -172,15 +220,15 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
           const keyAlg = lengthToKeyAlg[type.length]
           if (!keyAlg) {
             throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `length '${type.length}' for kty '${type.kty}' with algorithm '${type.algorithm}'. Supported length values are '128', '256'.`,
+              `length '${type.length}' for kty '${type.kty}' with algorithm '${type.algorithm}'. Supported length values are '128', '256'`,
               this.backend
             )
           }
 
           askarKey = Key.generate(keyAlg)
-        } else if (type.algorithm === 'c20p') {
+        } else if (type.algorithm === 'C20P') {
           // Both X and non-X variant can be used with the same key
-          askarKey = Key.generate(KeyAlgs.Chacha20C20P)
+          askarKey = Key.generate(KeyAlgorithm.Chacha20C20P)
         } else {
           throw new Kms.KeyManagementAlgorithmNotSupportedError(
             `algorithm '${type.algorithm}' for kty '${type.kty}'`,
@@ -260,17 +308,11 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     const sigType = this.assertedSigTypeForAlg(algorithm)
 
     // Retrieve the key
-    let askarKey:
-      | KeyEntryObject
-      | (Omit<KeyEntryObject, 'key'> & {
-          key: undefined
-        })
-      | undefined
-      | Key = undefined
+    let askarKey: Key | undefined = undefined
 
     try {
       if (typeof keyInput === 'string') {
-        askarKey = await this.getKeyAsserted(agentContext, keyInput)
+        askarKey = (await this.getKeyAsserted(agentContext, keyInput)).key
       } else if (keyInput.kty === 'EC' || keyInput.kty === 'OKP') {
         // Throws error if not supported
         this.assertAskarAlgForJwkCrv(keyInput.kty, keyInput.crv)
@@ -280,28 +322,26 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${keyInput.kty}`, this.backend)
       }
 
-      const signingKey = askarKey instanceof Key ? askarKey : askarKey?.key
       // Askar has a bug with loading symmetric keys, but we shouldn't get here as I don't think askar
       // support signing with symmetric keys, and we don't support it (it will be caught by assertedSigTypeForAlg)
-      if (!signingKey) {
+      if (!askarKey) {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`algorithm ${algorithm}`, this.backend)
       }
 
-      const keyId = askarKey instanceof Key ? (typeof keyInput === 'string' ? keyInput : keyInput.kid) : askarKey?.name
-
-      const publicJwk = this.publicJwkFromKey(signingKey, { kid: keyId })
-      const privateJwk = this.privateJwkFromKey(signingKey, { kid: keyId })
+      const keyId = typeof keyInput === 'string' ? keyInput : keyInput.kid
+      const publicJwk = this.publicJwkFromKey(askarKey, { kid: keyId })
+      const privateJwk = this.privateJwkFromKey(askarKey, { kid: keyId })
 
       // 2. Validate alg and use for key
       Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
       Kms.assertKeyAllowsVerify(publicJwk)
 
       // 4. Perform the verify operation
-      const verified = signingKey.verifySignature({ message: data, signature, sigType })
+      const verified = askarKey.verifySignature({ message: data, signature, sigType })
       if (verified) {
         return {
           verified: true,
-          publicJwk: typeof keyInput === 'string' ? this.publicJwkFromKey(signingKey, { kid: keyId }) : keyInput,
+          publicJwk: typeof keyInput === 'string' ? this.publicJwkFromKey(askarKey, { kid: keyId }) : keyInput,
         }
       }
 
@@ -312,12 +352,273 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       if (error instanceof Kms.KeyManagementError) throw error
       throw new Kms.KeyManagementError('Error verifying with key', { cause: error })
     } finally {
-      if (askarKey instanceof Key) askarKey.handle.free()
-      else if (askarKey) askarKey.key?.handle.free()
+      if (askarKey) askarKey.handle.free()
     }
   }
 
-  private assertedSigTypeForAlg(algorithm: Kms.KnownJwaSignatureAlgorithm): SigAlgs {
+  public async encrypt(agentContext: AgentContext, options: Kms.KmsEncryptOptions): Promise<Kms.KmsEncryptReturn> {
+    const { data, encryption, key } = options
+
+    Kms.assertSupportedEncryptionAlgorithm(encryption, askarSupportedEncryptionAlgorithms, this.backend)
+
+    const keysToFree: Key[] = []
+    try {
+      let encryptionKey: Key | undefined = undefined
+      let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
+
+      // TODO: we should check if the key allows this operation
+      if (typeof key === 'string') {
+        encryptionKey = (await this.getKeyAsserted(agentContext, key)).key
+
+        keysToFree.push(encryptionKey)
+      } else if ('kty' in key) {
+        if (encryption.algorithm === 'XSALSA20-POLY1305') {
+          throw new Kms.KeyManagementAlgorithmNotSupportedError(
+            `encryption algorithm '${encryption.algorithm}' is only supported in combination with key agreement algorithm '${Kms.KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20}'`,
+            this.backend
+          )
+        }
+        encryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
+          TypedArrayEncoder.fromBase64(key.k),
+          encryption.algorithm
+        )
+        keysToFree.push(encryptionKey)
+      } else {
+        Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
+        Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+        Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
+
+        const privateKey = key.keyId ? (await this.getKeyAsserted(agentContext, key.keyId)).key : undefined
+        if (privateKey) keysToFree.push(privateKey)
+
+        const privateJwk = privateKey ? this.privateJwkFromKey(privateKey) : undefined
+        if (privateJwk) {
+          Kms.assertJwkAsymmetric(privateJwk, key.keyId)
+          Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+          Kms.assertKeyAllowsDerive(privateJwk)
+          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+        }
+
+        const recipientKey = this.keyFromJwk(key.externalPublicJwk)
+        keysToFree.push(recipientKey)
+
+        // Special case to support DIDComm v1
+        if (key.algorithm === 'ECDH-HSALSA20' || encryption.algorithm === 'XSALSA20-POLY1305') {
+          if (encryption.algorithm !== 'XSALSA20-POLY1305' || key.algorithm !== 'ECDH-HSALSA20') {
+            throw new Kms.KeyManagementAlgorithmNotSupportedError(
+              `key agreement algorithm '${key.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
+              this.backend
+            )
+          }
+
+          // anonymous encryption
+          if (!privateKey) {
+            return {
+              encrypted: CryptoBox.seal({
+                recipientKey,
+                message: data,
+              }),
+            }
+          }
+
+          const nonce = CryptoBox.randomNonce()
+          const encrypted = CryptoBox.cryptoBox({
+            recipientKey,
+            senderKey: privateKey,
+            message: data,
+            nonce,
+          })
+
+          return {
+            encrypted,
+            iv: nonce,
+          }
+        }
+
+        // This should not happen, but for TS
+        if (!privateKey) {
+          throw new Kms.KeyManagementError('sender key is required for ECDH-ES key derivation.')
+        }
+
+        const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({
+          encryption,
+          keyAgreement: key,
+          recipientKey,
+          senderKey: privateKey,
+        })
+
+        encryptionKey = contentEncryptionKey
+        keysToFree.push(contentEncryptionKey)
+        encryptedKey = encryptedContentEncryptionKey
+      }
+
+      if (encryption.algorithm === 'XSALSA20-POLY1305') {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(
+          `encryption algorithm '${encryption.algorithm}' can only be used with key agreement algorithm ECDH-HSALSA20`,
+          this.backend
+        )
+      }
+
+      const privateJwk = this.privateJwkFromKey(encryptionKey)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      Kms.assertAllowedEncryptionAlgForKey(privateJwk, encryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(privateJwk)
+
+      const encrypted = encrypt({
+        key: encryptionKey,
+        data,
+        encryption,
+      })
+
+      return {
+        ...encrypted,
+        encryptedKey,
+      }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+      throw new Kms.KeyManagementError('Error encrypting with key', { cause: error })
+    } finally {
+      // Clear all keys
+      for (const key of keysToFree) {
+        key.handle.free()
+      }
+    }
+  }
+
+  public async decrypt(agentContext: AgentContext, options: Kms.KmsDecryptOptions): Promise<Kms.KmsDecryptReturn> {
+    const { encrypted, decryption, key } = options
+
+    Kms.assertSupportedEncryptionAlgorithm(decryption, askarSupportedEncryptionAlgorithms, this.backend)
+
+    const keysToFree: Key[] = []
+
+    try {
+      let decryptionKey: Key | undefined = undefined
+
+      if (typeof key === 'string') {
+        decryptionKey = (await this.getKeyAsserted(agentContext, key)).key
+        keysToFree.push(decryptionKey)
+      } else if ('kty' in key) {
+        if (decryption.algorithm === 'XSALSA20-POLY1305') {
+          throw new Kms.KeyManagementAlgorithmNotSupportedError(
+            `decryption algorithm '${decryption.algorithm}' is only supported in combination with key agreement algorithm '${Kms.KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20}'`,
+            this.backend
+          )
+        }
+        decryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
+          TypedArrayEncoder.fromBase64(key.k),
+          decryption.algorithm
+        )
+        keysToFree.push(decryptionKey)
+      } else {
+        if (key.externalPublicJwk) {
+          Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
+          Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+        }
+        Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
+
+        const privateKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
+        keysToFree.push(privateKey)
+
+        const privateJwk = this.privateJwkFromKey(privateKey)
+
+        Kms.assertJwkAsymmetric(privateJwk, key.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+        Kms.assertKeyAllowsDerive(privateJwk)
+
+        if (key.externalPublicJwk) {
+          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+        }
+
+        const senderKey = key.externalPublicJwk ? this.keyFromJwk(key.externalPublicJwk) : undefined
+        if (senderKey) keysToFree.push(senderKey)
+
+        // Special case to support DIDComm v1
+        if (key.algorithm === 'ECDH-HSALSA20' || decryption.algorithm === 'XSALSA20-POLY1305') {
+          if (decryption.algorithm !== 'XSALSA20-POLY1305' || key.algorithm !== 'ECDH-HSALSA20') {
+            throw new Kms.KeyManagementAlgorithmNotSupportedError(
+              `key agreement algorithm '${key.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
+              this.backend
+            )
+          }
+
+          if (!senderKey) {
+            // anonymous encryption
+            return {
+              data: CryptoBox.sealOpen({
+                recipientKey: privateKey,
+                ciphertext: encrypted,
+              }),
+            }
+          }
+
+          if (!decryption.iv) {
+            throw new Kms.KeyManagementError(
+              `Missing required 'iv' for key agreement algorithm ${key.algorithm} and encryption algorithm ${decryption.algorithm} with sender key defined.`
+            )
+          }
+
+          const decrypted = CryptoBox.open({
+            recipientKey: privateKey,
+            senderKey: senderKey,
+            message: encrypted,
+            nonce: decryption.iv,
+          })
+
+          return {
+            data: decrypted,
+          }
+        }
+
+        // This should not happen, but for TS
+        if (!senderKey) {
+          throw new Kms.KeyManagementError('sender key is required for ECDH-ES key derivation.')
+        }
+
+        const { contentEncryptionKey } = deriveDecryptionKey({
+          decryption,
+          keyAgreement: key,
+          recipientKey: privateKey,
+          senderKey,
+        })
+
+        decryptionKey = contentEncryptionKey
+        keysToFree.push(contentEncryptionKey)
+      }
+
+      if (decryption.algorithm === 'XSALSA20-POLY1305') {
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(
+          `encryption algorithm '${decryption.algorithm}' can only be used with key agreement algorithm ECDH-HSALSA20`,
+          this.backend
+        )
+      }
+
+      const privateJwk = this.privateJwkFromKey(decryptionKey)
+      Kms.assertKeyAllowsDerive(privateJwk)
+      Kms.assertAllowedEncryptionAlgForKey(privateJwk, decryption.algorithm)
+      Kms.assertKeyAllowsEncrypt(privateJwk)
+
+      const decrypted = decrypt({
+        key: decryptionKey,
+        encrypted,
+        decryption,
+      })
+
+      return {
+        data: decrypted,
+      }
+    } catch (error) {
+      if (error instanceof Kms.KeyManagementError) throw error
+      throw new Kms.KeyManagementError('Error decrypting with key', { cause: error })
+    } finally {
+      // Clear all keys
+      for (const key of keysToFree) {
+        key.handle.free()
+      }
+    }
+  }
+
+  private assertedSigTypeForAlg(algorithm: Kms.KnownJwaSignatureAlgorithm): SignatureAlgorithm {
     const sigType = AksarKeyManagementService.algToSigType[algorithm]
     if (!sigType) {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(
@@ -330,12 +631,39 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private assertAskarAlgForJwkCrv(kty: string, crv: Kms.KmsJwkPublicEc['crv'] | Kms.KmsJwkPublicOkp['crv']) {
-    const keyAlg = AksarKeyManagementService.crvToAlg[crv]
+    const keyAlg = jwkCrvToAskarAlg[crv]
     if (!keyAlg) {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(`crv '${crv}' for kty '${kty}'`, this.backend)
     }
 
     return keyAlg
+  }
+
+  private keyFromJwk(jwk: Kms.KmsJwkPrivate | Kms.KmsJwkPublic) {
+    const key = new Key(
+      askar.keyFromJwk({
+        // TODO: the JWK class in JS Askar wrapper is too limiting
+        // so we use this method directly. should update it
+        jwk: JsonEncoder.toBuffer(jwk) as unknown as Jwk,
+      })
+    )
+
+    return key
+  }
+
+  private keyFromSecretBytesAndEncryptionAlgorithm(
+    secretBytes: Uint8Array,
+    algorithm: AskarSupportedEncryptionOptions['algorithm']
+  ) {
+    const askarEncryptionAlgorithm = jwkEncToAskarAlg[algorithm]
+    if (!askarEncryptionAlgorithm) {
+      throw new Kms.KeyManagementAlgorithmNotSupportedError(`JWA encryption algorithm '${algorithm}'`, 'askar')
+    }
+
+    return Key.fromSecretBytes({
+      algorithm: askarEncryptionAlgorithm,
+      secretKey: secretBytes,
+    })
   }
 
   private publicJwkFromKey(key: Key, partialJwkPublic?: Partial<Kms.KmsJwkPublic>) {
@@ -344,44 +672,34 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
 
   private privateJwkFromKey(key: Key, partialJwkPrivate?: Partial<Kms.KmsJwkPrivate>) {
     // TODO: once we support additional params we should add these here
+
+    // TODO: the JWK class in JS Askar wrapper is too limiting
+    // so we use this method directly. should update it
+    // We extract alg, as Askar doesn't always use the same algs
+    const { alg, ...jwkSecret } = JsonEncoder.fromBuffer(
+      askar.keyGetJwkSecret({
+        localKeyHandle: key.handle,
+      })
+    )
+
     return {
       ...partialJwkPrivate,
-      ...key.jwkSecret,
+      ...jwkSecret,
     } as Kms.KmsJwkPrivate
   }
 
-  private async fetchAskarKey(
-    agentContext: AgentContext,
-    keyId: string
-  ): Promise<KeyEntryObject | (Omit<KeyEntryObject, 'key'> & { key: undefined }) | null> {
+  private async fetchAskarKey(agentContext: AgentContext, keyId: string): Promise<KeyEntryObject | null> {
     return await this.withSession(agentContext, async (session) => {
       if (!session.handle) throw Error('Cannot fetch a key with a closed session')
 
       // Fetch the key from the session
-      const handle = await ariesAskar.sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
+      const handle = await askar.sessionFetchKey({ forUpdate: false, name: keyId, sessionHandle: session.handle })
       if (!handle) return null
 
       // Get the key entry
       const keyEntryList = new KeyEntryList({ handle })
       const keyEntry = keyEntryList.getEntryByIndex(0)
 
-      // There seems to be a bug in Askar that it can't load a symmetric key.
-      // https://github.com/openwallet-foundation/askar/issues/329
-      if (AksarKeyManagementService.symmetricAlgs.includes(keyEntry.algorithm as KeyAlgs)) {
-        const keyEntryObject = {
-          algorithm: keyEntry.algorithm,
-          metadata: keyEntry.metadata,
-          name: keyEntry.name,
-          tags: keyEntry.tags,
-          key: undefined,
-        }
-
-        keyEntryList.handle.free()
-
-        return keyEntryObject
-      }
-
-      // For other keys we will get the json
       const keyEntryObject = keyEntry.toJson()
       keyEntryList.handle.free()
 

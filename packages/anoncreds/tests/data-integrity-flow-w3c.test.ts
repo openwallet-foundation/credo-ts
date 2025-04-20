@@ -27,7 +27,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -46,6 +45,7 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 
+import { AksarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
 
@@ -69,8 +69,6 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
-
-const wallet = new InMemoryWallet()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -101,7 +99,7 @@ const agentContext = getAgentContext({
     ],
   ],
   agentConfig,
-  wallet,
+  kmsBackends: [new AksarKeyManagementService()],
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
@@ -113,8 +111,6 @@ describe('data integrity format service (w3c)', () => {
   let holderKdv: CreateDidKidVerificationMethodReturn
 
   beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })

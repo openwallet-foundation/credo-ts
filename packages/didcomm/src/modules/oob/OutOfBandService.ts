@@ -1,4 +1,4 @@
-import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../models'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 import type { OutOfBandDidCommService } from './domain'
@@ -20,7 +20,7 @@ export interface CreateFromImplicitInvitationConfig {
   threadId: string
   handshakeProtocols: HandshakeProtocol[]
   autoAcceptConnection?: boolean
-  recipientKey: Key
+  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }
 
 @injectable()
@@ -233,7 +233,10 @@ export class OutOfBandService {
     })
   }
 
-  public async findCreatedByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public async findCreatedByRecipientKey(
+    agentContext: AgentContext,
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: OutOfBandRole.Sender,

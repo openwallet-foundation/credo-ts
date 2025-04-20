@@ -110,14 +110,3 @@ export function assertKeyAllowsDecrypt(jwk: KmsJwkPrivate | KmsJwkPublic) {
     throw new KeyManagementError(`${getJwkHumanDescription(jwk)} usage does not allow decryption operations`)
   }
 }
-
-const _allowedUseKeyOpsMapping = {
-  sig: ['sign', 'verify'],
-  enc: ['encrypt', 'decrypt', 'wrapKey', 'unwrapKey'],
-} satisfies Record<KnownJwkUse, KnownJwkKeyOps[]>
-
-const _allowedKeyOpsCombinations = [
-  ['sign', 'verify'],
-  ['encrypt', 'decrypt'],
-  ['wrapKey', 'unwrapKey'],
-] satisfies Array<KnownJwkKeyOps[]>

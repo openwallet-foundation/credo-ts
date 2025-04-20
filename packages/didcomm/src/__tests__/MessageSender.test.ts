@@ -12,7 +12,7 @@ import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { Key, KeyType } from '../../../core/src/crypto'
 import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
 import { DidCommV1Service } from '../../../core/src/modules/dids/domain/service/DidCommV1Service'
-import { verkeyToInstanceOfKey } from '../../../core/src/modules/dids/helpers'
+import { verkeyToPublicJwk } from '../../../core/src/modules/dids/helpers'
 import { DidResolverService } from '../../../core/src/modules/dids/services/DidResolverService'
 import { TestMessage } from '../../../core/tests/TestMessage'
 import {
@@ -697,7 +697,7 @@ function getMockResolvedDidService(service: DidCommV1Service | IndyAgentService)
   return {
     id: service.id,
     serviceEndpoint: service.serviceEndpoint,
-    recipientKeys: [verkeyToInstanceOfKey('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
+    recipientKeys: [verkeyToPublicJwk('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
     routingKeys: [],
   }
 }

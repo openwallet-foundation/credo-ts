@@ -1,0 +1,17 @@
+import * as z from '../../../utils/zod'
+
+export const zKmsRandomBytesOptions = z.object({
+  /**
+   * The number of random bytes to genreate
+   */
+  length: z.number().positive(),
+})
+
+export type KmsRandomBytesOptions = z.output<typeof zKmsRandomBytesOptions>
+
+export interface KmsRandomBytesReturn {
+  /**
+   * The generated random bytes
+   */
+  bytes: Uint8Array
+}

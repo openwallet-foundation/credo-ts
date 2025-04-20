@@ -18,7 +18,8 @@ const bobAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:bob'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getInMemoryAgentOptions(
@@ -27,7 +28,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Question Answer', () => {
@@ -47,9 +49,7 @@ describe('Question Answer', () => {
 
   afterEach(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice sends a question and Bob answers', async () => {

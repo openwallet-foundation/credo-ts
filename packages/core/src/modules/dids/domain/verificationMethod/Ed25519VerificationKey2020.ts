@@ -1,6 +1,7 @@
 import { KeyType } from '../../../../crypto'
 import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import { PublicJwk, getJwkHumanDescription } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -44,4 +45,24 @@ export function getKeyFromEd25519VerificationKey2020(verificationMethod: Ed25519
   }
 
   return key
+}
+
+/**
+ * Get a key from a Ed25519VerificationKey2020 verification method.
+ */
+export function getPublicJwkFromEd25519VerificationKey2020(verificationMethod: Ed25519VerificationKey2020) {
+  if (!verificationMethod.publicKeyMultibase) {
+    throw new CredoError('verification method is missing publicKeyMultibase')
+  }
+
+  const publicJwk = PublicJwk.fromFingerprint(verificationMethod.publicKeyMultibase)
+  const publicKey = publicJwk.publicKey
+
+  if (publicKey.kty !== 'OKP' || publicKey.crv !== 'Ed25519') {
+    throw new CredoError(
+      `Verification method ${verificationMethod.type} is for unexpected ${getJwkHumanDescription(publicJwk.toJson())}.`
+    )
+  }
+
+  return publicJwk
 }

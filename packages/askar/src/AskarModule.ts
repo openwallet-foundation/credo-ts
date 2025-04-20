@@ -8,6 +8,7 @@ import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModule
 import { AskarStoreManager } from './AskarStoreManager'
 import { AksarKeyManagementService } from './kms/AskarKeyManagementService'
 import { AskarStorageService } from './storage'
+import { storeAskarStoreConfigForContextCorrelationId } from './tenants'
 
 export class AskarModule implements Module {
   public readonly config: AskarModuleConfig
@@ -44,30 +45,20 @@ export class AskarModule implements Module {
     dependencyManager.registerSingleton(AskarStoreManager)
   }
 
-  public async onInitializeContext(agentContext: AgentContext, metadata: Record<string, unknown>) {
-    // TODO: I think we should also register the store here
-    if (agentContext.contextCorrelationId === 'default') {
-      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
-      await storeManager.getInitializedStoreWithProfile(agentContext)
-      return
-    }
-
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.DatabasePerWallet) {
-      agentContext.dependencyManager.registerInstance('AskarContextMetadata', metadata)
-      const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
-      await storeManager.getInitializedStoreWithProfile(agentContext)
-    }
+  public async onInitializeContext(agentContext: AgentContext) {
+    const storeManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+    await storeManager.getInitializedStoreWithProfile(agentContext)
   }
 
   public async onProvisionContext(agentContext: AgentContext) {
     // We don't have any side effects to run
-    if (agentContext.contextCorrelationId === 'default') return null
-    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) return null
+    if (agentContext.isRootAgentContext) return
+    if (this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet) return
 
     // For new stores (so not profiles) we need to generate a wallet key
-    return {
-      walletKey: this.config.askar.storeGenerateRawKey({}),
-    }
+    await storeAskarStoreConfigForContextCorrelationId(agentContext, {
+      key: this.config.askar.storeGenerateRawKey({}),
+    })
   }
 
   public async onDeleteContext(agentContext: AgentContext) {

@@ -6,7 +6,7 @@ import path from 'path'
 
 import { askarModule } from '../../../../../askar/tests/helpers'
 import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
-import { getAgentOptions, getAskarWalletConfig } from '../../../../tests/helpers'
+import { getAgentOptions, getAskarStoreConfig } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
@@ -18,7 +18,7 @@ const agentOptions = getAgentOptions(
   'UpdateAssistant | Backup',
   {},
   {
-    walletConfig: getAskarWalletConfig('UpdateAssistant | Backup', {
+    walletConfig: getAskarStoreConfig('UpdateAssistant | Backup', {
       inMemory: false,
     }),
   },

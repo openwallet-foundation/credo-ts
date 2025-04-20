@@ -21,7 +21,7 @@ import {
   PeerDidNumAlgo,
   TypedArrayEncoder,
   base64ToBase64URL,
-  didKeyToInstanceOfKey,
+  didKeyToEd25519PublicJwk,
   didKeyToVerkey,
   getAlternativeDidsForPeerDid,
   getJwkFromKey,
@@ -272,8 +272,8 @@ export class DidExchangeProtocol {
       services = inlineServices.map((service) => ({
         id: service.id,
         serviceEndpoint: service.serviceEndpoint,
-        recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
-        routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) ?? [],
+        recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+        routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) ?? [],
       }))
     } else {
       // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method

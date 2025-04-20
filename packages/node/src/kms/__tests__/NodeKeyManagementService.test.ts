@@ -1,6 +1,8 @@
 import { Buffer } from 'node:buffer'
 import { randomBytes } from 'node:crypto'
-import { Kms, ZodValidationError } from '@credo-ts/core'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { JsonEncoder, Kms, TypedArrayEncoder, ZodValidationError } from '@credo-ts/core'
 import { getAgentContext } from '../../../../core/tests'
 import { NodeInMemoryKeyManagementStorage } from '../NodeInMemoryKeyManagementStorage'
 import { NodeKeyManagementService } from '../NodeKeyManagementService'
@@ -243,13 +245,13 @@ describe('NodeKeyManagementService', () => {
       })
     })
 
-    it('throws error for unsupported oct c20p key', async () => {
+    it('throws error for unsupported oct C20P key', async () => {
       await expect(
         service.createKey(agentContext, {
-          type: { kty: 'oct', algorithm: 'c20p' },
+          type: { kty: 'oct', algorithm: 'C20P' },
         })
       ).rejects.toThrow(
-        new Kms.KeyManagementAlgorithmNotSupportedError(`algorithm 'c20p' for kty 'oct'`, service.backend)
+        new Kms.KeyManagementAlgorithmNotSupportedError(`algorithm 'C20P' for kty 'oct'`, service.backend)
       )
     })
 
@@ -1285,10 +1287,10 @@ describe('NodeKeyManagementService', () => {
 
     it('decrypts with A128CBC-HS256', async () => {
       const { keyId } = await service.createKey(agentContext, {
-        type: { kty: 'oct', algorithm: 'aes', length: 512 },
+        type: { kty: 'oct', algorithm: 'aes', length: 256 },
       })
 
-      const iv = randomBytes(12)
+      const iv = randomBytes(16)
       const { encrypted, tag } = await service.encrypt(agentContext, {
         key: keyId,
         encryption: {
@@ -1301,7 +1303,7 @@ describe('NodeKeyManagementService', () => {
       const { data } = await service.decrypt(agentContext, {
         key: keyId,
         decryption: {
-          algorithm: 'A128GCM',
+          algorithm: 'A128CBC-HS256',
           iv,
           tag: tag as Uint8Array,
         },
@@ -1309,6 +1311,46 @@ describe('NodeKeyManagementService', () => {
       })
 
       expect(Buffer.from(data).toString('utf-8')).toEqual('heelllo')
+    })
+
+    it('decrypts JWE using ECDH-ES and A256GCM based on test vector from OpenID Conformance test', async () => {
+      const {
+        compactJwe,
+        decodedPayload,
+        privateKeyJwk,
+        header: expectedHeader,
+      } = JSON.parse(
+        readFileSync(path.join(__dirname, '../__fixtures__/jarm-jwe-encrypted-response.json')).toString('utf-8')
+      ) as {
+        compactJwe: string
+        decodedPayload: Record<string, unknown>
+        privateKeyJwk: Kms.KmsJwkPrivate
+        header: string
+      }
+
+      const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = compactJwe.split('.')
+      const header = JsonEncoder.fromBase64(encodedHeader)
+
+      const recipientKey = await service.importKey(agentContext, { privateJwk: privateKeyJwk })
+      const { data } = await service.decrypt(agentContext, {
+        decryption: {
+          algorithm: 'A256GCM',
+          iv: TypedArrayEncoder.fromBase64(encodedIv),
+          tag: TypedArrayEncoder.fromBase64(encodedTag),
+          aad: TypedArrayEncoder.fromString(encodedHeader),
+        },
+        key: {
+          algorithm: 'ECDH-ES',
+          keyId: recipientKey.keyId,
+          externalPublicJwk: header.epk,
+          apu: TypedArrayEncoder.fromBase64(header.apu),
+          apv: TypedArrayEncoder.fromBase64(header.apv),
+        },
+        encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
+      })
+
+      expect(header).toEqual(expectedHeader)
+      expect(JsonEncoder.fromBuffer(data)).toEqual(decodedPayload)
     })
   })
 

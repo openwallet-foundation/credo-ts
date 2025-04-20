@@ -8,66 +8,71 @@ function recordToUnion<T>(record: Record<string, T>) {
   ]
 }
 
-export const zKnownJwaSignatureAlgorithms = {
-  HS256: z.literal('HS256'),
-  HS384: z.literal('HS384'),
-  HS512: z.literal('HS512'),
-  RS256: z.literal('RS256'),
-  RS384: z.literal('RS384'),
-  RS512: z.literal('RS512'),
-  ES256: z.literal('ES256'),
-  ES384: z.literal('ES384'),
-  ES512: z.literal('ES512'),
-  PS256: z.literal('PS256'),
-  PS384: z.literal('PS384'),
-  PS512: z.literal('PS512'),
-  EdDSA: z.literal('EdDSA'),
-  ES256K: z.literal('ES256K'),
+export const KnownJwaSignatureAlgorithms = {
+  HS256: 'HS256',
+  HS384: 'HS384',
+  HS512: 'HS512',
+  RS256: 'RS256',
+  RS384: 'RS384',
+  RS512: 'RS512',
+  ES256: 'ES256',
+  ES384: 'ES384',
+  ES512: 'ES512',
+  PS256: 'PS256',
+  PS384: 'PS384',
+  PS512: 'PS512',
+  EdDSA: 'EdDSA',
+  ES256K: 'ES256K',
 } as const
 
-export const zKnownJwaSignatureAlgorithm = z.union(recordToUnion(zKnownJwaSignatureAlgorithms))
+export const zKnownJwaSignatureAlgorithm = z.enum(recordToUnion(KnownJwaSignatureAlgorithms))
 export type KnownJwaSignatureAlgorithm = z.output<typeof zKnownJwaSignatureAlgorithm>
 
 // Content encryption algorithms ("enc" parameter)
-export const zKnownJwaContentEncryptionAlgorithms = {
+export const KnownJwaContentEncryptionAlgorithms = {
   // AES-GCM Content Encryption
-  A128GCM: z.literal('A128GCM'),
-  A192GCM: z.literal('A192GCM'),
-  A256GCM: z.literal('A256GCM'),
+  A128GCM: 'A128GCM',
+  A192GCM: 'A192GCM',
+  A256GCM: 'A256GCM',
 
   // AES-CBC Content Encryption
-  A128CBC: z.literal('A128CBC'),
-  A256CBC: z.literal('A256CBC'),
+  A128CBC: 'A128CBC',
+  A256CBC: 'A256CBC',
 
-  // ChaCha20-Poly1305
-  C20P: z.literal('C20P'),
-  XC20P: z.literal('XC20P'),
+  // (X)ChaCha20-Poly1305
+  C20P: 'C20P',
+  XC20P: 'XC20P',
 
-  A128CBC_HS256: z.literal('A128CBC-HS256'),
-  A192CBC_HS384: z.literal('A192CBC-HS384'),
-  A256CBC_HS512: z.literal('A256CBC-HS512'),
+  /**
+   * As is used in DIDComm v1
+   */
+  'XSALSA20-POLY1305': 'XSALSA20-POLY1305',
+
+  A128CBC_HS256: 'A128CBC-HS256',
+  A192CBC_HS384: 'A192CBC-HS384',
+  A256CBC_HS512: 'A256CBC-HS512',
 } as const
-export const zKnownJwaContentEncryptionAlgorithm = z.union(recordToUnion(zKnownJwaContentEncryptionAlgorithms))
+export const zKnownJwaContentEncryptionAlgorithm = z.enum(recordToUnion(KnownJwaContentEncryptionAlgorithms))
 export type KnownJwaContentEncryptionAlgorithm = z.output<typeof zKnownJwaContentEncryptionAlgorithm>
 
-export const vKnownJwaKeyEncryptionAlgorithms = {
+export const KnownJwaKeyEncryptionAlgorithms = {
   // AES Key Wrapping
-  A128KW: z.literal('A128KW'),
-  A192KW: z.literal('A192KW'),
-  A256KW: z.literal('A256KW'),
+  A128KW: 'A128KW',
+  A192KW: 'A192KW',
+  A256KW: 'A256KW',
 } as const
-const zKnownJwaKeyEncryptionAlgorithm = z.union(recordToUnion(vKnownJwaKeyEncryptionAlgorithms))
+const zKnownJwaKeyEncryptionAlgorithm = z.enum(recordToUnion(KnownJwaKeyEncryptionAlgorithms))
 export type KnownJwaKeyEncryptionAlgorithm = z.output<typeof zKnownJwaKeyEncryptionAlgorithm>
 
 // Key derivation / wrapping algorithms ("alg" parameter)
-export const zKnownJwaKeyManagementAlgorithms = {
+export const KnownJwaKeyAgreementAlgorithms = {
   // ECDH-ES with P-256/P-384/P-521
-  ECDH_ES: z.literal('ECDH-ES'),
-  ECDH_ES_A128KW: z.literal('ECDH-ES+A128KW'),
-  ECDH_ES_A192KW: z.literal('ECDH-ES+A192KW'),
-  ECDH_ES_A256KW: z.literal('ECDH-ES+A256KW'),
+  ECDH_ES: 'ECDH-ES',
+  ECDH_ES_A128KW: 'ECDH-ES+A128KW',
+  ECDH_ES_A192KW: 'ECDH-ES+A192KW',
+  ECDH_ES_A256KW: 'ECDH-ES+A256KW',
 
-  ECDH_HSALSA20: z.literal('ECDH-HSALSA20'),
+  ECDH_HSALSA20: 'ECDH-HSALSA20',
 } as const
-const zKnownJwaKeyManagementAlgorithm = z.union(recordToUnion(zKnownJwaKeyManagementAlgorithms))
-export type KnownJwaKeyManagementAlgorithm = z.output<typeof zKnownJwaKeyManagementAlgorithm>
+const zKnownJwaKeyAgreementAlgorithm = z.enum(recordToUnion(KnownJwaKeyAgreementAlgorithms))
+export type KnownJwaKeyAgreementAlgorithm = z.output<typeof zKnownJwaKeyAgreementAlgorithm>

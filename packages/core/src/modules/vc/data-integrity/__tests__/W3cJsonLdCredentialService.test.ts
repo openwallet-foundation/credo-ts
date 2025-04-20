@@ -67,13 +67,6 @@ describe('W3cJsonLdCredentialsService', () => {
   })
 
   describe('Utility methods', () => {
-    describe('getKeyTypesByProofType', () => {
-      it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
-        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('Ed25519Signature2018')
-        expect(keyTypes).toEqual([KeyType.Ed25519])
-      })
-    })
-
     describe('getVerificationMethodTypesByProofType', () => {
       it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
         const verificationMethodTypes =

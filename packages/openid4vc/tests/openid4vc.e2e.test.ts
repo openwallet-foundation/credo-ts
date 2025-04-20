@@ -462,10 +462,13 @@ describe('OpenId4Vc', () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
 
-    const authorizationServerKey = await issuer.agent.wallet.createKey({
-      keyType: KeyType.P256,
+    const authorizationServerKey = await issuer.agent.kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
     })
-    const authorizationServerJwk = getJwkFromKey(authorizationServerKey).toJson()
+    // const authorizationServerJwk = getJwkFromKey(authorizationServerKey).toJson()
     const authorizationServer = new Oauth2AuthorizationServer({
       callbacks: {
         ...getOid4vcCallbacks(issuer.agent.context),
@@ -473,7 +476,7 @@ describe('OpenId4Vc', () => {
         signJwt: async (_signer, { header, payload }) => {
           const jwsService = issuer.agent.dependencyManager.resolve(JwsService)
           const compact = await jwsService.createJwsCompact(issuer.agent.context, {
-            key: authorizationServerKey,
+            keyId: authorizationServerKey.keyId,
             payload: JwtPayload.fromJson(payload),
             protectedHeaderOptions: {
               ...header,
@@ -485,7 +488,7 @@ describe('OpenId4Vc', () => {
 
           return {
             jwt: compact,
-            signerJwk: authorizationServerJwk,
+            signerJwk: authorizationServerKey.publicJwk,
           }
         },
       },

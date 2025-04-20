@@ -100,7 +100,7 @@ function getCredentialRequestToCredentialMapper({
             binding.method === 'did'
               ? {
                   method: 'did',
-                  didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
+                  didUrl: `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`,
                 }
               : { method: 'x5c', x5c: [trustedCertificates[0]], issuer: ISSUER_HOST },
         })),
@@ -128,7 +128,7 @@ function getCredentialRequestToCredentialMapper({
               ),
               issuanceDate: w3cDate(Date.now()),
             }),
-            verificationMethod: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
+            verificationMethod: `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`,
           }
         }),
       } satisfies OpenId4VciSignW3cCredentials
@@ -147,7 +147,7 @@ function getCredentialRequestToCredentialMapper({
           holder: binding,
           issuer: {
             method: 'did',
-            didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
+            didUrl: `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`,
           },
           disclosureFrame: { _sd: ['university', 'degree', 'authorized_user'] },
         })),
@@ -161,7 +161,7 @@ function getCredentialRequestToCredentialMapper({
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate: trustedCertificates[0],
-          holderKey: binding.key,
+          holderKey: binding.jwk,
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
@@ -193,7 +193,7 @@ export class Issuer extends BaseAgent<{
       port,
       name,
       modules: {
-        askar: new AskarModule({ askar }),
+        askar: new AskarModule({ askar, store: { id: name, key: name } }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: `${url}/oid4vp`,
           router: openId4VpRouter,
@@ -209,7 +209,7 @@ export class Issuer extends BaseAgent<{
               verifierId: this.verifierRecord.verifierId,
               requestSigner: {
                 method: 'did',
-                didUrl: `${this.didKey.did}#${this.didKey.key.fingerprint}`,
+                didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
               },
               responseMode: 'direct_post.jwt',
               presentationExchange: {

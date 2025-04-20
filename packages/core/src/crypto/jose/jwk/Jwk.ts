@@ -1,6 +1,7 @@
 import type { KeyType } from '../../KeyType'
 import type { JwaEncryptionAlgorithm, JwaKeyType, JwaSignatureAlgorithm } from '../jwa'
 
+import { KmsJwkPublicAsymmetric } from '../../../modules/kms'
 import { Key } from '../../Key'
 
 export interface JwkJson {
@@ -12,6 +13,8 @@ export interface JwkJson {
 }
 
 export abstract class Jwk {
+  public abstract jwkJson: KmsJwkPublicAsymmetric
+
   public abstract publicKey: Uint8Array
   public abstract supportedSignatureAlgorithms: JwaSignatureAlgorithm[]
   public abstract supportedEncryptionAlgorithms: JwaEncryptionAlgorithm[]
@@ -28,19 +31,21 @@ export abstract class Jwk {
   public abstract kty: JwaKeyType
   public use?: string
 
-  public toJson(): JwkJson {
-    return { use: this.use, kty: this.kty }
+  public toJson(): KmsJwkPublicAsymmetric {
+    return this.jwkJson
   }
 
   public get key() {
     return new Key(this.publicKey, this.keyType)
   }
 
-  public supportsSignatureAlgorithm(algorithm: JwaSignatureAlgorithm | string) {
+  public supportsSignatureAlgorithm(
+    algorithm: JwaSignatureAlgorithm | string
+  ): algorithm is Exclude<JwaSignatureAlgorithm, 'none'> {
     return this.supportedSignatureAlgorithms.includes(algorithm as JwaSignatureAlgorithm)
   }
 
-  public supportsEncryptionAlgorithm(algorithm: JwaEncryptionAlgorithm | string) {
+  public supportsEncryptionAlgorithm(algorithm: JwaEncryptionAlgorithm | string): algorithm is JwaEncryptionAlgorithm {
     return this.supportedEncryptionAlgorithms.includes(algorithm as JwaEncryptionAlgorithm)
   }
 }

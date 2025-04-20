@@ -25,4 +25,10 @@ export const keyDidBls12381g1: KeyDidMapping = {
       `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.Bls12381g1}'`
     )
   },
+  getPublicJwkFromVerificationMethod: (verificationMethod: VerificationMethod) => {
+    // TODO
+    throw new CredoError(
+      `Verification method with type '${verificationMethod.type}' not supported for key type '${KeyType.Bls12381g1}'`
+    )
+  },
 }

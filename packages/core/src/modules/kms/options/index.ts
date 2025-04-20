@@ -6,9 +6,12 @@ export type {
   KmsCreateKeyTypeOct,
   KmsCreateKeyTypeOkp,
   KmsCreateKeyTypeRsa,
+  KmsCreateKeyTypeAssymetric,
+  KmsCreateKeyForSignatureAlgorithmOptions,
 } from './KmsCreateKeyOptions'
 
 export type { KmsDeleteKeyOptions } from './KmsDeleteKeyOptions'
+export type { KmsRandomBytesOptions, KmsRandomBytesReturn } from './KmsRandomBytesOptions'
 export type { KmsSignOptions, KmsSignReturn } from './KmsSignOptions'
 export type { KmsVerifyOptions, KmsVerifyReturn } from './KmsVerifyOptions'
 export type { KmsImportKeyOptions, KmsImportKeyReturn } from './KmsImportKeyOptions'
@@ -20,6 +23,7 @@ export type {
   KmsEncryptDataEncryptionAesCbc,
   KmsEncryptDataEncryptionAesGcm,
   KmsEncryptDataEncryptionX20c,
+  KmsEncryptedKey,
 } from './KmsEncryptOptions'
 export {
   KmsDecryptDataDecryption,
@@ -30,8 +34,24 @@ export {
   KmsDecryptReturn,
 } from './KmsDecryptOptions'
 export {
-  KmsDeriveKeyOptions,
-  KmsDeriveKeyEcdhEs,
-  KmsDeriveKeyEcdhEsKw,
-  KmsDeriveKeyEcdhHsalsa20,
-} from './KmsDeriveKeyOptions'
+  KmsKeyAgreementEcdhEs,
+  KmsKeyAgreementEncryptEcdhEsKw,
+  KmsKeyAgreementEncryptEcdhHsalsa20,
+  KmsKeyAgreementEncryptOptions,
+} from './KmsKeyAgreementEncryptOptions'
+export {
+  KmsKeyAgreementDecryptOptions,
+  KmsKeyAgreementDecryptEcdhHsalsa20,
+  KmsKeyAgreementDecryptEcdhEsKw,
+} from './KmsKeyAgreementDecryptOptions'
+export {
+  KmsOperation,
+  KmsOperationCreateKey,
+  KmsOperationDecrypt,
+  KmsOperationDeleteKey,
+  KmsOperationEncrypt,
+  KmsOperationImportKey,
+  KmsOperationSign,
+  KmsOperationVerify,
+  getKmsOperationHumanDescription,
+} from './KmsOperation'

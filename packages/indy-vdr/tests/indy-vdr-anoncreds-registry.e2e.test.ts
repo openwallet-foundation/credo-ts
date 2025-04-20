@@ -82,9 +82,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
     }
 
     await endorser.shutdown()
-    await endorser.wallet.delete()
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('register and resolve a schema and credential definition (internal, issuerDid != endorserDid)', async () => {

@@ -49,14 +49,25 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     this.listenForRoutingKeyCreatedEvents()
   }
 
-  public async getAgentContextForContextCorrelationId(contextCorrelationId: string) {
+  public getContextCorrelationIdForTenantId(tenantId: string) {
+    return this.tenantSessionCoordinator.getContextCorrelationIdForTenantId(tenantId)
+  }
+
+  public async getAgentContextForContextCorrelationId(
+    contextCorrelationId: string,
+    { provisionContext = false }: { provisionContext?: boolean } = {}
+  ) {
     // It could be that the root agent context is requested, in that case we return the root agent context
     if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
       return this.rootAgentContext
     }
 
+    // If not the root agent context, we require it to be a tenant context correlation id
+    this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+    const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
+
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
@@ -67,10 +78,11 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     }
 
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
+      provisionContext,
       runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
     })
 
-    this.logger.debug(`Created tenant agent context for tenant '${contextCorrelationId}'`)
+    this.logger.debug(`Created tenant agent context for context correlation id '${contextCorrelationId}'`)
 
     return agentContext
   }
@@ -80,7 +92,12 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       contextCorrelationId: options?.contextCorrelationId,
     })
 
-    let tenantId = options?.contextCorrelationId
+    // TODO: what if context is for root agent context?
+    let tenantId =
+      options?.contextCorrelationId &&
+      this.tenantSessionCoordinator.isTenantContextCorrelationId(options.contextCorrelationId)
+        ? this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(options.contextCorrelationId)
+        : undefined
     let recipientKeys: Key[] = []
 
     if (!tenantId && isValidJweStructure(inboundMessage)) {
@@ -116,13 +133,18 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       throw new CredoError("Couldn't determine tenant id for inbound message. Unable to create context")
     }
 
-    const agentContext = await this.getAgentContextForContextCorrelationId(tenantId)
+    const contextCorrelationId = this.tenantSessionCoordinator.getContextCorrelationIdForTenantId(tenantId)
+    const agentContext = await this.getAgentContextForContextCorrelationId(contextCorrelationId)
 
     return agentContext
   }
 
   public async endSessionForAgentContext(agentContext: AgentContext) {
     await this.tenantSessionCoordinator.endAgentContextSession(agentContext)
+  }
+
+  public async deleteAgentContext(agentContext: AgentContext): Promise<void> {
+    await this.tenantSessionCoordinator.deleteAgentContext(agentContext)
   }
 
   private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {
@@ -159,10 +181,15 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       // We don't want to register the key if it's for the root agent context
       if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) return
 
+      this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+
       this.logger.debug(
-        `Received routing key created event for tenant ${contextCorrelationId}, registering recipient key ${recipientKey.fingerprint} in base wallet`
+        `Received routing key created event for tenant context ${contextCorrelationId}, registering recipient key ${recipientKey.fingerprint} in base wallet`
       )
-      await this.registerRecipientKeyForTenant(contextCorrelationId, recipientKey)
+      await this.registerRecipientKeyForTenant(
+        this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId),
+        recipientKey
+      )
     })
   }
 
@@ -201,16 +228,10 @@ export class TenantAgentContextProvider implements AgentContextProvider {
   ) {
     try {
       // Update the tenant storage
-      const tenantAgent = new TenantAgent(agentContext, {
-        TOOD: 'SET PERSISTED MODULE CONFIG',
-      })
+      const tenantAgent = new TenantAgent(agentContext)
       const updateAssistant = new UpdateAssistant(tenantAgent)
       await updateAssistant.initialize()
-      await updateAssistant.update({
-        ...updateOptions,
-        backupBeforeStorageUpdate:
-          updateOptions?.backupBeforeStorageUpdate ?? agentContext.config.backupBeforeStorageUpdate,
-      })
+      await updateAssistant.update(updateOptions)
 
       // Update the storage version in the tenant record
       tenantRecord.storageVersion = await updateAssistant.getCurrentAgentStorageVersion()

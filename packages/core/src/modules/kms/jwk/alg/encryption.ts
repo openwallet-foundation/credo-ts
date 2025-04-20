@@ -1,6 +1,6 @@
 import type { KnownJwaContentEncryptionAlgorithm, KnownJwaKeyEncryptionAlgorithm } from '../jwa'
 import type { KmsJwkPrivate, KmsJwkPublic } from '../knownJwk'
-import type { KmsJwkPublicOct } from '../kty/oct'
+import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
 
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
@@ -14,8 +14,8 @@ export function supportedEncryptionAlgsForKey(jwk: KmsJwkPrivate | Exclude<KmsJw
     const keyBits = TypedArrayEncoder.fromBase64(jwk.k).length * 8
 
     // For CBC-HMAC composite algorithms we need exact key sizes
-    if (keyBits === 384) algs.push('A128CBC-HS256')
-    if (keyBits === 576) algs.push('A192CBC-HS384')
+    if (keyBits === 256) algs.push('A128CBC-HS256')
+    if (keyBits === 384) algs.push('A192CBC-HS384')
     if (keyBits === 512) algs.push('A256CBC-HS512')
 
     // For GCM/CBC we just need the exact AES key size

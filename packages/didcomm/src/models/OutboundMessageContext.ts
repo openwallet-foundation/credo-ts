@@ -1,4 +1,4 @@
-import type { AgentContext, BaseRecord, Key, ResolvedDidCommService } from '@credo-ts/core'
+import type { AgentContext, BaseRecord, Kms, ResolvedDidCommService } from '@credo-ts/core'
 import type { AgentMessage } from '../AgentMessage'
 import type { ConnectionRecord } from '../modules/connections/repository'
 import type { OutOfBandRecord } from '../modules/oob'
@@ -7,7 +7,7 @@ import type { InboundMessageContext } from './InboundMessageContext'
 import { CredoError } from '@credo-ts/core'
 
 export interface ServiceMessageParams {
-  senderKey: Key
+  senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   service: ResolvedDidCommService
   returnRoute?: boolean
 }

@@ -13,7 +13,7 @@ import {
   InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  Key,
+  Kms,
   Logger,
   filterContextCorrelationId,
   inject,
@@ -543,8 +543,12 @@ export class OutOfBandApi {
     const recipientRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
     if (!routing && recipientRouting) {
       routing = {
-        recipientKey: Key.fromFingerprint(recipientRouting.recipientKeyFingerprint),
-        routingKeys: recipientRouting.routingKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint)),
+        recipientKey: Kms.PublicJwk.fromFingerprint(
+          recipientRouting.recipientKeyFingerprint
+        ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+        routingKeys: recipientRouting.routingKeyFingerprints.map(
+          (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+        ),
         endpoints: recipientRouting.endpoints,
         mediatorId: recipientRouting.mediatorId,
       }
@@ -705,7 +709,11 @@ export class OutOfBandApi {
       outOfBandRecord.outOfBandInvitation.getDidServices().length === 0 &&
       (relatedConnections.length === 0 || outOfBandRecord.reusable)
     ) {
-      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+      const recipientKeys = outOfBandRecord
+        .getTags()
+        .recipientKeyFingerprints.map(
+          (item) => Kms.PublicJwk.fromFingerprint(item) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+        )
 
       await this.routingService.removeRouting(this.agentContext, {
         recipientKeys,
@@ -965,12 +973,17 @@ export class OutOfBandApi {
         )
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
-            // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-            .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+            .reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
+              // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+              (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
+              []
+            )
             .map((key) => key.fingerprint)
         )
       } else {
-        recipientKeyFingerprints.push(...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint))
+        recipientKeyFingerprints.push(
+          ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
+        )
       }
     }
 

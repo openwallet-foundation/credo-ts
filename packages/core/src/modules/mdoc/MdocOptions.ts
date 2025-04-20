@@ -1,6 +1,6 @@
 import type { ValidityInfo } from '@animo-id/mdoc'
-import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
+import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
 
@@ -77,5 +77,5 @@ export type MdocSignOptions = {
    * The trusted base64-encoded issuer certificate string in the DER-format.
    */
   issuerCertificate: string
-  holderKey: Key
+  holderKey: PublicJwk
 }

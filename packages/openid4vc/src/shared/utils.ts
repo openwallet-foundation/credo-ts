@@ -11,6 +11,7 @@ import {
   getJwkClassFromKeyType,
   getJwkFromKey,
   getKeyFromVerificationMethod,
+  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 
 /**
@@ -46,6 +47,18 @@ export async function getKeyFromDid(
   const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
 
   return getKeyFromVerificationMethod(verificationMethod)
+}
+
+export async function getPublicJwkFromDid(
+  agentContext: AgentContext,
+  didUrl: string,
+  allowedPurposes: DidPurpose[] = ['authentication']
+) {
+  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+  const didDocument = await didsApi.resolveDidDocument(didUrl)
+  const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
+
+  return getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
 export async function requestSignerToJwtIssuer(

@@ -5,11 +5,8 @@ import { BaseAgent, CredoError } from '@credo-ts/core'
 export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> extends BaseAgent<AgentModules> {
   private sessionHasEnded = false
 
-  public constructor(
-    agentContext: AgentContext,
-    persistedModuleMetadata?: Record<string, Record<string, unknown> | undefined>
-  ) {
-    super(agentContext.config, agentContext.dependencyManager, persistedModuleMetadata)
+  public constructor(agentContext: AgentContext) {
+    super(agentContext.config, agentContext.dependencyManager)
   }
 
   public async initialize() {
@@ -17,7 +14,6 @@ export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> 
       throw new CredoError("Can't initialize agent after tenant sessions has been ended.")
     }
 
-    await super.initialize()
     this._isInitialized = true
   }
 

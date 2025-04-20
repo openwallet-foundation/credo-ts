@@ -6,13 +6,14 @@ import type {
   QueryOptions,
   StorageService,
 } from '@credo-ts/core'
-import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, WalletError, injectable } from '@credo-ts/core'
+import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, injectable } from '@credo-ts/core'
 import { Session } from '@openwallet-foundation/askar-shared'
 import { Scan } from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
 
+import { AskarError } from '../error'
 import { askarQueryFromSearchQuery, recordToInstance, transformFromRecordTagValues } from './utils'
 
 @injectable()
@@ -39,7 +40,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
       }
 
-      throw new WalletError('Error saving record', { cause: error })
+      throw new AskarError('Error saving record', { cause: error })
     }
   }
 
@@ -62,7 +63,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         })
       }
 
-      throw new WalletError('Error updating record', { cause: error })
+      throw new AskarError('Error updating record', { cause: error })
     }
   }
 
@@ -77,7 +78,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
           cause: error,
         })
       }
-      throw new WalletError('Error deleting record', { cause: error })
+      throw new AskarError('Error deleting record', { cause: error })
     }
   }
 
@@ -96,7 +97,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
           cause: error,
         })
       }
-      throw new WalletError('Error deleting record', { cause: error })
+      throw new AskarError('Error deleting record', { cause: error })
     }
   }
 
@@ -114,7 +115,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       return recordToInstance(record, recordClass)
     } catch (error) {
       if (error instanceof RecordNotFoundError) throw error
-      throw new WalletError(`Error getting record ${recordClass.name}`, { cause: error })
+      throw new AskarError(`Error getting record ${recordClass.name}`, { cause: error })
     }
   }
 
@@ -156,7 +157,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
       }
       return instances
     } catch (error) {
-      throw new WalletError(`Error executing query. ${error.message}`, { cause: error })
+      throw new AskarError(`Error executing query. ${error.message}`, { cause: error })
     }
   }
 }

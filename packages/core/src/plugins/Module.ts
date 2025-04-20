@@ -37,20 +37,16 @@ export interface Module {
    * Method that will be called when an agent context is provisioned/created, and will allow for setting
    * up of required services, data or other dependencies for an agent context.
    *
-   * Optionally a metadata object can be returned which will be stored in storage of
-   * the root agent context. Depending on the storage implementation used this may
-   * be stored encrypted or in plaintext.
+   * NOTE: this method will NOT be called for the root agent context as the framework
+   * does not know whether we are provisioning or initializing an existing agent.
    */
-  onProvisionContext?(agentContext: AgentContext): Promise<Record<string, unknown> | null>
+  onProvisionContext?(agentContext: AgentContext): Promise<void>
 
   /**
    * Method that will be called when an agent context is initialized, and will allow for
    * setting up of required services, data or other dependencies for an agent context.
-   *
-   * Optionally a metdata object will be passed as second argument which will contain the
-   * metadata associated with this module for this agent context.
    */
-  onInitializeContext?(agentContext: AgentContext, metadata: Record<string, unknown> | null): Promise<void>
+  onInitializeContext?(agentContext: AgentContext): Promise<void>
 
   /**
    * Method that will be called when an agent context is closed, and will allow for

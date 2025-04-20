@@ -2,14 +2,13 @@ import type { DidDocumentService } from './service'
 
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { Key } from '../../../crypto/Key'
-import { KeyType } from '../../../crypto/KeyType'
 import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { getKeyFromVerificationMethod } from './key-type'
+import { TypedArrayEncoder } from '../../../utils'
+import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
+import { getPublicJwkFromVerificationMethod } from './key-type'
 import { DidCommV1Service, IndyAgentService, ServiceTransformer } from './service'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -149,6 +148,30 @@ export class DidDocument {
     throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public findVerificationMethodByPublicKey(publicJwk: PublicJwk, allowedPurposes?: DidVerificationMethods[]) {
+    const allPurposes: DidVerificationMethods[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+      'verificationMethod',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    for (const purpose of purposes) {
+      for (const key of this[purpose] ?? []) {
+        const verificationMethod = typeof key === 'string' ? this.dereferenceVerificationMethod(key) : key
+        if (getPublicJwkFromVerificationMethod(verificationMethod).equals(publicJwk)) return verificationMethod
+      }
+    }
+
+    throw new CredoError(
+      `Unable to locate verification method with public key ${publicJwk.jwkTypehumanDescription} in purposes ${purposes}`
+    )
+  }
+
   /**
    * Returns all of the service endpoints matching the given type.
    *
@@ -184,21 +207,37 @@ export class DidDocument {
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
-  public get recipientKeys(): Key[] {
-    let recipientKeys: Key[] = []
+  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] {
+    let recipientKeys: PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] = []
 
     for (const service of this.didCommServices) {
       if (service.type === IndyAgentService.type) {
         recipientKeys = [
           ...recipientKeys,
-          ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
+          ...service.recipientKeys.map((publicKeyBase58) =>
+            PublicJwk.fromPublicKey<Ed25519PublicJwk>({
+              kty: 'OKP',
+              crv: 'Ed25519',
+              publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),
+            })
+          ),
         ]
       } else if (service.type === DidCommV1Service.type) {
         recipientKeys = [
           ...recipientKeys,
-          ...service.recipientKeys.map((recipientKey) =>
-            getKeyFromVerificationMethod(this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement']))
-          ),
+          ...service.recipientKeys.map((recipientKey) => {
+            const publicJwk = getPublicJwkFromVerificationMethod(
+              this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
+            )
+
+            if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk)) {
+              throw new CredoError(
+                'Expected either Ed25519PublicJwk or X25519PublicJwk for DidcommV1Service recipient key'
+              )
+            }
+
+            return publicJwk
+          }),
         ]
       }
     }
@@ -208,6 +247,10 @@ export class DidDocument {
 
   public toJSON() {
     return JsonTransformer.toJSON(this)
+  }
+
+  public static fromJSON(didDocument: unknown) {
+    return JsonTransformer.fromJSON(didDocument, DidDocument)
   }
 }
 

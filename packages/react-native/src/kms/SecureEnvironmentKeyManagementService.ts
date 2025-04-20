@@ -8,6 +8,29 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   public readonly backend = 'secureEnvironment'
   private readonly secureEnvironment = importSecureEnvironment()
 
+  public isOperationSupported(_agentContext: AgentContext, operation: Kms.KmsOperation): boolean {
+    if (operation.operation === 'createKey') {
+      return operation.type.kty === 'EC' && operation.type.crv === 'P-256'
+    }
+
+    if (operation.operation === 'sign') {
+      return operation.algorithm === 'ES256'
+    }
+
+    if (operation.operation === 'deleteKey') {
+      return true
+    }
+
+    return false
+  }
+
+  public async randomBytes(
+    _agentContext: AgentContext,
+    _options: Kms.KmsRandomBytesOptions
+  ): Promise<Kms.KmsRandomBytesReturn> {
+    throw new Kms.KeyManagementError(`Generating random bytes is not supported for backend '${this.backend}'`)
+  }
+
   public async getPublicKey(_agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
     try {
       return await this.getKeyAsserted(keyId)
@@ -18,14 +41,30 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   }
 
   public async importKey(): Promise<Kms.KmsImportKeyReturn> {
-    // TODO: can we support this?
     throw new Kms.KeyManagementError(`Importing a key is not supported for backend '${this.backend}'`)
   }
 
-  public async deleteKey(): Promise<boolean> {
-    // TODO: can we support this?
-    // @see https://github.com/animo/expo-secure-environment/issues/22
-    throw new Kms.KeyManagementError(`Deleting a key is not supported for backend '${this.backend}'`)
+  public async deleteKey(_agentContext: AgentContext, options: Kms.KmsDeleteKeyOptions): Promise<boolean> {
+    try {
+      await this.secureEnvironment.deleteKey(options.keyId)
+      return true
+    } catch (error) {
+      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
+        return false
+      }
+
+      throw new Kms.KeyManagementError(`Error deleting key with id '${options.keyId}' in backend '${this.backend}'`, {
+        cause: error,
+      })
+    }
+  }
+
+  public async encrypt(): Promise<Kms.KmsEncryptReturn> {
+    throw new Kms.KeyManagementError(`Encryption is not supported for backend '${this.backend}'`)
+  }
+
+  public async decrypt(): Promise<Kms.KmsDecryptReturn> {
+    throw new Kms.KeyManagementError(`Decryption is not supported for backend '${this.backend}'`)
   }
 
   public async createKey(
@@ -45,10 +84,9 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       )
     }
 
-    try {
-      const keyId = options.keyId ?? utils.uuid()
+    const keyId = options.keyId ?? utils.uuid()
 
-      // TODO: Handle key already exists error
+    try {
       await this.secureEnvironment.generateKeypair(keyId)
 
       return {
@@ -57,6 +95,10 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
+      if (error instanceof this.secureEnvironment.KeyAlreadyExistsError) {
+        throw new Kms.KeyManagementKeyExistsError(keyId, this.backend)
+      }
+
       throw new Kms.KeyManagementError('Error creating key', { cause: error })
     }
   }
@@ -69,11 +111,6 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       )
     }
 
-    // Ensure key exists. Because the library doesn't have a specific key not found
-    // we get the key separately so we can throw a proper error message
-    // @see https://github.com/animo/expo-secure-environment/issues/21
-    await this.getKeyAsserted(options.keyId)
-
     try {
       // TODO: can we store something like 'use' for the key in secure environment?
       // Kms.assertKeyAllowsSign(publicJwk)
@@ -85,14 +122,15 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
         signature,
       }
     } catch (error) {
-      if (error instanceof Kms.KeyManagementError) throw error
+      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
+        throw new Kms.KeyManagementKeyNotFoundError(options.keyId, this.backend)
+      }
+
       throw new Kms.KeyManagementError('Error signing with key', { cause: error })
     }
   }
 
   public async verify(): Promise<Kms.KmsVerifyReturn> {
-    // TODO: can we support this?
-    // @see https://github.com/animo/expo-secure-environment/issues/25
     throw new Kms.KeyManagementError(`verification of signatures is not supported for backend '${this.backend}'`)
   }
 
@@ -114,11 +152,14 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     try {
       const publicKeyBytes = await this.secureEnvironment.getPublicBytesForKeyId(keyId)
       return this.publicJwkFromPublicKeyBytes(publicKeyBytes, keyId)
-    } catch (_error) {
-      // The library doesn't have a specific key not found error so we just assume
-      // if an error is thrown this is because the key couldn't be found.
-      // @see https://github.com/animo/expo-secure-environment/issues/21
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+    } catch (error) {
+      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
+        throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      }
+
+      throw new Kms.KeyManagementError(`Error retrieving key with id '${keyId}' from backend ${this.backend}`, {
+        cause: error,
+      })
     }
   }
 }
