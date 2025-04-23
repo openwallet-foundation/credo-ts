@@ -259,6 +259,7 @@ export function getAgentContext({
   contextCorrelationId = 'mock',
   registerInstances = [],
   kmsBackends = [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
+  isRootAgentContext = true,
 }: {
   dependencyManager?: DependencyManager
   agentConfig?: AgentConfig
@@ -267,6 +268,7 @@ export function getAgentContext({
   // Must be an array of arrays as objects can't have injection tokens
   // as keys (it must be number, string or symbol)
   registerInstances?: Array<[InjectionToken, unknown]>
+  isRootAgentContext?: boolean
 } = {}) {
   if (agentConfig) dependencyManager.registerInstance(AgentConfig, agentConfig)
 
@@ -275,7 +277,7 @@ export function getAgentContext({
     dependencyManager.registerInstance(token, instance)
   }
 
-  const agentContext = new AgentContext({ dependencyManager, contextCorrelationId, isRootAgentContext: true })
+  const agentContext = new AgentContext({ dependencyManager, contextCorrelationId, isRootAgentContext })
   agentContext.dependencyManager.registerInstance(
     Kms.KeyManagementModuleConfig,
     new Kms.KeyManagementModuleConfig({

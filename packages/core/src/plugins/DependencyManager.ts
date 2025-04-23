@@ -161,7 +161,10 @@ export class DependencyManager {
         }
       }
     } finally {
-      await this.container.dispose()
+      // NOTE: we support reinitialization of the root agent so we can't dispose of the agent context
+      if (!agentContext.isRootAgentContext) {
+        await this.container.dispose()
+      }
     }
   }
 

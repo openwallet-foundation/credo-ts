@@ -71,7 +71,7 @@ export function getAskarSqliteAgentOptions(
   name: string,
   didcommConfig: Partial<DidCommModuleConfig> = {},
   extraConfig: Partial<InitConfig> = {},
-  _inMemory?: boolean
+  inMemory?: boolean
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
@@ -90,7 +90,7 @@ export function getAskarSqliteAgentOptions(
         store: {
           id: `SQLiteWallet${name} - ${random}`,
           key: `Key${name}`,
-          database: { type: 'sqlite', config: { inMemory: true } },
+          database: { type: 'sqlite', config: { inMemory } },
         },
       }),
       connections: new ConnectionsModule({

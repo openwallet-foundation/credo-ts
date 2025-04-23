@@ -34,6 +34,12 @@ describe('AskarStorageService', () => {
       })
     )
     storageService = new AskarStorageService<TestRecord>(storeManager)
+
+    await storeManager.provisionStore(agentContext)
+  })
+
+  afterEach(async () => {
+    await storeManager.deleteStore(agentContext)
   })
 
   const insertRecord = async ({
@@ -141,7 +147,7 @@ describe('AskarStorageService', () => {
     it('should throw RecordDuplicateError if a record with the id already exists', async () => {
       const record = await insertRecord({ id: 'test-id' })
 
-      return expect(() => storageService.save(agentContext, record)).rejects.toThrowError(RecordDuplicateError)
+      return expect(() => storageService.save(agentContext, record)).rejects.toThrow(RecordDuplicateError)
     })
 
     it('should save the record', async () => {
@@ -159,7 +165,7 @@ describe('AskarStorageService', () => {
 
   describe('getById()', () => {
     it('should throw RecordNotFoundError if the record does not exist', async () => {
-      return expect(() => storageService.getById(agentContext, TestRecord, 'does-not-exist')).rejects.toThrowError(
+      return expect(() => storageService.getById(agentContext, TestRecord, 'does-not-exist')).rejects.toThrow(
         RecordNotFoundError
       )
     })
@@ -180,7 +186,7 @@ describe('AskarStorageService', () => {
         tags: { some: 'tag' },
       })
 
-      return expect(() => storageService.update(agentContext, record)).rejects.toThrowError(RecordNotFoundError)
+      return expect(() => storageService.update(agentContext, record)).rejects.toThrow(RecordNotFoundError)
     })
 
     it('should update the record', async () => {
@@ -208,14 +214,14 @@ describe('AskarStorageService', () => {
         tags: { some: 'tag' },
       })
 
-      return expect(() => storageService.delete(agentContext, record)).rejects.toThrowError(RecordNotFoundError)
+      await expect(() => storageService.delete(agentContext, record)).rejects.toThrow(RecordNotFoundError)
     })
 
     it('should delete the record', async () => {
       const record = await insertRecord({ id: 'test-id' })
       await storageService.delete(agentContext, record)
 
-      return expect(() => storageService.getById(agentContext, TestRecord, record.id)).rejects.toThrowError(
+      await expect(() => storageService.getById(agentContext, TestRecord, record.id)).rejects.toThrow(
         RecordNotFoundError
       )
     })
@@ -230,7 +236,6 @@ describe('AskarStorageService', () => {
       )
 
       const records = await storageService.getAll(agentContext, TestRecord)
-
       expect(records).toEqual(expect.arrayContaining(createdRecords))
     })
   })

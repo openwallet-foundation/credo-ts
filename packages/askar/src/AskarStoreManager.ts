@@ -31,8 +31,7 @@ export class AskarStoreManager {
   ) {}
 
   public isStoreOpen(agentContext: AgentContext) {
-    // TODO: check for handle?
-    return this.getStore(agentContext)?.handle !== null
+    return !!this.getStore(agentContext)?.handle
   }
 
   private async getStoreConfig(agentContext: AgentContext): Promise<AskarModuleConfigStoreOptions> {
@@ -112,7 +111,7 @@ export class AskarStoreManager {
    * @throws {AskarStoreDuplicateError} if the wallet already exists
    * @throws {AskarStoreError} if another error occurs
    */
-  public async provisionStore(agentContext: AgentContext): Promise<void> {
+  public async provisionStore(agentContext: AgentContext): Promise<Store> {
     this.ensureStoreLevel(agentContext)
 
     const storeConfig = await this.getStoreConfig(agentContext)
@@ -148,7 +147,11 @@ export class AskarStoreManager {
 
       // For new stores we need to set the framework storage version
       await this.withSession(agentContext, (session) => this.setCurrentFrameworkStorageVersionOnSession(session))
+
+      return store
     } catch (error) {
+      if (error instanceof AskarStoreDuplicateError) throw error
+
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
       if (
@@ -171,15 +174,13 @@ export class AskarStoreManager {
 
       throw new AskarStoreError(errorMessage, { cause: error })
     }
-
-    agentContext.config.logger.debug(`Successfully created store '${storeConfig.id}'`)
   }
 
   /**
    * @throws {AskarStoreNotFoundError} if the wallet does not exist
    * @throws {AskarStoreError} if another error occurs
    */
-  public async openStore(agentContext: AgentContext): Promise<void> {
+  public async openStore(agentContext: AgentContext): Promise<Store> {
     this.ensureStoreLevel(agentContext)
 
     let store = this.getStore(agentContext)
@@ -197,6 +198,7 @@ export class AskarStoreManager {
         passKey: askarStoreConfig.passKey,
       })
       agentContext.dependencyManager.registerInstance(Store, store)
+      return store
     } catch (error) {
       if (
         isAskarError(error) &&
@@ -220,8 +222,6 @@ export class AskarStoreManager {
       }
       throw new AskarStoreError(`Error opening store ${storeConfig.id}: ${error.message}`, { cause: error })
     }
-
-    agentContext.config.logger.debug(`Store '${storeConfig.id}' opened with handle '${store.handle.handle}'`)
   }
 
   /**
@@ -396,7 +396,7 @@ export class AskarStoreManager {
     try {
       await Store.remove(askarStoreConfig.uri)
       // Clear the store instance
-      agentContext.dependencyManager.registerInstance(Store, null)
+      agentContext.dependencyManager.registerInstance(Store, undefined)
     } catch (error) {
       const errorMessage = `Error deleting store '${storeConfig.id}': ${error.message}`
       agentContext.config.logger.error(errorMessage, {
@@ -424,7 +424,7 @@ export class AskarStoreManager {
     try {
       await store.close()
       // Unregister the store from the context
-      agentContext.dependencyManager.registerInstance(Store, null)
+      agentContext.dependencyManager.registerInstance(Store, undefined)
     } catch (error) {
       const errorMessage = `Error closing store '${storeConfig.id}': ${error.message}`
       agentContext.config.logger.error(errorMessage, {
@@ -477,12 +477,19 @@ export class AskarStoreManager {
     return this._withSession(agentContext, callback, false)
   }
 
-  private getStore(agentContext: AgentContext) {
-    if (agentContext.dependencyManager.isRegistered(Store, false)) {
-      return agentContext.dependencyManager.resolve(Store)
-    }
+  private getStore(agentContext: AgentContext, { recursive = false }: { recursive?: boolean } = {}) {
+    const isRegistered = agentContext.dependencyManager.isRegistered(Store, recursive)
+    if (!isRegistered) return null
 
-    return null
+    // We set the store value to undefined in the dependency manager
+    // when closing it, but TSyringe still marks is as registered, but
+    // will throw an error when resolved. Since there is no unregister method
+    // we wrap it with a try-catch
+    try {
+      return agentContext.dependencyManager.resolve(Store)
+    } catch {
+      return null
+    }
   }
 
   private async _withSession<Return>(
@@ -538,26 +545,24 @@ export class AskarStoreManager {
   }
 
   public async getInitializedStoreWithProfile(agentContext: AgentContext) {
-    if (
-      !agentContext.dependencyManager.isRegistered(
-        Store,
-        // In case we use a profile per wallet, we want to use the parent store, otherwise we only
-        // want to use a store that is directly registered on this context.
-        this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet
-      )
-    ) {
+    let store = this.getStore(agentContext, {
+      // In case we use a profile per wallet, we want to use the parent store, otherwise we only
+      // want to use a store that is directly registered on this context.
+      recursive: this.config.multiWalletDatabaseScheme === AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+    })
+
+    if (!store) {
       try {
-        await this.openStore(agentContext)
+        store = await this.openStore(agentContext)
       } catch (error) {
         if (error instanceof AskarStoreNotFoundError) {
-          await this.provisionStore(agentContext)
+          store = await this.provisionStore(agentContext)
         } else {
           throw error
         }
       }
     }
 
-    const store = agentContext.dependencyManager.resolve(Store)
     return {
       // If we're on store level the default profile can be used automatically
       // otherwise we need to set the profile, which we do based on the context correlation id

@@ -1,5 +1,5 @@
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { Store, askar } from '@openwallet-foundation/askar-shared'
+import { askar } from '@openwallet-foundation/askar-shared'
 
 import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
@@ -38,6 +38,7 @@ const agentContext = getAgentContext({
 const agentContextTenant = getAgentContext({
   contextCorrelationId: '1a2eb2ed-49e4-43bf-bbca-de1cfbf1d890',
   dependencyManager: agentContext.dependencyManager.createChild(),
+  isRootAgentContext: false,
 })
 const service = new AksarKeyManagementService()
 
@@ -64,10 +65,14 @@ describe('AskarKeyManagementService', () => {
         name: 'key-1',
         tags: {},
       })
+
+      await askarStoreManager.deleteStore(agentContext)
     })
 
     it("automatically creates a profile if it doesn't exist yet", async () => {
-      const store = agentContextTenant.dependencyManager.resolve(Store)
+      const askarStoreManager = agentContext.dependencyManager.resolve(AskarStoreManager)
+      const store = await askarStoreManager.provisionStore(agentContext)
+
       expect(await store.listProfiles()).toEqual(['default'])
 
       await service.createKey(agentContextTenant, {
@@ -75,7 +80,7 @@ describe('AskarKeyManagementService', () => {
         keyId: 'key-2',
       })
 
-      expect(await store.listProfiles()).toEqual(['default', agentContextTenant.contextCorrelationId])
+      expect(await store.listProfiles()).toEqual([agentContextTenant.contextCorrelationId, 'default'])
       const session = await store.session(agentContextTenant.contextCorrelationId).open()
       expect(await session.fetchKey({ name: 'key-2' })).toEqual({
         algorithm: 'p256',
@@ -85,6 +90,8 @@ describe('AskarKeyManagementService', () => {
         tags: {},
       })
       await session.close()
+
+      await askarStoreManager.deleteStore(agentContext)
     })
   })
 
