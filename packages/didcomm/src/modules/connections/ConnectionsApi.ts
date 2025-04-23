@@ -488,7 +488,9 @@ export class ConnectionsApi {
 
       if (didDocument) {
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: didDocument.recipientKeys,
+          recipientKeys: didDocument
+            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+            .map(({ publicJwk }) => publicJwk),
           mediatorId: connection.mediatorId,
         })
       }
@@ -516,7 +518,9 @@ export class ConnectionsApi {
 
       if (mediatorRecord) {
         await this.routingService.removeRouting(this.agentContext, {
-          recipientKeys: did.didDocument.recipientKeys,
+          recipientKeys: did.didDocument
+            .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+            .map(({ publicJwk }) => publicJwk),
           mediatorId: mediatorRecord.id,
         })
       }

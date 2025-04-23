@@ -1,4 +1,4 @@
-import type { AgentContext, DidDocumentKey, DidRecord, ResolvedDidCommService } from '@credo-ts/core'
+import type { AgentContext, DidRecord, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -21,7 +21,6 @@ import {
   PeerDidNumAlgo,
   TypedArrayEncoder,
   base64ToBase64URL,
-  didKeyToEd25519PublicJwk,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
   getPublicJwkFromVerificationMethod,
@@ -47,7 +46,11 @@ import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from '.
 import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
-import { createPeerDidFromServices, routingToServices } from './services/helpers'
+import {
+  createPeerDidFromServices,
+  getOutOfBandInlineServicesWithSigningKeyId,
+  routingToServices,
+} from './services/helpers'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -278,28 +281,8 @@ export class DidExchangeProtocol {
       throw new CredoError('Missing theirDid on connection record.')
     }
 
-    const metadata = outOfBandRecord.metadata.get<{ keys: DidDocumentKey[] }>(
-      '_internal/outOfBandInvitationServicesKmsKeys'
-    )
-
     // Extract keys from the out of band record metadata
-    const inlineResolvedServices = outOfBandRecord.outOfBandInvitation.getInlineServices().map((service) => ({
-      id: service.id,
-      serviceEndpoint: service.serviceEndpoint,
-      recipientKeys: service.recipientKeys.map((didKey) => {
-        const publicJwk = didKeyToEd25519PublicJwk(didKey)
-
-        // Make sure the key id is set for service keys
-        const kmsKeyId = metadata?.keys.find(
-          ({ didDocumentRelativeKeyId }) => service.id === didDocumentRelativeKeyId
-        )?.kmsKeyId
-        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
-
-        return publicJwk
-      }),
-      routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) ?? [],
-    }))
-
+    const inlineResolvedServices = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
     let services: ResolvedDidCommService[] = []
 
     if (routing) {
@@ -322,21 +305,7 @@ export class DidExchangeProtocol {
     const { didDocument } = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
-    // didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, didDocument.)
-
-    // const signingKeys = verificationMethodIds.map((id) => {
-    //   const verificationMethod = didDocument.dereferenceKey(id, ['authentication', 'verificationMethod'])
-    //   const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    //   const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
-    //     verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-    //   )?.kmsKeyId
-    //   publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
-
-    //   return publicJwk
-    // })
-
     // DID Rotate attachment should be signed with invitation keys
-
     const invitationRecipientKeys = inlineResolvedServices.flatMap((s) => s.recipientKeys)
 
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID

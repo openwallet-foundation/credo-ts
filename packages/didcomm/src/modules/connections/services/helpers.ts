@@ -1,4 +1,4 @@
-import { AgentContext, DidDocument, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
+import { AgentContext, DidDocumentKey, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
 
@@ -17,9 +17,11 @@ import {
 } from '@credo-ts/core'
 
 import { DidCommDocumentService } from '../../../services'
+import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
+import { OutOfBandRecord } from '../../oob/repository/OutOfBandRecord'
 import { EmbeddedAuthentication } from '../models'
 
-export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
+export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
   const didDocumentBuilder = new DidDocumentBuilder('')
 
   const oldIdNewIdMapping: { [key: string]: string } = {}
@@ -94,7 +96,13 @@ export function convertToNewDidDocument(didDoc: DidDoc): DidDocument {
   const peerDid = didDocumentJsonToNumAlgo1Did(didDocument.toJSON())
   didDocument.id = peerDid
 
-  return didDocument
+  return {
+    didDocument,
+    keys: keys?.map((key) => ({
+      ...key,
+      didDocumentRelativeKeyId: oldIdNewIdMapping[key.didDocumentRelativeKeyId],
+    })),
+  }
 }
 
 function normalizeId(fullId: string): `#${string}` {
@@ -207,4 +215,27 @@ export async function createPeerDidFromServices(
 
   // FIXME: didApi.create should return the did document
   return didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, result.didState.did)
+}
+
+export function getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord: OutOfBandRecord) {
+  // Can only attach signer keys if we create the invitation
+  outOfBandRecord.assertRole(OutOfBandRole.Sender)
+
+  // Extract keys from the out of band record metadata
+  const inlineResolvedServices = outOfBandRecord.outOfBandInvitation.getInlineServices().map((service) => {
+    const resolvedService = service.resolvedDidCommService
+
+    // Make sure the key id is set for service keys
+    for (const recipientKey of resolvedService.recipientKeys) {
+      const kmsKeyId = outOfBandRecord.invitationInlineServiceKeys?.find(
+        ({ didDocumentRelativeKeyId }) => service.id === didDocumentRelativeKeyId
+      )?.kmsKeyId
+
+      recipientKey.keyId = kmsKeyId ?? recipientKey.legacyKeyId
+    }
+
+    return resolvedService
+  })
+
+  return inlineResolvedServices
 }

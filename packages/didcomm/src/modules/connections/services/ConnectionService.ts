@@ -1,8 +1,7 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { AckMessage } from '../../../messages'
 import type { InboundMessageContext } from '../../../models'
-import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
@@ -12,7 +11,6 @@ import type { ConnectionRecordProps } from '../repository'
 import {
   CredoError,
   DidDocumentRole,
-  DidKey,
   DidRecord,
   DidRecordMetadataKeys,
   DidRepository,
@@ -21,9 +19,10 @@ import {
   InjectionSymbols,
   JsonTransformer,
   Key,
+  Kms,
   Logger,
+  TypedArrayEncoder,
   didDocumentJsonToNumAlgo1Did,
-  didKeyToVerkey,
   filterContextCorrelationId,
   inject,
   injectable,
@@ -56,7 +55,11 @@ import {
 } from '../models'
 import { ConnectionRecord, ConnectionRepository } from '../repository'
 
-import { assertNoCreatedDidExistsForKeys, convertToNewDidDocument } from './helpers'
+import {
+  assertNoCreatedDidExistsForKeys,
+  convertToNewDidDocument,
+  getOutOfBandInlineServicesWithSigningKeyId,
+} from './helpers'
 
 export interface ConnectionRequestParams {
   label?: string
@@ -106,7 +109,7 @@ export class ConnectionService {
     const { outOfBandInvitation } = outOfBandRecord
 
     const { mediatorId } = config.routing
-    const didDoc = this.createDidDoc(config.routing)
+    const { didDoc, keys } = this.createDidDoc(config.routing)
 
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
@@ -115,6 +118,7 @@ export class ConnectionService {
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
+      keys,
     })
 
     const { label, imageUrl } = config
@@ -217,10 +221,15 @@ export class ConnectionService {
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
     let didDoc: DidDoc
+    let keys: DidDocumentKey[]
     if (routing) {
-      didDoc = this.createDidDoc(routing)
+      const result = this.createDidDoc(routing)
+      didDoc = result.didDoc
+      keys = result.keys
     } else if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
-      didDoc = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
+      const result = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord)
+      didDoc = result.didDoc
+      keys = result.keys
     } else {
       // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method
       throw new CredoError(
@@ -231,6 +240,7 @@ export class ConnectionService {
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
+      keys,
     })
 
     const connection = new Connection({
@@ -244,11 +254,18 @@ export class ConnectionService {
       throw new CredoError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
-    const signingKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
+    let signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
+      // We don't support DIDs for connection protocol i think?
+      const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
+      signingKey = services[0].recipientKeys[0]
+    } else {
+      throw new CredoError('Not supported. Signing connection 1.0 response with a did')
+    }
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
-      connectionSig: await signData(connectionJson, agentContext.wallet, signingKey),
+      connectionSig: await signData(agentContext, connectionJson, signingKey),
     })
 
     connectionRecord.did = peerDid
@@ -295,10 +312,7 @@ export class ConnectionService {
 
     let connectionJson = null
     try {
-      connectionJson = await unpackAndVerifySignatureDecorator(
-        message.connectionSig,
-        messageContext.agentContext.wallet
-      )
+      connectionJson = await unpackAndVerifySignatureDecorator(messageContext.agentContext, message.connectionSig)
     } catch (error) {
       if (error instanceof CredoError) {
         throw new ConnectionProblemReportError(error.message, {
@@ -497,8 +511,8 @@ export class ConnectionService {
         type: message.type,
       })
 
-      const recipientKey = messageContext.recipientKey?.publicKeyBase58
-      const senderKey = messageContext.senderKey?.publicKeyBase58
+      const recipientKey = messageContext.recipientKey
+      const senderKey = messageContext.senderKey
 
       // set theirService to the value of lastReceivedMessage.service
       let theirService =
@@ -552,7 +566,7 @@ export class ConnectionService {
 
       // Check if recipientKey is in ourService
       if (recipientKey && ourService) {
-        const recipientKeyFound = ourService.recipientKeys.some((key) => key.publicKeyBase58 === recipientKey)
+        const recipientKeyFound = ourService.recipientKeys.some((key) => recipientKey.equals(key))
         if (!recipientKeyFound) {
           throw new CredoError(`Recipient key ${recipientKey} not found in our service`)
         }
@@ -560,7 +574,7 @@ export class ConnectionService {
 
       // Check if senderKey is in theirService
       if (senderKey && theirService) {
-        const senderKeyFound = theirService.recipientKeys.some((key) => key.publicKeyBase58 === senderKey)
+        const senderKeyFound = theirService.recipientKeys.some((key) => senderKey.equals(key))
         if (!senderKeyFound) {
           throw new CredoError(`Sender key ${senderKey} not found in their service.`)
         }
@@ -756,7 +770,10 @@ export class ConnectionService {
 
   public async findByKeys(
     agentContext: AgentContext,
-    { senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }
+    {
+      senderKey,
+      recipientKey,
+    }: { senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
   ) {
     const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (theirDidRecord) {
@@ -806,9 +823,16 @@ export class ConnectionService {
     return connectionRecord.connectionTypes || []
   }
 
-  private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
+  private async createDid(
+    agentContext: AgentContext,
+    { role, didDoc, keys }: { role: DidDocumentRole; didDoc: DidDoc; keys?: DidDocumentKey[] }
+  ) {
+    if (keys && role !== DidDocumentRole.Created) {
+      throw new CredoError(`keys can only be provided for did documents when the role is '${DidDocumentRole.Created}'`)
+    }
+
     // Convert the legacy did doc to a new did document
-    const didDocument = convertToNewDidDocument(didDoc)
+    const { didDocument, keys: updatedKeys } = convertToNewDidDocument(didDoc, keys)
 
     // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
     if (role === DidDocumentRole.Created) {
@@ -821,6 +845,7 @@ export class ConnectionService {
       did: peerDid,
       role,
       didDocument,
+      keys: updatedKeys,
     })
 
     // Store the unqualified did with the legacy did document in the metadata
@@ -844,12 +869,20 @@ export class ConnectionService {
   }
 
   private createDidDoc(routing: Routing) {
-    const indyDid = utils.indyDidFromPublicKeyBase58(routing.recipientKey.publicKeyBase58)
+    const recipientKeyBase58 = TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)
+    const indyDid = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
+
+    const keys: DidDocumentKey[] = [
+      {
+        didDocumentRelativeKeyId: '#1',
+        kmsKeyId: routing.recipientKey.keyId,
+      },
+    ]
 
     const publicKey = new Ed25119Sig2018({
       id: `${indyDid}#1`,
       controller: indyDid,
-      publicKeyBase58: routing.recipientKey.publicKeyBase58,
+      publicKeyBase58: recipientKeyBase58,
     })
 
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
@@ -860,31 +893,35 @@ export class ConnectionService {
         new IndyAgentService({
           id: `${indyDid}#IndyAgentService-${index + 1}`,
           serviceEndpoint: endpoint,
-          recipientKeys: [routing.recipientKey.publicKeyBase58],
-          routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+          recipientKeys: [recipientKeyBase58],
+          routingKeys: routing.routingKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey)),
           // Order of endpoint determines priority
           priority: index,
         })
     )
 
-    return new DidDoc({
-      id: indyDid,
-      authentication: [auth],
-      service: services,
-      publicKey: [publicKey],
-    })
+    return {
+      didDoc: new DidDoc({
+        id: indyDid,
+        authentication: [auth],
+        service: services,
+        publicKey: [publicKey],
+      }),
+      keys,
+    }
   }
 
-  private createDidDocFromOutOfBandDidCommServices(services: OutOfBandDidCommService[]) {
-    const [recipientDidKey] = services[0].recipientKeys
+  private createDidDocFromOutOfBandDidCommServices(outOfBandRecord: OutOfBandRecord) {
+    const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
+    const [recipientKey] = services[0].recipientKeys
 
-    const recipientKey = DidKey.fromDid(recipientDidKey).key
-    const did = utils.indyDidFromPublicKeyBase58(recipientKey.publicKeyBase58)
+    const recipientKeyBase58 = TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)
+    const did = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,
-      publicKeyBase58: recipientKey.publicKeyBase58,
+      publicKeyBase58: recipientKeyBase58,
     })
 
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
@@ -895,18 +932,23 @@ export class ConnectionService {
         new IndyAgentService({
           id: `${did}#IndyAgentService-${index + 1}`,
           serviceEndpoint: service.serviceEndpoint,
-          recipientKeys: [recipientKey.publicKeyBase58],
-          routingKeys: service.routingKeys?.map(didKeyToVerkey),
+          recipientKeys: [recipientKeyBase58],
+          routingKeys: service.routingKeys?.map((publicJwk) =>
+            TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+          ),
           priority: index,
         })
     )
 
-    return new DidDoc({
-      id: did,
-      authentication: [auth],
-      service,
-      publicKey: [publicKey],
-    })
+    return {
+      didDoc: new DidDoc({
+        id: did,
+        authentication: [auth],
+        service,
+        publicKey: [publicKey],
+      }),
+      keys: [{ didDocumentRelativeKeyId: '#1', kmsKeyId: recipientKey.keyId }] satisfies DidDocumentKey[],
+    }
   }
 
   public async returnWhenIsConnected(

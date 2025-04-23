@@ -201,7 +201,7 @@ export class OutOfBandApi {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
     }
 
-    const keys: DidDocumentKey[] = []
+    const invitationInlineServiceKeys: DidDocumentKey[] = []
     if (config.invitationDid) {
       services = [config.invitationDid]
     } else {
@@ -210,7 +210,7 @@ export class OutOfBandApi {
 
       services = routing.endpoints.map((endpoint, index) => {
         // Store the key id for the recipient key
-        keys.push({
+        invitationInlineServiceKeys.push({
           kmsKeyId: routing.recipientKey.keyId,
           didDocumentRelativeKeyId: `#inline-${index}`,
         })
@@ -253,13 +253,10 @@ export class OutOfBandApi {
       outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,
+      invitationInlineServiceKeys,
       tags: {
         recipientKeyFingerprints,
       },
-    })
-
-    outOfBandRecord.metadata.set('_internal/outOfBandInvitationServicesKmsKeys', {
-      keys,
     })
 
     await this.outOfBandService.save(this.agentContext, outOfBandRecord)

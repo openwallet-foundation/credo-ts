@@ -1,7 +1,6 @@
 import {
   AgentContext,
   CredoError,
-  DidDocumentKey,
   DidsApi,
   JsonEncoder,
   Kms,
@@ -14,7 +13,8 @@ import type { EncryptedMessage, PlaintextMessage } from './types'
 import { InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { OutOfBandDidCommService, OutOfBandRepository, OutOfBandRole } from './modules'
+import { OutOfBandRepository, OutOfBandRole } from './modules'
+import { getOutOfBandInlineServicesWithSigningKeyId } from './modules/connections/services/helpers'
 import { ForwardMessage } from './modules/routing/messages'
 import { DidCommDocumentService } from './services'
 
@@ -189,32 +189,21 @@ export class EnvelopeService {
           const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
             recipientKeyFingerprints: [publicKey.fingerprint],
             role: OutOfBandRole.Sender,
-            // Include state?
-            // state: ''
           })
 
           if (!outOfBandRecord) continue
 
-          const service = outOfBandRecord.outOfBandInvitation.getServices().find((s): s is OutOfBandDidCommService => {
-            if (typeof s === 'string') return false
-            const recipientKey = s.resolvedDidCommService.recipientKeys[0]
-            return recipientKey.equals(publicKey)
-          })
+          const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
 
-          if (!service) continue
+          for (const service of services) {
+            const _recipientKey = service.recipientKeys.find((recipientKey) => recipientKey.equals(publicKey))
 
-          const metadata = outOfBandRecord.metadata.get<{ keys: DidDocumentKey[] }>(
-            '_internal/outOfBandInvitationServicesKmsKeys'
-          )
-
-          const kmsKeyId = metadata?.keys.find(({ didDocumentRelativeKeyId }) =>
-            service.id.endsWith(didDocumentRelativeKeyId)
-          )?.kmsKeyId
-
-          publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
-          recipientKey = publicKey
-          recipient = _recipient
-          break
+            if (_recipientKey) {
+              recipientKey = _recipientKey
+              recipient = _recipient
+              break
+            }
+          }
         }
       }
     }

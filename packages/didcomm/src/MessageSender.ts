@@ -11,8 +11,6 @@ import {
   AgentContext,
   CredoError,
   DidKey,
-  DidRepository,
-  DidResolverService,
   EventEmitter,
   InjectionSymbols,
   Kms,
@@ -57,8 +55,6 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessagePickupRepository) messagePickupRepository: MessagePickupRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService,
-    didRepository: DidRepository,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
@@ -66,8 +62,6 @@ export class MessageSender {
     this.transportService = transportService
     this.messagePickupRepository = messagePickupRepository
     this.logger = logger
-    this.didResolverService = didResolverService
-    this.didRepository = didRepository
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
     this._outboundTransports = []

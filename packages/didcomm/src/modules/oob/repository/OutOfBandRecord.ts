@@ -1,4 +1,4 @@
-import type { TagsBase } from '@credo-ts/core'
+import type { DidDocumentKey, TagsBase } from '@credo-ts/core'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
@@ -39,6 +39,11 @@ export interface OutOfBandRecordProps {
   mediatorId?: string
   reuseConnectionId?: string
   threadId?: string
+
+  /**
+   * The keys associated with the inline services of the out of band invitation
+   */
+  invitationInlineServiceKeys?: DidDocumentKey[]
 }
 
 export class OutOfBandRecord extends BaseRecord<
@@ -55,6 +60,11 @@ export class OutOfBandRecord extends BaseRecord<
   public autoAcceptConnection?: boolean
   public mediatorId?: string
   public reuseConnectionId?: string
+
+  /**
+   * The keys associated with the inline services of the out of band invitation
+   */
+  invitationInlineServiceKeys?: DidDocumentKey[]
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -73,6 +83,7 @@ export class OutOfBandRecord extends BaseRecord<
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
+      this.invitationInlineServiceKeys = props.invitationInlineServiceKeys
       this._tags = props.tags ?? { recipientKeyFingerprints: [] }
     }
   }

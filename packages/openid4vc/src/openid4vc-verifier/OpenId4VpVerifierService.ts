@@ -417,7 +417,7 @@ export class OpenId4VpVerifierService {
       if (result.type === 'dcql') {
         const dcqlPresentationEntries = Object.entries(result.dcql.presentations)
         if (!authorizationRequest.dcql_query) {
-          throw new CredoError('')
+          throw new CredoError('Missing required dcql query')
         }
 
         const dcql = agentContext.dependencyManager.resolve(DcqlService)

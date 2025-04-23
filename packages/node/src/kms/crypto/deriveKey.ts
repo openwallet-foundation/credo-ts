@@ -182,7 +182,7 @@ async function deriveKeyEcdhEs(options: {
 
   const publicKey = Kms.PublicJwk.fromPublicJwk(options.publicJwk).publicKey
   if (publicKey.kty === 'RSA') {
-    throw new Kms.KeyManagementError('')
+    throw new Kms.KeyManagementError('Key type RSA is not supported for ECDH-ES')
   }
 
   // Compute shared secret

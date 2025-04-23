@@ -436,7 +436,7 @@ describe('ConnectionService', () => {
       const plainConnection = JsonTransformer.toJSON(connection)
 
       expect(connectionRecord.state).toBe(DidExchangeState.ResponseSent)
-      expect(await unpackAndVerifySignatureDecorator(message.connectionSig, wallet)).toEqual(plainConnection)
+      expect(await unpackAndVerifySignatureDecorator(agentContext, message.connectionSig)).toEqual(plainConnection)
     })
 
     it(`throws an error when connection role is ${DidExchangeRole.Requester} and not ${DidExchangeRole.Responder}`, async () => {
@@ -536,8 +536,10 @@ describe('ConnectionService', () => {
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
+      const peerDid = didDocumentJsonToNumAlgo1Did(
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        convertToNewDidDocument(otherPartyConnection.didDoc!).didDocument.toJSON()
+      )
 
       expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
       expect(processedConnection.theirDid).toBe(peerDid)
