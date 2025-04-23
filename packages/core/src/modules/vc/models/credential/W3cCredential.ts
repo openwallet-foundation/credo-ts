@@ -26,6 +26,7 @@ export interface W3cCredentialOptions {
   expirationDate?: string
   credentialSubject: SingleOrArray<W3cCredentialSubjectOptions>
   credentialStatus?: W3cCredentialStatus
+  credentialSchema?: SingleOrArray<W3cCredentialSchema>
 }
 
 export class W3cCredential {
@@ -49,6 +50,12 @@ export class W3cCredential {
           options.credentialStatus instanceof W3cCredentialStatus
             ? options.credentialStatus
             : new W3cCredentialStatus(options.credentialStatus)
+      }
+
+      if (options.credentialSchema) {
+        this.credentialSchema = mapSingleOrArray(options.credentialSchema, (schema) =>
+          schema instanceof W3cCredentialSchema ? schema : new W3cCredentialSchema(schema)
+        )
       }
     }
   }
