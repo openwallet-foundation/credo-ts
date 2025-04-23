@@ -11,6 +11,7 @@ import {
   DidUpdateResult,
   Kms,
   XOR,
+  getKmsKeyIdForVerifiacationMethod,
   getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 
@@ -66,15 +67,15 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
         didDocument = options.didDocument
         const authenticationIds = didDocument.authentication?.map((v) => (typeof v === 'string' ? v : v.id)) ?? []
-        const didDocumentKeyIds = options.options.keys.map((key) => key.didDocumentRelativeKeyId)
+        const didDocumentRelativeKeyIds = options.options.keys.map((key) => key.didDocumentRelativeKeyId)
         keys = options.options.keys
 
         // Ensure all keys are present in the did document
-        for (const didDocumentKeyId of didDocumentKeyIds) {
+        for (const didDocumentKeyId of didDocumentRelativeKeyIds) {
           didDocument.dereferenceKey(didDocumentKeyId)
         }
 
-        if (!authenticationIds.every((id) => didDocumentKeyIds.includes(id))) {
+        if (!authenticationIds.every((id) => didDocumentRelativeKeyIds.includes(id.replace(didDocument.id, '')))) {
           return {
             didDocumentMetadata: {},
             didRegistrationMetadata: {},
@@ -274,8 +275,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
 
         const keys = didRecord.keys ?? []
-
-        if (options.options.createKey || options.options.keyId) {
+        if (options.options?.createKey || options.options?.keyId) {
           const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
           let createdKey: DidDocumentKey
 
@@ -419,7 +419,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didRecord.keys
       )
 
-      const response = await cheqdLedgerService.update(didDocument as DIDDocument, signInputs, versionId)
+      const response = await cheqdLedgerService.update(didDocument.toJSON() as DIDDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -604,12 +604,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     return await Promise.all(
       verificationMethod.map(async (method) => {
         const publicJwk = getPublicJwkFromVerificationMethod(method)
-        let kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
-          method.id.startsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
-        if (!kmsKeyId) {
-          kmsKeyId = Kms.legacyKeyIdFromPublicJwk(publicJwk)
-        }
+        const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
 
         const { signature } = await kms.sign({
           data: payload,
@@ -664,7 +659,13 @@ export interface CheqdDidUpdateOptions extends DidUpdateOptions {
   didDocument: DidDocument
   secret?: never
 
-  options: {
+  options?: {
+    /**
+     * The linking between the did document keys and the kms keys. The existing keys will be filtered based on the keys not present
+     * in the did document anymore, and this new list will be merged into it.
+     */
+    keys?: DidDocumentKey[]
+
     fee?: DidStdFee
     versionId?: string
   } & XOR<{ createKey?: KmsCreateKeyOptionsOkpEd25519 }, { keyId?: string }>

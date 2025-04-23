@@ -344,7 +344,8 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         registries,
         cheqd,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
@@ -360,7 +361,8 @@ export async function setupAnonCredsTests<
         autoAcceptProofs,
         registries,
         cheqd,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 

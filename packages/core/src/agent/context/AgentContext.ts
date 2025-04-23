@@ -1,4 +1,4 @@
-import type { DependencyManager } from '../../plugins'
+import type { DependencyManager, InjectionToken } from '../../plugins'
 import type { AgentContextProvider } from './AgentContextProvider'
 
 import { InjectionSymbols } from '../../constants'
@@ -63,5 +63,12 @@ export class AgentContext {
     return {
       contextCorrelationId: this.contextCorrelationId,
     }
+  }
+
+  /**
+   * Resolve a dependency
+   */
+  public resolve<T>(token: InjectionToken<T>): T {
+    return this.dependencyManager.resolve(token)
   }
 }

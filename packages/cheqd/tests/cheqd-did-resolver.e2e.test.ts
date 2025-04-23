@@ -25,13 +25,8 @@ describe('Cheqd DID resolver', () => {
 
     const didResult = await resolverAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-1',
-          type: 'Ed25519VerificationKey2020',
-        },
-      },
       options: {
+        createKey: { type: { kty: 'OKP', crv: 'Ed25519' } },
         network: 'testnet',
         methodSpecificIdAlgo: 'uuid',
       },
@@ -74,7 +69,6 @@ describe('Cheqd DID resolver', () => {
 
   afterAll(async () => {
     await resolverAgent.shutdown()
-    await resolverAgent.wallet.delete()
   })
 
   it('should resolve a did:cheqd did from local testnet', async () => {
@@ -83,15 +77,19 @@ describe('Cheqd DID resolver', () => {
     })
     expect(JsonTransformer.toJSON(resolveResult)).toMatchObject({
       didDocument: {
-        '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2020/v1'],
+        '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
         id: did,
         controller: [did],
         verificationMethod: [
           {
             controller: did,
             id: `${did}#key-1`,
-            publicKeyMultibase: expect.any(String),
-            type: 'Ed25519VerificationKey2020',
+            publicKeyJwk: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+              x: expect.any(String),
+            },
+            type: 'JsonWebKey2020',
           },
         ],
         authentication: [`${did}#key-1`],

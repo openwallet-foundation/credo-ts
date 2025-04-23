@@ -43,6 +43,25 @@ export class KeyManagementApi {
   ) {}
 
   /**
+   * Whether whether an operation is supported.
+   *
+   * @returns a list of backends that support the operation. In case
+   * no backends are supported it returns an empty array
+   */
+  public supportedBackendsForOperation(operation: KmsOperation): string[] {
+    const supportedBackends: string[] = []
+
+    for (const kms of this.keyManagementConfig.backends) {
+      const isOperationSupported = kms.isOperationSupported(this.agentContext, operation)
+      if (isOperationSupported) {
+        supportedBackends.push(kms.backend)
+      }
+    }
+
+    return supportedBackends
+  }
+
+  /**
    * Create a key.
    */
   public async createKey<Type extends KmsCreateKeyType>(
@@ -288,7 +307,7 @@ export class KeyManagementApi {
 
     if (operation) {
       throw new KeyManagementError(
-        `No key management service supports ${getKmsOperationHumanDescription(operation)} and has a key with keyId '${keyId}'`
+        `No key management service supports ${getKmsOperationHumanDescription(operation)} that has a key with keyId '${keyId}'`
       )
     }
 
