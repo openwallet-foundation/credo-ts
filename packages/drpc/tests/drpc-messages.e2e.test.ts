@@ -18,7 +18,8 @@ const faberConfig = getInMemoryAgentOptions(
     endpoints: ['rxjs:faber'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const aliceConfig = getInMemoryAgentOptions(
@@ -27,7 +28,8 @@ const aliceConfig = getInMemoryAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const handleMessageOrError = async (
@@ -113,9 +115,7 @@ describe('Drpc Messages E2E', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice and Faber exchange messages', async () => {
