@@ -18,7 +18,8 @@ const faberAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:faber'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getInMemoryAgentOptions(
@@ -27,7 +28,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Action Menu', () => {
