@@ -100,7 +100,7 @@ describe('sd-jwt-vc end to end test', () => {
       header: {
         alg: 'EdDSA',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
-        typ: 'vc+sd-jwt',
+        typ: 'dc+sd-jwt',
       },
       payload: {
         _sd: [

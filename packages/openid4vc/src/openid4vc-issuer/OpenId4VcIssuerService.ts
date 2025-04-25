@@ -1240,7 +1240,15 @@ export class OpenId4VcIssuerService {
       return {
         format: credentialConfiguration.format,
         credentials: await Promise.all(
-          signOptions.credentials.map((credential) => sdJwtVcApi.sign(credential).then((signed) => signed.compact))
+          signOptions.credentials.map((credential) =>
+            sdJwtVcApi
+              .sign({
+                ...credential,
+                // Set header type based on the oid4vci format
+                headerType: credentialConfiguration.format,
+              })
+              .then((signed) => signed.compact)
+          )
         ),
       }
     }
