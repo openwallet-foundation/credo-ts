@@ -271,7 +271,7 @@ describe('OpenID4VP Draft 21', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
@@ -623,7 +623,7 @@ describe('OpenID4VP Draft 21', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
