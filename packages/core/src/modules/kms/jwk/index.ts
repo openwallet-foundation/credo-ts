@@ -18,6 +18,9 @@ export {
   assertJwkAsymmetric,
   isJwkAsymmetric,
   type KmsJwkPrivateAsymmetric,
+  type KmsJwkPublicFromCreateType,
+  type KmsJwkPrivateFromKmsJwkPublic,
+  type KmsJwkPublicFromKmsJwkPrivate,
 } from './knownJwk'
 
 export { assertSupportedKeyAgreementAlgorithm, assertSupportedEncryptionAlgorithm } from './assertSupported'
@@ -57,5 +60,4 @@ export {
 export * from './alg'
 export { getJwkHumanDescription } from './humanDescription'
 export { assymetricJwkKeyTypeMatches, assymetricPublicJwkMatches, assertAsymmetricJwkKeyTypeMatches } from './equals'
-export { publicJwkAsymmetricToPublicKey } from './publicKey'
 export { PublicJwk } from './PublicJwk'

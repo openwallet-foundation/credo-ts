@@ -1,14 +1,7 @@
 import type { Agent } from '@credo-ts/core'
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
 
-import {
-  DidCommV1Service,
-  DidDocumentService,
-  Kms,
-  NewDidCommV2Service,
-  NewDidCommV2ServiceEndpoint,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import { DidCommV1Service, DidDocumentService, NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -35,7 +28,6 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
     },
   })
 
-  const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
   const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
     options: {
@@ -43,7 +35,7 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
       endorserDid: endorserDid,
       alias: 'Alias',
       role: 'TRUSTEE',
-      verkey: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
+      keyId: key.keyId,
       useEndpointAttrib: true,
       services: [
         new DidDocumentService({

@@ -56,6 +56,10 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
+  public get isOpen() {
+    return this._pool !== undefined
+  }
+
   public connect() {
     if (this._pool) {
       return

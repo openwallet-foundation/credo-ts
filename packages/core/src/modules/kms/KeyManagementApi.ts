@@ -6,6 +6,7 @@ import { parseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
+import { KmsJwkPrivate, getJwkHumanDescription } from './jwk'
 import { createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
 import {
   KmsDecryptOptions,
@@ -29,7 +30,7 @@ import { zKmsDecryptOptions } from './options/KmsDecryptOptions'
 import { zKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
 import { KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
-import { zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
+import { KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
 import { KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
 import { KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
@@ -78,10 +79,12 @@ export class KeyManagementApi {
       type: options.type,
     })
 
-    // FIXME: do we want this?
-    // Ensure the kid is set to the keyId
     const key = await kms.createKey(this.agentContext, kmsOptions)
     key.publicJwk.kid = key.keyId
+
+    this.agentContext.config.logger.debug(
+      `Created key ${getJwkHumanDescription(key.publicJwk)} with key id '${key.keyId}'`
+    )
 
     return key
   }
@@ -209,7 +212,9 @@ export class KeyManagementApi {
   /**
    * Import a key.
    */
-  public async importKey(options: WithBackend<KmsImportKeyOptions>) {
+  public async importKey<Jwk extends KmsJwkPrivate>(
+    options: WithBackend<KmsImportKeyOptions<Jwk>>
+  ): Promise<KmsImportKeyReturn<Jwk>> {
     const { backend, ...kmsOptions } = parseWithErrorHandling(
       zWithBackend(zKmsImportKeyOptions),
       options,
@@ -221,7 +226,14 @@ export class KeyManagementApi {
       privateJwk: options.privateJwk,
     } as const
     const kms = this.getKms(this.agentContext, backend, operation)
-    return await kms.importKey(this.agentContext, kmsOptions)
+
+    const key = await kms.importKey(this.agentContext, kmsOptions)
+
+    this.agentContext.config.logger.trace(
+      `Imported key ${getJwkHumanDescription(key.publicJwk)} with key id '${key.keyId}'`
+    )
+
+    return key
   }
 
   /**

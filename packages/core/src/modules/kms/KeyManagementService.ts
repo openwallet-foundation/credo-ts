@@ -1,5 +1,5 @@
 import type { AgentContext } from '../../agent'
-import type { KmsJwkPublic } from './jwk/knownJwk'
+import type { KmsJwkPrivate, KmsJwkPublic } from './jwk/knownJwk'
 import type { KmsDecryptOptions, KmsDecryptReturn, KmsRandomBytesOptions, KmsRandomBytesReturn } from './options'
 import type { KmsCreateKeyOptions, KmsCreateKeyReturn, KmsCreateKeyType } from './options/KmsCreateKeyOptions'
 import type { KmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
@@ -43,7 +43,10 @@ export interface KeyManagementService {
   /**
    * Import a key
    */
-  importKey(agentContext: AgentContext, options: KmsImportKeyOptions): Promise<KmsImportKeyReturn>
+  importKey<Jwk extends KmsJwkPrivate>(
+    agentContext: AgentContext,
+    options: KmsImportKeyOptions<Jwk>
+  ): Promise<KmsImportKeyReturn<Jwk>>
 
   /**
    * Delete a key.

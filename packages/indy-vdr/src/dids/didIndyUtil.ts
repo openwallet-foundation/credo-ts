@@ -1,4 +1,4 @@
-import type { AgentContext, Kms } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { IndyVdrPool } from '../pool'
 import type { GetNymResponseData, IndyEndpointAttrib } from './didSovUtil'
 
@@ -10,8 +10,7 @@ import {
   DidsApi,
   Hasher,
   JsonTransformer,
-  Key,
-  KeyType,
+  Kms,
   TypedArrayEncoder,
   convertPublicKeyToX25519,
   getPublicJwkFromVerificationMethod,
@@ -152,7 +151,11 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
   const { namespace } = parseIndyDid(did)
   const { did: didFromVerkey } = indyDidFromNamespaceAndInitialKey(
     namespace,
-    Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+    Kms.PublicJwk.fromPublicKey({
+      crv: 'Ed25519',
+      kty: 'OKP',
+      publicKey: TypedArrayEncoder.fromBase58(verkey),
+    })
   )
 
   if (didFromVerkey === did) {
@@ -162,11 +165,11 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
   return false
 }
 
-export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Key) {
-  const buffer = Hasher.hash(initialKey.publicKey, 'sha-256')
+export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>) {
+  const buffer = Hasher.hash(initialKey.publicKey.publicKey, 'sha-256')
 
   const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-  const verkey = initialKey.publicKeyBase58
+  const verkey = TypedArrayEncoder.toBase58(initialKey.publicKey.publicKey)
   const did = `did:indy:${namespace}:${id}`
 
   return { did, id, verkey }
@@ -179,32 +182,19 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
  */
 export async function verificationPublicJwkForIndyDid(agentContext: AgentContext, did: string) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const [didRecord] = await didsApi.getCreatedDids({
-    did,
-  })
 
-  if (didRecord.didDocument) {
-    const verificationMethod = didRecord.didDocument.dereferenceKey('#verkey')
-    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const key = didRecord.keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
+  const { didRecord, didDocument } = await didsApi.resolveCreatedDidRecordWithDocument(did)
 
-    publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  const verificationMethod = didDocument.dereferenceKey('#verkey')
+  const key = didRecord.keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
 
-    return publicJwk as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+  if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+    throw new CredoError('Expected #verkey verification mehod to be of type Ed25519')
   }
 
-  // FIXME: There was a period where we did not store the didDocument in the DidRecord, so in this case we need to resolve
-  const didResult = await didsApi.resolve(did)
-
-  if (!didResult.didDocument) {
-    throw new CredoError(
-      `Could not resolve did ${did}. ${didResult.didResolutionMetadata.error} ${didResult.didResolutionMetadata.message}`
-    )
-  }
-
-  // did:indy dids MUST have a verificationMethod with #verkey
-  const verificationMethod = didResult.didDocument.dereferenceKey(`${did}#verkey`)
-  return getPublicJwkFromVerificationMethod(verificationMethod) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  return publicJwk
 }
 
 export async function getPublicDid(pool: IndyVdrPool, unqualifiedDid: string) {

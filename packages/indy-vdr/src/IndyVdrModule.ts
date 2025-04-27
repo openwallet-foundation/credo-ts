@@ -38,7 +38,9 @@ export class IndyVdrModule implements Module {
     const indyVdrPoolService = agentContext.dependencyManager.resolve(IndyVdrPoolService)
 
     for (const pool of indyVdrPoolService.pools) {
-      pool.close()
+      if (pool.isOpen) {
+        pool.close()
+      }
     }
   }
 }

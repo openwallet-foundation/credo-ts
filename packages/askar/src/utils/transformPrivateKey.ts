@@ -26,13 +26,13 @@ import { jwkCrvToAskarAlg } from './askarKeyTypes'
  * })
  * ```
  */
-export function transformPrivateKeyToPrivateJwk({
+export function transformPrivateKeyToPrivateJwk<Type extends Kms.KmsCreateKeyTypeOkp | Kms.KmsCreateKeyTypeEc>({
   type,
   privateKey,
 }: {
-  type: Kms.KmsCreateKeyTypeOkp | Kms.KmsCreateKeyTypeEc
+  type: Type
   privateKey: Buffer
-}) {
+}): { privateJwk: Kms.KmsJwkPrivateFromKmsJwkPublic<Kms.KmsJwkPublicFromCreateType<Type>> } {
   const askarAlgorithm = jwkCrvToAskarAlg[type.crv]
   if (!askarAlgorithm) {
     throw new CredoError(`kty '${type.kty}' with crv '${type.crv}' not supported by Askar`)
@@ -44,6 +44,7 @@ export function transformPrivateKeyToPrivateJwk({
   }).jwkSecret
 
   return {
-    privateJwk: privateJwk as Kms.KmsJwkPrivateEc | Kms.KmsJwkPrivateOkp,
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    privateJwk: privateJwk as any,
   }
 }

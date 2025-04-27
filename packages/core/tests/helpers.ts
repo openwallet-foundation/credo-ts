@@ -56,7 +56,7 @@ import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
-import { Key, KeyType, getJwkFromJson } from '../src/crypto'
+import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -218,7 +218,6 @@ export function getInMemoryAgentOptions<
 }
 
 export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
-  // TODO: transform all callers of this method to use private JWK directly
   const { privateJwk } = transformPrivateKeyToPrivateJwk({
     privateKey,
     type: {
@@ -231,14 +230,20 @@ export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateK
     privateJwk,
   })
 
-  const jwk = getJwkFromJson(key.publicJwk)
+  const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk as Kms.KmsJwkPublicOkp & { crv: 'Ed25519' })
 
   // did is first 16 bytes of public key encoded as base58
-  const unqualifiedIndyDid = TypedArrayEncoder.toBase58(jwk.publicKey.slice(0, 16))
+  const unqualifiedIndyDid = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey.slice(0, 16))
 
   // import the did in the wallet so it can be used
   await agent.dids.import({
     did: `did:indy:pool:localtest:${unqualifiedIndyDid}`,
+    keys: [
+      {
+        didDocumentRelativeKeyId: '#verkey',
+        kmsKeyId: key.keyId,
+      },
+    ],
   })
 
   return unqualifiedIndyDid

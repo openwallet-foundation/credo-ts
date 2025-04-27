@@ -92,6 +92,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return new PublicJwk(jwkInstance)
   }
 
+  // FIXME: all Jwk combinations should be separate types.
+  // so not kty: EC, and crv: P-256 | P-384
+  // but: kty: EC, and crv: P-256 | kty: EC, and crv: P-384
+  // As the first appraoch messes with TypeScript's type inference
   public static fromPublicJwk<Jwk extends KmsJwkPublicAsymmetric>(jwk: Jwk) {
     return PublicJwk.fromUnknown(jwk) as PublicJwk<
       ExtractByJwk<SupportedPublicJwk, Jwk> extends never ? SupportedPublicJwk : ExtractByJwk<SupportedPublicJwk, Jwk>

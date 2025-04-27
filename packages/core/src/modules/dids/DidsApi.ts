@@ -10,13 +10,13 @@ import type {
 } from './types'
 
 import { AgentContext } from '../../agent'
-import { CredoError } from '../../error'
+import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 
 import { KeyManagementApi } from '../kms'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
-import { DidRepository } from './repository'
+import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
 
 @injectable()
@@ -160,6 +160,31 @@ export class DidsApi {
         alternativeDids: isValidPeerDid(didDocument.id) ? getAlternativeDidsForPeerDid(did) : undefined,
       },
     })
+  }
+
+  public async resolveCreatedDidRecordWithDocument(did: string) {
+    const [didRecord] = await this.didRepository.getCreatedDids(this.agentContext, { did })
+
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
+    }
+
+    if (didRecord.didDocument) {
+      return {
+        didRecord,
+        didDocument: didRecord.didDocument,
+      }
+    }
+
+    // TODO: we should somehow store the did document on the record if the did method allows it
+    // E.g. for did:key we don't want to store it, but if we still have a did:indy record we do want to store it
+    // If the did document is not stored on the did record, we resolve it
+    const didDocument = await this.didResolverService.resolveDidDocument(this.agentContext, didRecord.did)
+
+    return {
+      didRecord,
+      didDocument,
+    }
   }
 
   public get supportedResolverMethods() {

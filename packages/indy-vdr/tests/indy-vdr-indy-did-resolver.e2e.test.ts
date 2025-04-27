@@ -32,7 +32,6 @@ describe('indy-vdr DID Resolver E2E', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('resolve a did:indy did', async () => {

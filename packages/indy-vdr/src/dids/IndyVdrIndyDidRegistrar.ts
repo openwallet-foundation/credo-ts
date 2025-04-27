@@ -127,13 +127,27 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const { namespace: endorserNamespace, namespaceIdentifier: endorserNamespaceIdentifier } = parseIndyDid(endorserDid)
 
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const _verificationKey = await kms.createKey({
-      type: {
-        kty: 'OKP',
-        crv: 'Ed25519',
-      },
-    })
-    const verificationKey = Kms.PublicJwk.fromPublicJwk(_verificationKey.publicJwk)
+
+    const _verificationKey = options.options.keyId
+      ? await kms.getPublicKey({ keyId: options.options.keyId })
+      : (
+          await kms.createKey({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          })
+        ).publicJwk
+
+    if (_verificationKey.kty !== 'OKP' || _verificationKey.crv !== 'Ed25519') {
+      return {
+        status: 'error',
+        reason: `keyId must point to an Ed25519 key, but found ${Kms.getJwkHumanDescription(_verificationKey)}`,
+      }
+    }
+
+    const verificationKey = Kms.PublicJwk.fromPublicJwk(_verificationKey) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
     // Create a new key and calculate did according to the rules for indy did method
     const buffer = Hasher.hash(verificationKey.publicKey.publicKey, 'sha-256')
 
@@ -355,6 +369,9 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       didDocument = didDocument ?? (await buildDidDocument(agentContext, pool, did))
       return this.didCreateFinishedResult({ did, didDocument, namespace: res.namespace })
     } catch (error) {
+      agentContext.config.logger.error('Error creating indy did', {
+        error,
+      })
       return this.didCreateFailedResult({
         reason: `unknownError: ${error.message}`,
       })
@@ -493,6 +510,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 interface IndyVdrDidCreateOptionsWithoutDid extends DidCreateOptions {
   didDocument?: never // Not yet supported
   did?: never
+  method: 'indy'
   options: {
     /**
      * Optionally an existing keyId can be provided, in this case the did will be created

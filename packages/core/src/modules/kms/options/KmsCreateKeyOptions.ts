@@ -1,8 +1,4 @@
-import type { KmsJwkPublic } from '../jwk/knownJwk'
-import type { KmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
-import type { KmsJwkPublicOct } from '../jwk/kty/oct/octJwk'
-import type { KmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
-import type { KmsJwkPublicRsa } from '../jwk/kty/rsa/rsaJwk'
+import type { KmsJwkPublicFromCreateType } from '../jwk/knownJwk'
 
 import * as z from '../../../utils/zod'
 import { KnownJwaSignatureAlgorithm } from '../jwk'
@@ -108,16 +104,6 @@ export interface KmsCreateKeyForSignatureAlgorithmOptions {
    */
   algorithm: KnownJwaSignatureAlgorithm
 }
-
-export type KmsJwkPublicFromCreateType<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa
-  ? KmsJwkPublicRsa
-  : Type extends KmsCreateKeyTypeOct
-    ? KmsJwkPublicOct
-    : Type extends KmsCreateKeyTypeOkp
-      ? KmsJwkPublicOkp & { crv: Type['crv'] }
-      : Type extends KmsCreateKeyTypeEc
-        ? KmsJwkPublicEc & { crv: Type['crv'] }
-        : KmsJwkPublic
 
 export interface KmsCreateKeyReturn<Type extends KmsCreateKeyType = KmsCreateKeyType> {
   keyId: string

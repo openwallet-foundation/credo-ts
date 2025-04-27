@@ -33,7 +33,6 @@ describe('Indy VDR Sov DID Resolver', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('resolve a did:sov did', async () => {

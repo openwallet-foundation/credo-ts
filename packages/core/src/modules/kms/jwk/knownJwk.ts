@@ -1,10 +1,41 @@
 import * as z from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
+import {
+  KmsCreateKeyType,
+  KmsCreateKeyTypeEc,
+  KmsCreateKeyTypeOct,
+  KmsCreateKeyTypeOkp,
+  KmsCreateKeyTypeRsa,
+} from '../options'
 
-import { zKmsJwkPrivateEc, zKmsJwkPrivateToPublicEc, zKmsJwkPublicEc } from './kty/ec/ecJwk'
-import { zKmsJwkPrivateOct, zKmsJwkPrivateToPublicOct, zKmsJwkPublicOct } from './kty/oct/octJwk'
-import { zKmsJwkPrivateOkp, zKmsJwkPrivateToPublicOkp, zKmsJwkPublicOkp } from './kty/okp/okpJwk'
-import { zKmsJwkPrivateRsa, zKmsJwkPrivateToPublicRsa, zKmsJwkPublicRsa } from './kty/rsa/rsaJwk'
+import {
+  KmsJwkPrivateEc,
+  KmsJwkPublicEc,
+  zKmsJwkPrivateEc,
+  zKmsJwkPrivateToPublicEc,
+  zKmsJwkPublicEc,
+} from './kty/ec/ecJwk'
+import {
+  KmsJwkPrivateOct,
+  KmsJwkPublicOct,
+  zKmsJwkPrivateOct,
+  zKmsJwkPrivateToPublicOct,
+  zKmsJwkPublicOct,
+} from './kty/oct/octJwk'
+import {
+  KmsJwkPrivateOkp,
+  KmsJwkPublicOkp,
+  zKmsJwkPrivateOkp,
+  zKmsJwkPrivateToPublicOkp,
+  zKmsJwkPublicOkp,
+} from './kty/okp/okpJwk'
+import {
+  KmsJwkPrivateRsa,
+  KmsJwkPublicRsa,
+  zKmsJwkPrivateRsa,
+  zKmsJwkPrivateToPublicRsa,
+  zKmsJwkPublicRsa,
+} from './kty/rsa/rsaJwk'
 
 export const zKmsJwkPublicAsymmetric = z.discriminatedUnion('kty', [
   zKmsJwkPublicEc,
@@ -71,3 +102,33 @@ export function publicJwkFromPrivateJwk(privateJwk: KmsJwkPrivate | KmsJwkPublic
   // This will remove any private properties
   return z.parseWithErrorHandling(zKmsJwkPrivateToPublic, privateJwk)
 }
+
+export type KmsJwkPrivateFromKmsJwkPublic<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa
+  ? KmsJwkPrivateRsa
+  : Type extends KmsCreateKeyTypeOct
+    ? KmsJwkPrivateOct
+    : Type extends KmsCreateKeyTypeOkp
+      ? KmsJwkPrivateOkp & { crv: Type['crv'] }
+      : Type extends KmsCreateKeyTypeEc
+        ? KmsJwkPrivateEc & { crv: Type['crv'] }
+        : KmsJwkPrivate
+
+export type KmsJwkPublicFromKmsJwkPrivate<Jwk extends KmsJwkPrivate> = Jwk extends KmsJwkPrivateRsa
+  ? KmsJwkPublicRsa
+  : Jwk extends KmsJwkPrivateOct
+    ? KmsJwkPublicOct
+    : Jwk extends KmsJwkPrivateOkp
+      ? KmsJwkPublicOkp & { crv: Jwk['crv'] }
+      : Jwk extends KmsJwkPrivateEc
+        ? KmsJwkPublicEc & { crv: Jwk['crv'] }
+        : KmsJwkPublic
+
+export type KmsJwkPublicFromCreateType<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa
+  ? KmsJwkPublicRsa
+  : Type extends KmsCreateKeyTypeOct
+    ? KmsJwkPublicOct
+    : Type extends KmsCreateKeyTypeOkp
+      ? KmsJwkPublicOkp & { crv: Type['crv'] }
+      : Type extends KmsCreateKeyTypeEc
+        ? KmsJwkPublicEc & { crv: Type['crv'] }
+        : KmsJwkPublic
