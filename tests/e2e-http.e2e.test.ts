@@ -72,11 +72,8 @@ describe('E2E HTTP tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {

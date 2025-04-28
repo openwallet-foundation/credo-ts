@@ -78,11 +78,8 @@ describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {

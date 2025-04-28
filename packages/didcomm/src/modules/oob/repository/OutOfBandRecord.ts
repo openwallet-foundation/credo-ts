@@ -1,4 +1,4 @@
-import type { DidDocumentKey, TagsBase } from '@credo-ts/core'
+import type { TagsBase } from '@credo-ts/core'
 import type { OutOfBandRole } from '../domain/OutOfBandRole'
 import type { OutOfBandState } from '../domain/OutOfBandState'
 import type { OutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
@@ -8,6 +8,11 @@ import { Type } from 'class-transformer'
 
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import { OutOfBandInvitation } from '../messages'
+
+export interface OutOfBandInlineServiceKey {
+  recipientKeyFingerprint: string
+  kmsKeyId: string
+}
 
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
@@ -22,7 +27,19 @@ type DefaultOutOfBandRecordTags = {
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
+  /**
+   * The fingerprints of the recipient keys from the out of band invitation.
+   * When we created the invitation this will be our keys, when we received this
+   * invitation it will be the other parties' keys.
+   */
   recipientKeyFingerprints: string[]
+
+  /**
+   * The fingerprint from the {@link OutOfBandRecordMetadataKeys.RecipientRouting} recipient key.
+   *
+   * This will always be a key from our recipient
+   */
+  recipientRoutingKeyFingerprint?: string
 }
 
 export interface OutOfBandRecordProps {
@@ -43,7 +60,7 @@ export interface OutOfBandRecordProps {
   /**
    * The keys associated with the inline services of the out of band invitation
    */
-  invitationInlineServiceKeys?: DidDocumentKey[]
+  invitationInlineServiceKeys?: OutOfBandInlineServiceKey[]
 }
 
 export class OutOfBandRecord extends BaseRecord<
@@ -64,7 +81,7 @@ export class OutOfBandRecord extends BaseRecord<
   /**
    * The keys associated with the inline services of the out of band invitation
    */
-  invitationInlineServiceKeys?: DidDocumentKey[]
+  invitationInlineServiceKeys?: Array<OutOfBandInlineServiceKey>
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type

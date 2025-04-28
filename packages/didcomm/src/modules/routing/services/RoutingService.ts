@@ -25,11 +25,11 @@ export class RoutingService {
     agentContext: AgentContext,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
   ): Promise<Routing> {
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
     // Create and store new key
     const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
 
     let routing: Routing = {
       endpoints: didcommConfig.endpoints,

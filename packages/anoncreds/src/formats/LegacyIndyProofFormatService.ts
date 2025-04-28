@@ -74,6 +74,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     agentContext: AgentContext,
     { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new ProofFormatSpec({
       format: V2_INDY_PRESENTATION_PROPOSAL,
       attachmentId,
@@ -89,7 +90,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
       predicates: indyFormat.predicates ?? [],
       name: indyFormat.name ?? 'Proof request',
       version: indyFormat.version ?? '1.0',
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
     })
     const attachment = this.getFormatData(proofRequest, format.attachmentId)
 
@@ -110,6 +111,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     agentContext: AgentContext,
     { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new ProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
       attachmentId,
@@ -120,7 +122,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const request = {
       ...proposalJson,
       // We never want to reuse the nonce from the proposal, as this will allow replay attacks
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
     }
 
     const attachment = this.getFormatData(request, format.attachmentId)
@@ -132,6 +134,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     agentContext: AgentContext,
     { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new ProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
       attachmentId,
@@ -145,7 +148,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     const request = {
       name: indyFormat.name,
       version: indyFormat.version,
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
       requested_attributes: indyFormat.requested_attributes ?? {},
       requested_predicates: indyFormat.requested_predicates ?? {},
       non_revoked: indyFormat.non_revoked,

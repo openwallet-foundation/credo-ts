@@ -326,7 +326,8 @@ export async function setupAnonCredsTests<
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
@@ -340,7 +341,8 @@ export async function setupAnonCredsTests<
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
@@ -355,7 +357,8 @@ export async function setupAnonCredsTests<
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
-          })
+          }),
+          { requireDidcomm: true }
         )
       )
     : undefined

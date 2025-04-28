@@ -48,7 +48,7 @@ import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
 import {
   createPeerDidFromServices,
-  getOutOfBandInlineServicesWithSigningKeyId,
+  getResolvedDidcommServiceWithSigningKeyId,
   routingToServices,
 } from './services/helpers'
 
@@ -282,7 +282,10 @@ export class DidExchangeProtocol {
     }
 
     // Extract keys from the out of band record metadata
-    const inlineResolvedServices = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
+    const inlineResolvedServices = outOfBandRecord.outOfBandInvitation
+      .getInlineServices()
+      .map((service) => getResolvedDidcommServiceWithSigningKeyId(service, outOfBandRecord.invitationInlineServiceKeys))
+
     let services: ResolvedDidCommService[] = []
 
     if (routing) {

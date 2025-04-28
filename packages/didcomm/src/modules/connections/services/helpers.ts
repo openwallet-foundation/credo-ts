@@ -17,8 +17,8 @@ import {
 } from '@credo-ts/core'
 
 import { DidCommDocumentService } from '../../../services'
-import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
-import { OutOfBandRecord } from '../../oob/repository/OutOfBandRecord'
+import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
+import { OutOfBandInlineServiceKey } from '../../oob/repository/OutOfBandRecord'
 import { EmbeddedAuthentication } from '../models'
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
@@ -217,25 +217,23 @@ export async function createPeerDidFromServices(
   return didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, result.didState.did)
 }
 
-export function getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord: OutOfBandRecord) {
-  // Can only attach signer keys if we create the invitation
-  outOfBandRecord.assertRole(OutOfBandRole.Sender)
+export function getResolvedDidcommServiceWithSigningKeyId(
+  outOfBandDidcommService: OutOfBandDidCommService,
+  /**
+   * Optional keys for the inline services
+   */
+  inlineServiceKeys?: OutOfBandInlineServiceKey[]
+) {
+  const resolvedService = outOfBandDidcommService.resolvedDidCommService
 
-  // Extract keys from the out of band record metadata
-  const inlineResolvedServices = outOfBandRecord.outOfBandInvitation.getInlineServices().map((service) => {
-    const resolvedService = service.resolvedDidCommService
+  // Make sure the key id is set for service keys
+  for (const recipientKey of resolvedService.recipientKeys) {
+    const kmsKeyId = inlineServiceKeys?.find(
+      ({ recipientKeyFingerprint }) => recipientKeyFingerprint === recipientKey.fingerprint
+    )?.kmsKeyId
 
-    // Make sure the key id is set for service keys
-    for (const recipientKey of resolvedService.recipientKeys) {
-      const kmsKeyId = outOfBandRecord.invitationInlineServiceKeys?.find(
-        ({ didDocumentRelativeKeyId }) => service.id === didDocumentRelativeKeyId
-      )?.kmsKeyId
+    recipientKey.keyId = kmsKeyId ?? recipientKey.legacyKeyId
+  }
 
-      recipientKey.keyId = kmsKeyId ?? recipientKey.legacyKeyId
-    }
-
-    return resolvedService
-  })
-
-  return inlineResolvedServices
+  return resolvedService
 }

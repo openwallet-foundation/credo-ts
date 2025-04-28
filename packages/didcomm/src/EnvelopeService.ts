@@ -1,12 +1,4 @@
-import {
-  AgentContext,
-  CredoError,
-  DidsApi,
-  JsonEncoder,
-  Kms,
-  RecordNotFoundError,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import { AgentContext, CredoError, JsonEncoder, Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EncryptedMessage, PlaintextMessage } from './types'
 
@@ -14,7 +6,8 @@ import { InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { OutOfBandRepository, OutOfBandRole } from './modules'
-import { getOutOfBandInlineServicesWithSigningKeyId } from './modules/connections/services/helpers'
+import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
+import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { ForwardMessage } from './modules/routing/messages'
 import { DidCommDocumentService } from './services'
 
@@ -136,7 +129,6 @@ export class EnvelopeService {
 
   private async decryptDidcommV1Message(agentContext: AgentContext, encryptedMessage: EncryptedMessage) {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const _dids = agentContext.dependencyManager.resolve(DidsApi)
     const protectedJson = JsonEncoder.fromBase64(encryptedMessage.protected)
 
     const alg = protectedJson.alg as 'Anoncrypt' | 'Authcrypt'
@@ -187,20 +179,60 @@ export class EnvelopeService {
         if (error instanceof RecordNotFoundError) {
           const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
           const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
-            recipientKeyFingerprints: [publicKey.fingerprint],
-            role: OutOfBandRole.Sender,
+            $or: [
+              // In case we are the creator of the out of band invitation we can query based on
+              // out of band invitation recipient key fingerprint
+              {
+                role: OutOfBandRole.Sender,
+                recipientKeyFingerprints: [publicKey.fingerprint],
+              },
+              // In case we are the receiver of the out of band invitation we need to query
+              // for the recipient routing fingerprint
+              {
+                role: OutOfBandRole.Receiver,
+                recipientRoutingKeyFingerprint: publicKey.fingerprint,
+              },
+            ],
           })
 
-          if (!outOfBandRecord) continue
+          if (outOfBandRecord?.role === OutOfBandRole.Sender) {
+            for (const service of outOfBandRecord.outOfBandInvitation.getInlineServices()) {
+              const resolvedService = getResolvedDidcommServiceWithSigningKeyId(
+                service,
+                outOfBandRecord.invitationInlineServiceKeys
+              )
+              const _recipientKey = resolvedService.recipientKeys.find((recipientKey) => recipientKey.equals(publicKey))
 
-          const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
-
-          for (const service of services) {
-            const _recipientKey = service.recipientKeys.find((recipientKey) => recipientKey.equals(publicKey))
-
-            if (_recipientKey) {
-              recipientKey = _recipientKey
+              if (_recipientKey) {
+                recipientKey = _recipientKey
+                recipient = _recipient
+                break
+              }
+            }
+          } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
+            // If there is still no key we need to look at the metadata
+            const recipieintRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+            if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
+              publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
               recipient = _recipient
+              recipientKey = publicKey
+              break
+            }
+          } else {
+            // If there is no did found, and no out of band record found, we assume this is a connectionless
+            // oob exchange initiated before we added key ids. We will check if the public key exists based
+            // on the base58 encoded public key. We should probably remove this flow at some point, as it only
+            // affects received oob invitations which:
+            // - have been received but not accepted yet (auto accept is true, so this is already rare)
+            // - are connectionless (this is more common, but usually ephemeral anyway)
+            const kmsJwkPublic = await kms.getPublicKey({
+              keyId: publicKey.legacyKeyId,
+            })
+
+            if (kmsJwkPublic) {
+              publicKey.keyId = publicKey.legacyKeyId
+              recipient = _recipient
+              recipientKey = publicKey
               break
             }
           }

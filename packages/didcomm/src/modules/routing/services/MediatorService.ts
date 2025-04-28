@@ -247,6 +247,7 @@ export class MediatorService {
   }
 
   public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
+    // FIXME: We should create a did:peer record, so we can decrypt the message
     // FIXME: keyId
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const routingKey = await kms.createKey({

@@ -58,7 +58,7 @@ import { ConnectionRecord, ConnectionRepository } from '../repository'
 import {
   assertNoCreatedDidExistsForKeys,
   convertToNewDidDocument,
-  getOutOfBandInlineServicesWithSigningKeyId,
+  getResolvedDidcommServiceWithSigningKeyId,
 } from './helpers'
 
 export interface ConnectionRequestParams {
@@ -257,8 +257,12 @@ export class ConnectionService {
     let signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
     if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
       // We don't support DIDs for connection protocol i think?
-      const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
-      signingKey = services[0].recipientKeys[0]
+
+      const service = getResolvedDidcommServiceWithSigningKeyId(
+        outOfBandRecord.outOfBandInvitation.getInlineServices()[0],
+        outOfBandRecord.invitationInlineServiceKeys
+      )
+      signingKey = service.recipientKeys[0]
     } else {
       throw new CredoError('Not supported. Signing connection 1.0 response with a did')
     }
@@ -519,6 +523,9 @@ export class ConnectionService {
         messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
+      // FIXME: we should remove support for the flow where no out of band record is used.
+      // Users have had enough time to update to the OOB API which supports legacy connectionsless
+      // invitations as well
       // 1. check if there's an oob record associated.
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(OutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(OutOfBandService)
@@ -530,7 +537,8 @@ export class ConnectionService {
       if (outOfBandRecord?.role === OutOfBandRole.Sender) {
         ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
-          outOfBandRecord.outOfBandInvitation.getServices()
+          outOfBandRecord.outOfBandInvitation.getServices(),
+          outOfBandRecord.invitationInlineServiceKeys
         )
       } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
         theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
@@ -912,9 +920,11 @@ export class ConnectionService {
   }
 
   private createDidDocFromOutOfBandDidCommServices(outOfBandRecord: OutOfBandRecord) {
-    const services = getOutOfBandInlineServicesWithSigningKeyId(outOfBandRecord)
-    const [recipientKey] = services[0].recipientKeys
+    const services = outOfBandRecord.outOfBandInvitation
+      .getInlineServices()
+      .map((service) => getResolvedDidcommServiceWithSigningKeyId(service, outOfBandRecord.invitationInlineServiceKeys))
 
+    const [recipientKey] = services[0].recipientKeys
     const recipientKeyBase58 = TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)
     const did = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
 

@@ -1,4 +1,4 @@
-import type { DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
+import type { Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../AgentMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
 import type { Routing } from '../../models'
@@ -50,7 +50,7 @@ import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAccepted
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
 import { InvitationType, OutOfBandInvitation } from './messages'
 import { OutOfBandRepository } from './repository'
-import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { OutOfBandInlineServiceKey, OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -201,7 +201,7 @@ export class OutOfBandApi {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
     }
 
-    const invitationInlineServiceKeys: DidDocumentKey[] = []
+    const invitationInlineServiceKeys: OutOfBandInlineServiceKey[] = []
     if (config.invitationDid) {
       services = [config.invitationDid]
     } else {
@@ -212,7 +212,7 @@ export class OutOfBandApi {
         // Store the key id for the recipient key
         invitationInlineServiceKeys.push({
           kmsKeyId: routing.recipientKey.keyId,
-          didDocumentRelativeKeyId: `#inline-${index}`,
+          recipientKeyFingerprint: routing.recipientKey.fingerprint,
         })
         return new OutOfBandDidCommService({
           id: `#inline-${index}`,
@@ -473,10 +473,12 @@ export class OutOfBandApi {
       this.logger.debug('Storing routing for out of band invitation.')
       outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
+        recipientKeyId: routing.recipientKey.keyId,
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
       })
+      outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
     }
 
     // If the invitation was converted from another legacy format, we store this, as its needed for some flows
@@ -550,10 +552,13 @@ export class OutOfBandApi {
     // recipient routing from the receiveInvitation method.
     const recipientRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
     if (!routing && recipientRouting) {
+      const recipientPublicJwk = Kms.PublicJwk.fromFingerprint(
+        recipientRouting.recipientKeyFingerprint
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+
       routing = {
-        recipientKey: Kms.PublicJwk.fromFingerprint(
-          recipientRouting.recipientKeyFingerprint
-        ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+        recipientKey: recipientPublicJwk,
         routingKeys: recipientRouting.routingKeyFingerprints.map(
           (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
         ),

@@ -57,4 +57,9 @@ export interface AnonCredsHolderService {
     agentContext: AgentContext,
     options: LegacyToW3cCredentialOptions
   ): Promise<W3cJsonLdVerifiableCredential>
+
+  /**
+   * Generate an AnonCreds compatible nonce
+   */
+  generateNonce(agentContext: AgentContext): string
 }
