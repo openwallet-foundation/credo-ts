@@ -9,7 +9,7 @@ import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VcIssuerRecord,
   OpenId4VcVerifierModule,
   OpenId4VciCredentialConfigurationSupportedWithFormats,
@@ -47,7 +47,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
     openId4VcVerifier: OpenId4VcVerifierModule
     askar: AskarModule
   }>
@@ -69,7 +69,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       openId4VcVerifier: new OpenId4VcVerifierModule({
         baseUrl: verifierBaseUrl,
       }),
-      openId4VcIssuer: new OpenId4VcIssuerModule({
+      openId4VcIssuer: new OpenId4VcIssuerExpressModule({
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
           if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {

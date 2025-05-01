@@ -1,18 +1,17 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
-import type { RouterFactory, SupportedRouterTypes,  } from '../shared/router'
+import type { RouterFactory, SupportedRouterTypes } from '../shared/router'
 
-import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
+import { AgentConfig } from '@credo-ts/core'
 import { setGlobalConfig } from '@openid4vc/oauth2'
 import createHttpError from 'http-errors'
 
 import { getAgentContextForActorId } from '../shared/router'
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
+import { OpenId4VcIssuerModuleConfigOptions, OpenId4VcIssuerModuleConfigSymbol } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from './repository'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
-
 
 export abstract class OpenId4VcIssuerModule<RouterType extends SupportedRouterTypes> implements Module {
   public readonly api = OpenId4VcIssuerApi<RouterType>
@@ -39,7 +38,7 @@ export abstract class OpenId4VcIssuerModule<RouterType extends SupportedRouterTy
       })
     }
     // Register config
-    dependencyManager.registerInstance(InjectionSymbols.OpenId4VcIssuerModuleConfig, this.config)
+    dependencyManager.registerInstance(OpenId4VcIssuerModuleConfigSymbol, this.config)
 
     // Services
     dependencyManager.registerSingleton(OpenId4VcIssuerService)

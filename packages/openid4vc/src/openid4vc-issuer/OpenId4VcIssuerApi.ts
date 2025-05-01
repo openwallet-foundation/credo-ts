@@ -6,10 +6,10 @@ import type {
   OpenId4VciCreateStatelessCredentialOfferOptions,
 } from './OpenId4VcIssuerServiceOptions'
 
-import { AgentContext, InjectionSymbols, inject, injectable } from '@credo-ts/core'
+import { AgentContext, inject, injectable } from '@credo-ts/core'
 
 import type { SupportedRouterTypes } from '../shared/router'
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerModuleConfig, OpenId4VcIssuerModuleConfigSymbol } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
@@ -21,7 +21,7 @@ import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 @injectable()
 export class OpenId4VcIssuerApi<RouterType extends SupportedRouterTypes> {
   public constructor(
-    @inject(InjectionSymbols.OpenId4VcIssuerModuleConfig)
+    @inject(OpenId4VcIssuerModuleConfigSymbol)
     public readonly config: OpenId4VcIssuerModuleConfig<RouterType>,
     private agentContext: AgentContext,
     private openId4VcIssuerService: OpenId4VcIssuerService

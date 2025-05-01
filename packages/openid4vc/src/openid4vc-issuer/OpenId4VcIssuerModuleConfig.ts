@@ -9,6 +9,8 @@ const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
+export const OpenId4VcIssuerModuleConfigSymbol = Symbol('OpenId4VcIssuerModuleConfig')
+
 export interface BaseOpenId4VcIssuerModuleConfigOptions {
   /**
    * Base url at which the issuer endpoints will be hosted. All endpoints will be exposed with
