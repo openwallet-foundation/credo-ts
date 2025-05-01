@@ -110,7 +110,8 @@ export class DidExchangeProtocol {
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
-      const resolved = await this.didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, did)
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidRecordWithDocument(did)
       didDocument = resolved.didDocument
       didRecord = resolved.didRecord
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
@@ -304,7 +305,6 @@ export class DidExchangeProtocol {
       ? getNumAlgoFromPeerDid(theirDid)
       : config.peerNumAlgoForDidExchangeRequests
 
-    const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
     const { didDocument } = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
@@ -313,7 +313,8 @@ export class DidExchangeProtocol {
 
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
-      const resolved = await didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, parseDid(did).did)
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidRecordWithDocument(parseDid(did).did)
       invitationRecipientKeys.push(
         ...resolved.didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })

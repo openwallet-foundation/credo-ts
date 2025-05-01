@@ -14,6 +14,7 @@ import {
   DidRecord,
   DidRecordMetadataKeys,
   DidRepository,
+  DidsApi,
   EventEmitter,
   IndyAgentService,
   InjectionSymbols,
@@ -26,6 +27,7 @@ import {
   filterContextCorrelationId,
   inject,
   injectable,
+  parseDid,
   utils,
 } from '@credo-ts/core'
 import { ReplaySubject, firstValueFrom } from 'rxjs'
@@ -255,16 +257,28 @@ export class ConnectionService {
     }
 
     let signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
-    if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
-      // We don't support DIDs for connection protocol i think?
+    const firstService = outOfBandRecord.outOfBandInvitation.getServices()[0]
+    if (typeof firstService === 'string') {
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidRecordWithDocument(parseDid(firstService).did)
 
+      const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      if (recipientKeys.length === 0) {
+        throw new CredoError(`Unable to extract signing key for connection response from did '${firstService}'`)
+      }
+
+      signingKey = recipientKeys[0].publicJwk
+      // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
+      signingKey.keyId =
+        resolved.didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+          recipientKeys[0].verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId ?? signingKey.legacyKeyId
+    } else {
       const service = getResolvedDidcommServiceWithSigningKeyId(
-        outOfBandRecord.outOfBandInvitation.getInlineServices()[0],
+        firstService,
         outOfBandRecord.invitationInlineServiceKeys
       )
       signingKey = service.recipientKeys[0]
-    } else {
-      throw new CredoError('Not supported. Signing connection 1.0 response with a did')
     }
 
     const connectionResponse = new ConnectionResponseMessage({

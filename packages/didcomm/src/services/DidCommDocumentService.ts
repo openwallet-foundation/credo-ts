@@ -101,31 +101,6 @@ export class DidCommDocumentService {
     return resolvedServices
   }
 
-  public async resolveCreatedDidRecordWithDocument(agentContext: AgentContext, did: string) {
-    const [didRecord] = await this.didRepository.getCreatedDids(agentContext, { did })
-
-    if (!didRecord) {
-      throw new RecordNotFoundError(`Created did '${did}' not found`, { recordType: DidRecord.type })
-    }
-
-    if (didRecord.didDocument) {
-      return {
-        didRecord,
-        didDocument: didRecord.didDocument,
-      }
-    }
-
-    // TODO: we should somehow store the did document on the record if the did method allows it
-    // E.g. for did:key we don't want to store it, but if we still have a did:indy record we do want to store it
-    // If the did document is not stored on the did record, we resolve it
-    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didRecord.did)
-
-    return {
-      didRecord,
-      didDocument,
-    }
-  }
-
   public async resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
     const didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
 

@@ -11,6 +11,7 @@ import {
   AgentContext,
   CredoError,
   DidKey,
+  DidsApi,
   EventEmitter,
   InjectionSymbols,
   Kms,
@@ -268,18 +269,17 @@ export class MessageSender {
       )
     }
 
-    const { didDocument, didRecord } = await this.didCommDocumentService
-      .resolveCreatedDidRecordWithDocument(agentContext, connection.did)
-      .catch((error) => {
-        this.logger.error(`Unable to send message using connection '${connection.id}', unable to resolve did`, {
-          error,
-        })
-        this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-        throw new MessageSendingError(
-          `Unable to send message using connection '${connection.id}'. Unble to resolve did`,
-          { outboundMessageContext, cause: error }
-        )
+    const dids = agentContext.resolve(DidsApi)
+    const { didDocument, didRecord } = await dids.resolveCreatedDidRecordWithDocument(connection.did).catch((error) => {
+      this.logger.error(`Unable to send message using connection '${connection.id}', unable to resolve did`, {
+        error,
       })
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      throw new MessageSendingError(
+        `Unable to send message using connection '${connection.id}'. Unble to resolve did`,
+        { outboundMessageContext, cause: error }
+      )
+    })
 
     const authentication = didDocument.authentication
       ?.map((a) => {

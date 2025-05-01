@@ -15,8 +15,6 @@ import {
   didDocumentJsonToNumAlgo1Did,
   getEd25519VerificationKey2018,
 } from '@credo-ts/core'
-
-import { DidCommDocumentService } from '../../../services'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import { OutOfBandInlineServiceKey } from '../../oob/repository/OutOfBandRecord'
 import { EmbeddedAuthentication } from '../models'
@@ -179,7 +177,6 @@ export async function createPeerDidFromServices(
   services: ResolvedDidCommService[],
   numAlgo: PeerDidNumAlgo
 ) {
-  const didcommDocumentService = agentContext.dependencyManager.resolve(DidCommDocumentService)
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
   // Create did document without the id property
@@ -203,7 +200,7 @@ export async function createPeerDidFromServices(
   }
 
   // FIXME: didApi.create should return the did document
-  return didcommDocumentService.resolveCreatedDidRecordWithDocument(agentContext, result.didState.did)
+  return didsApi.resolveCreatedDidRecordWithDocument(result.didState.did)
 }
 
 export function getResolvedDidcommServiceWithSigningKeyId(

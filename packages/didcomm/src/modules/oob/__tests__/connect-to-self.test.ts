@@ -9,9 +9,15 @@ import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { OutOfBandState } from '../domain/OutOfBandState'
 
-const faberAgentOptions = getAgentOptions('Faber Agent OOB Connect to Self', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber Agent OOB Connect to Self',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('out of band', () => {
   let faberAgent: Agent
@@ -31,7 +37,6 @@ describe('out of band', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
   })
 
   describe('connect with self', () => {
