@@ -90,6 +90,11 @@ export class OpenId4VcIssuerExpressModule extends OpenId4VcIssuerModule<Router> 
       async (error: HttpError | Error | string, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
         const { agentContext } = getRequestContext(req)
 
+        if (res.headersSent) {
+          // if headers have already been sent, then the error response has already been sent
+          return
+        }
+
         const statusCode = error instanceof HttpError ? error.statusCode : 500
 
         res.status(statusCode)
