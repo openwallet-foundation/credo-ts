@@ -3,8 +3,7 @@ import { RouterFactory } from './RouterFactory'
 
 export function importFastify() {
   try {
-    const fastify = require('fastify') as typeof Fastify
-    return fastify
+    return require('fastify') as typeof Fastify
   } catch (_error) {
     throw new Error('Fastify must be installed as a peer dependency')
   }
