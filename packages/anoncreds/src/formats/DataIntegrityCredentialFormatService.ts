@@ -55,9 +55,8 @@ import {
   W3cCredentialSubject,
   W3cJsonLdVerifiableCredential,
   deepEquality,
-  getJwkFromKey,
-  getKeyFromVerificationMethod,
   getPublicJwkFromVerificationMethod,
+  parseDid,
 } from '@credo-ts/core'
 import {
   Attachment,
@@ -236,24 +235,32 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     }
 
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(kid)
-    const verificationMethod = didDocument.dereferenceKey(kid)
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const jwk = getJwkFromKey(key)
+    const parsedDid = parseDid(kid)
 
-    if (alg && !jwk.supportsSignatureAlgorithm(alg)) {
-      throw new CredoError(`key type '${jwk.keyType}', does not support the JWS signature alg '${alg}'`)
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const { didDocument, didRecord } = await didsApi.resolveCreatedDidRecordWithDocument(parsedDid.did)
+    const verificationMethod = didDocument.dereferenceKey(kid)
+
+    // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const keyId =
+      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
+
+    if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
+      throw new CredoError(`jwk ${publicJwk.jwkTypehumanDescription}, does not support the JWS signature alg '${alg}'`)
     }
 
     const signingAlg = issuerSupportedAlgs.find(
-      (supportedAlg) => jwk.supportsSignatureAlgorithm(supportedAlg) && (alg === undefined || alg === supportedAlg)
+      (supportedAlg) =>
+        publicJwk.supportedSignatureAlgorithms.includes(supportedAlg as Kms.KnownJwaSignatureAlgorithm) &&
+        (alg === undefined || alg === supportedAlg)
     )
     if (!signingAlg) throw new CredoError('No signing algorithm supported by the issuer found')
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
     const jws = await jwsService.createJws(agentContext, {
-      key,
+      keyId,
       header: {},
       payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
       protectedHeaderOptions: { alg: signingAlg, kid },

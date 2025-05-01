@@ -8,6 +8,7 @@ import type {
   ConnectionStateChangedEvent,
   CredentialState,
   CredentialStateChangedEvent,
+  OutOfBandInlineServiceKey,
   ProofStateChangedEvent,
   RevocationNotificationReceivedEvent,
 } from '../../didcomm/src'
@@ -662,11 +663,12 @@ export function getMockOutOfBand({
     new DidKey(
       PublicJwk.fromPublicKey({
         kty: 'OKP',
-        crv: 'X25519',
+        crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7'),
       })
     ).did,
   ],
+  invitationInlineServiceKeys,
   mediatorId,
   role,
   state,
@@ -682,6 +684,7 @@ export function getMockOutOfBand({
   state?: OutOfBandState
   reusable?: boolean
   reuseConnectionId?: string
+  invitationInlineServiceKeys?: OutOfBandInlineServiceKey[]
   imageUrl?: string
 } = {}) {
   const options = {
@@ -701,6 +704,7 @@ export function getMockOutOfBand({
   const outOfBandInvitation = new OutOfBandInvitation(options)
   const outOfBandRecord = new OutOfBandRecord({
     mediatorId,
+    invitationInlineServiceKeys,
     role: role || OutOfBandRole.Receiver,
     state: state || OutOfBandState.Initial,
     outOfBandInvitation: outOfBandInvitation,

@@ -105,7 +105,8 @@ describe('Presentation Exchange ProofFormatService', () => {
           proofs: new ProofsModule({
             proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
           }),
-        }
+        },
+        { requireDidcomm: true }
       )
     )
 

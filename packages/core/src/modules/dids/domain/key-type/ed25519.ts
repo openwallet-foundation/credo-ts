@@ -3,6 +3,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { CredoError } from '../../../../error'
+import { Ed25519PublicJwk } from '../../../kms'
 import {
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -19,15 +20,16 @@ import {
 
 export { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-export const keyDidEd25519: KeyDidMapping = {
+export const keyDidEd25519: KeyDidMapping<Ed25519PublicJwk> = {
+  PublicJwkTypes: [Ed25519PublicJwk],
   supportedVerificationMethodTypes: [
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
     VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
     VERIFICATION_METHOD_TYPE_MULTIKEY,
   ],
-  getVerificationMethods: (did, key) => [
-    getEd25519VerificationKey2018({ id: `${did}#${key.fingerprint}`, key, controller: did }),
+  getVerificationMethods: (did, publicJwk) => [
+    getEd25519VerificationKey2018({ id: `${did}#${publicJwk.fingerprint}`, publicJwk, controller: did }),
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (isEd25519VerificationKey2018(verificationMethod)) {

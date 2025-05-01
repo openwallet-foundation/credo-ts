@@ -108,7 +108,8 @@ async function didExchangeNumAlgoBaseTest(options: {
         peerNumAlgoForDidExchangeRequests: options.requesterNumAlgoSetting,
       }),
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
-    }
+    },
+    { requireDidcomm: true }
   )
   const faberAgentOptions = getAgentOptions(
     'DID Exchange numalgo settings Alice',
@@ -122,7 +123,8 @@ async function didExchangeNumAlgoBaseTest(options: {
         peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
       }),
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
-    }
+    },
+    { requireDidcomm: true }
   )
 
   const aliceAgent = new Agent(aliceAgentOptions)
@@ -139,27 +141,31 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
 
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let ourDid
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let routing
+  let ourDid: string | undefined = undefined
+
   if (options.createExternalDidForRequester) {
     // Create did externally
     const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
     ourDid = `did:inmemory:${uuid()}`
-    const didDocument = createPeerDidDocumentFromServices([
-      {
-        id: 'didcomm',
-        recipientKeys: [didRouting.recipientKey],
-        routingKeys: didRouting.routingKeys,
-        serviceEndpoint: didRouting.endpoints[0],
-      },
-    ])
+    const { didDocument, keys } = createPeerDidDocumentFromServices(
+      [
+        {
+          id: 'didcomm',
+          recipientKeys: [didRouting.recipientKey],
+          routingKeys: didRouting.routingKeys,
+          serviceEndpoint: didRouting.endpoints[0],
+        },
+      ],
+      true
+    )
     didDocument.id = ourDid
 
     await aliceAgent.dids.create({
       did: ourDid,
       didDocument,
+      options: {
+        keys,
+      },
     })
   }
 
@@ -168,7 +174,6 @@ async function didExchangeNumAlgoBaseTest(options: {
     {
       autoAcceptInvitation: true,
       autoAcceptConnection: false,
-      routing,
       ourDid,
     }
   )
@@ -190,9 +195,7 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
 
-  await aliceAgent.wallet.delete()
   await aliceAgent.shutdown()
 
-  await faberAgent.wallet.delete()
   await faberAgent.shutdown()
 }

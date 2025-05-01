@@ -197,8 +197,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const verificationKeyBase58 = TypedArrayEncoder.toBase58(verificationKey.publicKey.publicKey)
     // Create base did document
     const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKeyBase58)
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let diddocContent
+    let diddocContent: Record<string, unknown> | undefined = undefined
 
     // Add services if object was passed
     if (services) {

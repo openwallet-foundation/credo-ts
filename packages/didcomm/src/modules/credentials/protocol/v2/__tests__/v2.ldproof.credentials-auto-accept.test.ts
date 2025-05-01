@@ -1,9 +1,8 @@
-import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
-
-import { KeyType } from '../../../../../../../core/src/crypto'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { CredoError } from '../../../../../../../core/src/error/CredoError'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
+import type { JsonLdTestsAgent } from '../../../../../../../core/tests'
 import { setupJsonLdTests } from '../../../../../../../core/tests'
 import { waitForCredentialRecord } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
@@ -48,17 +47,30 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         autoAcceptCredentials: AutoAcceptCredential.Always,
       }))
 
-      await faberAgent.context.wallet.createKey({
-        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-        keyType: KeyType.Ed25519,
+      const key = await faberAgent.kms.importKey({
+        privateJwk: transformPrivateKeyToPrivateJwk({
+          privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        }).privateJwk,
+      })
+
+      await faberAgent.dids.import({
+        did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        keys: [
+          {
+            didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+            kmsKeyId: key.keyId,
+          },
+        ],
       })
     })
 
     afterAll(async () => {
       await faberAgent.shutdown()
-      await faberAgent.wallet.delete()
       await aliceAgent.shutdown()
-      await aliceAgent.wallet.delete()
     })
 
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'always'", async () => {
@@ -150,17 +162,30 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
         autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
       }))
 
-      await faberAgent.context.wallet.createKey({
-        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-        keyType: KeyType.Ed25519,
+      const key = await faberAgent.kms.importKey({
+        privateJwk: transformPrivateKeyToPrivateJwk({
+          privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        }).privateJwk,
+      })
+
+      await faberAgent.dids.import({
+        did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+        keys: [
+          {
+            didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+            kmsKeyId: key.keyId,
+          },
+        ],
       })
     })
 
     afterAll(async () => {
       await faberAgent.shutdown()
-      await faberAgent.wallet.delete()
       await aliceAgent.shutdown()
-      await aliceAgent.wallet.delete()
     })
 
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'contentApproved'", async () => {

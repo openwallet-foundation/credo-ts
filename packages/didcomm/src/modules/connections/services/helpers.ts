@@ -144,17 +144,6 @@ export function routingToServices(routing: Routing): ResolvedDidCommService[] {
   }))
 }
 
-export async function getDidDocumentForCreatedDid(agentContext: AgentContext, did: string) {
-  // Ensure that the DID has been created by us
-  const didRecord = await agentContext.dependencyManager.resolve(DidRepository).findCreatedDid(agentContext, did)
-  if (!didRecord) {
-    throw new CredoError(`Could not find created did ${did}`)
-  }
-
-  const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  return await didsApi.resolveDidDocument(did)
-}
-
 /**
  * Asserts that the keys we are going to use for creating a did document haven't already been used in another did document
  * Due to how DIDComm v1 works (only reference the key not the did in encrypted message) we can't have multiple dids containing

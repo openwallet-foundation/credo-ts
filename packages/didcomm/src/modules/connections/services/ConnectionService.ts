@@ -576,7 +576,7 @@ export class ConnectionService {
       if (recipientKey && ourService) {
         const recipientKeyFound = ourService.recipientKeys.some((key) => recipientKey.equals(key))
         if (!recipientKeyFound) {
-          throw new CredoError(`Recipient key ${recipientKey} not found in our service`)
+          throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
       }
 
@@ -584,7 +584,7 @@ export class ConnectionService {
       if (senderKey && theirService) {
         const senderKeyFound = theirService.recipientKeys.some((key) => senderKey.equals(key))
         if (!senderKeyFound) {
-          throw new CredoError(`Sender key ${senderKey} not found in their service.`)
+          throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }
       }
     }

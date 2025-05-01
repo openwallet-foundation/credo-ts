@@ -576,8 +576,7 @@ export class OutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let connectionRecord
+      let connectionRecord: ConnectionRecord | undefined = undefined
       if (existingConnection && reuseConnection) {
         this.logger.debug(
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`

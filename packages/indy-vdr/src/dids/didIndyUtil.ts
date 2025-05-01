@@ -279,10 +279,9 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
     return builder.build()
   }
   // Combine it with didDoc
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let diddocContent
+  let diddocContent: Record<string, unknown>
   try {
-    diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
+    diddocContent = JSON.parse(nym.diddocContent)
   } catch (error) {
     agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
     throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)

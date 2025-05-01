@@ -32,7 +32,6 @@ import {
   MediationRecipientModule,
   MediatorModule,
   MediatorPickupStrategy,
-  MessageReceiver,
   ProofEventTypes,
   ProofState,
 } from '../../../../../../src'
@@ -283,7 +282,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -319,7 +319,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const aliceOptions = getAgentOptions(
@@ -336,7 +337,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const faberAgent = new Agent(faberOptions)
@@ -525,17 +527,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'rxjs:faber',
-    })
+    const { message: requestMessage, invitationUrl } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        recordId: faberProofExchangeRecord.id,
+        message,
+        domain: 'rxjs:faber',
+      })
 
     for (const transport of faberAgent.modules.didcomm.outboundTransports) {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       threadId: requestMessage.threadId,

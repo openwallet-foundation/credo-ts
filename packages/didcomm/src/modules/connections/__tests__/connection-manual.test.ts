@@ -56,7 +56,8 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
     const bobAgentOptions = getAgentOptions(
       'Manual Connection Flow Bob',
@@ -70,7 +71,8 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
     const faberAgentOptions = getAgentOptions(
       'Manual Connection Flow Faber',
@@ -82,7 +84,8 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const aliceAgent = new Agent(aliceAgentOptions)
@@ -145,11 +148,8 @@ describe('Manual Connection Flow', () => {
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)
 
-    await aliceAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await bobAgent.wallet.delete()
     await bobAgent.shutdown()
-    await faberAgent.wallet.delete()
     await faberAgent.shutdown()
   })
 })

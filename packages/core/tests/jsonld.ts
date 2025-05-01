@@ -109,7 +109,8 @@ export async function setupJsonLdTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         useBbs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
@@ -124,7 +125,8 @@ export async function setupJsonLdTests<
         autoAcceptCredentials,
         autoAcceptProofs,
         useBbs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
@@ -140,7 +142,8 @@ export async function setupJsonLdTests<
             autoAcceptCredentials,
             autoAcceptProofs,
             useBbs,
-          })
+          }),
+          { requireDidcomm: true }
         )
       )
     : undefined

@@ -14,9 +14,10 @@ import { getJwkClassFromJwaSignatureAlgorithm, getJwkFromKey } from '../../../cr
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { MessageValidator, asArray, isDid } from '../../../utils'
-import { DidResolverService, getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../dids'
+import { DidResolverService } from '../../dids'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
 
+import { getSupportedVerificationMethodTypesForPublicJwk } from '../../dids/domain/key-type/keyDidMapping'
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
@@ -509,7 +510,7 @@ export class W3cJwtCredentialService {
       const jwkClass = getJwkClassFromJwaSignatureAlgorithm(credential.jwt.header.alg)
       if (!jwkClass) throw new CredoError(`Unsupported JWT alg '${credential.jwt.header.alg}'`)
 
-      const { supportedVerificationMethodTypes } = getKeyDidMappingByKeyType(jwkClass.keyType)
+      const supportedVerificationMethodTypes = getSupportedVerificationMethodTypesForPublicJwk(jwkClass.keyType)
 
       const didDocument = await didResolver.resolveDidDocument(agentContext, signerId)
       const verificationMethods =

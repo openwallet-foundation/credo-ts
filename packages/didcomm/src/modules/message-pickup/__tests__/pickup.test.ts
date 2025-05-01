@@ -17,6 +17,7 @@ import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
 const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', undefined, undefined, undefined, {
   requireDidcomm: true,
+  inMemory: false,
 })
 const mediatorOptions = getAgentOptions(
   'Mediation Pickup Loop Mediator',
@@ -30,7 +31,7 @@ const mediatorOptions = getAgentOptions(
       messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
   },
-  { requireDidcomm: true }
+  { requireDidcomm: true, inMemory: false }
 )
 
 describe('E2E Pick Up protocol', () => {
@@ -77,7 +78,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(

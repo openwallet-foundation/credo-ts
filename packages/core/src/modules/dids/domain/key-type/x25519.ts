@@ -3,6 +3,7 @@ import type { KeyDidMapping } from './keyDidMapping'
 
 import { KeyType } from '../../../../crypto/KeyType'
 import { CredoError } from '../../../../error'
+import { X25519PublicJwk } from '../../../kms'
 import {
   VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
   VERIFICATION_METHOD_TYPE_MULTIKEY,
@@ -13,14 +14,15 @@ import {
   isX25519KeyAgreementKey2019,
 } from '../verificationMethod'
 
-export const keyDidX25519: KeyDidMapping = {
+export const keyDidX25519: KeyDidMapping<X25519PublicJwk> = {
+  PublicJwkTypes: [X25519PublicJwk],
   supportedVerificationMethodTypes: [
     VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
     VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
     VERIFICATION_METHOD_TYPE_MULTIKEY,
   ],
-  getVerificationMethods: (did, key) => [
-    getX25519KeyAgreementKey2019({ id: `${did}#${key.fingerprint}`, key, controller: did }),
+  getVerificationMethods: (did, publicJwk) => [
+    getX25519KeyAgreementKey2019({ id: `${did}#${publicJwk.fingerprint}`, publicJwk, controller: did }),
   ],
   getKeyFromVerificationMethod: (verificationMethod: VerificationMethod) => {
     if (isX25519KeyAgreementKey2019(verificationMethod)) {

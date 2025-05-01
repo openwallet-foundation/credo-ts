@@ -31,6 +31,7 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
+import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
 import { HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
 
@@ -110,8 +111,10 @@ export class ConnectionsApi {
       routing = await this.routingService.getRouting(this.agentContext, { mediatorId: outOfBandRecord.mediatorId })
     }
 
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let result
+    let result: {
+      message: DidExchangeRequestMessage | ConnectionRequestMessage
+      connectionRecord: ConnectionRecord
+    }
     if (protocol === HandshakeProtocol.DidExchange) {
       result = await this.didExchangeProtocol.createRequest(this.agentContext, outOfBandRecord, {
         label,
@@ -180,8 +183,7 @@ export class ConnectionsApi {
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let outboundMessageContext
+    let outboundMessageContext: OutboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
@@ -228,8 +230,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let outboundMessageContext
+    let outboundMessageContext: OutboundMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
