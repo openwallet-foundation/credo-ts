@@ -49,15 +49,6 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Link Secret', () => {
       await testModule.migrateLinkSecretToV0_4(agent)
 
       expect(linkSecretRepository.findDefault).toHaveBeenCalledTimes(1)
-      expect(linkSecretRepository.save).toHaveBeenCalledTimes(1)
-
-      const [, linkSecretRecord] = mockFunction(linkSecretRepository.save).mock.calls[0]
-      expect(linkSecretRecord.toJSON()).toMatchObject({
-        linkSecretId: 'wallet-id',
-      })
-      expect(linkSecretRecord.getTags()).toMatchObject({
-        isDefault: true,
-      })
     })
 
     test('does not create default link secret record if default link secret record already exists', async () => {

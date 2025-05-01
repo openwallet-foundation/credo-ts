@@ -30,13 +30,13 @@ export class BbsModule implements Module {
       suiteClass: BbsBlsSignature2020,
       proofType: 'BbsBlsSignature2020',
       verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
-      supportedPublicJwk: [],
+      supportedPublicJwkType: [],
     } satisfies SuiteInfo)
     dependencyManager.registerInstance(SignatureSuiteToken, {
       suiteClass: BbsBlsSignatureProof2020,
       proofType: 'BbsBlsSignatureProof2020',
       verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
-      supportedPublicJwk: [],
+      supportedPublicJwkType: [],
     } satisfies SuiteInfo)
   }
 }

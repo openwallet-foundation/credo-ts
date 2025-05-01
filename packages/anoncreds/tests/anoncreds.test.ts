@@ -88,6 +88,9 @@ const agent = new Agent(
           }),
         ],
       }),
+    },
+    {
+      requireDidcomm: true,
     }
   )
 )
@@ -98,7 +101,6 @@ describe('AnonCreds API', () => {
   })
 
   afterEach(async () => {
-    await agent.wallet.delete()
     await agent.shutdown()
   })
 

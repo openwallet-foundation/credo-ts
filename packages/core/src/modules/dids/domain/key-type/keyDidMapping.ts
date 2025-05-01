@@ -6,16 +6,14 @@ import { getPublicJwkFromJsonWebKey2020, isJsonWebKey2020 } from '../verificatio
 
 import { Constructor } from '../../../../utils/mixins'
 import { PublicJwk, getJwkHumanDescription } from '../../../kms'
-import { SupportedPublicJwk, SupportedPublicJwks } from '../../../kms/jwk/PublicJwk'
+import { SupportedPublicJwk, SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidSecp256k1 } from './secp256k1'
 import { keyDidX25519 } from './x25519'
 
 export interface KeyDidMapping<
-  PublicJwkType extends InstanceType<(typeof SupportedPublicJwks)[number]> = InstanceType<
-    (typeof SupportedPublicJwks)[number]
-  >,
+  PublicJwkType extends InstanceType<SupportedPublicJwkClass> = InstanceType<SupportedPublicJwkClass>,
 > {
   PublicJwkTypes: Array<Constructor<PublicJwkType>>
   getVerificationMethods: (did: string, publicJwk: PublicJwk<PublicJwkType>) => VerificationMethod[]
@@ -40,7 +38,7 @@ export function getVerificationMethodsForPublicJwk(publicJwk: PublicJwk, did: st
 }
 
 export function getSupportedVerificationMethodTypesForPublicJwk(
-  publicJwk: SupportedPublicJwk | PublicJwk | (typeof SupportedPublicJwks)[number]
+  publicJwk: SupportedPublicJwk | PublicJwk | SupportedPublicJwkClass
 ): string[] {
   const { supportedVerificationMethodTypes } = getKeyDidMappingByPublicJwk(publicJwk)
 
@@ -67,9 +65,7 @@ export function getPublicJwkFromVerificationMethod(verificationMethod: Verificat
   return keyDid.getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
-function getKeyDidMappingByPublicJwk(
-  jwk: SupportedPublicJwk | PublicJwk | (typeof SupportedPublicJwks)[number]
-): KeyDidMapping {
+function getKeyDidMappingByPublicJwk(jwk: SupportedPublicJwk | PublicJwk | SupportedPublicJwkClass): KeyDidMapping {
   const jwkTypeClass = jwk instanceof PublicJwk ? jwk.jwk.constructor : 'publicKey' in jwk ? jwk.constructor : jwk
 
   const keyDid = supportedKeyDids.find((supportedKeyDid) =>

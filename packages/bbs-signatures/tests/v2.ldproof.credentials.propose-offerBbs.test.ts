@@ -79,9 +79,7 @@ describeSkipNode18('credentials, BBS+ signature', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with V2 (ld format, BbsBlsSignature2020 signature) credential proposal to Faber', async () => {

@@ -314,7 +314,6 @@ export class IndySdkToAskarMigrationUpdater {
 
     const category = 'Indy::MasterSecret'
 
-    const storeConfig = this.agent.modules.askar.config.store
     this.agent.config.logger.info(`Migrating category: ${category}`)
 
     let updateCount = 0
@@ -337,7 +336,7 @@ export class IndySdkToAskarMigrationUpdater {
       for (const row of masterSecrets) {
         this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
 
-        const isDefault = masterSecrets.length === 0 || row.name === storeConfig.id
+        const isDefault = row.name === this.defaultLinkSecretId
 
         const {
           value: { ms },

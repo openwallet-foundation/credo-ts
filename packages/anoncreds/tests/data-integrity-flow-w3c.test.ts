@@ -1,4 +1,4 @@
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, SuiteInfo } from '@credo-ts/core'
 import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
@@ -9,7 +9,7 @@ import {
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
+  Kms,
   SignatureSuiteToken,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -35,6 +35,7 @@ import {
   createDidKidVerificationMethod,
   getAgentConfig,
   getAgentContext,
+  getAskarStoreConfig,
   testLogger,
 } from '../../core/tests'
 import {
@@ -45,6 +46,8 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
 import { AksarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
@@ -94,8 +97,15 @@ const agentContext = getAgentContext({
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
         ],
-        keyTypes: [KeyType.Ed25519],
-      },
+        supportedPublicJwkType: [Kms.Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+    ],
+    [
+      AskarModuleConfig,
+      new AskarModuleConfig({
+        askar,
+        store: getAskarStoreConfig('data-integrity-flow-w3c'),
+      }),
     ],
   ],
   agentConfig,

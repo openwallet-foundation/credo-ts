@@ -27,6 +27,7 @@ export const SupportedPublicJwks = [
   Secp256k1PublicJwk,
   X25519PublicJwk,
 ]
+export type SupportedPublicJwkClass = (typeof SupportedPublicJwks)[number]
 export type SupportedPublicJwk =
   | Ed25519PublicJwk
   | P256PublicJwk

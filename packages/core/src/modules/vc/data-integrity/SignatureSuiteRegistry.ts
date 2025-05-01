@@ -1,6 +1,6 @@
 import { CredoError } from '../../../error'
 import { injectAll, injectable } from '../../../plugins'
-import { PublicJwk, SupportedPublicJwks } from '../../kms/jwk/PublicJwk'
+import { PublicJwk, SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './libraries/jsonld-signatures'
 
@@ -11,13 +11,15 @@ export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
   verificationMethodTypes: string[]
-  supportedPublicJwk: (typeof SupportedPublicJwks)[number][]
+  supportedPublicJwkType: SupportedPublicJwkClass[]
 }
 
 @injectable()
 export class SignatureSuiteRegistry {
   private suiteMapping: SuiteInfo[]
 
+  // TODO: replace this signature suite token with just injecting and registering the suites
+  // on the registry. It's a bit ugly/awkward approach.
   public constructor(@injectAll(SignatureSuiteToken) suites: Array<SuiteInfo | 'default'>) {
     this.suiteMapping = suites.filter((suite): suite is SuiteInfo => suite !== 'default')
   }
@@ -34,7 +36,7 @@ export class SignatureSuiteRegistry {
   }
 
   public getAllByPublicJwk(publicJwk: PublicJwk) {
-    return this.suiteMapping.filter((x) => x.supportedPublicJwk.includes(publicJwk.jwk.constructor))
+    return this.suiteMapping.filter((x) => x.supportedPublicJwkType.includes(publicJwk.jwk.constructor))
   }
 
   public getByProofType(proofType: string) {
