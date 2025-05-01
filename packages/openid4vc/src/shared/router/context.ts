@@ -1,10 +1,10 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
 import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { NextFunction, Request, Response, Router } from 'express'
+import type { FastifyInstance } from 'fastify'
 
 import * as http from 'node:http'
 import { CredoError } from '@credo-ts/core'
-import { FastifyInstance } from 'fastify'
 
 export interface HasRequestContext<RC extends Record<string, unknown>> {
   requestContext?: RC & OpenId4VcRequestContext
