@@ -3,13 +3,11 @@ import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleCo
 import type { OpenId4VcIssuancePostRequest } from './requestContext'
 
 import { joinUriParts, utils } from '@credo-ts/core'
+import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  Oauth2ErrorCodes,
-  Oauth2ResourceUnauthorizedError,
-  Oauth2ServerErrorResponseError,
-  SupportedAuthenticationScheme,
-} from '@openid4vc/oauth2'
-import { CredentialRequest, getCredentialConfigurationsMatchingRequestFormat } from '@openid4vc/openid4vci'
+  CredentialConfigurationsSupportedWithFormats,
+  getCredentialConfigurationsMatchingRequestFormat,
+} from '@openid4vc/openid4vci'
 
 import createHttpError from 'http-errors'
 import { getCredentialConfigurationsSupportedForScopes } from '../../shared'
@@ -35,7 +33,6 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
       .verifyResourceRequest({
         authorizationServers: issuerMetadata.authorizationServers,
         resourceServer: issuerMetadata.credentialIssuer.credential_issuer,
-        allowedAuthenticationSchemes: config.dpopRequired ? [SupportedAuthenticationScheme.DPoP] : undefined,
         request: {
           headers: new Headers(request.headers as Record<string, string>),
           method: request.method as HttpMethod,
@@ -67,6 +64,7 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
 
     const parsedCredentialRequest = vcIssuer.parseCredentialRequest({
       credentialRequest,
+      issuerMetadata,
     })
 
     let issuanceSession: OpenId4VcIssuanceSessionRecord | null = null
@@ -92,7 +90,9 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
         400,
         parsedCredentialRequest.credentialIdentifier
           ? `Credential request containing 'credential_identifier' not supported`
-          : `Credential format '${parsedCredentialRequest.credentialRequest.format}' not supported`,
+          : parsedCredentialRequest.credentialConfigurationId
+            ? `Credential configuration '${parsedCredentialRequest.credentialConfigurationId}' not supported`
+            : `Credential format '${parsedCredentialRequest.credentialRequest.format}' not supported`,
         {
           type: 'oauth2_error',
           errorResponse: {
@@ -133,6 +133,19 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
         )
       }
 
+      // Use issuance session dpop config
+      if (issuanceSession.dpop?.required && !resourceRequestResult.dpop) {
+        return sendUnauthorizedError(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
+            scheme,
+            error: Oauth2ErrorCodes.InvalidDpopProof,
+          })
+        )
+      }
+
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
         if (issuanceSession.authorization.subject !== tokenPayload.sub) {
@@ -146,6 +159,7 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
           )
         }
       }
+
       // Stateful session expired
       else if (
         Date.now() >
@@ -174,17 +188,42 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
         }
       )
 
+      // Use global config when creating a dynamic session
+      if (config.dpopRequired && !resourceRequestResult.dpop) {
+        return sendUnauthorizedError(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
+            scheme,
+            error: Oauth2ErrorCodes.InvalidDpopProof,
+          })
+        )
+      }
+
+      const configurationsForScope = getCredentialConfigurationsSupportedForScopes(
+        issuerMetadata.credentialIssuer.credential_configurations_supported,
+        tokenPayload.scope?.split(' ') ?? []
+      )
+
       // All credential configurations that match the request scope and credential request
       // This is just so we don't create an issuance session that will fail immediately after
-      const credentialConfigurationsForToken = getCredentialConfigurationsMatchingRequestFormat({
-        credentialConfigurations: getCredentialConfigurationsSupportedForScopes(
-          issuerMetadata.credentialIssuer.credential_configurations_supported,
-          tokenPayload.scope?.split(' ') ?? []
-        ),
-        requestFormat: parsedCredentialRequest.format,
-      })
+      let configurationsForToken: CredentialConfigurationsSupportedWithFormats = {}
 
-      if (Object.keys(credentialConfigurationsForToken).length === 0) {
+      if (parsedCredentialRequest.credentialConfigurationId && parsedCredentialRequest.credentialConfiguration) {
+        if (configurationsForScope[parsedCredentialRequest.credentialConfigurationId]) {
+          configurationsForToken = {
+            [parsedCredentialRequest.credentialConfigurationId]: parsedCredentialRequest.credentialConfiguration,
+          }
+        }
+      } else if (parsedCredentialRequest.format) {
+        configurationsForToken = getCredentialConfigurationsMatchingRequestFormat({
+          credentialConfigurations: configurationsForScope,
+          requestFormat: parsedCredentialRequest.format,
+        })
+      }
+
+      if (Object.keys(configurationsForToken).length === 0) {
         throw createHttpError(403, 'No credential configurations match credential request and access token scope', {
           headers: {
             'WWW-Authenticate': new Oauth2ResourceUnauthorizedError(
@@ -200,13 +239,18 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
 
       issuanceSession = new OpenId4VcIssuanceSessionRecord({
         credentialOfferPayload: {
-          credential_configuration_ids: Object.keys(credentialConfigurationsForToken),
+          credential_configuration_ids: Object.keys(configurationsForToken),
           credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
         },
         credentialOfferId: utils.uuid(),
         issuerId: issuer.issuerId,
         state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
         clientId: tokenPayload.client_id,
+        dpop: config.dpopRequired
+          ? {
+              required: true,
+            }
+          : undefined,
         authorization: {
           subject: tokenPayload.sub,
         },

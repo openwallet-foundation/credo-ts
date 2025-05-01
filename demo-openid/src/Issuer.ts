@@ -1,7 +1,5 @@
 import type { DidKey } from '@credo-ts/core'
 import type {
-  OpenId4VcCredentialHolderBinding,
-  OpenId4VcCredentialHolderDidBinding,
   OpenId4VcIssuerRecord,
   OpenId4VcVerifierRecord,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -9,6 +7,7 @@ import type {
   OpenId4VciSignMdocCredentials,
   OpenId4VciSignSdJwtCredentials,
   OpenId4VciSignW3cCredentials,
+  VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
@@ -82,33 +81,23 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({
-    holderBindings,
-    credentialConfigurationIds,
-    credentialConfigurationsSupported: supported,
-    agentContext,
-    authorization,
-  }) => {
+  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, agentContext, authorization }) => {
     const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
     if (trustedCertificates?.length !== 1) {
       throw new Error(`Expected exactly one trusted certificate. Received ${trustedCertificates?.length}.`)
     }
 
-    const credentialConfigurationId = credentialConfigurationIds[0]
-    const credentialConfiguration = supported[credentialConfigurationId]
-
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
-        credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
             authorized_user: authorization.accessToken.payload.sub,
           },
-          holder: holderBinding,
+          holder: binding,
           issuer:
-            holderBindings[0].method === 'did'
+            binding.method === 'did'
               ? {
                   method: 'did',
                   didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
@@ -119,15 +108,11 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
-      for (const holderBinding of holderBindings) {
-        assertDidBasedHolderBinding(holderBinding)
-      }
+      assertDidBasedHolderBinding(holderBinding)
 
       return {
-        credentialConfigurationId,
         format: ClaimFormat.JwtVc,
-        credentials: holderBindings.map((holderBinding) => {
-          assertDidBasedHolderBinding(holderBinding)
+        credentials: holderBinding.keys.map((binding) => {
           return {
             credential: new W3cCredential({
               type: credentialConfiguration.credential_definition.type,
@@ -136,7 +121,7 @@ function getCredentialRequestToCredentialMapper({
               }),
               credentialSubject: JsonTransformer.fromJSON(
                 {
-                  id: parseDid(holderBinding.didUrl).did,
+                  id: parseDid(binding.didUrl).did,
                   authorizedUser: authorization.accessToken.payload.sub,
                 },
                 W3cCredentialSubject
@@ -151,16 +136,15 @@ function getCredentialRequestToCredentialMapper({
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
-        credentialConfigurationId,
         format: ClaimFormat.SdJwtVc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
             authorized_user: authorization.accessToken.payload.sub,
           },
-          holder: holderBinding,
+          holder: binding,
           issuer: {
             method: 'did',
             didUrl: `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`,
@@ -171,12 +155,13 @@ function getCredentialRequestToCredentialMapper({
     }
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+      assertJwkBasedHolderBinding(holderBinding)
+
       return {
-        credentialConfigurationId,
         format: ClaimFormat.MsoMdoc,
-        credentials: holderBindings.map((holderBinding) => ({
+        credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate: trustedCertificates[0],
-          holderKey: holderBinding.key,
+          holderKey: binding.key,
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
@@ -323,7 +308,7 @@ export class Issuer extends BaseAgent<{
 
     const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
-      offeredCredentials: options.credentialConfigurationIds,
+      credentialConfigurationIds: options.credentialConfigurationIds,
       // Pre-auth using our own server
       preAuthorizedCodeFlowConfig: !options.requireAuthorization
         ? {
@@ -363,9 +348,17 @@ export class Issuer extends BaseAgent<{
 }
 
 function assertDidBasedHolderBinding(
-  holderBinding: OpenId4VcCredentialHolderBinding
-): asserts holderBinding is OpenId4VcCredentialHolderDidBinding {
-  if (holderBinding.method !== 'did') {
+  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+): asserts holderBinding is VerifiedOpenId4VcCredentialHolderBinding & { bindingMethod: 'did' } {
+  if (holderBinding.bindingMethod !== 'did') {
     throw new CredoError('Only did based holder bindings supported for this credential type')
+  }
+}
+
+function assertJwkBasedHolderBinding(
+  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+): asserts holderBinding is VerifiedOpenId4VcCredentialHolderBinding & { bindingMethod: 'jwk' } {
+  if (holderBinding.bindingMethod !== 'jwk') {
+    throw new CredoError('Only jwk based holder bindings supported for this credential type')
   }
 }

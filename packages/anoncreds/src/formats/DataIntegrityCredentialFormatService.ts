@@ -282,7 +282,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         signature: jws.signature,
         payload: signedAttachment.data.base64,
       },
-      jwkResolver: async ({ protectedHeader: { kid } }) => {
+      allowedJwsSignerMethods: ['did'],
+      resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
         if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
         if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
 
@@ -290,7 +291,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         const didDocument = await didsApi.resolveDidDocument(kid)
         const verificationMethod = didDocument.dereferenceKey(kid)
         const key = getKeyFromVerificationMethod(verificationMethod)
-        return getJwkFromKey(key)
+
+        return {
+          alg,
+          method: 'did',
+          didUrl: kid,
+          jwk: getJwkFromKey(key),
+        }
       },
     })
 
@@ -915,10 +922,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext, // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
-  ) {
+  ): Promise<boolean> {
     throw new CredoError('Not implemented')
-    // biome-ignore lint/correctness/noUnreachable: <explanation>
-    return false
   }
 
   public async shouldAutoRespondToOffer(

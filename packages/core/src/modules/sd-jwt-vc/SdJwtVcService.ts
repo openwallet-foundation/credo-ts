@@ -111,7 +111,7 @@ export class SdJwtVcService {
 
     const header = {
       alg: issuer.alg,
-      typ: 'vc+sd-jwt',
+      typ: options.headerType ?? 'dc+sd-jwt',
       kid: issuer.kid,
       x5c: issuer.x5c,
     } as const
@@ -315,8 +315,14 @@ export class SdJwtVcService {
         verificationResult.isStatusValid = false
       }
 
+      if (sdJwtVc.jwt.header?.typ !== 'vc+sd-jwt' && sdJwtVc.jwt.header?.typ !== 'dc+sd-jwt') {
+        verificationResult.areRequiredClaimsIncluded = false
+        _error = new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`)
+      }
+
       try {
         JwtPayload.fromJson(returnSdJwtVc.payload).validate()
+
         verificationResult.isValidJwtPayload = true
       } catch (error) {
         _error = error
@@ -698,7 +704,12 @@ export class SdJwtVcService {
 
   private getStatusListFetcher(agentContext: AgentContext) {
     return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri)
+      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
+        headers: {
+          Accept: 'application/statuslist+jwt',
+        },
+      })
+
       if (!response.ok) {
         throw new CredoError(
           `Received invalid response with status ${

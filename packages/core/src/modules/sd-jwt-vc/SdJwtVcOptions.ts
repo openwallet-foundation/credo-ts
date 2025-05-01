@@ -71,6 +71,15 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
    * Default of sha-256 will be used if not provided
    */
   hashingAlgorithm?: HashName
+
+  /**
+   * The header 'typ' to use for the SD-JWT VC. vc+sd-jwt is supported
+   * for backwards compatibility but implementations should update to
+   * dc+sd-jwt
+   *
+   * @default 'dc+sd-jwt'
+   */
+  headerType?: 'dc+sd-jwt' | 'vc+sd-jwt'
 }
 
 // TODO: use the payload type once types are fixed

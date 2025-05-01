@@ -326,7 +326,6 @@ export class DifPresentationExchangeProofFormatService
           presentation: parsedPresentation,
           challenge: request.options.challenge,
           domain: request.options.domain,
-          trustedCertificates,
         })
       } else if (parsedPresentation.claimFormat === ClaimFormat.LdpVp) {
         if (

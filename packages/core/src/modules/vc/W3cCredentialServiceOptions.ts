@@ -1,6 +1,5 @@
 import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
 import type { SingleOrArray } from '../../utils/type'
-import type { EncodedX509Certificate } from '../x509'
 import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -182,7 +181,6 @@ interface W3cVerifyPresentationOptionsBase {
 
 export interface W3cJwtVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {
   presentation: W3cJwtVerifiablePresentation | string // string must be encoded VP JWT
-  trustedCertificates?: EncodedX509Certificate[]
 }
 
 export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentationOptionsBase {

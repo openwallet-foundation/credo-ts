@@ -139,17 +139,11 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization:
           getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-        credentialRequestToCredentialMapper: async ({
-          credentialRequest,
-          holderBindings,
-          credentialConfigurationIds,
-          verification,
-        }) => {
+        credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
           if (!verification) {
             throw new Error('Expected verification in credential request mapper')
           }
 
-          const credentialConfigurationId = credentialConfigurationIds[0]
           let credential: SdJwtVc
 
           if (verification.presentationExchange) {
@@ -176,9 +170,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
           if (credentialRequest.format === 'vc+sd-jwt') {
             return {
-              credentialConfigurationId,
               format: credentialRequest.format,
-              credentials: holderBindings.map((holderBinding) => ({
+              credentials: holderBinding.keys.map((holderBinding) => ({
                 payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
                 holder: holderBinding,
                 issuer: {
@@ -228,7 +221,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = () => ({
     method: 'jwk',
-    jwk: getJwkFromKey(holder.key),
+    keys: [getJwkFromKey(holder.key)],
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with presentation definition', async () => {
@@ -270,7 +263,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -393,7 +386,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -513,7 +506,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -561,7 +554,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },

@@ -47,11 +47,16 @@ export class X509Service {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
     const webCrypto = new CredoWebCrypto(agentContext)
 
-    const parsedLeafCertificate = new x509.X509Certificate(certificate)
-
-    const certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
-      (c) => new x509.X509Certificate(c)
-    )
+    let parsedLeafCertificate: x509.X509Certificate
+    let certificatesToBuildChain: x509.X509Certificate[]
+    try {
+      parsedLeafCertificate = new x509.X509Certificate(certificate)
+      certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
+        (c) => new x509.X509Certificate(c)
+      )
+    } catch (error) {
+      throw new X509Error('Error during parsing of x509 certificate', { cause: error })
+    }
 
     const certificateChainBuilder = new x509.X509ChainBuilder({
       certificates: certificatesToBuildChain,
@@ -109,7 +114,7 @@ export class X509Service {
       // In this case we could skip the signature verification (not other verifications), as we already trust the signer certificate,
       // but i think the purpose of ISO 18013-5 mDL is that you trust the root certificate. If we can't verify the whole chain e.g.
       // when we receive a credential we have the chance it will fail later on.
-      const skipSignatureVerification = i === 0 && trustedCertificates && cert.issuer !== cert.subject && !publicKey
+      const skipSignatureVerification = i === 0 && trustedCertificates && !publicKey
       // NOTE: at some point we might want to change this to throw an error instead of skipping the signature verification of the trusted
       // but it would basically prevent mDOCs from unknown issuers to be verified in the wallet. Verifiers should only trust the root certificate
       // anyway.

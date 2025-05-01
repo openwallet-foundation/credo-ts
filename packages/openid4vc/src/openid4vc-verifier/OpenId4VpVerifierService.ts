@@ -396,7 +396,9 @@ export class OpenId4VpVerifierService {
 
     try {
       const parsedClientId = getOpenid4vpClientId({
-        authorizationRequestPayload: authorizationRequest,
+        responseMode: authorizationRequest.response_mode,
+        clientId: authorizationRequest.client_id,
+        legacyClientIdScheme: authorizationRequest.client_id_scheme,
         origin: options.origin,
       })
 
@@ -911,52 +913,57 @@ export class OpenId4VpVerifierService {
           throw new CredoError('Expected vp_token entry for format mso_mdoc to be of type string')
         }
         const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
-        if (mdocDeviceResponse.documents.length !== 1) {
-          throw new CredoError('Only a single mdoc is supported per device response for OpenID4VP verification')
+        if (mdocDeviceResponse.documents.length === 0) {
+          throw new CredoError('mdoc device response does not contain any mdocs')
         }
 
-        const document = mdocDeviceResponse.documents[0]
-        const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
-          X509Certificate.fromRawCertificate(cert)
-        )
+        const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
-        const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-          certificateChain,
-          verification: {
-            type: 'credential',
-            credential: document,
-            openId4VcVerificationSessionId: options.verificationSessionId,
-          },
-        })
+        for (const deviceResponseIndex in deviceResponses) {
+          const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
-        let sessionTranscriptOptions: MdocSessionTranscriptOptions
-        if (options.origin) {
-          sessionTranscriptOptions = {
-            type: 'openId4VpDcApi',
-            clientId: options.audience,
-            verifierGeneratedNonce: options.nonce,
-            origin: options.origin,
+          const document = mdocDeviceResponse.documents[0]
+          const certificateChain = document.issuerSignedCertificateChain.map((cert) =>
+            X509Certificate.fromRawCertificate(cert)
+          )
+
+          const trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
+            certificateChain,
+            verification: {
+              type: 'credential',
+              credential: document,
+              openId4VcVerificationSessionId: options.verificationSessionId,
+            },
+          })
+
+          let sessionTranscriptOptions: MdocSessionTranscriptOptions
+          if (options.origin) {
+            sessionTranscriptOptions = {
+              type: 'openId4VpDcApi',
+              clientId: options.audience,
+              verifierGeneratedNonce: options.nonce,
+              origin: options.origin,
+            }
+          } else {
+            if (!options.mdocGeneratedNonce || !options.responseUri) {
+              throw new CredoError(
+                'mdocGeneratedNonce and responseUri are required for mdoc openid4vp session transcript calculation'
+              )
+            }
+            sessionTranscriptOptions = {
+              type: 'openId4Vp',
+              clientId: options.audience,
+              mdocGeneratedNonce: options.mdocGeneratedNonce,
+              responseUri: options.responseUri,
+              verifierGeneratedNonce: options.nonce,
+            }
           }
-        } else {
-          if (!options.mdocGeneratedNonce || !options.responseUri) {
-            throw new CredoError(
-              'mdocGeneratedNonce and responseUri are required for mdoc openid4vp session transcript calculation'
-            )
-          }
-          sessionTranscriptOptions = {
-            type: 'openId4Vp',
-            clientId: options.audience,
-            mdocGeneratedNonce: options.mdocGeneratedNonce,
-            responseUri: options.responseUri,
-            verifierGeneratedNonce: options.nonce,
-          }
+
+          await mdocDeviceResponse.verify(agentContext, {
+            sessionTranscriptOptions,
+            trustedCertificates,
+          })
         }
-
-        await mdocDeviceResponse.verify(agentContext, {
-          sessionTranscriptOptions,
-          trustedCertificates,
-        })
-
         // TODO: extract transaction data hashes once https://github.com/openid/OpenID4VP/pull/330 is resolved
 
         isValid = true
@@ -967,29 +974,10 @@ export class OpenId4VpVerifierService {
         }
 
         verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
-        const certificateChain = extractX509CertificatesFromJwt(verifiablePresentation.jwt)
-
-        let trustedCertificates: string[] | undefined = undefined
-        if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
-          trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-            certificateChain,
-            verification: {
-              type: 'credential',
-              credential: verifiablePresentation,
-              openId4VcVerificationSessionId: options.verificationSessionId,
-            },
-          })
-        }
-
-        if (!trustedCertificates) {
-          trustedCertificates = x509Config.trustedCertificates ?? []
-        }
-
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
           challenge: options.nonce,
           domain: options.audience,
-          trustedCertificates,
         })
 
         isValid = verificationResult.isValid
