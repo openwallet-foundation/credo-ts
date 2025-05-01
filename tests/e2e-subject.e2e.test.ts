@@ -4,7 +4,7 @@ import type { SubjectMessage } from './transport/SubjectInboundTransport'
 import { Subject } from 'rxjs'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
@@ -18,7 +18,7 @@ import {
   MediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 
-const recipientAgentOptions = getInMemoryAgentOptions(
+const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',
   {},
   {},
@@ -31,7 +31,7 @@ const recipientAgentOptions = getInMemoryAgentOptions(
     }),
   }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'E2E Subject Mediator',
   {
     endpoints: ['rxjs:mediator'],
@@ -44,7 +44,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
   }
 )
-const senderAgentOptions = getInMemoryAgentOptions(
+const senderAgentOptions = getAgentOptions(
   'E2E Subject Sender',
   {
     endpoints: ['rxjs:sender'],

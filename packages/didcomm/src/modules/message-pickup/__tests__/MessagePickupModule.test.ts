@@ -64,6 +64,9 @@ describe('MessagePickupModule', () => {
     expect(messagePickupProtocol.register).toHaveBeenCalledTimes(1)
     expect(messagePickupProtocol.register).toHaveBeenCalledWith(messageHandlerRegistry, featureRegistry)
 
+    expect(messagePickupSessionSessionService.start).not.toHaveBeenCalled()
+
+    await messagePickupModule.onInitializeContext(agentContext)
     expect(messagePickupSessionSessionService.start).toHaveBeenCalledTimes(1)
 
     // TODO: add test in each protocol to verify that it is properly registered in the feature registry

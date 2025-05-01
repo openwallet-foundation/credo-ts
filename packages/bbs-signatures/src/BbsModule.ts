@@ -1,8 +1,7 @@
-import type { DependencyManager, Module } from '@credo-ts/core'
+import type { DependencyManager, Module, SuiteInfo } from '@credo-ts/core'
 
 import {
   AgentConfig,
-  KeyType,
   SignatureSuiteToken,
   SigningProviderToken,
   VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020,
@@ -31,13 +30,13 @@ export class BbsModule implements Module {
       suiteClass: BbsBlsSignature2020,
       proofType: 'BbsBlsSignature2020',
       verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
-      keyTypes: [KeyType.Bls12381g2],
-    })
+      supportedPublicJwk: [],
+    } satisfies SuiteInfo)
     dependencyManager.registerInstance(SignatureSuiteToken, {
       suiteClass: BbsBlsSignatureProof2020,
       proofType: 'BbsBlsSignatureProof2020',
       verificationMethodTypes: [VERIFICATION_METHOD_TYPE_BLS12381G2_KEY_2020],
-      keyTypes: [KeyType.Bls12381g2],
-    })
+      supportedPublicJwk: [],
+    } satisfies SuiteInfo)
   }
 }

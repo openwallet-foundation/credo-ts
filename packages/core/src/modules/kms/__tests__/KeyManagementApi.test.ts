@@ -1,11 +1,11 @@
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ZodValidationError } from '../../../error/ZodValidationError'
 import { KeyManagementModule } from '../KeyManagementModule'
 import { KeyManagementError } from '../error/KeyManagementError'
 
-const agentOptions = getInMemoryAgentOptions('KeyManagementApi', undefined, {
+const agentOptions = getAgentOptions('KeyManagementApi', undefined, {
   keyManagement: new KeyManagementModule({
     backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
     defaultBackend: 'node',

@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
@@ -12,7 +12,7 @@ const modules = {
   questionAnswer: new QuestionAnswerModule(),
 }
 
-const bobAgentOptions = getInMemoryAgentOptions(
+const bobAgentOptions = getAgentOptions(
   'Bob Question Answer',
   {
     endpoints: ['rxjs:bob'],
@@ -22,7 +22,7 @@ const bobAgentOptions = getInMemoryAgentOptions(
   { requireDidcomm: true }
 )
 
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Question Answer',
   {
     endpoints: ['rxjs:alice'],

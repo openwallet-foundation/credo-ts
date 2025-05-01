@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForActionMenuRecord } from './helpers'
 
@@ -12,7 +12,7 @@ const modules = {
   actionMenu: new ActionMenuModule(),
 }
 
-const faberAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
   'Faber Action Menu',
   {
     endpoints: ['rxjs:faber'],
@@ -22,7 +22,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
   { requireDidcomm: true }
 )
 
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Action Menu',
   {
     endpoints: ['rxjs:alice'],

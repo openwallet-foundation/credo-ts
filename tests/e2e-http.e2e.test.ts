@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
@@ -15,7 +15,7 @@ import {
 } from '@credo-ts/didcomm'
 import { HttpInboundTransport } from '@credo-ts/node'
 
-const recipientAgentOptions = getInMemoryAgentOptions(
+const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
   {},
   {},
@@ -31,7 +31,7 @@ const recipientAgentOptions = getInMemoryAgentOptions(
 )
 
 const mediatorPort = 3000
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'E2E HTTP Mediator',
   {
     endpoints: [`http://localhost:${mediatorPort}`],
@@ -48,7 +48,7 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
 )
 
 const senderPort = 3001
-const senderAgentOptions = getInMemoryAgentOptions(
+const senderAgentOptions = getAgentOptions(
   'E2E HTTP Sender',
   {
     endpoints: [`http://localhost:${senderPort}`],

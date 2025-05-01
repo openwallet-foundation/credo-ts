@@ -30,12 +30,12 @@ import {
   MediatorService,
 } from '../../../../didcomm/src/modules/routing'
 import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
-import { getInMemoryAgentOptions } from '../../../tests/helpers'
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 
-const agentOptions = getInMemoryAgentOptions('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test')
 
 const myModuleMethod = jest.fn()
 @injectable()

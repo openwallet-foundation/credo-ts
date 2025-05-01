@@ -422,6 +422,7 @@ export class AskarStoreManager {
     const storeConfig = await this.getStoreConfig(agentContext)
 
     try {
+      agentContext.config.logger.debug(`Closing store '${storeConfig.id}'`)
       await store.close()
       // Unregister the store from the context
       agentContext.dependencyManager.registerInstance(Store, undefined)

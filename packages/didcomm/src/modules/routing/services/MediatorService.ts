@@ -6,6 +6,7 @@ import type { ForwardMessage, MediationRequestMessage } from '../messages'
 
 import {
   CredoError,
+  DidKey,
   EventEmitter,
   InjectionSymbols,
   Kms,
@@ -74,8 +75,9 @@ export class MediatorService {
     if (mediatorRoutingRecord) {
       // Return the routing keys
       this.logger.debug(`Returning mediator routing keys ${mediatorRoutingRecord.routingKeys}`)
-      return mediatorRoutingRecord.routingKeys
+      return mediatorRoutingRecord.routingKeysWithKeyId
     }
+
     throw new CredoError('Mediator has not been initialized yet.')
   }
 
@@ -197,11 +199,13 @@ export class MediatorService {
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     const useDidKey = didcommConfig.useDidKeyInProtocols
 
+    const routingKeys = (await this.getRoutingKeys(agentContext)).map((routingKey) =>
+      useDidKey ? new DidKey(routingKey).did : TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)
+    )
+
     const message = new MediationGrantMessage({
       endpoint: didcommConfig.endpoints[0],
-      routingKeys: useDidKey
-        ? (await this.getRoutingKeys(agentContext)).map(verkeyToDidKey)
-        : await this.getRoutingKeys(agentContext),
+      routingKeys,
       threadId: mediationRecord.threadId,
     })
 
@@ -247,24 +251,27 @@ export class MediatorService {
   }
 
   public async createMediatorRoutingRecord(agentContext: AgentContext): Promise<MediatorRoutingRecord | null> {
-    // FIXME: We should create a did:peer record, so we can decrypt the message
-    // FIXME: keyId
-    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const didcommConfig = agentContext.resolve(DidCommModuleConfig)
+
     const routingKey = await kms.createKey({
       type: {
         kty: 'OKP',
-        crv: 'X25519',
+        crv: 'Ed25519',
       },
     })
     const publicJwk = Kms.PublicJwk.fromPublicJwk(routingKey.publicJwk)
 
     const routingRecord = new MediatorRoutingRecord({
       id: this.mediatorRoutingRepository.MEDIATOR_ROUTING_RECORD_ID,
-      // FIXME: update to list of JWKs including a kid
-      routingKeys: [TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)],
+      routingKeys: [
+        {
+          routingKeyFingerprint: publicJwk.fingerprint,
+          kmsKeyId: routingKey.keyId,
+        },
+      ],
     })
 
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
     try {
       await this.mediatorRoutingRepository.save(agentContext, routingRecord)
       this.eventEmitter.emit(agentContext, {

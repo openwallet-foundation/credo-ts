@@ -30,13 +30,13 @@ import { Key } from '../src/crypto'
 import { JsonEncoder, JsonTransformer } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
 
 import { CredoError } from '@credo-ts/core'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Faber Agent OOB',
     {
       endpoints: ['rxjs:faber'],
@@ -48,7 +48,7 @@ const faberAgent = new Agent(
   )
 )
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Alice Agent OOB',
     {
       endpoints: ['rxjs:alice'],

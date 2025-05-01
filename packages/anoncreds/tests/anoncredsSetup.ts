@@ -45,7 +45,7 @@ import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
 import { sleep } from '../../core/src/utils/sleep'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecordSubject,
@@ -333,7 +333,7 @@ export async function setupAnonCredsTests<
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getInMemoryAgentOptions(
+    getAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
@@ -350,7 +350,7 @@ export async function setupAnonCredsTests<
   )
 
   const holderAgent = new Agent(
-    getInMemoryAgentOptions(
+    getAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
@@ -368,7 +368,7 @@ export async function setupAnonCredsTests<
 
   const verifierAgent = verifierName
     ? new Agent(
-        getInMemoryAgentOptions(
+        getAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],

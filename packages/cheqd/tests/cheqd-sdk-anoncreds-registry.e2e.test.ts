@@ -2,13 +2,13 @@ import type { CheqdDidCreateOptions } from '../src'
 
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(getInMemoryAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeeds[2])))
+const agent = new Agent(getAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeeds[2])))
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 

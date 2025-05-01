@@ -2,16 +2,14 @@ import type { CheqdDidCreateOptions } from '../src'
 
 import { Agent, JsonTransformer, utils } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdDidRegistrar } from '../src'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export const resolverAgent = new Agent(
-  getInMemoryAgentOptions('Cheqd resolver', {}, {}, getCheqdModules(cheqdPayerSeeds[1]))
-)
+export const resolverAgent = new Agent(getAgentOptions('Cheqd resolver', {}, {}, getCheqdModules(cheqdPayerSeeds[1])))
 
 describe('Cheqd DID resolver', () => {
   let did: string

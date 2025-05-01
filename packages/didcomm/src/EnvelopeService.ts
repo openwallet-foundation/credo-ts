@@ -5,7 +5,7 @@ import type { EncryptedMessage, PlaintextMessage } from './types'
 import { InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { OutOfBandRepository, OutOfBandRole } from './modules'
+import { MediatorRoutingRepository, OutOfBandRepository, OutOfBandRole } from './modules'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
 import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { ForwardMessage } from './modules/routing/messages'
@@ -140,103 +140,21 @@ export class EnvelopeService {
       throw new CredoError(`Unsupported enc algorithm: ${protectedJson.enc}`)
     }
 
-    let recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined = undefined
-    let recipient:
-      | {
-          header: {
-            kid: string
-            iv?: string
-            sender?: string
-          }
-          encrypted_key: string
-        }
-      | undefined = undefined
+    let recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null = null
+    let recipient: {
+      header: {
+        kid: string
+        iv?: string
+        sender?: string
+      }
+      encrypted_key: string
+    } | null = null
 
     for (const _recipient of protectedJson.recipients) {
-      const publicKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
-        kty: 'OKP',
-        crv: 'Ed25519',
-        publicKey: TypedArrayEncoder.fromBase58(_recipient.header.kid),
-      })
+      recipientKey = await this.extractOurRecipientKeyWithKeyId(agentContext, _recipient)
 
-      // We need to find the associated did based on the recipient key
-      // so we can extract the kms key id from the did record.
-      try {
-        const { didDocument, didRecord } =
-          await this.didcommDocumentService.resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext, publicKey)
-
-        const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
-        const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
-          verificationMethod.id.endsWith(didDocumentRelativeKeyId)
-        )?.kmsKeyId
-
-        publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
-        recipientKey = publicKey
+      if (recipientKey) {
         recipient = _recipient
-        break
-      } catch (error) {
-        // If there is no did record yet, we need to look at the out of band record
-        if (error instanceof RecordNotFoundError) {
-          const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
-          const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
-            $or: [
-              // In case we are the creator of the out of band invitation we can query based on
-              // out of band invitation recipient key fingerprint
-              {
-                role: OutOfBandRole.Sender,
-                recipientKeyFingerprints: [publicKey.fingerprint],
-              },
-              // In case we are the receiver of the out of band invitation we need to query
-              // for the recipient routing fingerprint
-              {
-                role: OutOfBandRole.Receiver,
-                recipientRoutingKeyFingerprint: publicKey.fingerprint,
-              },
-            ],
-          })
-
-          if (outOfBandRecord?.role === OutOfBandRole.Sender) {
-            for (const service of outOfBandRecord.outOfBandInvitation.getInlineServices()) {
-              const resolvedService = getResolvedDidcommServiceWithSigningKeyId(
-                service,
-                outOfBandRecord.invitationInlineServiceKeys
-              )
-              const _recipientKey = resolvedService.recipientKeys.find((recipientKey) => recipientKey.equals(publicKey))
-
-              if (_recipientKey) {
-                recipientKey = _recipientKey
-                recipient = _recipient
-                break
-              }
-            }
-          } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
-            // If there is still no key we need to look at the metadata
-            const recipieintRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
-            if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
-              publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
-              recipient = _recipient
-              recipientKey = publicKey
-              break
-            }
-          } else {
-            // If there is no did found, and no out of band record found, we assume this is a connectionless
-            // oob exchange initiated before we added key ids. We will check if the public key exists based
-            // on the base58 encoded public key. We should probably remove this flow at some point, as it only
-            // affects received oob invitations which:
-            // - have been received but not accepted yet (auto accept is true, so this is already rare)
-            // - are connectionless (this is more common, but usually ephemeral anyway)
-            const kmsJwkPublic = await kms.getPublicKey({
-              keyId: publicKey.legacyKeyId,
-            })
-
-            if (kmsJwkPublic) {
-              publicKey.keyId = publicKey.legacyKeyId
-              recipient = _recipient
-              recipientKey = publicKey
-              break
-            }
-          }
-        }
       }
     }
 
@@ -349,6 +267,146 @@ export class EnvelopeService {
   ): Promise<DecryptedMessageContext> {
     const decryptedMessage = await this.decryptDidcommV1Message(agentContext, encryptedMessage)
     return decryptedMessage
+  }
+
+  private async extractOurRecipientKeyWithKeyId(
+    agentContext: AgentContext,
+    recipient: {
+      header: {
+        kid: string
+      }
+    }
+  ): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk> | null> {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+
+    const publicKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      kty: 'OKP',
+      crv: 'Ed25519',
+      publicKey: TypedArrayEncoder.fromBase58(recipient.header.kid),
+    })
+
+    // We need to find the associated did based on the recipient key
+    // so we can extract the kms key id from the did record.
+    try {
+      const { didDocument, didRecord } =
+        await this.didcommDocumentService.resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext, publicKey)
+
+      const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
+      const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+      )?.kmsKeyId
+
+      agentContext.config.logger.debug(
+        `Found did '${didRecord.did}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+      )
+
+      publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId
+      return publicKey
+    } catch (error) {
+      // If there is no did record yet, we first look at the mediator routing record
+      const mediatorRoutingRepository = agentContext.dependencyManager.resolve(MediatorRoutingRepository)
+      if (error instanceof RecordNotFoundError) {
+        const mediatorRoutingRecord = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
+          routingKeyFingerprints: [publicKey.fingerprint],
+        })
+
+        if (mediatorRoutingRecord) {
+          agentContext.config.logger.debug(
+            `Found mediator routing record with id '${mediatorRoutingRecord.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+          )
+
+          const routingKey = mediatorRoutingRecord.routingKeysWithKeyId.find((routingKey) =>
+            publicKey.equals(routingKey)
+          )
+
+          // This should not happen as we only get here if the tag matches
+          if (!routingKey) {
+            throw new CredoError(
+              `Expected to find key with fingerprint '${publicKey.fingerprint}' in routing keys of mediator routing record '${mediatorRoutingRecord.id}'`
+            )
+          }
+
+          if (routingKey) {
+            return routingKey
+          }
+        }
+
+        //  If there is no mediator routing record, we look at the out of band record
+        const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
+        const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
+          $or: [
+            // In case we are the creator of the out of band invitation we can query based on
+            // out of band invitation recipient key fingerprint
+            {
+              role: OutOfBandRole.Sender,
+              recipientKeyFingerprints: [publicKey.fingerprint],
+            },
+            // In case we are the receiver of the out of band invitation we need to query
+            // for the recipient routing fingerprint
+            {
+              role: OutOfBandRole.Receiver,
+              recipientRoutingKeyFingerprint: publicKey.fingerprint,
+            },
+          ],
+        })
+
+        if (outOfBandRecord?.role === OutOfBandRole.Sender) {
+          agentContext.config.logger.debug(
+            `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+          )
+
+          for (const service of outOfBandRecord.outOfBandInvitation.getInlineServices()) {
+            const resolvedService = getResolvedDidcommServiceWithSigningKeyId(
+              service,
+              outOfBandRecord.invitationInlineServiceKeys
+            )
+            const _recipientKey = resolvedService.recipientKeys.find((recipientKey) => recipientKey.equals(publicKey))
+
+            if (_recipientKey) {
+              return _recipientKey
+            }
+          }
+        } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
+          agentContext.config.logger.debug(
+            `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+          )
+
+          // If there is still no key we need to look at the metadata
+          const recipieintRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+          if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
+            publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
+            return publicKey
+          }
+        }
+
+        // If there is no did found, no out of band record found, and not mediator routing record
+        // this is either:
+        //  - a connectionless oob exchange initiated before we added key ids.
+        //  - a message for a mediator, where the mediator routing record is created before we added key ids
+        //
+        // We will check if the public key exists based on the base58 encoded public key. We can remove this flow once we create a migration
+        // that optimizes this flow.
+        const kmsJwkPublic = await kms
+          .getPublicKey({
+            keyId: publicKey.legacyKeyId,
+          })
+          .catch((error) => {
+            if (error instanceof Kms.KeyManagementKeyNotFoundError) return null
+            throw error
+          })
+        if (kmsJwkPublic) {
+          agentContext.config.logger.debug(
+            `Found public key with legacy key id '${publicKey.legacyKeyId}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+          )
+
+          publicKey.keyId = publicKey.legacyKeyId
+          return publicKey
+        }
+      }
+    }
+
+    // no match found
+    return null
   }
 }
 

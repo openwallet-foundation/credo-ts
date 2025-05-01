@@ -1,6 +1,6 @@
 import { Optionality } from '@sphereon/pex-models'
 
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { X509Service } from '../../x509'
@@ -8,7 +8,7 @@ import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
 describe('mdoc device-response test', () => {
-  const agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
+  const agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
   beforeEach(async () => {
     await agent.initialize()
   })

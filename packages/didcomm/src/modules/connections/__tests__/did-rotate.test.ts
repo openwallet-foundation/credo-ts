@@ -8,7 +8,7 @@ import { createPeerDidDocumentFromServices } from '../../../../../core/src/modul
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
@@ -30,10 +30,10 @@ describe('Rotation E2E tests', () => {
   let bobAliceConnection: ConnectionRecord | undefined
 
   beforeEach(async () => {
-    const aliceAgentOptions = getInMemoryAgentOptions('DID Rotate Alice', {
+    const aliceAgentOptions = getAgentOptions('DID Rotate Alice', {
       endpoints: ['rxjs:alice'],
     })
-    const bobAgentOptions = getInMemoryAgentOptions('DID Rotate Bob', {
+    const bobAgentOptions = getAgentOptions('DID Rotate Bob', {
       endpoints: ['rxjs:bob'],
     })
 

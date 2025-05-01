@@ -1,6 +1,6 @@
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests'
+import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
@@ -71,7 +71,7 @@ const existingRevocationStatusLists = {
 }
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'credo-anoncreds-package',
     {},
     {},

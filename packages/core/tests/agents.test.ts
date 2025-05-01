@@ -3,13 +3,13 @@ import type { ConnectionRecord } from '../../didcomm/src'
 import { HandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getInMemoryAgentOptions('Agents Alice', {
+const aliceAgentOptions = getAgentOptions('Agents Alice', {
   endpoints: ['rxjs:alice'],
 })
-const bobAgentOptions = getInMemoryAgentOptions('Agents Bob', {
+const bobAgentOptions = getAgentOptions('Agents Bob', {
   endpoints: ['rxjs:bob'],
 })
 

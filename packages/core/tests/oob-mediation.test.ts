@@ -19,12 +19,12 @@ import {
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberAgentOptions = getInMemoryAgentOptions('OOB mediation - Faber Agent', {
+const faberAgentOptions = getAgentOptions('OOB mediation - Faber Agent', {
   endpoints: ['rxjs:faber'],
 })
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'OOB mediation - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
@@ -36,7 +36,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     }),
   }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'OOB mediation - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],

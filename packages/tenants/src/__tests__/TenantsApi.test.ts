@@ -1,6 +1,6 @@
 import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
-import { getAgentContext, getInMemoryAgentOptions, mockFunction } from '../../../core/tests'
+import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
@@ -16,7 +16,7 @@ const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantA
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
 agentContextProvider.getContextCorrelationIdForTenantId = (tenantId) => `tenant-${tenantId}`
-const agentOptions = getInMemoryAgentOptions('TenantsApi', undefined, { autoUpdateStorageOnStartup: true })
+const agentOptions = getAgentOptions('TenantsApi', undefined, { autoUpdateStorageOnStartup: true })
 const rootAgent = new Agent(agentOptions)
 rootAgent.dependencyManager.registerInstance(InjectionSymbols.AgentContextProvider, agentContextProvider)
 

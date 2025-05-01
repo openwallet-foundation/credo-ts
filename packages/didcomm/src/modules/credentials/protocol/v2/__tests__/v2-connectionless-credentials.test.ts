@@ -13,7 +13,7 @@ import {
   storePreCreatedAnonCredsDefinition,
 } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
-import { getInMemoryAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
+import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
 import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialEventTypes } from '../../../CredentialEvents'
@@ -22,7 +22,7 @@ import { CredentialState } from '../../../models/CredentialState'
 import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
 
-const faberAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
   'Faber connection-less Credentials V2',
   {
     endpoints: ['rxjs:faber'],
@@ -31,7 +31,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
   getAnonCredsIndyModules()
 )
 
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice connection-less Credentials V2',
   {
     endpoints: ['rxjs:alice'],

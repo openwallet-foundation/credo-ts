@@ -3,7 +3,7 @@ import type { DifPresentationExchangeDefinition } from '../../dif-presentation-e
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { KeyType } from '../../../crypto'
 import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
@@ -134,7 +134,7 @@ describe('mdoc device-response openid4vp test', () => {
 
   describe('P256', () => {
     beforeEach(async () => {
-      agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
+      agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
       await agent.initialize()
 
       const devicePrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(DEVICE_JWK_PRIVATE_P256) })
@@ -291,7 +291,7 @@ describe('mdoc device-response openid4vp test', () => {
 
   describe('EdDSA', () => {
     beforeEach(async () => {
-      agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent-eddsa', {}))
+      agent = new Agent(getAgentOptions('mdoc-test-agent-eddsa', {}))
       await agent.initialize()
     })
 

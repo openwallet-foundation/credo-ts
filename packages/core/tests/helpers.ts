@@ -33,8 +33,6 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
-
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import {
   AgentEventTypes,
   BasicMessageEventTypes,
@@ -62,10 +60,11 @@ import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { AskarModule } from '../../askar/src/AskarModule'
 import { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
-import { KeyManagementApi, KeyManagementModule, KeyManagementService, PublicJwk } from '../src/modules/kms'
+import { KeyManagementApi, KeyManagementService, PublicJwk } from '../src/modules/kms'
 import testLogger, { TestLogger } from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -106,7 +105,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
-  inMemoryWallet = true
+  { requireDidcomm = false, inMemory = true }: { requireDidcomm?: boolean; inMemory?: boolean } = {}
 ): {
   config: InitConfig
   modules: AgentModules & DefaultAgentModulesInput
@@ -123,85 +122,23 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   }
 
   const m = (inputModules ?? {}) as AgentModulesInput
+
+  const _kmsModules =
+    requireDidcomm || !inMemory
+      ? {
+          askar: new AskarModule({
+            askar,
+            store: getAskarStoreConfig(name, { inMemory }),
+          }),
+        }
+      : {
+          inMemory: new InMemoryWalletModule(),
+        }
+
   const modules = {
-    ...getDefaultDidcommModules(didcommConfig),
+    ...(requireDidcomm ? getDefaultDidcommModules(didcommConfig) : {}),
     ...m,
-    // Make sure connections module is always defined so we can set autoAcceptConnections
-    connections:
-      m.connections ??
-      new ConnectionsModule({
-        autoAcceptConnections: true,
-      }),
-    askar: new AskarModule({
-      askar,
-      store: getAskarStoreConfig(name, {
-        inMemory: inMemoryWallet,
-        random,
-      }),
-    }),
-  }
-
-  return {
-    config,
-    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
-    dependencies: agentDependencies,
-  } as const
-}
-
-export function getInMemoryAgentOptions<
-  AgentModules extends DefaultAgentModulesInput | AgentModulesInput | EmptyModuleMap,
->(
-  name: string,
-  didcommExtraConfig: Partial<DidCommModuleConfigOptions> = {},
-  extraConfig: Partial<InitConfig> = {},
-  inputModules?: AgentModules,
-  { requireDidcomm = false }: { requireDidcomm?: boolean } = {}
-): {
-  config: InitConfig
-  modules: AgentModules & DefaultAgentModulesInput
-  dependencies: AgentDependencies
-} {
-  const random = uuid().slice(0, 4)
-  const config: InitConfig = {
-    label: `Agent: ${name} - ${random}`,
-    // TODO: determine the log level based on an environment variable. This will make it
-    // possible to run e.g. failed github actions in debug mode for extra logs
-    logger: TestLogger.fromLogger(testLogger, name),
-    ...extraConfig,
-  }
-
-  const didcommConfig: DidCommModuleConfigOptions = { ...didcommExtraConfig }
-  const kmsModules = requireDidcomm
-    ? {
-        askar: new AskarModule({
-          enableKms: true,
-          enableStorage: false,
-          askar,
-          store: {
-            id: `Wallet: ${name} - ${random}`,
-            key: `Wallet: ${name}`,
-            database: {
-              type: 'sqlite',
-              config: {
-                inMemory: true,
-              },
-            },
-          },
-        }),
-      }
-    : {
-        kms: new KeyManagementModule({
-          backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
-        }),
-      }
-
-  const m = (inputModules ?? {}) as AgentModulesInput
-  const modules = {
-    ...getDefaultDidcommModules(didcommConfig),
-    ...m,
-
-    ...kmsModules,
-    inMemory: new InMemoryWalletModule(),
+    ..._kmsModules,
     // Make sure connections module is always defined so we can set autoAcceptConnections
     connections:
       m.connections ??

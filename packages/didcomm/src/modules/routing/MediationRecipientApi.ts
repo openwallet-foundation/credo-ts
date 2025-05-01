@@ -25,14 +25,12 @@ import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'
 import { TransportEventTypes } from '../../transport'
-import { ConnectionsApi } from '../connections'
 import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../connections/services'
 import { DiscoverFeaturesApi } from '../discover-features'
 import { MessagePickupApi } from '../message-pickup/MessagePickupApi'
 import { V1BatchPickupMessage } from '../message-pickup/protocol/v1'
 import { V2StatusMessage } from '../message-pickup/protocol/v2'
-import { OutOfBandApi } from '../oob'
 
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
@@ -495,38 +493,5 @@ export class MediationRecipientApi {
     messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
     //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
-  }
-
-  protected async getMediationConnection(mediatorInvitationUrl: string) {
-    const connectionsApi = this.agentContext.dependencyManager.resolve(ConnectionsApi)
-    const oobApi = this.agentContext.dependencyManager.resolve(OutOfBandApi)
-
-    const outOfBandInvitation = await oobApi.parseInvitation(mediatorInvitationUrl)
-
-    const outOfBandRecord = await oobApi.findByReceivedInvitationId(outOfBandInvitation.id)
-    const [connection] = outOfBandRecord ? await connectionsApi.findAllByOutOfBandId(outOfBandRecord.id) : []
-
-    if (!connection) {
-      this.agentContext.config.logger.debug('Mediation connection does not exist, creating connection')
-      // We don't want to use the current default mediator when connecting to another mediator
-      const routing = await this.getRouting({ useDefaultMediator: false })
-
-      this.agentContext.config.logger.debug('Routing created', routing)
-      const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {
-        routing,
-      })
-      this.agentContext.config.logger.debug('Mediation invitation processed', { outOfBandInvitation })
-
-      if (!newConnection) {
-        throw new CredoError('No connection record to provision mediation.')
-      }
-
-      return connectionsApi.returnWhenIsConnected(newConnection.id)
-    }
-
-    if (!connection.isReady) {
-      return connectionsApi.returnWhenIsConnected(connection.id)
-    }
-    return connection
   }
 }

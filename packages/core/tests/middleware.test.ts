@@ -14,21 +14,16 @@ import {
 } from '../../didcomm/src'
 import { Agent, JsonTransformer } from '../src'
 
-import {
-  getInMemoryAgentOptions,
-  makeConnection,
-  waitForAgentMessageProcessedEvent,
-  waitForBasicMessage,
-} from './helpers'
+import { getAgentOptions, makeConnection, waitForAgentMessageProcessedEvent, waitForBasicMessage } from './helpers'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions('Faber Message Handler Middleware', {
+  getAgentOptions('Faber Message Handler Middleware', {
     endpoints: ['rxjs:faber'],
   })
 )
 
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions('Alice Message Handler Middleware', {
+  getAgentOptions('Alice Message Handler Middleware', {
     endpoints: ['rxjs:alice'],
   })
 )

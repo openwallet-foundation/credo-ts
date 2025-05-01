@@ -19,7 +19,7 @@ import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/d
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
   setupSubjectTransports,
@@ -113,7 +113,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
   beforeAll(async () => {
     faberAgent = new Agent(
-      getInMemoryAgentOptions(
+      getAgentOptions(
         'Faber Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:faber'],
@@ -123,7 +123,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       )
     )
     aliceAgent = new Agent(
-      getInMemoryAgentOptions(
+      getAgentOptions(
         'Alice Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:alice'],

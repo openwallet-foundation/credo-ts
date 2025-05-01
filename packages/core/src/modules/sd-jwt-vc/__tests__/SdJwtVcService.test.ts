@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto'
 import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
 
-import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
+import { agentDependencies, getAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
@@ -52,7 +52,7 @@ const jwkJsonWithoutUse = (jwk: Jwk) => {
 }
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'sdjwtvcserviceagent',
     {},
     {},

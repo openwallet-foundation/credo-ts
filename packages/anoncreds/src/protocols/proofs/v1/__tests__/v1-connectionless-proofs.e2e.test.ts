@@ -8,7 +8,7 @@ import { SubjectOutboundTransport } from '../../../../../../../tests/transport/S
 import { Agent } from '../../../../../../core/src'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
   testLogger,
@@ -360,7 +360,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorAgentOptions = getInMemoryAgentOptions(
+    const mediatorAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
@@ -392,7 +392,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberAgentOptions = getInMemoryAgentOptions(
+    const faberAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {},
@@ -409,7 +409,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       }
     )
 
-    const aliceAgentOptions = getInMemoryAgentOptions(
+    const aliceAgentOptions = getAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {},

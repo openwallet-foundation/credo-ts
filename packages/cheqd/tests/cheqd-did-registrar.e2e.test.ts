@@ -12,13 +12,13 @@ import {
   utils,
 } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { validService } from './setup'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
+const agentOptions = getAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
 
 describe('Cheqd DID registrar', () => {
   let agent: Agent<ReturnType<typeof getCheqdModules>>

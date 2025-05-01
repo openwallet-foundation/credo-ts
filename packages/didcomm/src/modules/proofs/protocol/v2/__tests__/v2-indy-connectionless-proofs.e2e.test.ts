@@ -15,7 +15,7 @@ import {
 import { Agent } from '../../../../../../../core'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
   testLogger,
@@ -270,7 +270,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getInMemoryAgentOptions(
+    const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
@@ -305,7 +305,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberOptions = getInMemoryAgentOptions(
+    const faberOptions = getAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {},
@@ -322,7 +322,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       }
     )
 
-    const aliceOptions = getInMemoryAgentOptions(
+    const aliceOptions = getAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {},

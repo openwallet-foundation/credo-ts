@@ -7,7 +7,7 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getInMemoryAgentOptions } from '../../../../../core/tests/helpers'
+import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { DidExchangeState } from '../models'
@@ -94,7 +94,7 @@ async function didExchangeNumAlgoBaseTest(options: {
   // Make a common in-memory did registry for both agents
   const didRegistry = new InMemoryDidRegistry()
 
-  const aliceAgentOptions = getInMemoryAgentOptions(
+  const aliceAgentOptions = getAgentOptions(
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:alice'],
@@ -110,7 +110,7 @@ async function didExchangeNumAlgoBaseTest(options: {
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
     }
   )
-  const faberAgentOptions = getInMemoryAgentOptions(
+  const faberAgentOptions = getAgentOptions(
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:faber'],

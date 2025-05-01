@@ -2,19 +2,19 @@ import type { Key } from '@credo-ts/core'
 
 import nock, { cleanAll } from 'nock'
 
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
 
 import { Agent, DidKey, KeyType, TypedArrayEncoder, getJwkFromKey } from '@credo-ts/core'
 
 describe('sd-jwt-vc end to end test', () => {
-  const issuer = new Agent(getInMemoryAgentOptions('sd-jwt-vc-issuer-agent'))
+  const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
   let issuerKey: Key
   let issuerDidUrl: string
 
-  const holder = new Agent(getInMemoryAgentOptions('sd-jwt-vc-holder-agent'))
+  const holder = new Agent(getAgentOptions('sd-jwt-vc-holder-agent'))
   let holderKey: Key
 
-  const verifier = new Agent(getInMemoryAgentOptions('sd-jwt-vc-verifier-agent'))
+  const verifier = new Agent(getAgentOptions('sd-jwt-vc-verifier-agent'))
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
 
   beforeAll(async () => {

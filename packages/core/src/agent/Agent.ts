@@ -90,6 +90,10 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       )
     }
 
+    // We first initialize all the modules
+    await this.dependencyManager.initializeModules(this.agentContext)
+
+    // Then we initialize the root agent context
     await this.dependencyManager.initializeAgentContext(this.agentContext)
 
     // Make sure the storage is up to date
@@ -113,8 +117,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
         `Current agent storage is not up to date. To prevent the framework state from getting corrupted the agent initialization is aborted. Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
       )
     }
-
-    await this.dependencyManager.initializeModules(this.agentContext)
 
     this._isInitialized = true
   }

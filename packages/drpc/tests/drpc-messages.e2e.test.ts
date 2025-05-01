@@ -3,7 +3,7 @@ import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/
 
 import { Agent } from '../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../core/tests'
-import { getInMemoryAgentOptions, makeConnection } from '../../core/tests/helpers'
+import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { DrpcModule } from '../src/DrpcModule'
 import { DrpcErrorCode } from '../src/models'
@@ -12,7 +12,7 @@ const modules = {
   drpc: new DrpcModule(),
 }
 
-const faberConfig = getInMemoryAgentOptions(
+const faberConfig = getAgentOptions(
   'Faber Drpc Messages',
   {
     endpoints: ['rxjs:faber'],
@@ -22,7 +22,7 @@ const faberConfig = getInMemoryAgentOptions(
   { requireDidcomm: true }
 )
 
-const aliceConfig = getInMemoryAgentOptions(
+const aliceConfig = getAgentOptions(
   'Alice Drpc Messages',
   {
     endpoints: ['rxjs:alice'],

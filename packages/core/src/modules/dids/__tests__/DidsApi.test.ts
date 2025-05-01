@@ -1,4 +1,4 @@
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 
@@ -11,7 +11,7 @@ import {
   createPeerDidDocumentFromServices,
 } from '@credo-ts/core'
 
-const agentOptions = getInMemoryAgentOptions('DidsApi')
+const agentOptions = getAgentOptions('DidsApi')
 
 const agent = new Agent(agentOptions)
 

@@ -1,10 +1,8 @@
-import type { Wallet } from '../../../../../../core/src/wallet'
-
 import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
-import { Key } from '../../../../../../core/src/crypto'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../../node/src'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { RoutingEventTypes } from '../../RoutingEvents'
 import { MediationRecipientService } from '../MediationRecipientService'
@@ -13,29 +11,18 @@ import { RoutingService } from '../RoutingService'
 jest.mock('../MediationRecipientService')
 const MediationRecipientServiceMock = MediationRecipientService as jest.Mock<MediationRecipientService>
 
-const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
 const agentConfig = getAgentConfig('RoutingService', {
   endpoints: ['http://endpoint.com'],
 })
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-const wallet = {
-  createKey: jest.fn().mockResolvedValue(recipientKey),
-  // with satisfies Partial<Wallet> we still get type errors when the interface changes
-} satisfies Partial<Wallet>
 const agentContext = getAgentContext({
-  wallet: wallet as unknown as Wallet,
   agentConfig,
   registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ endpoints: ['http://endpoint.com'] })]],
+  kmsBackends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
 })
 const mediationRecipientService = new MediationRecipientServiceMock()
 const routingService = new RoutingService(mediationRecipientService, eventEmitter)
-
-const routing = {
-  endpoints: ['http://endpoint.com'],
-  recipientKey,
-  routingKeys: [],
-}
-mockFunction(mediationRecipientService.addMediationRouting).mockResolvedValue(routing)
+mockFunction(mediationRecipientService.addMediationRouting).mockImplementation(async (_, routing) => routing)
 
 describe('RoutingService', () => {
   afterEach(() => {
@@ -44,12 +31,12 @@ describe('RoutingService', () => {
 
   describe('getRouting', () => {
     test('calls mediation recipient service', async () => {
-      const routing = await routingService.getRouting(agentContext, {
+      const newRouting = await routingService.getRouting(agentContext, {
         mediatorId: 'mediator-id',
         useDefaultMediator: true,
       })
 
-      expect(mediationRecipientService.addMediationRouting).toHaveBeenCalledWith(agentContext, routing, {
+      expect(mediationRecipientService.addMediationRouting).toHaveBeenCalledWith(agentContext, newRouting, {
         mediatorId: 'mediator-id',
         useDefaultMediator: true,
       })
@@ -59,16 +46,15 @@ describe('RoutingService', () => {
       const routingListener = jest.fn()
       eventEmitter.on(RoutingEventTypes.RoutingCreatedEvent, routingListener)
 
-      const routing = await routingService.getRouting(agentContext)
+      const newRouting = await routingService.getRouting(agentContext)
 
-      expect(routing).toEqual(routing)
       expect(routingListener).toHaveBeenCalledWith({
         type: RoutingEventTypes.RoutingCreatedEvent,
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
-          routing,
+          routing: newRouting,
         },
       })
     })

@@ -12,13 +12,13 @@ import {
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions } from './helpers'
+import { getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Alice', {
+const aliceAgentOptions = getAgentOptions('Multi Protocol Versions - Alice', {
   endpoints: ['rxjs:alice'],
 })
-const bobAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Bob', {
+const bobAgentOptions = getAgentOptions('Multi Protocol Versions - Bob', {
   endpoints: ['rxjs:bob'],
 })
 

@@ -1,10 +1,5 @@
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
-import type { EventReplaySubject } from './events'
-
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { askarModule } from '../../askar/tests/helpers'
 import { BbsModule } from '../../bbs-signatures/src/BbsModule'
+import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
 import {
   CredentialEventTypes,
   CredentialsModule,
@@ -15,8 +10,10 @@ import {
   V2CredentialProtocol,
   V2ProofProtocol,
 } from '../../didcomm/src'
+import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
+import type { EventReplaySubject } from './events'
 
 import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
@@ -24,11 +21,14 @@ import { setupSubjectTransports } from './transport'
 
 export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
 
-export const getJsonLdModules = ({
-  autoAcceptCredentials,
-  autoAcceptProofs,
-  useBbs = false,
-}: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof; useBbs?: boolean } = {}) =>
+export const getJsonLdModules = (
+  _name: string,
+  {
+    autoAcceptCredentials,
+    autoAcceptProofs,
+    useBbs = false,
+  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof; useBbs?: boolean } = {}
+) =>
   ({
     credentials: new CredentialsModule({
       credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
@@ -44,15 +44,11 @@ export const getJsonLdModules = ({
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    // We don't support signing provider in in memory wallet yet, so if BBS is used we need to use Askar
     ...(useBbs
       ? {
-          askar: askarModule,
           bbs: new BbsModule(),
         }
-      : {
-          inMemory: new InMemoryWalletModule(),
-        }),
+      : {}),
   }) as const
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
@@ -102,12 +98,6 @@ export async function setupJsonLdTests<
   createConnections?: CreateConnections
   useBbs?: boolean
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
-  const modules = getJsonLdModules({
-    autoAcceptCredentials,
-    autoAcceptProofs,
-    useBbs,
-  })
-
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -115,7 +105,11 @@ export async function setupJsonLdTests<
         endpoints: ['rxjs:issuer'],
       },
       {},
-      modules
+      getJsonLdModules(issuerName, {
+        autoAcceptCredentials,
+        autoAcceptProofs,
+        useBbs,
+      })
     )
   )
 
@@ -126,7 +120,11 @@ export async function setupJsonLdTests<
         endpoints: ['rxjs:holder'],
       },
       {},
-      modules
+      getJsonLdModules(holderName, {
+        autoAcceptCredentials,
+        autoAcceptProofs,
+        useBbs,
+      })
     )
   )
 
@@ -138,7 +136,11 @@ export async function setupJsonLdTests<
             endpoints: ['rxjs:verifier'],
           },
           {},
-          modules
+          getJsonLdModules(verifierName, {
+            autoAcceptCredentials,
+            autoAcceptProofs,
+            useBbs,
+          })
         )
       )
     : undefined

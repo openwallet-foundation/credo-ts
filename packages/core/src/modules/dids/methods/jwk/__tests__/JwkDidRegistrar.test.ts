@@ -1,5 +1,3 @@
-import type { Wallet } from '../../../../../wallet'
-
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src/utils'
 import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { getJwkFromJson } from '../../../../../crypto/jose/jwk'

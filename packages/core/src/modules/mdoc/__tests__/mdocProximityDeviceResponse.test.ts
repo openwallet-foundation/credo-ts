@@ -2,7 +2,7 @@ import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
 import { Agent, KeyType } from '../../..'
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
 import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
 import { Buffer, TypedArrayEncoder } from '../../../utils'
 import { Mdoc } from '../Mdoc'
@@ -80,7 +80,7 @@ describe('mdoc device-response proximity test', () => {
   let agent: Agent
 
   beforeEach(async () => {
-    agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
+    agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
     await agent.initialize()
 
     const devicePrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(DEVICE_JWK_PRIVATE) })

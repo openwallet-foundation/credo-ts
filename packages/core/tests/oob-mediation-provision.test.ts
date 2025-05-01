@@ -9,13 +9,13 @@ import {
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const faberAgentOptions = getInMemoryAgentOptions('OOB mediation provision - Faber Agent', {
+const faberAgentOptions = getAgentOptions('OOB mediation provision - Faber Agent', {
   endpoints: ['rxjs:faber'],
 })
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
@@ -27,7 +27,7 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     }),
   }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'OOB mediation provision - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],

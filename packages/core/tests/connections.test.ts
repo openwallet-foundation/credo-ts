@@ -14,28 +14,28 @@ import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandSt
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getInMemoryAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 import { Key } from '@credo-ts/core'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions('Faber Agent Connections', {
+  getAgentOptions('Faber Agent Connections', {
     endpoints: ['rxjs:faber'],
   })
 )
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions('Alice Agent Connections', {
+  getAgentOptions('Alice Agent Connections', {
     endpoints: ['rxjs:alice'],
   })
 )
 const acmeAgent = new Agent(
-  getInMemoryAgentOptions('Acme Agent Connections', {
+  getAgentOptions('Acme Agent Connections', {
     endpoints: ['rxjs:acme'],
   })
 )
 const mediatorAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Mediator Agent Connections',
     {
       endpoints: ['rxjs:mediator'],

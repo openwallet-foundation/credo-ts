@@ -15,11 +15,7 @@ import {
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import {
-  getInMemoryAgentOptions,
-  importExistingIndyDidFromPrivateKey,
-  retryUntilResult,
-} from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
@@ -29,7 +25,7 @@ import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorser = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {},
@@ -46,7 +42,7 @@ const endorser = new Agent(
   )
 )
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {},

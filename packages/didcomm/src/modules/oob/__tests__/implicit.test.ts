@@ -10,13 +10,13 @@ import {
   getEd25519VerificationKey2018,
 } from '../../../../../core/src/modules/dids'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
+import { getAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
 
-const faberAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
@@ -29,7 +29,7 @@ const faberAgentOptions = getInMemoryAgentOptions(
     }),
   }
 )
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],

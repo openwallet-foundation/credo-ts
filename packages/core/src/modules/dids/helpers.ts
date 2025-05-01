@@ -12,13 +12,14 @@ export function isDidKey(key: string) {
 export function didKeyToVerkey(key: string) {
   if (isDidKey(key)) {
     const publicKey = DidKey.fromDid(key).publicJwk.publicKey
-    if (publicKey.kty !== 'OKP' || publicKey.crv !== 'X25519') {
-      throw new CredoError('Expected OKP key with crv X25519')
+    if (publicKey.kty !== 'OKP' || publicKey.crv !== 'Ed25519') {
+      throw new CredoError('Expected OKP key with crv Ed25519')
     }
 
     const publicKeyBase58 = TypedArrayEncoder.toBase58(publicKey.publicKey)
     return publicKeyBase58
   }
+
   return key
 }
 

@@ -14,7 +14,7 @@ import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { JsonTransformer, asArray } from '../../../utils'
-import { VerificationMethod } from '../../dids'
+import { DidsApi, VerificationMethod, parseDid } from '../../dids'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { w3cDate } from '../util'
@@ -336,11 +336,27 @@ export class W3cJsonLdCredentialService {
     agentContext: AgentContext,
     verificationMethod: string
   ): Promise<PublicJwk> {
+    const dids = agentContext.resolve(DidsApi)
+
     const documentLoader = this.w3cCredentialsModuleConfig.documentLoader(agentContext)
     const verificationMethodObject = await documentLoader(verificationMethod)
-    const verificationMethodClass = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
+    const verificationMethodInstance = JsonTransformer.fromJSON(verificationMethodObject.document, VerificationMethod)
+    const did = parseDid(verificationMethod)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethodInstance)
 
-    return getPublicJwkFromVerificationMethod(verificationMethodClass)
+    const [didRecord] = await dids.getCreatedDids({ did: did.did })
+
+    // For all modern uses of did bound credentials there MUST be a did record
+    if (didRecord) {
+      publicJwk.keyId =
+        didRecord.keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${did.fragment}`)
+          ?.kmsKeyId ?? publicJwk.legacyKeyId
+    } else {
+      // If we don't have a did record we assume legacy key id should be used.
+      publicJwk.keyId = publicJwk.legacyKeyId
+    }
+
+    return publicJwk
   }
 
   private getSignatureSuitesForCredential(agentContext: AgentContext, credential: W3cJsonLdVerifiableCredential) {
