@@ -270,7 +270,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   const { authorizationChallengeRequest } = parseResult
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-  const config = agentContext.dependencyManager.resolve(BaseOpenId4VcIssuerModuleConfig)
+  const config = agentContext.dependencyManager.resolve<BaseOpenId4VcIssuerModuleConfig>(OpenId4VcIssuerModuleConfigSymbol)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
 
   const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
