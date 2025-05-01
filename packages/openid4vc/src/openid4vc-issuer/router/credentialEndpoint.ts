@@ -1,4 +1,4 @@
-import type { HttpMethod } from '@openid4vc/oauth2'
+import { HttpMethod, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
 import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuancePostRequest } from './requestContext'
 
@@ -6,6 +6,7 @@ import { joinUriParts, utils } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   CredentialConfigurationsSupportedWithFormats,
+  CredentialRequest,
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
 
@@ -135,15 +136,10 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
 
       // Use issuance session dpop config
       if (issuanceSession.dpop?.required && !resourceRequestResult.dpop) {
-        return sendUnauthorizedError(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
-            scheme,
-            error: Oauth2ErrorCodes.InvalidDpopProof,
-          })
-        )
+        return createHttpError(401, 'Missing required DPoP proof', agentContext.config.logger, {
+          tyoe: 'oauth2_error',
+          errorResponse: { error: Oauth2ErrorCodes.InvalidDpopProof },
+        })
       }
 
       // Verify the issuance session subject
@@ -190,15 +186,10 @@ export function configureCredentialEndpoint(router: CredoRouter, config: BaseOpe
 
       // Use global config when creating a dynamic session
       if (config.dpopRequired && !resourceRequestResult.dpop) {
-        return sendUnauthorizedError(
-          response,
-          next,
-          agentContext.config.logger,
-          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
-            scheme,
-            error: Oauth2ErrorCodes.InvalidDpopProof,
-          })
-        )
+        return createHttpError(401, 'Missing required DPoP proof', agentContext.config.logger, {
+          tyoe: 'oauth2_error',
+          errorResponse: { error: Oauth2ErrorCodes.InvalidDpopProof },
+        })
       }
 
       const configurationsForScope = getCredentialConfigurationsSupportedForScopes(

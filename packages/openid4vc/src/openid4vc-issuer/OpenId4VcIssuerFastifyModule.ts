@@ -30,7 +30,7 @@ async function openId4VcIssuerPlugin(
   { rootAgentContext, config }: { rootAgentContext: AgentContext; config: OpenId4VcIssuerModuleConfig<FastifyInstance> }
 ) {
   fastify
-    .decorateRequest('requestContext', null)
+    .decorateRequest('requestContext')
     .addHook<{ Params: IssuerIdParam }>('preHandler', async (request, reply) => {
       try {
         request.requestContext = await buildOpenId4VcIssuanceRequestContext(request.params.issuerId, rootAgentContext)

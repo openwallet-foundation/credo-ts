@@ -1,7 +1,3 @@
-import { AgentContext, InjectionSymbols } from '@credo-ts/core'
-import type { SupportedRouterTypes } from '../shared/router'
-import type { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
   OpenId4VcUpdateIssuerRecordOptions,
   OpenId4VciCreateCredentialOfferOptions,
@@ -10,7 +6,11 @@ import type {
   OpenId4VciCreateStatelessCredentialOfferOptions,
 } from './OpenId4VcIssuerServiceOptions'
 
-import { inject, injectable } from '@credo-ts/core'
+import { AgentContext, InjectionSymbols, inject, injectable } from '@credo-ts/core'
+
+import type { SupportedRouterTypes } from '../shared/router'
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
  * @public

@@ -34,6 +34,7 @@ import {
   W3cCredentialService,
   getJwkFromJson,
   getJwkFromKey,
+  inject,
   injectable,
   joinUriParts,
   utils,
@@ -98,6 +99,7 @@ export class OpenId4VcIssuerService {
 
   public constructor(
     w3cCredentialService: W3cCredentialService,
+    @inject(InjectionSymbols.OpenId4VcIssuerModuleConfig)
     openId4VcIssuerConfig: BaseOpenId4VcIssuerModuleConfig,
     openId4VcIssuerRepository: OpenId4VcIssuerRepository,
     openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
