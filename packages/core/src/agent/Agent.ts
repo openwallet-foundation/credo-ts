@@ -5,7 +5,6 @@ import type { AgentModulesInput } from './AgentModules'
 import { Subject } from 'rxjs'
 
 import { InjectionSymbols } from '../constants'
-import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
@@ -35,13 +34,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(JwsService)
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
-
-    // This is a really ugly hack to make tsyringe work without any SigningProviders registered
-    // It is currently impossible to use @injectAll if there are no instances registered for the
-    // token. We register a value of `default` by default and will filter that out in the registry.
-    // Once we have a signing provider that should always be registered we can remove this. We can make an ed25519
-    // signer using the @stablelib/ed25519 library.
-    dependencyManager.registerInstance(SigningProviderToken, 'default')
 
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)

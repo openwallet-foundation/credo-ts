@@ -1,9 +1,7 @@
-import type { VerificationMethod } from './verificationMethod/VerificationMethod'
-
-import { Key } from '../../../crypto/Key'
 import { CredoError } from '../../../error'
-import { SECURITY_CONTEXT_BBS_URL, SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
+import { SECURITY_JWS_CONTEXT_URL, SECURITY_X25519_CONTEXT_URL } from '../../vc/constants'
 import { ED25519_SUITE_CONTEXT_URL_2018 } from '../../vc/data-integrity/signature-suites/ed25519/constants'
+import type { VerificationMethod } from './verificationMethod/VerificationMethod'
 
 import {
   Ed25519PublicJwk,
@@ -16,15 +14,8 @@ import {
 } from '../../kms'
 import { PublicJwk } from '../../kms/jwk/PublicJwk'
 import { DidDocumentBuilder } from './DidDocumentBuilder'
-import { getBls12381g1g2VerificationMethod } from './key-type'
 import { convertPublicKeyToX25519 } from './key-type/ed25519'
-import {
-  getBls12381G1Key2020,
-  getBls12381G2Key2020,
-  getEd25519VerificationKey2018,
-  getJsonWebKey2020,
-  getX25519KeyAgreementKey2019,
-} from './verificationMethod'
+import { getEd25519VerificationKey2018, getJsonWebKey2020, getX25519KeyAgreementKey2019 } from './verificationMethod'
 
 export function getDidDocumentForPublicJwk(did: string, publicJwk: PublicJwk) {
   if (publicJwk.jwk instanceof Ed25519PublicJwk) {
@@ -43,47 +34,6 @@ export function getDidDocumentForPublicJwk(did: string, publicJwk: PublicJwk) {
   }
 
   throw new CredoError(`Unsupported public key type for did document: ${getJwkHumanDescription(publicJwk.toJson())}`)
-}
-
-function getBls12381g1DidDoc(did: string, key: Key) {
-  const verificationMethod = getBls12381G1Key2020({ id: `${did}#${key.fingerprint}`, key, controller: did })
-
-  return getSignatureKeyBase({
-    did,
-    key,
-    verificationMethod,
-  })
-    .addContext(SECURITY_CONTEXT_BBS_URL)
-    .build()
-}
-
-function getBls12381g1g2DidDoc(did: string, key: Key) {
-  const verificationMethods = getBls12381g1g2VerificationMethod(did, key)
-
-  const didDocumentBuilder = new DidDocumentBuilder(did)
-
-  for (const verificationMethod of verificationMethods) {
-    didDocumentBuilder
-      .addVerificationMethod(verificationMethod)
-      .addAuthentication(verificationMethod.id)
-      .addAssertionMethod(verificationMethod.id)
-      .addCapabilityDelegation(verificationMethod.id)
-      .addCapabilityInvocation(verificationMethod.id)
-  }
-
-  return didDocumentBuilder.addContext(SECURITY_CONTEXT_BBS_URL).build()
-}
-
-function getBls12381g2DidDoc(did: string, key: Key) {
-  const verificationMethod = getBls12381G2Key2020({ id: `${did}#${key.fingerprint}`, key, controller: did })
-
-  return getSignatureKeyBase({
-    did,
-    key,
-    verificationMethod,
-  })
-    .addContext(SECURITY_CONTEXT_BBS_URL)
-    .build()
 }
 
 export function getJsonWebKey2020DidDocument(did: string, publicJwk: PublicJwk) {

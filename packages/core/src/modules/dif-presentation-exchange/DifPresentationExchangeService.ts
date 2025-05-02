@@ -140,7 +140,7 @@ export class DifPresentationExchangeService {
         ? presentations.map(getSphereonOriginalVerifiablePresentation)
         : getSphereonOriginalVerifiablePresentation(presentations),
       {
-        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+        limitDisclosureSignatureSuites: ['DataIntegrityProof.anoncreds-2023'],
         presentationSubmission,
       }
     )

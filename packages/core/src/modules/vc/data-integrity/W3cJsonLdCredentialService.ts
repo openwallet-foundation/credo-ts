@@ -8,7 +8,6 @@ import type {
 } from '../W3cCredentialServiceOptions'
 import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
-import type { W3cJsonLdDeriveProofOptions } from './deriveProof'
 
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
 import { CredoError } from '../../../error'
@@ -21,7 +20,6 @@ import { w3cDate } from '../util'
 
 import { PublicJwk } from '../../kms'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
-import { deriveProof } from './deriveProof'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
 import jsonld from './libraries/jsonld'
 import vc from './libraries/vc'
@@ -297,24 +295,6 @@ export class W3cJsonLdCredentialService {
         error,
       }
     }
-  }
-
-  public async deriveProof(
-    agentContext: AgentContext,
-    options: W3cJsonLdDeriveProofOptions
-  ): Promise<W3cJsonLdVerifiableCredential> {
-    // TODO: make suite dynamic
-    const suiteInfo = this.signatureSuiteRegistry.getByProofType('BbsBlsSignatureProof2020')
-    const SuiteClass = suiteInfo.suiteClass
-
-    const suite = new SuiteClass()
-
-    const proof = await deriveProof(JsonTransformer.toJSON(options.credential), options.revealDocument, {
-      suite: suite,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
-
-    return proof
   }
 
   public getVerificationMethodTypesByProofType(proofType: string): string[] {

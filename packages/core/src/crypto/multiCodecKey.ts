@@ -2,11 +2,8 @@ import { KeyType } from './KeyType'
 
 // based on https://github.com/multiformats/multicodec/blob/master/table.csv
 const multiCodecPrefixMap: Record<string, KeyType> = {
-  234: KeyType.Bls12381g1,
-  235: KeyType.Bls12381g2,
   236: KeyType.X25519,
   237: KeyType.Ed25519,
-  238: KeyType.Bls12381g1g2,
   4608: KeyType.P256,
   4609: KeyType.P384,
   4610: KeyType.P521,

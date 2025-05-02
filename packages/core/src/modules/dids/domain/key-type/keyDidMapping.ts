@@ -22,12 +22,7 @@ export interface KeyDidMapping<
   supportedVerificationMethodTypes: string[]
 }
 
-const supportedKeyDids = [
-  keyDidEd25519,
-  keyDidX25519,
-  keyDidJsonWebKey,
-  keyDidSecp256k1 /* keyDidBls12381g1, keyDidBls12381g2, keyDidBls12381g1g2 */,
-]
+const supportedKeyDids = [keyDidEd25519, keyDidX25519, keyDidJsonWebKey, keyDidSecp256k1]
 
 // TODO: at some point we should update all usages to Jwk / Multikey methods
 // so we don't need key type specific verification methods anymore
