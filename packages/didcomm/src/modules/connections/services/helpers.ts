@@ -121,7 +121,7 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
     throw new CredoError(`Public key ${publicKey.id} does not have value property`)
   }
   const publicKeyBase58 = publicKey.value
-  const ed25519Key = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+  const ed25519Key = Kms.PublicJwk.fromPublicKey({
     kty: 'OKP',
     crv: 'Ed25519',
     publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),

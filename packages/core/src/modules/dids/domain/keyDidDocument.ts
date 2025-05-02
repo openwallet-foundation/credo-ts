@@ -73,8 +73,7 @@ function getEd25519DidDoc(did: string, publicJwk: PublicJwk<Ed25519PublicJwk>) {
 
   const publicKeyX25519 = convertPublicKeyToX25519(publicJwk.publicKey.publicKey)
 
-  // FIXME: should not be needed to provide type
-  const publicJwkX25519 = PublicJwk.fromPublicKey<X25519PublicJwk>({
+  const publicJwkX25519 = PublicJwk.fromPublicKey({
     kty: 'OKP',
     crv: 'X25519',
     publicKey: publicKeyX25519,

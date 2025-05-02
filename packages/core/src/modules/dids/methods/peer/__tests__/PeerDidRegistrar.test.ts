@@ -1,29 +1,24 @@
-import type { Wallet } from '../../../../../wallet'
-
 import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
-import { KeyType } from '../../../../../crypto'
-import { Key } from '../../../../../crypto/Key'
-import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
-import { WalletError } from '../../../../../wallet/error'
 import { DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
 import { DidRepository } from '../../../repository/DidRepository'
 import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import { PeerDidNumAlgo } from '../didPeer'
 
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
+import { TypedArrayEncoder } from '../../../../../utils'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../../kms'
 import didPeer0z6MksLeFixture from './__fixtures__/didPeer0z6MksLe.json'
 
 jest.mock('../../../repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
-const walletMock = {
-  createKey: jest.fn(() => Key.fromFingerprint('z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU')),
-} as unknown as Wallet
 const didRepositoryMock = new DidRepositoryMock()
 
-const agentContext = getAgentContext({ wallet: walletMock, registerInstances: [[DidRepository, didRepositoryMock]] })
+const agentContext = getAgentContext({ registerInstances: [[DidRepository, didRepositoryMock]] })
 const peerDidRegistrar = new PeerDidRegistrar()
+const kms = agentContext.resolve(KeyManagementApi)
 
 describe('DidRegistrar', () => {
   afterEach(() => {
@@ -33,16 +28,23 @@ describe('DidRegistrar', () => {
   describe('PeerDidRegistrar', () => {
     describe('did:peer:0', () => {
       it('should correctly create a did:peer:0 document using Ed25519 key type', async () => {
-        const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+        const privateJwk = transformPrivateKeyToPrivateJwk({
+          privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+          type: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+          },
+        }).privateJwk
+
+        const { keyId } = await kms.importKey({
+          privateJwk,
+        })
 
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
-            keyType: KeyType.Ed25519,
+            keyId,
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-          },
-          secret: {
-            privateKey,
           },
         })
 
@@ -53,33 +55,6 @@ describe('DidRegistrar', () => {
             state: 'finished',
             did: 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU',
             didDocument: didPeer0z6MksLeFixture,
-            secret: {
-              privateKey,
-            },
-          },
-        })
-      })
-
-      it('should return an error state if a key instance and key type are both provided', async () => {
-        const key = await agentContext.wallet.createKey({
-          keyType: KeyType.P256,
-        })
-
-        const result = await peerDidRegistrar.create(agentContext, {
-          method: 'peer',
-          options: {
-            numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-            key,
-            keyType: KeyType.P256,
-          },
-        })
-
-        expect(JsonTransformer.toJSON(result)).toMatchObject({
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: 'Key instance cannot be combined with key type, seed or private key',
           },
         })
       })
@@ -87,6 +62,7 @@ describe('DidRegistrar', () => {
       it('should return an error state if no key or key type is provided', async () => {
         const result = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
+          // @ts-ignore
           options: {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
           },
@@ -102,42 +78,19 @@ describe('DidRegistrar', () => {
         })
       })
 
-      it('should return an error state if a key creation error is thrown', async () => {
-        mockFunction(walletMock.createKey).mockRejectedValueOnce(new WalletError('Invalid private key provided'))
-
-        const result = await peerDidRegistrar.create(agentContext, {
-          method: 'peer',
-          options: {
-            keyType: KeyType.Ed25519,
-            numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-          },
-          secret: {
-            privateKey: TypedArrayEncoder.fromString('invalid'),
-          },
-        })
-
-        expect(JsonTransformer.toJSON(result)).toMatchObject({
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: expect.stringContaining('Invalid private key provided'),
-          },
-        })
-      })
-
       it('should store the did without the did document', async () => {
-        const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
         const did = 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
         await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
-            keyType: KeyType.Ed25519,
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-          },
-          secret: {
-            privateKey,
+            createKey: {
+              type: {
+                crv: 'Ed25519',
+                kty: 'OKP',
+              },
+            },
           },
         })
 
@@ -157,7 +110,9 @@ describe('DidRegistrar', () => {
 
     describe('did:peer:1', () => {
       const verificationMethod = getEd25519VerificationKey2018({
-        key: Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'),
+        publicJwk: PublicJwk.fromFingerprint(
+          'z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'
+        ) as PublicJwk<Ed25519PublicJwk>,
         // controller in method 1 did should be #id
         controller: '#id',
         id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
@@ -182,6 +137,12 @@ describe('DidRegistrar', () => {
           didDocument: didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.GenesisDoc,
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+                kmsKeyId: 'some-key-id',
+              },
+            ],
           },
         })
 
@@ -232,6 +193,7 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.GenesisDoc,
+            keys: [],
           },
         })
 
@@ -250,9 +212,11 @@ describe('DidRegistrar', () => {
     })
 
     describe('did:peer:2', () => {
-      const key = Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz')
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'
+      ) as PublicJwk<Ed25519PublicJwk>
       const verificationMethod = getEd25519VerificationKey2018({
-        key,
+        publicJwk,
         // controller in method 1 did should be #id
         controller: '#id',
         // Use relative id for peer dids with pattern 'key-N'
@@ -278,6 +242,7 @@ describe('DidRegistrar', () => {
           didDocument: didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
+            keys: [],
           },
         })
 
@@ -324,6 +289,7 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
+            keys: [],
           },
         })
 
@@ -342,9 +308,11 @@ describe('DidRegistrar', () => {
     })
 
     describe('did:peer:4', () => {
-      const key = Key.fromFingerprint('z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz')
+      const publicJwk = PublicJwk.fromFingerprint(
+        'z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'
+      ) as PublicJwk<Ed25519PublicJwk>
       const verificationMethod = getEd25519VerificationKey2018({
-        key,
+        publicJwk,
         controller: '#id',
         // Use relative id for peer dids
         id: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
@@ -369,6 +337,7 @@ describe('DidRegistrar', () => {
           didDocument: didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+            keys: [],
           },
         })
 
@@ -419,6 +388,7 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+            keys: [],
           },
         })
 

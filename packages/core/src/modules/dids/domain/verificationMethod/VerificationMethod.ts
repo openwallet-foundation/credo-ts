@@ -1,6 +1,5 @@
-import type { JwkJson } from '../../../../crypto/jose/jwk/Jwk'
-
 import { IsOptional, IsString } from 'class-validator'
+import { JwkJson } from '../../../../crypto/jose/jwt/Jwt'
 
 export interface VerificationMethodOptions {
   id: string

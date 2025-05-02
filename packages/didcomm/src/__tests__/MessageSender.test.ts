@@ -99,12 +99,12 @@ describe('MessageSender', () => {
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
-  const recipientKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+  const recipientKey = Kms.PublicJwk.fromPublicKey({
     crv: 'Ed25519',
     kty: 'OKP',
     publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
   })
-  const senderKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+  const senderKey = Kms.PublicJwk.fromPublicKey({
     crv: 'Ed25519',
     kty: 'OKP',
     publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -509,7 +509,7 @@ describe('MessageSender', () => {
     const service: ResolvedDidCommService = {
       id: 'out-of-band',
       recipientKeys: [
-        Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        Kms.PublicJwk.fromPublicKey({
           crv: 'Ed25519',
           kty: 'OKP',
           publicKey: TypedArrayEncoder.fromBase58('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'),
@@ -518,7 +518,7 @@ describe('MessageSender', () => {
       routingKeys: [],
       serviceEndpoint: 'https://example.com',
     }
-    const senderKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+    const senderKey = Kms.PublicJwk.fromPublicKey({
       crv: 'Ed25519',
       kty: 'OKP',
       publicKey: TypedArrayEncoder.fromBase58('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'),

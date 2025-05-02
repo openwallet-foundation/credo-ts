@@ -218,7 +218,7 @@ describe('ConnectionService', () => {
       expect.assertions(5)
 
       const theirDid = 'their-did'
-      const theirKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const theirKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -254,7 +254,7 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionRequest, {
         agentContext,
         senderKey: theirKey,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
@@ -285,7 +285,7 @@ describe('ConnectionService', () => {
       })
 
       const theirDid = 'their-did'
-      const theirKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const theirKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -322,7 +322,7 @@ describe('ConnectionService', () => {
         agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
@@ -357,12 +357,12 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         agentContext,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
         }),
-        senderKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -381,12 +381,12 @@ describe('ConnectionService', () => {
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
         agentContext,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
         }),
-        senderKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -597,12 +597,12 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(jest.fn()(), {
         agentContext,
         connection: connectionRecord,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
         }),
-        senderKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -704,12 +704,12 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
-        recipientKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
         }),
-        senderKey: Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -886,12 +886,12 @@ describe('ConnectionService', () => {
     it('should not throw when a fully valid connection-less input is passed', async () => {
       expect.assertions(1)
 
-      const recipientKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const recipientKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
       })
-      const senderKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const senderKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
@@ -957,12 +957,12 @@ describe('ConnectionService', () => {
     it('should throw an error when lastSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', async () => {
       expect.assertions(1)
 
-      const recipientKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const recipientKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
       })
-      const senderKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+      const senderKey = Kms.PublicJwk.fromPublicKey({
         kty: 'OKP',
         crv: 'Ed25519',
         publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),

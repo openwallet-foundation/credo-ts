@@ -1,7 +1,5 @@
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
-import { PublicJwk, getJwkHumanDescription } from '../../../kms'
+import { Ed25519PublicJwk, PublicJwk, getJwkHumanDescription } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -13,12 +11,16 @@ type Ed25519VerificationKey2020 = VerificationMethod & {
 /**
  * Get a Ed25519VerificationKey2020 verification method.
  */
-export function getEd25519VerificationKey2020({ key, id, controller }: { id: string; key: Key; controller: string }) {
+export function getEd25519VerificationKey2020({
+  publicJwk,
+  id,
+  controller,
+}: { id: string; publicJwk: PublicJwk<Ed25519PublicJwk>; controller: string }) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     controller,
-    publicKeyMultibase: key.fingerprint,
+    publicKeyMultibase: publicJwk.fingerprint,
   })
 }
 
@@ -29,22 +31,6 @@ export function isEd25519VerificationKey2020(
   verificationMethod: VerificationMethod
 ): verificationMethod is Ed25519VerificationKey2020 {
   return verificationMethod.type === VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020
-}
-
-/**
- * Get a key from a Ed25519VerificationKey2020 verification method.
- */
-export function getKeyFromEd25519VerificationKey2020(verificationMethod: Ed25519VerificationKey2020) {
-  if (!verificationMethod.publicKeyMultibase) {
-    throw new CredoError('verification method is missing publicKeyMultibase')
-  }
-
-  const key = Key.fromFingerprint(verificationMethod.publicKeyMultibase)
-  if (key.keyType !== KeyType.Ed25519) {
-    throw new CredoError(`Verification method publicKeyMultibase is for unexpected key type ${key.keyType}`)
-  }
-
-  return key
 }
 
 /**

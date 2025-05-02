@@ -28,6 +28,10 @@ export const KnownJwaSignatureAlgorithms = {
 export const zKnownJwaSignatureAlgorithm = z.enum(recordToUnion(KnownJwaSignatureAlgorithms))
 export type KnownJwaSignatureAlgorithm = z.output<typeof zKnownJwaSignatureAlgorithm>
 
+export function isKnownJwaSignatureAlgorithm(alg: string): alg is KnownJwaSignatureAlgorithm {
+  return Object.values(KnownJwaSignatureAlgorithms).includes(alg as keyof typeof KnownJwaSignatureAlgorithms)
+}
+
 // Content encryption algorithms ("enc" parameter)
 export const KnownJwaContentEncryptionAlgorithms = {
   // AES-GCM Content Encryption

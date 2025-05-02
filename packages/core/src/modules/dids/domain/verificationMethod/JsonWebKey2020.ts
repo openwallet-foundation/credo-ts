@@ -1,6 +1,5 @@
 import type { VerificationMethod } from './VerificationMethod'
 
-import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { CredoError } from '../../../../error'
 import { PublicJwk } from '../../../kms'
 
@@ -34,19 +33,6 @@ export function isJsonWebKey2020(
   verificationMethod: VerificationMethod
 ): verificationMethod is VerificationMethod & { type: 'JsonWebKey2020' } {
   return verificationMethod.type === VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020
-}
-
-/**
- * Get a key from a JsonWebKey2020 verification method.
- */
-export function getKeyFromJsonWebKey2020(verificationMethod: VerificationMethod & { type: 'JsonWebKey2020' }) {
-  if (!verificationMethod.publicKeyJwk) {
-    throw new CredoError(
-      `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
-    )
-  }
-
-  return getJwkFromJson(verificationMethod.publicKeyJwk).key
 }
 
 /**

@@ -1,15 +1,13 @@
 import { id_ce_basicConstraints, id_ce_extKeyUsage, id_ce_keyUsage } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
 
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
-import { KeyType } from '../../../crypto/KeyType'
 import { X509Error } from '../X509Error'
 import { X509Service } from '../X509Service'
 
 import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import { KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, PublicJwk } from '../../kms'
+import { Ed25519PublicJwk, KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, PublicJwk } from '../../kms'
 
 /**
  *
@@ -344,7 +342,7 @@ describe('X509Service', () => {
       throw new Error('uexpected kty value')
     }
 
-    expect(publicKey.crv).toStrictEqual(KeyType.P256)
+    expect(publicKey.crv).toStrictEqual('P-256')
     expect(publicKey.publicKey.length).toStrictEqual(65)
     expect(TypedArrayEncoder.toBase58(publicKey.publicKey)).toStrictEqual(
       'QDaLvg9KroUnpuviZ9W7Q3DauqAuKiJN4sKC6cLo4HtxnpJCwwayNBLzRpsCHfHsLJsiKDeTCV8LqmCBSPkmiJNe'
@@ -376,8 +374,8 @@ describe('X509Service', () => {
     const leafCertificate = validatedChain[validatedChain.length - 1]
 
     expect(leafCertificate).toMatchObject({
-      publicKey: expect.objectContaining({
-        keyType: KeyType.P256,
+      publicJwk: expect.objectContaining({
+        jwk: expect.any(Ed25519PublicJwk),
       }),
       privateKey: undefined,
     })
@@ -521,8 +519,8 @@ describe('X509Service', () => {
       certificateChain: x5c,
     })
     expect(chain.length).toStrictEqual(2)
-    expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual(KeyType.P384)
-    expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual(KeyType.P256)
+    expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-384')
+    expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
 
     // Works with root certificate as trusted certificate
     await expect(
@@ -561,7 +559,7 @@ describe('X509Service', () => {
     })
 
     expect(chain.length).toStrictEqual(2)
-    expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual(KeyType.P384)
-    expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual(KeyType.P256)
+    expect((chain[0].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-384')
+    expect((chain[1].publicJwk.toJson() as KmsJwkPublicEc).crv).toStrictEqual('P-256')
   })
 })

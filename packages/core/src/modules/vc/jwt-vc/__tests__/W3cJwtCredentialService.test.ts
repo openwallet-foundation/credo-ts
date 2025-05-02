@@ -1,12 +1,11 @@
-import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
 import { getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
 import { InjectionSymbols } from '../../../../constants'
-import { JwsService, KeyType } from '../../../../crypto'
-import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
-import { getJwkFromKey } from '../../../../crypto/jose/jwk'
+import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
 import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
+import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
@@ -16,7 +15,6 @@ import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
-  CredoEs256DidJwkJwtVcSubjectSeed,
   CredoEs256DidKeyJwtVp,
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-jwt-vc'
@@ -24,9 +22,7 @@ import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentat
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
 const config = getAgentConfig('W3cJwtCredentialService')
-const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
-  wallet,
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
@@ -35,29 +31,42 @@ const agentContext = getAgentContext({
   ],
   agentConfig: config,
 })
-
+const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 const jwsService = new JwsService()
 const w3cJwtCredentialService = new W3cJwtCredentialService(jwsService)
 
-// Runs in Node 18 because of usage of Askar
 describe('W3cJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
   let holderDidKey: DidKey
 
   beforeAll(async () => {
-    await wallet.createAndOpen(config.walletConfig)
+    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+      privateKey: CredoEs256DidJwkJwtVcIssuerSeed,
+    }).privateJwk
 
-    const issuerKey = await agentContext.wallet.createKey({
-      keyType: KeyType.P256,
-      seed: CredoEs256DidJwkJwtVcIssuerSeed,
+    const importedIssuerKey = await kms.importKey({
+      privateJwk: issuerPrivateJwk,
     })
-    issuerDidJwk = DidJwk.fromJwk(getJwkFromKey(issuerKey))
 
-    const holderKey = await agentContext.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: CredoEs256DidJwkJwtVcSubjectSeed,
+    issuerDidJwk = DidJwk.fromPublicJwk(PublicJwk.fromPublicJwk(importedIssuerKey.publicJwk))
+
+    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+      privateKey: CredoEs256DidJwkJwtVcIssuerSeed,
+    }).privateJwk
+
+    const importedHolderKey = await kms.importKey({
+      privateJwk: holderPrivateJwk,
     })
-    holderDidKey = new DidKey(holderKey)
+
+    holderDidKey = new DidKey(PublicJwk.fromPublicJwk(importedHolderKey.publicJwk))
   })
 
   describe('signCredential', () => {
@@ -65,7 +74,7 @@ describe('W3cJwtCredentialService', () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cCredential)
 
       const vcJwt = await w3cJwtCredentialService.signCredential(agentContext, {
-        alg: JwaSignatureAlgorithm.ES256,
+        alg: KnownJwaSignatureAlgorithms.ES256,
         format: ClaimFormat.JwtVc,
         verificationMethod: issuerDidJwk.verificationMethodId,
         credential,
@@ -90,7 +99,7 @@ describe('W3cJwtCredentialService', () => {
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: 'hello',
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
@@ -100,7 +109,7 @@ describe('W3cJwtCredentialService', () => {
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: issuerDidJwk.verificationMethodId,
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON({ ...credentialJson, issuanceDate: undefined }, W3cCredential, {
             validate: false,
           }),
@@ -114,7 +123,7 @@ describe('W3cJwtCredentialService', () => {
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: `${issuerDidJwk.verificationMethodId}extra`,
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
@@ -288,11 +297,11 @@ describe('W3cJwtCredentialService', () => {
 
       const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
         presentation,
-        alg: JwaSignatureAlgorithm.EdDSA,
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
         format: ClaimFormat.JwtVp,
-        verificationMethod: `${holderDidKey.did}#${holderDidKey.key.fingerprint}`,
+        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
       })
 
       expect(signedJwtVp.serializedJwt).toEqual(CredoEs256DidKeyJwtVp)

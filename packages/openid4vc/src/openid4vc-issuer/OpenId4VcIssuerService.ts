@@ -23,8 +23,8 @@ import {
   JwsService,
   Jwt,
   JwtPayload,
-  Key,
   KeyType,
+  Kms,
   MdocApi,
   Query,
   QueryOptions,
@@ -836,11 +836,12 @@ export class OpenId4VcIssuerService {
     const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
     const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
-    const key = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-    const jwk = getJwkFromKey(key)
+    // FIXME: we need to store the keyId on the issuer
+    const key = Kms.PublicJwk.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
+    key.keyId = key.legacyKeyId
 
     const cNonce = await jwsService.createJwsCompact(agentContext, {
-      key,
+      keyId: key.keyId,
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
         exp: dateToSeconds(cNonceExpiresAt),
@@ -848,7 +849,7 @@ export class OpenId4VcIssuerService {
       protectedHeaderOptions: {
         typ: 'credo+cnonce',
         kid: issuer.accessTokenPublicKeyFingerprint,
-        alg: jwk.supportedSignatureAlgorithms[0],
+        alg: key.signatureAlgorithm,
       },
     })
 
@@ -868,8 +869,7 @@ export class OpenId4VcIssuerService {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    const key = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-    const jwk = getJwkFromKey(key)
+    const key = Kms.PublicJwk.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
     const jwt = Jwt.fromSerializedJwt(cNonce)
     jwt.payload.validate()
@@ -885,7 +885,7 @@ export class OpenId4VcIssuerService {
       jws: cNonce,
       jwsSigner: {
         method: 'jwk',
-        jwk,
+        jwk: key,
       },
     })
 

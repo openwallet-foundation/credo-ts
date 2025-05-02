@@ -21,11 +21,10 @@ import {
   assymetricPublicJwkMatches,
   getJwkHumanDescription,
 } from '../modules/kms'
+import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { X509Service } from './../modules/x509/X509Service'
 import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
-import { JwaSignatureAlgorithm } from './jose'
-import { getJwkFromJson } from './jose/jwk'
 import { JwtPayload } from './jose/jwt'
 
 @injectable()
@@ -35,11 +34,10 @@ export class JwsService {
 
     const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-    const publicJwk = await kms.getPublicKey({ keyId: options.keyId })
-    assertJwkAsymmetric(publicJwk)
+    const key = await kms.getPublicKey({ keyId: options.keyId })
+    assertJwkAsymmetric(key)
 
-    // TODO: we need to think about how to deal with jwk json vs instance
-    const publicJwkInstance = getJwkFromJson(publicJwk)
+    const publicJwk = PublicJwk.fromPublicJwk(key)
 
     // Make sure the options.x5c and x5c from protectedHeader are the same.
     if (x5c) {
@@ -47,20 +45,20 @@ export class JwsService {
         certificateChain: x5c,
       })
 
-      if (assymetricPublicJwkMatches(certificate.publicJwk.toJson(), publicJwk)) {
+      if (assymetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
         throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwk && !assymetricPublicJwkMatches(jwk.toJson(), publicJwk)) {
+    if (jwk && !assymetricPublicJwkMatches(jwk.toJson(), key)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
     // Validate the options.key used for signing against the jws options
-    if (!publicJwkInstance.supportsSignatureAlgorithm(alg)) {
+    if (!publicJwk.supportedSignatureAlgorithms.includes(alg)) {
       throw new CredoError(
-        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${getJwkHumanDescription(publicJwk)}. Supported algorithms are ${publicJwkInstance.supportedSignatureAlgorithms.join(
+        `alg '${alg}' is not a valid JWA signature algorithm for this jwk with ${publicJwk.jwkTypehumanDescription}. Supported algorithms are ${publicJwk.supportedSignatureAlgorithms.join(
           ', '
         )}`
       )
@@ -293,8 +291,8 @@ export class JwsService {
   ): Promise<JwsSignerWithJwk> {
     const { protectedHeader, resolveJwsSigner, jws, payload, allowedJwsSignerMethods } = options
 
-    const alg = protectedHeader.alg as JwaSignatureAlgorithm
-    if (!Object.values(JwaSignatureAlgorithm).includes(alg)) {
+    const alg = protectedHeader.alg
+    if (!isKnownJwaSignatureAlgorithm(alg)) {
       throw new CredoError(`Unsupported JWA signature algorithm '${protectedHeader.alg}'`)
     }
 
@@ -405,7 +403,7 @@ export type JwsSignerResolver = (options: {
   jws: JwsDetachedFormat
   payload: string
   protectedHeader: {
-    alg: JwaSignatureAlgorithm
+    alg: KnownJwaSignatureAlgorithm
     jwk?: string
     kid?: string
     [key: string]: unknown

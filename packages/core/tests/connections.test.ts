@@ -17,22 +17,41 @@ import { didKeyToVerkey } from '../src/modules/dids/helpers'
 import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-import { Key } from '@credo-ts/core'
+import { TypedArrayEncoder } from '@credo-ts/core'
+import { Ed25519PublicJwk, PublicJwk } from '../src/modules/kms'
 
 const faberAgent = new Agent(
-  getAgentOptions('Faber Agent Connections', {
-    endpoints: ['rxjs:faber'],
-  })
+  getAgentOptions(
+    'Faber Agent Connections',
+    {
+      endpoints: ['rxjs:faber'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const aliceAgent = new Agent(
-  getAgentOptions('Alice Agent Connections', {
-    endpoints: ['rxjs:alice'],
-  })
+  getAgentOptions(
+    'Alice Agent Connections',
+    {
+      endpoints: ['rxjs:alice'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const acmeAgent = new Agent(
-  getAgentOptions('Acme Agent Connections', {
-    endpoints: ['rxjs:acme'],
-  })
+  getAgentOptions(
+    'Acme Agent Connections',
+    {
+      endpoints: ['rxjs:acme'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const mediatorAgent = new Agent(
   getAgentOptions(
@@ -45,7 +64,8 @@ const mediatorAgent = new Agent(
       mediator: new MediatorModule({
         autoAcceptMediationRequests: true,
       }),
-    }
+    },
+    { requireDidcomm: true }
   )
 )
 
@@ -61,13 +81,9 @@ describe('connections', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
     await acmeAgent.shutdown()
-    await acmeAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
   })
 
   it('one agent should be able to send and receive a ping', async () => {
@@ -305,19 +321,27 @@ describe('connections', () => {
       expect.arrayContaining([
         {
           action: KeylistUpdateAction.add,
-          recipientKey: Key.fromFingerprint(faberOutOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            (
+              PublicJwk.fromFingerprint(
+                faberOutOfBandRecord.getTags().recipientKeyFingerprints[0]
+              ) as PublicJwk<Ed25519PublicJwk>
+            ).publicKey.publicKey
+          ),
         },
         {
           action: KeylistUpdateAction.add,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          recipientKey: (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0]
-            .publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0].publicKey.publicKey
+          ),
         },
         {
           action: KeylistUpdateAction.add,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          recipientKey: (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0]
-            .publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0].publicKey.publicKey
+          ),
         },
       ])
     )
@@ -343,8 +367,10 @@ describe('connections', () => {
         }))[0]
       ).toEqual({
         action: KeylistUpdateAction.remove,
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        recipientKey: (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKeyBase58,
+        recipientKey: TypedArrayEncoder.toBase58(
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKey.publicKey
+        ),
       })
     }
   })

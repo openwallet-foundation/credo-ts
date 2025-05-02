@@ -1,10 +1,9 @@
-import { PublicJwk } from '../modules/kms'
-import type { JwaSignatureAlgorithm } from './jose/jwa'
+import { KnownJwaSignatureAlgorithm, PublicJwk } from '../modules/kms'
 
 export type Kid = string
 
 export interface JwsProtectedHeaderOptions {
-  alg: JwaSignatureAlgorithm | string
+  alg: KnownJwaSignatureAlgorithm
   kid?: Kid
   jwk?: PublicJwk
   x5c?: string[]

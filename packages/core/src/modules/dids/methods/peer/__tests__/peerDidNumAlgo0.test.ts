@@ -1,4 +1,4 @@
-import { Key } from '../../../../../crypto'
+import { PublicJwk } from '../../../../kms'
 import didKeyEd25519 from '../../../__tests__/__fixtures__/didKeyEd25519.json'
 import didKeyX25519 from '../../../__tests__/__fixtures__/didKeyX25519.json'
 import { didToNumAlgo0DidDocument, publicJwkToNumAlgo0DidDocument } from '../peerDidNumAlgo0'
@@ -9,7 +9,7 @@ describe('peerDidNumAlgo0', () => {
       const didDocuments = [didKeyEd25519, didKeyX25519]
 
       for (const didDocument of didDocuments) {
-        const key = Key.fromFingerprint(didDocument.id.split(':')[2])
+        const key = PublicJwk.fromFingerprint(didDocument.id.split(':')[2])
 
         const didPeerDocument = publicJwkToNumAlgo0DidDocument(key)
         const expectedDidPeerDocument = JSON.parse(JSON.stringify(didDocument).replace(/did:key:/g, 'did:peer:0'))

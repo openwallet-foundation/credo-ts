@@ -19,7 +19,6 @@ import {
   IndyAgentService,
   InjectionSymbols,
   JsonTransformer,
-  Key,
   Kms,
   Logger,
   TypedArrayEncoder,
@@ -346,9 +345,17 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
+    const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
+    if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
+      throw new ConnectionProblemReportError(
+        `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypehumanDescription}`,
+        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
+      )
+    }
 
-    if (signerVerkey !== invitationKey) {
+    const invitationKeyBase58 = TypedArrayEncoder.toBase58(invitationKey.publicKey.publicKey)
+
+    if (signerVerkey !== invitationKeyBase58) {
       throw new ConnectionProblemReportError(
         `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
         { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }

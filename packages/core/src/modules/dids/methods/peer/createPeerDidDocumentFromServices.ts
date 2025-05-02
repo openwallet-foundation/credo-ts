@@ -2,7 +2,7 @@ import type { ResolvedDidCommService } from '../../../../types'
 
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import { PublicJwk, X25519PublicJwk } from '../../../kms'
+import { PublicJwk } from '../../../kms'
 import { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument, getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
@@ -27,7 +27,7 @@ export function createPeerDidDocumentFromServices<WithKeys extends boolean>(
       // Key already added to the did document
       if (recipientKeyIdMapping[recipientKey.fingerprint]) return recipientKeyIdMapping[recipientKey.fingerprint]
 
-      const x25519Key = PublicJwk.fromPublicKey<X25519PublicJwk>({
+      const x25519Key = PublicJwk.fromPublicKey({
         crv: 'X25519',
         kty: 'OKP',
         publicKey: convertPublicKeyToX25519(recipientKey.publicKey.publicKey),

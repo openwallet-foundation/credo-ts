@@ -1,3 +1,5 @@
+import { TypedArrayEncoder } from '../../../utils'
+import { PublicJwk, X25519PublicJwk } from '../../kms'
 import { DidDocument, VerificationMethod } from '../domain'
 import { findMatchingEd25519Key } from '../helpers'
 
@@ -33,19 +35,34 @@ describe('findMatchingEd25519Key', () => {
     })
 
     test('returns matching Ed25519 key if corresponding X25519 key supplied', () => {
-      const x25519Key = Key.fromPublicKeyBase58(publicKeyBase58X25519, KeyType.X25519)
+      const x25519Key = PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'X25519',
+        publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58X25519),
+      })
       const ed25519Key = findMatchingEd25519Key(x25519Key, didDocument)
-      expect(ed25519Key?.publicKeyBase58).toBe(Ed25519VerificationMethod.publicKeyBase58)
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      expect(TypedArrayEncoder.toBase58(ed25519Key?.publicJwk.publicKey.publicKey!)).toBe(
+        Ed25519VerificationMethod.publicKeyBase58
+      )
     })
 
     test('returns undefined if non-corresponding X25519 key supplied', () => {
-      const differentX25519Key = Key.fromPublicKeyBase58('Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt', KeyType.X25519)
+      const differentX25519Key = PublicJwk.fromPublicKey({
+        publicKey: TypedArrayEncoder.fromBase58('Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt'),
+        kty: 'OKP',
+        crv: 'X25519',
+      })
       expect(findMatchingEd25519Key(differentX25519Key, didDocument)).toBeUndefined()
     })
 
     test('returns undefined if ed25519 key supplied', () => {
-      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58Ed25519, KeyType.Ed25519)
-      expect(findMatchingEd25519Key(ed25519Key, didDocument)).toBeUndefined()
+      const ed25519Key = PublicJwk.fromPublicKey({
+        publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58Ed25519),
+        kty: 'OKP',
+        crv: 'Ed25519',
+      })
+      expect(findMatchingEd25519Key(ed25519Key as unknown as PublicJwk<X25519PublicJwk>, didDocument)).toBeUndefined()
     })
   })
 
@@ -63,19 +80,34 @@ describe('findMatchingEd25519Key', () => {
     })
 
     test('returns matching Ed25519 key if corresponding X25519 key supplied', () => {
-      const x25519Key = Key.fromPublicKeyBase58(publicKeyBase58X25519, KeyType.X25519)
+      const x25519Key = PublicJwk.fromPublicKey({
+        publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58X25519),
+        kty: 'OKP',
+        crv: 'X25519',
+      })
       const ed25519Key = findMatchingEd25519Key(x25519Key, didDocument)
-      expect(ed25519Key?.publicKeyBase58).toBe(Ed25519VerificationMethod.publicKeyBase58)
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      expect(TypedArrayEncoder.toBase58(ed25519Key?.publicJwk.publicKey.publicKey!)).toBe(
+        Ed25519VerificationMethod.publicKeyBase58
+      )
     })
 
     test('returns undefined if non-corresponding X25519 key supplied', () => {
-      const differentX25519Key = Key.fromPublicKeyBase58('Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt', KeyType.X25519)
+      const differentX25519Key = PublicJwk.fromPublicKey({
+        publicKey: TypedArrayEncoder.fromBase58('Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt'),
+        kty: 'OKP',
+        crv: 'X25519',
+      })
       expect(findMatchingEd25519Key(differentX25519Key, didDocument)).toBeUndefined()
     })
 
     test('returns undefined if ed25519 key supplied', () => {
-      const ed25519Key = Key.fromPublicKeyBase58(publicKeyBase58Ed25519, KeyType.Ed25519)
-      expect(findMatchingEd25519Key(ed25519Key, didDocument)).toBeUndefined()
+      const ed25519Key = PublicJwk.fromPublicKey({
+        publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58Ed25519),
+        kty: 'OKP',
+        crv: 'Ed25519',
+      })
+      expect(findMatchingEd25519Key(ed25519Key as unknown as PublicJwk<X25519PublicJwk>, didDocument)).toBeUndefined()
     })
   })
 })

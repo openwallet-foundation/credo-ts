@@ -3,7 +3,7 @@ import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { Key, getJwkFromKey } from '@credo-ts/core'
+import { Kms } from '@credo-ts/core'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 
@@ -12,7 +12,9 @@ export function configureJwksEndpoint(router: Router, config: OpenId4VcIssuerMod
     const { agentContext, issuer } = getRequestContext(_request)
     try {
       const jwks = {
-        keys: [getJwkFromKey(Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)).toJson()],
+        keys: [
+          Kms.PublicJwk.fromFingerprint(issuer.accessTokenPublicKeyFingerprint).toJson() as JwkSet['keys'][number],
+        ],
       } satisfies JwkSet
 
       return sendJsonResponse(response, next, jwks, 'application/jwk-set+json')

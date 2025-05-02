@@ -13,9 +13,7 @@ import {
   InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  JwaSignatureAlgorithm,
   JwsService,
-  Key,
   Kms,
   Logger,
   PeerDidNumAlgo,
@@ -372,9 +370,13 @@ export class DidExchangeProtocol {
     const didDocument = await this.resolveDidDocument(
       agentContext,
       message,
-      outOfBandRecord
-        .getTags()
-        .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
+      outOfBandRecord.getTags().recipientKeyFingerprints.map((fingerprint) => {
+        const publicJwk = Kms.PublicJwk.fromFingerprint(fingerprint)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          throw new CredoError('Expected fingerprint to be of type Ed25519')
+        }
+        return publicJwk
+      })
     )
 
     if (isValidPeerDid(didDocument.id)) {
@@ -506,7 +508,7 @@ export class DidExchangeProtocol {
             kid,
           },
           protectedHeaderOptions: {
-            alg: JwaSignatureAlgorithm.EdDSA,
+            alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
             jwk: signingKey,
           },
         })
@@ -529,12 +531,12 @@ export class DidExchangeProtocol {
   private async resolveDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58: string[] = []
+    invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ) {
     // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
     return isDid(message.did, 'peer') && getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
-      ? this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
-      : this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+      ? this.extractAttachedDidDocument(agentContext, message, invitationKeys)
+      : this.extractResolvableDidDocument(agentContext, message, invitationKeys)
   }
 
   /**
@@ -544,7 +546,7 @@ export class DidExchangeProtocol {
   private async extractResolvableDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58?: string[]
+    invitationKeys?: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   ) {
     // Validate did-rotate attachment in case of DID Exchange response
     if (message instanceof DidExchangeResponseMessage) {
@@ -607,14 +609,12 @@ export class DidExchangeProtocol {
 
       if (
         !isValid ||
-        !jwsSignerKeys.every((key) =>
-          invitationKeysBase58?.includes(TypedArrayEncoder.toBase58(key.publicKey.publicKey))
-        )
+        !jwsSignerKeys.every((key) => invitationKeys?.some((invitationKey) => invitationKey.equals(key)))
       ) {
         throw new DidExchangeProblemReportError(
           `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
-            jwsSignerKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey))
-          )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
+            jwsSignerKeys.map((key) => key.fingerprint)
+          )} invitationKeys:${JSON.stringify(invitationKeys?.map((key) => key.fingerprint))}`,
           {
             problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
           }
@@ -647,7 +647,7 @@ export class DidExchangeProtocol {
   private async extractAttachedDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58: string[] = []
+    invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ): Promise<DidDocument> {
     if (!message.didDoc) {
       const problemCode =
@@ -706,11 +706,7 @@ export class DidExchangeProtocol {
         const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
         return publicJwk
       })
-      .concat(
-        invitationKeysBase58.map((base58) =>
-          Kms.PublicJwk.fromPublicKey({ crv: 'Ed25519', kty: 'OKP', publicKey: TypedArrayEncoder.fromBase58(base58) })
-        )
-      )
+      .concat(invitationKeys)
 
     this.logger.trace('JWS verification result', { isValid, jwsSigners })
 

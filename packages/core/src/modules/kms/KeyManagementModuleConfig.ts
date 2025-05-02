@@ -54,4 +54,11 @@ export class KeyManagementModuleConfig {
 
     return backend
   }
+
+  private toJSON() {
+    return {
+      defaultBackend: this.#defaultBackend,
+      backends: this.backends.map((backend) => backend.backend),
+    }
+  }
 }

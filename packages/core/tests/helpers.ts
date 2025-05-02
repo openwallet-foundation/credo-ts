@@ -55,7 +55,6 @@ import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
-import { Key, KeyType } from '../src/crypto'
 import { DidKey } from '../src/modules/dids/methods/key'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
@@ -813,14 +812,23 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
   return { did, kid, verificationMethod, publicJwk: didKey.publicJwk }
 }
 
-export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: Key) {
-  const x509 = agentContext.dependencyManager.resolve(X509Api)
+export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: PublicJwk) {
+  const x509 = agentContext.resolve(X509Api)
+  const kms = agentContext.resolve(KeyManagementApi)
+
   const certificate = await x509.createCertificate({
     authorityKey:
       key ??
-      (await agentContext.wallet.createKey({
-        keyType: KeyType.Ed25519,
-      })),
+      Kms.PublicJwk.fromPublicJwk(
+        (
+          await kms.createKey({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          })
+        ).publicJwk
+      ),
     issuer: {
       countryName: 'DE',
     },

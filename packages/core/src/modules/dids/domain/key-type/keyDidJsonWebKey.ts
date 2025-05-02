@@ -10,10 +10,6 @@ export const keyDidJsonWebKey: KeyDidMapping<P256PublicJwk | P384PublicJwk | P52
   supportedVerificationMethodTypes: [VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020],
   getVerificationMethods: (did, publicJwk) => [getJsonWebKey2020({ did, publicJwk })],
 
-  getKeyFromVerificationMethod: () => {
-    // This is handled on a higher level
-    throw new CredoError('Not supported for key did json web key')
-  },
   getPublicJwkFromVerificationMethod: () => {
     // This is handled on a higher level
     throw new CredoError('Not supported for key did json web key')

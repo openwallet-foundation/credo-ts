@@ -235,7 +235,7 @@ export class DidDocument {
     for (const service of this.didCommServices) {
       if (service.type === IndyAgentService.type) {
         for (const publicKeyBase58 of service.recipientKeys) {
-          const publicJwk = PublicJwk.fromPublicKey<Ed25519PublicJwk>({
+          const publicJwk = PublicJwk.fromPublicKey({
             kty: 'OKP',
             crv: 'Ed25519',
             publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),

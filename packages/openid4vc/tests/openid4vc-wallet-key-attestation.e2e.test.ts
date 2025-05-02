@@ -1,11 +1,9 @@
 import type { AgentType } from './utils'
 
-import { ClaimFormat, CredoError, JwaSignatureAlgorithm, Key, KeyType, getJwkFromKey } from '@credo-ts/core'
+import { ClaimFormat, CredoError, Kms } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
@@ -17,6 +15,7 @@ import {
 } from '../src'
 
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import { addSecondsToDate } from '../src/shared/utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
@@ -49,17 +48,15 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
     openId4VcVerifier: OpenId4VcVerifierModule
-    askar: AskarModule
   }>
   let issuerRecord: OpenId4VcIssuerRecord
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
-    askar: AskarModule
   }>
 
   let keyAttestationJwt: string
-  let attestedKeys: Key[]
+  let attestedKeys: Kms.PublicJwk[]
   let walletAttestationJwt: string
 
   beforeEach(async () => {
@@ -160,12 +157,12 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
           throw new Error('not supported')
         },
       }),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule({}),
     })
 
     holder = await createAgentFromModules('holder', {
       openId4VcHolder: new OpenId4VcHolderModule(),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule({}),
     })
 
     const walletProviderCertificate = await holder.agent.x509.createCertificate({

@@ -1,4 +1,4 @@
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, Kms, VerifiableCredential } from '@credo-ts/core'
+import type { AgentContext, Kms, VerifiableCredential } from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
@@ -32,8 +32,8 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
 ]
 
 export interface OpenId4VciDpopRequestOptions {
-  jwk: Jwk
-  alg: JwaSignatureAlgorithm
+  jwk: Kms.PublicJwk
+  alg: Kms.KnownJwaSignatureAlgorithm
   nonce?: string
 }
 
@@ -233,7 +233,7 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for signing the credential, but this not a requirement for the spec. E.g. if the
    * pop uses EdDsa, the credential will most commonly also use EdDsa, or Ed25519Signature2018/2020.
    */
-  allowedProofOfPossessionSignatureAlgorithms?: JwaSignatureAlgorithm[]
+  allowedProofOfPossessionSignatureAlgorithms?: Kms.KnownJwaSignatureAlgorithm[]
 
   /**
    * A function that should resolve key material for binding the to-be-issued credential

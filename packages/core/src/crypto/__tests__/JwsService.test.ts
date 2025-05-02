@@ -1,46 +1,57 @@
-import type { Key, Wallet, X509Certificate } from '@credo-ts/core'
+import type { X509Certificate } from '@credo-ts/core'
 import type { AgentContext } from '../../agent'
 
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
-import { KeyType } from '../KeyType'
-import { JwaSignatureAlgorithm } from '../jose/jwa'
-import { getJwkFromKey } from '../jose/jwk'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import {
+  Ed25519PublicJwk,
+  KeyManagementApi,
+  KnownJwaSignatureAlgorithms,
+  P256PublicJwk,
+  PublicJwk,
+} from '../../modules/kms'
 
 describe('JwsService', () => {
-  let wallet: Wallet
   let agentContext: AgentContext
   let jwsService: JwsService
-  let didJwsz6MkfKey: Key
+  let didJwsz6MkfKey: PublicJwk<Ed25519PublicJwk>
   let didJwsz6MkfCertificate: X509Certificate
-  let didJwsz6MkvKey: Key
+  let didJwsz6MkvKey: PublicJwk<Ed25519PublicJwk>
   let didJwsz6MkvCertificate: X509Certificate
-  let didJwszDnaeyKey: Key
+  let didJwszDnaeyKey: PublicJwk<P256PublicJwk>
 
   beforeAll(async () => {
-    const config = getAgentConfig('JwsService')
-    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
-      wallet,
       registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]],
+      agentConfig: getAgentConfig('JwsService'),
     })
-    await wallet.createAndOpen(config.walletConfig)
+    const kms = agentContext.resolve(KeyManagementApi)
 
     jwsService = new JwsService()
 
-    didJwsz6MkfKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
-      keyType: KeyType.Ed25519,
-    })
+    didJwsz6MkfKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
+
     didJwsz6MkfCertificate = await X509Service.createCertificate(agentContext, {
       authorityKey: didJwsz6MkfKey,
       issuer: {
@@ -48,10 +59,20 @@ describe('JwsService', () => {
       },
     })
 
-    didJwsz6MkvKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
-      keyType: KeyType.Ed25519,
-    })
+    didJwsz6MkvKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
+
     didJwsz6MkvCertificate = await X509Service.createCertificate(agentContext, {
       authorityKey: didJwsz6MkvKey,
       issuer: {
@@ -59,14 +80,19 @@ describe('JwsService', () => {
       },
     })
 
-    didJwszDnaeyKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwszDnaey.SEED),
-      keyType: KeyType.P256,
-    })
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
+    didJwszDnaeyKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwszDnaey.SEED),
+            type: {
+              kty: 'EC',
+              crv: 'P-256',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
   })
 
   it('creates a jws for the payload using Ed25519 key', async () => {
@@ -75,11 +101,11 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       header: { kid },
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey,
       },
     })
 
@@ -92,11 +118,11 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      key: didJwszDnaeyKey,
+      keyId: didJwszDnaeyKey.keyId,
       header: { kid },
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.ES256,
-        jwk: getJwkFromKey(didJwszDnaeyKey),
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        jwk: didJwszDnaeyKey,
       },
     })
 
@@ -108,10 +134,10 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey,
       },
     })
 
@@ -125,10 +151,10 @@ describe('JwsService', () => {
 
     const signed1 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey,
         kid: 'something',
       },
     })
@@ -139,9 +165,9 @@ describe('JwsService', () => {
 
     const signed2 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
         x5c: [didJwsz6MkfCertificate.toString('base64url')],
         kid: 'something',
       },
@@ -161,7 +187,7 @@ describe('JwsService', () => {
         allowedJwsSignerMethods: ['did'],
         jwsSigner: {
           didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
+          jwk: didJwsz6MkfKey,
           method: 'did',
         },
       })
@@ -171,7 +197,7 @@ describe('JwsService', () => {
         {
           method: 'did',
           didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
+          jwk: didJwsz6MkfKey,
         },
       ])
     })
@@ -181,7 +207,7 @@ describe('JwsService', () => {
         jws: `${didJwsz6Mkf.JWS_JSON.protected}.${didJwsz6Mkf.JWS_JSON.payload}.${didJwsz6Mkf.JWS_JSON.signature}`,
         jwsSigner: {
           didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
+          jwk: didJwsz6MkfKey,
           method: 'did',
         },
       })
@@ -191,7 +217,7 @@ describe('JwsService', () => {
         {
           method: 'did',
           didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
+          jwk: didJwsz6MkfKey,
         },
       ])
     })
@@ -204,7 +230,7 @@ describe('JwsService', () => {
           if (jws.header.kid === `did:key:${didJwsz6MkfKey.fingerprint}`) {
             return {
               method: 'did',
-              jwk: getJwkFromKey(didJwsz6MkfKey),
+              jwk: didJwsz6MkfKey,
               didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
             }
           }
@@ -212,7 +238,7 @@ describe('JwsService', () => {
           if (jws.header.kid === `did:key:${didJwsz6MkvKey.fingerprint}`) {
             return {
               method: 'did',
-              jwk: getJwkFromKey(didJwsz6MkvKey),
+              jwk: didJwsz6MkvKey,
               didUrl: `did:key:${didJwsz6MkvKey.fingerprint}#${didJwsz6MkvKey.fingerprint}`,
             }
           }
@@ -226,12 +252,12 @@ describe('JwsService', () => {
         {
           method: 'did',
           didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
+          jwk: didJwsz6MkfKey,
         },
         {
           method: 'did',
           didUrl: `did:key:${didJwsz6MkvKey.fingerprint}#${didJwsz6MkvKey.fingerprint}`,
-          jwk: getJwkFromKey(didJwsz6MkvKey),
+          jwk: didJwsz6MkvKey,
         },
       ])
     })
@@ -263,7 +289,7 @@ describe('JwsService', () => {
           jws: { signatures: [], payload: '' },
           jwsSigner: {
             method: 'jwk',
-            jwk: getJwkFromKey(didJwsz6MkfKey),
+            jwk: didJwsz6MkfKey,
           },
         })
       ).rejects.toThrow("jwsSigner provided with method 'jwk', but allowed jws signer methods are x5c.")
@@ -274,7 +300,7 @@ describe('JwsService', () => {
         jws: didJwsz6Mkf.JWS_JSON,
         jwsSigner: {
           method: 'jwk',
-          jwk: getJwkFromKey(didJwsz6MkvKey),
+          jwk: didJwsz6MkvKey,
         },
       })
 
@@ -287,9 +313,9 @@ describe('JwsService', () => {
 
       const signed = await jwsService.createJwsCompact(agentContext, {
         payload,
-        key: didJwsz6MkfKey,
+        keyId: didJwsz6MkfKey.keyId,
         protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
+          alg: KnownJwaSignatureAlgorithms.EdDSA,
           x5c: [didJwsz6MkfCertificate.toString('base64url')],
         },
       })
@@ -309,7 +335,7 @@ describe('JwsService', () => {
           jwsSigner: {
             method: 'x5c',
             x5c: ['invalid'],
-            jwk: getJwkFromKey(didJwsz6MkfKey),
+            jwk: didJwsz6MkfKey,
           },
           trustedCertificates: [didJwsz6MkfCertificate.toString('base64url')],
         })
@@ -323,7 +349,7 @@ describe('JwsService', () => {
           jwsSigner: {
             method: 'x5c',
             x5c: [didJwsz6MkfCertificate.toString('base64url')],
-            jwk: getJwkFromKey(didJwsz6MkfKey),
+            jwk: didJwsz6MkfKey,
           },
           trustedCertificates: [didJwsz6MkvCertificate.toString('base64url')],
         })

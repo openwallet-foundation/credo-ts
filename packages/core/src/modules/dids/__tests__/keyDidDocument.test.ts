@@ -7,7 +7,7 @@ import didKeyX25519Fixture from './__fixtures__/didKeyX25519.json'
 const TEST_X25519_DID = 'did:key:z6LShLeXRTzevtwcfehaGEzCMyL3bNsAeKCwcqwJxyCo63yE'
 const TEST_ED25519_DID = 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
 
-describe('getDidDocumentForKey', () => {
+describe('getDidDocumentForPublicJwk', () => {
   it('should return a valid did:key did document for and x25519 key', () => {
     const didKey = DidKey.fromDid(TEST_X25519_DID)
     const didDocument = getDidDocumentForPublicJwk(TEST_X25519_DID, didKey.publicJwk)

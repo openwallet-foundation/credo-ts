@@ -1,5 +1,4 @@
 import type { Buffer } from '../../../utils'
-import type { JwkJson } from '../jwk'
 
 import { CredoError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
@@ -21,6 +20,14 @@ interface JwtOptions {
   signature: Buffer
 
   serializedJwt: string
+}
+
+export interface JwkJson {
+  kty: string
+  use?: string
+  kid?: string
+  key_ops?: string[]
+  [key: string]: unknown
 }
 
 export class Jwt {

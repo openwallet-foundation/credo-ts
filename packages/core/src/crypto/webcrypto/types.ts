@@ -4,7 +4,7 @@
  */
 
 import { KnownJwaSignatureAlgorithm } from '../../modules/kms'
-import type { JwkJson } from '../jose'
+import { JwkJson } from '../jose/jwt/Jwt'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import type { CredoWebCryptoKey } from './CredoWebCryptoKey'
 

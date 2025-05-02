@@ -4,7 +4,6 @@ import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../
 
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
 import { KmsCreateKeyType, PublicJwk, getJwkHumanDescription } from '../../../modules/kms'
-import { KeyType } from '../../KeyType'
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
@@ -184,43 +183,4 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
     algorithm: crvToAlgorithm[publicKey.crv],
     subjectPublicKey: publicKey.publicKey,
   })
-}
-
-export const spkiAlgorithmIntoCredoKeyType = (algorithm: AlgorithmIdentifier): KeyType => {
-  if (algorithm.isEqual(ecPublicKeyWithP256AlgorithmIdentifier)) {
-    return KeyType.P256
-  }
-  if (algorithm.isEqual(ecPublicKeyWithP384AlgorithmIdentifier)) {
-    return KeyType.P384
-  }
-  if (algorithm.isEqual(ecPublicKeyWithK256AlgorithmIdentifier)) {
-    return KeyType.K256
-  }
-  if (algorithm.isEqual(ed25519AlgorithmIdentifier)) {
-    return KeyType.Ed25519
-  }
-  if (algorithm.isEqual(x25519AlgorithmIdentifier)) {
-    return KeyType.X25519
-  }
-
-  throw new CredoWebCryptoError(
-    `Unsupported algorithm: ${algorithm.algorithm}, with params: ${algorithm.parameters ? 'yes' : 'no'}`
-  )
-}
-
-export const credoKeyTypeIntoSpkiAlgorithm = (keyType: KeyType): AlgorithmIdentifier => {
-  switch (keyType) {
-    case KeyType.Ed25519:
-      return ed25519AlgorithmIdentifier
-    case KeyType.X25519:
-      return x25519AlgorithmIdentifier
-    case KeyType.P256:
-      return ecPublicKeyWithP256AlgorithmIdentifier
-    case KeyType.P384:
-      return ecPublicKeyWithP384AlgorithmIdentifier
-    case KeyType.K256:
-      return ecPublicKeyWithK256AlgorithmIdentifier
-    default:
-      throw new CredoWebCryptoError(`Unsupported key type: ${keyType}`)
-  }
 }

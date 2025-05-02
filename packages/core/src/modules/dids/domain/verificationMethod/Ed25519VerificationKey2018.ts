@@ -1,5 +1,3 @@
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
 import { TypedArrayEncoder } from '../../../../utils'
 import { Ed25519PublicJwk, PublicJwk } from '../../../kms'
@@ -39,13 +37,6 @@ export function isEd25519VerificationKey2018(
 /**
  * Get a key from a Ed25519VerificationKey2018 verification method.
  */
-export function getKeyFromEd25519VerificationKey2018(verificationMethod: Ed25519VerificationKey2018) {
-  if (!verificationMethod.publicKeyBase58) {
-    throw new CredoError('verification method is missing publicKeyBase58')
-  }
-
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.Ed25519)
-}
 
 /**
  * Get a public jwk from a Ed25519VerificationKey2018 verification method.

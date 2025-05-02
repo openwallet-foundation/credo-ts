@@ -50,7 +50,7 @@ export class MediatorRoutingRecord extends BaseRecord<DefaultMediatorRoutingReco
     return this.routingKeys.map((routingKey) => {
       // routing keys in base58 format use the legacy key id
       if (typeof routingKey === 'string') {
-        const publicJwk = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+        const publicJwk = Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
           crv: 'Ed25519',
           publicKey: TypedArrayEncoder.fromBase58(routingKey),

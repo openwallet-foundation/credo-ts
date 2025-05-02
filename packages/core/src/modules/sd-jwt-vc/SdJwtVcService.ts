@@ -1,6 +1,5 @@
 import type { SDJwt } from '@sd-jwt/core'
 import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
-import type { JwkJson, Key } from '../../crypto'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   SdJwtVcHeader,
@@ -15,21 +14,22 @@ import type {
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 import { selectDisclosures } from '@sd-jwt/present'
 import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
-import { uint8ArrayToBase64Url } from '@sd-jwt/utils'
 import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
-import { Hasher, Jwk, JwtPayload, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, getKeyFromVerificationMethod, parseDid } from '../dids'
+import { DidResolverService, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
+import { JwkJson } from '../../crypto/jose/jwt/Jwt'
+import { KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
@@ -118,7 +118,7 @@ export class SdJwtVcService {
 
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: this.signer(agentContext, issuer.key),
+      signer: this.signer(agentContext, issuer.publicJwk),
       hashAlg: 'sha-256',
       signAlg: issuer.alg,
     })
@@ -204,7 +204,7 @@ export class SdJwtVcService {
 
     const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
     sdjwt.config({
-      kbSigner: holder ? this.signer(agentContext, holder.key) : undefined,
+      kbSigner: holder ? this.signer(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
     })
 
@@ -296,8 +296,8 @@ export class SdJwtVcService {
       const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
-        verifier: this.verifier(agentContext, issuer.key),
-        kbVerifier: holder ? this.verifier(agentContext, holder.key) : undefined,
+        verifier: this.verifier(agentContext, issuer.publicJwk),
+        kbVerifier: holder ? this.verifier(agentContext, holder.publicJwk) : undefined,
       })
 
       const requiredKeys = requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct']
@@ -442,27 +442,35 @@ export class SdJwtVcService {
   /**
    * @todo validate the JWT header (alg)
    */
-  private signer(agentContext: AgentContext, key: Key): Signer {
+  private signer(agentContext: AgentContext, key: PublicJwk): Signer {
+    const kms = agentContext.resolve(KeyManagementApi)
+
     return async (input: string) => {
-      const signedBuffer = await agentContext.wallet.sign({ key, data: TypedArrayEncoder.fromString(input) })
-      return uint8ArrayToBase64Url(signedBuffer)
+      const result = await kms.sign({
+        keyId: key.keyId,
+        data: TypedArrayEncoder.fromString(input),
+        algorithm: key.signatureAlgorithm,
+      })
+
+      return TypedArrayEncoder.toBase64URL(result.signature)
     }
   }
 
   /**
    * @todo validate the JWT header (alg)
    */
-  private verifier(agentContext: AgentContext, key: Key): Verifier {
-    return async (message: string, signatureBase64Url: string) => {
-      if (!key) {
-        throw new SdJwtVcError('The public key used to verify the signature is missing')
-      }
+  private verifier(agentContext: AgentContext, key: PublicJwk): Verifier {
+    const kms = agentContext.resolve(KeyManagementApi)
 
-      return await agentContext.wallet.verify({
+    return async (message: string, signatureBase64Url: string) => {
+      const result = await kms.verify({
         signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
-        key,
+        key: key.toJson(),
         data: TypedArrayEncoder.fromString(message),
+        algorithm: key.signatureAlgorithm,
       })
+
+      return result.verified
     }
   }
 
@@ -475,35 +483,41 @@ export class SdJwtVcService {
         )
       }
 
+      // FIXME: need to extract the key id from the DID
       const { verificationMethod } = await this.resolveDidUrl(agentContext, issuer.didUrl)
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
+        throw new SdJwtVcError(
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
+        )
       }
       const alg = supportedSignatureAlgorithms[0]
 
       return {
         alg,
-        key,
+        publicJwk,
         iss: parsedDid.did,
         kid: `#${parsedDid.fragment}`,
       }
     }
 
+    // FIXME: probably need to make the input an x509 certificate so we can attach a key id
     if (issuer.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.x5c })
-      const key = leafCertificate.publicKey
-      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      const publicJwk = leafCertificate.publicJwk
+      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
+        throw new SdJwtVcError(
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
+        )
       }
       const alg = supportedSignatureAlgorithms[0]
 
       this.assertValidX5cJwtIssuer(agentContext, issuer.issuer, leafCertificate)
 
       return {
-        key,
+        publicJwk,
         iss: issuer.issuer,
         x5c: issuer.x5c,
         alg,
@@ -628,7 +642,7 @@ export class SdJwtVcService {
     if (cnf.jwk) {
       return {
         method: 'jwk',
-        jwk: cnf.jwk,
+        jwk: PublicJwk.fromUnknown(cnf.jwk),
       }
     }
     if (cnf.kid) {
@@ -653,17 +667,20 @@ export class SdJwtVcService {
         )
       }
 
+      // FIXMe: in case we are presenting the SD-JWT, we need to attach the key id
       const { verificationMethod } = await this.resolveDidUrl(agentContext, holder.didUrl)
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
+      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
+        throw new SdJwtVcError(
+          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
+        )
       }
       const alg = supportedSignatureAlgorithms[0]
 
       return {
         alg,
-        key,
+        publicJwk,
         cnf: {
           // We need to include the whole didUrl here, otherwise the verifier
           // won't know which did it is associated with
@@ -672,15 +689,14 @@ export class SdJwtVcService {
       }
     }
     if (holder.method === 'jwk') {
-      const jwk = holder.jwk instanceof Jwk ? holder.jwk : getJwkFromJson(holder.jwk)
-      const key = jwk.key
-      const alg = jwk.supportedSignatureAlgorithms[0]
+      const publicJwk = holder.jwk
+      const alg = publicJwk.supportedSignatureAlgorithms[0]
 
       return {
         alg,
-        key,
+        publicJwk,
         cnf: {
-          jwk: jwk.toJson(),
+          jwk: publicJwk.toJson(),
         },
       }
     }
@@ -689,10 +705,12 @@ export class SdJwtVcService {
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
+    const kms = agentContext.resolve(KeyManagementApi)
+
     return {
       hasher: sdJwtVcHasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
-      saltGenerator: agentContext.wallet.generateNonce,
+      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length }).bytes).slice(0, length),
     }
   }
 

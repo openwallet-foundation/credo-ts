@@ -279,7 +279,7 @@ export class EnvelopeService {
   ): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk> | null> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
 
-    const publicKey = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+    const publicKey = Kms.PublicJwk.fromPublicKey({
       kty: 'OKP',
       crv: 'Ed25519',
       publicKey: TypedArrayEncoder.fromBase58(recipient.header.kid),

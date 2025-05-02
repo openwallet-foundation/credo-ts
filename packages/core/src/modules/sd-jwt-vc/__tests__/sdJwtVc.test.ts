@@ -1,28 +1,40 @@
-import type { Key } from '@credo-ts/core'
-
 import nock, { cleanAll } from 'nock'
 
 import { getAgentOptions } from '../../../../tests'
 
-import { Agent, DidKey, KeyType, TypedArrayEncoder, getJwkFromKey } from '@credo-ts/core'
+import { Agent, DidKey, TypedArrayEncoder } from '@credo-ts/core'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { PublicJwk } from '../../kms'
+
+const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
+const holder = new Agent(getAgentOptions('sd-jwt-vc-holder-agent'))
 
 describe('sd-jwt-vc end to end test', () => {
-  const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
-  let issuerKey: Key
+  let issuerKey: PublicJwk
   let issuerDidUrl: string
 
-  const holder = new Agent(getAgentOptions('sd-jwt-vc-holder-agent'))
-  let holderKey: Key
+  let holderKey: PublicJwk
 
   const verifier = new Agent(getAgentOptions('sd-jwt-vc-verifier-agent'))
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
 
   beforeAll(async () => {
     await issuer.initialize()
-    issuerKey = await issuer.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
-    })
+
+    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    issuerKey = PublicJwk.fromPublicJwk(
+      (
+        await issuer.kms.importKey({
+          privateJwk: issuerPrivateJwk,
+        })
+      ).publicJwk
+    )
 
     const issuerDidKey = new DidKey(issuerKey)
     const issuerDidDocument = issuerDidKey.didDocument
@@ -30,10 +42,20 @@ describe('sd-jwt-vc end to end test', () => {
     await issuer.dids.import({ didDocument: issuerDidDocument, did: issuerDidDocument.id })
 
     await holder.initialize()
-    holderKey = await holder.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
-    })
+    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    holderKey = PublicJwk.fromPublicJwk(
+      (
+        await holder.kms.importKey({
+          privateJwk: holderPrivateJwk,
+        })
+      ).publicJwk
+    )
 
     await verifier.initialize()
   })
@@ -63,7 +85,7 @@ describe('sd-jwt-vc end to end test', () => {
       payload: credential,
       holder: {
         method: 'jwk',
-        jwk: getJwkFromKey(holderKey),
+        jwk: holderKey,
       },
       issuer: {
         didUrl: issuerDidUrl,
@@ -183,7 +205,7 @@ describe('sd-jwt-vc end to end test', () => {
     const verifierMetadata = {
       audience: verifierDid,
       issuedAt: new Date().getTime() / 1000,
-      nonce: await verifier.wallet.generateNonce(),
+      nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 }).bytes),
     }
 
     const presentation = await holder.sdJwtVc.present<Payload>({

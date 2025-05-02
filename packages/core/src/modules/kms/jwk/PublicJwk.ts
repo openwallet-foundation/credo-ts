@@ -39,6 +39,24 @@ export type SupportedPublicJwk =
 
 type ExtractByJwk<T, K> = T extends { jwk: infer J } ? (K extends J ? T : never) : never
 
+type ExtractByPublicKey<T, K> = T extends { publicKey: infer J } ? (K extends J ? T : never) : never
+
+// /**
+//  * Utility type that finds a matching SupportedPublicJwk type based on its publicKey property
+//  * @template InputPublicKey - The input public key type to match against
+//  * @template SJwk - The SupportedPublicJwk union type (default: SupportedPublicJwk)
+//  */
+// type FindMatchingSupportedPublicJwk
+//   InputPublicKey,
+//   SJwk = SupportedPublicJwk
+// > = SJwk extends infer U
+//   ? U extends { publicKey: infer PK }
+//     ? InputPublicKey extends PK
+//       ? U
+//       : never
+//     : never
+//   : never;
+
 export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   private constructor(public readonly jwk: Jwk) {}
 
@@ -168,7 +186,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return alg as this['supportedSignatureAlgorithms'][number]
   }
 
-  public static fromPublicKey<Supported extends SupportedPublicJwk>(publicKey: Supported['publicKey']) {
+  public static fromPublicKey<Supported extends SupportedPublicJwk['publicKey']>(publicKey: Supported) {
     let jwkInstance: SupportedPublicJwk
 
     if (publicKey.kty === 'RSA') {
@@ -199,7 +217,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
       )
     }
 
-    return new PublicJwk(jwkInstance) as PublicJwk<Supported>
+    return new PublicJwk(jwkInstance) as PublicJwk<ExtractByPublicKey<SupportedPublicJwk, Supported>>
   }
 
   /**

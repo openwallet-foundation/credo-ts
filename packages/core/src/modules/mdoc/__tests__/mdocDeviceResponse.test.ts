@@ -2,7 +2,7 @@ import { Optionality } from '@sphereon/pex-models'
 
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
-import { KeyType } from '../../../crypto'
+import { PublicJwk } from '../../kms'
 import { X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
@@ -14,11 +14,17 @@ describe('mdoc device-response test', () => {
   })
 
   test('can limit the disclosure', async () => {
-    const holderKey = await agent.context.wallet.createKey({
-      keyType: KeyType.P256,
+    const holderKey = await agent.kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
     })
-    const issuerKey = await agent.context.wallet.createKey({
-      keyType: KeyType.P256,
+    const issuerKey = await agent.kms.createKey({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
     })
 
     const currentDate = new Date()
@@ -28,7 +34,7 @@ describe('mdoc device-response test', () => {
 
     const certificate = await X509Service.createCertificate(agent.context, {
       issuer: 'CN=credo',
-      authorityKey: issuerKey,
+      authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
       validity: {
         notBefore: currentDate,
         notAfter: nextDay,
@@ -39,7 +45,7 @@ describe('mdoc device-response test', () => {
 
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
-      holderKey: holderKey,
+      holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
       namespaces: {
         hello: {
           world: 'from-mdoc',

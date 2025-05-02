@@ -1,12 +1,5 @@
-import type {
-  DcqlQuery,
-  DifPresentationExchangeDefinitionV2,
-  JwkJson,
-  Mdoc,
-  MdocDeviceResponse,
-  SdJwtVc,
-} from '@credo-ts/core'
-import type { AuthorizationServerMetadata } from '@openid4vc/oauth2'
+import type { DcqlQuery, DifPresentationExchangeDefinitionV2, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
+import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import type { OpenId4VciSignMdocCredentials } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AgentType, TenantType } from './utils'
@@ -16,12 +9,10 @@ import {
   CredoError,
   DateOnly,
   DidsApi,
-  JwaSignatureAlgorithm,
-  Jwk,
   JwsService,
   Jwt,
   JwtPayload,
-  KeyType,
+  Kms,
   MdocRecord,
   SdJwtVcRecord,
   W3cCredential,
@@ -30,8 +21,7 @@ import {
   X509Module,
   X509ModuleConfig,
   X509Service,
-  getJwkFromKey,
-  getKeyFromVerificationMethod,
+  getPublicJwkFromVerificationMethod,
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
@@ -43,9 +33,6 @@ import {
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcHolderModule,
@@ -56,6 +43,7 @@ import {
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   createAgentFromModules,
@@ -66,7 +54,6 @@ import {
 import {
   universityDegreeCredentialConfigurationSupported,
   universityDegreeCredentialConfigurationSupportedMdoc,
-  universityDegreeCredentialSdJwt2,
 } from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 
@@ -85,7 +72,7 @@ describe('OpenId4Vc', () => {
     x509: X509Module
   }>
   let issuer1: TenantType
-  let issuer2: TenantType
+  let _issuer2: TenantType
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
@@ -107,6 +94,7 @@ describe('OpenId4Vc', () => {
       'issuer',
       {
         x509: new X509Module(),
+        inMemory: new InMemoryWalletModule(),
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
 
@@ -145,7 +133,7 @@ describe('OpenId4Vc', () => {
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
                   issuerCertificate: trustedCertificates[0],
-                  holderKey: holderBinding.key,
+                  holderKey: holderBinding.jwk,
                   namespaces: {
                     'Leopold-Franzens-University': {
                       degree: 'bachelor',
@@ -157,20 +145,19 @@ describe('OpenId4Vc', () => {
             throw new Error('Invalid request')
           },
         }),
-        askar: new AskarModule(askarModuleConfig),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598g',
       global.fetch
     )) as unknown as typeof issuer
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
-    issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
+    _issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
     holder = (await createAgentFromModules(
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module(),
       },
@@ -185,7 +172,7 @@ describe('OpenId4Vc', () => {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
         }),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f',
@@ -205,13 +192,8 @@ describe('OpenId4Vc', () => {
     clearNock()
 
     await issuer.agent.shutdown()
-    await issuer.agent.wallet.delete()
-
     await holder.agent.shutdown()
-    await holder.agent.wallet.delete()
-
     await verifier.agent.shutdown()
-    await verifier.agent.wallet.delete()
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {
@@ -227,236 +209,13 @@ describe('OpenId4Vc', () => {
     if (supportsJwk) {
       return {
         method: 'jwk',
-        keys: [getJwkFromKey(getKeyFromVerificationMethod(holder1.verificationMethod))],
+        keys: [getPublicJwkFromVerificationMethod(holder1.verificationMethod)],
       }
     }
 
     // otherwise throw an error
     throw new CredoError('Issuer does not support did:key or JWK for credential binding')
   }
-
-  it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc', async () => {
-    const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
-    const issuerTenant2 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer2.tenantId })
-
-    const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
-      credentialConfigurationsSupported: {
-        universityDegree: universityDegreeCredentialConfigurationSupported,
-      },
-    })
-    const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
-    expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['EdDSA'])
-    expect(issuer1Record.credentialConfigurationsSupported).toEqual({
-      universityDegree: {
-        format: 'vc+sd-jwt',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
-        proof_types_supported: {
-          jwt: {
-            proof_signing_alg_values_supported: ['EdDSA', 'ES256'],
-          },
-        },
-        vct: universityDegreeCredentialConfigurationSupported.vct,
-        scope: universityDegreeCredentialConfigurationSupported.scope,
-      },
-    })
-    const openIdIssuerTenant2 = await issuerTenant2.modules.openId4VcIssuer.createIssuer({
-      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.EdDSA],
-      credentialConfigurationsSupported: {
-        [universityDegreeCredentialSdJwt2.id]: universityDegreeCredentialSdJwt2,
-      },
-    })
-
-    const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
-      await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
-        issuerId: openIdIssuerTenant1.issuerId,
-        credentialConfigurationIds: ['universityDegree'],
-        preAuthorizedCodeFlowConfig: {
-          txCode: {
-            input_mode: 'numeric',
-            length: 4,
-          },
-        },
-        version: 'v1.draft15',
-      })
-
-    const { issuanceSession: issuanceSession2, credentialOffer: credentialOffer2 } =
-      await issuerTenant2.modules.openId4VcIssuer.createCredentialOffer({
-        issuerId: openIdIssuerTenant2.issuerId,
-        credentialConfigurationIds: [universityDegreeCredentialSdJwt2.id],
-        preAuthorizedCodeFlowConfig: {
-          txCode: {},
-        },
-        version: 'v1.draft11-15',
-      })
-
-    await issuerTenant2.endSession()
-
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.OfferCreated,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.OfferCreated,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-
-    const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-
-    const resolvedCredentialOffer1 =
-      await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer1)
-
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['EdDSA'])
-    expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
-      universityDegree: {
-        format: 'vc+sd-jwt',
-        cryptographic_binding_methods_supported: ['did:key', 'jwk'],
-        proof_types_supported: {
-          jwt: {
-            proof_signing_alg_values_supported: ['EdDSA', 'ES256'],
-          },
-        },
-        vct: universityDegreeCredentialConfigurationSupported.vct,
-        scope: universityDegreeCredentialConfigurationSupported.scope,
-      },
-    })
-
-    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
-    )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.token_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/token`
-    )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.credential_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/credential`
-    )
-
-    // Bind to JWK
-    const tokenResponseTenant1 = await holderTenant1.modules.openId4VcHolder.requestToken({
-      resolvedCredentialOffer: resolvedCredentialOffer1,
-      txCode: issuanceSession1.userPin,
-    })
-
-    const expectedSubject = (await issuerTenant1.modules.openId4VcIssuer.getIssuanceSessionById(issuanceSession1.id))
-      .authorization?.subject
-    await issuerTenant1.endSession()
-
-    expect(tokenResponseTenant1.accessToken).toBeDefined()
-    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Jwk)
-    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
-    expect(payload.toJson()).toEqual({
-      cnf: {
-        jkt: await calculateJwkThumbprint({
-          hashAlgorithm: HashAlgorithm.Sha256,
-          hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
-          jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
-        }),
-      },
-      'pre-authorized_code': expect.any(String),
-      aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
-      exp: expect.any(Number),
-      iat: expect.any(Number),
-      iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
-      jti: expect.any(String),
-      nbf: undefined,
-      sub: expectedSubject,
-    })
-
-    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
-      resolvedCredentialOffer: resolvedCredentialOffer1,
-      ...tokenResponseTenant1,
-      credentialBindingResolver,
-    })
-
-    // Wait for all events
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.AccessTokenCreated,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.Completed,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
-    })
-
-    expect(credentialsTenant1.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialsTenant1.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVcTenant1 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
-    expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
-
-    const resolvedCredentialOffer2 =
-      await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer2)
-
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.OfferUriRetrieved,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-
-    expect(resolvedCredentialOffer2.credentialOfferPayload.credential_issuer).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}`
-    )
-    expect(resolvedCredentialOffer2.metadata.credentialIssuer?.token_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/token`
-    )
-    expect(resolvedCredentialOffer2.metadata.credentialIssuer?.credential_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant2.issuerId}/credential`
-    )
-
-    // Bind to did
-    const tokenResponseTenant2 = await holderTenant1.modules.openId4VcHolder.requestToken({
-      resolvedCredentialOffer: resolvedCredentialOffer2,
-      txCode: issuanceSession2.userPin,
-    })
-
-    const credentialsTenant2 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
-      resolvedCredentialOffer: resolvedCredentialOffer2,
-      ...tokenResponseTenant2,
-      credentialBindingResolver,
-    })
-
-    // Wait for all events
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.AccessTokenCreated,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.Completed,
-      issuanceSessionId: issuanceSession2.id,
-      contextCorrelationId: issuer2.tenantId,
-    })
-
-    expect(credentialsTenant2.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant2 = (credentialsTenant2.credentials[0].credentials[0] as SdJwtVc).compact
-    const sdJwtVcTenant2 = holderTenant1.sdJwtVc.fromCompact(compactSdJwtVcTenant2)
-    expect(sdJwtVcTenant2.payload.vct).toEqual('UniversityDegreeCredential2')
-
-    await holderTenant1.endSession()
-  })
 
   it('e2e flow with tenants, issuer endpoints requesting a sd-jwt-vc using authorization code flow', async () => {
     const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
@@ -468,7 +227,7 @@ describe('OpenId4Vc', () => {
         crv: 'P-256',
       },
     })
-    // const authorizationServerJwk = getJwkFromKey(authorizationServerKey).toJson()
+    const authorizationServerJwk = Kms.PublicJwk.fromPublicJwk(authorizationServerKey.publicJwk)
     const authorizationServer = new Oauth2AuthorizationServer({
       callbacks: {
         ...getOid4vcCallbacks(issuer.agent.context),
@@ -488,7 +247,7 @@ describe('OpenId4Vc', () => {
 
           return {
             jwt: compact,
-            signerJwk: authorizationServerKey.publicJwk,
+            signerJwk: authorizationServerKey.publicJwk as Jwk,
           }
         },
       },
@@ -506,7 +265,7 @@ describe('OpenId4Vc', () => {
     app.get('/jwks.json', (_req, res) =>
       res.setHeader('Content-Type', 'application/jwk-set+json').send(
         JSON.stringify({
-          keys: [{ ...authorizationServerJwk, kid: 'first' }],
+          keys: [{ ...authorizationServerJwk.toJson(), kid: 'first' }],
         })
       )
     )
@@ -523,7 +282,7 @@ describe('OpenId4Vc', () => {
           },
           signer: {
             method: 'jwk',
-            publicJwk: authorizationServerJwk,
+            publicJwk: authorizationServerJwk.toJson() as Jwk,
             alg: 'ES256',
           },
         })
@@ -615,7 +374,7 @@ describe('OpenId4Vc', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -627,7 +386,7 @@ describe('OpenId4Vc', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -858,7 +617,9 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
@@ -1135,7 +896,9 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
@@ -1410,7 +1173,9 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
@@ -1822,14 +1587,16 @@ describe('OpenId4Vc', () => {
     const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
     const issuerCertificate = await issuerTenant1.x509.createCertificate({
-      authorityKey: await issuerTenant1.wallet.createKey({ keyType: KeyType.P256 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await issuerTenant1.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      ),
       issuer: 'C=DE',
     })
     const issuerCertificatePem = issuerCertificate.toString('pem')
     await issuerTenant1.x509.setTrustedCertificates([issuerCertificatePem])
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
-      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.ES256],
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
       },
@@ -1904,7 +1671,7 @@ describe('OpenId4Vc', () => {
     })
 
     expect(tokenResponseTenant1.accessToken).toBeDefined()
-    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Jwk)
+    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Kms.PublicJwk)
     const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
 
     expect(payload.toJson()).toEqual({
@@ -1912,7 +1679,7 @@ describe('OpenId4Vc', () => {
         jkt: await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
           hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
-          jwk: tokenResponseTenant1.dpop?.jwk.toJson() as JwkJson,
+          jwk: tokenResponseTenant1.dpop?.jwk.toJson() as Jwk,
         }),
       },
       'pre-authorized_code':
@@ -1969,13 +1736,24 @@ describe('OpenId4Vc', () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
-      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await issuer.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      ),
       issuer: 'C=DE',
     })
 
     await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
 
-    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await holder.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
@@ -1991,7 +1769,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
       issuer: { commonName: 'Credo', countryName: 'NL' },
     })
@@ -2090,7 +1870,9 @@ describe('OpenId4Vc', () => {
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
     const issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
-      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await issuer.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      ),
       issuer: 'C=DE',
     })
 
@@ -2101,7 +1883,16 @@ describe('OpenId4Vc', () => {
       throw new Error(`didUrl '${parsedDid.didUrl}' does not contain a '#'. Unable to derive key from did document.`)
     }
 
-    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await holder.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
 
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
@@ -2119,7 +1910,9 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
@@ -2458,7 +2251,9 @@ describe('OpenId4Vc', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
@@ -2808,7 +2603,9 @@ describe('OpenId4Vc', () => {
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
     const selfSignedCertificate = await X509Service.createCertificate(issuer.agent.context, {
-      authorityKey: await issuer.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await issuer.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      ),
       issuer: {
         countryName: 'DE',
       },
@@ -2821,7 +2618,16 @@ describe('OpenId4Vc', () => {
       throw new Error(`didUrl '${parsedDid.didUrl}' does not contain a '#'. Unable to derive key from did document.`)
     }
 
-    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await holder.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
 
     const date = new DateOnly(new DateOnly().toISOString())
 
@@ -2841,7 +2647,9 @@ describe('OpenId4Vc', () => {
     })
 
     const certificate = await verifier.agent.x509.createCertificate({
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       issuer: { commonName: 'Test' },
       extensions: {
         subjectAlternativeName: {

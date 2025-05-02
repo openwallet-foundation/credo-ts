@@ -1,4 +1,3 @@
-import type { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
 import type { VerificationMethod } from '../verificationMethod'
 import { getPublicJwkFromMultikey, isMultikey } from '../verificationMethod'
@@ -17,7 +16,6 @@ export interface KeyDidMapping<
 > {
   PublicJwkTypes: Array<Constructor<PublicJwkType>>
   getVerificationMethods: (did: string, publicJwk: PublicJwk<PublicJwkType>) => VerificationMethod[]
-  getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key
   getPublicJwkFromVerificationMethod(verificationMethod: VerificationMethod): PublicJwk
   supportedVerificationMethodTypes: string[]
 }

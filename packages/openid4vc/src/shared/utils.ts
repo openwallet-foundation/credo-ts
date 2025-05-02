@@ -1,4 +1,4 @@
-import type { AgentContext, DidPurpose, JwaSignatureAlgorithm, Key } from '@credo-ts/core'
+import type { AgentContext, DidPurpose, Kms } from '@credo-ts/core'
 import type { JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 
@@ -8,9 +8,6 @@ import {
   SignatureSuiteRegistry,
   X509Service,
   getDomainFromUrl,
-  getJwkClassFromKeyType,
-  getJwkFromKey,
-  getKeyFromVerificationMethod,
   getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 
@@ -22,7 +19,7 @@ import {
  * all the algorithms for that key type. However, this needs refactoring of the wallet
  * that is planned for the 0.5.0 release.
  */
-export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): JwaSignatureAlgorithm[] {
+export function getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
   const supportedKeyTypes = agentContext.wallet.supportedKeyTypes
 
   // Extract the supported JWS algs based on the key types the wallet support.
@@ -66,9 +63,8 @@ export async function requestSignerToJwtIssuer(
   requestSigner: OpenId4VcJwtIssuer
 ): Promise<Exclude<JwtSigner, JwtSignerX5c> | (JwtSignerX5c & { issuer: string })> {
   if (requestSigner.method === 'did') {
-    const key = await getKeyFromDid(agentContext, requestSigner.didUrl)
-    const alg = getJwkClassFromKeyType(key.keyType)?.supportedSignatureAlgorithms[0]
-    if (!alg) throw new CredoError(`No supported signature algorithms for key type: ${key.keyType}`)
+    const publicJwk = await getPublicJwkFromDid(agentContext, requestSigner.didUrl)
+    const alg = publicJwk.signatureAlgorithm
 
     return {
       method: requestSigner.method,
@@ -81,11 +77,7 @@ export async function requestSignerToJwtIssuer(
       certificateChain: requestSigner.x5c,
     })
 
-    const jwk = getJwkFromKey(leafCertificate.publicKey)
-    const alg = jwk.supportedSignatureAlgorithms[0]
-    if (!alg) {
-      throw new CredoError(`No supported signature algorithms found key type: '${jwk.keyType}'`)
-    }
+    const alg = leafCertificate.publicJwk.signatureAlgorithm
 
     if (
       !requestSigner.issuer.startsWith('https://') &&
@@ -131,12 +123,12 @@ export async function requestSignerToJwtIssuer(
   throw new CredoError(`Unsupported jwt issuer method '${(requestSigner as OpenId4VcJwtIssuer).method}'`)
 }
 
-export function getProofTypeFromKey(agentContext: AgentContext, key: Key) {
+export function getProofTypeFromKey(agentContext: AgentContext, key: Kms.PublicJwk) {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-  const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
+  const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwk(key)
   if (supportedSignatureSuites.length === 0) {
-    throw new CredoError(`Couldn't find a supported signature suite for the given key type '${key.keyType}'.`)
+    throw new CredoError(`Couldn't find a supported signature suite for the given key ${key.jwkTypehumanDescription}.`)
   }
 
   return supportedSignatureSuites[0].proofType

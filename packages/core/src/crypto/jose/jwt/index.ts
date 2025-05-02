@@ -1,2 +1,2 @@
-export { Jwt } from './Jwt'
+export { Jwt, JwkJson } from './Jwt'
 export { JwtPayload, JwtPayloadJson, JwtPayloadOptions } from './JwtPayload'

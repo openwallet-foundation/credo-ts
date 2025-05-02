@@ -1,4 +1,4 @@
-import type { AgentContext, Jwk, Key } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
 import { randomUUID } from 'crypto'
@@ -37,15 +37,15 @@ import {
   JwtPayload,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
   TypedArrayEncoder,
   X509ModuleConfig,
   getDomainFromUrl,
-  getJwkFromKey,
   parseDid,
 } from '@credo-ts/core'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { PublicJwk } from '../../kms'
 
-const jwkJsonWithoutUse = (jwk: Jwk) => {
+const _jwkJsonWithoutUse = (jwk: PublicJwk) => {
   const jwkJson = jwk.toJson()
   jwkJson.use = undefined
   return jwkJson
@@ -65,7 +65,7 @@ const agent = new Agent(
   )
 )
 
-agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
+agent.kms.randomBytes = jest.fn(() => ({ bytes: TypedArrayEncoder.fromString('salt') }))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
 
 jest.mock('../repository/SdJwtVcRepository')
@@ -73,7 +73,7 @@ const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
 
 const generateStatusList = async (
   agentContext: AgentContext,
-  key: Key,
+  key: PublicJwk,
   issuerDidUrl: string,
   length: number,
   revokedIndexes: number[]
@@ -100,37 +100,59 @@ const generateStatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    key,
+    keyId: key.keyId,
     payload: JwtPayload.fromJson(payload),
-    protectedHeaderOptions: header,
+    protectedHeaderOptions: {
+      ...header,
+      alg: 'EdDSA',
+    },
   })
 }
 
 describe('SdJwtVcService', () => {
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
   let issuerDidUrl: string
-  let issuerKey: Key
-  let holderKey: Key
+  let issuerKey: PublicJwk
+  let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
 
   beforeAll(async () => {
     await agent.initialize()
 
-    issuerKey = await agent.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
-    })
+    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    issuerKey = PublicJwk.fromPublicJwk(
+      (
+        await agent.kms.importKey({
+          privateJwk: issuerPrivateJwk,
+        })
+      ).publicJwk
+    )
 
     const issuerDidKey = new DidKey(issuerKey)
     const issuerDidDocument = issuerDidKey.didDocument
     issuerDidUrl = (issuerDidDocument.verificationMethod ?? [])[0].id
     await agent.dids.import({ didDocument: issuerDidDocument, did: issuerDidDocument.id })
 
-    holderKey = await agent.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
-    })
-
+    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    holderKey = PublicJwk.fromPublicJwk(
+      (
+        await agent.kms.importKey({
+          privateJwk: holderPrivateJwk,
+        })
+      ).publicJwk
+    )
     const holderDidKey = new DidKey(holderKey)
     const holderDidDocument = holderDidKey.didDocument
     await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
@@ -149,7 +171,7 @@ describe('SdJwtVcService', () => {
           },
           holder: {
             method: 'jwk',
-            jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+            jwk: holderKey,
           },
           issuer: {
             method: 'x5c',
@@ -168,7 +190,7 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'x5c',
@@ -191,7 +213,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: simpleX509.certificateIssuer,
-        cnf: { jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)) },
+        cnf: { jwk: holderKey },
       })
     })
 
@@ -205,7 +227,7 @@ describe('SdJwtVcService', () => {
           // FIXME: is it nicer API to just pass either didUrl or JWK?
           // Or none if you don't want to bind it?
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -229,7 +251,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -276,7 +298,7 @@ describe('SdJwtVcService', () => {
           // FIXME: is it nicer API to just pass either didUrl or JWK?
           // Or none if you don't want to bind it?
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -300,7 +322,7 @@ describe('SdJwtVcService', () => {
         value: false,
         discloseableValue: false,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -311,7 +333,7 @@ describe('SdJwtVcService', () => {
         disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -334,7 +356,7 @@ describe('SdJwtVcService', () => {
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
 
@@ -344,7 +366,7 @@ describe('SdJwtVcService', () => {
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -376,7 +398,7 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -413,7 +435,7 @@ describe('SdJwtVcService', () => {
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
 
@@ -436,7 +458,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -468,7 +490,7 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -499,7 +521,7 @@ describe('SdJwtVcService', () => {
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
 
@@ -522,7 +544,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -546,7 +568,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -586,7 +608,7 @@ describe('SdJwtVcService', () => {
         _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
 
@@ -625,7 +647,7 @@ describe('SdJwtVcService', () => {
           'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
         ],
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
 
@@ -663,7 +685,7 @@ describe('SdJwtVcService', () => {
           street_address: '123 Main St',
         },
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
       })
     })
@@ -710,7 +732,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
       })
 
@@ -748,7 +770,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
       })
 
@@ -767,7 +789,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
         presentationFrame: {
           is_over_65: true,
@@ -786,7 +808,6 @@ describe('SdJwtVcService', () => {
 
   describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
         // no disclosures
@@ -794,13 +815,13 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
 
@@ -821,7 +842,6 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleX509.sdJwtVc,
         // no disclosures
@@ -829,16 +849,16 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
       })
 
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
+      x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
 
@@ -1039,21 +1059,19 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
-
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
         presentationFrame: { claim: true },
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
 
@@ -1074,8 +1092,6 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
-
       const presentation = await sdJwtVcService.present<{
         is_over_65: boolean
         is_over_21: boolean
@@ -1087,7 +1103,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
         presentationFrame: {
           is_over_65: true,
@@ -1102,7 +1118,7 @@ describe('SdJwtVcService', () => {
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         // FIXME: this should be a requiredFrame to be consistent with the other methods
         // using frames
         requiredClaimKeys: [

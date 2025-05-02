@@ -19,7 +19,7 @@ export async function unpackAndVerifySignatureDecorator(
   const signerVerkey = decorator.signer
   const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-  const publicJwk = Kms.PublicJwk.fromPublicKey<Kms.Ed25519PublicJwk>({
+  const publicJwk = Kms.PublicJwk.fromPublicKey({
     kty: 'OKP',
     crv: 'Ed25519',
     publicKey: TypedArrayEncoder.fromBase58(signerVerkey),
