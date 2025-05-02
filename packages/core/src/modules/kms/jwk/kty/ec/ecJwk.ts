@@ -4,7 +4,7 @@ import { vJwkCommon } from '../../jwk'
 export const zKmsJwkPublicEc = z.object({
   ...vJwkCommon.shape,
   kty: z.literal('EC'),
-  crv: z.enum(['P-256', 'P-384', 'P-521', 'secp256k1', 'BLS12381G1', 'BLS12381G2']),
+  crv: z.enum(['P-256', 'P-384', 'P-521', 'secp256k1']),
 
   // Public
   x: z.base64Url, // Public key x-coordinate

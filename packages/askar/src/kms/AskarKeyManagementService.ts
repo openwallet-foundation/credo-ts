@@ -114,10 +114,10 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     return this.publicJwkFromKey(key.key, { kid: keyId })
   }
 
-  public async importKey(
+  public async importKey<Jwk extends Kms.KmsJwkPrivate>(
     agentContext: AgentContext,
-    options: Kms.KmsImportKeyOptions
-  ): Promise<Kms.KmsImportKeyReturn> {
+    options: Kms.KmsImportKeyOptions<Jwk>
+  ): Promise<Kms.KmsImportKeyReturn<Jwk>> {
     const { kid } = options.privateJwk
 
     const privateJwk = {
@@ -160,7 +160,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
           ...publicJwk,
           kid: privateJwk.kid,
         },
-      }
+      } as Kms.KmsImportKeyReturn<Jwk>
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 

@@ -124,10 +124,10 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     return Kms.publicJwkFromPrivateJwk(privateJwk)
   }
 
-  public async importKey(
+  public async importKey<Jwk extends Kms.KmsJwkPrivate>(
     agentContext: AgentContext,
-    options: Kms.KmsImportKeyOptions
-  ): Promise<Kms.KmsImportKeyReturn> {
+    options: Kms.KmsImportKeyOptions<Jwk>
+  ): Promise<Kms.KmsImportKeyReturn<Jwk>> {
     const { kid } = options.privateJwk
 
     if (kid) await this.assertKeyNotExists(agentContext, kid)
@@ -177,7 +177,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
           ...publicJwk,
           kid: privateJwk.kid,
         },
-      }
+      } as Kms.KmsImportKeyReturn<Jwk>
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
 

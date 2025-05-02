@@ -179,26 +179,6 @@ describe('AskarKeyManagementService', () => {
       })
     })
 
-    it('throws error for unsupported EC key BLS12381G1', async () => {
-      await expect(
-        service.createKey(agentContext, {
-          type: { kty: 'EC', crv: 'BLS12381G1' },
-        })
-      ).rejects.toThrow(
-        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G1' for kty 'EC'`, service.backend)
-      )
-    })
-
-    it('throws error for unsupported EC key BLS12381G2', async () => {
-      await expect(
-        service.createKey(agentContext, {
-          type: { kty: 'EC', crv: 'BLS12381G2' },
-        })
-      ).rejects.toThrow(
-        new Kms.KeyManagementAlgorithmNotSupportedError(`crv 'BLS12381G2' for kty 'EC'`, service.backend)
-      )
-    })
-
     it('throws error for unsupported key type RSA', async () => {
       await expect(
         service.createKey(agentContext, {

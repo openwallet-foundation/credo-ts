@@ -24,10 +24,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     return false
   }
 
-  public async randomBytes(
-    _agentContext: AgentContext,
-    _options: Kms.KmsRandomBytesOptions
-  ): Promise<Kms.KmsRandomBytesReturn> {
+  public randomBytes(_agentContext: AgentContext, _options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
     throw new Kms.KeyManagementError(`Generating random bytes is not supported for backend '${this.backend}'`)
   }
 
@@ -40,7 +37,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     }
   }
 
-  public async importKey(): Promise<Kms.KmsImportKeyReturn> {
+  public async importKey(): Promise<Kms.KmsImportKeyReturn<Kms.KmsJwkPrivate>> {
     throw new Kms.KeyManagementError(`Importing a key is not supported for backend '${this.backend}'`)
   }
 

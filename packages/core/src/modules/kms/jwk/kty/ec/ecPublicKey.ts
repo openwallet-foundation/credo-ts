@@ -18,8 +18,6 @@ const crvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams | undefined> =
   'P-384': Secp384r1,
   'P-521': Secp521r1,
   secp256k1: Secp256k1,
-  BLS12381G1: undefined,
-  BLS12381G2: undefined,
 }
 
 export function ecPublicJwkToPublicKey(publicJwk: KmsJwkPublicEc): Uint8Array {
