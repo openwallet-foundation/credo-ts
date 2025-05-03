@@ -1,7 +1,7 @@
 import type { X509Certificate } from '@credo-ts/core'
 import type { AgentContext } from '../../agent'
 
-import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
+import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
@@ -11,7 +11,7 @@ import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
-import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { AksarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import {
   Ed25519PublicJwk,
   KeyManagementApi,
@@ -19,6 +19,13 @@ import {
   P256PublicJwk,
   PublicJwk,
 } from '../../modules/kms'
+import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { askar } from '@openwallet-foundation/askar-nodejs'
+
+// NOTE: we use askar for the KMS in this test since the signatures with the
+// node KMS are different, but it does correctly verify. It's probably something
+// to do with the encoding of the signature?
 
 describe('JwsService', () => {
   let agentContext: AgentContext
@@ -31,7 +38,21 @@ describe('JwsService', () => {
 
   beforeAll(async () => {
     agentContext = getAgentContext({
-      registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]],
+      registerInstances: [
+        [X509ModuleConfig, new X509ModuleConfig()],
+
+        [
+          AskarStoreManager,
+          new AskarStoreManager(
+            new NodeFileSystem(),
+            new AskarModuleConfig({
+              askar,
+              store: getAskarStoreConfig('JwsService'),
+            })
+          ),
+        ],
+      ],
+      kmsBackends: [new AksarKeyManagementService()],
       agentConfig: getAgentConfig('JwsService'),
     })
     const kms = agentContext.resolve(KeyManagementApi)
@@ -105,7 +126,7 @@ describe('JwsService', () => {
       header: { kid },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
-        jwk: didJwsz6MkfKey,
+        jwk: didJwsz6MkfKey.toJson({ includeKid: false }),
       },
     })
 
@@ -122,7 +143,7 @@ describe('JwsService', () => {
       header: { kid },
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.ES256,
-        jwk: didJwszDnaeyKey,
+        jwk: didJwszDnaeyKey.toJson({ includeKid: false }),
       },
     })
 
@@ -137,7 +158,7 @@ describe('JwsService', () => {
       keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
         alg: KnownJwaSignatureAlgorithms.EdDSA,
-        jwk: didJwsz6MkfKey,
+        jwk: didJwsz6MkfKey.toJson({ includeKid: false }),
       },
     })
 

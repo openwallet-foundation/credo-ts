@@ -20,13 +20,16 @@ const crvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams | undefined> =
   secp256k1: Secp256k1,
 }
 
-export function ecPublicJwkToPublicKey(publicJwk: KmsJwkPublicEc): Uint8Array {
+export function ecPublicJwkToPublicKey(
+  publicJwk: KmsJwkPublicEc,
+  { compressed = false }: { compressed?: boolean } = {}
+): Uint8Array {
   const xAsBytes = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))
   const yAsBytes = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.y))
 
   const affinePoint = new AffinePoint(xAsBytes, yAsBytes)
 
-  return affinePoint.decompressedForm
+  return compressed ? affinePoint.compressedForm : affinePoint.decompressedForm
 }
 
 export function ecPublicKeyToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publicKey: Uint8Array, crv: Crv) {

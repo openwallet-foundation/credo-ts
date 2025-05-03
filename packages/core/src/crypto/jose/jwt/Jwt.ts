@@ -4,12 +4,13 @@ import { CredoError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 
 import { JwtPayload } from './JwtPayload'
+import { Jwk } from '../../../modules/kms'
 
 // TODO: JWT Header typing
 interface JwtHeader {
   alg: string
   kid?: string
-  jwk?: JwkJson
+  jwk?: Jwk
   x5c?: string[]
   [key: string]: unknown
 }
@@ -20,14 +21,6 @@ interface JwtOptions {
   signature: Buffer
 
   serializedJwt: string
-}
-
-export interface JwkJson {
-  kty: string
-  use?: string
-  kid?: string
-  key_ops?: string[]
-  [key: string]: unknown
 }
 
 export class Jwt {

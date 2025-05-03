@@ -1,4 +1,3 @@
-import { BbsModule } from '../../bbs-signatures/src/BbsModule'
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
 import {
   CredentialEventTypes,
@@ -26,8 +25,7 @@ export const getJsonLdModules = (
   {
     autoAcceptCredentials,
     autoAcceptProofs,
-    useBbs = false,
-  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof; useBbs?: boolean } = {}
+  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
 ) =>
   ({
     credentials: new CredentialsModule({
@@ -44,11 +42,6 @@ export const getJsonLdModules = (
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
-    ...(useBbs
-      ? {
-          bbs: new BbsModule(),
-        }
-      : {}),
   }) as const
 
 interface SetupJsonLdTestsReturn<VerifierName extends string | undefined, CreateConnections extends boolean> {
@@ -88,7 +81,6 @@ export async function setupJsonLdTests<
   autoAcceptCredentials,
   autoAcceptProofs,
   createConnections,
-  useBbs = false,
 }: {
   issuerName: string
   holderName: string
@@ -96,7 +88,6 @@ export async function setupJsonLdTests<
   autoAcceptCredentials?: AutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   createConnections?: CreateConnections
-  useBbs?: boolean
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
     getAgentOptions(
@@ -108,7 +99,6 @@ export async function setupJsonLdTests<
       getJsonLdModules(issuerName, {
         autoAcceptCredentials,
         autoAcceptProofs,
-        useBbs,
       }),
       { requireDidcomm: true }
     )
@@ -124,7 +114,6 @@ export async function setupJsonLdTests<
       getJsonLdModules(holderName, {
         autoAcceptCredentials,
         autoAcceptProofs,
-        useBbs,
       }),
       { requireDidcomm: true }
     )
@@ -141,7 +130,6 @@ export async function setupJsonLdTests<
           getJsonLdModules(verifierName, {
             autoAcceptCredentials,
             autoAcceptProofs,
-            useBbs,
           }),
           { requireDidcomm: true }
         )

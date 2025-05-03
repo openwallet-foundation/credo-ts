@@ -28,8 +28,7 @@ import { DidResolverService, getPublicJwkFromVerificationMethod, parseDid } from
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
-import { JwkJson } from '../../crypto/jose/jwt/Jwt'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
@@ -66,7 +65,7 @@ export interface SdJwtVc<
 }
 
 export interface CnfPayload {
-  jwk?: JwkJson
+  jwk?: Jwk
   kid?: string
 }
 

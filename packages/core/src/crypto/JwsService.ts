@@ -45,13 +45,14 @@ export class JwsService {
         certificateChain: x5c,
       })
 
-      if (assymetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
+      if (!assymetricPublicJwkMatches(certificate.publicJwk.toJson(), key)) {
         throw new CredoError('Protected header x5c does not match key for signing.')
       }
     }
 
+    const jwkInstance = jwk instanceof PublicJwk ? jwk : jwk ? PublicJwk.fromUnknown(jwk) : undefined
     // Make sure the options.key and jwk from protectedHeader are the same.
-    if (jwk && !assymetricPublicJwkMatches(jwk.toJson(), key)) {
+    if (jwkInstance && !assymetricPublicJwkMatches(jwkInstance.toJson(), key)) {
       throw new CredoError('Protected header JWK does not match key for signing.')
     }
 
@@ -212,14 +213,14 @@ export class JwsService {
       const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
       try {
-        const isValid = await kms.verify({
+        const { verified } = await kms.verify({
           key: jwsSigner.jwk.toJson(),
           data,
           signature,
           algorithm: protectedJson.alg as KnownJwaSignatureAlgorithm,
         })
 
-        if (!isValid) {
+        if (!verified) {
           return {
             isValid: false,
             jwsSigners: [],
@@ -248,7 +249,7 @@ export class JwsService {
     return {
       ...options,
       alg: options.alg,
-      jwk: options.jwk?.toJson(),
+      jwk: options.jwk instanceof PublicJwk ? options.jwk?.toJson() : options.jwk,
       kid: options.kid,
     }
   }

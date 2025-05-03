@@ -4,7 +4,7 @@ import {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   HashName,
-  JwkJson,
+  Kms,
   MdocSessionTranscriptOptions,
   Query,
   QueryOptions,
@@ -746,7 +746,7 @@ export class OpenId4VpVerifierService {
     const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
+    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {

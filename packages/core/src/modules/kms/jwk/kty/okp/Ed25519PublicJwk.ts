@@ -1,5 +1,5 @@
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
+import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
 import { PublicJwkType } from '../PublicJwk'
 import { X25519PublicJwk } from './X25519PublicJwk'
 import { KmsJwkPublicOkp } from './okpJwk'
@@ -8,7 +8,7 @@ import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }
 
 export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
-  public static supportedSignatureAlgorithms = [KnownJwaSignatureAlgorithms.EdDSA]
+  public static supportedSignatureAlgorithms: KnownJwaSignatureAlgorithm[] = [KnownJwaSignatureAlgorithms.EdDSA]
   public static supportdEncryptionKeyAgreementAlgorithms: KnownJwaKeyAgreementAlgorithm[] = []
   public static multicodecPrefix = 237
 

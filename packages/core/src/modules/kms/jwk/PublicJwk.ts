@@ -1,3 +1,4 @@
+import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
 import { Constructor } from '../../../utils/mixins'
 import { parseWithErrorHandling } from '../../../utils/zod'
@@ -121,8 +122,13 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     >
   }
 
-  public toJson(): Jwk['jwk'] {
-    return this.jwk.jwk
+  public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
+    const jwk = { ...this.jwk.jwk }
+
+    // biome-ignore lint/performance/noDelete: <explanation>
+    if (!includeKid) delete jwk.kid
+
+    return jwk
   }
 
   public get supportedSignatureAlgorithms(): KnownJwaSignatureAlgorithm[] {
@@ -278,5 +284,17 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    */
   public get jwkTypehumanDescription() {
     return getJwkHumanDescription(this.toJson())
+  }
+
+  public static supportedPublicJwkClassForSignatureAlgorithm(alg: KnownJwaSignatureAlgorithm): SupportedPublicJwkClass {
+    const supportedPublicJwkClass = SupportedPublicJwks.find((JwkClass) =>
+      JwkClass.supportedSignatureAlgorithms.includes(alg)
+    )
+
+    if (!supportedPublicJwkClass) {
+      throw new CredoError(`Could not determine supported public jwk class for alg '${alg}'`)
+    }
+
+    return supportedPublicJwkClass
   }
 }

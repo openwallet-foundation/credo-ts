@@ -1,12 +1,11 @@
 import type { MdocContext, X509Context } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
-import type { JwkJson } from '../../crypto'
 
 import { p256 } from '@noble/curves/p256'
 import { hkdf } from '@noble/hashes/hkdf'
 import { sha256 } from '@noble/hashes/sha2'
 
-import { CredoWebCrypto, Hasher, getJwkFromJson, getJwkFromKey } from '../../crypto'
+import { CredoWebCrypto, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 import { X509Certificate, X509Service } from '../x509'
 
