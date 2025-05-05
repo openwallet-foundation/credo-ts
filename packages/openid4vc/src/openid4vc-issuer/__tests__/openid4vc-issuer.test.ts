@@ -41,7 +41,7 @@ import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { dateToSeconds, getKeyFromDid } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
+import { OpenId4VcIssuerExpressModule } from '../OpenId4VcIssuerExpressModule'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
@@ -77,7 +77,7 @@ const universityDegreeCredentialSdJwt = {
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const modules = {
-  openId4VcIssuer: new OpenId4VcIssuerModule({
+  openId4VcIssuer: new OpenId4VcIssuerExpressModule({
     baseUrl: 'https://openid4vc-issuer.com',
     credentialRequestToCredentialMapper: () => {
       throw new Error('Not implemented')

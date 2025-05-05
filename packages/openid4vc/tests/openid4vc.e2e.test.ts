@@ -50,7 +50,7 @@ import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
@@ -80,8 +80,8 @@ describe('OpenId4Vc', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
-    tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
+    tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerExpressModule }>
     x509: X509Module
   }>
   let issuer1: TenantType
@@ -107,7 +107,7 @@ describe('OpenId4Vc', () => {
       'issuer',
       {
         x509: new X509Module(),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
+        openId4VcIssuer: new OpenId4VcIssuerExpressModule({
           baseUrl: issuanceBaseUrl,
 
           credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
