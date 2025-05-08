@@ -53,13 +53,20 @@ export function sendOauth2ErrorResponse(
   response.status(error.status).json(error.errorResponse)
   next(error)
 }
-export function sendUnknownServerErrorResponse(response: Response, next: NextFunction, logger: Logger, error: unknown) {
+export function sendUnknownServerErrorResponse(
+  response: Response,
+  next: NextFunction,
+  logger: Logger,
+  error: unknown,
+  additionalParams: Record<string, unknown> = {}
+) {
   logger.error('[OID4VC] Sending unknown server error response', {
     error,
   })
 
   response.status(500).json({
     error: 'server_error',
+    ...additionalParams,
   })
 
   const throwError =
