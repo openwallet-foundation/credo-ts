@@ -67,6 +67,9 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    *
    * For same-device flows it allows continuing the flow. Based on the redirect uri, you can retrieve the session
    * and display error or success screens.
+   *
+   * NOTE: the Uri MUST include randomness so the URL cannot be guessed, recommended is to have at least 128 bits of
+   * randomness, which is unique for each request.
    */
   authorizationResponseRedirectUri?: string
 
