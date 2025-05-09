@@ -28,6 +28,8 @@ export interface OpenId4VcVerificationSessionRecordProps {
   authorizationRequestId: string
   authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
+  authorizationResponseRedirectUri?: string
+
   expiresAt: Date
 
   authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
@@ -103,6 +105,14 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
    */
   public presentationDuringIssuanceSession?: string
 
+  /**
+   * Redirect uri that should be used in the authorization response. This will be included in both error and success
+   * responses.
+   *
+   * @since 0.6
+   */
+  authorizationResponseRedirectUri?: string
+
   public constructor(props: OpenId4VcVerificationSessionRecordProps) {
     super()
 
@@ -118,6 +128,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
       this.authorizationRequestId = props.authorizationRequestId
+      this.authorizationResponseRedirectUri = props.authorizationResponseRedirectUri
       this.authorizationResponsePayload = props.authorizationResponsePayload
       this.expiresAt = props.expiresAt
 
