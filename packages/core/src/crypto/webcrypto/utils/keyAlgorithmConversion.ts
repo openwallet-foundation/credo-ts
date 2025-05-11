@@ -107,7 +107,14 @@ export const spkiToPublicJwk = (spki: SubjectPublicKeyInfo): PublicJwk => {
   if (spki.algorithm.isEqual(ecPublicKeyWithP384AlgorithmIdentifier)) {
     return PublicJwk.fromPublicKey({
       kty: 'EC',
-      crv: 'P-256',
+      crv: 'P-384',
+      publicKey: new Uint8Array(spki.subjectPublicKey),
+    })
+  }
+  if (spki.algorithm.isEqual(ecPublicKeyWithP521AlgorithmIdentifier)) {
+    return PublicJwk.fromPublicKey({
+      kty: 'EC',
+      crv: 'P-521',
       publicKey: new Uint8Array(spki.subjectPublicKey),
     })
   }

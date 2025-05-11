@@ -10,8 +10,6 @@ import {
   SubjectAlternativeNameExtension,
   SubjectKeyIdentifierExtension,
 } from '@peculiar/x509'
-
-import { AsnSerializer } from '@peculiar/asn1-schema'
 import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
@@ -24,8 +22,7 @@ export const createSubjectKeyIdentifierExtension = (
   if (!options || !options.include) return
 
   const spki = publicJwkToSpki(additionalOptions.publicJwk)
-  // TODO: this should be spki, but previously it was just the raw key?
-  const hash = Hasher.hash(new Uint8Array(AsnSerializer.serialize(spki)), 'SHA-1')
+  const hash = Hasher.hash(new Uint8Array(spki.subjectPublicKey), 'SHA-1')
 
   return new SubjectKeyIdentifierExtension(TypedArrayEncoder.toHex(hash))
 }
@@ -51,9 +48,7 @@ export const createAuthorityKeyIdentifierExtension = (
   if (!options) return
 
   const spki = publicJwkToSpki(additionalOptions.publicJwk)
-
-  // TODO: this should be spki, but previously it was just the raw key?
-  const hash = Hasher.hash(new Uint8Array(AsnSerializer.serialize(spki)), 'SHA-1')
+  const hash = Hasher.hash(new Uint8Array(spki.subjectPublicKey), 'SHA-1')
 
   return new AuthorityKeyIdentifierExtension(TypedArrayEncoder.toHex(hash), options.markAsCritical)
 }

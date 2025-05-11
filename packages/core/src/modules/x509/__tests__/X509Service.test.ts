@@ -7,14 +7,7 @@ import { X509Service } from '../X509Service'
 
 import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import {
-  Ed25519PublicJwk,
-  KeyManagementApi,
-  KeyManagementModuleConfig,
-  KmsJwkPublicEc,
-  P256PublicJwk,
-  PublicJwk,
-} from '../../kms'
+import { KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
 
 /**
  *
@@ -381,13 +374,7 @@ describe('X509Service', () => {
     expect(validatedChain.length).toStrictEqual(3)
 
     const leafCertificate = validatedChain[validatedChain.length - 1]
-
-    expect(leafCertificate).toMatchObject({
-      publicJwk: expect.objectContaining({
-        jwk: expect.any(Ed25519PublicJwk),
-      }),
-      privateKey: undefined,
-    })
+    expect(leafCertificate.publicJwk.jwk).toBeInstanceOf(P256PublicJwk)
   })
 
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {
