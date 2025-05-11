@@ -17,7 +17,6 @@ export function performSign(
 
   switch (key.kty) {
     case 'RSA':
-    case 'EC':
     case 'OKP': {
       const nodeKeyInput = algorithm.startsWith('PS')
         ? // For RSA-PSS, we need to set padding
@@ -29,6 +28,10 @@ export function performSign(
         : nodeKey
 
       return sign(nodeAlgorithm, data, nodeKeyInput)
+    }
+    case 'EC': {
+      // Node returns EC signatures as DER encoded, but we need raw
+      return sign(nodeAlgorithm, data, nodeKey).then((derSignature) => Kms.derEcSignatureToRaw(derSignature, key.crv))
     }
     case 'oct': {
       return createHmac(nodeAlgorithm as string, nodeKey)

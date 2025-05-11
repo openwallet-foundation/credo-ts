@@ -397,7 +397,7 @@ importers:
         specifier: ^1.7.1
         version: 1.7.1
       '@peculiar/asn1-ecc':
-        specifier: ^2.3.13
+        specifier: ^2.3.14
         version: 2.3.14
       '@peculiar/asn1-rsa':
         specifier: ^2.3.15

@@ -13,7 +13,7 @@ import { KeyManagementError } from '../../../error/KeyManagementError'
 import { KmsJwkPublicEc } from './ecJwk'
 
 // CurveParams for ec-compression lib
-const crvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams | undefined> = {
+export const ecCrvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams> = {
   'P-256': Secp256r1,
   'P-384': Secp384r1,
   'P-521': Secp521r1,
@@ -33,7 +33,7 @@ export function ecPublicJwkToPublicKey(
 }
 
 export function ecPublicKeyToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publicKey: Uint8Array, crv: Crv) {
-  const curveParams = crvToCurveParams[crv]
+  const curveParams = ecCrvToCurveParams[crv]
 
   if (!curveParams) {
     throw new KeyManagementError(`kty EC with crv '${crv}' is not supported for creating jwk based on public key bytes`)

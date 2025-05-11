@@ -43,6 +43,8 @@ export {
   RsaPublicJwk,
   X25519PublicJwk,
   Secp256k1PublicJwk,
+  derEcSignatureToRaw,
+  rawEcSignatureToDer,
 } from './kty'
 
 export { Jwk, JwkCommon } from './jwk'

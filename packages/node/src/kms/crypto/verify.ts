@@ -1,4 +1,4 @@
-import type { CanBePromise, Kms } from '@credo-ts/core'
+import { CanBePromise, Kms } from '@credo-ts/core'
 
 import { Buffer } from 'node:buffer'
 import {
@@ -28,7 +28,6 @@ export function performVerify(
 
   switch (key.kty) {
     case 'RSA':
-    case 'EC':
     case 'OKP': {
       const nodeKeyInput = algorithm.startsWith('PS')
         ? // For RSA-PSS, we need to set padding
@@ -40,6 +39,10 @@ export function performVerify(
         : nodeKey
 
       return verify(nodeAlgorithm, data, nodeKeyInput, signature)
+    }
+    case 'EC': {
+      // Node expects DER encoded signature, but we input raw
+      return verify(nodeAlgorithm, data, nodeKey, Kms.rawEcSignatureToDer(signature, key.crv))
     }
     case 'oct': {
       const expectedHmac = createHmac(nodeAlgorithm as string, nodeKey)
