@@ -155,6 +155,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     throw new KeyManagementError('Unable to determine keyId for jwk')
   }
 
+  public get hasKeyId(): boolean {
+    return this.jwk.jwk.kid !== undefined
+  }
+
   public set keyId(keyId: string) {
     this.jwk.jwk.kid = keyId
   }

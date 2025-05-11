@@ -272,7 +272,7 @@ export class Issuer extends BaseAgent<{
     })
 
     const issuerCertficicate = certificate.toString('base64url')
-    await issuer.agent.x509.setTrustedCertificates([issuerCertficicate])
+    issuer.agent.x509.config.setTrustedCertificates([issuerCertficicate])
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
     console.log(issuerCertficicate)
 

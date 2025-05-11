@@ -242,7 +242,9 @@ export class X509Certificate {
         webCrypto
       )
 
-      return X509Certificate.parseCertificate(certificate)
+      const certificateInstance = X509Certificate.parseCertificate(certificate)
+      if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+      return certificateInstance
     }
 
     if (!options.subject) {
@@ -264,7 +266,9 @@ export class X509Certificate {
       webCrypto
     )
 
-    return X509Certificate.parseCertificate(certificate)
+    const certificateInstance = X509Certificate.parseCertificate(certificate)
+    if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+    return certificateInstance
   }
 
   public get subject() {
@@ -356,8 +360,15 @@ export class X509Certificate {
     return this.x509Certificate.issuerName.getField(field)
   }
 
-  public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
-    return this.x509Certificate.toString(format)
+  /**
+   * @param format the format to export to, defaults to `pem`
+   */
+  public toString(format?: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
+    return this.x509Certificate.toString(format ?? 'pem')
+  }
+
+  private toJSON() {
+    return this.toString()
   }
 
   public equal(certificate: X509Certificate) {

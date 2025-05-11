@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`UpdateAssistant | Backup should create a backup 1`] = `
+exports[`UpdateAssistant | Aries Askar should create a backup 1`] = `
 [
   {
     "_tags": {
@@ -41,7 +41,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
     "role": "issuer",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
-    "updatedAt": "2022-03-21T22:50:20.522Z",
+    "updatedAt": "2022-03-22T22:50:20.522Z",
   },
   {
     "_tags": {
@@ -99,7 +99,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
     "role": "holder",
     "state": "done",
     "threadId": "578e73da-c3be-43d4-949b-7aadfd5a6eae",
-    "updatedAt": "2022-03-21T22:50:20.522Z",
+    "updatedAt": "2022-03-22T22:50:20.522Z",
   },
   {
     "_tags": {
@@ -140,7 +140,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
     "role": "issuer",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
-    "updatedAt": "2022-03-21T22:50:20.522Z",
+    "updatedAt": "2022-03-22T22:50:20.522Z",
   },
   {
     "_tags": {
@@ -198,7 +198,7 @@ exports[`UpdateAssistant | Backup should create a backup 1`] = `
     "role": "holder",
     "state": "done",
     "threadId": "e2c2194c-6ac6-4b27-9030-18887c79b5eb",
-    "updatedAt": "2022-03-21T22:50:20.522Z",
+    "updatedAt": "2022-03-22T22:50:20.522Z",
   },
 ]
 `;

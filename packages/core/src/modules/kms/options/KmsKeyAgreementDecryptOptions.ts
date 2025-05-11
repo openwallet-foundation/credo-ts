@@ -1,7 +1,7 @@
 import * as z from '../../../utils/zod'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsEncryptedKey } from './KmsEncryptOptions'
-import { ecdhPublicJwk, zKmsKeyAgreementEcdhEs } from './KmsKeyAgreementEncryptOptions'
+import { zKmsJwkPublicEcdh, zKmsKeyAgreementEcdhEs } from './KmsKeyAgreementEncryptOptions'
 import { zKmsKeyId } from './common'
 
 const zKmsKeyAgreementDecryptEcdhEsKw = z.object({
@@ -14,7 +14,7 @@ const zKmsKeyAgreementDecryptEcdhEsKw = z.object({
 
   algorithm: z.enum(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW']),
 
-  externalPublicJwk: ecdhPublicJwk,
+  externalPublicJwk: zKmsJwkPublicEcdh,
 
   /**
    * The encrypted content encryption key (cek)

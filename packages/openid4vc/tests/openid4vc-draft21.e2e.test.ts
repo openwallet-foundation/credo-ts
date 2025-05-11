@@ -99,8 +99,8 @@ describe('OpenID4VP Draft 21', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -339,7 +339,7 @@ describe('OpenID4VP Draft 21', () => {
       issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const parsedDid = parseDid(verifier.kid)
     if (!parsedDid.fragment) {
@@ -371,8 +371,8 @@ describe('OpenID4VP Draft 21', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',

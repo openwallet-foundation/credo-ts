@@ -139,9 +139,7 @@ export class Mdoc {
       document.addIssuerNameSpace(namespace, namespaceRecord)
     }
 
-    const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerKey = cert.publicJwk
-
+    const issuerKey = issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
@@ -157,8 +155,7 @@ export class Mdoc {
       {
         issuerPrivateKey: issuerKey.toJson(),
         alg,
-        issuerCertificate,
-        kid: cert.publicJwk.fingerprint,
+        issuerCertificate: issuerCertificate.rawCertificate,
       },
       mdocContext
     )
@@ -211,5 +208,13 @@ export class Mdoc {
     } catch (error) {
       return { isValid: false, error: error.message }
     }
+  }
+
+  private toJSON() {
+    return this.base64Url
+  }
+
+  private toString() {
+    return this.base64Url
   }
 }

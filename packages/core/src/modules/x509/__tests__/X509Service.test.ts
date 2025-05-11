@@ -7,7 +7,14 @@ import { X509Service } from '../X509Service'
 
 import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import { Ed25519PublicJwk, KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, PublicJwk } from '../../kms'
+import {
+  Ed25519PublicJwk,
+  KeyManagementApi,
+  KeyManagementModuleConfig,
+  KmsJwkPublicEc,
+  P256PublicJwk,
+  PublicJwk,
+} from '../../kms'
 
 /**
  *
@@ -39,9 +46,7 @@ const getLastMonth = () => {
 }
 
 const agentConfig = getAgentConfig('X509Service')
-
 const agentContext = getAgentContext({
-  wallet: new InMemoryWallet(),
   agentConfig,
 })
 
@@ -120,7 +125,7 @@ describe('X509Service', () => {
     })
 
     expect(certificate.publicJwk.toJson()).toMatchObject({ kty: 'EC', crv: 'P-256', kid: expect.any(String) })
-    expect(certificate.publicJwk.publicKey.publicKey.length).toStrictEqual(65)
+    expect((certificate.publicJwk as PublicJwk<P256PublicJwk>).publicKey.publicKey.length).toStrictEqual(65)
     expect(certificate.subject).toStrictEqual('CN=credo')
   })
 
@@ -174,7 +179,9 @@ describe('X509Service', () => {
     expect(certificate.keyUsage).toStrictEqual(expect.arrayContaining([X509KeyUsage.DigitalSignature]))
     expect(certificate.extendedKeyUsage).toStrictEqual(expect.arrayContaining([X509ExtendedKeyUsage.MdlDs]))
     expect(certificate.subjectKeyIdentifier).toStrictEqual(
-      TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1'))
+      TypedArrayEncoder.toHex(
+        Hasher.hash((certificate.publicJwk as PublicJwk<P256PublicJwk>).publicKey.publicKey, 'SHA-1')
+      )
     )
   })
 
@@ -217,7 +224,9 @@ describe('X509Service', () => {
     expect(mdocRootCertificate).toMatchObject({
       ianUriNames: expect.arrayContaining(['animo.id']),
       keyUsage: expect.arrayContaining([X509KeyUsage.KeyCertSign, X509KeyUsage.CrlSign]),
-      subjectKeyIdentifier: TypedArrayEncoder.toHex(Hasher.hash(authorityKey.publicKey, 'SHA-1')),
+      subjectKeyIdentifier: TypedArrayEncoder.toHex(
+        Hasher.hash((mdocRootCertificate.publicJwk as PublicJwk<P256PublicJwk>).publicKey.publicKey, 'SHA-1')
+      ),
     })
 
     const authorityJwk = PublicJwk.fromPublicJwk(authorityKey.publicJwk)

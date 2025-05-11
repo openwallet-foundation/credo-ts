@@ -13,8 +13,10 @@ import { AgentContext } from '../../agent'
 import { CredoError, RecordNotFoundError } from '../../error'
 import { injectable } from '../../plugins'
 
+import { parseDid } from '@sphereon/ssi-types'
 import { KeyManagementApi } from '../kms'
 import { DidsModuleConfig } from './DidsModuleConfig'
+import { DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
 import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
 import { DidRecord, DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'
@@ -184,6 +186,25 @@ export class DidsApi {
     return {
       didRecord,
       didDocument,
+    }
+  }
+
+  public async resolveVerificationMethodFromCreatedDidRecord(
+    didUrl: string,
+    allowedPurposes?: Array<DidPurpose | 'verificationMethod'>
+  ) {
+    const parsedDid = parseDid(didUrl)
+    const { didDocument, didRecord } = await this.resolveCreatedDidRecordWithDocument(parsedDid.did)
+
+    const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    publicJwk.keyId =
+      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
+
+    return {
+      verificationMethod,
+      publicJwk,
     }
   }
 

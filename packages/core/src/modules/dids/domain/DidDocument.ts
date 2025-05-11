@@ -8,7 +8,7 @@ import { IsStringOrStringArray } from '../../../utils/transformers'
 
 import { TypedArrayEncoder } from '../../../utils'
 import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
-import { findMatchingEd25519Key } from '../helpers'
+import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
 import { DidCommV1Service, IndyAgentService, ServiceTransformer } from './service'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'

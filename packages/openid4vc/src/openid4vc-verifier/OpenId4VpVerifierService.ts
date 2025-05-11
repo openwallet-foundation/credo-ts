@@ -31,7 +31,6 @@ import {
   JsonEncoder,
   JsonTransformer,
   Jwt,
-  KeyType,
   Logger,
   MdocDeviceResponse,
   SdJwtVcApi,
@@ -46,18 +45,18 @@ import {
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
-  getJwkFromKey,
   inject,
   injectable,
   isMdocSupportedSignatureAlgorithm,
   joinUriParts,
   utils,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdScheme,
   ClientMetadata,
   JarmClientMetadata,
+  JarmMode,
   Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
   TransactionDataHashesCredentials,
@@ -108,8 +107,9 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
-    const nonce = await agentContext.wallet.generateNonce()
-    const state = await agentContext.wallet.generateNonce()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes)
+    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes)
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -331,7 +331,7 @@ export class OpenId4VpVerifierService {
       })
 
       // FIXME: use JarmMode enum when new release of oid4vp
-      if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== 'Encrypted') {
+      if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== JarmMode.Encrypted) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidRequest,
           error_description: `Only encrypted JARM responses are supported, received '${parsedAuthorizationResponse.jarm.type}'.`,
@@ -741,7 +741,8 @@ export class OpenId4VpVerifierService {
   ) {
     const { responseMode, verifier } = options
 
-    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+    const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
     const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
@@ -750,13 +751,13 @@ export class OpenId4VpVerifierService {
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {
-      const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-      jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
+      const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
+      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc' }
     }
 
     const jarmClientMetadata: (JarmClientMetadata & Pick<ClientMetadata, 'jwks'>) | undefined = jarmEncryptionJwk
       ? {
-          jwks: { keys: [jarmEncryptionJwk] },
+          jwks: { keys: [jarmEncryptionJwk as Jwk] },
           authorization_encrypted_response_alg: 'ECDH-ES',
           // FIXME: we need to support dynamically setting this by letting the wallet post their supported values
           // by posting to `request_uri`

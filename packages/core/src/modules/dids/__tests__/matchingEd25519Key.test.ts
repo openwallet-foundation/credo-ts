@@ -1,7 +1,7 @@
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk, X25519PublicJwk } from '../../kms'
 import { DidDocument, VerificationMethod } from '../domain'
-import { findMatchingEd25519Key } from '../helpers'
+import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 
 describe('findMatchingEd25519Key', () => {
   const publicKeyBase58Ed25519 = 'GyYtYWU1vjwd5PFJM4VSX5aUiSV3TyZMuLBJBTQvfdF8'

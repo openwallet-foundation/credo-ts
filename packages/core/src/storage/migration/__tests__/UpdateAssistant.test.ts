@@ -30,11 +30,13 @@ describe('UpdateAssistant', () => {
 
   afterEach(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   describe('upgrade()', () => {
     it('should not upgrade records when upgrading after a new wallet is created', async () => {
+      // Make sure it's initialized
+      storageService.createRecordsForContext(agent.context)
+
       const beforeStorage = JSON.stringify(storageService.contextCorrelationIdToRecords)
       await updateAssistant.update()
 

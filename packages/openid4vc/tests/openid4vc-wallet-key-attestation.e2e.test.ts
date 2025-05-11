@@ -130,7 +130,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
               signer: {
                 method: 'x5c',
                 x5c: [expect.any(String)],
-                alg: JwaSignatureAlgorithm.ES256,
+                alg: Kms.KnownJwaSignatureAlgorithms.ES256,
                 publicJwk: expect.any(Object),
               },
             })
@@ -139,7 +139,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
               format: OpenId4VciCredentialFormatProfile.MsoMdoc,
               credentials: holderBinding.keys.map((holderBinding, index) => ({
                 docType: credentialConfiguration.doctype,
-                holderKey: holderBinding.key,
+                holderKey: holderBinding.jwk,
                 issuerCertificate: issuer.certificate.toString('base64'),
                 namespaces: {
                   [credentialConfiguration.doctype]: {
@@ -181,7 +181,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       issuer: 'https://wallet-provider.com',
       signer: {
         method: 'x5c',
-        alg: JwaSignatureAlgorithm.ES256,
+        alg: Kms.KnownJwaSignatureAlgorithms.ES256,
         x5c: [walletProviderCertificate.toString('base64')],
       },
       walletName: 'Credo Wallet',
@@ -202,7 +202,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       attestedKeys: attestedKeys.map((key) => getJwkFromKey(key).toJson()),
       signer: {
         method: 'x5c',
-        alg: JwaSignatureAlgorithm.ES256,
+        alg: Kms.KnownJwaSignatureAlgorithms.ES256,
         x5c: [walletProviderCertificate.toString('base64')],
       },
       use: 'proof_type.jwt',
@@ -244,12 +244,12 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
     await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
 
-    holder.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
-    issuer.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
+    holder.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
+    issuer.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
 
     issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
-      dpopSigningAlgValuesSupported: [JwaSignatureAlgorithm.ES256],
+      dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       batchCredentialIssuance: {
         batchSize: 10,
       },

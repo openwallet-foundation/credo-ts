@@ -38,6 +38,7 @@ export {
   KmsKeyAgreementEncryptEcdhEsKw,
   KmsKeyAgreementEncryptEcdhHsalsa20,
   KmsKeyAgreementEncryptOptions,
+  KmsJwkPublicEcdh,
 } from './KmsKeyAgreementEncryptOptions'
 export {
   KmsKeyAgreementDecryptOptions,

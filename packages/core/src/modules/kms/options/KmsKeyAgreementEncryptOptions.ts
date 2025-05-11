@@ -3,10 +3,12 @@ import { zKmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsKeyId } from './common'
 
-export const ecdhPublicJwk = z.union([
+export const zKmsJwkPublicEcdh = z.union([
   zKmsJwkPublicOkp.extend({ crv: zKmsJwkPublicOkp.shape.crv.extract(['X25519']) }),
   zKmsJwkPublicEc.extend({ crv: zKmsJwkPublicEc.shape.crv.extract(['P-256', 'P-384', 'P-521', 'secp256k1']) }),
 ])
+
+export type KmsJwkPublicEcdh = z.infer<typeof zKmsJwkPublicEcdh>
 
 export const zKmsKeyAgreementEcdhEs = z.object({
   /**
@@ -18,7 +20,7 @@ export const zKmsKeyAgreementEcdhEs = z.object({
 
   algorithm: z.literal('ECDH-ES'),
 
-  externalPublicJwk: ecdhPublicJwk,
+  externalPublicJwk: zKmsJwkPublicEcdh,
 
   apu: z.optional(z.instanceof(Uint8Array)),
   apv: z.optional(z.instanceof(Uint8Array)),
@@ -35,7 +37,7 @@ const zKmsKeyAgreementEncryptEcdhEsKw = z.object({
 
   algorithm: z.enum(['ECDH-ES+A128KW', 'ECDH-ES+A192KW', 'ECDH-ES+A256KW']),
 
-  externalPublicJwk: ecdhPublicJwk,
+  externalPublicJwk: zKmsJwkPublicEcdh,
 
   apu: z.optional(z.instanceof(Uint8Array)),
   apv: z.optional(z.instanceof(Uint8Array)),

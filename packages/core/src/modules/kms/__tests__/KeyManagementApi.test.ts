@@ -1,16 +1,9 @@
-import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { ZodValidationError } from '../../../error/ZodValidationError'
-import { KeyManagementModule } from '../KeyManagementModule'
 import { KeyManagementError } from '../error/KeyManagementError'
 
-const agentOptions = getAgentOptions('KeyManagementApi', undefined, {
-  keyManagement: new KeyManagementModule({
-    backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
-    defaultBackend: 'node',
-  }),
-})
+const agentOptions = getAgentOptions('KeyManagementApi')
 const agent = new Agent(agentOptions)
 
 describe('KeyManagementApi', () => {
@@ -20,12 +13,11 @@ describe('KeyManagementApi', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('throws error if invalid backend provided', async () => {
     await expect(
-      agent.modules.keyManagement.getPublicKey({
+      agent.kms.getPublicKey({
         keyId: 'hello',
         backend: 'non-existing',
       })
@@ -37,7 +29,7 @@ describe('KeyManagementApi', () => {
   })
 
   test('successfully create, get and delete a key', async () => {
-    const result = await agent.modules.keyManagement.createKey({
+    const result = await agent.kms.createKey({
       keyId: 'hello',
       type: {
         kty: 'EC',
@@ -56,17 +48,17 @@ describe('KeyManagementApi', () => {
       },
     })
 
-    const publicJwk = await agent.modules.keyManagement.getPublicKey({
+    const publicJwk = await agent.kms.getPublicKey({
       keyId: 'hello',
     })
     expect(publicJwk).toEqual(result.publicJwk)
 
-    const deleted = await agent.modules.keyManagement.deleteKey({
+    const deleted = await agent.kms.deleteKey({
       keyId: 'hello',
     })
     expect(deleted).toEqual(true)
 
-    const deleted2 = await agent.modules.keyManagement.deleteKey({
+    const deleted2 = await agent.kms.deleteKey({
       keyId: 'hello',
     })
     expect(deleted2).toEqual(false)
@@ -74,7 +66,7 @@ describe('KeyManagementApi', () => {
 
   test('throws error on invalid input for createKey', async () => {
     await expect(
-      agent.modules.keyManagement.createKey({
+      agent.kms.createKey({
         keyId: 'hello',
         type: {
           kty: 'EC',
@@ -88,7 +80,7 @@ describe('KeyManagementApi', () => {
 
   test('throws error on invalid input for getPublicKey', async () => {
     await expect(
-      agent.modules.keyManagement.getPublicKey({
+      agent.kms.getPublicKey({
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
@@ -98,7 +90,7 @@ describe('KeyManagementApi', () => {
 
   test('throws error on invalid input for deleteKey', async () => {
     await expect(
-      agent.modules.keyManagement.getPublicKey({
+      agent.kms.getPublicKey({
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
@@ -107,20 +99,20 @@ describe('KeyManagementApi', () => {
   })
 
   test('successfully sign and verify with key', async () => {
-    const { keyId, publicJwk } = await agent.modules.keyManagement.createKey({
+    const { keyId, publicJwk } = await agent.kms.createKey({
       type: {
         kty: 'EC',
         crv: 'P-256',
       },
     })
 
-    const { signature } = await agent.modules.keyManagement.sign({
+    const { signature } = await agent.kms.sign({
       keyId,
       algorithm: 'ES256',
       data: new Uint8Array([1, 2, 3]),
     })
 
-    const verifyResult = await agent.modules.keyManagement.verify({
+    const verifyResult = await agent.kms.verify({
       key: keyId,
       algorithm: 'ES256',
       signature,
@@ -134,7 +126,7 @@ describe('KeyManagementApi', () => {
 
   test('throws error on invalid input to sign', async () => {
     await expect(
-      agent.modules.keyManagement.sign({
+      agent.kms.sign({
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
@@ -144,7 +136,7 @@ describe('KeyManagementApi', () => {
 
   test('throws error on invalid input to verify', async () => {
     await expect(
-      agent.modules.keyManagement.verify({
+      agent.kms.verify({
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         key: undefined,

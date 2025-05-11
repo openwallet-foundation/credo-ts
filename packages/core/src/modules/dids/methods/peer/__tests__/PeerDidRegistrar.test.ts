@@ -1,4 +1,4 @@
-import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { DidCommV1Service, DidDocumentBuilder, getEd25519VerificationKey2018 } from '../../../domain'
 import { DidDocumentRole } from '../../../domain/DidDocumentRole'
@@ -16,7 +16,10 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 const didRepositoryMock = new DidRepositoryMock()
 
-const agentContext = getAgentContext({ registerInstances: [[DidRepository, didRepositoryMock]] })
+const agentContext = getAgentContext({
+  registerInstances: [[DidRepository, didRepositoryMock]],
+  agentConfig: getAgentConfig('PeerDidRegistrar'),
+})
 const peerDidRegistrar = new PeerDidRegistrar()
 const kms = agentContext.resolve(KeyManagementApi)
 
@@ -73,24 +76,28 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Missing key type or key instance',
+            reason: 'unknownError: Invalid options provided to getPublicKey method\n\t- Required at "keyId"',
           },
         })
       })
 
       it('should store the did without the did document', async () => {
+        const { keyId } = await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+            privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e'),
+          }).privateJwk,
+        })
         const did = 'did:peer:0z6MksLeew51QS6Ca6tVKM56LQNbxCNVcLHv4xXj4jMkAhPWU'
 
         await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           options: {
             numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-            createKey: {
-              type: {
-                crv: 'Ed25519',
-                kty: 'OKP',
-              },
-            },
+            keyId,
           },
         })
 
@@ -193,7 +200,12 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.GenesisDoc,
-            keys: [],
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16',
+                kmsKeyId: 'test',
+              },
+            ],
           },
         })
 
@@ -242,7 +254,12 @@ describe('DidRegistrar', () => {
           didDocument: didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
-            keys: [],
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#key-1',
+                kmsKeyId: 'test',
+              },
+            ],
           },
         })
 
@@ -275,7 +292,6 @@ describe('DidRegistrar', () => {
               ],
               authentication: ['#key-1'],
             },
-            secret: {},
           },
         })
       })
@@ -289,7 +305,13 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc,
-            keys: [],
+            // FIXME: it should check that the key id exists and starts with `#`
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#a',
+                kmsKeyId: 'test',
+              },
+            ],
           },
         })
 
@@ -337,7 +359,13 @@ describe('DidRegistrar', () => {
           didDocument: didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
-            keys: [],
+            // FIXME: it should check that the key id exists and starts with `#`
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#a',
+                kmsKeyId: 'test',
+              },
+            ],
           },
         })
 
@@ -374,7 +402,6 @@ describe('DidRegistrar', () => {
               ],
               authentication: ['#41fb2ec7-1f8b-42bf-91a2-4ef9092ddc16'],
             },
-            secret: {},
           },
         })
       })
@@ -388,7 +415,14 @@ describe('DidRegistrar', () => {
           didDocument,
           options: {
             numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
-            keys: [],
+
+            // FIXME: it should check that the key id exists and starts with `#`
+            keys: [
+              {
+                didDocumentRelativeKeyId: '#a',
+                kmsKeyId: 'test',
+              },
+            ],
           },
         })
 

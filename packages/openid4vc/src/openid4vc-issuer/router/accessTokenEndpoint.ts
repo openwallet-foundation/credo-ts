@@ -3,7 +3,7 @@ import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { Kms, joinUriParts, utils } from '@credo-ts/core'
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
@@ -35,7 +35,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-    const accessTokenSigningKey = Kms.PublicJwk.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
+    const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
     let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
     const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [

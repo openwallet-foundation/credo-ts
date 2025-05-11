@@ -1,20 +1,21 @@
+import { parseWithErrorHandling } from '../../../utils/zod'
 import { zKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
 
 describe('CreateKeyOptions', () => {
   test('should throw error for invalid create key type', async () => {
-    await expect(
-      zKmsCreateKeyType.parseAsync({
+    expect(() =>
+      parseWithErrorHandling(zKmsCreateKeyType, {
         kty: 'oct',
         algorithm: 'AES',
       })
-    ).rejects.toThrow('Invalid type: Expected (128 | 192 | 256) but received undefined')
+    ).toThrow('Error validating schema with data {"kty":"oct","algorithm":"AES"}')
   })
 
   test('should correctly parse create key type', async () => {
     expect(() =>
       zKmsCreateKeyType.parse({
         kty: 'oct',
-        algorithm: 'AES',
+        algorithm: 'aes',
         length: 128,
       })
     ).not.toThrow()

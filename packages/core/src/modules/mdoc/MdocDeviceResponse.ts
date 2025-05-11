@@ -193,6 +193,11 @@ export class MdocDeviceResponse {
       const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
 
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
+
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
       // We do PEX filtering on a different layer, so we only include the needed input descriptor here
@@ -238,6 +243,11 @@ export class MdocDeviceResponse {
       const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
+
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
 
       const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
 

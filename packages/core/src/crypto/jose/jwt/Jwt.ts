@@ -3,8 +3,8 @@ import type { Buffer } from '../../../utils'
 import { CredoError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 
-import { JwtPayload } from './JwtPayload'
 import { Jwk } from '../../../modules/kms'
+import { JwtPayload } from './JwtPayload'
 
 // TODO: JWT Header typing
 interface JwtHeader {

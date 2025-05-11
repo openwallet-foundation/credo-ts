@@ -11,7 +11,6 @@ describe('dids', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   it('should resolve a did:key did', async () => {

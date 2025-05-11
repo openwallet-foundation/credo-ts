@@ -136,15 +136,19 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
         }
 
   const modules = {
-    ...(requireDidcomm ? getDefaultDidcommModules(didcommConfig) : {}),
+    ...(requireDidcomm
+      ? {
+          ...getDefaultDidcommModules(didcommConfig),
+          connections:
+            // Make sure connections module is always defined so we can set autoAcceptConnections
+            m.connections ??
+            new ConnectionsModule({
+              autoAcceptConnections: true,
+            }),
+        }
+      : {}),
     ...m,
     ..._kmsModules,
-    // Make sure connections module is always defined so we can set autoAcceptConnections
-    connections:
-      m.connections ??
-      new ConnectionsModule({
-        autoAcceptConnections: true,
-      }),
   }
 
   return {
@@ -780,7 +784,7 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
   const dids = agentContext.dependencyManager.resolve(DidsApi)
   const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-  const { keyId } = secretKey
+  const { keyId, publicJwk } = secretKey
     ? await kms.importKey({
         privateJwk: transformPrivateKeyToPrivateJwk({
           type: {
@@ -809,7 +813,7 @@ export async function createDidKidVerificationMethod(agentContext: AgentContext,
   const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(kid, ['authentication'])
   if (!verificationMethod) throw new Error('No verification method found')
 
-  return { did, kid, verificationMethod, publicJwk: didKey.publicJwk }
+  return { did, kid, verificationMethod, publicJwk: PublicJwk.fromPublicJwk(publicJwk) }
 }
 
 export async function createX509Certificate(agentContext: AgentContext, dns: string, key?: PublicJwk) {

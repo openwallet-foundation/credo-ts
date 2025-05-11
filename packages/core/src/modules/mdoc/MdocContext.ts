@@ -7,10 +7,13 @@ import { sha256 } from '@noble/hashes/sha2'
 
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
+import { KeyManagementApi, KmsJwkPublicAsymmetric, KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
 
 export const getMdocContext = (agentContext: AgentContext): MdocContext => {
   const crypto = new CredoWebCrypto(agentContext)
+  const kms = agentContext.resolve(KeyManagementApi)
+
   return {
     crypto: {
       digest: async (input) => {
@@ -44,38 +47,66 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         sign: async (input) => {
           const { jwk, mac0 } = input
           const { data } = mac0.getRawSigningData()
-          return await agentContext.wallet.sign({
-            data: Buffer.from(data),
-            key: getJwkFromJson(jwk as JwkJson).key,
+
+          const publicJwk = PublicJwk.fromUnknown(jwk)
+          const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
+
+          const { signature } = await kms.sign({
+            data,
+            algorithm,
+            keyId: publicJwk.keyId,
           })
+
+          return signature
         },
         verify: async (input) => {
           const { mac0, jwk, options } = input
           const { data, signature } = mac0.getRawVerificationData(options)
-          return await agentContext.wallet.verify({
-            key: getJwkFromJson(jwk as JwkJson).key,
-            data: Buffer.from(data),
-            signature: new Buffer(signature),
+
+          const publicJwk = PublicJwk.fromUnknown(jwk)
+          const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
+
+          const { verified } = await kms.verify({
+            key: jwk as KmsJwkPublicAsymmetric,
+            data,
+            algorithm,
+            signature,
           })
+
+          return verified
         },
       },
       sign1: {
         sign: async (input) => {
           const { jwk, sign1 } = input
           const { data } = sign1.getRawSigningData()
-          return await agentContext.wallet.sign({
-            data: Buffer.from(data),
-            key: getJwkFromJson(jwk as JwkJson).key,
+
+          const publicJwk = PublicJwk.fromUnknown(jwk)
+          const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
+
+          const { signature } = await kms.sign({
+            data,
+            algorithm: algorithm as KnownJwaSignatureAlgorithm,
+            keyId: publicJwk.keyId,
           })
+
+          return signature
         },
         verify: async (input) => {
           const { sign1, jwk, options } = input
           const { data, signature } = sign1.getRawVerificationData(options)
-          return await agentContext.wallet.verify({
-            key: getJwkFromJson(jwk as JwkJson).key,
-            data: Buffer.from(data),
-            signature: new Buffer(signature),
+
+          const publicJwk = PublicJwk.fromUnknown(jwk)
+          const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
+
+          const { verified } = await kms.verify({
+            key: jwk as KmsJwkPublicAsymmetric,
+            data,
+            algorithm: algorithm as KnownJwaSignatureAlgorithm,
+            signature,
           })
+
+          return verified
         },
       },
     },
@@ -87,8 +118,8 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         return x509Certificate.getIssuerNameField(field)
       },
       getPublicKey: async (input) => {
-        const comp = X509Certificate.fromRawCertificate(input.certificate)
-        return getJwkFromKey(comp.publicKey).toJson()
+        const certificate = X509Certificate.fromRawCertificate(input.certificate)
+        return certificate.publicJwk.toJson()
       },
       validateCertificateChain: async (input) => {
         const certificateChain = input.x5chain.map((cert) => X509Certificate.fromRawCertificate(cert).toString('pem'))

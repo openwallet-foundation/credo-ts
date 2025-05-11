@@ -46,6 +46,7 @@ describe('peer dids', () => {
         [DidRepository, didRepository],
         [InjectionSymbols.StorageService, storageService],
       ],
+      agentConfig: getAgentConfig('peer-did'),
     })
     kms = agentContext.resolve(KeyManagementApi)
 

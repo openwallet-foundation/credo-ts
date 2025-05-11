@@ -25,7 +25,7 @@ export class CredoWalletWebCrypto {
   private kms: KeyManagementApi
 
   public constructor(private agentContext: AgentContext) {
-    this.kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+    this.kms = agentContext.resolve(KeyManagementApi)
   }
 
   public generateRandomValues<T extends ArrayBufferView | null>(array: T): T {
@@ -82,7 +82,7 @@ export class CredoWalletWebCrypto {
     const { verified } = await this.kms.verify({
       key: key.publicJwk.toJson(),
       algorithm: jwaAlgorithm,
-      signature: signature,
+      signature,
       data: message,
     })
 

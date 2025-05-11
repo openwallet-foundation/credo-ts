@@ -9,7 +9,7 @@ import { CredoError, tryParseDid } from '@credo-ts/core'
 
 import { TransportService } from '../../../TransportService'
 import { OutboundMessageContext } from '../../../models'
-import { OutOfBandState } from '../../oob'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 

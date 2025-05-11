@@ -20,11 +20,11 @@ import {
   getPublicJwkFromVerificationMethod,
   getSupportedVerificationMethodTypesForPublicJwk,
 } from '../../dids/domain/key-type/keyDidMapping'
+import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
 import { getJwtPayloadFromPresentation } from './presentationTransformer'
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)

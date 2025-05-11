@@ -24,7 +24,7 @@ import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
@@ -101,7 +101,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError(`Unsupported hashing algorithm used: ${hashingAlgorithm}`)
     }
 
-    const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer)
+    const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
     const holderBinding = options.holder
@@ -201,7 +201,7 @@ export class SdJwtVcService {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
     sdjwt.config({
       kbSigner: holder ? this.signer(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
@@ -428,6 +428,13 @@ export class SdJwtVcService {
     await this.sdJwtVcRepository.update(agentContext, sdJwtVcRecord)
   }
 
+  private async resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
+    const dids = agentContext.dependencyManager.resolve(DidsApi)
+
+    const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)
+    return publicJwk
+  }
+
   private async resolveDidUrl(agentContext: AgentContext, didUrl: string) {
     const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
     const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
@@ -473,7 +480,7 @@ export class SdJwtVcService {
     }
   }
 
-  private async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer) {
+  private async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
     if (issuer.method === 'did') {
       const parsedDid = parseDid(issuer.didUrl)
       if (!parsedDid.fragment) {
@@ -482,9 +489,14 @@ export class SdJwtVcService {
         )
       }
 
-      // FIXME: need to extract the key id from the DID
-      const { verificationMethod } = await this.resolveDidUrl(agentContext, issuer.didUrl)
-      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      let publicJwk: PublicJwk
+      if (forSigning) {
+        publicJwk = await this.resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
+      } else {
+        const { verificationMethod } = await this.resolveDidUrl(agentContext, issuer.didUrl)
+        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      }
+
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
         throw new SdJwtVcError(
@@ -503,7 +515,16 @@ export class SdJwtVcService {
 
     // FIXME: probably need to make the input an x509 certificate so we can attach a key id
     if (issuer.method === 'x5c') {
-      const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: issuer.x5c })
+      const leafCertificate = issuer.x5c[0]
+      if (!leafCertificate) {
+        throw new SdJwtVcError("Empty 'x5c' array provided")
+      }
+
+      // TODO: We don't have an x509 certificate record so we expect the key id to already be set
+      if (forSigning && !leafCertificate.publicJwk.hasKeyId) {
+        throw new SdJwtVcError("Expected leaf certificate in 'x5c' array to have a key id configured.")
+      }
+
       const publicJwk = leafCertificate.publicJwk
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
@@ -630,7 +651,7 @@ export class SdJwtVcService {
     sdJwtVc: SDJwt<Header, Payload>
   ): SdJwtVcHolderBinding | null {
     if (!sdJwtVc.jwt?.payload) {
-      throw new SdJwtVcError('Credential not exist')
+      throw new SdJwtVcError('Unable to extract payload from SD-JWT VC')
     }
 
     if (!sdJwtVc.jwt?.payload.cnf) {
@@ -657,7 +678,11 @@ export class SdJwtVcService {
     throw new SdJwtVcError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
   }
 
-  private async extractKeyFromHolderBinding(agentContext: AgentContext, holder: SdJwtVcHolderBinding) {
+  private async extractKeyFromHolderBinding(
+    agentContext: AgentContext,
+    holder: SdJwtVcHolderBinding,
+    forSigning = false
+  ) {
     if (holder.method === 'did') {
       const parsedDid = parseDid(holder.didUrl)
       if (!parsedDid.fragment) {
@@ -666,9 +691,14 @@ export class SdJwtVcService {
         )
       }
 
-      // FIXMe: in case we are presenting the SD-JWT, we need to attach the key id
-      const { verificationMethod } = await this.resolveDidUrl(agentContext, holder.didUrl)
-      const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      let publicJwk: PublicJwk
+      if (forSigning) {
+        publicJwk = await this.resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
+      } else {
+        const { verificationMethod } = await this.resolveDidUrl(agentContext, holder.didUrl)
+        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+      }
+
       const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
       if (supportedSignatureAlgorithms.length === 0) {
         throw new SdJwtVcError(
@@ -690,6 +720,12 @@ export class SdJwtVcService {
     if (holder.method === 'jwk') {
       const publicJwk = holder.jwk
       const alg = publicJwk.supportedSignatureAlgorithms[0]
+
+      // If there is no key id configured when signing, we assume this credential was issued before we included key ids
+      // and the we use the legacy key id.
+      if (forSigning && !publicJwk.hasKeyId) {
+        publicJwk.keyId = publicJwk.legacyKeyId
+      }
 
       return {
         alg,

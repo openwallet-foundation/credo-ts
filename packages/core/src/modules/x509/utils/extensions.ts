@@ -1,4 +1,4 @@
-import { Hasher } from '../../../crypto'
+import { Hasher } from '../../../crypto/hashes/Hasher'
 import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
 
 import {

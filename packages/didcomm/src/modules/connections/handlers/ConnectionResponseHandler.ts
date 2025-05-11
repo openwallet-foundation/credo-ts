@@ -8,7 +8,7 @@ import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { OutboundMessageContext } from '../../../models'
-import { OutOfBandState } from '../../oob'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionResponseMessage } from '../messages'
 import { DidExchangeRole } from '../models'
 

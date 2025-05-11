@@ -18,8 +18,8 @@ import {
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
+  X509Certificate,
   X509Module,
-  X509ModuleConfig,
   X509Service,
   getPublicJwkFromVerificationMethod,
   parseDid,
@@ -87,6 +87,8 @@ describe('OpenId4Vc', () => {
   let verifier1: TenantType
   let verifier2: TenantType
 
+  let credentialIssuerCertificate: X509Certificate
+
   beforeEach(async () => {
     expressApp = express()
 
@@ -123,16 +125,11 @@ describe('OpenId4Vc', () => {
               }
             }
             if (credentialRequest.format === 'mso_mdoc') {
-              const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-              if (trustedCertificates?.length !== 1) {
-                throw new Error('Expected exactly one trusted certificate. Received 0.')
-              }
-
               return {
                 format: ClaimFormat.MsoMdoc,
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
-                  issuerCertificate: trustedCertificates[0],
+                  issuerCertificate: credentialIssuerCertificate,
                   holderKey: holderBinding.jwk,
                   namespaces: {
                     'Leopold-Franzens-University': {
@@ -346,7 +343,7 @@ describe('OpenId4Vc', () => {
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.Completed,
       issuanceSessionId: issuanceSession.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
@@ -626,8 +623,8 @@ describe('OpenId4Vc', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -664,7 +661,7 @@ describe('OpenId4Vc', () => {
         responseMode: 'direct_post.jwt',
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         transactionData: [
           {
@@ -905,8 +902,8 @@ describe('OpenId4Vc', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -942,7 +939,7 @@ describe('OpenId4Vc', () => {
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         transactionData: [
           {
@@ -1183,8 +1180,8 @@ describe('OpenId4Vc', () => {
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',
@@ -1244,7 +1241,7 @@ describe('OpenId4Vc', () => {
 
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -1592,8 +1589,7 @@ describe('OpenId4Vc', () => {
       ),
       issuer: 'C=DE',
     })
-    const issuerCertificatePem = issuerCertificate.toString('pem')
-    await issuerTenant1.x509.setTrustedCertificates([issuerCertificatePem])
+    credentialIssuerCertificate = issuerCertificate
 
     const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
@@ -1631,11 +1627,11 @@ describe('OpenId4Vc', () => {
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.OfferCreated,
       issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
     })
 
     const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    await holderTenant1.x509.setTrustedCertificates([issuerCertificatePem])
+    holderTenant1.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const resolvedCredentialOffer1 =
       await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer1)
@@ -1706,22 +1702,22 @@ describe('OpenId4Vc', () => {
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
       issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.AccessTokenCreated,
       issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.Completed,
       issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuer1.tenantId,
+      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
     })
 
     expect(credentialsTenant1.credentials).toHaveLength(1)
@@ -1742,7 +1738,7 @@ describe('OpenId4Vc', () => {
       issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const holderKey = Kms.PublicJwk.fromPublicJwk(
       (
@@ -1757,7 +1753,7 @@ describe('OpenId4Vc', () => {
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: issuerCertificate.toString('pem'),
+      issuerCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -1779,8 +1775,8 @@ describe('OpenId4Vc', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -1814,7 +1810,7 @@ describe('OpenId4Vc', () => {
       verifierId: openIdVerifier.verifierId,
       requestSigner: {
         method: 'x5c',
-        x5c: [rawCertificate],
+        x5c: [certificate],
       },
       presentationExchange: { definition: presentationDefinition },
     })
@@ -1876,7 +1872,7 @@ describe('OpenId4Vc', () => {
       issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
     const parsedDid = parseDid(issuer.kid)
     if (!parsedDid.fragment) {
@@ -1897,7 +1893,7 @@ describe('OpenId4Vc', () => {
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: issuerCertificate.toString('pem'),
+      issuerCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -1919,8 +1915,8 @@ describe('OpenId4Vc', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -1978,7 +1974,7 @@ describe('OpenId4Vc', () => {
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -2261,8 +2257,8 @@ describe('OpenId4Vc', () => {
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
     await holder.agent.sdJwtVc.store(signedSdJwtVc2.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredentials',
@@ -2322,7 +2318,7 @@ describe('OpenId4Vc', () => {
 
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -2611,7 +2607,7 @@ describe('OpenId4Vc', () => {
       },
     })
 
-    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([selfSignedCertificate.toString('pem')])
 
     const parsedDid = parseDid(issuer.kid)
     if (!parsedDid.fragment) {
@@ -2634,7 +2630,7 @@ describe('OpenId4Vc', () => {
     const signedMdoc = await issuer.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: selfSignedCertificate.toString('pem'),
+      issuerCertificate: selfSignedCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -2661,8 +2657,8 @@ describe('OpenId4Vc', () => {
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const dcqlQuery = {
       credentials: [
@@ -2691,7 +2687,7 @@ describe('OpenId4Vc', () => {
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         dcql: {
           query: dcqlQuery,

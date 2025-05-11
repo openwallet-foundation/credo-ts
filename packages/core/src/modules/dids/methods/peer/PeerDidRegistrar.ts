@@ -162,7 +162,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `unknown error: ${error.message}`,
+          reason: `unknownError: ${error.message}`,
         },
       }
     }

@@ -12,7 +12,7 @@ import {
   createPeerDidDocumentFromServices,
 } from '@credo-ts/core'
 
-const agentOptions = getAgentOptions('DidsApi')
+const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
 
 const agent = new Agent(agentOptions)
 
@@ -110,18 +110,7 @@ describe('DidsApi', () => {
   })
 
   test('import an existing did with providing a did document', async () => {
-    // Private key is for public key associated with did:key did
-    const privateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('a-new-sample-seed-of-32-bytes-in'),
-      type: {
-        kty: 'OKP',
-        crv: 'Ed25519',
-      },
-    }).privateJwk
     const did = 'did:peer:0z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM'
-    const importedKey = await agent.kms.importKey({
-      privateJwk,
-    })
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
 
@@ -130,12 +119,6 @@ describe('DidsApi', () => {
       didDocument: new DidDocument({
         id: did,
       }),
-      keys: [
-        {
-          didDocumentRelativeKeyId: '#z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM',
-          kmsKeyId: importedKey.keyId,
-        },
-      ],
     })
 
     const createdDids = await agent.dids.getCreatedDids({

@@ -36,8 +36,8 @@ describe('x25519', () => {
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidX25519.getPublicJwkFromVerificationMethod(verificationMethod)).toThrowError(
-      `Verification method with type 'SomeRandomType' not supported for key type 'x25519'`
+    expect(() => keyDidX25519.getPublicJwkFromVerificationMethod(verificationMethod)).toThrow(
+      `Verification method with type 'SomeRandomType' not supported for key type X25519`
     )
   })
 })

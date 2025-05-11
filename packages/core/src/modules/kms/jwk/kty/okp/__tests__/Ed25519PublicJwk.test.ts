@@ -29,7 +29,7 @@ describe('Ed25519PublicJwk', () => {
     expect(publicJwk.publicKey).toEqual({
       kty: 'OKP',
       crv: 'Ed25519',
-      publicJwk: Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)),
+      publicKey: Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)),
     })
     expect(publicJwk.toJson()).toEqual({
       kty: 'OKP',

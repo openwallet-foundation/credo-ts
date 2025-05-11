@@ -1,15 +1,26 @@
-import { AgentContext, CredoError, JsonEncoder, Kms, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  AgentContext,
+  CredoError,
+  InjectionSymbols,
+  JsonEncoder,
+  Kms,
+  RecordNotFoundError,
+  TypedArrayEncoder,
+  inject,
+} from '@credo-ts/core'
 import type { AgentMessage } from './AgentMessage'
 import type { EncryptedMessage, PlaintextMessage } from './types'
 
-import { InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { Logger, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { MediatorRoutingRepository, OutOfBandRepository, OutOfBandRole } from './modules'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
+import { OutOfBandRole } from './modules/oob/domain/OutOfBandRole'
+import { OutOfBandRepository } from './modules/oob/repository/OutOfBandRepository'
 import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
-import { ForwardMessage } from './modules/routing/messages'
-import { DidCommDocumentService } from './services'
+import { ForwardMessage } from './modules/routing/messages/ForwardMessage'
+import { MediatorRoutingRepository } from './modules/routing/repository/MediatorRoutingRepository'
+import { DidCommDocumentService } from './services/DidCommDocumentService'
 
 export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]

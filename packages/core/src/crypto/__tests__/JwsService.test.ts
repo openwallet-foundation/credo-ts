@@ -11,7 +11,10 @@ import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { AksarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import {
   Ed25519PublicJwk,
   KeyManagementApi,
@@ -19,9 +22,6 @@ import {
   P256PublicJwk,
   PublicJwk,
 } from '../../modules/kms'
-import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
-import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
-import { askar } from '@openwallet-foundation/askar-nodejs'
 
 // NOTE: we use askar for the KMS in this test since the signatures with the
 // node KMS are different, but it does correctly verify. It's probably something

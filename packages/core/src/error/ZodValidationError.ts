@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { formatZodError } from '../utils/zod-error'
 import { CredoError } from './CredoError'
 
 export class ZodValidationError extends CredoError {
@@ -7,7 +8,7 @@ export class ZodValidationError extends CredoError {
     message: string,
     public readonly zodError: z.ZodError
   ) {
-    const errorDetails = JSON.stringify(zodError.flatten(), null, 2)
-    super(`${message}\n${errorDetails}`)
+    const formattedError = formatZodError(zodError)
+    super(`${message}\n${formattedError}`)
   }
 }

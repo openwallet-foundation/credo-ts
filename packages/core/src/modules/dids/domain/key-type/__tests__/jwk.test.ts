@@ -22,21 +22,13 @@ describe('keyDidJsonWebKey', () => {
     ])
   })
 
-  it('returns key for JsonWebKey2020 verification method', () => {
-    const verificationMethod = JsonTransformer.fromJSON(didKeyP256Fixture.verificationMethod[0], VerificationMethod)
-
-    const key = keyDidJsonWebKey.getPublicJwkFromVerificationMethod(verificationMethod)
-
-    expect(key.fingerprint).toBe(TEST_P256_FINGERPRINT)
-  })
-
   it('throws an error if an invalid verification method is passed', () => {
     const verificationMethod = JsonTransformer.fromJSON(didKeyP256Fixture.verificationMethod[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 
     expect(() => keyDidJsonWebKey.getPublicJwkFromVerificationMethod(verificationMethod)).toThrow(
-      'Invalid verification method passed'
+      'Not supported for key did json web key'
     )
   })
 })

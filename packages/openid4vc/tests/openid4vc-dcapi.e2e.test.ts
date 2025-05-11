@@ -175,7 +175,7 @@ describe('OpenId4VP DC API', () => {
       },
     })
 
-    await verifier.agent.x509.setTrustedCertificates([selfSignedCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([selfSignedCertificate.toString('pem')])
 
     const parsedDid = parseDid(verifier.kid)
     if (!parsedDid.fragment) {
@@ -209,8 +209,8 @@ describe('OpenId4VP DC API', () => {
     verifierCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(verifierCertificate)
-    verifier.agent.x509.addTrustedCertificate(verifierCertificate)
+    holder.agent.x509.config.addTrustedCertificate(verifierCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(verifierCertificate)
   })
 
   afterEach(async () => {

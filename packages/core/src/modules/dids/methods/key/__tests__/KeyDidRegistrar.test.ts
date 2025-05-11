@@ -1,5 +1,5 @@
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
-import { getAgentContext, mockFunction } from '../../../../../../tests/helpers'
+import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { KeyManagementApi } from '../../../../kms'
@@ -17,6 +17,7 @@ const keyDidRegistrar = new KeyDidRegistrar()
 
 const agentContext = getAgentContext({
   registerInstances: [[DidRepository, didRepositoryMock]],
+  agentConfig: getAgentConfig('KeyDidRegistrar'),
 })
 const kms = agentContext.resolve(KeyManagementApi)
 
@@ -69,7 +70,7 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: 'Missing key type or key instance',
+          reason: 'unknownError: Invalid options provided to getPublicKey method\n\t- Required at "keyId"',
         },
       })
     })
