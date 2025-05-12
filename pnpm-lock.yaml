@@ -324,8 +324,8 @@ importers:
   packages/cheqd:
     dependencies:
       '@cheqd/sdk':
-        specifier: ^5.1.4
-        version: 5.1.4
+        specifier: ^5.2.1
+        version: 5.2.1
       '@cheqd/ts-proto':
         specifier: ~2.4.1
         version: 2.4.1
@@ -373,8 +373,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -546,8 +546,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@sphereon/pex-models':
         specifier: ^2.3.2
         version: 2.3.2
@@ -922,8 +922,8 @@ packages:
   '@animo-id/mdoc@0.5.2':
     resolution: {integrity: sha512-EQVsNOOeXFfBaEHkiKoh24jbSEQ1MORB/kUu0rnNrAEETpY5GK/H9iWevYFdmNDIqQTIEJlkU7S+sIj3pe66eA==}
 
-  '@animo-id/pex@5.2.0':
-    resolution: {integrity: sha512-W0nopdAS1boDOuhH1L5yUyNOo4LJwIqVc3x90ua0ypNXuOv6gDkr78nNTqIjaF0eBKakagTYegbDZrfQrlmRBQ==}
+  '@animo-id/pex@6.1.0':
+    resolution: {integrity: sha512-qlfbTAASA3B8DFwKV9nIe6ZSTg/UkgyQ2fUKkyO/D+sNPDgAP33JXtUmTG/uPDRJrhxhodSpwQ6I9seAlSTmUA==}
     engines: {node: '>=18'}
 
   '@astronautlabs/jsonpath@1.1.2':
@@ -1841,8 +1841,8 @@ packages:
   '@changesets/write@0.3.1':
     resolution: {integrity: sha512-SyGtMXzH3qFqlHKcvFY2eX+6b0NGiFcNav8AFsYwy5l8hejOeoeTDemu5Yjmke2V5jpzY+pBvM0vCCQ3gdZpfw==}
 
-  '@cheqd/sdk@5.1.4':
-    resolution: {integrity: sha512-GuVGyilBCSxJ9jwj1Grpnkxs7GcAs/JJoIFufF6ZQ+REQ9G3QXSufUAeEB08Ho36TRzuFzvggAmY6Wv1SjkSGg==}
+  '@cheqd/sdk@5.2.1':
+    resolution: {integrity: sha512-R6lpEEF0fTpDr4yebT/WUIs7AUgvVbR/V3RMGudcq2nVRv248fD2zpcJroKOpUKsoTUCa9Fw5PkWz01VvdmUEw==}
     engines: {node: '>=20.0.0'}
 
   '@cheqd/ts-proto@2.4.1':
@@ -7619,8 +7619,9 @@ snapshots:
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@5.2.0':
+  '@animo-id/pex@6.1.0':
     dependencies:
+      '@animo-id/mdoc': 0.5.2
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
       '@sd-jwt/present': 0.7.2
@@ -8821,7 +8822,7 @@ snapshots:
       human-id: 1.0.2
       prettier: 2.8.8
 
-  '@cheqd/sdk@5.1.4':
+  '@cheqd/sdk@5.2.1':
     dependencies:
       '@cheqd/ts-proto': 4.0.2
       '@cheqd/ts-proto-cjs': '@cheqd/ts-proto@2.4.1'

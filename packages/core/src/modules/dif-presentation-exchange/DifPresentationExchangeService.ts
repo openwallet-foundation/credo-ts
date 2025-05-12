@@ -1,10 +1,5 @@
-import {
-  PEX,
-  type PresentationSignCallBackParams,
-  Status,
-  type Validated,
-  type VerifiablePresentationResult,
-} from '@animo-id/pex'
+import type { Checked, PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import { PEX, Status } from '@animo-id/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
   SdJwtDecodedVerifiableCredential,
@@ -28,8 +23,6 @@ import type {
 } from './models'
 import type { PresentationToCreate } from './utils'
 
-// import { PEVersion, PEX, Status } from '@animo-id/pex'
-// import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
 import { CredoError } from '../../error'
@@ -116,6 +109,7 @@ export class DifPresentationExchangeService {
   public validatePresentationDefinition(presentationDefinition: DifPresentationExchangeDefinition) {
     const validation = PEX.validateDefinition(presentationDefinition)
     const errorMessages = this.formatValidated(validation)
+
     if (errorMessages.length > 0) {
       throw new DifPresentationExchangeError('Invalid presentation definition', { additionalMessages: errorMessages })
     }
@@ -134,7 +128,7 @@ export class DifPresentationExchangeService {
     presentations: VerifiablePresentation | VerifiablePresentation[],
     presentationSubmission?: DifPresentationExchangeSubmission
   ) {
-    const { errors } = this.pex.evaluatePresentation(
+    const result = this.pex.evaluatePresentation(
       presentationDefinition,
       Array.isArray(presentations)
         ? presentations.map(getSphereonOriginalVerifiablePresentation)
@@ -145,18 +139,16 @@ export class DifPresentationExchangeService {
       }
     )
 
-    if (errors) {
-      const errorMessages = this.formatValidated(errors as Validated)
-      if (errorMessages.length > 0) {
-        throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
-      }
+    if (result.areRequiredCredentialsPresent === Status.ERROR) {
+      const errorMessages = this.formatValidated(result.errors)
+      throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
     }
   }
 
-  private formatValidated(v: Validated) {
-    const validated = Array.isArray(v) ? v : [v]
+  private formatValidated(v?: Checked[] | Validated) {
+    const validated = Array.isArray(v) ? v : v ? [v] : []
     return validated
-      .filter((r) => r.tag === Status.ERROR)
+      .filter((r) => r.status === Status.ERROR)
       .map((r) => r.message)
       .filter((r): r is string => Boolean(r))
   }

@@ -220,6 +220,7 @@ describe('SdJwtVcService', () => {
           x5c: [simpleX509Certificate],
           issuer: simpleX509.certificateIssuer,
         },
+        headerType: 'vc+sd-jwt',
       })
 
       expect(compact).toStrictEqual(simpleX509.sdJwtVc)
@@ -256,6 +257,7 @@ describe('SdJwtVcService', () => {
           method: 'did',
           didUrl: issuerDidUrl,
         },
+        headerType: 'vc+sd-jwt',
       })
 
       expect(compact).toStrictEqual(simpleJwtVc)
@@ -285,6 +287,7 @@ describe('SdJwtVcService', () => {
           claim: 'some-claim',
           vct: 'IdentityCredential',
         },
+        headerType: 'vc+sd-jwt',
         issuer: {
           method: 'did',
           didUrl: issuerDidUrl,
@@ -331,7 +334,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
-        typ: 'vc+sd-jwt',
+        typ: 'dc+sd-jwt',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 
@@ -360,6 +363,7 @@ describe('SdJwtVcService', () => {
           method: 'did',
           didUrl: issuerDidUrl,
         },
+        headerType: 'vc+sd-jwt',
       })
 
       expect(compact).toStrictEqual(sdJwtVcWithSingleDisclosure)
@@ -425,6 +429,7 @@ describe('SdJwtVcService', () => {
           method: 'did',
           didUrl: issuerDidUrl,
         },
+        headerType: 'vc+sd-jwt',
       })
 
       expect(compact).toStrictEqual(complexSdJwtVc)
@@ -521,7 +526,7 @@ describe('SdJwtVcService', () => {
 
       expect(header).toEqual({
         alg: 'EdDSA',
-        typ: 'vc+sd-jwt',
+        typ: 'dc+sd-jwt',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
       })
 

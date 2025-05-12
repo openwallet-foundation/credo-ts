@@ -825,7 +825,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
@@ -884,6 +884,7 @@ describe('OpenId4Vc', () => {
         degree: 'bachelor',
         name: 'John Doe',
       },
+      headerType: 'vc+sd-jwt',
       disclosureFrame: {
         _sd: ['university', 'name'],
       },
@@ -1489,7 +1490,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
@@ -1535,7 +1536,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
@@ -2164,7 +2165,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
@@ -2490,7 +2491,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
@@ -2534,7 +2535,7 @@ describe('OpenId4Vc', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MkrzQPBr4pyqC776KKtrz13SchM5ePPbssuPuQZb5t4uKQ',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           payload: {
             _sd: [expect.any(String), expect.any(String)],
