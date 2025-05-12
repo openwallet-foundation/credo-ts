@@ -16,11 +16,6 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
     Agent: jest.fn(() => ({
       config: agentConfig,
       context: agentContext,
-      wallet: {
-        walletConfig: {
-          id: 'wallet-id',
-        },
-      },
       dependencyManager: {
         resolve: jest.fn(() => linkSecretRepository),
       },
