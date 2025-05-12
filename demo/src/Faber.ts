@@ -40,7 +40,7 @@ export class Faber extends BaseAgent {
     const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
     const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
     const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
-    const didDocumentKeyId = registry === RegistryOptions.indy ? '#verkey' : '#key-1'
+    const didDocumentRelativeKeyId = registry === RegistryOptions.indy ? '#verkey' : '#key-1'
 
     const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
     const { privateJwk } = transformPrivateKeyToPrivateJwk({
@@ -60,7 +60,7 @@ export class Faber extends BaseAgent {
       overwrite: true,
       keys: [
         {
-          didDocumentKeyId,
+          didDocumentRelativeKeyId,
           kmsKeyId: keyId,
         },
       ],

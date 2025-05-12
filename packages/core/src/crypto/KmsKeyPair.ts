@@ -53,21 +53,13 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
     public signer(): { sign: (data: { data: Uint8Array | Uint8Array[] }) => Promise<Uint8Array> } {
       // wrap function for conversion
       const wrappedSign = async (data: { data: Uint8Array | Uint8Array[] }): Promise<Uint8Array> => {
-        let converted: Buffer | Buffer[] = []
-
-        // convert uint8array to buffer
         if (Array.isArray(data.data)) {
-          converted = data.data.map((d) => Buffer.from(d))
-        } else {
-          converted = Buffer.from(data.data)
+          throw new CredoError('Signing array of data entries is not supported')
         }
-
         const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-        // sign
         const result = await kms.sign({
-          // FIXME: need to handle array of data
-          data: converted,
+          data: data.data,
           keyId: this.publicJwk.keyId,
           algorithm: this.publicJwk.signatureAlgorithm,
         })
@@ -90,19 +82,13 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
         data: Uint8Array | Uint8Array[]
         signature: Uint8Array
       }): Promise<boolean> => {
-        let converted: Buffer | Buffer[] = []
-
-        // convert uint8array to buffer
         if (Array.isArray(data.data)) {
-          converted = data.data.map((d) => Buffer.from(d))
-        } else {
-          converted = Buffer.from(data.data)
+          throw new CredoError('Verifying array of data entries is not supported')
         }
         const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-        // verify
         const { verified } = await kms.verify({
-          data: converted,
+          data: data.data,
           signature: Buffer.from(data.signature),
           key: this.publicJwk.toJson(),
           algorithm: this.publicJwk.signatureAlgorithm,

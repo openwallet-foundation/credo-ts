@@ -263,7 +263,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       keyId,
       header: {},
       payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
-      protectedHeaderOptions: { alg: signingAlg, kid },
+      protectedHeaderOptions: { alg: signingAlg as Kms.KnownJwaSignatureAlgorithm, kid },
     })
 
     const signedAttach = new Attachment({
