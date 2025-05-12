@@ -703,17 +703,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250511132052
-        version: 0.3.0-alpha-20250511132052
+        specifier: 0.3.0-alpha-20250511195407
+        version: 0.3.0-alpha-20250511195407
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250511132052
-        version: 0.3.0-alpha-20250511132052
+        specifier: 0.3.0-alpha-20250511195407
+        version: 0.3.0-alpha-20250511195407
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250511132052
-        version: 0.3.0-alpha-20250511132052
+        specifier: 0.3.0-alpha-20250511195407
+        version: 0.3.0-alpha-20250511195407
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250511132052
-        version: 0.3.0-alpha-20250511132052
+        specifier: 0.3.0-alpha-20250511195407
+        version: 0.3.0-alpha-20250511195407
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -2450,17 +2450,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250511132052':
-    resolution: {integrity: sha512-igtWg1FTg6LLHTEMxbdiyI/Rn/tCm2v/xlwoqFkdY76A55B9M/+ehCwBtC/zacOrIwpZXTAIfOnuoOGkchO6vA==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250511195407':
+    resolution: {integrity: sha512-H4SYmrszAm/qk+P35jk1vEVIIRTkhLTZOzTO0pTKBzDMordgAPyD06EDxw40mVEY3vY1IHICloUq8AzNtBPKOA==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250511132052':
-    resolution: {integrity: sha512-l6fFvbGIwhYYQKvYF7CFNeVhRLFa7hry1K+SVP6M0d2Fu3wzxB2uGcgLeEwBdwKCQjMf4398FCMmHyh7xORoHg==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250511195407':
+    resolution: {integrity: sha512-OMQbQNym2hDWrfldZgYdzaVKwE83WE7aExQgL299WBd8nr9fvUaoG74+GtTHX/bgDXcLR7XwoUmcLsWByqSXpA==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250511132052':
-    resolution: {integrity: sha512-VbjGAbGkAw9np9lm64++/RJT0B8vfBBI7fjU2kFwq5dBXGZ1OAah/qWVxiF5uZ088nn87UvCmDIcpa8H29N1Lg==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250511195407':
+    resolution: {integrity: sha512-bOTzFCv7gDcuDJ1JoWUPDlqVVjGkGVuQRWlnpl792bbsflkKQ7OCPIFuOH6oqxutPwE0ehV0nt8Pc0lUTwutTw==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250511132052':
-    resolution: {integrity: sha512-J/kxotgG8SLvR6ImU/o6GUBziyE82BytYeISqSHV3isj2L8mpGOMu9qtkKv2WzmuB4F6m8g6Sljx6cWSDxrhDQ==}
+  '@openid4vc/utils@0.3.0-alpha-20250511195407':
+    resolution: {integrity: sha512-S9c7GVEoohMbWY0CJsIchqcMy6le2hGUAEqAIF5R9PaaADviXOFoyaitXIa8rMIqNuPMk66Fs2IW1PvwnbI7EQ==}
 
   '@openwallet-foundation/askar-nodejs@0.3.1':
     resolution: {integrity: sha512-m3L8KEPC+qgA3MAFssMtjSqJiAQtrawZEWPmW6eiB7OPjZvkKjodMhx/cuUV5YTl4eQlSix2EY4vXMzk4vt+cQ==}
@@ -2758,6 +2758,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -9970,24 +9971,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250511132052':
+  '@openid4vc/oauth2@0.3.0-alpha-20250511195407':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250511132052
+      '@openid4vc/utils': 0.3.0-alpha-20250511195407
       zod: 3.24.2
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250511132052':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250511195407':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250511132052
-      '@openid4vc/utils': 0.3.0-alpha-20250511132052
+      '@openid4vc/oauth2': 0.3.0-alpha-20250511195407
+      '@openid4vc/utils': 0.3.0-alpha-20250511195407
       zod: 3.24.2
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250511132052':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250511195407':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250511132052
-      '@openid4vc/utils': 0.3.0-alpha-20250511132052
+      '@openid4vc/oauth2': 0.3.0-alpha-20250511195407
+      '@openid4vc/utils': 0.3.0-alpha-20250511195407
       zod: 3.24.2
 
-  '@openid4vc/utils@0.3.0-alpha-20250511132052':
+  '@openid4vc/utils@0.3.0-alpha-20250511195407':
     dependencies:
       buffer: 6.0.3
       zod: 3.24.2

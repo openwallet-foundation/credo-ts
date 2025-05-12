@@ -868,7 +868,7 @@ export class OpenId4VpVerifierService {
       this.logger.trace('Presentation response', JsonTransformer.toJSON(presentation))
 
       let isValid: boolean
-      let reason: string | undefined = undefined
+      let cause: Error | undefined = undefined
       let verifiablePresentation: VerifiablePresentation
 
       if (format === ClaimFormat.SdJwtVc) {
@@ -907,7 +907,7 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.verification.isValid
-        reason = verificationResult.isValid ? undefined : verificationResult.error.message
+        cause = verificationResult.isValid ? undefined : verificationResult.error
         verifiablePresentation = sdJwtVc
       } else if (format === ClaimFormat.MsoMdoc) {
         if (typeof presentation !== 'string') {
@@ -977,7 +977,7 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.isValid
-        reason = verificationResult.error?.message
+        cause = verificationResult.error
       } else {
         verifiablePresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
@@ -987,11 +987,13 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.isValid
-        reason = verificationResult.error?.message
+        cause = verificationResult.error
       }
 
       if (!isValid) {
-        throw new Error(reason)
+        throw new CredoError(`Error occured during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
+          cause,
+        })
       }
 
       return {

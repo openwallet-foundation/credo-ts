@@ -408,6 +408,7 @@ export class OpenId4VpHolderService {
 
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       authorizationRequestPayload,
+      origin: options.origin,
       authorizationResponsePayload: {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,

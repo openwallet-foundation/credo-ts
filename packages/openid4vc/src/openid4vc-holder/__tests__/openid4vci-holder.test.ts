@@ -1,11 +1,12 @@
-import { Kms, SdJwtVc } from '@credo-ts/core'
+import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
 
 import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../../../node/src'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
@@ -16,9 +17,7 @@ const holder = new Agent({
   dependencies: agentDependencies,
   modules: {
     openId4VcHolder: new OpenId4VcHolderModule(),
-    kms: new Kms.KeyManagementModule({
-      backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
-    }),
+    inMemory: new InMemoryWalletModule(),
   },
 })
 
@@ -41,7 +40,18 @@ describe('OpenId4VcHolder', () => {
     })
     holderKey = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
 
-    const holderDidKey = new DidKey(holderKey)
+    const {
+      didState: { did },
+    } = await holder.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: {
+        keyId: key.keyId,
+      },
+    })
+
+    if (!did) throw new Error('expected did')
+
+    const holderDidKey = DidKey.fromDid(did)
     holderDid = holderDidKey.did
     holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`
   })

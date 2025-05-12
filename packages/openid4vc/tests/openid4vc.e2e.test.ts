@@ -72,7 +72,6 @@ describe('OpenId4Vc', () => {
     x509: X509Module
   }>
   let issuer1: TenantType
-  let _issuer2: TenantType
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
@@ -148,7 +147,6 @@ describe('OpenId4Vc', () => {
       global.fetch
     )) as unknown as typeof issuer
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
-    _issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
     holder = (await createAgentFromModules(
       'holder',

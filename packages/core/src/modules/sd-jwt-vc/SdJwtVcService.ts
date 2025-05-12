@@ -602,7 +602,7 @@ export class SdJwtVcService {
 
       return {
         method: 'x5c',
-        x5c: sdJwtVc.jwt.header.x5c,
+        x5c: certificateChain,
         issuer: iss,
       }
     }
