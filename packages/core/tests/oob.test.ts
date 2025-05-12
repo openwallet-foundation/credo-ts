@@ -43,7 +43,8 @@ const faberAgent = new Agent(
     {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    })
+    }),
+    { requireDidcomm: true }
   )
 )
 const aliceAgent = new Agent(
@@ -57,7 +58,8 @@ const aliceAgent = new Agent(
     },
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    })
+    }),
+    { requireDidcomm: true }
   )
 )
 
@@ -372,18 +374,22 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation with multiple endpoints uses first endpoint for invitation', async () => {
+      const routingKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      routingKey.keyId = routingKey.legacyKeyId
+
+      const recipientKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      recipientKey.keyId = recipientKey.legacyKeyId
+
       const { invitation } = await faberAgent.modules.oob.createLegacyInvitation({
         ...makeConnectionConfig,
         routing: {
           endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
-          routingKeys: [
-            Kms.PublicJwk.fromFingerprint(
-              'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
-            ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
-          ],
-          recipientKey: Kms.PublicJwk.fromFingerprint(
-            'z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'
-          ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>,
+          routingKeys: [routingKey],
+          recipientKey,
         },
       })
 
@@ -958,9 +964,9 @@ describe('out of band', () => {
       const faberCredentialRequest = await faberAgent.modules.credentials.findRequestMessage(faberCredentialRecord.id)
 
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
         serviceEndpoint: routing.endpoints[0],
-        routingKeys: routing.routingKeys.map((r) => r.publicKeyBase58),
+        routingKeys: routing.routingKeys.map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
       })
     })
 

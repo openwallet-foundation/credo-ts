@@ -38,18 +38,13 @@ import {
   KeyDidRegistrar,
   KeyDidResolver,
   TypedArrayEncoder,
+  X509Certificate,
   X509ModuleConfig,
   getDomainFromUrl,
   parseDid,
 } from '@credo-ts/core'
-import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { PublicJwk } from '../../kms'
-
-const _jwkJsonWithoutUse = (jwk: PublicJwk) => {
-  const jwkJson = jwk.toJson()
-  jwkJson.use = undefined
-  return jwkJson
-}
 
 const agent = new Agent(
   getAgentOptions(
@@ -70,6 +65,8 @@ Date.prototype.getTime = jest.fn(() => 1698151532000)
 
 jest.mock('../repository/SdJwtVcRepository')
 const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
+
+const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
 
 const generateStatusList = async (
   agentContext: AgentContext,
@@ -119,8 +116,8 @@ describe('SdJwtVcService', () => {
   beforeAll(async () => {
     await agent.initialize()
 
-    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+    const issuerPrivateJwk = transformSeedToPrivateJwk({
+      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -137,15 +134,31 @@ describe('SdJwtVcService', () => {
     const issuerDidKey = new DidKey(issuerKey)
     const issuerDidDocument = issuerDidKey.didDocument
     issuerDidUrl = (issuerDidDocument.verificationMethod ?? [])[0].id
-    await agent.dids.import({ didDocument: issuerDidDocument, did: issuerDidDocument.id })
+    await agent.dids.import({
+      didDocument: issuerDidDocument,
+      did: issuerDidDocument.id,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${issuerDidUrl.split('#')[1]}`,
+          kmsKeyId: issuerKey.keyId,
+        },
+      ],
+    })
 
-    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+    simpleX509Certificate.keyId = issuerKey.keyId
+
+    const holderPrivateJwk = transformSeedToPrivateJwk({
+      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
       },
     }).privateJwk
+
+    // We use hardcoded SD-JWT VCs which don't have a `kid` in the credential JWK
+    // So we set the kid to the legacy key id
+    holderPrivateJwk.kid = TypedArrayEncoder.toBase58(PublicJwk.fromPublicJwk(holderPrivateJwk).publicKey.publicKey)
+
     holderKey = PublicJwk.fromPublicJwk(
       (
         await agent.kms.importKey({
@@ -155,7 +168,17 @@ describe('SdJwtVcService', () => {
     )
     const holderDidKey = new DidKey(holderKey)
     const holderDidDocument = holderDidKey.didDocument
-    await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
+    const holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
+    await agent.dids.import({
+      didDocument: holderDidDocument,
+      did: holderDidDocument.id,
+      keys: [
+        {
+          kmsKeyId: holderKey.keyId,
+          didDocumentRelativeKeyId: `#${holderDidUrl.split('#')[1]}`,
+        },
+      ],
+    })
 
     const sdJwtVcRepositoryMock = new SdJwtVcRepositoryMock()
     sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock)
@@ -175,7 +198,7 @@ describe('SdJwtVcService', () => {
           },
           issuer: {
             method: 'x5c',
-            x5c: [simpleX509.trustedCertficate],
+            x5c: [simpleX509Certificate],
             issuer: 'some-issuer',
           },
         })
@@ -194,7 +217,7 @@ describe('SdJwtVcService', () => {
         },
         issuer: {
           method: 'x5c',
-          x5c: [simpleX509.trustedCertficate],
+          x5c: [simpleX509Certificate],
           issuer: simpleX509.certificateIssuer,
         },
       })
@@ -213,7 +236,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: simpleX509.certificateIssuer,
-        cnf: { jwk: holderKey },
+        cnf: { jwk: holderKey.toJson() },
       })
     })
 
@@ -251,7 +274,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -295,8 +318,6 @@ describe('SdJwtVcService', () => {
           discloseableValue: false,
         },
         holder: {
-          // FIXME: is it nicer API to just pass either didUrl or JWK?
-          // Or none if you don't want to bind it?
           method: 'jwk',
           jwk: holderKey,
         },
@@ -322,7 +343,7 @@ describe('SdJwtVcService', () => {
         value: false,
         discloseableValue: false,
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -353,10 +374,10 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
-        _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
+        _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -366,7 +387,7 @@ describe('SdJwtVcService', () => {
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -418,7 +439,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         address: {
-          _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
+          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
@@ -426,16 +447,16 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -458,7 +479,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -511,17 +532,17 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
-          'yPhxDEM7k7p7eQ9eHHC-Ca6VEA8bzebZpYu7vYmwG6c',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'RDQeb-TXvRaGsX5jV4W2-xAKutsaYZVm8qEvMtP71pc',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -544,7 +565,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -568,7 +589,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -605,10 +626,10 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
-        _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
+        _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -632,22 +653,22 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         address: {
-          _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
+          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
         _sd_alg: 'sha-256',
         phone_number: '+1-202-555-0101',
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -685,7 +706,7 @@ describe('SdJwtVcService', () => {
           street_address: '123 Main St',
         },
         cnf: {
-          jwk: holderKey,
+          jwk: holderKey.toJson(),
         },
       })
     })

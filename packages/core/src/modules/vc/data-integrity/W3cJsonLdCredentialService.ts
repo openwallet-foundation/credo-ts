@@ -89,7 +89,7 @@ export class W3cJsonLdCredentialService {
 
       return JsonTransformer.fromJSON(result, W3cJsonLdVerifiableCredential)
     } catch (error) {
-      throw new CredoError('Error issuing W3C JSON-LD VC', {
+      throw new CredoError(`Error issuing W3C JSON-LD VC. ${error.message}`, {
         cause: error,
       })
     }

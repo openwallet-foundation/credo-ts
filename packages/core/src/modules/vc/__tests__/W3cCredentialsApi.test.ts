@@ -40,8 +40,11 @@ describe('W3cCredentialsApi', () => {
   })
 
   afterEach(async () => {
-    await agent.shutdown()
-    await agent.wallet.delete()
+    // TOOD: we probably need a way to delete a context on the agent,
+    // for tenants we do it on the tenants api, for the main context
+    //  we can do it on the agent instance? So `agent.delete()` maybe?
+    await agent.dependencyManager.registeredModules.inMemory.onDeleteContext?.(agent.context)
+    agent.shutdown()
   })
 
   it('Should successfully store a credential', async () => {

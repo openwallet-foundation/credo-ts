@@ -1,6 +1,6 @@
 import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
 
-import { Agent } from '../../..'
+import { Agent, X509Certificate } from '../../..'
 import { getAgentOptions } from '../../../../tests'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
@@ -85,9 +85,12 @@ describe('mdoc device-response proximity test', () => {
       privateJwk: DEVICE_JWK_PRIVATE,
     })
 
-    const _importedIssuerKey = await agent.kms.importKey({
+    const importedIssuerKey = await agent.kms.importKey({
       privateJwk: ISSUER_PRIVATE_KEY_JWK,
     })
+    const issuerCertificate = X509Certificate.fromEncodedCertificate(ISSUER_CERTIFICATE)
+    issuerCertificate.publicJwk.keyId = importedIssuerKey.keyId
+
     mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
       validityInfo: {
@@ -95,7 +98,7 @@ describe('mdoc device-response proximity test', () => {
         validUntil: new Date('2050-10-24'),
       },
       holderKey: PublicJwk.fromPublicJwk(importedDeviceKey.publicJwk),
-      issuerCertificate: ISSUER_CERTIFICATE,
+      issuerCertificate,
       namespaces: {
         'org.iso.18013.5.1': {
           family_name: 'Jones',

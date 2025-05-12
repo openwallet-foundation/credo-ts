@@ -70,6 +70,18 @@ export class X509Certificate {
     this.x509Certificate = options.x509Certificate
   }
 
+  public set keyId(keyId: string) {
+    this.publicJwk.keyId = keyId
+  }
+
+  public get keyId(): string {
+    return this.publicJwk.keyId
+  }
+
+  public get hasKeyId(): boolean {
+    return this.publicJwk.hasKeyId
+  }
+
   public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)

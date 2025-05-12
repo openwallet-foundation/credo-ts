@@ -3,7 +3,7 @@ import nock, { cleanAll } from 'nock'
 import { getAgentOptions } from '../../../../tests'
 
 import { Agent, DidKey, TypedArrayEncoder } from '@credo-ts/core'
-import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { PublicJwk } from '../../kms'
 
 const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
@@ -21,8 +21,8 @@ describe('sd-jwt-vc end to end test', () => {
   beforeAll(async () => {
     await issuer.initialize()
 
-    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
+    const issuerPrivateJwk = transformSeedToPrivateJwk({
+      seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -39,11 +39,20 @@ describe('sd-jwt-vc end to end test', () => {
     const issuerDidKey = new DidKey(issuerKey)
     const issuerDidDocument = issuerDidKey.didDocument
     issuerDidUrl = (issuerDidDocument.verificationMethod ?? [])[0].id
-    await issuer.dids.import({ didDocument: issuerDidDocument, did: issuerDidDocument.id })
+    await issuer.dids.import({
+      didDocument: issuerDidDocument,
+      did: issuerDidDocument.id,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${issuerDidUrl.split('#')[1]}`,
+          kmsKeyId: issuerKey.keyId,
+        },
+      ],
+    })
 
     await holder.initialize()
-    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+    const holderPrivateJwk = transformSeedToPrivateJwk({
+      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
@@ -119,6 +128,7 @@ describe('sd-jwt-vc end to end test', () => {
       claimFormat: 'vc+sd-jwt',
       compact: expect.any(String),
       encoded: expect.any(String),
+      kbJwt: undefined,
       header: {
         alg: 'EdDSA',
         kid: '#z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
@@ -150,6 +160,7 @@ describe('sd-jwt-vc end to end test', () => {
         },
         cnf: {
           jwk: {
+            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
@@ -169,6 +180,7 @@ describe('sd-jwt-vc end to end test', () => {
         birthdate: '1940-01-01',
         cnf: {
           jwk: {
+            kid: expect.any(String),
             crv: 'Ed25519',
             kty: 'OKP',
             x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',

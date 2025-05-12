@@ -6,12 +6,24 @@ import { Agent } from '../src/agent/Agent'
 import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getAgentOptions('Agents Alice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobAgentOptions = getAgentOptions('Agents Bob', {
-  endpoints: ['rxjs:bob'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Agents Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const bobAgentOptions = getAgentOptions(
+  'Agents Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('agents', () => {
   let aliceAgent: Agent
@@ -21,9 +33,7 @@ describe('agents', () => {
 
   afterAll(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('make a connection between agents', async () => {

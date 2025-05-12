@@ -41,8 +41,6 @@ describe('mdoc device-response test', () => {
       },
     })
 
-    const issuerCertificate = certificate.toString('pem')
-
     const mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
@@ -53,7 +51,7 @@ describe('mdoc device-response test', () => {
           nicer: 'dicer',
         },
       },
-      issuerCertificate,
+      issuerCertificate: certificate,
     })
 
     const limitedDisclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({

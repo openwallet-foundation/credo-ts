@@ -112,7 +112,7 @@ export class SdJwtVcService {
       alg: issuer.alg,
       typ: 'vc+sd-jwt',
       kid: issuer.kid,
-      x5c: issuer.x5c,
+      x5c: issuer.x5c?.map((cert) => cert.toString('base64')),
     } as const
 
     const sdjwt = new SDJwtVcInstance({

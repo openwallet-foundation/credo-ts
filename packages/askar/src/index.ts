@@ -19,4 +19,4 @@ export {
   AskarModuleConfigStoreOptions,
 } from './AskarModuleConfig'
 
-export { transformPrivateKeyToPrivateJwk } from './utils'
+export { transformPrivateKeyToPrivateJwk, transformSeedToPrivateJwk } from './utils'

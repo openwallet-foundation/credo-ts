@@ -6,6 +6,7 @@ import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
+import { X509Certificate } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
@@ -142,7 +143,8 @@ describe('mdoc device-response openid4vp test', () => {
       const importedIssuerKey = await agent.kms.importKey({
         privateJwk: ISSUER_PRIVATE_KEY_JWK_P256,
       })
-      const _issuerKeyPublicJwk = PublicJwk.fromPublicJwk(importedIssuerKey.publicJwk)
+      const issuerCertificate = X509Certificate.fromEncodedCertificate(ISSUER_CERTIFICATE_P256)
+      issuerCertificate.keyId = importedIssuerKey.keyId
 
       mdoc = await Mdoc.sign(agent.context, {
         docType: 'org.iso.18013.5.1.mDL',
@@ -151,7 +153,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: deviceKeyPublicJwk,
-        issuerCertificate: ISSUER_CERTIFICATE_P256,
+        issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
             family_name: 'Jones',
@@ -322,7 +324,7 @@ describe('mdoc device-response openid4vp test', () => {
           validUntil: new Date('2050-10-24'),
         },
         holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
-        issuerCertificate: issuerCertificate.toString('pem'),
+        issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
             family_name: 'Jones',

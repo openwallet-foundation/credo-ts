@@ -1,10 +1,19 @@
-import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
-import { getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
+import { AksarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
+import {
+  agentDependencies,
+  getAgentConfig,
+  getAgentContext,
+  getAskarStoreConfig,
+  testLogger,
+} from '../../../../../tests'
+import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
-import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
+import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
@@ -12,26 +21,45 @@ import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { AskarStoreManager } from '../../../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../../../node/src/NodeFileSystem'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
+  CredoEs256DidJwkJwtVcSubjectSeed,
   CredoEs256DidKeyJwtVp,
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-jwt-vc'
 import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+const storageSerivice = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cJwtCredentialService')
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
-    [DidRepository, {} as unknown as DidRepository],
+    [DidRepository, new DidRepository(storageSerivice, new EventEmitter(agentDependencies, new Subject()))],
+    [InjectionSymbols.StorageService, storageSerivice],
     [X509ModuleConfig, new X509ModuleConfig()],
+    [
+      AskarStoreManager,
+      new AskarStoreManager(
+        new NodeFileSystem(),
+        new AskarModuleConfig({
+          askar,
+          store: getAskarStoreConfig('W3cJwtCredentialService'),
+        })
+      ),
+    ],
   ],
+  kmsBackends: [new AksarKeyManagementService()],
   agentConfig: config,
 })
 const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+const dids = agentContext.dependencyManager.resolve(DidsApi)
 const jwsService = new JwsService()
 const w3cJwtCredentialService = new W3cJwtCredentialService(jwsService)
 
@@ -40,12 +68,12 @@ describe('W3cJwtCredentialService', () => {
   let holderDidKey: DidKey
 
   beforeAll(async () => {
-    const issuerPrivateJwk = transformPrivateKeyToPrivateJwk({
+    const issuerPrivateJwk = transformSeedToPrivateJwk({
       type: {
         kty: 'EC',
         crv: 'P-256',
       },
-      privateKey: CredoEs256DidJwkJwtVcIssuerSeed,
+      seed: CredoEs256DidJwkJwtVcIssuerSeed,
     }).privateJwk
 
     const importedIssuerKey = await kms.importKey({
@@ -53,13 +81,22 @@ describe('W3cJwtCredentialService', () => {
     })
 
     issuerDidJwk = DidJwk.fromPublicJwk(PublicJwk.fromPublicJwk(importedIssuerKey.publicJwk))
+    await dids.import({
+      did: issuerDidJwk.did,
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#0',
+          kmsKeyId: importedIssuerKey.keyId,
+        },
+      ],
+    })
 
-    const holderPrivateJwk = transformPrivateKeyToPrivateJwk({
+    const holderPrivateJwk = transformSeedToPrivateJwk({
       type: {
-        kty: 'EC',
-        crv: 'P-256',
+        kty: 'OKP',
+        crv: 'Ed25519',
       },
-      privateKey: CredoEs256DidJwkJwtVcIssuerSeed,
+      seed: CredoEs256DidJwkJwtVcSubjectSeed,
     }).privateJwk
 
     const importedHolderKey = await kms.importKey({
@@ -67,6 +104,15 @@ describe('W3cJwtCredentialService', () => {
     })
 
     holderDidKey = new DidKey(PublicJwk.fromPublicJwk(importedHolderKey.publicJwk))
+    await dids.import({
+      did: holderDidKey.did,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${holderDidKey.publicJwk.fingerprint}`,
+          kmsKeyId: importedHolderKey.keyId,
+        },
+      ],
+    })
   })
 
   describe('signCredential', () => {
@@ -103,7 +149,7 @@ describe('W3cJwtCredentialService', () => {
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError('Only did identifiers are supported as verification method')
+      ).rejects.toThrow('Only did identifiers are supported as verification method')
 
       // Throw when not according to data model
       await expect(
@@ -115,7 +161,7 @@ describe('W3cJwtCredentialService', () => {
           }),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         'property issuanceDate has failed the following constraints: issuanceDate must be RFC 3339 date'
       )
 
@@ -127,7 +173,7 @@ describe('W3cJwtCredentialService', () => {
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         `Unable to locate verification method with id 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InpRT293SUMxZ1dKdGRkZEI1R0F0NGxhdTZMdDhJaHk3NzFpQWZhbS0xcGMiLCJ5IjoiY2pEXzdvM2dkUTF2Z2lReTNfc01HczdXcndDTVU5RlFZaW1BM0h4bk1sdyJ9#0extra' in purposes assertionMethod`
       )
     })

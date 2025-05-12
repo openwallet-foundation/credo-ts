@@ -20,7 +20,6 @@ describe('genericRecords', () => {
 
   afterAll(async () => {
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('store generic-record record', async () => {

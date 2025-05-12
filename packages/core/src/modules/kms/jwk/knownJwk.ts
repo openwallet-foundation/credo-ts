@@ -73,12 +73,19 @@ export const zKmsJwkPublic = z.discriminatedUnion('kty', [
 ])
 export type KmsJwkPublic = z.output<typeof zKmsJwkPublic>
 
-const zKmsJwkPrivateToPublic = z.discriminatedUnion('kty', [
-  zKmsJwkPrivateToPublicEc,
-  zKmsJwkPrivateToPublicRsa,
-  zKmsJwkPrivateToPublicOct,
-  zKmsJwkPrivateToPublicOkp,
-])
+const zKmsJwkPrivateToPublic = z
+  .discriminatedUnion('kty', [
+    zKmsJwkPrivateToPublicEc,
+    zKmsJwkPrivateToPublicRsa,
+    zKmsJwkPrivateToPublicOct,
+    zKmsJwkPrivateToPublicOkp,
+  ])
+  // Mdoc library does not work well with undefined values. It should not be needed
+  // but for now it's the easiest approach
+  .transform(
+    (jwk): KmsJwkPublic =>
+      Object.fromEntries(Object.entries(jwk).filter(([, value]) => value !== undefined)) as KmsJwkPublic
+  )
 
 export const zKmsJwkPrivateCrv = z.discriminatedUnion('kty', [zKmsJwkPrivateEc, zKmsJwkPrivateOkp])
 export type KmsJwkPrivateCrv = z.output<typeof zKmsJwkPrivateCrv>

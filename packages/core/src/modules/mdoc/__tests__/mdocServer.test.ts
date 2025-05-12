@@ -55,8 +55,6 @@ describe('mdoc service test', () => {
       issuer: 'C=DE',
     })
 
-    const issuerCertificate = certificate.toString('pem')
-
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
@@ -66,7 +64,7 @@ describe('mdoc service test', () => {
           nicer: 'dicer',
         },
       },
-      issuerCertificate,
+      issuerCertificate: certificate,
     })
 
     expect(mdoc.alg).toBe('ES256')
@@ -114,8 +112,6 @@ describe('mdoc service test', () => {
       issuer: { commonName: 'hello' },
     })
 
-    const issuerCertificate = certificate.toString('pem')
-
     const mdoc = await Mdoc.sign(agentContext, {
       docType: 'org.iso.18013.5.1.mDL',
       holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
@@ -125,7 +121,7 @@ describe('mdoc service test', () => {
           nicer: 'dicer',
         },
       },
-      issuerCertificate,
+      issuerCertificate: certificate,
     })
 
     expect(mdoc.alg).toBe('ES256')

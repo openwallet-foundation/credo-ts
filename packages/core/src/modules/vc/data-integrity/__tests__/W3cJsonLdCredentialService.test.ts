@@ -1,10 +1,11 @@
-import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
-import type { AgentContext } from '../../../../agent'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import { TypedArrayEncoder, asArray } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import {
   DidKey,
+  DidRepository,
   DidsApi,
+  DidsModuleConfig,
   KeyDidCreateOptions,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -20,8 +21,13 @@ import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePr
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 import { Ed25519Signature2018 } from '../signature-suites'
 
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
-import { Ed25519PublicJwk, KeyManagementApi, KeyManagementError, PublicJwk } from '../../../kms'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
+import { ConsoleLogger, LogLevel } from '../../../../logger'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
@@ -38,24 +44,27 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
   },
 ])
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+const inMemoryStorage = new InMemoryStorageService<any>()
 const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
+const agentContext = getAgentContext({
+  agentConfig,
+  registerInstances: [
+    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.off)],
+    [DidsModuleConfig, new DidsModuleConfig({})],
+    [DidRepository, new DidRepository(inMemoryStorage, new EventEmitter(agentDependencies, new Subject()))],
+  ],
+})
+
+const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
+  signatureSuiteRegistry,
+  new W3cCredentialsModuleConfig({
+    documentLoader: customDocumentLoader,
+  })
+)
 
 describe('W3cJsonLdCredentialsService', () => {
-  let agentContext: AgentContext
-  let w3cJsonLdCredentialService: W3cJsonLdCredentialService
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
-
-  beforeAll(async () => {
-    agentContext = getAgentContext({
-      agentConfig,
-    })
-    w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
-      signatureSuiteRegistry,
-      new W3cCredentialsModuleConfig({
-        documentLoader: customDocumentLoader,
-      })
-    )
-  })
 
   describe('Utility methods', () => {
     describe('getVerificationMethodTypesByProofType', () => {
@@ -135,7 +144,9 @@ describe('W3cJsonLdCredentialsService', () => {
             verificationMethod:
               'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
-        }).rejects.toThrow(KeyManagementError)
+        }).rejects.toThrow(
+          `No key management service supports 'sign' operation with algorithm 'EdDSA' that has a key with keyId 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7`
+        )
       })
     })
 
