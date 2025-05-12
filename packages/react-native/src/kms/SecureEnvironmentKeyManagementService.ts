@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Buffer, Kms, P256Jwk, utils } from '@credo-ts/core'
+import { Kms, utils } from '@credo-ts/core'
 
 import { importSecureEnvironment } from './secureEnvironment'
 
@@ -132,16 +132,15 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   }
 
   private publicJwkFromPublicKeyBytes(key: Uint8Array, keyId: string) {
-    // TODO: we should move the decompression logic over at some point, for now we
-    // depend on the P256Jwk class
-    const p256Jwk = P256Jwk.fromPublicKey(Buffer.from(key))
-
-    return {
-      kid: keyId,
+    const publicJwk = Kms.PublicJwk.fromPublicKey<Kms.P256PublicJwk['publicKey']>({
       kty: 'EC',
       crv: 'P-256',
-      x: p256Jwk.x,
-      y: p256Jwk.y,
+      publicKey: key,
+    }).toJson()
+
+    return {
+      ...publicJwk,
+      kid: keyId,
     } satisfies Kms.KmsJwkPublicEc
   }
 
