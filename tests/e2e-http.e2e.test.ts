@@ -27,7 +27,8 @@ const recipientAgentOptions = getAgentOptions(
       mediatorPollingInterval: 500,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const mediatorPort = 3000
@@ -44,7 +45,8 @@ const mediatorAgentOptions = getAgentOptions(
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const senderPort = 3001
@@ -56,7 +58,8 @@ const senderAgentOptions = getAgentOptions(
   {},
   getAnonCredsModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+  }),
+  { requireDidcomm: true }
 )
 
 describe('E2E HTTP tests', () => {

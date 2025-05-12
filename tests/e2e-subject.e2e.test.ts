@@ -29,7 +29,8 @@ const recipientAgentOptions = getAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 const mediatorAgentOptions = getAgentOptions(
   'E2E Subject Mediator',
@@ -42,7 +43,8 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
-  }
+  },
+  { requireDidcomm: true }
 )
 const senderAgentOptions = getAgentOptions(
   'E2E Subject Sender',
@@ -58,7 +60,8 @@ const senderAgentOptions = getAgentOptions(
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('E2E Subject tests', () => {
@@ -74,11 +77,8 @@ describe('E2E Subject tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {

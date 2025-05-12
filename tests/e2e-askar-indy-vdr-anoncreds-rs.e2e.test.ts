@@ -4,7 +4,6 @@ import type { SubjectMessage } from './transport/SubjectInboundTransport'
 import { Subject } from 'rxjs'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -30,8 +29,8 @@ const recipientAgentOptions = getAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 const mediatorAgentOptions = getAgentOptions(
   'E2E Askar Subject Mediator',
@@ -44,8 +43,8 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 const senderAgentOptions = getAgentOptions(
   'E2E Askar Subject Sender',
@@ -61,8 +60,8 @@ const senderAgentOptions = getAgentOptions(
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('E2E Askar-AnonCredsRS-IndyVDR Subject tests', () => {

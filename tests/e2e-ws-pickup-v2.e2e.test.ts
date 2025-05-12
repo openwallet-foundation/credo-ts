@@ -1,7 +1,6 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
   AutoAcceptCredential,
@@ -36,8 +35,8 @@ const mediatorOptions = getAgentOptions(
       autoAcceptMediationRequests: true,
       messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const senderPort = 4101
@@ -51,8 +50,8 @@ const senderOptions = getAgentOptions(
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('E2E WS Pickup V2 tests', () => {
@@ -69,11 +68,8 @@ describe('E2E WS Pickup V2 tests', () => {
     // NOTE: the order is important here, as the recipient sends pickup messages to the mediator
     // so we first want the recipient to fully be finished with the sending of messages
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full WS flow (connect, request mediation, issue, verify) using Message Pickup V2 polling mode', async () => {
@@ -89,8 +85,8 @@ describe('E2E WS Pickup V2 tests', () => {
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
           mediatorPollingInterval: 500,
         }),
-        askar: askarModule,
-      }
+      },
+      { requireDidcomm: true }
     )
 
     recipientAgent = new Agent(recipientOptions) as unknown as AnonCredsTestsAgent
@@ -128,8 +124,8 @@ describe('E2E WS Pickup V2 tests', () => {
         mediationRecipient: new MediationRecipientModule({
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2LiveMode,
         }),
-        askar: askarModule,
-      }
+      },
+      { requireDidcomm: true }
     )
 
     recipientAgent = new Agent(recipientOptions) as unknown as AnonCredsTestsAgent

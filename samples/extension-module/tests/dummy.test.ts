@@ -23,7 +23,8 @@ const bobAgentOptions = getAgentOptions(
     endpoints: ['rxjs:bob'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -32,7 +33,8 @@ const aliceAgentOptions = getAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Dummy extension module test', () => {

@@ -1,7 +1,6 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { askarModule } from '../packages/askar/tests/helpers'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
@@ -29,8 +28,8 @@ const recipientAgentOptions = getAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const mediatorPort = 4000
@@ -45,8 +44,8 @@ const mediatorAgentOptions = getAgentOptions(
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const senderPort = 4001
@@ -64,8 +63,8 @@ const senderAgentOptions = getAgentOptions(
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-    askar: askarModule,
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('E2E WS tests', () => {
@@ -81,11 +80,8 @@ describe('E2E WS tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
