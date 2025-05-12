@@ -55,7 +55,7 @@ export class W3cJsonLdCredentialService {
     const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwk(signingKey)
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey.jwk)
 
     if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')
@@ -79,14 +79,20 @@ export class W3cJsonLdCredentialService {
       date: options.created ?? w3cDate(),
     })
 
-    const result = await vc.issue({
-      credential: JsonTransformer.toJSON(options.credential),
-      suite: suite,
-      purpose: options.proofPurpose,
-      documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
+    try {
+      const result = await vc.issue({
+        credential: JsonTransformer.toJSON(options.credential),
+        suite: suite,
+        purpose: options.proofPurpose,
+        documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+      })
 
-    return JsonTransformer.fromJSON(result, W3cJsonLdVerifiableCredential)
+      return JsonTransformer.fromJSON(result, W3cJsonLdVerifiableCredential)
+    } catch (error) {
+      throw new CredoError('Error issuing W3C JSON-LD VC', {
+        cause: error,
+      })
+    }
   }
 
   /**
@@ -176,7 +182,7 @@ export class W3cJsonLdCredentialService {
     }
 
     const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwk(signingKey)
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey.jwk)
 
     if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')

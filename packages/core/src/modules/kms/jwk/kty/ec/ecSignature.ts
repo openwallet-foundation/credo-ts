@@ -12,17 +12,18 @@ import { ecCrvToCurveParams } from './ecPublicKey'
  * @returns DER encoded signature
  */
 export function rawEcSignatureToDer(rawSignature: Uint8Array, crv: KmsJwkPublicEc['crv']): Uint8Array {
-  const pointSize = ecCrvToPointSize(crv)
+  const pointBitLength = ecCrvToCurveParams[crv].pointBitLength
+  const pointByteLength = Math.ceil(pointBitLength / 8)
 
-  if (rawSignature.length !== pointSize * 2) {
+  if (rawSignature.length !== pointByteLength * 2) {
     throw new KeyManagementError(
-      `Invalid raw signature length for EC signature conversion. Expected ${pointSize * 2} bytes`
+      `Invalid raw signature length for EC signature conversion. Expected ${pointByteLength * 2} bytes for crv ${crv}`
     )
   }
 
   // Extract r and s values from the raw signature
-  const r = rawSignature.slice(0, pointSize)
-  const s = rawSignature.slice(pointSize)
+  const r = rawSignature.slice(0, pointByteLength)
+  const s = rawSignature.slice(pointByteLength)
 
   // Remove leading zeros that aren't necessary for ASN.1 encoding
   const rValue = removeLeadingZeros(r)
@@ -48,28 +49,19 @@ export function derEcSignatureToRaw(derSignature: Uint8Array, crv: KmsJwkPublicE
   // Parse DER signature
   const asn = AsnConvert.parse(derSignature, ECDSASigValue)
 
-  const pointSize = ecCrvToPointSize(crv)
+  const pointBitLength = ecCrvToCurveParams[crv].pointBitLength
+  const pointByteLength = Math.ceil(pointBitLength / 8)
 
   // Ensure r and s are padded to the correct point size
-  const rPadded = padToLength(new Uint8Array(asn.r), pointSize)
-  const sPadded = padToLength(new Uint8Array(asn.s), pointSize)
+  const rPadded = padToLength(new Uint8Array(asn.r), pointByteLength)
+  const sPadded = padToLength(new Uint8Array(asn.s), pointByteLength)
 
   // Concatenate to form raw signature
-  const rawSignature = new Uint8Array(pointSize * 2)
+  const rawSignature = new Uint8Array(pointByteLength * 2)
   rawSignature.set(rPadded, 0)
-  rawSignature.set(sPadded, pointSize)
+  rawSignature.set(sPadded, pointByteLength)
 
   return rawSignature
-}
-
-function ecCrvToPointSize(crv: KmsJwkPublicEc['crv']): number {
-  const curveParams = ecCrvToCurveParams[crv]
-
-  if (!curveParams) {
-    throw new KeyManagementError(`kty EC with crv '${crv}' is not supported for creating jwk based on public key bytes`)
-  }
-
-  return curveParams.pointBitLength / 8
 }
 
 /**

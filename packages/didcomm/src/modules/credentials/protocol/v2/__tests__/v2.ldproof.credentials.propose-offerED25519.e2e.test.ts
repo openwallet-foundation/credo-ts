@@ -37,11 +37,7 @@ import { V2CredentialPreview } from '../messages'
 
 const signCredentialOptions = {
   credential: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -396,11 +392,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     const credentialOfferJson = offerMessage?.offerAttachments[1].getDataAsJson()
     expect(credentialOfferJson).toMatchObject({
       credential: {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
+        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -528,11 +520,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     const credentialMessage = await faberAgent.modules.credentials.findCredentialMessage(faberCredentialRecord.id)
     const w3cCredential = credentialMessage?.credentialAttachments[1].getDataAsJson()
     expect(w3cCredential).toMatchObject({
-      '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://w3id.org/citizenship/v1',
-        'https://w3id.org/security/bbs/v1',
-      ],
+      '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
       id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
       type: ['VerifiableCredential', 'PermanentResidentCard'],
       issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',

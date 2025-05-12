@@ -612,6 +612,15 @@ export class CheqdDidRegistrar implements DidRegistrar {
           keyId: kmsKeyId,
         })
 
+        // EC signatures need to be sent as DER encoded for Cheqd
+        const jwk = publicJwk.toJson()
+        if (jwk.kty === 'EC') {
+          return {
+            verificationMethodId: method.id,
+            signature: Kms.rawEcSignatureToDer(signature, jwk.crv),
+          }
+        }
+
         return {
           verificationMethodId: method.id,
           signature,
