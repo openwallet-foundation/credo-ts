@@ -13,10 +13,6 @@ describe('TenantRecord', () => {
       },
       config: {
         label: 'test',
-        walletConfig: {
-          id: 'test',
-          key: 'test',
-        },
       },
       storageVersion: '0.5',
     })
@@ -48,10 +44,6 @@ describe('TenantRecord', () => {
       },
       config: {
         label: 'test',
-        walletConfig: {
-          id: 'test',
-          key: 'test',
-        },
       },
       storageVersion: '0.5',
     })

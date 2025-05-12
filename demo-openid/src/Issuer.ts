@@ -1,4 +1,4 @@
-import type { DidKey } from '@credo-ts/core'
+import type { DidKey, X509Certificate } from '@credo-ts/core'
 import type {
   OpenId4VcIssuerRecord,
   OpenId4VcVerifierRecord,
@@ -10,17 +10,16 @@ import type {
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 
-import { AskarModule } from '@credo-ts/askar'
+import { AskarModule, transformSeedToPrivateJwk } from '@credo-ts/askar'
 import {
   ClaimFormat,
   CredoError,
   JsonTransformer,
-  KeyType,
+  Kms,
   TypedArrayEncoder,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
-  X509ModuleConfig,
   X509Service,
   parseDid,
   utils,
@@ -76,17 +75,14 @@ export const credentialConfigurationsSupported = {
   },
 } satisfies OpenId4VciCredentialConfigurationsSupportedWithFormats
 
+let issuerCertificate: X509Certificate
+
 function getCredentialRequestToCredentialMapper({
   issuerDidKey,
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, agentContext, authorization }) => {
-    const trustedCertificates = agentContext.dependencyManager.resolve(X509ModuleConfig).trustedCertificates
-    if (trustedCertificates?.length !== 1) {
-      throw new Error(`Expected exactly one trusted certificate. Received ${trustedCertificates?.length}.`)
-    }
-
+  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
         format: ClaimFormat.SdJwtVc,
@@ -102,7 +98,7 @@ function getCredentialRequestToCredentialMapper({
                   method: 'did',
                   didUrl: `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`,
                 }
-              : { method: 'x5c', x5c: [trustedCertificates[0]], issuer: ISSUER_HOST },
+              : { method: 'x5c', x5c: [issuerCertificate], issuer: ISSUER_HOST },
         })),
       } satisfies OpenId4VciSignSdJwtCredentials
     }
@@ -160,7 +156,7 @@ function getCredentialRequestToCredentialMapper({
       return {
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
-          issuerCertificate: trustedCertificates[0],
+          issuerCertificate,
           holderKey: binding.jwk,
           namespaces: {
             'Leopold-Franzens-University': {
@@ -254,11 +250,17 @@ export class Issuer extends BaseAgent<{
     const issuer = new Issuer(ISSUER_HOST, 2000, `OpenId4VcIssuer ${Math.random().toString()}`)
     await issuer.initializeAgent('96213c3d7fc8d4d6754c7a0fd969598f')
 
-    const certificate = await X509Service.createCertificate(issuer.agent.context, {
-      authorityKey: await issuer.agent.context.wallet.createKey({
-        keyType: KeyType.P256,
+    const importedKey = await issuer.agent.kms.importKey({
+      privateJwk: transformSeedToPrivateJwk({
         seed: TypedArrayEncoder.fromString('e5f18b10cd15cdb76818bc6ae8b71eb475e6eac76875ed085d3962239bbcf42f'),
-      }),
+        type: {
+          crv: 'P-256',
+          kty: 'EC',
+        },
+      }).privateJwk,
+    })
+    issuerCertificate = await X509Service.createCertificate(issuer.agent.context, {
+      authorityKey: Kms.PublicJwk.fromPublicJwk(importedKey.publicJwk),
       validity: {
         notBefore: new Date('2000-01-01'),
         notAfter: new Date('2050-01-01'),
@@ -271,10 +273,9 @@ export class Issuer extends BaseAgent<{
       issuer: 'C=DE',
     })
 
-    const issuerCertficicate = certificate.toString('base64url')
-    issuer.agent.x509.config.setTrustedCertificates([issuerCertficicate])
+    issuer.agent.x509.config.setTrustedCertificates([issuerCertificate])
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
-    console.log(issuerCertficicate)
+    console.log(issuerCertificate)
 
     issuer.verifierRecord = await issuer.agent.modules.openId4VcVerifier.createVerifier({
       verifierId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
