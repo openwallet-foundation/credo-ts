@@ -36,7 +36,6 @@ describe('DidRegistrar', () => {
         privateKey,
       })
 
-      privateJwk.kid = '2a4fd941-3717-4ae0-9c45-ca239c6e5018'
       const { keyId } = await kms.importKey({
         privateJwk,
       })
@@ -53,16 +52,16 @@ describe('DidRegistrar', () => {
         didRegistrationMetadata: {},
         didState: {
           state: 'finished',
-          did: 'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
+          did: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
           didDocument: {
             '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
-            id: 'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
+            id: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
             verificationMethod: [
               {
-                id: 'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+                id: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
                 type: 'JsonWebKey2020',
                 controller:
-                  'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
+                  'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
                 publicKeyJwk: {
                   crv: 'P-256',
                   kty: 'EC',
@@ -72,19 +71,19 @@ describe('DidRegistrar', () => {
               },
             ],
             assertionMethod: [
-              'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+              'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
             ],
             authentication: [
-              'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+              'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
             ],
             capabilityInvocation: [
-              'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+              'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
             ],
             capabilityDelegation: [
-              'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+              'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
             ],
             keyAgreement: [
-              'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjJhNGZkOTQxLTM3MTctNGFlMC05YzQ1LWNhMjM5YzZlNTAxOCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
+              'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9#0',
             ],
           },
         },
@@ -117,10 +116,8 @@ describe('DidRegistrar', () => {
         },
         privateKey,
       })
-      // Consistent kid
-      privateJwk.kid = '4f3bc3c0-6741-444d-a2fd-68f8784a7a2d'
       const did =
-        'did:jwk:eyJrdHkiOiJFQyIsImtpZCI6IjRmM2JjM2MwLTY3NDEtNDQ0ZC1hMmZkLTY4Zjg3ODRhN2EyZCIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9'
+        'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9'
 
       const key = await kms.importKey({
         privateJwk,
