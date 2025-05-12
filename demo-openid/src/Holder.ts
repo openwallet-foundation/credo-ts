@@ -8,6 +8,8 @@ import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
+  JwkDidCreateOptions,
+  KeyDidCreateOptions,
   Kms,
   Mdoc,
   W3cJsonLdVerifiableCredential,
@@ -153,6 +155,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
 
         if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
+          await this.agent.dids.create<KeyDidCreateOptions>({
+            method: 'key',
+            options: {
+              keyId: key.keyId,
+            },
+          })
           const didKey = new DidKey(publicJwk)
 
           return {
@@ -162,6 +170,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         }
         if (supportedDidMethods?.includes('did:jwk')) {
           const didJwk = DidJwk.fromPublicJwk(publicJwk)
+          await this.agent.dids.create<JwkDidCreateOptions>({
+            method: 'jwk',
+            options: {
+              keyId: key.keyId,
+            },
+          })
 
           return {
             method: 'did',

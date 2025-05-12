@@ -46,7 +46,18 @@ export const credentialConfigurationsSupported = {
     vct: 'PresentationAuthorization',
     scope: 'openid4vc:credential:PresentationAuthorization',
     cryptographic_binding_methods_supported: ['jwk', 'did:key', 'did:jwk'],
-    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    credential_signing_alg_values_supported: [
+      Kms.KnownJwaSignatureAlgorithms.ES256,
+      Kms.KnownJwaSignatureAlgorithms.EdDSA,
+    ],
+    proof_types_supported: {
+      jwt: {
+        proof_signing_alg_values_supported: [
+          Kms.KnownJwaSignatureAlgorithms.ES256,
+          Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        ],
+      },
+    },
   },
   'UniversityDegreeCredential-jwtvcjson': {
     format: OpenId4VciCredentialFormatProfile.JwtVcJson,
@@ -54,9 +65,20 @@ export const credentialConfigurationsSupported = {
     // TODO: we should validate this against what is supported by credo
     // as otherwise it's very easy to create invalid configurations?
     cryptographic_binding_methods_supported: ['did:key', 'did:jwk'],
-    credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    credential_signing_alg_values_supported: [
+      Kms.KnownJwaSignatureAlgorithms.ES256,
+      Kms.KnownJwaSignatureAlgorithms.EdDSA,
+    ],
     credential_definition: {
       type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    },
+    proof_types_supported: {
+      jwt: {
+        proof_signing_alg_values_supported: [
+          Kms.KnownJwaSignatureAlgorithms.ES256,
+          Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        ],
+      },
     },
   },
   'UniversityDegreeCredential-sdjwt': {
@@ -65,6 +87,14 @@ export const credentialConfigurationsSupported = {
     scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
     cryptographic_binding_methods_supported: ['jwk'],
     credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    proof_types_supported: {
+      jwt: {
+        proof_signing_alg_values_supported: [
+          Kms.KnownJwaSignatureAlgorithms.ES256,
+          Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        ],
+      },
+    },
   },
   'UniversityDegreeCredential-mdoc': {
     format: OpenId4VciCredentialFormatProfile.MsoMdoc,
@@ -72,6 +102,14 @@ export const credentialConfigurationsSupported = {
     scope: 'openid4vc:credential:OpenBadgeCredential-mdoc',
     cryptographic_binding_methods_supported: ['jwk'],
     credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
+    proof_types_supported: {
+      jwt: {
+        proof_signing_alg_values_supported: [
+          Kms.KnownJwaSignatureAlgorithms.ES256,
+          Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        ],
+      },
+    },
   },
 } satisfies OpenId4VciCredentialConfigurationsSupportedWithFormats
 
@@ -275,7 +313,7 @@ export class Issuer extends BaseAgent<{
 
     issuer.agent.x509.config.setTrustedCertificates([issuerCertificate])
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
-    console.log(issuerCertificate)
+    console.log(issuerCertificate.toString('base64'))
 
     issuer.verifierRecord = await issuer.agent.modules.openId4VcVerifier.createVerifier({
       verifierId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
