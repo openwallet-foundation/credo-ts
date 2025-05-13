@@ -65,9 +65,9 @@ const encryptedMessage: EncryptedMessage = {
   tag: 'base64url',
 }
 const queuedMessages = [
-  { id: '1', encryptedMessage },
-  { id: '2', encryptedMessage },
-  { id: '3', encryptedMessage },
+  { id: '1', encryptedMessage, receivedAt: new Date() },
+  { id: '2', encryptedMessage, receivedAt: new Date() },
+  { id: '3', encryptedMessage, receivedAt: new Date() },
 ]
 
 describe('V2MessagePickupProtocol', () => {
