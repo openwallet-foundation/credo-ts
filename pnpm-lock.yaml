@@ -355,8 +355,8 @@ importers:
   packages/cheqd:
     dependencies:
       '@cheqd/sdk':
-        specifier: ^5.1.4
-        version: 5.1.4
+        specifier: ^5.2.1
+        version: 5.2.1
       '@cheqd/ts-proto':
         specifier: ~2.4.1
         version: 2.4.1
@@ -404,8 +404,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@astronautlabs/jsonpath':
         specifier: ^1.1.2
         version: 1.1.2
@@ -491,8 +491,8 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       ec-compression:
-        specifier: 0.0.1-alpha.11
-        version: 0.0.1-alpha.11
+        specifier: 0.0.1-alpha.12
+        version: 0.0.1-alpha.12
       lru_map:
         specifier: ^0.4.1
         version: 0.4.1
@@ -571,8 +571,8 @@ importers:
         version: 7.8.1
     devDependencies:
       '@animo-id/pex':
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: ^6.1.0
+        version: 6.1.0
       '@sphereon/pex-models':
         specifier: ^2.3.2
         version: 2.3.2
@@ -944,8 +944,8 @@ packages:
   '@animo-id/mdoc@0.5.2':
     resolution: {integrity: sha512-EQVsNOOeXFfBaEHkiKoh24jbSEQ1MORB/kUu0rnNrAEETpY5GK/H9iWevYFdmNDIqQTIEJlkU7S+sIj3pe66eA==}
 
-  '@animo-id/pex@5.2.0':
-    resolution: {integrity: sha512-W0nopdAS1boDOuhH1L5yUyNOo4LJwIqVc3x90ua0ypNXuOv6gDkr78nNTqIjaF0eBKakagTYegbDZrfQrlmRBQ==}
+  '@animo-id/pex@6.1.0':
+    resolution: {integrity: sha512-qlfbTAASA3B8DFwKV9nIe6ZSTg/UkgyQ2fUKkyO/D+sNPDgAP33JXtUmTG/uPDRJrhxhodSpwQ6I9seAlSTmUA==}
     engines: {node: '>=18'}
 
   '@animo-id/react-native-bbs-signatures@0.1.0':
@@ -1866,8 +1866,8 @@ packages:
   '@changesets/write@0.3.1':
     resolution: {integrity: sha512-SyGtMXzH3qFqlHKcvFY2eX+6b0NGiFcNav8AFsYwy5l8hejOeoeTDemu5Yjmke2V5jpzY+pBvM0vCCQ3gdZpfw==}
 
-  '@cheqd/sdk@5.1.4':
-    resolution: {integrity: sha512-GuVGyilBCSxJ9jwj1Grpnkxs7GcAs/JJoIFufF6ZQ+REQ9G3QXSufUAeEB08Ho36TRzuFzvggAmY6Wv1SjkSGg==}
+  '@cheqd/sdk@5.2.1':
+    resolution: {integrity: sha512-R6lpEEF0fTpDr4yebT/WUIs7AUgvVbR/V3RMGudcq2nVRv248fD2zpcJroKOpUKsoTUCa9Fw5PkWz01VvdmUEw==}
     engines: {node: '>=20.0.0'}
 
   '@cheqd/ts-proto@2.4.1':
@@ -4037,8 +4037,8 @@ packages:
   eastasianwidth@0.2.0:
     resolution: {integrity: sha512-I88TYZWc9XiYHRQ4/3c5rjjfgkjhLyW2luGIheGERbNQ6OY7yTybanSpDXZa8y7VUP9YmDcYa+eyq4ca7iLqWA==}
 
-  ec-compression@0.0.1-alpha.11:
-    resolution: {integrity: sha512-ppznPCx1m/TrjlThndIOZdJPSI9/PGqU1+RTDSHQGaMS66ZWdLM8bTQw8QbdBcseDS+5UV7ZZz8GwqpQhjsZYw==}
+  ec-compression@0.0.1-alpha.12:
+    resolution: {integrity: sha512-rfsgHPnS/q8SiiJyaJ5w+qpkLtvtvEFOXoh40VmjH+Xs1pjzCCKwhd9Un3BQV+1+Qg0es5VQnzwZVJ7fjzfN+A==}
 
   ed25519-signature-2018-context@1.1.0:
     resolution: {integrity: sha512-ppDWYMNwwp9bploq0fS4l048vHIq41nWsAbPq6H4mNVx9G/GxW3fwg4Ln0mqctP13MoEpREK7Biz8TbVVdYXqA==}
@@ -7718,8 +7718,9 @@ snapshots:
     dependencies:
       compare-versions: 6.1.1
 
-  '@animo-id/pex@5.2.0':
+  '@animo-id/pex@6.1.0':
     dependencies:
+      '@animo-id/mdoc': 0.5.2
       '@astronautlabs/jsonpath': 1.1.2
       '@sd-jwt/decode': 0.7.2
       '@sd-jwt/present': 0.7.2
@@ -8917,7 +8918,7 @@ snapshots:
       human-id: 1.0.2
       prettier: 2.8.8
 
-  '@cheqd/sdk@5.1.4':
+  '@cheqd/sdk@5.2.1':
     dependencies:
       '@cheqd/ts-proto': 4.0.2
       '@cheqd/ts-proto-cjs': '@cheqd/ts-proto@2.4.1'
@@ -12185,7 +12186,7 @@ snapshots:
 
   eastasianwidth@0.2.0: {}
 
-  ec-compression@0.0.1-alpha.11: {}
+  ec-compression@0.0.1-alpha.12: {}
 
   ed25519-signature-2018-context@1.1.0: {}
 

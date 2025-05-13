@@ -54,13 +54,29 @@ export class MdocDeviceResponse {
     return this.base64Url
   }
 
-  public static fromBase64Url(base64Url: string) {
-    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
-    if (parsed.status !== MDocStatus.OK) {
-      throw new MdocError('Parsing Mdoc Device Response failed.')
+  /**
+   * To support a single DeviceResponse with multiple documents in OpenID4VP
+   */
+  public splitIntoSingleDocumentResponses(): MdocDeviceResponse[] {
+    const deviceResponses: MdocDeviceResponse[] = []
+
+    if (this.documents.length === 0) {
+      throw new MdocError('mdoc device response does not contain any mdocs')
     }
 
-    const documents = parsed.documents.map((doc) => {
+    for (const document of this.documents) {
+      const deviceResponse = new MDoc()
+
+      deviceResponse.addDocument(document.issuerSignedDocument)
+
+      deviceResponses.push(MdocDeviceResponse.fromDeviceResponse(deviceResponse))
+    }
+
+    return deviceResponses
+  }
+
+  private static fromDeviceResponse(mdoc: MDoc) {
+    const documents = mdoc.documents.map((doc) => {
       const prepared = doc.prepare()
       const docType = prepared.get('docType') as string
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
@@ -73,7 +89,16 @@ export class MdocDeviceResponse {
       )
     })
 
-    return new MdocDeviceResponse(base64Url, documents)
+    return new MdocDeviceResponse(TypedArrayEncoder.toBase64URL(mdoc.encode()), documents)
+  }
+
+  public static fromBase64Url(base64Url: string) {
+    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
+    if (parsed.status !== MDocStatus.OK) {
+      throw new MdocError('Parsing Mdoc Device Response failed.')
+    }
+
+    return MdocDeviceResponse.fromDeviceResponse(parsed)
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
@@ -237,7 +262,6 @@ export class MdocDeviceResponse {
 
     for (const document of options.mdocs) {
       const deviceKeyJwk = document.deviceKeyJwk
-      document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
