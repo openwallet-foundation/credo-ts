@@ -1,4 +1,6 @@
+import type { EventReplaySubject } from '../../core/tests'
 import type { CheqdDidCreateOptions } from '../src'
+import type { Key } from '@credo-ts/core'
 
 import {
   SECURITY_JWS_CONTEXT_URL,
@@ -24,12 +26,13 @@ import {
   CredentialEventTypes,
 } from '@credo-ts/core'
 
+import { setupEventReplaySubjects, setupSubjectTransports, testLogger } from '../../core/tests'
 import { getInMemoryAgentOptions, makeConnection, waitForCredentialRecordSubject } from '../../core/tests/helpers'
 
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
-import { EventReplaySubject, setupEventReplaySubjects, setupSubjectTransports, testLogger } from '../../core/tests'
 
-let did = `did:cheqd:testnet:${utils.uuid()}`
+const did = `did:cheqd:testnet:${utils.uuid()}`
+let ed25519Key: Key
 
 const signCredentialOptions = {
   credential: {
@@ -72,7 +75,7 @@ const jsonLdProofFormat = new DifPresentationExchangeProofFormatService()
 
 const getCheqdJsonLdModules = () =>
   ({
-    ...getCheqdModules(cheqdPayerSeeds[0], 'https://rpc.cheqd.network'),
+    ...getCheqdModules(cheqdPayerSeeds[0]),
     credentials: new CredentialsModule({
       credentialProtocols: [
         new V2CredentialProtocol({
@@ -144,7 +147,7 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
   })
 
   it('should create a did:cheqd did using custom did document containing Ed25519 key', async () => {
-    const ed25519Key = await faberAgent.wallet.createKey({
+    ed25519Key = await faberAgent.wallet.createKey({
       keyType: KeyType.Ed25519,
     })
 
@@ -152,6 +155,7 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
+        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
@@ -171,7 +175,11 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
     })
 
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+      '@context': [
+        'https://w3id.org/did/v1',
+        'https://w3id.org/security/suites/jws-2020/v1',
+        'https://w3id.org/security/suites/ed25519-2018/v1',
+      ],
       verificationMethod: [
         {
           controller: did,
