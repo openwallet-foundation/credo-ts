@@ -174,8 +174,8 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
       '@context': [
         'https://w3id.org/did/v1',
-        'https://w3id.org/security/suites/jws-2020/v1',
         'https://w3id.org/security/suites/ed25519-2018/v1',
+        'https://www.w3.org/ns/did/v1',
       ],
       verificationMethod: [
         {

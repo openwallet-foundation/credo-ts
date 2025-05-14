@@ -28,6 +28,11 @@ import {
   SECURITY_JWS_CONTEXT_URL,
 } from '@credo-ts/core'
 
+import {
+  ED25519_SUITE_CONTEXT_URL_2018,
+  ED25519_SUITE_CONTEXT_URL_2020,
+} from '../../../core/src/modules/vc/data-integrity/signature-suites/ed25519/constants'
+
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
@@ -37,10 +42,6 @@ import {
   validateSpecCompliantPayload,
   createMsgDeactivateDidDocPayloadToSign,
 } from './didCheqdUtil'
-import {
-  ED25519_SUITE_CONTEXT_URL_2018,
-  ED25519_SUITE_CONTEXT_URL_2020,
-} from 'packages/core/src/modules/vc/data-integrity/signature-suites/ed25519/constants'
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
@@ -113,7 +114,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
 
       // Normalize context to an array
-      let contextSet = new Set<string>(
+      const contextSet = new Set<string>(
         typeof didDocument.context === 'string'
           ? [didDocument.context]
           : Array.isArray(didDocument.context)
