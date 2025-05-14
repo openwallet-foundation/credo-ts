@@ -16,6 +16,7 @@ export interface AddMessageOptions {
   connectionId: string
   recipientDids: string[]
   payload: EncryptedMessage
+  receivedAt?: Date
 }
 
 export interface RemoveMessagesOptions {

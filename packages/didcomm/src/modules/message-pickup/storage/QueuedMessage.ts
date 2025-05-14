@@ -8,6 +8,6 @@ import type { EncryptedMessage } from '../../../types'
  */
 export type QueuedMessage = {
   id: string
-  receivedAt?: Date
+  receivedAt: Date
   encryptedMessage: EncryptedMessage
 }
