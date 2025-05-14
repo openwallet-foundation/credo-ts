@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.15
+
+### Patch Changes
+
+- @credo-ts/core@0.5.15
+
+## 0.5.14
+
+### Patch Changes
+
+- 72f8aee: update the target to ES2020. Although this is technically a breaking change all the supported envrionments of Credo should support ES2020 and thus not cause issues. The update is required to include an important update for the cheqd SDK.
+- 5e4195a: fix: issues with usage of unqualified anoncreds object identifiers in presentations
+- 9cfe895: fix: properly assign rev_reg_id on an anoncreds credneital
+- Updated dependencies [72f8aee]
+- Updated dependencies [5e4195a]
+- Updated dependencies [32ddda0]
+- Updated dependencies [9cfe895]
+  - @credo-ts/core@0.5.14
+
 ## 0.5.13
 
 ### Patch Changes

@@ -22,6 +22,14 @@ export class DidDocumentBuilder {
     return this
   }
 
+  public addController(controller: string) {
+    const currentControllers = asArray(this.didDocument.controller)
+    if (currentControllers.includes(controller)) return this
+
+    this.didDocument.controller = [...currentControllers, controller]
+    return this
+  }
+
   public addService(service: DidDocumentService) {
     if (!this.didDocument.service) {
       this.didDocument.service = []

@@ -147,6 +147,8 @@ describe('Cheqd DID registrar', () => {
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
+        .addController(did)
+        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
@@ -189,6 +191,8 @@ describe('Cheqd DID registrar', () => {
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
+        .addController(did)
+        .addAuthentication(`${did}#${p256Key.fingerprint}`)
         .addVerificationMethod(
           getJsonWebKey2020({
             did,

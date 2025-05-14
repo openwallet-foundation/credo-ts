@@ -1,4 +1,6 @@
+import type { AnonCredsCredentialRequest } from '../../models'
 import type { DidRepository } from '@credo-ts/core'
+
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -7,8 +9,6 @@ import {
   KeyType,
   SignatureSuiteToken,
   W3cCredentialsModuleConfig,
-} from '@credo-ts/core'
-import {
   CredentialExchangeRecord,
   CredentialPreviewAttribute,
   CredentialRole,
@@ -16,9 +16,8 @@ import {
   ProofExchangeRecord,
   ProofRole,
   ProofState,
-} from '@credo-ts/didcomm'
+} from '@credo-ts/core'
 import { Subject } from 'rxjs'
-import type { AnonCredsCredentialRequest } from '../../models'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
@@ -62,7 +61,7 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 const wallet = new InMemoryWallet()
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)
