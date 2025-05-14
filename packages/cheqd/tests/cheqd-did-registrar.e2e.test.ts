@@ -128,9 +128,7 @@ describe('Cheqd DID registrar', () => {
     })
     expect(updateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
     const deactivateResult = await agent.dids.deactivate({ did })
-    // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
-    // We should align these at some point and then uncomment the below check.
-    //expect(deactivateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
+    expect(deactivateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
     expect(deactivateResult.didState.state).toEqual('finished')
 
     const resolvedDocument = await agent.dids.resolve(did, {
@@ -166,7 +164,11 @@ describe('Cheqd DID registrar', () => {
     })
 
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      '@context': [
+        'https://w3id.org/did/v1',
+        'https://w3id.org/security/suites/ed25519-2018/v1',
+        'https://www.w3.org/ns/did/v1',
+      ],
       verificationMethod: [
         {
           controller: did,

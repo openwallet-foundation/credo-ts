@@ -26,6 +26,7 @@ import {
   JsonTransformer,
   VerificationMethod,
   SECURITY_JWS_CONTEXT_URL,
+  DID_V1_CONTEXT_URL,
 } from '@credo-ts/core'
 
 import {
@@ -127,10 +128,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
 
-      // Add the context to the did document
-      // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
-      // We should align these at some point. For now we just return a consistent value.
-      didDocument.context = Array.from(contextSet.add('https://w3id.org/did/v1'))
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
       const didDocumentJson = didDocument.toJSON() as DIDDocument
 
@@ -227,10 +226,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
           if (contextUrl) {
             contextSet.add(contextUrl)
           }
-          // Add the context to the did document
-          // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
-          // We should align these at some point. For now we just return a consistent value.
-          didDocument.context = Array.from(contextSet.add('https://w3id.org/did/v1'))
+          // Add Cheqd default context to the did document
+          didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
           didDocument.verificationMethod?.concat(
             JsonTransformer.fromJSON(
@@ -335,7 +332,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didState: {
           state: 'finished',
           did: didDocument.id,
-          didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
+          didDocument: JsonTransformer.fromJSON(didRecord.didDocument, DidDocument),
           secret: options.secret,
         },
       }
