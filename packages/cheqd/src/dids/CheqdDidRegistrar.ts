@@ -44,6 +44,11 @@ import {
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
+  private contextMapping = {
+    Ed25519VerificationKey2018: ED25519_SUITE_CONTEXT_URL_2018,
+    Ed25519VerificationKey2020: ED25519_SUITE_CONTEXT_URL_2020,
+    JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
+  }
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
@@ -106,12 +111,6 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
 
-      const contextMapping = {
-        Ed25519VerificationKey2018: ED25519_SUITE_CONTEXT_URL_2018,
-        Ed25519VerificationKey2020: ED25519_SUITE_CONTEXT_URL_2020,
-        JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
-      }
-
       // Normalize context to an array
       const contextSet = new Set<string>(
         typeof didDocument.context === 'string'
@@ -122,7 +121,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       )
 
       for (const verificationMethod of didDocument.verificationMethod || []) {
-        const contextUrl = contextMapping[verificationMethod.type as keyof typeof contextMapping]
+        const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
         if (contextUrl) {
           contextSet.add(contextUrl)
         }
@@ -131,7 +130,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       // Add the context to the did document
       // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
       // We should align these at some point. For now we just return a consistent value.
-      didDocument.context = Array.from(contextSet.add('https://www.w3.org/ns/did/v1'))
+      didDocument.context = Array.from(contextSet.add('https://w3id.org/did/v1'))
 
       const didDocumentJson = didDocument.toJSON() as DIDDocument
 
@@ -198,6 +197,14 @@ export class CheqdDidRegistrar implements DidRegistrar {
             },
           }
         }
+        // Normalize existing context to an array
+        const contextSet = new Set<string>(
+          typeof didDocument.context === 'string'
+            ? [didDocument.context]
+            : Array.isArray(didDocument.context)
+            ? didDocument.context
+            : []
+        )
 
         if (verificationMethod) {
           const privateKey = verificationMethod.privateKey
@@ -216,6 +223,14 @@ export class CheqdDidRegistrar implements DidRegistrar {
             keyType: KeyType.Ed25519,
             privateKey: privateKey,
           })
+          const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
+          if (contextUrl) {
+            contextSet.add(contextUrl)
+          }
+          // Add the context to the did document
+          // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
+          // We should align these at some point. For now we just return a consistent value.
+          didDocument.context = Array.from(contextSet.add('https://w3id.org/did/v1'))
 
           didDocument.verificationMethod?.concat(
             JsonTransformer.fromJSON(
