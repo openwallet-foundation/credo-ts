@@ -3,7 +3,6 @@ import type { CheqdDidCreateOptions } from '../src'
 import type { Key } from '@credo-ts/core'
 
 import {
-  SECURITY_JWS_CONTEXT_URL,
   DidDocumentBuilder,
   getEd25519VerificationKey2018,
   KeyType,
@@ -154,8 +153,6 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
     const createResult = await faberAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
-        .addContext(SECURITY_JWS_CONTEXT_URL)
-        .addContext('https://w3id.org/security/suites/ed25519-2018/v1')
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
