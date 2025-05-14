@@ -31,9 +31,8 @@ import {
 import {
   ED25519_SUITE_CONTEXT_URL_2018,
   ED25519_SUITE_CONTEXT_URL_2020,
-} from '../../../core/src/modules/vc/data-integrity/signature-suites/ed25519/constants'
-
-import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+  parseCheqdDid,
+} from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
 import {
