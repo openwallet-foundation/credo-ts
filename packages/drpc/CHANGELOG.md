@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- @credo-ts/core@0.5.16
+
 ## 0.5.15
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- a8a7a12: fix: correct revocation registry check edge case
+  - @credo-ts/anoncreds@0.5.16
+  - @credo-ts/core@0.5.16
+
 ## 0.5.15
 
 ### Patch Changes
