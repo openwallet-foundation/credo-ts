@@ -10,7 +10,7 @@ export function generateTxCode(agentContext: AgentContext, txCode: OpenId4VciTxC
   const numbers = '0123456789'
   const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
   const characters = inputMode === 'numeric' ? numbers : numbers + letters
-  const random = kms.randomBytes({ length }).bytes
+  const random = kms.randomBytes({ length })
 
   let result = ''
   for (let i = 0; i < length; i++) {

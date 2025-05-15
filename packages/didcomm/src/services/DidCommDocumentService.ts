@@ -101,7 +101,7 @@ export class DidCommDocumentService {
     return resolvedServices
   }
 
-  public async resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
+  public async resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
     const didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
 
     if (!didRecord) {
@@ -112,7 +112,7 @@ export class DidCommDocumentService {
 
     if (didRecord.didDocument) {
       return {
-        didRecord,
+        keys: didRecord.keys,
         didDocument: didRecord.didDocument,
       }
     }
@@ -123,7 +123,7 @@ export class DidCommDocumentService {
     const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didRecord.did)
 
     return {
-      didRecord,
+      keys: didRecord.keys,
       didDocument,
     }
   }

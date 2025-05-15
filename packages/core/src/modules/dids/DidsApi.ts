@@ -164,7 +164,7 @@ export class DidsApi {
     })
   }
 
-  public async resolveCreatedDidRecordWithDocument(did: string) {
+  public async resolveCreatedDidDocumentWithKeys(did: string) {
     const [didRecord] = await this.didRepository.getCreatedDids(this.agentContext, { did })
 
     if (!didRecord) {
@@ -173,7 +173,7 @@ export class DidsApi {
 
     if (didRecord.didDocument) {
       return {
-        didRecord,
+        keys: didRecord.keys,
         didDocument: didRecord.didDocument,
       }
     }
@@ -184,7 +184,7 @@ export class DidsApi {
     const didDocument = await this.didResolverService.resolveDidDocument(this.agentContext, didRecord.did)
 
     return {
-      didRecord,
+      keys: didRecord.keys,
       didDocument,
     }
   }
@@ -194,12 +194,12 @@ export class DidsApi {
     allowedPurposes?: Array<DidPurpose | 'verificationMethod'>
   ) {
     const parsedDid = parseDid(didUrl)
-    const { didDocument, didRecord } = await this.resolveCreatedDidRecordWithDocument(parsedDid.did)
+    const { didDocument, keys } = await this.resolveCreatedDidDocumentWithKeys(parsedDid.did)
 
     const verificationMethod = didDocument.dereferenceKey(didUrl, allowedPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     publicJwk.keyId =
-      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
+      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethod.id.endsWith(didDocumentRelativeKeyId))
         ?.kmsKeyId ?? publicJwk.legacyKeyId
 
     return {

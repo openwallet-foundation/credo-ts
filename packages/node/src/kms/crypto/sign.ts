@@ -39,7 +39,6 @@ export function performSign(
         .digest()
     }
     default:
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${key.kty}'`, 'node')
   }

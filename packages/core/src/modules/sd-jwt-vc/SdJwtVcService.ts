@@ -751,7 +751,7 @@ export class SdJwtVcService {
     return {
       hasher: sdJwtVcHasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
-      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length }).bytes).slice(0, length),
+      saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
     }
   }
 

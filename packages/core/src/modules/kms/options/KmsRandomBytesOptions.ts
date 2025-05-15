@@ -9,9 +9,7 @@ export const zKmsRandomBytesOptions = z.object({
 
 export type KmsRandomBytesOptions = z.output<typeof zKmsRandomBytesOptions>
 
-export interface KmsRandomBytesReturn {
-  /**
-   * The generated random bytes
-   */
-  bytes: Uint8Array
-}
+/**
+ * The generated random bytes
+ */
+export type KmsRandomBytesReturn = Uint8Array

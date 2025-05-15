@@ -31,7 +31,7 @@ export class CredoWalletWebCrypto {
   public generateRandomValues<T extends ArrayBufferView | null>(array: T): T {
     if (!array) return array
 
-    return this.kms.randomBytes({ length: array.byteLength }).bytes as unknown as T
+    return this.kms.randomBytes({ length: array.byteLength }) as unknown as T
   }
 
   public async sign(key: CredoWebCryptoKey, message: Uint8Array, algorithm: KeySignParams): Promise<Uint8Array> {

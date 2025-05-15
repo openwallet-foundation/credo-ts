@@ -40,7 +40,7 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     ],
-    supportedPublicJwkType: [Ed25519PublicJwk],
+    supportedPublicJwkTypes: [Ed25519PublicJwk],
   },
 ])
 

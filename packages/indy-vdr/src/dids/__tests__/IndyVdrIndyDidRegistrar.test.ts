@@ -55,8 +55,8 @@ const agentContext = getAgentContext({
             ],
           }),
         }),
-        resolveCreatedDidRecordWithDocument: jest.fn().mockResolvedValue({
-          didRecord: new DidRecord({ did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg', role: DidDocumentRole.Created }),
+        resolveCreatedDidDocumentWithKeys: jest.fn().mockResolvedValue({
+          keys: [],
           didDocument: new DidDocument({
             id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
             authentication: [

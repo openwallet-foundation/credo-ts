@@ -77,8 +77,6 @@ export class AskarStoreManager {
    */
   public async deleteContext(agentContext: AgentContext) {
     const { profile, store } = await this.getInitializedStoreWithProfile(agentContext)
-
-    // TODO: what if the root agnet context is deleted when profile per wallet is used?
     // Currently it will delete the whole store. We can delete only the root profile, BUT:
     // - all tenant records will be deleted
     // - the root agent is deleted, this is not a flow we support (there's no default profile anymore)
@@ -100,7 +98,7 @@ export class AskarStoreManager {
    * Otherwise nothing will be done as profiles are opened on a store from higher level.
    */
   public async closeContext(agentContext: AgentContext) {
-    // TODO: we should maybe set some value on the agentContext indicating it is dipsoed so no new sessions can be opened
+    // TODO: we should maybe set some value on the agentContext indicating it is disposed so no new sessions can be opened
     // If not on store level we don't have to do anything.
     if (!this.isStoreLevel(agentContext)) return
 
@@ -119,8 +117,7 @@ export class AskarStoreManager {
 
     agentContext.config.logger.debug(`Provisioning store '${storeConfig.id}`)
 
-    let store = this.getStore(agentContext)
-    if (store) {
+    if (this.getStore(agentContext)) {
       throw new AskarStoreError('Store already provisioned')
     }
 
@@ -136,7 +133,7 @@ export class AskarStoreManager {
         await this.fileSystem.createDirectory(askarStoreConfig.path)
       }
 
-      store = await Store.provision({
+      const store = await Store.provision({
         recreate: false,
         uri: askarStoreConfig.uri,
         profile: askarStoreConfig.profile,
@@ -183,8 +180,7 @@ export class AskarStoreManager {
   public async openStore(agentContext: AgentContext): Promise<Store> {
     this.ensureStoreLevel(agentContext)
 
-    let store = this.getStore(agentContext)
-    if (store) {
+    if (this.getStore(agentContext)) {
       throw new AskarStoreError('Store already opened. Close the currently opened store before re-opening the store')
     }
 
@@ -192,7 +188,7 @@ export class AskarStoreManager {
     const askarStoreConfig = this.getAskarStoreConfig(storeConfig)
 
     try {
-      store = await Store.open({
+      const store = await Store.open({
         uri: askarStoreConfig.uri,
         keyMethod: askarStoreConfig.keyMethod,
         passKey: askarStoreConfig.passKey,
@@ -317,8 +313,7 @@ export class AskarStoreManager {
   public async importStore(agentContext: AgentContext, options: AskarStoreImportOptions) {
     this.ensureStoreLevel(agentContext)
 
-    const store = this.getStore(agentContext)
-    if (store) {
+    if (this.getStore(agentContext)) {
       throw new AskarStoreError('To import a store the current store needs to be closed first')
     }
 
@@ -386,8 +381,9 @@ export class AskarStoreManager {
   public async deleteStore(agentContext: AgentContext): Promise<void> {
     this.ensureStoreLevel(agentContext)
 
-    const store = this.getStore(agentContext)
-    if (store) await this.closeStore(agentContext)
+    if (this.getStore(agentContext)) {
+      await this.closeStore(agentContext)
+    }
 
     const storeConfig = await this.getStoreConfig(agentContext)
     const askarStoreConfig = this.getAskarStoreConfig(storeConfig)

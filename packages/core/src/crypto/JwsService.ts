@@ -249,7 +249,7 @@ export class JwsService {
     return {
       ...options,
       alg: options.alg,
-      jwk: options.jwk instanceof PublicJwk ? options.jwk?.toJson() : options.jwk,
+      jwk: options.jwk instanceof PublicJwk ? options.jwk.toJson() : options.jwk,
       kid: options.kid,
     }
   }

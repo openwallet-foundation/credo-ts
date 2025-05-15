@@ -972,8 +972,7 @@ export class OpenId4VcIssuerService {
       const { txCode, authorizationServerUrl, preAuthorizedCode } = preAuthorizedCodeFlowConfig
 
       grants[preAuthorizedCodeGrantIdentifier] = {
-        'pre-authorized_code':
-          preAuthorizedCode ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+        'pre-authorized_code': preAuthorizedCode ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
         tx_code: txCode,
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
@@ -1000,8 +999,7 @@ export class OpenId4VcIssuerService {
         issuer_state:
           // TODO: the issuer_state should not be guessable, so it's best if we generate it and now allow the user to provide it?
           // but same is true for the pre-auth code and users of credo can also provide that value. We can't easily do unique constraint with askat
-          authorizationCodeFlowConfig.issuerState ??
-          TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+          authorizationCodeFlowConfig.issuerState ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
           : undefined,

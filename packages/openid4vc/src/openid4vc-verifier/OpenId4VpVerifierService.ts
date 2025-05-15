@@ -108,8 +108,8 @@ export class OpenId4VpVerifierService {
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes)
-    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes)
+    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'

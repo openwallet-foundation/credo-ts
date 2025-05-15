@@ -12,7 +12,7 @@ import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
 import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { AksarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { AskarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import {
@@ -52,7 +52,7 @@ describe('JwsService', () => {
           ),
         ],
       ],
-      kmsBackends: [new AksarKeyManagementService()],
+      kmsBackends: [new AskarKeyManagementService()],
       agentConfig: getAgentConfig('JwsService'),
     })
     const kms = agentContext.resolve(KeyManagementApi)

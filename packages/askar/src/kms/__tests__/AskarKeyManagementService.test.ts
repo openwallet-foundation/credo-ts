@@ -8,7 +8,7 @@ import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'
 import { AskarStoreManager } from '../../AskarStoreManager'
-import { AksarKeyManagementService } from '../AskarKeyManagementService'
+import { AskarKeyManagementService } from '../AskarKeyManagementService'
 
 const agentContext = getAgentContext({
   contextCorrelationId: 'default',
@@ -40,7 +40,7 @@ const agentContextTenant = getAgentContext({
   dependencyManager: agentContext.dependencyManager.createChild(),
   isRootAgentContext: false,
 })
-const service = new AksarKeyManagementService()
+const service = new AskarKeyManagementService()
 
 describe('AskarKeyManagementService', () => {
   it('correctly identifies backend as askar', () => {
@@ -921,7 +921,6 @@ describe('AskarKeyManagementService', () => {
       await expect(
         service.importKey(agentContext, {
           privateJwk: {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             kty: 'something',
           },
@@ -970,7 +969,7 @@ describe('AskarKeyManagementService', () => {
 
   describe('randomBytes', () => {
     it('generates random bytes', () => {
-      const { bytes } = service.randomBytes(agentContext, {
+      const bytes = service.randomBytes(agentContext, {
         length: 32,
       })
 
@@ -1654,7 +1653,7 @@ describe('AskarKeyManagementService', () => {
           crv: 'X25519',
         },
       })
-      const { bytes: contentEncryptionKey } = service.randomBytes(agentContext, { length: 32 })
+      const contentEncryptionKey = service.randomBytes(agentContext, { length: 32 })
 
       const { encrypted: encryptedKey } = await service.encrypt(agentContext, {
         data: contentEncryptionKey,
@@ -1736,7 +1735,7 @@ describe('AskarKeyManagementService', () => {
           crv: 'X25519',
         },
       })
-      const { bytes: contentEncryptionKey } = service.randomBytes(agentContext, { length: 32 })
+      const contentEncryptionKey = service.randomBytes(agentContext, { length: 32 })
       const senderPublicJwk = Kms.PublicJwk.fromPublicJwk(senderKey.publicJwk)
 
       const { encrypted: encryptedSender } = await service.encrypt(agentContext, {

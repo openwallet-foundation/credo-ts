@@ -1,4 +1,4 @@
-import type { AgentContext, DidRecord, ResolvedDidCommService } from '@credo-ts/core'
+import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -103,15 +103,15 @@ export class DidExchangeProtocol {
     const label = params.label ?? agentContext.config.label
 
     let didDocument: DidDocument
-    let didRecord: DidRecord
+    let keys: DidDocumentKey[] | undefined
     let mediatorId: string | undefined
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
       const dids = agentContext.resolve(DidsApi)
-      const resolved = await dids.resolveCreatedDidRecordWithDocument(did)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(did)
       didDocument = resolved.didDocument
-      didRecord = resolved.didRecord
+      keys = resolved.keys
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
     }
     // Otherwise, create a did:peer based on the provided routing
@@ -124,7 +124,7 @@ export class DidExchangeProtocol {
         config.peerNumAlgoForDidExchangeRequests
       )
       didDocument = resolved.didDocument
-      didRecord = resolved.didRecord
+      keys = resolved.keys
       mediatorId = routing.mediatorId
     }
 
@@ -136,7 +136,7 @@ export class DidExchangeProtocol {
       .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
       .map(({ publicJwk, verificationMethod }) => {
         // Bind the kmsKeyIds
-        const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
           verificationMethod.id.endsWith(didDocumentRelativeKeyId)
         )?.kmsKeyId
 
@@ -312,12 +312,12 @@ export class DidExchangeProtocol {
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
       const dids = agentContext.resolve(DidsApi)
-      const resolved = await dids.resolveCreatedDidRecordWithDocument(parseDid(did).did)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(did).did)
       invitationRecipientKeys.push(
         ...resolved.didDocument
           .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
           .map(({ publicJwk, verificationMethod }) => {
-            const kmsKeyId = resolved.didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+            const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
               verificationMethod.id.endsWith(didDocumentRelativeKeyId)
             )?.kmsKeyId
 

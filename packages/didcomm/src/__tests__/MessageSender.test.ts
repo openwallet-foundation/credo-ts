@@ -9,7 +9,7 @@ import type { EncryptedMessage } from '../types'
 import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
-import { DidDocument, DidDocumentRole, DidRecord, VerificationMethod } from '../../../core/src/modules/dids'
+import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
 import { DidsApi } from '../../../core/src/modules/dids/DidsApi'
 import { DidCommV1Service } from '../../../core/src/modules/dids/domain/service/DidCommV1Service'
 import { verkeyToPublicJwk } from '../../../core/src/modules/dids/helpers'
@@ -93,7 +93,7 @@ describe('MessageSender', () => {
   const didsApi = new DidsApiMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
   const eventEmitter = new EventEmitter(agentDependencies, new Subject())
-  const resolveCreatedDidRecordWithDocumentMock = mockFunction(didsApi.resolveCreatedDidRecordWithDocument)
+  const resolveCreatedDidDocumentWithKeysMock = mockFunction(didsApi.resolveCreatedDidDocumentWithKeys)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
   const inboundMessage = new TestMessage()
@@ -181,12 +181,9 @@ describe('MessageSender', () => {
       const didDocumentInstance = getMockDidDocument({
         service: [firstDidCommService, secondDidCommService],
       })
-      resolveCreatedDidRecordWithDocumentMock.mockResolvedValue({
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
         didDocument: didDocumentInstance,
-        didRecord: new DidRecord({
-          did: '',
-          role: DidDocumentRole.Created,
-        }),
+        keys: [],
       })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([
         getMockResolvedDidService(firstDidCommService),
@@ -219,12 +216,9 @@ describe('MessageSender', () => {
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      resolveCreatedDidRecordWithDocumentMock.mockResolvedValue({
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
         didDocument: getMockDidDocument({ service: [] }),
-        didRecord: new DidRecord({
-          did: '',
-          role: DidDocumentRole.Created,
-        }),
+        keys: [],
       })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
@@ -304,7 +298,7 @@ describe('MessageSender', () => {
     test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      resolveCreatedDidRecordWithDocumentMock.mockRejectedValue(
+      resolveCreatedDidDocumentWithKeysMock.mockRejectedValue(
         new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
       )
 

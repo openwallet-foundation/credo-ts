@@ -97,11 +97,12 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
+  /**
+   * generate an 80-bit nonce suitable for AnonCreds proofs
+   */
   public generateNonce(agentContext: AgentContext): string {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
-    const bytes = kms.randomBytes({ length: 10 }).bytes
-
-    // generate an 80-bit nonce suitable for AnonCreds proofs
+    const bytes = kms.randomBytes({ length: 10 })
     return bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n).toString()
   }
 

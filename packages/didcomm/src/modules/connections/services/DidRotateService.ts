@@ -1,4 +1,4 @@
-import type { AgentContext, DidDocument, DidRecord } from '@credo-ts/core'
+import type { AgentContext, DidDocument, DidDocumentKey } from '@credo-ts/core'
 import type { InboundMessageContext, Routing } from '../../../models'
 import type { ConnectionDidRotatedEvent } from '../ConnectionEvents'
 import type { ConnectionRecord } from '../repository'
@@ -62,11 +62,11 @@ export class DidRotateService {
       throw new CredoError(`There is already an existing opened did rotation flow for connection id ${connection.id}`)
     }
 
-    let resolvedDid: { didRecord: DidRecord; didDocument: DidDocument }
+    let resolvedDid: { keys: DidDocumentKey[] | undefined; didDocument: DidDocument }
     let mediatorId: string | undefined
     // If did is specified, make sure we have all key material for it
     if (toDid) {
-      resolvedDid = await dids.resolveCreatedDidRecordWithDocument(toDid)
+      resolvedDid = await dids.resolveCreatedDidDocumentWithKeys(toDid)
       mediatorId = (await getMediationRecordForDidDocument(agentContext, resolvedDid.didDocument))?.id
 
       // Otherwise, create a did:peer based on the provided routing

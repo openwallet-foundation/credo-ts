@@ -25,7 +25,6 @@ export function getJwkHumanDescription(jwk: KmsJwkPrivate | KmsJwkPublic) {
     return 'oct key'
   }
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-expect-error
   return `'${jwk.kty}' key'`
 }

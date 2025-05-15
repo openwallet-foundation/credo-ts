@@ -44,7 +44,7 @@ export class KeyManagementApi {
   ) {}
 
   /**
-   * Whether whether an operation is supported.
+   * Whether an operation is supported.
    *
    * @returns a list of backends that support the operation. In case
    * no backends are supported it returns an empty array
@@ -107,7 +107,6 @@ export class KeyManagementApi {
       type,
     })
 
-    // FIXME: do we want this?
     // Ensure the kid is set to the keyId
     const key = await kms.createKey(this.agentContext, {
       ...kmsOptions,

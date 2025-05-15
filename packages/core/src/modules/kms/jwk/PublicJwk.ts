@@ -107,11 +107,9 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
-    const jwk = { ...this.jwk.jwk }
+    if (includeKid) return this.jwk.jwk
 
-    // biome-ignore lint/performance/noDelete: <explanation>
-    if (!includeKid) delete jwk.kid
-
+    const { kid, ...jwk } = this.jwk.jwk
     return jwk
   }
 

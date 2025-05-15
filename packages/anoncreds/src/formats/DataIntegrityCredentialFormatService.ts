@@ -238,14 +238,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     const parsedDid = parseDid(kid)
 
     const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const { didDocument, didRecord } = await didsApi.resolveCreatedDidRecordWithDocument(parsedDid.did)
+    const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
     const verificationMethod = didDocument.dereferenceKey(kid)
 
     // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     const keyId =
-      didRecord.keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)
-        ?.kmsKeyId ?? publicJwk.legacyKeyId
+      keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)?.kmsKeyId ??
+      publicJwk.legacyKeyId
 
     if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
       throw new CredoError(`jwk ${publicJwk.jwkTypehumanDescription}, does not support the JWS signature alg '${alg}'`)
@@ -1078,7 +1078,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
         algsSupported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
-        nonce: TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+        nonce: TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
       }
 
       if (didCommSignedAttachmentBindingMethod.algsSupported.length === 0) {

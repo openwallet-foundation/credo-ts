@@ -389,7 +389,7 @@ export function getOid4vcCallbacks(
 
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
-    generateRandom: (length) => kms.randomBytes({ length }).bytes,
+    generateRandom: (length) => kms.randomBytes({ length }),
     signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: () => {
       throw new CredoError('Did not expect client authentication to be called.')

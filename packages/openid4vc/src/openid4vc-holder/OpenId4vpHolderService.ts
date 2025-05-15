@@ -300,7 +300,7 @@ export class OpenId4VpHolderService {
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes)
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
     const parsedClientId = getOpenid4vpClientId({
       responseMode: authorizationRequestPayload.response_mode,

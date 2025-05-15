@@ -48,7 +48,7 @@ export class EnvelopeService {
     // Generally we would never generate the content encryption key outside of the KMS
     // However how DIDcommV1 is specified to calcualte the aad we need the encrypted content
     // encryption key, and thus we can't use the normal combined key agrement + encryption flow
-    const { bytes: contentEncryptionKey } = kms.randomBytes({ length: 32 })
+    const contentEncryptionKey = kms.randomBytes({ length: 32 })
 
     const recipients: Array<{
       encrypted_key: string
@@ -299,16 +299,18 @@ export class EnvelopeService {
     // We need to find the associated did based on the recipient key
     // so we can extract the kms key id from the did record.
     try {
-      const { didDocument, didRecord } =
-        await this.didcommDocumentService.resolveCreatedDidRecordWithDocumentByRecipientKey(agentContext, publicKey)
+      const { didDocument, keys } = await this.didcommDocumentService.resolveCreatedDidDocumentWithKeysByRecipientKey(
+        agentContext,
+        publicKey
+      )
 
       const verificationMethod = didDocument.findVerificationMethodByPublicKey(publicKey)
-      const kmsKeyId = didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+      const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
         verificationMethod.id.endsWith(didDocumentRelativeKeyId)
       )?.kmsKeyId
 
       agentContext.config.logger.debug(
-        `Found did '${didRecord.did}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
+        `Found did '${didDocument.id}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
       )
 
       publicKey.keyId = kmsKeyId ?? publicKey.legacyKeyId

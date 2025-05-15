@@ -217,7 +217,7 @@ describe('sd-jwt-vc end to end test', () => {
     const verifierMetadata = {
       audience: verifierDid,
       issuedAt: new Date().getTime() / 1000,
-      nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 }).bytes),
+      nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 })),
     }
 
     const presentation = await holder.sdJwtVc.present<Payload>({

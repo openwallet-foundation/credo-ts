@@ -101,7 +101,6 @@ export async function createOctKey(options: Kms.KmsCreateKeyTypeOct & { algorith
     k: secretBytes.toString('base64url'),
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { k, ...publicJwk } = privateJwk
 
   return {

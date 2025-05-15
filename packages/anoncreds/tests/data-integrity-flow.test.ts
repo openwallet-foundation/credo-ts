@@ -93,7 +93,7 @@ const agentContext = getAgentContext({
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
         ],
-        supportedPublicJwkType: [Kms.Ed25519PublicJwk],
+        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
       } satisfies SuiteInfo,
     ],
   ],

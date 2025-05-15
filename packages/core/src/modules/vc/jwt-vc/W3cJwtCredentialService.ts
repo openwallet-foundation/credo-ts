@@ -438,14 +438,13 @@ export class W3cJwtCredentialService {
     const dids = agentContext.resolve(DidsApi)
 
     const parsedDid = parseDid(verificationMethod)
-    const { didDocument, didRecord } = await dids.resolveCreatedDidRecordWithDocument(parsedDid.did)
+    const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(parsedDid.did)
     const verificationMethodObject = didDocument.dereferenceKey(verificationMethod, allowsPurposes)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethodObject)
 
     publicJwk.keyId =
-      didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
-        verificationMethodObject.id.endsWith(didDocumentRelativeKeyId)
-      )?.kmsKeyId ?? publicJwk.legacyKeyId
+      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethodObject.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
 
     return publicJwk
   }

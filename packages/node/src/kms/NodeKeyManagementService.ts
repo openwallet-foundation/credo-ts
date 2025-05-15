@@ -112,9 +112,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   }
 
   public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
-    return {
-      bytes: randomBytes(options.length),
-    }
+    return randomBytes(options.length)
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -163,7 +161,6 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         })
       } else {
         // All kty values supported for now, but can change in the future
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${privateJwk.kty}'`, this.backend)
       }
@@ -211,7 +208,6 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
         assertNodeSupportedOctAlgorithm(type)
         jwks = await createOctKey(type)
       } else {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty '${type.kty}'`, this.backend)
       }
@@ -272,7 +268,6 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
       } else if (options.key.kty === 'RSA') {
         key = options.key
       } else {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${options.key.kty}`, this.backend)
       }

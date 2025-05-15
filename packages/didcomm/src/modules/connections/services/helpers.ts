@@ -200,7 +200,7 @@ export async function createPeerDidFromServices(
   }
 
   // FIXME: didApi.create should return the did document
-  return didsApi.resolveCreatedDidRecordWithDocument(result.didState.did)
+  return didsApi.resolveCreatedDidDocumentWithKeys(result.didState.did)
 }
 
 export function getResolvedDidcommServiceWithSigningKeyId(

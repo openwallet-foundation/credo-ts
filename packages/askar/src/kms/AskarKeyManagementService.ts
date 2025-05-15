@@ -13,9 +13,9 @@ import {
 
 import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
-import { decrypt } from './crypto/decrypt'
+import { aeadDecrypt } from './crypto/decrypt'
 import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
-import { AskarSupportedEncryptionOptions, encrypt } from './crypto/encrypt'
+import { AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { randomBytes } from './crypto/randomBytes'
 
 const askarSupportedEncryptionAlgorithms = [
@@ -23,9 +23,9 @@ const askarSupportedEncryptionAlgorithms = [
   'XSALSA20-POLY1305',
 ] satisfies Array<Kms.KnownJwaContentEncryptionAlgorithm | Kms.KnownJwaKeyEncryptionAlgorithm>
 
-export class AksarKeyManagementService implements Kms.KeyManagementService {
+export class AskarKeyManagementService implements Kms.KeyManagementService {
   public static readonly backend = 'askar'
-  public readonly backend = AksarKeyManagementService.backend
+  public readonly backend = AskarKeyManagementService.backend
 
   private static algToSigType: Partial<Record<Kms.KnownJwaSignatureAlgorithm, SignatureAlgorithm>> = {
     EdDSA: SignatureAlgorithm.EdDSA,
@@ -69,7 +69,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
     }
 
     if (operation.operation === 'sign' || operation.operation === 'verify') {
-      return AksarKeyManagementService.algToSigType[operation.algorithm] !== undefined
+      return AskarKeyManagementService.algToSigType[operation.algorithm] !== undefined
     }
 
     if (operation.operation === 'encrypt') {
@@ -100,11 +100,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
   }
 
   public randomBytes(_agentContext: AgentContext, options: Kms.KmsRandomBytesOptions): Kms.KmsRandomBytesReturn {
-    const buffer = randomBytes(options.length)
-
-    return {
-      bytes: buffer,
-    }
+    return randomBytes(options.length)
   }
 
   public async getPublicKey(agentContext: AgentContext, keyId: string): Promise<Kms.KmsJwkPublic | null> {
@@ -134,10 +130,6 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
           `importing keys with kty '${privateJwk.kty}'`,
           this.backend
         )
-        // key = Key.fromSecretBytes({
-        //   algorithm: KeyAlgs.AesA128Gcm,
-        //   secretKey: TypedArrayEncoder.fromBase64(privateJwk.k),
-        // })
       }
       if (privateJwk.kty === 'EC' || privateJwk.kty === 'OKP') {
         // Throws error if not supported
@@ -180,7 +172,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       await this.withSession(agentContext, (session) => session.removeKey({ name: options.keyId }))
       return true
     } catch (error) {
-      // Handle case where key already exists
+      // Handle case where key does not exist
       if (isAskarError(error, AskarErrorCode.NotFound)) {
         return false
       }
@@ -213,15 +205,12 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
             128: KeyAlgorithm.AesA128Gcm,
             256: KeyAlgorithm.AesA256Gcm,
             512: KeyAlgorithm.AesA256CbcHs512,
-
-            // Not supported by askar
-            192: undefined,
           }
 
           const keyAlg = lengthToKeyAlg[type.length]
           if (!keyAlg) {
             throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `length '${type.length}' for kty '${type.kty}' with algorithm '${type.algorithm}'. Supported length values are '128', '256'`,
+              `length '${type.length}' for kty '${type.kty}' with algorithm '${type.algorithm}'. Supported length values are ${Object.keys(lengthToKeyAlg).join(', ')}`,
               this.backend
             )
           }
@@ -331,11 +320,19 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
 
       const keyId = typeof keyInput === 'string' ? keyInput : keyInput.kid
       const publicJwk = this.publicJwkFromKey(askarKey, { kid: keyId })
-      const privateJwk = this.privateJwkFromKey(askarKey, { kid: keyId })
 
-      // 2. Validate alg and use for key
-      Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
-      Kms.assertKeyAllowsVerify(publicJwk)
+      // For symmetric verificdation we need the private key
+      if (publicJwk.kty === 'oct') {
+        const privateJwk = this.privateJwkFromKey(askarKey, { kid: keyId })
+
+        // 2. Validate alg and use for key
+        Kms.assertAllowedSigningAlgForKey(privateJwk, algorithm)
+        Kms.assertKeyAllowsVerify(publicJwk)
+      } else {
+        // 2. Validate alg and use for key
+        Kms.assertAllowedSigningAlgForKey(publicJwk, algorithm)
+        Kms.assertKeyAllowsVerify(publicJwk)
+      }
 
       // 4. Perform the verify operation
       const verified = askarKey.verifySignature({ message: data, signature, sigType })
@@ -477,7 +474,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       Kms.assertAllowedEncryptionAlgForKey(privateJwk, encryption.algorithm)
       Kms.assertKeyAllowsEncrypt(privateJwk)
 
-      const encrypted = encrypt({
+      const encrypted = aeadEncrypt({
         key: encryptionKey,
         data,
         encryption,
@@ -619,7 +616,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
       Kms.assertAllowedEncryptionAlgForKey(privateJwk, decryption.algorithm)
       Kms.assertKeyAllowsEncrypt(privateJwk)
 
-      const decrypted = decrypt({
+      const decrypted = aeadDecrypt({
         key: decryptionKey,
         encrypted,
         decryption,
@@ -640,7 +637,7 @@ export class AksarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private assertedSigTypeForAlg(algorithm: Kms.KnownJwaSignatureAlgorithm): SignatureAlgorithm {
-    const sigType = AksarKeyManagementService.algToSigType[algorithm]
+    const sigType = AskarKeyManagementService.algToSigType[algorithm]
     if (!sigType) {
       throw new Kms.KeyManagementAlgorithmNotSupportedError(
         `signing and verification with algorithm '${algorithm}'`,

@@ -135,8 +135,8 @@ export function deriveDecryptionKey(options: {
         keyAgreement.algorithm === 'ECDH-ES' ? decryption.algorithm : keyAgreement.algorithm
       ),
       receive: true,
-      apv: keyAgreement.apv ?? new Uint8Array([]),
-      apu: keyAgreement.apu ?? new Uint8Array([]),
+      apv: keyAgreement.apv ?? new Uint8Array(),
+      apu: keyAgreement.apu ?? new Uint8Array(),
       algorithm: askarKeyWrappingAlgorithm ?? askarEncryptionAlgorithm,
       ephemeralKey: senderKey,
       recipientKey: recipientKey,
@@ -145,7 +145,7 @@ export function deriveDecryptionKey(options: {
 
   let contentEncryptionKey: Key | undefined = undefined
   try {
-    // Key wrapping
+    // Key unwrapping
     if (keyAgreement.algorithm !== 'ECDH-ES') {
       contentEncryptionKey = derivedKey.unwrapKey({
         ciphertext: keyAgreement.encryptedKey.encrypted,

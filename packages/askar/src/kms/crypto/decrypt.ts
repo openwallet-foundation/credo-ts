@@ -7,7 +7,7 @@ type AskarSupportedDecryptionOptions = Kms.KmsDecryptDataDecryption & {
   algorithm: keyof typeof jwkEncToAskarAlg
 }
 
-export function decrypt(options: {
+export function aeadDecrypt(options: {
   key: Key
   decryption: AskarSupportedDecryptionOptions
   encrypted: Uint8Array

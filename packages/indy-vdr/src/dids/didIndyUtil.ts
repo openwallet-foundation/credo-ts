@@ -183,10 +183,10 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
 export async function verificationPublicJwkForIndyDid(agentContext: AgentContext, did: string) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
 
-  const { didRecord, didDocument } = await didsApi.resolveCreatedDidRecordWithDocument(did)
+  const { keys, didDocument } = await didsApi.resolveCreatedDidDocumentWithKeys(did)
 
   const verificationMethod = didDocument.dereferenceKey('#verkey')
-  const key = didRecord.keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
+  const key = keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
 
   const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
   if (!publicJwk.is(Kms.Ed25519PublicJwk)) {

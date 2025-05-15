@@ -11,7 +11,7 @@ export interface SuiteInfo {
   suiteClass: typeof LinkedDataSignature
   proofType: string
   verificationMethodTypes: string[]
-  supportedPublicJwkType: SupportedPublicJwkClass[]
+  supportedPublicJwkTypes: SupportedPublicJwkClass[]
 }
 
 @injectable()
@@ -38,7 +38,7 @@ export class SignatureSuiteRegistry {
   public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | SupportedPublicJwk) {
     const publicJwkClass =
       'publicKey' in publicJwkType ? (publicJwkType.constructor as SupportedPublicJwkClass) : publicJwkType
-    return this.suiteMapping.filter((x) => x.supportedPublicJwkType.includes(publicJwkClass))
+    return this.suiteMapping.filter((x) => x.supportedPublicJwkTypes.includes(publicJwkClass))
   }
 
   public getByProofType(proofType: string) {

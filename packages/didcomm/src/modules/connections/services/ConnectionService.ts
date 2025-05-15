@@ -259,7 +259,7 @@ export class ConnectionService {
     const firstService = outOfBandRecord.outOfBandInvitation.getServices()[0]
     if (typeof firstService === 'string') {
       const dids = agentContext.resolve(DidsApi)
-      const resolved = await dids.resolveCreatedDidRecordWithDocument(parseDid(firstService).did)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(firstService).did)
 
       const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
       if (recipientKeys.length === 0) {
@@ -269,7 +269,7 @@ export class ConnectionService {
       signingKey = recipientKeys[0].publicJwk
       // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
       signingKey.keyId =
-        resolved.didRecord.keys?.find(({ didDocumentRelativeKeyId }) =>
+        resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
           recipientKeys[0].verificationMethod.id.endsWith(didDocumentRelativeKeyId)
         )?.kmsKeyId ?? signingKey.legacyKeyId
     } else {

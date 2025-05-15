@@ -94,7 +94,7 @@ export function supportedSigningAlgsForKey(
   return []
 }
 
-// Can we move this to the JWK classes?
+// TODO: Can we move this to the JWK classes?
 export function createKeyTypeForSigningAlgorithm(algorithm: KnownJwaSignatureAlgorithm): KmsCreateKeyType {
   // On JWK class we can have
   if (algorithm === 'ES256') {

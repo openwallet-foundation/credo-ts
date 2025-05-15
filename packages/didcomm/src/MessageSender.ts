@@ -270,7 +270,7 @@ export class MessageSender {
     }
 
     const dids = agentContext.resolve(DidsApi)
-    const { didDocument, didRecord } = await dids.resolveCreatedDidRecordWithDocument(connection.did).catch((error) => {
+    const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(connection.did).catch((error) => {
       this.logger.error(`Unable to send message using connection '${connection.id}', unable to resolve did`, {
         error,
       })
@@ -285,9 +285,7 @@ export class MessageSender {
       ?.map((a) => {
         const verificationMethod = typeof a === 'string' ? didDocument.dereferenceVerificationMethod(a) : a
         const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-        const kmsKeyId = didRecord.keys?.find((key) =>
-          verificationMethod.id.endsWith(key.didDocumentRelativeKeyId)
-        )?.kmsKeyId
+        const kmsKeyId = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
 
         // Set stored key id, or fallback to legacy key id
         publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
@@ -302,7 +300,7 @@ export class MessageSender {
     const senderVerificationMethod = authentication?.find((a) => a.kmsKeyId !== undefined) ?? authentication?.[0]
     if (!senderVerificationMethod) {
       throw new MessageSendingError(
-        `Unable to determine sender key for did ${didRecord.did}, no available Ed25519 keys`,
+        `Unable to determine sender key for did ${connection.did}, no available Ed25519 keys`,
         {
           outboundMessageContext,
         }

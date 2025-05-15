@@ -25,7 +25,7 @@ export class KeyManagementModuleConfig {
   #backends: KeyManagementService[]
 
   public constructor(options: KeyManagementModuleConfigOptions) {
-    this.#backends = options.backends ? [...options.backends] : []
+    this.#backends = options.backends ?? []
 
     if (options.defaultBackend) {
       const defaultBackend = this.#backends.find((kms) => kms.backend === options.defaultBackend)

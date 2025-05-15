@@ -114,7 +114,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   }
 
   public async shutdown() {
-    // TODO: relace stop$, should be replaced by module specific lifecycle methods
+    // TODO: replace stop$, should be replaced by module specific lifecycle methods
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable

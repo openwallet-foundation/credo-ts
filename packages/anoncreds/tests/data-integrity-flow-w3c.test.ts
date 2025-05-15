@@ -48,7 +48,7 @@ import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifier
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
-import { AksarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
+import { AskarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
 
@@ -97,7 +97,7 @@ const agentContext = getAgentContext({
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
         ],
-        supportedPublicJwkType: [Kms.Ed25519PublicJwk],
+        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
       } satisfies SuiteInfo,
     ],
     [
@@ -109,7 +109,7 @@ const agentContext = getAgentContext({
     ],
   ],
   agentConfig,
-  kmsBackends: [new AksarKeyManagementService()],
+  kmsBackends: [new AskarKeyManagementService()],
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)

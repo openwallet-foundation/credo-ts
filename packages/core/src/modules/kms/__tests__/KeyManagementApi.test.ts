@@ -70,7 +70,7 @@ describe('KeyManagementApi', () => {
         keyId: 'hello',
         type: {
           kty: 'EC',
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
           // @ts-expect-error
           crv: 'P-something',
         },
@@ -81,7 +81,6 @@ describe('KeyManagementApi', () => {
   test('throws error on invalid input for getPublicKey', async () => {
     await expect(
       agent.kms.getPublicKey({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
       })
@@ -91,7 +90,6 @@ describe('KeyManagementApi', () => {
   test('throws error on invalid input for deleteKey', async () => {
     await expect(
       agent.kms.getPublicKey({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
       })
@@ -127,7 +125,6 @@ describe('KeyManagementApi', () => {
   test('throws error on invalid input to sign', async () => {
     await expect(
       agent.kms.sign({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         keyId: undefined,
       })
@@ -137,7 +134,6 @@ describe('KeyManagementApi', () => {
   test('throws error on invalid input to verify', async () => {
     await expect(
       agent.kms.verify({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-expect-error
         key: undefined,
       })

@@ -1,6 +1,6 @@
 import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
-import { AksarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
+import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
 import {
   agentDependencies,
   getAgentConfig,
@@ -55,7 +55,7 @@ const agentContext = getAgentContext({
       ),
     ],
   ],
-  kmsBackends: [new AksarKeyManagementService()],
+  kmsBackends: [new AskarKeyManagementService()],
   agentConfig: config,
 })
 const kms = agentContext.dependencyManager.resolve(KeyManagementApi)

@@ -49,7 +49,6 @@ export const uriFromStoreConfig = (
       database.credentials.password
     )}@${database.config.host}/${encodeURIComponent(storeConfig.id)}`
   } else {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     throw new WalletError(`Storage type not supported: ${database.type}`)
   }

@@ -7,7 +7,7 @@ import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import { ConnectionEventTypes } from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
 
-import { transformPrivateKeyToPrivateJwk } from '../../packages/askar/src'
+import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
 import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 

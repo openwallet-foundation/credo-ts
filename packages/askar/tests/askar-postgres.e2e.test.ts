@@ -25,18 +25,6 @@ describe('Askar Postgres agents', () => {
   let aliceAgent: Agent<(typeof alicePostgresAgentOptions)['modules']>
   let bobAgent: Agent<(typeof bobPostgresAgentOptions)['modules']>
 
-  // afterAll(async () => {
-  //   if (bobAgent) {
-  //     await bobAgent.shutdown()
-  //     // await bobAgent.modules.askar.deleteStore()
-  //   }
-
-  //   if (aliceAgent) {
-  //     await aliceAgent.shutdown()
-  //     // await aliceAgent.modules.askar.deleteStore()
-  //   }
-  // })
-
   test('Postgres Askar wallets E2E test', async () => {
     const aliceMessages = new Subject<SubjectMessage>()
     const bobMessages = new Subject<SubjectMessage>()

@@ -129,7 +129,7 @@ export class DifPresentationExchangeProofFormatService
           // NOTE: we always want to include a challenge to prevent replay attacks
           challenge:
             presentationExchangeFormat?.options?.challenge ??
-            TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+            TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
           domain: presentationExchangeFormat?.options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -165,7 +165,7 @@ export class DifPresentationExchangeProofFormatService
         presentation_definition: presentationDefinition,
         options: {
           // NOTE: we always want to include a challenge to prevent replay attacks
-          challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+          challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
           domain: options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -212,7 +212,7 @@ export class DifPresentationExchangeProofFormatService
     const presentation = await ps.createPresentation(agentContext, {
       presentationDefinition,
       credentialsForInputDescriptor: credentials,
-      challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }).bytes),
+      challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
       domain: options?.domain,
     })
 

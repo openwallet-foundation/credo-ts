@@ -5,7 +5,7 @@ export {
   AskarSqliteConfig,
   AskarSqliteStorageConfig,
 } from './AskarStorageConfig'
-export { AksarKeyManagementService } from './kms/AskarKeyManagementService'
+export { AskarKeyManagementService } from './kms/AskarKeyManagementService'
 
 // Storage
 export { AskarStorageService } from './storage'

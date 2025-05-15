@@ -6,7 +6,7 @@ import { AgentConfig, CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
 import { AskarApi } from './AskarApi'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
-import { AksarKeyManagementService } from './kms/AskarKeyManagementService'
+import { AskarKeyManagementService } from './kms/AskarKeyManagementService'
 import { AskarStorageService } from './storage'
 import { storeAskarStoreConfigForContextCorrelationId } from './tenants'
 
@@ -30,17 +30,19 @@ export class AskarModule implements Module {
 
     if (this.config.enableKms) {
       const kmsConfig = dependencyManager.resolve(Kms.KeyManagementModuleConfig)
-
-      // Register askar backend if not registered yet
-      if (!kmsConfig.backends.find((backend) => backend.backend === AksarKeyManagementService.backend)) {
-        kmsConfig.registerBackend(new AksarKeyManagementService())
+      if (kmsConfig.backends.find((backend) => backend.backend === AskarKeyManagementService.backend)) {
+        throw new CredoError(
+          `Unable to register AskarKeyManagementService. There is a key management backend with name '${AskarKeyManagementService.backend}' already registered. If you have manually registered the AskarKeyManagementService on the KeyManagementModule, set 'enableKms' to false in the AskarModule.`
+        )
       }
+
+      kmsConfig.registerBackend(new AskarKeyManagementService())
     }
 
     if (this.config.enableStorage) {
       if (dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
         throw new CredoError(
-          'Unable to register AskatStoreService. There is an instance of StorageService already registered'
+          'Unable to register AskarStorageService. There is an instance of StorageService already registered'
         )
       }
       dependencyManager.registerSingleton(InjectionSymbols.StorageService, AskarStorageService)
