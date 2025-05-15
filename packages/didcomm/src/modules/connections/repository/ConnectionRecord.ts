@@ -84,6 +84,9 @@ export class ConnectionRecord extends BaseRecord<DefaultConnectionTags, CustomCo
   public static readonly type = 'ConnectionRecord'
   public readonly type = ConnectionRecord.type
 
+  public readonly useCache = ConnectionRecord.useCache
+  public static readonly useCache: boolean = true
+
   public constructor(props: ConnectionRecordProps) {
     super()
 
