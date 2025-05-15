@@ -301,15 +301,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     let askarKey: Key | undefined = undefined
 
     try {
-      if (typeof keyInput === 'string') {
-        askarKey = (await this.getKeyAsserted(agentContext, keyInput)).key
-      } else if (keyInput.kty === 'EC' || keyInput.kty === 'OKP') {
+      if (keyInput.keyId) {
+        askarKey = (await this.getKeyAsserted(agentContext, keyInput.keyId)).key
+      } else if (keyInput.publicJwk?.kty === 'EC' || keyInput.publicJwk?.kty === 'OKP') {
         // Throws error if not supported
-        this.assertAskarAlgForJwkCrv(keyInput.kty, keyInput.crv)
+        this.assertAskarAlgForJwkCrv(keyInput.publicJwk.kty, keyInput.publicJwk.crv)
 
-        askarKey = Key.fromJwk({ jwk: Jwk.fromJson(keyInput as JwkProps) })
+        askarKey = Key.fromJwk({ jwk: Jwk.fromJson(keyInput.publicJwk as JwkProps) })
       } else {
-        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${keyInput.kty}`, this.backend)
+        throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${keyInput.publicJwk?.kty}`, this.backend)
       }
 
       // Askar has a bug with loading symmetric keys, but we shouldn't get here as I don't think askar
@@ -318,7 +318,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`algorithm ${algorithm}`, this.backend)
       }
 
-      const keyId = typeof keyInput === 'string' ? keyInput : keyInput.kid
+      const keyId = keyInput.keyId ?? keyInput.publicJwk?.kid
       const publicJwk = this.publicJwkFromKey(askarKey, { kid: keyId })
 
       // For symmetric verificdation we need the private key
@@ -339,7 +339,9 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       if (verified) {
         return {
           verified: true,
-          publicJwk: typeof keyInput === 'string' ? this.publicJwkFromKey(askarKey, { kid: keyId }) : keyInput,
+          publicJwk: keyInput.keyId
+            ? this.publicJwkFromKey(askarKey, { kid: keyId })
+            : (keyInput.publicJwk as Kms.KmsJwkPublic),
         }
       }
 
@@ -365,11 +367,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
 
       // TODO: we should check if the key allows this operation
-      if (typeof key === 'string') {
-        encryptionKey = (await this.getKeyAsserted(agentContext, key)).key
+      if (key.keyId) {
+        encryptionKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
 
         keysToFree.push(encryptionKey)
-      } else if ('kty' in key) {
+      } else if (key.privateJwk) {
         if (encryption.algorithm === 'XSALSA20-POLY1305') {
           throw new Kms.KeyManagementAlgorithmNotSupportedError(
             `encryption algorithm '${encryption.algorithm}' is only supported in combination with key agreement algorithm '${Kms.KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20}'`,
@@ -377,39 +379,41 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           )
         }
         encryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
-          TypedArrayEncoder.fromBase64(key.k),
+          TypedArrayEncoder.fromBase64(key.privateJwk.k),
           encryption.algorithm
         )
         keysToFree.push(encryptionKey)
-      } else {
-        Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
-        Kms.assertKeyAllowsDerive(key.externalPublicJwk)
-        Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
+      } else if (key.keyAgreement) {
+        Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
+        Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+        Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
 
-        let privateKey = key.keyId ? (await this.getKeyAsserted(agentContext, key.keyId)).key : undefined
+        let privateKey = key.keyAgreement.keyId
+          ? (await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)).key
+          : undefined
         if (privateKey) keysToFree.push(privateKey)
 
         const privateJwk = privateKey ? this.privateJwkFromKey(privateKey) : undefined
         if (privateJwk) {
-          Kms.assertJwkAsymmetric(privateJwk, key.keyId)
-          Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+          Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
+          Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
           Kms.assertKeyAllowsDerive(privateJwk)
 
           // Special case, for DIDComm v1 we often use an X25519 for the external key
           // but we use an Ed25519 for our key
-          if (key.algorithm !== 'ECDH-HSALSA20') {
-            Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+          if (key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
+            Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
           }
         }
 
-        const recipientKey = this.keyFromJwk(key.externalPublicJwk)
+        const recipientKey = this.keyFromJwk(key.keyAgreement.externalPublicJwk)
         keysToFree.push(recipientKey)
 
         // Special case to support DIDComm v1
-        if (key.algorithm === 'ECDH-HSALSA20' || encryption.algorithm === 'XSALSA20-POLY1305') {
-          if (encryption.algorithm !== 'XSALSA20-POLY1305' || key.algorithm !== 'ECDH-HSALSA20') {
+        if (key.keyAgreement.algorithm === 'ECDH-HSALSA20' || encryption.algorithm === 'XSALSA20-POLY1305') {
+          if (encryption.algorithm !== 'XSALSA20-POLY1305' || key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
             throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `key agreement algorithm '${key.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
+              `key agreement algorithm '${key.keyAgreement.algorithm}' with encryption algorithm '${encryption.algorithm}'`,
               this.backend
             )
           }
@@ -452,7 +456,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
         const { contentEncryptionKey, encryptedContentEncryptionKey } = deriveEncryptionKey({
           encryption,
-          keyAgreement: key,
+          keyAgreement: key.keyAgreement,
           recipientKey,
           senderKey: privateKey,
         })
@@ -460,6 +464,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
         encryptionKey = contentEncryptionKey
         keysToFree.push(contentEncryptionKey)
         encryptedKey = encryptedContentEncryptionKey
+      } else {
+        throw new Kms.KeyManagementError('Unexpected key parameter for encrypt')
       }
 
       if (encryption.algorithm === 'XSALSA20-POLY1305') {
@@ -505,10 +511,10 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     try {
       let decryptionKey: Key | undefined = undefined
 
-      if (typeof key === 'string') {
-        decryptionKey = (await this.getKeyAsserted(agentContext, key)).key
+      if (key.keyId) {
+        decryptionKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
         keysToFree.push(decryptionKey)
-      } else if ('kty' in key) {
+      } else if (key.privateJwk) {
         if (decryption.algorithm === 'XSALSA20-POLY1305') {
           throw new Kms.KeyManagementAlgorithmNotSupportedError(
             `decryption algorithm '${decryption.algorithm}' is only supported in combination with key agreement algorithm '${Kms.KnownJwaKeyAgreementAlgorithms.ECDH_HSALSA20}'`,
@@ -516,39 +522,41 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           )
         }
         decryptionKey = this.keyFromSecretBytesAndEncryptionAlgorithm(
-          TypedArrayEncoder.fromBase64(key.k),
+          TypedArrayEncoder.fromBase64(key.privateJwk.k),
           decryption.algorithm
         )
         keysToFree.push(decryptionKey)
-      } else {
-        if (key.externalPublicJwk) {
-          Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
-          Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+      } else if (key.keyAgreement) {
+        if (key.keyAgreement.externalPublicJwk) {
+          Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
+          Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
         }
-        Kms.assertSupportedKeyAgreementAlgorithm(key, askarSupportedKeyAgreementAlgorithms, this.backend)
+        Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, askarSupportedKeyAgreementAlgorithms, this.backend)
 
-        let privateKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
+        let privateKey = (await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)).key
         keysToFree.push(privateKey)
 
         const privateJwk = this.privateJwkFromKey(privateKey)
 
-        Kms.assertJwkAsymmetric(privateJwk, key.keyId)
-        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+        Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
+        Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
         Kms.assertKeyAllowsDerive(privateJwk)
 
         // Special case for ECDH-HSALSA as we can have mismatch between keys because of DIDComm v1
-        if (key.externalPublicJwk && key.algorithm !== 'ECDH-HSALSA20') {
-          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+        if (key.keyAgreement.externalPublicJwk && key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
+          Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
         }
 
-        const senderKey = key.externalPublicJwk ? this.keyFromJwk(key.externalPublicJwk) : undefined
+        const senderKey = key.keyAgreement.externalPublicJwk
+          ? this.keyFromJwk(key.keyAgreement.externalPublicJwk)
+          : undefined
         if (senderKey) keysToFree.push(senderKey)
 
         // Special case to support DIDComm v1
-        if (key.algorithm === 'ECDH-HSALSA20' || decryption.algorithm === 'XSALSA20-POLY1305') {
-          if (decryption.algorithm !== 'XSALSA20-POLY1305' || key.algorithm !== 'ECDH-HSALSA20') {
+        if (key.keyAgreement.algorithm === 'ECDH-HSALSA20' || decryption.algorithm === 'XSALSA20-POLY1305') {
+          if (decryption.algorithm !== 'XSALSA20-POLY1305' || key.keyAgreement.algorithm !== 'ECDH-HSALSA20') {
             throw new Kms.KeyManagementAlgorithmNotSupportedError(
-              `key agreement algorithm '${key.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
+              `key agreement algorithm '${key.keyAgreement.algorithm}' with encryption algorithm '${decryption.algorithm}'`,
               this.backend
             )
           }
@@ -572,7 +580,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
           if (!decryption.iv) {
             throw new Kms.KeyManagementError(
-              `Missing required 'iv' for key agreement algorithm ${key.algorithm} and encryption algorithm ${decryption.algorithm} with sender key defined.`
+              `Missing required 'iv' for key agreement algorithm ${key.keyAgreement.algorithm} and encryption algorithm ${decryption.algorithm} with sender key defined.`
             )
           }
 
@@ -595,13 +603,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
         const { contentEncryptionKey } = deriveDecryptionKey({
           decryption,
-          keyAgreement: key,
+          keyAgreement: key.keyAgreement,
           recipientKey: privateKey,
           senderKey,
         })
 
         decryptionKey = contentEncryptionKey
         keysToFree.push(contentEncryptionKey)
+      } else {
+        throw new Kms.KeyManagementError('Unexpected key parameter for decrypt')
       }
 
       if (decryption.algorithm === 'XSALSA20-POLY1305') {

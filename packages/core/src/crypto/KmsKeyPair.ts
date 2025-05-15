@@ -90,7 +90,9 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
         const { verified } = await kms.verify({
           data: data.data,
           signature: Buffer.from(data.signature),
-          key: this.publicJwk.toJson(),
+          key: {
+            publicJwk: this.publicJwk.toJson(),
+          },
           algorithm: this.publicJwk.signatureAlgorithm,
         })
 

@@ -60,7 +60,7 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = jest.fn(() => ({ bytes: TypedArrayEncoder.fromString('salt') }))
+agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
 
 jest.mock('../repository/SdJwtVcRepository')

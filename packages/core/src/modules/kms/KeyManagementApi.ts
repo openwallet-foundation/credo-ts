@@ -170,7 +170,7 @@ export class KeyManagementApi {
     const operation = {
       operation: 'encrypt',
       encryption: options.encryption,
-      keyAgreement: typeof options.key === 'object' && 'algorithm' in options.key ? options.key : undefined,
+      keyAgreement: options.key.keyAgreement,
     } as const
     const kms =
       backend || typeof options.key !== 'string'
@@ -193,7 +193,7 @@ export class KeyManagementApi {
     const operation = {
       operation: 'decrypt',
       decryption: options.decryption,
-      keyAgreement: typeof options.key === 'object' && 'algorithm' in options.key ? options.key : undefined,
+      keyAgreement: options.key.keyAgreement,
     } as const
     const kms =
       backend || typeof options.key !== 'string'

@@ -68,9 +68,11 @@ export class EnvelopeService {
         // Encrypt the sender
         const { encrypted } = await kms.encrypt({
           key: {
-            algorithm: 'ECDH-HSALSA20',
-            // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            keyAgreement: {
+              algorithm: 'ECDH-HSALSA20',
+              // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
+              externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+            },
           },
           encryption: {
             algorithm: 'XSALSA20-POLY1305',
@@ -84,11 +86,13 @@ export class EnvelopeService {
       // Encrypt the key
       const { encrypted, iv } = await kms.encrypt({
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
 
-          // Sender key only needed for Authcrypt
-          keyId: senderKey?.keyId,
+            // Sender key only needed for Authcrypt
+            keyId: senderKey?.keyId,
+          },
         },
         data: contentEncryptionKey,
         encryption: {
@@ -121,8 +125,10 @@ export class EnvelopeService {
       },
       data: JsonEncoder.toBuffer(message),
       key: {
-        kty: 'oct',
-        k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+        privateJwk: {
+          kty: 'oct',
+          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+        },
       },
     })
 
@@ -181,8 +187,10 @@ export class EnvelopeService {
     if (recipient.header.sender) {
       const { data } = await kms.decrypt({
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          keyId: recipientKey.keyId,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            keyId: recipientKey.keyId,
+          },
         },
         decryption: {
           algorithm: 'XSALSA20-POLY1305',
@@ -205,11 +213,13 @@ export class EnvelopeService {
       },
       encrypted: TypedArrayEncoder.fromBase64(recipient.encrypted_key),
       key: {
-        algorithm: 'ECDH-HSALSA20',
-        keyId: recipientKey.keyId,
+        keyAgreement: {
+          algorithm: 'ECDH-HSALSA20',
+          keyId: recipientKey.keyId,
 
-        // Optionally we have a sender
-        externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
+          // Optionally we have a sender
+          externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
+        },
       },
     })
 
@@ -221,8 +231,10 @@ export class EnvelopeService {
         aad: TypedArrayEncoder.fromString(encryptedMessage.protected),
       },
       key: {
-        kty: 'oct',
-        k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+        privateJwk: {
+          kty: 'oct',
+          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+        },
       },
       encrypted: TypedArrayEncoder.fromBase64(encryptedMessage.ciphertext),
     })

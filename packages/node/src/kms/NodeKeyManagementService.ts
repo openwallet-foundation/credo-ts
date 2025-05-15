@@ -257,16 +257,16 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
 
     try {
       let key: Exclude<Kms.KmsJwkPublic, Kms.KmsJwkPublicOct> | Kms.KmsJwkPrivate
-      if (typeof options.key === 'string') {
-        key = await this.getKeyAsserted(agentContext, options.key)
-      } else if (options.key.kty === 'EC') {
-        assertNodeSupportedEcCrv(options.key)
-        key = options.key
-      } else if (options.key.kty === 'OKP') {
-        assertNodeSupportedOkpCrv(options.key)
-        key = options.key
-      } else if (options.key.kty === 'RSA') {
-        key = options.key
+      if (options.key.keyId) {
+        key = await this.getKeyAsserted(agentContext, options.key.keyId)
+      } else if (options.key.publicJwk?.kty === 'EC') {
+        assertNodeSupportedEcCrv(options.key.publicJwk)
+        key = options.key.publicJwk
+      } else if (options.key.publicJwk?.kty === 'OKP') {
+        assertNodeSupportedOkpCrv(options.key.publicJwk)
+        key = options.key.publicJwk
+      } else if (options.key.publicJwk?.kty === 'RSA') {
+        key = options.key.publicJwk
       } else {
         // @ts-expect-error
         throw new Kms.KeyManagementAlgorithmNotSupportedError(`kty ${options.key.kty}`, this.backend)
@@ -303,29 +303,31 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     let encryptionKey: Kms.KmsJwkPrivate
     let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
 
-    if (typeof key === 'string') {
-      encryptionKey = await this.getKeyAsserted(agentContext, key)
-    } else if ('kty' in key) {
-      encryptionKey = key
-    } else {
-      Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
-      Kms.assertKeyAllowsDerive(key.externalPublicJwk)
-      Kms.assertSupportedKeyAgreementAlgorithm(key, nodeSupportedKeyAgreementAlgorithms, this.backend)
+    if (key.keyId) {
+      encryptionKey = await this.getKeyAsserted(agentContext, key.keyId)
+    } else if (key.privateJwk) {
+      encryptionKey = key.privateJwk
+    } else if (key.keyAgreement) {
+      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
+      Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
 
-      const privateJwk = await this.getKeyAsserted(agentContext, key.keyId)
-      Kms.assertJwkAsymmetric(privateJwk, key.keyId)
-      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+      const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
 
       const { contentEncryptionKey, encryptedContentEncryptionKey } = await deriveEncryptionKey({
-        keyAgreement: key,
+        keyAgreement: key.keyAgreement,
         encryption,
         privateJwk,
       })
 
       encryptionKey = contentEncryptionKey
       encryptedKey = encryptedContentEncryptionKey
+    } else {
+      throw new Kms.KeyManagementError('Unexpected key parameter for encrypt')
     }
 
     if (encryptionKey.kty !== 'oct') {
@@ -359,28 +361,30 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
     Kms.assertSupportedEncryptionAlgorithm(decryption, nodeSupportedEncryptionAlgorithms, this.backend)
 
     let decryptionKey: Kms.KmsJwkPrivate
-    if (typeof key === 'string') {
-      decryptionKey = await this.getKeyAsserted(agentContext, key)
-    } else if ('kty' in key) {
-      decryptionKey = key
-    } else {
-      Kms.assertSupportedKeyAgreementAlgorithm(key, nodeSupportedKeyAgreementAlgorithms, this.backend)
-      Kms.assertAllowedKeyDerivationAlgForKey(key.externalPublicJwk, key.algorithm)
-      Kms.assertKeyAllowsDerive(key.externalPublicJwk)
+    if (key.keyId) {
+      decryptionKey = await this.getKeyAsserted(agentContext, key.keyId)
+    } else if (key.privateJwk) {
+      decryptionKey = key.privateJwk
+    } else if (key.keyAgreement) {
+      Kms.assertSupportedKeyAgreementAlgorithm(key.keyAgreement, nodeSupportedKeyAgreementAlgorithms, this.backend)
+      Kms.assertAllowedKeyDerivationAlgForKey(key.keyAgreement.externalPublicJwk, key.keyAgreement.algorithm)
+      Kms.assertKeyAllowsDerive(key.keyAgreement.externalPublicJwk)
 
-      const privateJwk = await this.getKeyAsserted(agentContext, key.keyId)
-      Kms.assertJwkAsymmetric(privateJwk, key.keyId)
-      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.algorithm)
+      const privateJwk = await this.getKeyAsserted(agentContext, key.keyAgreement.keyId)
+      Kms.assertJwkAsymmetric(privateJwk, key.keyAgreement.keyId)
+      Kms.assertAllowedKeyDerivationAlgForKey(privateJwk, key.keyAgreement.algorithm)
       Kms.assertKeyAllowsDerive(privateJwk)
-      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.externalPublicJwk)
+      Kms.assertAsymmetricJwkKeyTypeMatches(privateJwk, key.keyAgreement.externalPublicJwk)
 
       const { contentEncryptionKey } = await deriveDecryptionKey({
-        keyAgreement: key,
+        keyAgreement: key.keyAgreement,
         decryption,
         privateJwk,
       })
 
       decryptionKey = contentEncryptionKey
+    } else {
+      throw new Kms.KeyManagementError('Unexpected key parameter for decrypt')
     }
 
     if (decryptionKey.kty !== 'oct') {

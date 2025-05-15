@@ -111,7 +111,9 @@ describe('KeyManagementApi', () => {
     })
 
     const verifyResult = await agent.kms.verify({
-      key: keyId,
+      key: {
+        keyId,
+      },
       algorithm: 'ES256',
       signature,
       data: new Uint8Array([1, 2, 3]),

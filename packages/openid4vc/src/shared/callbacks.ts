@@ -208,13 +208,15 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
 
       const encrypted = await kms.encrypt({
         key: {
-          // FIXME: We can make the keyId optional for ECDH-ES
-          // That way we don't have to store the key
-          keyId: ephmeralKey.keyId,
-          algorithm: 'ECDH-ES',
-          apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64(jweEncryptor.apu) : undefined,
-          apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64(jweEncryptor.apv) : undefined,
-          externalPublicJwk: jwkJson,
+          keyAgreement: {
+            // FIXME: We can make the keyId optional for ECDH-ES
+            // That way we don't have to store the key
+            keyId: ephmeralKey.keyId,
+            algorithm: 'ECDH-ES',
+            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64(jweEncryptor.apu) : undefined,
+            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64(jweEncryptor.apv) : undefined,
+            externalPublicJwk: jwkJson,
+          },
         },
         data: Buffer.from(compact),
         encryption: {
@@ -294,11 +296,13 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
           tag: TypedArrayEncoder.fromBase64(encodedTag),
         },
         key: {
-          algorithm: header.alg,
-          externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
-          keyId: kid,
-          apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64(header.apu) : undefined,
-          apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64(header.apv) : undefined,
+          keyAgreement: {
+            algorithm: header.alg,
+            externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
+            keyId: kid,
+            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64(header.apu) : undefined,
+            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64(header.apv) : undefined,
+          },
         },
       })
 

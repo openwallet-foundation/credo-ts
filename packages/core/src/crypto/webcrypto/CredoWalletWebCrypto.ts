@@ -80,7 +80,9 @@ export class CredoWalletWebCrypto {
 
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
     const { verified } = await this.kms.verify({
-      key: key.publicJwk.toJson(),
+      key: {
+        publicJwk: key.publicJwk.toJson(),
+      },
       algorithm: jwaAlgorithm,
       signature,
       data: message,

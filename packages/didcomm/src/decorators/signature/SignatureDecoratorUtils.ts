@@ -29,7 +29,14 @@ export async function unpackAndVerifySignatureDecorator(
   const signedData = TypedArrayEncoder.fromBase64(decorator.signatureData)
   const signature = TypedArrayEncoder.fromBase64(decorator.signature)
 
-  const result = await kms.verify({ algorithm: 'EdDSA', data: signedData, key: publicJwk.toJson(), signature })
+  const result = await kms.verify({
+    algorithm: 'EdDSA',
+    data: signedData,
+    key: {
+      publicJwk: publicJwk.toJson(),
+    },
+    signature,
+  })
 
   if (!result.verified) {
     throw new CredoError('Signature is not valid')

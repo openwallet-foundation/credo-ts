@@ -477,7 +477,9 @@ export class SdJwtVcService {
     return async (message: string, signatureBase64Url: string) => {
       const result = await kms.verify({
         signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
-        key: key.toJson(),
+        key: {
+          publicJwk: key.toJson(),
+        },
         data: TypedArrayEncoder.fromString(message),
         algorithm: key.signatureAlgorithm,
       })

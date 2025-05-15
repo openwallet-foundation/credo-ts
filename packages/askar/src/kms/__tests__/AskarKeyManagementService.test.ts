@@ -414,7 +414,9 @@ describe('AskarKeyManagementService', () => {
     it('throws error if key is not found', async () => {
       await expect(
         service.verify(agentContext, {
-          key: 'nonexistent',
+          key: {
+            keyId: 'nonexistent',
+          },
           algorithm: 'ES256',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -435,7 +437,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: {
+          publicJwk,
+        },
         algorithm: 'ES256',
         data,
         signature,
@@ -450,7 +454,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: {
+          keyId,
+        },
         algorithm: 'ES256',
         data,
         signature: invalidSignature,
@@ -472,7 +478,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'ES384',
         data,
         signature,
@@ -487,7 +493,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'ES384',
         data,
         signature: invalidSignature,
@@ -509,7 +515,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'EdDSA',
         data,
         signature,
@@ -524,7 +530,7 @@ describe('AskarKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'EdDSA',
         data,
         signature: invalidSignature,
@@ -540,7 +546,7 @@ describe('AskarKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: keyId,
+          key: { keyId },
           algorithm: 'ES384',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -559,7 +565,7 @@ describe('AskarKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: publicJwk,
+          key: { publicJwk },
           algorithm: 'EdDSA',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -585,7 +591,7 @@ describe('AskarKeyManagementService', () => {
 
       const modifiedData = new Uint8Array([1, 2, 4])
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'ES384',
         data: modifiedData,
         signature,
@@ -981,7 +987,7 @@ describe('AskarKeyManagementService', () => {
     it('throws error if key is not found', async () => {
       await expect(
         service.encrypt(agentContext, {
-          key: 'nonexistent',
+          key: { keyId: 'nonexistent' },
           encryption: {
             algorithm: 'A256GCM',
           },
@@ -1007,9 +1013,11 @@ describe('AskarKeyManagementService', () => {
       await expect(
         service.encrypt(agentContext, {
           key: {
-            keyId: senderKey.keyId,
-            algorithm: 'ECDH-ES+A192KW',
-            externalPublicJwk: recipientKey.publicJwk,
+            keyAgreement: {
+              keyId: senderKey.keyId,
+              algorithm: 'ECDH-ES+A192KW',
+              externalPublicJwk: recipientKey.publicJwk,
+            },
           },
 
           encryption: {
@@ -1039,9 +1047,11 @@ describe('AskarKeyManagementService', () => {
       await expect(
         service.encrypt(agentContext, {
           key: {
-            keyId: senderKey.keyId,
-            algorithm: 'ECDH-ES',
-            externalPublicJwk: recipientKey.publicJwk,
+            keyAgreement: {
+              keyId: senderKey.keyId,
+              algorithm: 'ECDH-ES',
+              externalPublicJwk: recipientKey.publicJwk,
+            },
           },
 
           encryption: {
@@ -1065,7 +1075,9 @@ describe('AskarKeyManagementService', () => {
       })
       await expect(
         service.encrypt(agentContext, {
-          key: encryptionKey.keyId,
+          key: {
+            keyId: encryptionKey.keyId,
+          },
           encryption: {
             algorithm: 'A128GCM',
           },
@@ -1088,7 +1100,9 @@ describe('AskarKeyManagementService', () => {
       })
       await expect(
         service.encrypt(agentContext, {
-          key: encryptionKey.keyId,
+          key: {
+            keyId: encryptionKey.keyId,
+          },
           encryption: {
             algorithm: 'A192GCM',
           },
@@ -1104,7 +1118,9 @@ describe('AskarKeyManagementService', () => {
     it('throws error if key is not found', async () => {
       await expect(
         service.decrypt(agentContext, {
-          key: 'nonexistent',
+          key: {
+            keyId: 'nonexistent',
+          },
           decryption: {
             algorithm: 'A256GCM',
             iv: new Uint8Array([]),
@@ -1132,13 +1148,15 @@ describe('AskarKeyManagementService', () => {
       await expect(
         service.decrypt(agentContext, {
           key: {
-            keyId: senderKey.keyId,
-            algorithm: 'ECDH-ES+A192KW',
-            externalPublicJwk: recipientKey.publicJwk,
-            encryptedKey: {
-              encrypted: new Uint8Array([]),
-              iv: new Uint8Array([]),
-              tag: new Uint8Array([]),
+            keyAgreement: {
+              keyId: senderKey.keyId,
+              algorithm: 'ECDH-ES+A192KW',
+              externalPublicJwk: recipientKey.publicJwk,
+              encryptedKey: {
+                encrypted: new Uint8Array([]),
+                iv: new Uint8Array([]),
+                tag: new Uint8Array([]),
+              },
             },
           },
 
@@ -1171,9 +1189,11 @@ describe('AskarKeyManagementService', () => {
       await expect(
         service.decrypt(agentContext, {
           key: {
-            keyId: senderKey.keyId,
-            algorithm: 'ECDH-ES',
-            externalPublicJwk: recipientKey.publicJwk,
+            keyAgreement: {
+              keyId: senderKey.keyId,
+              algorithm: 'ECDH-ES',
+              externalPublicJwk: recipientKey.publicJwk,
+            },
           },
 
           decryption: {
@@ -1199,7 +1219,9 @@ describe('AskarKeyManagementService', () => {
       })
       await expect(
         service.decrypt(agentContext, {
-          key: encryptionKey.keyId,
+          key: {
+            keyId: encryptionKey.keyId,
+          },
           decryption: {
             algorithm: 'A128GCM',
             iv: new Uint8Array([]),
@@ -1224,7 +1246,9 @@ describe('AskarKeyManagementService', () => {
       })
       await expect(
         service.decrypt(agentContext, {
-          key: encryptionKey.keyId,
+          key: {
+            keyId: encryptionKey.keyId,
+          },
           decryption: {
             algorithm: 'A192GCM',
             iv: new Uint8Array([]),
@@ -1264,11 +1288,13 @@ describe('AskarKeyManagementService', () => {
           aad: TypedArrayEncoder.fromString(encodedHeader),
         },
         key: {
-          algorithm: 'ECDH-ES',
-          externalPublicJwk: header.epk,
-          keyId: recipientKey.keyId,
-          apu: TypedArrayEncoder.fromBase64(header.apu),
-          apv: TypedArrayEncoder.fromBase64(header.apv),
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: header.epk,
+            keyId: recipientKey.keyId,
+            apu: TypedArrayEncoder.fromBase64(header.apu),
+            apv: TypedArrayEncoder.fromBase64(header.apv),
+          },
         },
         encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
       })
@@ -1290,7 +1316,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'A256CBC-HS512',
         },
@@ -1304,7 +1332,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'A256CBC-HS512',
           iv: result.iv as Uint8Array,
@@ -1327,7 +1357,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'A128CBC-HS256',
         },
@@ -1341,7 +1373,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'A128CBC-HS256',
           iv: result.iv as Uint8Array,
@@ -1361,7 +1395,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'C20P',
         },
@@ -1369,7 +1405,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'C20P',
           iv: result.iv as Uint8Array,
@@ -1389,7 +1427,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'XC20P',
         },
@@ -1397,7 +1437,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'XC20P',
           iv: result.iv as Uint8Array,
@@ -1418,7 +1460,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'A256GCM',
         },
@@ -1432,7 +1476,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'A256GCM',
           iv: result.iv as Uint8Array,
@@ -1453,7 +1499,9 @@ describe('AskarKeyManagementService', () => {
         },
       })
       const result = await service.encrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         encryption: {
           algorithm: 'A128GCM',
         },
@@ -1467,7 +1515,9 @@ describe('AskarKeyManagementService', () => {
       })
 
       const decrypted = await service.decrypt(agentContext, {
-        key: encryptionKey.keyId,
+        key: {
+          keyId: encryptionKey.keyId,
+        },
         decryption: {
           algorithm: 'A128GCM',
           iv: result.iv as Uint8Array,
@@ -1495,9 +1545,11 @@ describe('AskarKeyManagementService', () => {
 
       const result = await service.encrypt(agentContext, {
         key: {
-          keyId: encryptionKey.keyId,
-          algorithm: 'ECDH-ES',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            keyId: encryptionKey.keyId,
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
 
         encryption: {
@@ -1514,9 +1566,11 @@ describe('AskarKeyManagementService', () => {
 
       const decrypted = await service.decrypt(agentContext, {
         key: {
-          keyId: encryptionKey.keyId,
-          algorithm: 'ECDH-ES',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            keyId: encryptionKey.keyId,
+            algorithm: 'ECDH-ES',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
 
         decryption: {
@@ -1546,9 +1600,11 @@ describe('AskarKeyManagementService', () => {
 
       const result = await service.encrypt(agentContext, {
         key: {
-          keyId: encryptionKey.keyId,
-          algorithm: 'ECDH-ES+A128KW',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            keyId: encryptionKey.keyId,
+            algorithm: 'ECDH-ES+A128KW',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
 
         encryption: {
@@ -1570,10 +1626,12 @@ describe('AskarKeyManagementService', () => {
 
       const decrypted = await service.decrypt(agentContext, {
         key: {
-          keyId: encryptionKey.keyId,
-          algorithm: 'ECDH-ES+A128KW',
-          externalPublicJwk: recipientKey.publicJwk,
-          encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
+          keyAgreement: {
+            keyId: encryptionKey.keyId,
+            algorithm: 'ECDH-ES+A128KW',
+            externalPublicJwk: recipientKey.publicJwk,
+            encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
+          },
         },
 
         decryption: {
@@ -1603,9 +1661,11 @@ describe('AskarKeyManagementService', () => {
 
       const result = await service.encrypt(agentContext, {
         key: {
-          keyId: senderKey.keyId,
-          algorithm: 'ECDH-ES+A256KW',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            keyId: senderKey.keyId,
+            algorithm: 'ECDH-ES+A256KW',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
 
         encryption: {
@@ -1627,10 +1687,12 @@ describe('AskarKeyManagementService', () => {
 
       const decrypted = await service.decrypt(agentContext, {
         key: {
-          keyId: senderKey.keyId,
-          algorithm: 'ECDH-ES+A256KW',
-          externalPublicJwk: recipientKey.publicJwk,
-          encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
+          keyAgreement: {
+            keyId: senderKey.keyId,
+            algorithm: 'ECDH-ES+A256KW',
+            externalPublicJwk: recipientKey.publicJwk,
+            encryptedKey: result.encryptedKey as Kms.KmsEncryptedKey,
+          },
         },
 
         decryption: {
@@ -1661,8 +1723,10 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'XSALSA20-POLY1305',
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
       })
 
@@ -1681,8 +1745,10 @@ describe('AskarKeyManagementService', () => {
           }),
         },
         key: {
-          kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          privateJwk: {
+            kty: 'oct',
+            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          },
         },
       })
 
@@ -1693,8 +1759,10 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'XSALSA20-POLY1305',
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          keyId: recipientKey.keyId,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            keyId: recipientKey.keyId,
+          },
         },
         encrypted: encryptedKey,
       })
@@ -1712,8 +1780,10 @@ describe('AskarKeyManagementService', () => {
         },
         encrypted: encryptedMessage,
         key: {
-          kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(decryptedKey),
+          privateJwk: {
+            kty: 'oct',
+            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+          },
         },
       })
 
@@ -1744,8 +1814,10 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'XSALSA20-POLY1305',
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          externalPublicJwk: recipientKey.publicJwk,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            externalPublicJwk: recipientKey.publicJwk,
+          },
         },
       })
 
@@ -1755,9 +1827,11 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'XSALSA20-POLY1305',
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          externalPublicJwk: recipientKey.publicJwk,
-          keyId: senderKey.keyId,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            externalPublicJwk: recipientKey.publicJwk,
+            keyId: senderKey.keyId,
+          },
         },
       })
 
@@ -1776,8 +1850,10 @@ describe('AskarKeyManagementService', () => {
           }),
         },
         key: {
-          kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          privateJwk: {
+            kty: 'oct',
+            k: TypedArrayEncoder.toBase64URL(contentEncryptionKey),
+          },
         },
       })
 
@@ -1788,8 +1864,10 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'XSALSA20-POLY1305',
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          keyId: recipientKey.keyId,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            keyId: recipientKey.keyId,
+          },
         },
         encrypted: encryptedSender,
       })
@@ -1804,9 +1882,11 @@ describe('AskarKeyManagementService', () => {
           iv: encryptedKeyIv,
         },
         key: {
-          algorithm: 'ECDH-HSALSA20',
-          keyId: recipientKey.keyId,
-          externalPublicJwk: senderKey.publicJwk,
+          keyAgreement: {
+            algorithm: 'ECDH-HSALSA20',
+            keyId: recipientKey.keyId,
+            externalPublicJwk: senderKey.publicJwk,
+          },
         },
         encrypted: encryptedKey,
       })
@@ -1824,8 +1904,10 @@ describe('AskarKeyManagementService', () => {
         },
         encrypted: encryptedMessage,
         key: {
-          kty: 'oct',
-          k: TypedArrayEncoder.toBase64URL(decryptedKey),
+          privateJwk: {
+            kty: 'oct',
+            k: TypedArrayEncoder.toBase64URL(decryptedKey),
+          },
         },
       })
 

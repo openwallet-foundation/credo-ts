@@ -102,7 +102,7 @@ export async function requestSignerToJwtIssuer(
 export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.PublicJwk) {
   const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-  const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(key.jwk)
+  const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(key)
   if (supportedSignatureSuites.length === 0) {
     throw new CredoError(`Couldn't find a supported signature suite for the given key ${key.jwkTypehumanDescription}.`)
   }

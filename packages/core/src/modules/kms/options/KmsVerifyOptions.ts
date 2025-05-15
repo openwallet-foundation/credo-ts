@@ -13,7 +13,20 @@ export const zKmsVerifyOptions = z.object({
    * It is currently not possible to verify a signature with symmetric a
    * key that is not already present in the KMS.
    */
-  key: z.union([zKmsKeyId, zKmsJwkPublicAsymmetric]),
+  key: z.union([
+    z.object({
+      keyId: zKmsKeyId,
+
+      // never helps with type narrowing
+      publicJwk: z.never().optional(),
+    }),
+    z.object({
+      publicJwk: zKmsJwkPublicAsymmetric,
+
+      // never helps with type narrowing
+      keyId: z.never().optional(),
+    }),
+  ]),
 
   /**
    * The JWA signature algorithm to use for verification

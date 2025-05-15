@@ -593,7 +593,7 @@ describe('NodeKeyManagementService', () => {
     it('throws error if key is not found', async () => {
       await expect(
         service.verify(agentContext, {
-          key: 'nonexistent',
+          key: { keyId: 'nonexistent' },
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -614,7 +614,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'RS256',
         data,
         signature,
@@ -629,7 +629,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'RS256',
         data,
         signature: invalidSignature,
@@ -651,7 +651,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'RS384',
         data,
         signature,
@@ -666,7 +666,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'RS384',
         data,
         signature: invalidSignature,
@@ -688,7 +688,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'RS512',
         data,
         signature,
@@ -703,7 +703,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'RS512',
         data,
         signature: invalidSignature,
@@ -719,7 +719,7 @@ describe('NodeKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: keyId,
+          key: { keyId },
           signature: new Uint8Array([1, 2, 3]),
           algorithm: 'RS512',
           data: new Uint8Array([1, 2, 3]),
@@ -744,7 +744,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS256',
         data,
         signature,
@@ -759,7 +759,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS256',
         data,
         signature: invalidSignature,
@@ -781,7 +781,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS384',
         data,
         signature,
@@ -796,7 +796,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS384',
         data,
         signature: invalidSignature,
@@ -818,7 +818,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS512',
         data,
         signature,
@@ -833,7 +833,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'PS512',
         data,
         signature: invalidSignature,
@@ -855,7 +855,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'ES256',
         data,
         signature,
@@ -870,7 +870,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'ES256',
         data,
         signature: invalidSignature,
@@ -892,7 +892,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'ES384',
         data,
         signature,
@@ -907,7 +907,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'ES384',
         data,
         signature: invalidSignature,
@@ -929,7 +929,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'ES512',
         data,
         signature,
@@ -944,7 +944,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'ES512',
         data,
         signature: invalidSignature,
@@ -960,7 +960,7 @@ describe('NodeKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: keyId,
+          key: { keyId },
           signature: new Uint8Array([1, 2, 3]),
           algorithm: 'HS512',
           data: new Uint8Array([1, 2, 3]),
@@ -985,7 +985,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: publicJwk,
+        key: { publicJwk },
         algorithm: 'EdDSA',
         data,
         signature,
@@ -1000,7 +1000,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'EdDSA',
         data,
         signature: invalidSignature,
@@ -1022,7 +1022,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS256',
         data,
         signature,
@@ -1037,7 +1037,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS256',
         data,
         signature: invalidSignature,
@@ -1059,7 +1059,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS384',
         data,
         signature,
@@ -1074,7 +1074,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS384',
         data,
         signature: invalidSignature,
@@ -1096,7 +1096,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS512',
         data,
         signature,
@@ -1111,7 +1111,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const invalidResult = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'HS512',
         data,
         signature: invalidSignature,
@@ -1127,7 +1127,7 @@ describe('NodeKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: keyId,
+          key: { keyId },
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -1146,7 +1146,7 @@ describe('NodeKeyManagementService', () => {
 
       await expect(
         service.verify(agentContext, {
-          key: publicJwk,
+          key: { publicJwk },
           algorithm: 'EdDSA',
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
@@ -1170,7 +1170,7 @@ describe('NodeKeyManagementService', () => {
 
       const modifiedData = new Uint8Array([1, 2, 4])
       const result = await service.verify(agentContext, {
-        key: keyId,
+        key: { keyId },
         algorithm: 'RS256',
         data: modifiedData,
         signature,
@@ -1188,7 +1188,7 @@ describe('NodeKeyManagementService', () => {
 
       const iv = randomBytes(12)
       const { encrypted, tag } = await service.encrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         encryption: {
           algorithm: 'A128GCM',
           iv,
@@ -1197,7 +1197,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const { data } = await service.decrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         decryption: {
           algorithm: 'A128GCM',
           iv,
@@ -1216,7 +1216,7 @@ describe('NodeKeyManagementService', () => {
 
       const iv = randomBytes(12)
       const { encrypted, tag } = await service.encrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         encryption: {
           algorithm: 'A192GCM',
           iv,
@@ -1225,7 +1225,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const { data } = await service.decrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         decryption: {
           algorithm: 'A192GCM',
           iv,
@@ -1244,7 +1244,7 @@ describe('NodeKeyManagementService', () => {
 
       const iv = randomBytes(12)
       const { encrypted, tag } = await service.encrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         encryption: {
           algorithm: 'A256GCM',
           iv,
@@ -1253,7 +1253,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const { data } = await service.decrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         decryption: {
           algorithm: 'A256GCM',
           iv,
@@ -1272,7 +1272,7 @@ describe('NodeKeyManagementService', () => {
 
       const iv = randomBytes(16)
       const { encrypted, tag } = await service.encrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         encryption: {
           algorithm: 'A128CBC-HS256',
           iv,
@@ -1281,7 +1281,7 @@ describe('NodeKeyManagementService', () => {
       })
 
       const { data } = await service.decrypt(agentContext, {
-        key: keyId,
+        key: { keyId },
         decryption: {
           algorithm: 'A128CBC-HS256',
           iv,
@@ -1320,11 +1320,13 @@ describe('NodeKeyManagementService', () => {
           aad: TypedArrayEncoder.fromString(encodedHeader),
         },
         key: {
-          algorithm: 'ECDH-ES',
-          keyId: recipientKey.keyId,
-          externalPublicJwk: header.epk,
-          apu: TypedArrayEncoder.fromBase64(header.apu),
-          apv: TypedArrayEncoder.fromBase64(header.apv),
+          keyAgreement: {
+            algorithm: 'ECDH-ES',
+            keyId: recipientKey.keyId,
+            externalPublicJwk: header.epk,
+            apu: TypedArrayEncoder.fromBase64(header.apu),
+            apv: TypedArrayEncoder.fromBase64(header.apv),
+          },
         },
         encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
       })

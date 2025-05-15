@@ -75,9 +75,27 @@ export const zKmsEncryptOptions = z.object({
    * - an object configuring key agreement, based on an existing assymetric key
    */
   key: z.union([
-    zKmsKeyId,
-    zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
-    zKmsKeyAgreementEncryptOptions,
+    z.object({
+      keyId: zKmsKeyId,
+
+      // never helps with type narrowing
+      privateJwk: z.never().optional(),
+      keyAgreement: z.never().optional(),
+    }),
+    z.object({
+      privateJwk: zKmsJwkPrivateOct.describe('A private oct (symmetric) jwk'),
+
+      // never helps with type narrowing
+      keyId: z.never().optional(),
+      keyAgreement: z.never().optional(),
+    }),
+    z.object({
+      keyAgreement: zKmsKeyAgreementEncryptOptions,
+
+      // never helps with type narrowing
+      keyId: z.never().optional(),
+      privateJwk: z.never().optional(),
+    }),
   ]),
 
   /**

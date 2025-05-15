@@ -215,7 +215,9 @@ export class JwsService {
 
       try {
         const { verified } = await kms.verify({
-          key: jwsSigner.jwk.toJson(),
+          key: {
+            publicJwk: jwsSigner.jwk.toJson(),
+          },
           data,
           signature,
           algorithm: protectedJson.alg as KnownJwaSignatureAlgorithm,

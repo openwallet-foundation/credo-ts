@@ -67,7 +67,9 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
           const algorithm = mac0.algName ?? publicJwk.signatureAlgorithm
 
           const { verified } = await kms.verify({
-            key: jwk as KmsJwkPublicAsymmetric,
+            key: {
+              publicJwk: jwk as KmsJwkPublicAsymmetric,
+            },
             data,
             algorithm,
             signature,
@@ -100,7 +102,9 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
           const algorithm = sign1.algName ?? publicJwk.signatureAlgorithm
 
           const { verified } = await kms.verify({
-            key: jwk as KmsJwkPublicAsymmetric,
+            key: {
+              publicJwk: jwk as KmsJwkPublicAsymmetric,
+            },
             data,
             algorithm: algorithm as KnownJwaSignatureAlgorithm,
             signature,
