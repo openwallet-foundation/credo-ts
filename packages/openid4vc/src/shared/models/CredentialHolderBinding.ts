@@ -1,4 +1,4 @@
-import type { Jwk, Key } from '@credo-ts/core'
+import type { Kms } from '@credo-ts/core'
 
 import { Openid4vciIssuer } from '@openid4vc/openid4vci'
 
@@ -38,7 +38,7 @@ export interface OpenId4VcCredentialHolderDidBinding {
 
 export interface OpenId4VcCredentialHolderJwkBinding {
   method: 'jwk'
-  keys: Jwk[]
+  keys: Kms.PublicJwk[]
 }
 
 export type VerifiedOpenId4VcCredentialHolderBinding = {
@@ -67,7 +67,7 @@ export type VerifiedOpenId4VcCredentialHolderBinding = {
        */
       keys: Array<{
         method: 'did'
-        key: Key
+        jwk: Kms.PublicJwk
         didUrl: string
       }>
     }
@@ -82,8 +82,7 @@ export type VerifiedOpenId4VcCredentialHolderBinding = {
        */
       keys: Array<{
         method: 'jwk'
-        key: Key
-        jwk: Jwk
+        jwk: Kms.PublicJwk
       }>
     }
 )

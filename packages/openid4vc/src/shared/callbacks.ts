@@ -1,9 +1,10 @@
-import { AgentContext, JwaSignatureAlgorithm, JwsSignerWithJwk } from '@credo-ts/core'
+import { AgentContext, JwsSignerWithJwk, Kms } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
   DecryptJweCallback,
   EncryptJweCallback,
+  Jwk,
   SignJwtCallback,
   VerifyJwtCallback,
 } from '@openid4vc/oauth2'
@@ -16,18 +17,14 @@ import {
   JsonEncoder,
   JwsService,
   JwtPayload,
-  Key,
-  KeyType,
   TypedArrayEncoder,
   X509Certificate,
   X509ModuleConfig,
   X509Service,
-  getJwkFromJson,
-  getJwkFromKey,
 } from '@credo-ts/core'
 import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
 
-import { getKeyFromDid } from './utils'
+import { getPublicJwkFromDid } from './utils'
 
 export function getOid4vcJwtVerifyCallback(
   agentContext: AgentContext,
@@ -113,8 +110,8 @@ export function getOid4vcJwtVerifyCallback(
       })
     }
 
-    const alg = signer.alg as JwaSignatureAlgorithm
-    if (!Object.values(JwaSignatureAlgorithm).includes(alg)) {
+    const alg = signer.alg as Kms.KnownJwaSignatureAlgorithm
+    if (!Object.values(Kms.KnownJwaSignatureAlgorithms).includes(alg)) {
       throw new CredoError(`Unsupported jwa signatre algorithm '${alg}'`)
     }
 
@@ -123,18 +120,18 @@ export function getOid4vcJwtVerifyCallback(
         ? {
             method: 'did',
             didUrl: signer.didUrl,
-            jwk: getJwkFromKey(await getKeyFromDid(agentContext, signer.didUrl)),
+            jwk: await getPublicJwkFromDid(agentContext, signer.didUrl),
           }
         : signer.method === 'jwk'
           ? {
               method: 'jwk',
-              jwk: getJwkFromJson(signer.publicJwk),
+              jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
             }
           : signer.method === 'x5c'
             ? {
                 method: 'x5c',
                 x5c: signer.x5c,
-                jwk: getJwkFromKey(X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicKey),
+                jwk: X509Certificate.fromEncodedCertificate(signer.x5c[0]).publicJwk,
               }
             : undefined
 
@@ -152,16 +149,14 @@ export function getOid4vcJwtVerifyCallback(
       return { verified: false, signerJwk: undefined }
     }
 
-    const signerJwk = jwsSigners[0].jwk.toJson()
-    if (signer.method === 'did') {
-      signerJwk.kid = signer.didUrl
-    }
-
+    const signerJwk = jwsSigners[0].jwk.toJson() as Jwk
     return { verified: true, signerJwk }
   }
 }
 
 export function getOid4vcEncryptJweCallback(agentContext: AgentContext): EncryptJweCallback {
+  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
   return async (jweEncryptor, compact) => {
     if (jweEncryptor.method !== 'jwk') {
       throw new CredoError(
@@ -169,8 +164,12 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       )
     }
 
-    const jwk = getJwkFromJson(jweEncryptor.publicJwk)
-    const key = jwk.key
+    // TODO: we should probably add a key id or ference to the jweEncryptor/jwsSigner in
+    // oid4vc-ts so we can keep a reference to the key
+    const jwk = Kms.PublicJwk.fromUnknown(jweEncryptor.publicJwk)
+    if (!jwk.hasKeyId) {
+      throw new CredoError('Expected kid to be defined on the JWK')
+    }
 
     if (jweEncryptor.alg !== 'ECDH-ES') {
       throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response encryption")
@@ -182,49 +181,143 @@ export function getOid4vcEncryptJweCallback(agentContext: AgentContext): Encrypt
       )
     }
 
-    if (key.keyType !== KeyType.P256) {
-      throw new CredoError(`Only '${KeyType.P256}' key type is supported for JARM response encryption`)
+    const jwkJson = jwk.toJson()
+    if (jwkJson.kty !== 'EC' && jwkJson.kty !== 'OKP') {
+      throw new CredoError(`Expected EC or OKP jwk for encryption, found ${Kms.getJwkHumanDescription(jwkJson)}`)
     }
 
-    if (!agentContext.wallet.directEncryptCompactJweEcdhEs) {
-      throw new CredoError(
-        'Cannot decrypt Jarm Response, wallet does not support directEncryptCompactJweEcdhEs. You need to upgrade your wallet implementation.'
-      )
+    if (jwkJson.crv === 'Ed25519') {
+      throw new CredoError(`Expected ${jwkJson.kty} with crv X25519, found ${Kms.getJwkHumanDescription(jwkJson)}`)
     }
 
-    const jwe = await agentContext.wallet.directEncryptCompactJweEcdhEs({
-      data: Buffer.from(compact),
-      recipientKey: key,
-      header: { kid: jweEncryptor.publicJwk.kid },
-      encryptionAlgorithm: jweEncryptor.enc,
-      apu: jweEncryptor.apu ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apu)) : undefined,
-      apv: jweEncryptor.apv ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromString(jweEncryptor.apv)) : undefined,
+    // TODO: create a JWE service that handles this
+    const ephmeralKey = await kms.createKey({
+      type: jwkJson,
     })
 
-    return { encryptionJwk: jweEncryptor.publicJwk, jwe }
+    try {
+      const header = {
+        kid: jweEncryptor.publicJwk.kid,
+        apu: jweEncryptor.apu,
+        apv: jweEncryptor.apv,
+        enc: jweEncryptor.enc,
+        alg: 'ECDH-ES',
+        epk: ephmeralKey.publicJwk,
+      }
+      const encodedHeader = JsonEncoder.toBase64URL(header)
+
+      const encrypted = await kms.encrypt({
+        key: {
+          keyAgreement: {
+            // FIXME: We can make the keyId optional for ECDH-ES
+            // That way we don't have to store the key
+            keyId: ephmeralKey.keyId,
+            algorithm: 'ECDH-ES',
+            apu: jweEncryptor.apu ? TypedArrayEncoder.fromBase64(jweEncryptor.apu) : undefined,
+            apv: jweEncryptor.apv ? TypedArrayEncoder.fromBase64(jweEncryptor.apv) : undefined,
+            externalPublicJwk: jwkJson,
+          },
+        },
+        data: Buffer.from(compact),
+        encryption: {
+          algorithm: jweEncryptor.enc,
+          aad: Buffer.from(encodedHeader),
+        },
+      })
+
+      if (!encrypted.iv || !encrypted.tag) {
+        throw new CredoError("Expected 'iv' and 'tag' to be defined")
+      }
+
+      const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(encrypted.iv)}.${TypedArrayEncoder.toBase64URL(
+        encrypted.encrypted
+      )}.${TypedArrayEncoder.toBase64URL(encrypted.tag)}`
+
+      return { encryptionJwk: jweEncryptor.publicJwk, jwe: compactJwe }
+    } finally {
+      // Delete the key
+      await kms.deleteKey({
+        keyId: ephmeralKey.keyId,
+      })
+    }
   }
 }
 
 export function getOid4vcDecryptJweCallback(agentContext: AgentContext): DecryptJweCallback {
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
   return async (jwe, options) => {
+    // TODO: use custom header zod schema to limit which algorithms can be used
     const { header } = decodeJwtHeader({ jwt: jwe })
 
-    const kid = options?.jwk?.kid ?? header.kid
+    let kid = options?.jwk?.kid ?? header.kid
     if (!kid) {
       throw new CredoError('Uanbel to decrypt jwe. No kid or jwk found')
     }
 
-    const key = Key.fromFingerprint(kid)
-    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
-      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
+    // Previously we used the fingerprint as the kid for JARM
+    // We try to parse it as fingerprint if it starts with z (base58 encoding)
+    // It's not 100%
+    if (kid.startsWith('z')) {
+      try {
+        const publicJwk = Kms.PublicJwk.fromFingerprint(kid)
+        if (publicJwk) kid = publicJwk.legacyKeyId
+      } catch {
+        // no-op
+      }
+    }
+
+    // TODO: decodeJwe method in oid4vc-ts
+    // encryption key is not used (we don't use key wrapping)
+    const [encodedHeader /* encryptionKey */, , encodedIv, encodedCiphertext, encodedTag] = jwe.split('.')
+
+    if (header.alg !== 'ECDH-ES') {
+      throw new CredoError("Only 'ECDH-ES' is supported as 'alg' value for JARM response decryption")
+    }
+
+    if (header.enc !== 'A256GCM' && header.enc !== 'A128GCM' && header.enc !== 'A128CBC-HS256') {
+      throw new CredoError(
+        "Only 'A256GCM', 'A128GCM', and 'A128CBC-HS256' is supported as 'enc' value for JARM response decryption"
+      )
     }
 
     let decryptedPayload: string
+    let publicJwk: Kms.PublicJwk
+
+    const epk = Kms.PublicJwk.fromUnknown(header.epk)
 
     try {
-      const decrypted = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe: jwe, recipientKey: key })
+      const decrypted = await kms.decrypt({
+        encrypted: TypedArrayEncoder.fromBase64(encodedCiphertext),
+        decryption: {
+          algorithm: header.enc,
+          // aad is the base64 encoded bytes (not just the bytes)
+          aad: TypedArrayEncoder.fromString(encodedHeader),
+          iv: TypedArrayEncoder.fromBase64(encodedIv),
+          tag: TypedArrayEncoder.fromBase64(encodedTag),
+        },
+        key: {
+          keyAgreement: {
+            algorithm: header.alg,
+            externalPublicJwk: epk.toJson() as Kms.KmsJwkPublicEcdh,
+            keyId: kid,
+            apu: typeof header.apu === 'string' ? TypedArrayEncoder.fromBase64(header.apu) : undefined,
+            apv: typeof header.apv === 'string' ? TypedArrayEncoder.fromBase64(header.apv) : undefined,
+          },
+        },
+      })
+
+      // TODO: decrypt should return the public jwk instance
+      publicJwk = Kms.PublicJwk.fromUnknown(
+        await kms.getPublicKey({
+          keyId: kid,
+        })
+      )
+
       decryptedPayload = TypedArrayEncoder.toUtf8String(decrypted.data)
-    } catch (_error) {
+    } catch (error) {
+      agentContext.config.logger.error('Error decrypting JWE', {
+        error,
+      })
       return {
         decrypted: false,
         encryptionJwk: options?.jwk,
@@ -235,7 +328,7 @@ export function getOid4vcDecryptJweCallback(agentContext: AgentContext): Decrypt
 
     return {
       decrypted: true,
-      decryptionJwk: getJwkFromKey(key).toJson(),
+      decryptionJwk: publicJwk.toJson() as Jwk,
       payload: decryptedPayload,
       header,
     }
@@ -254,32 +347,37 @@ export function getOid4vcJwtSignCallback(agentContext: AgentContext): SignJwtCal
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: signer.x5c })
 
       const jws = await jwsService.createJwsCompact(agentContext, {
-        protectedHeaderOptions: { ...header, alg: signer.alg, jwk: undefined },
+        protectedHeaderOptions: { ...header, alg: signer.alg as Kms.KnownJwaSignatureAlgorithm, jwk: undefined },
         payload: JwtPayload.fromJson(payload),
-        key: leafCertificate.publicKey,
+        keyId: signer.kid ?? leafCertificate.publicJwk.keyId,
       })
 
-      return { jwt: jws, signerJwk: getJwkFromKey(leafCertificate.publicKey).toJson() }
+      return { jwt: jws, signerJwk: leafCertificate.publicJwk.toJson() as Jwk }
     }
 
-    const key =
-      signer.method === 'did' ? await getKeyFromDid(agentContext, signer.didUrl) : getJwkFromJson(signer.publicJwk).key
-    const jwk = getJwkFromKey(key)
+    // TOOD: createJwsCompact should return the Jwk, so we don't have to reoslve it here
+    const publicJwk =
+      signer.method === 'did'
+        ? await getPublicJwkFromDid(agentContext, signer.didUrl)
+        : Kms.PublicJwk.fromUnknown(signer.publicJwk)
 
-    if (!jwk.supportsSignatureAlgorithm(signer.alg)) {
-      throw new CredoError(`key type '${jwk.keyType}', does not support the JWS signature alg '${signer.alg}'`)
+    if (!publicJwk.supportedSignatureAlgorithms.includes(signer.alg as Kms.KnownJwaSignatureAlgorithm)) {
+      throw new CredoError(
+        `jwk ${publicJwk.jwkTypehumanDescription} does not support JWS signature alg '${signer.alg}'`
+      )
     }
 
     const jwt = await jwsService.createJwsCompact(agentContext, {
       protectedHeaderOptions: {
         ...header,
-        jwk: header.jwk ? getJwkFromJson(header.jwk) : undefined,
+        jwk: header.jwk ? publicJwk : undefined,
+        alg: signer.alg as Kms.KnownJwaSignatureAlgorithm,
       },
       payload: JsonEncoder.toBuffer(payload),
-      key,
+      keyId: signer.kid ?? publicJwk.keyId,
     })
 
-    return { jwt, signerJwk: getJwkFromKey(key).toJson() }
+    return { jwt, signerJwk: publicJwk.toJson() as Jwk }
   }
 }
 
@@ -291,9 +389,11 @@ export function getOid4vcCallbacks(
     issuanceSessionId?: string
   }
 ) {
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
+
   return {
     hash: (data, alg) => Hasher.hash(data, alg.toLowerCase()),
-    generateRandom: (length) => agentContext.wallet.getRandomValues(length),
+    generateRandom: (length) => kms.randomBytes({ length }),
     signJwt: getOid4vcJwtSignCallback(agentContext),
     clientAuthentication: () => {
       throw new CredoError('Did not expect client authentication to be called.')

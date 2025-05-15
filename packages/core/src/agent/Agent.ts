@@ -1,4 +1,3 @@
-import type { Module } from '../plugins'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
 import type { AgentModulesInput } from './AgentModules'
@@ -6,11 +5,10 @@ import type { AgentModulesInput } from './AgentModules'
 import { Subject } from 'rxjs'
 
 import { InjectionSymbols } from '../constants'
-import { SigningProviderToken } from '../crypto'
 import { JwsService } from '../crypto/JwsService'
 import { CredoError } from '../error'
 import { DependencyManager } from '../plugins'
-import { StorageUpdateService, StorageVersionRepository } from '../storage'
+import { StorageUpdateService, StorageVersionRepository, UpdateAssistant } from '../storage'
 
 import { AgentConfig } from './AgentConfig'
 import { extendModulesWithDefaultModules } from './AgentModules'
@@ -37,13 +35,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     dependencyManager.registerSingleton(StorageVersionRepository)
     dependencyManager.registerSingleton(StorageUpdateService)
 
-    // This is a really ugly hack to make tsyringe work without any SigningProviders registered
-    // It is currently impossible to use @injectAll if there are no instances registered for the
-    // token. We register a value of `default` by default and will filter that out in the registry.
-    // Once we have a signing provider that should always be registered we can remove this. We can make an ed25519
-    // signer using the @stablelib/ed25519 library.
-    dependencyManager.registerInstance(SigningProviderToken, 'default')
-
     dependencyManager.registerInstance(AgentConfig, agentConfig)
     dependencyManager.registerInstance(InjectionSymbols.AgentDependencies, agentConfig.agentDependencies)
     dependencyManager.registerInstance(InjectionSymbols.Stop$, new Subject<boolean>())
@@ -52,12 +43,6 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     // Register all modules. This will also include the default modules
     dependencyManager.registerModules(modulesWithDefaultModules)
 
-    // Register possibly already defined services
-    if (!dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
-      throw new CredoError(
-        "Missing required dependency: 'Wallet'. You can register it using the AskarModule, or implement your own."
-      )
-    }
     if (!dependencyManager.isRegistered(InjectionSymbols.Logger)) {
       dependencyManager.registerInstance(InjectionSymbols.Logger, agentConfig.logger)
     }
@@ -74,6 +59,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
       new AgentContext({
         dependencyManager,
         contextCorrelationId: 'default',
+        isRootAgentContext: true,
       })
     )
 
@@ -90,32 +76,52 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
   }
 
   public async initialize() {
-    await super.initialize()
+    if (this._isInitialized) {
+      throw new CredoError(
+        'Agent already initialized. Currently it is not supported to re-initialize an already initialized agent.'
+      )
+    }
 
-    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      if (module.initialize) {
-        await module.initialize(this.agentContext)
-      }
+    // We first initialize all the modules
+    await this.dependencyManager.initializeModules(this.agentContext)
+
+    // Then we initialize the root agent context
+    await this.dependencyManager.initializeAgentContext(this.agentContext)
+
+    // Make sure the storage is up to date
+    const storageUpdateService = this.dependencyManager.resolve(StorageUpdateService)
+    const isStorageUpToDate = await storageUpdateService.isUpToDate(this.agentContext)
+    this.logger.info(`Agent storage is ${isStorageUpToDate ? '' : 'not '}up to date.`)
+
+    if (!isStorageUpToDate && this.agentConfig.autoUpdateStorageOnStartup) {
+      const updateAssistant = new UpdateAssistant(this)
+
+      await updateAssistant.initialize()
+      await updateAssistant.update()
+    } else if (!isStorageUpToDate) {
+      const currentVersion = await storageUpdateService.getCurrentStorageVersion(this.agentContext)
+
+      // Close agent context to prevent un-initialized agent with initialized agent context
+      await this.dependencyManager.closeAgentContext(this.agentContext)
+
+      throw new CredoError(
+        // TODO: add link to where documentation on how to update can be found.
+        `Current agent storage is not up to date. To prevent the framework state from getting corrupted the agent initialization is aborted. Make sure to update the agent storage (currently at ${currentVersion}) to the latest version (${UpdateAssistant.frameworkStorageVersion}). You can also downgrade your version of Credo.`
+      )
     }
 
     this._isInitialized = true
   }
 
   public async shutdown() {
+    // TODO: replace stop$, should be replaced by module specific lifecycle methods
     const stop$ = this.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     // All observables use takeUntil with the stop$ observable
     // this means all observables will stop running if a value is emitted on this observable
     stop$.next(true)
 
-    for (const [, module] of Object.entries(this.dependencyManager.registeredModules) as [string, Module][]) {
-      if (module.shutdown) {
-        await module.shutdown(this.agentContext)
-      }
-    }
-
-    if (this.wallet.isInitialized) {
-      await this.wallet.close()
-    }
+    await this.dependencyManager.shutdownModules(this.agentContext)
+    await this.dependencyManager.closeAgentContext(this.agentContext)
 
     this._isInitialized = false
   }

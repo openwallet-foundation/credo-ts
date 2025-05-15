@@ -44,8 +44,11 @@ export type DefaultAgentModulesInput = Omit<DefaultDidCommModules, 'credentials'
 
 export type DidCommAgent = Agent<DefaultDidCommModules>
 
+// TODO: we should reduce the default didcomm modules. E.g. you don't
+// need the mediator, basic messages, credentials, or proofs module
 export function getDefaultDidcommModules(didcommModuleConfig?: DidCommModuleConfigOptions) {
   return {
+    didcomm: new DidCommModule(didcommModuleConfig),
     connections: new ConnectionsModule(),
     credentials: new CredentialsModule(),
     proofs: new ProofsModule(),
@@ -54,7 +57,6 @@ export function getDefaultDidcommModules(didcommModuleConfig?: DidCommModuleConf
     mediationRecipient: new MediationRecipientModule(),
     messagePickup: new MessagePickupModule(),
     basicMessages: new BasicMessagesModule(),
-    didcomm: new DidCommModule(didcommModuleConfig),
     oob: new OutOfBandModule(),
   } as const
 }

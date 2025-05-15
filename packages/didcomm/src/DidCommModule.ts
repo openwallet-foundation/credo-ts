@@ -91,7 +91,6 @@ export class DidCommModule implements Module {
     }
   }
 
-  // TODO: Shall shutdown and initialize be part of API (so Agent can be stopped/restarted without creating a new instance)?
   public async shutdown(agentContext: AgentContext) {
     const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
     const messageSender = agentContext.dependencyManager.resolve(MessageSender)

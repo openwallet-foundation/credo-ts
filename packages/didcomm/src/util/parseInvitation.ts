@@ -14,8 +14,7 @@ import { parseMessageType, supportsIncomingMessageType } from './messageType'
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {
   const abortController = new AbortController()
   const id = setTimeout(() => abortController.abort(), 15000)
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let response
+  let response: Response
   try {
     response = await dependencies.fetch(invitationUrl, {
       method: 'GET',
@@ -96,8 +95,7 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
     if (response.url) {
       // The following if else is for here for trinsic shorten urls
       // Because the redirect targets a deep link the automatic redirect does not occur
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let responseUrl
+      let responseUrl: string
       const location = response.headers.get('Location')
       if ((response.status === 302 || response.status === 301) && location) responseUrl = location
       else responseUrl = response.url

@@ -2,16 +2,14 @@ import type { CheqdDidCreateOptions } from '../src'
 
 import { Agent, JsonTransformer, utils } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdDidRegistrar } from '../src'
 import { getClosestResourceVersion } from '../src/dids/didCheqdUtil'
 
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export const resolverAgent = new Agent(
-  getInMemoryAgentOptions('Cheqd resolver', {}, {}, getCheqdModules(cheqdPayerSeeds[1]))
-)
+export const resolverAgent = new Agent(getAgentOptions('Cheqd resolver', {}, {}, getCheqdModules(cheqdPayerSeeds[1])))
 
 describe('Cheqd DID resolver', () => {
   let did: string
@@ -25,13 +23,8 @@ describe('Cheqd DID resolver', () => {
 
     const didResult = await resolverAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-1',
-          type: 'Ed25519VerificationKey2020',
-        },
-      },
       options: {
+        createKey: { type: { kty: 'OKP', crv: 'Ed25519' } },
         network: 'testnet',
         methodSpecificIdAlgo: 'uuid',
       },
@@ -74,7 +67,6 @@ describe('Cheqd DID resolver', () => {
 
   afterAll(async () => {
     await resolverAgent.shutdown()
-    await resolverAgent.wallet.delete()
   })
 
   it('should resolve a did:cheqd did from local testnet', async () => {
@@ -83,15 +75,19 @@ describe('Cheqd DID resolver', () => {
     })
     expect(JsonTransformer.toJSON(resolveResult)).toMatchObject({
       didDocument: {
-        '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2020/v1'],
+        '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
         id: did,
         controller: [did],
         verificationMethod: [
           {
             controller: did,
             id: `${did}#key-1`,
-            publicKeyMultibase: expect.any(String),
-            type: 'Ed25519VerificationKey2020',
+            publicKeyJwk: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+              x: expect.any(String),
+            },
+            type: 'JsonWebKey2020',
           },
         ],
         authentication: [`${did}#key-1`],

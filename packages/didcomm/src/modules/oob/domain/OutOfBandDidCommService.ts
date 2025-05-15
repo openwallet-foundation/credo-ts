@@ -1,7 +1,7 @@
 import type { ResolvedDidCommService } from '@credo-ts/core'
 import type { ValidationOptions } from 'class-validator'
 
-import { DidDocumentService, DidKey, IsUri, isDid } from '@credo-ts/core'
+import { CredoError, DidDocumentService, DidKey, IsUri, Kms, isDid } from '@credo-ts/core'
 import { ArrayNotEmpty, IsOptional, IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
 export class OutOfBandDidCommService extends DidDocumentService {
@@ -42,8 +42,23 @@ export class OutOfBandDidCommService extends DidDocumentService {
   public get resolvedDidCommService(): ResolvedDidCommService {
     return {
       id: this.id,
-      recipientKeys: this.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key),
-      routingKeys: this.routingKeys?.map((didKey) => DidKey.fromDid(didKey).key) ?? [],
+      recipientKeys: this.recipientKeys.map((didKey) => {
+        const publicJwk = DidKey.fromDid(didKey).publicJwk
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          throw new CredoError('Expected recipient key for didcomm service to be of type Ed25519')
+        }
+
+        return publicJwk
+      }),
+      routingKeys:
+        this.routingKeys?.map((didKey) => {
+          const publicJwk = DidKey.fromDid(didKey).publicJwk
+          if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+            throw new CredoError('Expected recipient key for didcomm service to be of type Ed25519')
+          }
+
+          return publicJwk
+        }) ?? [],
       serviceEndpoint: this.serviceEndpoint,
     }
   }

@@ -1,5 +1,5 @@
 import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
-import type { DidRepository, Wallet } from '@credo-ts/core'
+import type { DidRepository } from '@credo-ts/core'
 
 import {
   DidResolverService,
@@ -61,8 +61,6 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
-const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
-
 const inMemoryStorageService = new InMemoryStorageService()
 const agentContext = getAgentContext({
   registerInstances: [
@@ -80,7 +78,6 @@ const agentContext = getAgentContext({
     [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
-  wallet,
 })
 
 const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()

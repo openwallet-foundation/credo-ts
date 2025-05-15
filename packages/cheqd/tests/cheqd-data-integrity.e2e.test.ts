@@ -24,9 +24,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
 
   afterEach(async () => {
     await issuerAgent.shutdown()
-    await issuerAgent.wallet.delete()
     await holderAgent.shutdown()
-    await holderAgent.wallet.delete()
   })
 
   test('cheqd issuance and verification flow starting from offer without revocation', async () => {

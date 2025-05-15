@@ -10,6 +10,7 @@ import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 
+import { DidDocumentKey } from '../DidsApiOptions'
 import { DidRecordMetadataKeys } from './didRecordMetadataTypes'
 
 export interface DidRecordProps {
@@ -19,6 +20,12 @@ export interface DidRecordProps {
   didDocument?: DidDocument
   createdAt?: Date
   tags?: CustomDidTags
+
+  /**
+   * The kms key ids associated with the did record. Should only be used
+   * when role is {@link DidDocumentRole.Created}
+   */
+  keys?: DidDocumentKey[]
 }
 
 export interface CustomDidTags extends TagsBase {
@@ -55,6 +62,12 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
   public static readonly type = 'DidRecord'
   public readonly type = DidRecord.type
 
+  /**
+   * The kms key ids associated with the DidRecord. Should only be used
+   * when role is {@link DidDocumentRole.Created}.
+   */
+  keys?: DidDocumentKey[]
+
   public constructor(props: DidRecordProps) {
     super()
 
@@ -65,6 +78,7 @@ export class DidRecord extends BaseRecord<DefaultDidTags, CustomDidTags, DidReco
       this.didDocument = props.didDocument
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags ?? {}
+      this.keys = props.keys
     }
   }
 

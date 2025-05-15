@@ -56,6 +56,8 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     agentContext: AgentContext,
     { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     const format = new ProofFormatSpec({
       format: ANONCREDS_PRESENTATION_PROPOSAL,
       attachmentId,
@@ -71,7 +73,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
       predicates: anoncredsFormat.predicates ?? [],
       name: anoncredsFormat.name ?? 'Proof request',
       version: anoncredsFormat.version ?? '1.0',
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
       nonRevokedInterval: anoncredsFormat.nonRevokedInterval,
     })
     const attachment = this.getFormatData(proofRequest, format.attachmentId)
@@ -93,6 +95,8 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     agentContext: AgentContext,
     { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     const format = new ProofFormatSpec({
       format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
@@ -103,7 +107,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     const request = {
       ...proposalJson,
       // We never want to reuse the nonce from the proposal, as this will allow replay attacks
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
     }
 
     const attachment = this.getFormatData(request, format.attachmentId)
@@ -115,6 +119,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     agentContext: AgentContext,
     { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
+    const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new ProofFormatSpec({
       format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
@@ -128,7 +133,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     const request = {
       name: anoncredsFormat.name,
       version: anoncredsFormat.version,
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: holderService.generateNonce(agentContext),
       requested_attributes: anoncredsFormat.requested_attributes ?? {},
       requested_predicates: anoncredsFormat.requested_predicates ?? {},
       non_revoked: anoncredsFormat.non_revoked,

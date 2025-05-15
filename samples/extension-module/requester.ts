@@ -26,14 +26,16 @@ const run = async () => {
   const agent = new Agent({
     config: {
       label: 'Dummy-powered agent - requester',
-      walletConfig: {
-        id: 'requester',
-        key: 'requester',
-      },
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
-      askar: new AskarModule({ askar }),
+      askar: new AskarModule({
+        askar,
+        store: {
+          id: 'requester',
+          key: 'requester',
+        },
+      }),
       didcomm: new DidCommModule(),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),

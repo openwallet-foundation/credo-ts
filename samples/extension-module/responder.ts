@@ -25,14 +25,16 @@ const run = async () => {
   const agent = new Agent({
     config: {
       label: 'Dummy-powered agent - responder',
-      walletConfig: {
-        id: 'responder',
-        key: 'responder',
-      },
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
-      askar: new AskarModule({ askar }),
+      askar: new AskarModule({
+        askar,
+        store: {
+          id: 'responder',
+          key: 'responder',
+        },
+      }),
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
       oob: new OutOfBandModule(),
       messagePickup: new MessagePickupModule(),

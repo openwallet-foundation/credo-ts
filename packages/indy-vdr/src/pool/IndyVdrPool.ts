@@ -1,4 +1,4 @@
-import type { AgentContext, Key } from '@credo-ts/core'
+import { AgentContext, Kms } from '@credo-ts/core'
 import type { IndyVdrRequest, RequestResponseType, IndyVdrPool as indyVdrPool } from '@hyperledger/indy-vdr-shared'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
@@ -56,6 +56,10 @@ export class IndyVdrPool {
     return this.poolConfig
   }
 
+  public get isOpen() {
+    return this._pool !== undefined
+  }
+
   public connect() {
     if (this._pool) {
       return
@@ -103,18 +107,20 @@ export class IndyVdrPool {
   public async prepareWriteRequest<Request extends IndyVdrRequest>(
     agentContext: AgentContext,
     request: Request,
-    signingKey: Key,
+    signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>,
     endorserDid?: string
   ) {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     await this.appendTaa(request)
 
     if (endorserDid) {
       request.setEndorser({ endorser: parseIndyDid(endorserDid).namespaceIdentifier })
     }
 
-    const signature = await agentContext.wallet.sign({
+    const { signature } = await kms.sign({
       data: TypedArrayEncoder.fromString(request.signatureInput),
-      key: signingKey,
+      algorithm: 'EdDSA',
+      keyId: signingKey.keyId,
     })
 
     request.setSignature({

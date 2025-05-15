@@ -67,9 +67,14 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
     for (const protocol of this.config.protocols) {
       protocol.register(messageHandlerRegistry, featureRegistry)
     }
+  }
 
+  public async onInitializeContext(agentContext: AgentContext): Promise<void> {
+    // We only support initialization of message pickup for the root agent
+    if (!agentContext.isRootAgentContext) return
+
+    // FIXME: this does not take into account multi-tenant agents, need to think how to separate based on context
     const messagePickupSessionService = agentContext.dependencyManager.resolve(MessagePickupSessionService)
-
     messagePickupSessionService.start(agentContext)
   }
 }

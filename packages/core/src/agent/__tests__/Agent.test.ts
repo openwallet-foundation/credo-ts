@@ -30,12 +30,11 @@ import {
   MediatorService,
 } from '../../../../didcomm/src/modules/routing'
 import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
-import { getInMemoryAgentOptions } from '../../../tests/helpers'
+import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
-import { WalletError } from '../../wallet/error'
 import { Agent } from '../Agent'
 
-const agentOptions = getInMemoryAgentOptions('Agent Class Test')
+const agentOptions = getAgentOptions('Agent Class Test', undefined, undefined, undefined, { requireDidcomm: true })
 
 const myModuleMethod = jest.fn()
 @injectable()
@@ -99,14 +98,6 @@ describe('Agent', () => {
   describe('Initialization', () => {
     let agent: Agent
 
-    afterEach(async () => {
-      const wallet = agent.context.wallet
-
-      if (wallet.isInitialized) {
-        await wallet.delete()
-      }
-    })
-
     it('isInitialized should only return true after initialization', async () => {
       expect.assertions(2)
 
@@ -114,42 +105,6 @@ describe('Agent', () => {
 
       expect(agent.isInitialized).toBe(false)
       await agent.initialize()
-      expect(agent.isInitialized).toBe(true)
-    })
-
-    it('wallet isInitialized should return true after agent initialization if wallet config is set in agent constructor', async () => {
-      expect.assertions(4)
-
-      agent = new Agent(agentOptions)
-      const wallet = agent.context.wallet
-
-      expect(agent.isInitialized).toBe(false)
-      expect(wallet.isInitialized).toBe(false)
-      await agent.initialize()
-      expect(agent.isInitialized).toBe(true)
-      expect(wallet.isInitialized).toBe(true)
-    })
-
-    it('wallet must be initialized if wallet config is not set before agent can be initialized', async () => {
-      expect.assertions(9)
-
-      const { walletConfig, ...withoutWalletConfig } = agentOptions.config
-      agent = new Agent({ ...agentOptions, config: withoutWalletConfig })
-
-      expect(agent.isInitialized).toBe(false)
-      expect(agent.wallet.isInitialized).toBe(false)
-
-      expect(agent.initialize()).rejects.toThrowError(WalletError)
-      expect(agent.isInitialized).toBe(false)
-      expect(agent.wallet.isInitialized).toBe(false)
-
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      await agent.wallet.initialize(walletConfig!)
-      expect(agent.isInitialized).toBe(false)
-      expect(agent.wallet.isInitialized).toBe(true)
-
-      await agent.initialize()
-      expect(agent.wallet.isInitialized).toBe(true)
       expect(agent.isInitialized).toBe(true)
     })
   })

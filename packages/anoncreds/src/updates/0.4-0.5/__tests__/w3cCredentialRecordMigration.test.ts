@@ -1,4 +1,4 @@
-import type { DidRepository, Wallet } from '@credo-ts/core'
+import type { DidRepository } from '@credo-ts/core'
 
 import {
   Agent,
@@ -33,8 +33,6 @@ const anonCredsModuleConfig = new AnonCredsModuleConfig({
   anoncreds,
   registries: [registry],
 })
-
-const wallet = { generateNonce: () => Promise.resolve('947121108704767252195123') } as Wallet
 
 const stop = new Subject<boolean>()
 const eventEmitter = new EventEmitter(agentDependencies, stop)
@@ -81,7 +79,6 @@ const agentContext = getAgentContext({
     [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
-  wallet,
 })
 
 const anonCredsRepo = {

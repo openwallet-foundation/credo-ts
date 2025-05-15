@@ -1,4 +1,3 @@
-import type { SingleOrArray } from '../../../utils'
 import type { W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential } from '../../vc'
 import type {
   DifPresentationExchangeDefinition,
@@ -9,6 +8,7 @@ import type {
 import { JSONPath } from '@astronautlabs/jsonpath'
 
 import { CredoError } from '../../../error'
+import { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
 import { ClaimFormat, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 

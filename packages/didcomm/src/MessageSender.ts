@@ -10,16 +10,16 @@ import type { EncryptedMessage, OutboundPackage } from './types'
 import {
   AgentContext,
   CredoError,
-  DidDocument,
   DidKey,
-  DidResolverService,
+  DidsApi,
   EventEmitter,
   InjectionSymbols,
+  Kms,
   Logger,
   MessageValidator,
   ResolvedDidCommService,
-  didKeyToInstanceOfKey,
-  getKeyFromVerificationMethod,
+  didKeyToEd25519PublicJwk,
+  getPublicJwkFromVerificationMethod,
   inject,
   injectable,
   utils,
@@ -47,7 +47,6 @@ export class MessageSender {
   private transportService: TransportService
   private messagePickupRepository: MessagePickupRepository
   private logger: Logger
-  private didResolverService: DidResolverService
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
   private _outboundTransports: OutboundTransport[] = []
@@ -57,7 +56,6 @@ export class MessageSender {
     transportService: TransportService,
     @inject(InjectionSymbols.MessagePickupRepository) messagePickupRepository: MessagePickupRepository,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    didResolverService: DidResolverService,
     didCommDocumentService: DidCommDocumentService,
     eventEmitter: EventEmitter
   ) {
@@ -65,7 +63,6 @@ export class MessageSender {
     this.transportService = transportService
     this.messagePickupRepository = messagePickupRepository
     this.logger = logger
-    this.didResolverService = didResolverService
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
     this._outboundTransports = []
@@ -272,33 +269,47 @@ export class MessageSender {
       )
     }
 
-    let ourDidDocument: DidDocument
-    try {
-      ourDidDocument = await this.didResolverService.resolveDidDocument(agentContext, connection.did)
-    } catch (error) {
-      this.logger.error(`Unable to resolve DID Document for '${connection.did}`)
-      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
-      throw new MessageSendingError(`Unable to resolve DID Document for '${connection.did}`, {
-        outboundMessageContext,
-        cause: error,
+    const dids = agentContext.resolve(DidsApi)
+    const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(connection.did).catch((error) => {
+      this.logger.error(`Unable to send message using connection '${connection.id}', unable to resolve did`, {
+        error,
       })
+      this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
+      throw new MessageSendingError(
+        `Unable to send message using connection '${connection.id}'. Unble to resolve did`,
+        { outboundMessageContext, cause: error }
+      )
+    })
+
+    const authentication = didDocument.authentication
+      ?.map((a) => {
+        const verificationMethod = typeof a === 'string' ? didDocument.dereferenceVerificationMethod(a) : a
+        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        const kmsKeyId = keys?.find((key) => verificationMethod.id.endsWith(key.didDocumentRelativeKeyId))?.kmsKeyId
+
+        // Set stored key id, or fallback to legacy key id
+        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+
+        return { verificationMethod, publicJwk, kmsKeyId }
+      })
+      .filter((v): v is typeof v & { publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk> } =>
+        v.publicJwk.is(Kms.Ed25519PublicJwk)
+      )
+
+    // We take the first one with a kms key id. Otherwise we pick the first
+    const senderVerificationMethod = authentication?.find((a) => a.kmsKeyId !== undefined) ?? authentication?.[0]
+    if (!senderVerificationMethod) {
+      throw new MessageSendingError(
+        `Unable to determine sender key for did ${connection.did}, no available Ed25519 keys`,
+        {
+          outboundMessageContext,
+        }
+      )
     }
 
-    const ourAuthenticationKeys = getAuthenticationKeys(ourDidDocument)
-
-    // TODO We're selecting just the first authentication key. Is it ok?
-    // We can probably learn something from the didcomm-rust implementation, which looks at crypto compatibility to make sure the
-    // other party can decrypt the message. https://github.com/sicpa-dlab/didcomm-rust/blob/9a24b3b60f07a11822666dda46e5616a138af056/src/message/pack_encrypted/mod.rs#L33-L44
-    // This will become more relevant when we support different encrypt envelopes. One thing to take into account though is that currently we only store the recipientKeys
-    // as defined in the didcomm services, while it could be for example that the first authentication key is not defined in the recipientKeys, in which case we wouldn't
-    // even be interoperable between two Credo agents. So we should either pick the first key that is defined in the recipientKeys, or we should make sure to store all
-    // keys defined in the did document as tags so we can retrieve it, even if it's not defined in the recipientKeys. This, again, will become simpler once we use didcomm v2
-    // as the `from` field in a received message will identity the did used so we don't have to store all keys in tags to be able to find the connections associated with
-    // an incoming message.
-    const [firstOurAuthenticationKey] = ourAuthenticationKeys
     // If the returnRoute is already set we won't override it. This allows to set the returnRoute manually if this is desired.
     const shouldAddReturnRoute =
-      message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(ourDidDocument)
+      message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
     // Loop trough all available services and try to send the message
     for await (const service of services) {
@@ -309,7 +320,7 @@ export class MessageSender {
             agentContext,
             serviceParams: {
               service,
-              senderKey: firstOurAuthenticationKey,
+              senderKey: senderVerificationMethod.publicJwk,
               returnRoute: shouldAddReturnRoute,
             },
             connection,
@@ -337,7 +348,7 @@ export class MessageSender {
       const keys = {
         recipientKeys: queueService.recipientKeys,
         routingKeys: queueService.routingKeys,
-        senderKey: firstOurAuthenticationKey,
+        senderKey: senderVerificationMethod.publicJwk,
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
@@ -507,8 +518,8 @@ export class MessageSender {
             // Out of band inline service contains keys encoded as did:key references
             didCommServices.push({
               id: service.id,
-              recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
-              routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) || [],
+              recipientKeys: service.recipientKeys.map(didKeyToEd25519PublicJwk),
+              routingKeys: service.routingKeys?.map(didKeyToEd25519PublicJwk) || [],
               serviceEndpoint: service.serviceEndpoint,
             })
           }
@@ -558,15 +569,4 @@ export class MessageSender {
 
 export function isDidCommTransportQueue(serviceEndpoint: string): serviceEndpoint is typeof DID_COMM_TRANSPORT_QUEUE {
   return serviceEndpoint === DID_COMM_TRANSPORT_QUEUE
-}
-
-function getAuthenticationKeys(didDocument: DidDocument) {
-  return (
-    didDocument.authentication?.map((authentication) => {
-      const verificationMethod =
-        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
-      const key = getKeyFromVerificationMethod(verificationMethod)
-      return key
-    }) ?? []
-  )
 }

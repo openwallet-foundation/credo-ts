@@ -1,5 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import type { Key } from '../../../crypto'
 import type { DidDocument } from '../domain'
 import type { CustomDidTags } from './DidRecord'
 
@@ -10,6 +9,8 @@ import { Repository } from '../../../storage/Repository'
 import { StorageService } from '../../../storage/StorageService'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 
+import { PublicJwk } from '../../kms'
+import { DidDocumentKey } from '../DidsApiOptions'
 import { DidRecord } from './DidRecord'
 
 @injectable()
@@ -25,7 +26,7 @@ export class DidRepository extends Repository<DidRecord> {
    * Finds a {@link DidRecord}, containing the specified recipientKey that was received by this agent.
    * To find a {@link DidRecord} that was created by this agent, use {@link DidRepository.findCreatedDidByRecipientKey}.
    */
-  public findReceivedDidByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public findReceivedDidByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
     return this.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: DidDocumentRole.Received,
@@ -36,14 +37,14 @@ export class DidRepository extends Repository<DidRecord> {
    * Finds a {@link DidRecord}, containing the specified recipientKey that was created by this agent.
    * To find a {@link DidRecord} that was received by this agent, use {@link DidRepository.findReceivedDidByRecipientKey}.
    */
-  public findCreatedDidByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public findCreatedDidByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
     return this.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: DidDocumentRole.Created,
     })
   }
 
-  public findAllByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public findAllByRecipientKey(agentContext: AgentContext, recipientKey: PublicJwk) {
     return this.findByQuery(agentContext, { recipientKeyFingerprints: [recipientKey.fingerprint] })
   }
 
@@ -73,12 +74,16 @@ export class DidRepository extends Repository<DidRecord> {
     })
   }
 
-  public async storeCreatedDid(agentContext: AgentContext, { did, didDocument, tags }: StoreDidOptions) {
+  public async storeCreatedDid(
+    agentContext: AgentContext,
+    { did, didDocument, tags, keys }: StoreDidOptions & { keys?: DidDocumentKey[] }
+  ) {
     const didRecord = new DidRecord({
       did,
       didDocument,
       role: DidDocumentRole.Created,
       tags,
+      keys,
     })
 
     await this.save(agentContext, didRecord)
@@ -104,4 +109,5 @@ interface StoreDidOptions {
   did: string
   didDocument?: DidDocument
   tags?: CustomDidTags
+  keys?: DidDocumentKey[]
 }

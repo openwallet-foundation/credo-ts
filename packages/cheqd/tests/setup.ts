@@ -17,7 +17,7 @@ export function validService(did: string) {
   return new DidDocumentService({
     id: `${did}#service-1`,
     type: 'CustomType',
-    serviceEndpoint: 'https://rand.io',
+    serviceEndpoint: ['https://rand.io'],
   })
 }
 

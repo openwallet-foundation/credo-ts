@@ -1,24 +1,24 @@
 import type { DidDocument } from '@credo-ts/core'
-import type { CheqdDidCreateOptions } from '../src'
+import type { CheqdDidCreateOptions, CheqdDidUpdateOptions } from '../src'
 
 import {
   Agent,
   DidDocumentBuilder,
-  KeyType,
+  Kms,
   SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
   utils,
 } from '@credo-ts/core'
-import { generateKeyPairFromSeed } from '@stablelib/ed25519'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { validService } from './setup'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
+const agentOptions = getAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
 
 describe('Cheqd DID registrar', () => {
   let agent: Agent<ReturnType<typeof getCheqdModules>>
@@ -30,7 +30,6 @@ describe('Cheqd DID registrar', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   it('should create a did:cheqd did', async () => {
@@ -41,18 +40,16 @@ describe('Cheqd DID registrar', () => {
         .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
         .slice(0, 32)
     )
-    const publicKeyEd25519 = generateKeyPairFromSeed(privateKey).publicKey
-    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicKeyEd25519)
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({ type: { crv: 'Ed25519', kty: 'OKP' }, privateKey })
+    const createdKey = await agent.kms.importKey({ privateJwk })
+
+    // @ts-ignore
+    const { kid, d, ...publicJwk } = createdKey.publicJwk
+
     const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-1',
-          type: 'Ed25519VerificationKey2018',
-          privateKey,
-        },
-      },
       options: {
+        keyId: createdKey.keyId,
         network: 'testnet',
         methodSpecificIdAlgo: 'base58btc',
       },
@@ -63,8 +60,8 @@ describe('Cheqd DID registrar', () => {
         didDocument: {
           verificationMethod: [
             {
-              type: 'Ed25519VerificationKey2018',
-              publicKeyBase58: ed25519PublicKeyBase58,
+              type: 'JsonWebKey2020',
+              publicKeyJwk: publicJwk,
             },
           ],
         },
@@ -75,13 +72,14 @@ describe('Cheqd DID registrar', () => {
   it('should create a did:cheqd using Ed25519VerificationKey2020', async () => {
     const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-1',
-          type: 'Ed25519VerificationKey2020',
-        },
-      },
       options: {
+        createKey: {
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+          keyId: 'custom-key-id',
+        },
         network: 'testnet',
         methodSpecificIdAlgo: 'uuid',
       },
@@ -92,13 +90,14 @@ describe('Cheqd DID registrar', () => {
   it('should create a did:cheqd using JsonWebKey2020', async () => {
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-11',
-          type: 'JsonWebKey2020',
-        },
-      },
+
       options: {
+        createKey: {
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        },
         network: 'testnet',
         methodSpecificIdAlgo: 'base58btc',
       },
@@ -117,9 +116,10 @@ describe('Cheqd DID registrar', () => {
     const didDocument = createResult.didState.didDocument as DidDocument
     didDocument.service = [validService(did)]
 
-    const updateResult = await agent.dids.update({
+    const updateResult = await agent.dids.update<CheqdDidUpdateOptions>({
       did,
       didDocument,
+      options: {},
     })
     expect(updateResult).toMatchObject({
       didState: {
@@ -141,24 +141,36 @@ describe('Cheqd DID registrar', () => {
   it('should create a did:cheqd did using custom did document containing Ed25519 key', async () => {
     const did = `did:cheqd:testnet:${utils.uuid()}`
 
-    const ed25519Key = await agent.wallet.createKey({
-      keyType: KeyType.Ed25519,
+    const ed25519Key = await agent.kms.createKey({
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
     })
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(ed25519Key.publicJwk)
 
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
         .addController(did)
-        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
+        .addAuthentication(`${did}#${publicJwk.fingerprint}`)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
-            key: ed25519Key,
+            publicJwk,
             controller: did,
-            id: `${did}#${ed25519Key.fingerprint}`,
+            id: `${did}#${publicJwk.fingerprint}`,
           })
         )
         .build(),
+      options: {
+        keys: [
+          {
+            didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+            kmsKeyId: ed25519Key.keyId,
+          },
+        ],
+      },
     })
 
     expect(createResult).toMatchObject({
@@ -173,7 +185,7 @@ describe('Cheqd DID registrar', () => {
         {
           controller: did,
           type: 'Ed25519VerificationKey2018',
-          publicKeyBase58: ed25519Key.publicKeyBase58,
+          publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
         },
       ],
     })
@@ -182,31 +194,39 @@ describe('Cheqd DID registrar', () => {
   it('should create a did:cheqd did using custom did document containing P256 key', async () => {
     const did = `did:cheqd:testnet:${utils.uuid()}`
 
-    const p256Key = await agent.wallet.createKey({
-      keyType: KeyType.P256,
+    const p256Key = await agent.kms.createKey({
+      type: { kty: 'EC', crv: 'P-256' },
     })
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(p256Key.publicJwk)
 
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
+      options: {
+        keys: [
+          {
+            didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+            kmsKeyId: p256Key.keyId,
+          },
+        ],
+      },
       didDocument: new DidDocumentBuilder(did)
         .addContext(SECURITY_JWS_CONTEXT_URL)
         .addController(did)
-        .addAuthentication(`${did}#${p256Key.fingerprint}`)
+        .addAuthentication(`${did}#${publicJwk.fingerprint}`)
         .addVerificationMethod(
           getJsonWebKey2020({
             did,
-            key: p256Key,
-            verificationMethodId: `${did}#${p256Key.fingerprint}`,
+            publicJwk,
+            verificationMethodId: `${did}#${publicJwk.fingerprint}`,
           })
         )
         .build(),
     })
 
-    // FIXME: the ES256 signature generated by Credo is invalid for Cheqd
-    // need to dive deeper into it, but for now adding a failing test so we can fix it in the future
+    // Somehow this only works with the Node KMS
     expect(createResult).toMatchObject({
       didState: {
-        state: 'failed',
+        state: 'finished',
       },
     })
   })

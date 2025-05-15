@@ -16,24 +16,6 @@ export class X509Api {
   ) {}
 
   /**
-   * Adds a trusted certificate to the X509 Module Config.
-   *
-   * @param certificate
-   */
-  public addTrustedCertificate(certificate: string) {
-    this.config.addTrustedCertificate(certificate)
-  }
-
-  /**
-   * Overwrites the trusted certificates in the X509 Module Config.
-   *
-   * @param certificate
-   */
-  public async setTrustedCertificates(certificates?: [string, ...string[]]) {
-    this.config.setTrustedCertificates(certificates)
-  }
-
-  /**
    * Creates a X.509 certificate.
    *
    * @param options X509CreateCertificateOptions

@@ -1,4 +1,4 @@
-import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { InboundMessageContext } from '../../models'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 import type { OutOfBandDidCommService } from './domain'
@@ -8,19 +8,20 @@ import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-
 
 import { DidCommDocumentService } from '../../services'
 
+import { getResolvedDidcommServiceWithSigningKeyId } from '../connections/services/helpers'
 import { OutOfBandEventTypes } from './domain/OutOfBandEvents'
 import { OutOfBandRole } from './domain/OutOfBandRole'
 import { OutOfBandState } from './domain/OutOfBandState'
 import { HandshakeReuseMessage, OutOfBandInvitation } from './messages'
 import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
-import { OutOfBandRecord, OutOfBandRepository } from './repository'
+import { OutOfBandInlineServiceKey, OutOfBandRecord, OutOfBandRepository } from './repository'
 
 export interface CreateFromImplicitInvitationConfig {
   did: string
   threadId: string
   handshakeProtocols: HandshakeProtocol[]
   autoAcceptConnection?: boolean
-  recipientKey: Key
+  recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }
 
 @injectable()
@@ -233,7 +234,10 @@ export class OutOfBandService {
     })
   }
 
-  public async findCreatedByRecipientKey(agentContext: AgentContext, recipientKey: Key) {
+  public async findCreatedByRecipientKey(
+    agentContext: AgentContext,
+    recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  ) {
     return this.outOfBandRepository.findSingleByQuery(agentContext, {
       recipientKeyFingerprints: [recipientKey.fingerprint],
       role: OutOfBandRole.Sender,
@@ -260,7 +264,11 @@ export class OutOfBandService {
    */
   public async getResolvedServiceForOutOfBandServices(
     agentContext: AgentContext,
-    services: Array<string | OutOfBandDidCommService>
+    services: Array<string | OutOfBandDidCommService>,
+    /**
+     * Optional keys for the inline services
+     */
+    inlineServiceKeys?: OutOfBandInlineServiceKey[]
   ) {
     for (const service of services) {
       if (typeof service === 'string') {
@@ -268,7 +276,7 @@ export class OutOfBandService {
 
         if (didService) return didService
       } else {
-        return service.resolvedDidCommService
+        return getResolvedDidcommServiceWithSigningKeyId(service, inlineServiceKeys)
       }
     }
 

@@ -1,4 +1,4 @@
-import type { DidRecord, RecordSavedEvent } from '@credo-ts/core'
+import { DidRecord, RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
@@ -9,8 +9,7 @@ import {
   DidsApi,
   EventEmitter,
   JsonTransformer,
-  Key,
-  KeyType,
+  Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
   RepositoryEventTypes,
@@ -20,7 +19,7 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies, getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrIndyDidRegistrar } from '../IndyVdrIndyDidRegistrar'
@@ -31,17 +30,12 @@ const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
 
 const agentConfig = getAgentConfig('IndyVdrIndyDidRegistrar')
-const wallet = new InMemoryWallet()
 
-jest
-  .spyOn(wallet, 'createKey')
-  .mockResolvedValue(Key.fromPublicKeyBase58('E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu', KeyType.Ed25519))
 const storageService = new InMemoryStorageService<DidRecord>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const didRepository = new DidRepository(storageService, eventEmitter)
 
 const agentContext = getAgentContext({
-  wallet,
   registerInstances: [
     [DidRepository, didRepository],
     [IndyVdrPoolService, { getPoolForNamespace: jest.fn().mockReturnValue(poolMock) }],
@@ -56,7 +50,21 @@ const agentContext = getAgentContext({
                 id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg#verkey',
                 type: 'Ed25519VerificationKey2018',
                 controller: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-                publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+                publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
+              }),
+            ],
+          }),
+        }),
+        resolveCreatedDidDocumentWithKeys: jest.fn().mockResolvedValue({
+          keys: [],
+          didDocument: new DidDocument({
+            id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+            authentication: [
+              new VerificationMethod({
+                id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg#verkey',
+                type: 'Ed25519VerificationKey2018',
+                controller: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
+                publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
               }),
             ],
           }),
@@ -68,22 +76,42 @@ const agentContext = getAgentContext({
 })
 
 const indyVdrIndyDidRegistrar = new IndyVdrIndyDidRegistrar()
+const kms = agentContext.resolve(Kms.KeyManagementApi)
+
+const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
+const keyId = 'the-key-id'
+const privateJwk = transformPrivateKeyToPrivateJwk({
+  privateKey,
+  type: { crv: 'Ed25519', kty: 'OKP' },
+}).privateJwk
+privateJwk.kid = keyId
 
 describe('IndyVdrIndyDidRegistrar', () => {
+  beforeAll(async () => {
+    await kms.importKey({
+      privateJwk,
+    })
+  })
+
   afterEach(() => {
     jest.clearAllMocks()
   })
 
-  test('returns an error state if both did and privateKey are provided', async () => {
+  test('returns an error state if the provided key id is not an Ed25519 key', async () => {
+    await kms.createKey({
+      keyId: 'no-ed25519',
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
+    })
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'did:indy:pool1:did-value',
+      method: 'indy',
       options: {
         alias: 'Hello',
         endorserMode: 'internal',
+        keyId: 'no-ed25519',
         endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-      },
-      secret: {
-        privateKey: TypedArrayEncoder.fromString('key'),
       },
     })
 
@@ -92,7 +120,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'failed',
-        reason: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
+        reason: `keyId must point to an Ed25519 key, but found EC key with crv 'P-256'`,
       },
     })
   })
@@ -117,93 +145,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     })
   })
 
-  test('returns an error state if did is provided, but it is not a valid did:indy did', async () => {
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'BzCbsNYhMrjHiqZDTUASHg',
-      options: {
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        verkey: 'verkey',
-        alias: 'Hello',
-      },
-    })
-
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'unknownError: BzCbsNYhMrjHiqZDTUASHg is not a valid did:indy did',
-      },
-    })
-  })
-
-  test('returns an error state if did is provided, but no verkey', async () => {
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'BzCbsNYhMrjHiqZDTUASHg',
-      options: {
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        alias: 'Hello',
-      },
-    })
-
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'If a did is defined, a matching verkey must be provided',
-      },
-    })
-  })
-
-  test('returns an error state if did and verkey are provided, but the did is not self certifying', async () => {
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-      options: {
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        verkey: 'verkey',
-        alias: 'Hello',
-      },
-    })
-
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason: 'Initial verkey verkey does not match did did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-      },
-    })
-  })
-
-  test('returns an error state if did is provided, but does not match with the namespace from the endorserDid', async () => {
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'did:indy:pool2:B6xaJg1c2xU3D9ppCtt1CZ',
-      options: {
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
-        alias: 'Hello',
-      },
-    })
-
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'failed',
-        reason:
-          "The endorser did uses namespace: 'pool1' and the did to register uses namespace: 'pool2'. Namespaces must match.",
-      },
-    })
-  })
-
   test('creates a did:indy document without services', async () => {
-    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
-
     // @ts-ignore - method is private
     const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
@@ -224,19 +166,17 @@ describe('IndyVdrIndyDidRegistrar', () => {
         endorserMode: 'internal',
         endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
-      },
-      secret: {
-        privateKey,
+        keyId,
       },
     })
 
     expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      signingKey: expect.any(Key),
+      signingKey: expect.any(Kms.PublicJwk),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
-      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
-      verificationKey: expect.any(Key),
+      namespaceIdentifier: 'Q4HNw3AuzNBacei9KsAxno',
+      verificationKey: expect.any(Kms.PublicJwk),
       alias: 'Hello',
       diddocContent: undefined,
       role: 'STEWARD',
@@ -248,278 +188,27 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'finished',
-        did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
+        did: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
         didDocument: {
           '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-          id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
+          id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
           verificationMethod: [
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#verkey',
               type: 'Ed25519VerificationKey2018',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+              controller: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
+              publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
             },
           ],
-          authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
+          authentication: ['did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#verkey'],
           assertionMethod: undefined,
           keyAgreement: undefined,
-        },
-        secret: {
-          privateKey,
-        },
-      },
-    })
-  })
-
-  test('creates a did:indy document by passing did', async () => {
-    // @ts-ignore - method is private
-    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
-      indyVdrIndyDidRegistrar,
-      'createRegisterDidWriteRequest'
-    )
-    // @ts-ignore type check fails because method is private
-    createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
-
-    // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-ignore type check fails because method is private
-    registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
-
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-      options: {
-        verkey: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
-        alias: 'Hello',
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        role: 'STEWARD',
-      },
-      secret: {},
-    })
-
-    expect(createRegisterDidWriteRequest).toHaveBeenCalledWith({
-      agentContext,
-      pool: poolMock,
-      signingKey: expect.any(Key),
-      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
-      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
-      verificationKey: expect.any(Key),
-      alias: 'Hello',
-      diddocContent: undefined,
-      role: 'STEWARD',
-    })
-
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
-      agentContext,
-      poolMock,
-      // writeRequest
-      undefined
-    )
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'finished',
-        did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-        didDocument: {
-          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
-          id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-          verificationMethod: [
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey',
-              type: 'Ed25519VerificationKey2018',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
-            },
-          ],
-          authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
-          assertionMethod: undefined,
-          keyAgreement: undefined,
-        },
-        secret: {},
-      },
-    })
-  })
-
-  test('creates a did:indy document with services using diddocContent', async () => {
-    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
-
-    // @ts-ignore - method is private
-    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
-      indyVdrIndyDidRegistrar,
-      'createRegisterDidWriteRequest'
-    )
-    // @ts-ignore type check fails because method is private
-    createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
-
-    // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-ignore type check fails because method is private
-    registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
-
-    // @ts-ignore - method is private
-    const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
-
-    const result = await indyVdrIndyDidRegistrar.create(agentContext, {
-      method: 'indy',
-      options: {
-        alias: 'Hello',
-        endorserMode: 'internal',
-        endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
-        role: 'STEWARD',
-        services: [
-          new DidDocumentService({
-            id: '#endpoint',
-            serviceEndpoint: 'https://example.com/endpoint',
-            type: 'endpoint',
-          }),
-          new DidCommV1Service({
-            id: '#did-communication',
-            priority: 0,
-            recipientKeys: ['#key-agreement-1'],
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
-            accept: ['didcomm/aip2;env=rfc19'],
-          }),
-          new NewDidCommV2Service({
-            id: '#didcomm-messaging-1',
-            serviceEndpoint: new NewDidCommV2ServiceEndpoint({
-              accept: ['didcomm/v2'],
-              routingKeys: ['key-1'],
-              uri: 'https://example.com/endpoint',
-            }),
-          }),
-        ],
-      },
-      secret: {
-        privateKey,
-      },
-    })
-
-    expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
-      agentContext,
-      pool: poolMock,
-      signingKey: expect.any(Key),
-      submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
-      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
-      verificationKey: expect.any(Key),
-      alias: 'Hello',
-      role: 'STEWARD',
-      diddocContent: {
-        '@context': [],
-        authentication: [],
-        id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-        keyAgreement: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
-        service: [
-          {
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#endpoint',
-            serviceEndpoint: 'https://example.com/endpoint',
-            type: 'endpoint',
-          },
-          {
-            accept: ['didcomm/aip2;env=rfc19'],
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#did-communication',
-            priority: 0,
-            recipientKeys: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
-            routingKeys: ['key-1'],
-            serviceEndpoint: 'https://example.com/endpoint',
-            type: 'did-communication',
-          },
-          {
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
-            serviceEndpoint: {
-              uri: 'https://example.com/endpoint',
-              accept: ['didcomm/v2'],
-              routingKeys: ['key-1'],
-            },
-            type: 'DIDCommMessaging',
-          },
-        ],
-        verificationMethod: [
-          {
-            controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-            id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1',
-            publicKeyBase58: 'Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt',
-            type: 'X25519KeyAgreementKey2019',
-          },
-        ],
-      },
-    })
-
-    expect(registerPublicDidSpy).toHaveBeenCalledWith(
-      agentContext,
-      poolMock,
-      // writeRequest
-      undefined
-    )
-    expect(setEndpointsForDidSpy).not.toHaveBeenCalled()
-    expect(JsonTransformer.toJSON(result)).toMatchObject({
-      didDocumentMetadata: {},
-      didRegistrationMetadata: {},
-      didState: {
-        state: 'finished',
-        did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-        didDocument: {
-          '@context': [
-            'https://w3id.org/did/v1',
-            'https://w3id.org/security/suites/ed25519-2018/v1',
-            'https://w3id.org/security/suites/x25519-2019/v1',
-            'https://didcomm.org/messaging/contexts/v2',
-          ],
-          id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-          verificationMethod: [
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey',
-              type: 'Ed25519VerificationKey2018',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
-            },
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1',
-              type: 'X25519KeyAgreementKey2019',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt',
-            },
-          ],
-          service: [
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#endpoint',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'endpoint',
-            },
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#did-communication',
-              serviceEndpoint: 'https://example.com/endpoint',
-              type: 'did-communication',
-              priority: 0,
-              recipientKeys: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
-              routingKeys: ['key-1'],
-              accept: ['didcomm/aip2;env=rfc19'],
-            },
-            {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
-              type: 'DIDCommMessaging',
-              serviceEndpoint: {
-                uri: 'https://example.com/endpoint',
-                routingKeys: ['key-1'],
-                accept: ['didcomm/v2'],
-              },
-            },
-          ],
-          authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
-          assertionMethod: undefined,
-          keyAgreement: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
-        },
-        secret: {
-          privateKey,
         },
       },
     })
   })
 
   test('creates a did:indy document with services using attrib', async () => {
-    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
-
     // @ts-ignore - method is private
     const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
@@ -550,6 +239,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
+        keyId,
         endorserMode: 'internal',
         endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
@@ -578,19 +268,16 @@ describe('IndyVdrIndyDidRegistrar', () => {
           }),
         ],
       },
-      secret: {
-        privateKey,
-      },
     })
     expect(result.didState.state).toEqual('finished')
 
     expect(createRegisterDidWriteRequestSpy).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      signingKey: expect.any(Key),
+      signingKey: expect.any(Kms.PublicJwk),
       submitterNamespaceIdentifier: 'BzCbsNYhMrjHiqZDTUASHg',
-      namespaceIdentifier: 'B6xaJg1c2xU3D9ppCtt1CZ',
-      verificationKey: expect.any(Key),
+      namespaceIdentifier: 'Q4HNw3AuzNBacei9KsAxno',
+      verificationKey: expect.any(Kms.PublicJwk),
       alias: 'Hello',
       diddocContent: undefined,
       role: 'STEWARD',
@@ -605,10 +292,10 @@ describe('IndyVdrIndyDidRegistrar', () => {
     expect(createSetDidEndpointsRequestSpy).toHaveBeenCalledWith({
       agentContext,
       pool: poolMock,
-      signingKey: expect.any(Key),
+      signingKey: expect.any(Kms.PublicJwk),
       endorserDid: undefined,
       // Unqualified created indy did
-      unqualifiedDid: 'B6xaJg1c2xU3D9ppCtt1CZ',
+      unqualifiedDid: 'Q4HNw3AuzNBacei9KsAxno',
       endpoints: {
         endpoint: 'https://example.com/endpoint',
         routingKeys: ['key-1'],
@@ -621,7 +308,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       didRegistrationMetadata: {},
       didState: {
         state: 'finished',
-        did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
+        did: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
         didDocument: {
           '@context': [
             'https://w3id.org/did/v1',
@@ -629,56 +316,51 @@ describe('IndyVdrIndyDidRegistrar', () => {
             'https://w3id.org/security/suites/x25519-2019/v1',
             'https://didcomm.org/messaging/contexts/v2',
           ],
-          id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
+          id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
           verificationMethod: [
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#verkey',
               type: 'Ed25519VerificationKey2018',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'E6D1m3eERqCueX4ZgMCY14B4NceAr6XP2HyVqt55gDhu',
+              controller: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
+              publicKeyBase58: 'DtPcLpky6Yi6zPecfW8VZH3xNoDkvQfiGWp8u5n9nAj6',
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#key-agreement-1',
               type: 'X25519KeyAgreementKey2019',
-              controller: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
-              publicKeyBase58: 'Fbv17ZbnUSbafsiUBJbdGeC62M8v8GEscVMMcE59mRPt',
+              controller: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
+              publicKeyBase58: '7H8ScGrunfcGBwMhhRakDMYguLAWiNWhQ2maYH84J8fE',
             },
           ],
           service: [
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#endpoint',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#endpoint',
               serviceEndpoint: 'https://example.com/endpoint',
               type: 'endpoint',
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#did-communication',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#did-communication',
               serviceEndpoint: 'https://example.com/endpoint',
               type: 'did-communication',
               priority: 0,
-              recipientKeys: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
+              recipientKeys: ['did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#key-agreement-1'],
               routingKeys: ['key-1'],
               accept: ['didcomm/aip2;env=rfc19'],
             },
             {
-              id: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#didcomm-messaging-1',
+              id: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#didcomm-messaging-1',
               type: 'DIDCommMessaging',
               serviceEndpoint: { uri: 'https://example.com/endpoint', routingKeys: ['key-1'], accept: ['didcomm/v2'] },
             },
           ],
-          authentication: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#verkey'],
+          authentication: ['did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#verkey'],
           assertionMethod: undefined,
-          keyAgreement: ['did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ#key-agreement-1'],
-        },
-        secret: {
-          privateKey,
+          keyAgreement: ['did:indy:pool1:Q4HNw3AuzNBacei9KsAxno#key-agreement-1'],
         },
       },
     })
   })
 
   test('stores the did document', async () => {
-    const privateKey = TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c712fd969598e')
-
     // @ts-ignore - method is private
     const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
@@ -704,6 +386,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
       method: 'indy',
       options: {
         alias: 'Hello',
+        keyId,
         endorserMode: 'internal',
         endorserDid: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
         role: 'STEWARD',
@@ -731,19 +414,16 @@ describe('IndyVdrIndyDidRegistrar', () => {
           }),
         ],
       },
-      secret: {
-        privateKey,
-      },
     })
 
     expect(saveCalled).toHaveBeenCalledTimes(1)
     const [saveEvent] = saveCalled.mock.calls[0]
 
     expect(saveEvent.payload.record.getTags()).toMatchObject({
-      recipientKeyFingerprints: ['z6LSrH6AdsQeZuKKmG6Ehx7abEQZsVg2psR2VU536gigUoAe'],
+      recipientKeyFingerprints: ['z6LShxJc8afmt8L1HKjUE56hXwmAkUhdQygrH1VG2jmb1WRz'],
     })
     expect(saveEvent.payload.record).toMatchObject({
-      did: 'did:indy:pool1:B6xaJg1c2xU3D9ppCtt1CZ',
+      did: 'did:indy:pool1:Q4HNw3AuzNBacei9KsAxno',
       role: DidDocumentRole.Created,
       didDocument: expect.any(DidDocument),
     })

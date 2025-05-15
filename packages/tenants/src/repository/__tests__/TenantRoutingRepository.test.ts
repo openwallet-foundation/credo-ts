@@ -1,6 +1,4 @@
-import type { EventEmitter, StorageService } from '@credo-ts/core'
-
-import { Key } from '@credo-ts/core'
+import { type EventEmitter, Kms, type StorageService } from '@credo-ts/core'
 
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRoutingRecord } from '../TenantRoutingRecord'
@@ -21,7 +19,7 @@ describe('TenantRoutingRepository', () => {
 
   describe('findByRecipientKey', () => {
     test('it should correctly transform the key to a fingerprint and return the routing record', async () => {
-      const key = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+      const key = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
       const tenantRoutingRecord = new TenantRoutingRecord({
         recipientKeyFingerprint: key.fingerprint,
         tenantId: 'tenant-id',

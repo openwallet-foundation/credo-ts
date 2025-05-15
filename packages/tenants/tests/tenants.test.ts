@@ -12,19 +12,16 @@ import {
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { uuid } from '../../core/src/utils/uuid'
-import { testLogger } from '../../core/tests'
+import { AskarModule } from '../../askar/src'
+import { getAskarStoreConfig, testLogger } from '../../core/tests'
 import { TenantsModule } from '../src/TenantsModule'
 
 const agent1Config: InitConfig = {
   label: 'Tenant Agent 1',
-  walletConfig: {
-    id: `tenants e2e agent 1 - ${uuid().slice(0, 4)}`,
-    key: 'tenants e2e agent 1',
-  },
   logger: testLogger,
 }
 
@@ -34,10 +31,6 @@ const agent1DidcommConfig: DidCommModuleConfigOptions = {
 
 const agent2Config: InitConfig = {
   label: 'Tenant Agent 2',
-  walletConfig: {
-    id: `tenants e2e agent 2 - ${uuid().slice(0, 4)}`,
-    key: 'tenants e2e agent 2',
-  },
   logger: testLogger,
 }
 
@@ -51,7 +44,7 @@ const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
     oob: new OutOfBandModule(),
     messagePickup: new MessagePickupModule(),
     tenants: new TenantsModule(),
-    inMemory: new InMemoryWalletModule(),
+    inMemory: new InMemoryWalletModule({ enableKms: false }),
     connections: new ConnectionsModule({
       autoAcceptConnections: true,
     }),
@@ -63,13 +56,27 @@ const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
 // Create multi-tenant agents
 const agent1 = new Agent({
   config: agent1Config,
-  modules: getTenantsAgentModules(agent1DidcommConfig),
+  modules: {
+    ...getTenantsAgentModules(agent1DidcommConfig),
+    askar: new AskarModule({
+      enableStorage: false,
+      askar,
+      store: getAskarStoreConfig('tenants.test.ts', { inMemory: false }),
+    }),
+  },
   dependencies: agentDependencies,
 })
 
 const agent2 = new Agent({
   config: agent2Config,
-  modules: getTenantsAgentModules(agent2DidcommConfig),
+  modules: {
+    ...getTenantsAgentModules(agent2DidcommConfig),
+    askar: new AskarModule({
+      enableStorage: false,
+      askar,
+      store: getAskarStoreConfig('tenants.test.ts', { inMemory: false }),
+    }),
+  },
   dependencies: agentDependencies,
 })
 
@@ -100,9 +107,7 @@ describe('Tenants E2E', () => {
   })
 
   afterAll(async () => {
-    await agent1.wallet.delete()
     await agent1.shutdown()
-    await agent2.wallet.delete()
     await agent2.shutdown()
   })
 
@@ -127,8 +132,18 @@ describe('Tenants E2E', () => {
     })
     await tenantAgent.endSession()
 
+    // Create session but do not close it yet
+    const tenantAgent1 = await agent1.modules.tenants.getTenantAgent({
+      tenantId: tenantRecord1.id,
+    })
+
     // Delete tenant agent
     await agent1.modules.tenants.deleteTenantById(tenantRecord1.id)
+
+    // Should not be able to use the session anymore
+    await expect(tenantAgent1.dids.getCreatedDids({})).rejects.toThrow(
+      `Storage for agent context ${tenantAgent1.context.contextCorrelationId} does not exist`
+    )
 
     // Can not get tenant agent again
     await expect(agent1.modules.tenants.getTenantAgent({ tenantId: tenantRecord1.id })).rejects.toThrow(
@@ -200,8 +215,8 @@ describe('Tenants E2E', () => {
     await tenantAgent2.endSession()
 
     // Delete tenants (will also delete wallets)
-    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId)
-    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId)
+    await agent1.modules.tenants.deleteTenantById(tenantAgent1.context.contextCorrelationId.replace('tenant-', ''))
+    await agent1.modules.tenants.deleteTenantById(tenantAgent2.context.contextCorrelationId.replace('tenant-', ''))
   })
 
   test('create a connection between two tenants within different agents', async () => {
@@ -258,7 +273,7 @@ describe('Tenants E2E', () => {
       ).modules.oob.createInvitation()
 
       expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
-      expect(tenantAgent.context.contextCorrelationId).toBe(tenantRecord.id)
+      expect(tenantAgent.context.contextCorrelationId).toBe(`tenant-${tenantRecord.id}`)
       expect(tenantAgent.config.label).toBe('Agent 1 Tenant 1')
     })
 

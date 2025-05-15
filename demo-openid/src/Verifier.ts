@@ -159,7 +159,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       port,
       name,
       modules: {
-        askar: new AskarModule({ askar }),
+        askar: new AskarModule({ askar, store: { id: name, key: name } }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: `${url}/oid4vp`,
           router: openId4VpRouter,

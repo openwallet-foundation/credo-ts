@@ -40,7 +40,15 @@ export class MediationRecord
   public connectionId!: string
   public threadId!: string
   public endpoint?: string
+
+  /**
+   * Base58 encoded recipient keys
+   */
   public recipientKeys!: string[]
+
+  /**
+   * Base58 encoded routing keys
+   */
   public routingKeys!: string[]
 
   @Transform(({ value }) => {

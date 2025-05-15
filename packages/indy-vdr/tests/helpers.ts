@@ -1,13 +1,7 @@
 import type { Agent } from '@credo-ts/core'
 import type { IndyVdrDidCreateOptions } from '../src/dids/IndyVdrIndyDidRegistrar'
 
-import {
-  DidCommV1Service,
-  DidDocumentService,
-  KeyType,
-  NewDidCommV2Service,
-  NewDidCommV2ServiceEndpoint,
-} from '@credo-ts/core'
+import { DidCommV1Service, DidDocumentService, NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -27,7 +21,12 @@ export const indyVdrModuleConfig = new IndyVdrModuleConfig({
 })
 
 export async function createDidOnLedger(agent: Agent, endorserDid: string) {
-  const key = await agent.wallet.createKey({ keyType: KeyType.Ed25519 })
+  const key = await agent.kms.createKey({
+    type: {
+      kty: 'OKP',
+      crv: 'Ed25519',
+    },
+  })
 
   const createResult = await agent.dids.create<IndyVdrDidCreateOptions>({
     method: 'indy',
@@ -36,7 +35,7 @@ export async function createDidOnLedger(agent: Agent, endorserDid: string) {
       endorserDid: endorserDid,
       alias: 'Alias',
       role: 'TRUSTEE',
-      verkey: key.publicKeyBase58,
+      keyId: key.keyId,
       useEndpointAttrib: true,
       services: [
         new DidDocumentService({

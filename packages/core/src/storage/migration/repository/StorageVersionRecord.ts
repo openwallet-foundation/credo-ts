@@ -1,10 +1,9 @@
 import type { VersionString } from '../../../utils/version'
 
-import { uuid } from '../../../utils/uuid'
 import { BaseRecord } from '../../BaseRecord'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION, STORAGE_VERSION_RECORD_ID } from '../updates'
 
 export interface StorageVersionRecordProps {
-  id?: string
   createdAt?: Date
   storageVersion: VersionString
 }
@@ -19,7 +18,7 @@ export class StorageVersionRecord extends BaseRecord {
     super()
 
     if (props) {
-      this.id = props.id ?? uuid()
+      this.id = StorageVersionRecord.storageVersionRecordId
       this.createdAt = props.createdAt ?? new Date()
       this.storageVersion = props.storageVersion
     }
@@ -27,5 +26,13 @@ export class StorageVersionRecord extends BaseRecord {
 
   public getTags() {
     return this._tags
+  }
+
+  public static get frameworkStorageVersion() {
+    return CURRENT_FRAMEWORK_STORAGE_VERSION
+  }
+
+  public static get storageVersionRecordId() {
+    return STORAGE_VERSION_RECORD_ID
   }
 }

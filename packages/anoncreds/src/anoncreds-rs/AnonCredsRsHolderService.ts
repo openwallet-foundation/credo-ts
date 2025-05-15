@@ -44,6 +44,7 @@ import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata
 import {
   CredoError,
   JsonTransformer,
+  Kms,
   TypedArrayEncoder,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -94,6 +95,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
       linkSecretId: options?.linkSecretId ?? utils.uuid(),
       linkSecretValue: LinkSecret.create(),
     }
+  }
+
+  /**
+   * generate an 80-bit nonce suitable for AnonCreds proofs
+   */
+  public generateNonce(agentContext: AgentContext): string {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const bytes = kms.randomBytes({ length: 10 })
+    return bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n).toString()
   }
 
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {

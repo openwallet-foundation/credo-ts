@@ -4,7 +4,7 @@ import {
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   HashName,
-  JwkJson,
+  Kms,
   MdocSessionTranscriptOptions,
   Query,
   QueryOptions,
@@ -31,7 +31,6 @@ import {
   JsonEncoder,
   JsonTransformer,
   Jwt,
-  KeyType,
   Logger,
   MdocDeviceResponse,
   SdJwtVcApi,
@@ -46,18 +45,18 @@ import {
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
-  getJwkFromKey,
   inject,
   injectable,
   isMdocSupportedSignatureAlgorithm,
   joinUriParts,
   utils,
 } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdScheme,
   ClientMetadata,
   JarmClientMetadata,
+  JarmMode,
   Openid4vpVerifier,
   ParsedOpenid4vpAuthorizationResponse,
   TransactionDataHashesCredentials,
@@ -108,8 +107,9 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     options: OpenId4VpCreateAuthorizationRequestOptions & { verifier: OpenId4VcVerifierRecord }
   ): Promise<OpenId4VpCreateAuthorizationRequestReturn> {
-    const nonce = await agentContext.wallet.generateNonce()
-    const state = await agentContext.wallet.generateNonce()
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const nonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
+    const state = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
 
     const responseMode = options.responseMode ?? 'direct_post.jwt'
     const isDcApiRequest = responseMode === 'dc_api' || responseMode === 'dc_api.jwt'
@@ -331,7 +331,7 @@ export class OpenId4VpVerifierService {
       })
 
       // FIXME: use JarmMode enum when new release of oid4vp
-      if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== 'Encrypted') {
+      if (parsedAuthorizationResponse.jarm && parsedAuthorizationResponse.jarm.type !== JarmMode.Encrypted) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidRequest,
           error_description: `Only encrypted JARM responses are supported, received '${parsedAuthorizationResponse.jarm.type}'.`,
@@ -417,7 +417,7 @@ export class OpenId4VpVerifierService {
       if (result.type === 'dcql') {
         const dcqlPresentationEntries = Object.entries(result.dcql.presentations)
         if (!authorizationRequest.dcql_query) {
-          throw new CredoError('')
+          throw new CredoError('Missing required dcql query')
         }
 
         const dcql = agentContext.dependencyManager.resolve(DcqlService)
@@ -741,22 +741,23 @@ export class OpenId4VpVerifierService {
   ) {
     const { responseMode, verifier } = options
 
-    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+    const signatureSuiteRegistry = agentContext.resolve(SignatureSuiteRegistry)
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const supportedAlgs = getSupportedJwaSignatureAlgorithms(agentContext)
     const supportedMdocAlgs = supportedAlgs.filter(isMdocSupportedSignatureAlgorithm)
     const supportedProofTypes = signatureSuiteRegistry.supportedProofTypes
 
-    type JarmEncryptionJwk = JwkJson & { kid: string; use: 'enc' }
+    type JarmEncryptionJwk = Kms.Jwk & { kid: string; use: 'enc' }
     let jarmEncryptionJwk: JarmEncryptionJwk | undefined
 
     if (isJarmResponseMode(responseMode)) {
-      const key = await agentContext.wallet.createKey({ keyType: KeyType.P256 })
-      jarmEncryptionJwk = { ...getJwkFromKey(key).toJson(), kid: key.fingerprint, use: 'enc' }
+      const key = await kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })
+      jarmEncryptionJwk = { ...key.publicJwk, use: 'enc' }
     }
 
     const jarmClientMetadata: (JarmClientMetadata & Pick<ClientMetadata, 'jwks'>) | undefined = jarmEncryptionJwk
       ? {
-          jwks: { keys: [jarmEncryptionJwk] },
+          jwks: { keys: [jarmEncryptionJwk as Jwk] },
           authorization_encrypted_response_alg: 'ECDH-ES',
           // FIXME: we need to support dynamically setting this by letting the wallet post their supported values
           // by posting to `request_uri`
@@ -867,7 +868,7 @@ export class OpenId4VpVerifierService {
       this.logger.trace('Presentation response', JsonTransformer.toJSON(presentation))
 
       let isValid: boolean
-      let reason: string | undefined = undefined
+      let cause: Error | undefined = undefined
       let verifiablePresentation: VerifiablePresentation
 
       if (format === ClaimFormat.SdJwtVc) {
@@ -906,7 +907,7 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.verification.isValid
-        reason = verificationResult.isValid ? undefined : verificationResult.error.message
+        cause = verificationResult.isValid ? undefined : verificationResult.error
         verifiablePresentation = sdJwtVc
       } else if (format === ClaimFormat.MsoMdoc) {
         if (typeof presentation !== 'string') {
@@ -981,7 +982,7 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.isValid
-        reason = verificationResult.error?.message
+        cause = verificationResult.error
       } else {
         verifiablePresentation = JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
@@ -991,11 +992,13 @@ export class OpenId4VpVerifierService {
         })
 
         isValid = verificationResult.isValid
-        reason = verificationResult.error?.message
+        cause = verificationResult.error
       }
 
       if (!isValid) {
-        throw new Error(reason)
+        throw new CredoError(`Error occured during verification of presentation.${cause ? ` ${cause.message}` : ''}`, {
+          cause,
+        })
       }
 
       return {

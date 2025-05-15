@@ -3,15 +3,27 @@ import type { ConnectionRecord } from '../../didcomm/src'
 import { HandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getInMemoryAgentOptions('Agents Alice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobAgentOptions = getInMemoryAgentOptions('Agents Bob', {
-  endpoints: ['rxjs:bob'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Agents Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const bobAgentOptions = getAgentOptions(
+  'Agents Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('agents', () => {
   let aliceAgent: Agent
@@ -21,9 +33,7 @@ describe('agents', () => {
 
   afterAll(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('make a connection between agents', async () => {

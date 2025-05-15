@@ -1,4 +1,4 @@
-import { JwaSignatureAlgorithm } from '@credo-ts/core'
+import { Kms } from '@credo-ts/core'
 import type { OpenId4VciCredentialConfigurationSupportedWithFormats } from '../src'
 
 import { OpenId4VciCredentialFormatProfile } from '../src'
@@ -10,7 +10,12 @@ export const openBadgeCredential = {
     type: ['VerifiableCredential', 'OpenBadgeCredential'],
   },
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -21,7 +26,12 @@ export const universityDegreeCredential = {
     type: ['VerifiableCredential', 'UniversityDegreeCredential'],
   },
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -33,7 +43,12 @@ export const universityDegreeCredentialLd = {
     '@context': ['context'],
   },
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -43,7 +58,12 @@ export const universityDegreeCredentialSdJwt = {
   vct: 'UniversityDegreeCredential',
   cryptographic_binding_methods_supported: ['did:key'],
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
@@ -52,7 +72,12 @@ export const universityDegreeCredentialConfigurationSupported = {
   scope: 'UniversityDegreeCredential',
   vct: 'UniversityDegreeCredential',
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
   cryptographic_binding_methods_supported: ['did:key', 'jwk'],
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
@@ -72,7 +97,12 @@ export const universityDegreeCredentialSdJwt2 = {
   format: OpenId4VciCredentialFormatProfile.SdJwtVc,
   vct: 'UniversityDegreeCredential2',
   proof_types_supported: {
-    jwt: { proof_signing_alg_values_supported: [JwaSignatureAlgorithm.EdDSA, JwaSignatureAlgorithm.ES256] },
+    jwt: {
+      proof_signing_alg_values_supported: [
+        Kms.KnownJwaSignatureAlgorithms.EdDSA,
+        Kms.KnownJwaSignatureAlgorithms.ES256,
+      ],
+    },
   },
   // FIXME: should this be dynamically generated? I think static is fine for now
   cryptographic_binding_methods_supported: ['jwk'],

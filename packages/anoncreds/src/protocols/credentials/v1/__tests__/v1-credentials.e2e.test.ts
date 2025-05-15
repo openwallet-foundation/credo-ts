@@ -35,9 +35,7 @@ describe('V1 Credentials', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with V1 credential proposal to Faber', async () => {

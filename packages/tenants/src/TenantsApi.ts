@@ -41,15 +41,7 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   }
 
   public async getTenantAgent({ tenantId }: GetTenantAgentOptions): Promise<TenantAgent<AgentModules>> {
-    this.logger.debug(`Getting tenant agent for tenant '${tenantId}'`)
-    const tenantContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(tenantId)
-
-    this.logger.trace(`Got tenant context for tenant '${tenantId}'`)
-    const tenantAgent = new TenantAgent<AgentModules>(tenantContext)
-    await tenantAgent.initialize()
-    this.logger.trace(`Initializing tenant agent for tenant '${tenantId}'`)
-
-    return tenantAgent
+    return this._getTenantAgent({ tenantId })
   }
 
   public async withTenantAgent<ReturnValue>(
@@ -74,10 +66,15 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async createTenant(options: CreateTenantOptions) {
     this.logger.debug(`Creating tenant with label ${options.config.label}`)
+
     const tenantRecord = await this.tenantRecordService.createTenant(this.rootAgentContext, options.config)
 
     // This initializes the tenant agent, creates the wallet etc...
-    const tenantAgent = await this.getTenantAgent({ tenantId: tenantRecord.id })
+    const tenantAgent = await this._getTenantAgent({
+      tenantId: tenantRecord.id,
+      // When creating a tenant we need to provision the context
+      provisionContext: true,
+    })
     await tenantAgent.endSession()
 
     this.logger.info(`Successfully created tenant '${tenantRecord.id}'`)
@@ -97,13 +94,12 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
 
   public async deleteTenantById(tenantId: string) {
     this.logger.debug(`Deleting tenant by id '${tenantId}'`)
-    // TODO: force remove context from the context provider (or session manager)
     const tenantAgent = await this.getTenantAgent({ tenantId })
 
     this.logger.trace(`Deleting wallet for tenant '${tenantId}'`)
-    await tenantAgent.wallet.delete()
-    this.logger.trace(`Shutting down agent for tenant '${tenantId}'`)
-    await tenantAgent.endSession()
+
+    // Deleting agent context will also end the session since there is no session anymore if the agent context is deleted
+    await this.agentContextProvider.deleteAgentContext(tenantAgent.context)
 
     return this.tenantRecordService.deleteTenantById(this.rootAgentContext, tenantId)
   }
@@ -141,5 +137,24 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
     })
 
     return outdatedTenants
+  }
+
+  private async _getTenantAgent({
+    tenantId,
+    provisionContext = false,
+  }: GetTenantAgentOptions & { provisionContext?: boolean }): Promise<TenantAgent<AgentModules>> {
+    this.logger.debug(`Getting tenant agent for tenant '${tenantId}'`)
+    const tenantContext = await this.agentContextProvider.getAgentContextForContextCorrelationId(
+      this.agentContextProvider.getContextCorrelationIdForTenantId(tenantId),
+      { provisionContext }
+    )
+
+    this.logger.trace(`Got tenant context for tenant '${tenantId}'`)
+    const tenantAgent = new TenantAgent<AgentModules>(tenantContext)
+
+    await tenantAgent.initialize()
+    this.logger.trace(`Initializing tenant agent for tenant '${tenantId}'`)
+
+    return tenantAgent
   }
 }

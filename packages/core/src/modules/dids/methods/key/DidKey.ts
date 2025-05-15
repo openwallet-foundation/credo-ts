@@ -1,26 +1,26 @@
-import { Key } from '../../../../crypto/Key'
-import { getDidDocumentForKey } from '../../domain/keyDidDocument'
+import { PublicJwk } from '../../../kms'
+import { getDidDocumentForPublicJwk } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
 export class DidKey {
-  public readonly key: Key
+  public readonly publicJwk: PublicJwk
 
-  public constructor(key: Key) {
-    this.key = key
+  public constructor(publicJwk: PublicJwk) {
+    this.publicJwk = publicJwk
   }
 
   public static fromDid(did: string) {
     const parsed = parseDid(did)
 
-    const key = Key.fromFingerprint(parsed.id)
-    return new DidKey(key)
+    const publicJwk = PublicJwk.fromFingerprint(parsed.id)
+    return new DidKey(publicJwk)
   }
 
   public get did() {
-    return `did:key:${this.key.fingerprint}`
+    return `did:key:${this.publicJwk.fingerprint}`
   }
 
   public get didDocument() {
-    return getDidDocumentForKey(this.did, this.key)
+    return getDidDocumentForPublicJwk(this.did, this.publicJwk)
   }
 }

@@ -1,6 +1,5 @@
 import type { KeyGenAlgorithm, KeySignParams } from '../types'
 
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { CredoWebCrypto } from '../CredoWebCrypto'
 
@@ -18,12 +17,9 @@ describe('CredoWebCrypto', () => {
   ]
 
   beforeAll(async () => {
-    const agentConfig = getAgentConfig('X509Service')
-    const wallet = new InMemoryWallet()
-    const agentContext = getAgentContext({ wallet })
-
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    const agentContext = getAgentContext({
+      agentConfig: getAgentConfig('X509Service'),
+    })
 
     webCrypto = new CredoWebCrypto(agentContext)
   })

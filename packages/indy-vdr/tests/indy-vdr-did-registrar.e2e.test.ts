@@ -7,29 +7,25 @@ import {
   DidDocumentService,
   DidsModule,
   JsonTransformer,
-  Key,
-  KeyType,
+  Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
-import { convertPublicKeyToX25519, generateKeyPairFromSeed } from '@stablelib/ed25519'
+import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
-import {
-  getInMemoryAgentOptions,
-  importExistingIndyDidFromPrivateKey,
-  retryUntilResult,
-} from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey, retryUntilResult } from '../../core/tests/helpers'
 import { IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
 import { IndyVdrIndyDidResolver } from '../src/dids/IndyVdrIndyDidResolver'
 import { indyDidFromNamespaceAndInitialKey } from '../src/dids/didIndyUtil'
 
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { indyVdrModuleConfig } from './helpers'
 
 const endorser = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {},
@@ -46,7 +42,7 @@ const endorser = new Agent(
   )
 )
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Indy VDR Indy DID Registrar',
     {},
     {},
@@ -79,9 +75,7 @@ describe('Indy VDR Indy Did Registrar', () => {
 
   afterAll(async () => {
     await endorser.shutdown()
-    await endorser.wallet.delete()
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('can register a did:indy without services', async () => {
@@ -165,26 +159,29 @@ describe('Indy VDR Indy Did Registrar', () => {
   })
 
   test('can register an endorsed did:indy without services - did and verkey specified', async () => {
-    // Generate a seed and the indy did. This allows us to create a new did every time
-    // but still check if the created output document is as expected.
-    const seed = Array(32 + 1)
-      .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
-      .slice(0, 32)
-
-    const keyPair = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed))
-    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(keyPair.publicKey)
-
-    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
-      'pool:localtest',
-      Key.fromPublicKey(keyPair.publicKey, KeyType.Ed25519)
+    const privateKey = TypedArrayEncoder.fromString(
+      Array(32 + 1)
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
+        .slice(0, 32)
     )
 
+    const key = await agent.kms.importKey(
+      transformPrivateKeyToPrivateJwk({
+        type: { kty: 'OKP', crv: 'Ed25519' },
+        privateKey,
+      })
+    )
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+
+    const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
+
     const didCreateTobeEndorsedResult = (await agent.dids.create<IndyVdrDidCreateOptions>({
-      did,
+      method: 'indy',
       options: {
         endorserDid,
         endorserMode: 'external',
-        verkey,
+        keyId: key.keyId,
       },
     })) as IndyVdrDidCreateResult
 
@@ -196,14 +193,13 @@ describe('Indy VDR Indy Did Registrar', () => {
       didState.endorserDid
     )
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      did: didState.did,
+      did,
       options: {
         endorserMode: 'external',
         endorsedTransaction: {
           nymRequest: signedNymRequest,
         },
       },
-      secret: didState.secret,
     })
 
     if (didCreateSubmitResult.didState.state !== 'finished') {
@@ -265,25 +261,28 @@ describe('Indy VDR Indy Did Registrar', () => {
   })
 
   test('can register a did:indy without services - did and verkey specified', async () => {
-    // Generate a seed and the indy did. This allows us to create a new did every time
-    // but still check if the created output document is as expected.
-    const seed = Array(32 + 1)
-      .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
-      .slice(0, 32)
-
-    const keyPair = generateKeyPairFromSeed(TypedArrayEncoder.fromString(seed))
-    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(keyPair.publicKey)
-
-    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
-      'pool:localtest',
-      Key.fromPublicKey(keyPair.publicKey, KeyType.Ed25519)
+    const privateKey = TypedArrayEncoder.fromString(
+      Array(32 + 1)
+        .join(`${Math.random().toString(36)}00000000000000000`.slice(2, 18))
+        .slice(0, 32)
     )
+
+    const key = await endorser.kms.importKey(
+      transformPrivateKeyToPrivateJwk({
+        type: { kty: 'OKP', crv: 'Ed25519' },
+        privateKey,
+      })
+    )
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+
+    const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
-      did,
+      method: 'indy',
       options: {
         endorserDid,
         endorserMode: 'internal',
-        verkey,
+        keyId: key.keyId,
       },
     })
 
@@ -351,22 +350,22 @@ describe('Indy VDR Indy Did Registrar', () => {
         .slice(0, 32)
     )
 
-    const key = await endorser.wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
-    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(key.publicKey))
-    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(key.publicKey)
-
-    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
-      'pool:localtest',
-      Key.fromPublicKey(key.publicKey, KeyType.Ed25519)
+    const key = await endorser.kms.importKey(
+      transformPrivateKeyToPrivateJwk({ type: { kty: 'OKP', crv: 'Ed25519' }, privateKey })
     )
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicJwk.publicKey.publicKey))
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+
+    const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
 
     const didRegistrationResult = await endorser.dids.create<IndyVdrDidCreateOptions>({
-      did,
+      method: 'indy',
       options: {
         endorserDid,
         endorserMode: 'internal',
         useEndpointAttrib: true,
-        verkey,
+        keyId: key.keyId,
         services: [
           new DidDocumentService({
             id: `${did}#endpoint`,
@@ -477,22 +476,23 @@ describe('Indy VDR Indy Did Registrar', () => {
         .slice(0, 32)
     )
 
-    const key = await endorser.wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
-    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(key.publicKey))
-    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(key.publicKey)
-
-    const { did, verkey } = indyDidFromNamespaceAndInitialKey(
-      'pool:localtest',
-      Key.fromPublicKey(key.publicKey, KeyType.Ed25519)
+    const key = await endorser.kms.importKey(
+      transformPrivateKeyToPrivateJwk({ type: { kty: 'OKP', crv: 'Ed25519' }, privateKey })
     )
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+    const x25519PublicKeyBase58 = TypedArrayEncoder.toBase58(convertPublicKeyToX25519(publicJwk.publicKey.publicKey))
+    const ed25519PublicKeyBase58 = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+
+    const { did } = indyDidFromNamespaceAndInitialKey('pool:localtest', publicJwk)
 
     const didCreateTobeEndorsedResult = (await endorser.dids.create<IndyVdrDidCreateOptions>({
-      did,
+      method: 'indy',
       options: {
         endorserMode: 'external',
         endorserDid: endorserDid,
         useEndpointAttrib: true,
-        verkey,
+        keyId: key.keyId,
+        // keyId: key.keyId
         services: [
           new DidDocumentService({
             id: `${did}#endpoint`,
@@ -534,7 +534,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     )
 
     const didCreateSubmitResult = await agent.dids.create<IndyVdrDidCreateOptions>({
-      did: didState.did,
+      did,
       options: {
         endorserMode: 'external',
         endorsedTransaction: {
@@ -542,7 +542,6 @@ describe('Indy VDR Indy Did Registrar', () => {
           attribRequest: endorsedAttribRequest,
         },
       },
-      secret: didState.secret,
     })
 
     const expectedDidDocument = {

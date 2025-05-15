@@ -2,14 +2,14 @@ import type { DidDocumentService } from './service'
 
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
-
-import { Key } from '../../../crypto/Key'
-import { KeyType } from '../../../crypto/KeyType'
 import { CredoError } from '../../../error'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
 
-import { getKeyFromVerificationMethod } from './key-type'
+import { TypedArrayEncoder } from '../../../utils'
+import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
+import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
+import { getPublicJwkFromVerificationMethod } from './key-type'
 import { DidCommV1Service, IndyAgentService, ServiceTransformer } from './service'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
@@ -149,6 +149,30 @@ export class DidDocument {
     throw new CredoError(`Unable to locate verification method with id '${keyId}' in purposes ${purposes}`)
   }
 
+  public findVerificationMethodByPublicKey(publicJwk: PublicJwk, allowedPurposes?: DidVerificationMethods[]) {
+    const allPurposes: DidVerificationMethods[] = [
+      'authentication',
+      'keyAgreement',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+      'verificationMethod',
+    ]
+
+    const purposes = allowedPurposes ?? allPurposes
+
+    for (const purpose of purposes) {
+      for (const key of this[purpose] ?? []) {
+        const verificationMethod = typeof key === 'string' ? this.dereferenceVerificationMethod(key) : key
+        if (getPublicJwkFromVerificationMethod(verificationMethod).equals(publicJwk)) return verificationMethod
+      }
+    }
+
+    throw new CredoError(
+      `Unable to locate verification method with public key ${publicJwk.jwkTypehumanDescription} in purposes ${purposes}`
+    )
+  }
+
   /**
    * Returns all of the service endpoints matching the given type.
    *
@@ -184,30 +208,112 @@ export class DidDocument {
   }
 
   // TODO: it would probably be easier if we add a utility to each service so we don't have to handle logic for all service types here
-  public get recipientKeys(): Key[] {
-    let recipientKeys: Key[] = []
+  public get recipientKeys(): PublicJwk<Ed25519PublicJwk | X25519PublicJwk>[] {
+    return this.getRecipientKeysWithVerificationMethod({
+      // False for now to avoid breaking changes
+      mapX25519ToEd25519: false,
+    }).map(({ publicJwk }) => publicJwk)
+  }
 
+  /**
+   * Returns the recipient keys with their verification method matches
+   *
+   * We should probably deprecate recipientKeys in favour of this one
+   */
+  public getRecipientKeysWithVerificationMethod<MapX25519ToEd25519 extends boolean>({
+    mapX25519ToEd25519,
+  }: { mapX25519ToEd25519: MapX25519ToEd25519 }): Array<{
+    verificationMethod: VerificationMethod
+    publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
+  }> {
+    const recipientKeys: Array<{
+      verificationMethod: VerificationMethod
+      publicJwk: PublicJwk<Ed25519PublicJwk | X25519PublicJwk>
+    }> = []
+
+    const seenVerificationMethodIds: string[] = []
     for (const service of this.didCommServices) {
       if (service.type === IndyAgentService.type) {
-        recipientKeys = [
-          ...recipientKeys,
-          ...service.recipientKeys.map((publicKeyBase58) => Key.fromPublicKeyBase58(publicKeyBase58, KeyType.Ed25519)),
-        ]
+        for (const publicKeyBase58 of service.recipientKeys) {
+          const publicJwk = PublicJwk.fromPublicKey({
+            kty: 'OKP',
+            crv: 'Ed25519',
+            publicKey: TypedArrayEncoder.fromBase58(publicKeyBase58),
+          })
+          const verificationMethod = [...(this.verificationMethod ?? []), ...(this.authentication ?? [])]
+            .map((v) => (typeof v === 'string' ? this.dereferenceVerificationMethod(v) : v))
+            .find((v) => {
+              const vPublicJwk = getPublicJwkFromVerificationMethod(v)
+              return vPublicJwk.equals(publicJwk)
+            })
+
+          if (!verificationMethod) {
+            throw new CredoError('Could not find verification method for IndyAgentService recipient key')
+          }
+
+          // Skip adding if already present
+          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
+            continue
+          }
+
+          recipientKeys.push({
+            publicJwk,
+            verificationMethod,
+          })
+        }
       } else if (service.type === DidCommV1Service.type) {
-        recipientKeys = [
-          ...recipientKeys,
-          ...service.recipientKeys.map((recipientKey) =>
-            getKeyFromVerificationMethod(this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement']))
-          ),
-        ]
+        for (const recipientKey of service.recipientKeys) {
+          const verificationMethod = this.dereferenceKey(recipientKey, ['authentication', 'keyAgreement'])
+          if (seenVerificationMethodIds.includes(verificationMethod.id)) {
+            // Skip adding if already present
+            continue
+          }
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+          if (!publicJwk.is(Ed25519PublicJwk, X25519PublicJwk)) {
+            throw new CredoError(
+              'Expected either Ed25519PublicJwk or X25519PublicJwk for DidcommV1Service recipient key'
+            )
+          }
+
+          recipientKeys.push({
+            publicJwk,
+            verificationMethod,
+          })
+        }
       }
     }
 
-    return recipientKeys
+    if (!mapX25519ToEd25519) {
+      return recipientKeys as Array<{
+        verificationMethod: VerificationMethod
+        publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
+      }>
+    }
+
+    return recipientKeys.map(({ publicJwk, verificationMethod }) => {
+      if (publicJwk.is(Ed25519PublicJwk)) return { publicJwk, verificationMethod }
+
+      const matchingEd25519Key = findMatchingEd25519Key(publicJwk as PublicJwk<X25519PublicJwk>, this)
+
+      // For DIDcomm v1 if you use X25519 you MUST also include the Ed25519 key
+      if (!matchingEd25519Key) {
+        throw new CredoError(
+          `Unable to find matching Ed25519 key for X25519 verification method with id ${verificationMethod.id}`
+        )
+      }
+
+      return matchingEd25519Key
+    })
   }
 
   public toJSON() {
     return JsonTransformer.toJSON(this)
+  }
+
+  public static fromJSON(didDocument: unknown) {
+    return JsonTransformer.fromJSON(didDocument, DidDocument)
   }
 }
 

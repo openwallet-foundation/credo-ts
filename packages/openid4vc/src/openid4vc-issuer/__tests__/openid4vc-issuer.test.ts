@@ -21,7 +21,6 @@ import {
   JsonTransformer,
   JwsService,
   JwtPayload,
-  KeyType,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredential,
@@ -31,15 +30,13 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   equalsIgnoreOrder,
-  getJwkFromKey,
   w3cDate,
 } from '@credo-ts/core'
-
-import { AskarModule } from '../../../../askar/src'
-import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
-import { dateToSeconds, getKeyFromDid } from '../../shared/utils'
+import { dateToSeconds } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -83,7 +80,7 @@ const modules = {
       throw new Error('Not implemented')
     },
   }),
-  askar: new AskarModule(askarModuleConfig),
+  inMemory: new InMemoryWalletModule(),
 }
 
 const jwsService = new JwsService()
@@ -101,16 +98,10 @@ const createCredentialRequest = async (
   const { credentialConfiguration, kid, nonce, issuerMetadata, clientId } = options
 
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const didDocument = await didsApi.resolveDidDocument(kid)
-  if (!didDocument.verificationMethod) {
-    throw new CredoError(`No verification method found for kid ${kid}`)
-  }
-
-  const key = await getKeyFromDid(agentContext, kid)
-  const jwk = getJwkFromKey(key)
+  const { publicJwk } = await didsApi.resolveVerificationMethodFromCreatedDidRecord(kid)
 
   const jws = await jwsService.createJwsCompact(agentContext, {
-    protectedHeaderOptions: { alg: jwk.supportedSignatureAlgorithms[0], kid, typ: 'openid4vci-proof+jwt' },
+    protectedHeaderOptions: { alg: publicJwk.signatureAlgorithm, kid, typ: 'openid4vci-proof+jwt' },
     payload: new JwtPayload({
       iat: dateToSeconds(new Date()),
       iss: clientId,
@@ -119,7 +110,7 @@ const createCredentialRequest = async (
         nonce,
       },
     }),
-    key,
+    keyId: publicJwk.keyId,
   })
 
   if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.JwtVcJson) {
@@ -149,10 +140,6 @@ const createCredentialRequest = async (
 const issuer = new Agent({
   config: {
     label: 'OpenId4VcIssuer Test323',
-    walletConfig: {
-      id: 'openid4vc-Issuer-test323',
-      key: 'openid4vc-Issuer-test323',
-    },
   },
   dependencies: agentDependencies,
   modules,
@@ -161,10 +148,6 @@ const issuer = new Agent({
 const holder = new Agent({
   config: {
     label: 'OpenId4VciIssuer(Holder) Test323',
-    walletConfig: {
-      id: 'openid4vc-Issuer(Holder)-test323',
-      key: 'openid4vc-Issuer(Holder)-test323',
-    },
   },
   dependencies: agentDependencies,
   modules,
@@ -183,31 +166,42 @@ describe('OpenId4VcIssuer', () => {
     await issuer.initialize()
     await holder.initialize()
 
+    const { keyId } = await holder.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      }).privateJwk,
+    })
+
     const holderDidCreateResult = await holder.dids.create<KeyDidCreateOptions>({
       method: 'key',
-      options: { keyType: KeyType.Ed25519 },
-      secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
+      options: { keyId },
     })
 
     holderDid = holderDidCreateResult.didState.did as string
     const holderDidKey = DidKey.fromDid(holderDid)
-    holderKid = `${holderDid}#${holderDidKey.key.fingerprint}`
+    holderKid = `${holderDid}#${holderDidKey.publicJwk.fingerprint}`
     const _holderVerificationMethod = holderDidCreateResult.didState.didDocument?.dereferenceKey(holderKid, [
       'authentication',
     ])
     if (!_holderVerificationMethod) throw new Error('No verification method found')
     holderVerificationMethod = _holderVerificationMethod
 
+    const { keyId: issuerKeyId } = await issuer.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598f'),
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      }).privateJwk,
+    })
     const issuerDidCreateResult = await issuer.dids.create<KeyDidCreateOptions>({
       method: 'key',
-      options: { keyType: KeyType.Ed25519 },
-      secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598f') },
+      options: { keyId: issuerKeyId },
     })
 
     issuerDid = issuerDidCreateResult.didState.did as string
 
     const issuerDidKey = DidKey.fromDid(issuerDid)
-    const issuerKid = `${issuerDid}#${issuerDidKey.key.fingerprint}`
+    const issuerKid = `${issuerDid}#${issuerDidKey.publicJwk.fingerprint}`
     const _issuerVerificationMethod = issuerDidCreateResult.didState.didDocument?.dereferenceKey(issuerKid, [
       'authentication',
     ])
@@ -226,10 +220,7 @@ describe('OpenId4VcIssuer', () => {
 
   afterEach(async () => {
     await issuer.shutdown()
-    await issuer.wallet.delete()
-
     await holder.shutdown()
-    await holder.wallet.delete()
   })
 
   // This method is available on the holder service,

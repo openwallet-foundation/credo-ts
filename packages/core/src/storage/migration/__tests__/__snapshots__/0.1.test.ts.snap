@@ -810,6 +810,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.577Z",
       "id": "1-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -877,6 +878,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.608Z",
       "id": "2-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -944,6 +946,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.628Z",
       "id": "3-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -1011,6 +1014,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": undefined,
       "createdAt": "2022-04-30T13:02:21.635Z",
       "id": "4-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -1078,6 +1082,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": false,
       "createdAt": "2022-04-30T13:02:21.641Z",
       "id": "5-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -1140,6 +1145,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.646Z",
       "id": "6-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -1207,6 +1213,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": true,
       "createdAt": "2022-04-30T13:02:21.653Z",
       "id": "7-4e4f-41d9-94c4-f49351b811f1",
+      "invitationInlineServiceKeys": undefined,
       "mediatorId": undefined,
       "metadata": {},
       "outOfBandInvitation": {
@@ -1518,6 +1525,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"SDqTzbVuCowusqGBNbNDjH#1","controller":"SDqTzbVuCowusqGBNbNDjH","type":"Ed25519VerificationKey2018","publicKeyBase58":"EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"}],"service":[{"id":"SDqTzbVuCowusqGBNbNDjH#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"],"routingKeys":[]}],"authentication":[{"publicKey":"SDqTzbVuCowusqGBNbNDjH#1","type":"Ed25519SignatureAuthentication2018"}],"id":"SDqTzbVuCowusqGBNbNDjH"}",
@@ -1588,6 +1596,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"GkEeb96MGT94K1HyQQzpj1#1","controller":"GkEeb96MGT94K1HyQQzpj1","type":"Ed25519VerificationKey2018","publicKeyBase58":"9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"}],"service":[{"id":"GkEeb96MGT94K1HyQQzpj1#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],"routingKeys":[]}],"authentication":[{"publicKey":"GkEeb96MGT94K1HyQQzpj1#1","type":"Ed25519SignatureAuthentication2018"}],"id":"GkEeb96MGT94K1HyQQzpj1"}",
@@ -1658,6 +1667,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"XajWZZmHGAWUvYCi7CApaG#1","controller":"XajWZZmHGAWUvYCi7CApaG","type":"Ed25519VerificationKey2018","publicKeyBase58":"HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"}],"service":[{"id":"XajWZZmHGAWUvYCi7CApaG#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"],"routingKeys":[]}],"authentication":[{"publicKey":"XajWZZmHGAWUvYCi7CApaG#1","type":"Ed25519SignatureAuthentication2018"}],"id":"XajWZZmHGAWUvYCi7CApaG"}",
@@ -1728,6 +1738,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#1","controller":"RtH4qxVPL1Dpmdv7GytjBv","type":"Ed25519VerificationKey2018","publicKeyBase58":"EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"}],"service":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],"routingKeys":[]}],"authentication":[{"publicKey":"RtH4qxVPL1Dpmdv7GytjBv#1","type":"Ed25519SignatureAuthentication2018"}],"id":"RtH4qxVPL1Dpmdv7GytjBv"}",
@@ -1798,6 +1809,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"YUH4t3KMkEJiXgmqsncrY9#1","controller":"YUH4t3KMkEJiXgmqsncrY9","type":"Ed25519VerificationKey2018","publicKeyBase58":"J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"}],"service":[{"id":"YUH4t3KMkEJiXgmqsncrY9#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"],"routingKeys":[]}],"authentication":[{"publicKey":"YUH4t3KMkEJiXgmqsncrY9#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YUH4t3KMkEJiXgmqsncrY9"}",
@@ -1868,6 +1880,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#1","controller":"WSwJQMBHGZbQsq9LDBTWjX","type":"Ed25519VerificationKey2018","publicKeyBase58":"H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"}],"service":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"],"routingKeys":[]}],"authentication":[{"publicKey":"WSwJQMBHGZbQsq9LDBTWjX#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WSwJQMBHGZbQsq9LDBTWjX"}",
@@ -1938,6 +1951,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"TMnQftvJJJwoYogYkQgVjg#1","controller":"TMnQftvJJJwoYogYkQgVjg","type":"Ed25519VerificationKey2018","publicKeyBase58":"FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"}],"service":[{"id":"TMnQftvJJJwoYogYkQgVjg#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"],"routingKeys":[]}],"authentication":[{"publicKey":"TMnQftvJJJwoYogYkQgVjg#1","type":"Ed25519SignatureAuthentication2018"}],"id":"TMnQftvJJJwoYogYkQgVjg"}",
@@ -2008,6 +2022,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"YKc7qhYN1TckZAMUf7jgwc#1","controller":"YKc7qhYN1TckZAMUf7jgwc","type":"Ed25519VerificationKey2018","publicKeyBase58":"J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"}],"service":[{"id":"YKc7qhYN1TckZAMUf7jgwc#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"],"routingKeys":[]}],"authentication":[{"publicKey":"YKc7qhYN1TckZAMUf7jgwc#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YKc7qhYN1TckZAMUf7jgwc"}",
@@ -2078,6 +2093,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"Ak15GBhMYpdS8XX3QDMv31#1","controller":"Ak15GBhMYpdS8XX3QDMv31","type":"Ed25519VerificationKey2018","publicKeyBase58":"6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"}],"service":[{"id":"Ak15GBhMYpdS8XX3QDMv31#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"],"routingKeys":[]}],"authentication":[{"publicKey":"Ak15GBhMYpdS8XX3QDMv31#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ak15GBhMYpdS8XX3QDMv31"}",
@@ -2148,6 +2164,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"9jTqUnV4k5ucxbyxumAaV7#1","controller":"9jTqUnV4k5ucxbyxumAaV7","type":"Ed25519VerificationKey2018","publicKeyBase58":"5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"}],"service":[{"id":"9jTqUnV4k5ucxbyxumAaV7#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"],"routingKeys":[]}],"authentication":[{"publicKey":"9jTqUnV4k5ucxbyxumAaV7#1","type":"Ed25519SignatureAuthentication2018"}],"id":"9jTqUnV4k5ucxbyxumAaV7"}",
@@ -2218,6 +2235,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"WewvCdyBi4HL8ogyGviYVS#1","controller":"WewvCdyBi4HL8ogyGviYVS","type":"Ed25519VerificationKey2018","publicKeyBase58":"HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"}],"service":[{"id":"WewvCdyBi4HL8ogyGviYVS#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"],"routingKeys":[]}],"authentication":[{"publicKey":"WewvCdyBi4HL8ogyGviYVS#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WewvCdyBi4HL8ogyGviYVS"}",
@@ -2288,6 +2306,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#1","controller":"3KAjJWF5NjiDTUm6JpPBQD","type":"Ed25519VerificationKey2018","publicKeyBase58":"2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"}],"service":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],"routingKeys":[]}],"authentication":[{"publicKey":"3KAjJWF5NjiDTUm6JpPBQD#1","type":"Ed25519SignatureAuthentication2018"}],"id":"3KAjJWF5NjiDTUm6JpPBQD"}",
@@ -2358,6 +2377,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         ],
       },
       "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
           "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#1","controller":"Ud6AWCk6WrwfYKZUw5tJmt","type":"Ed25519VerificationKey2018","publicKeyBase58":"G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"}],"service":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"],"routingKeys":[]}],"authentication":[{"publicKey":"Ud6AWCk6WrwfYKZUw5tJmt#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ud6AWCk6WrwfYKZUw5tJmt"}",

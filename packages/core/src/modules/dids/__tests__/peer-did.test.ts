@@ -1,21 +1,17 @@
 import type { AgentContext } from '../../../agent'
-import type { Wallet } from '../../../wallet'
 
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../tests/helpers'
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
-import { Key, KeyType } from '../../../crypto'
 import { JsonTransformer, TypedArrayEncoder } from '../../../utils'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import {
   DidCommV1Service,
   DidDocument,
   DidDocumentBuilder,
-  convertPublicKeyToX25519,
   getEd25519VerificationKey2018,
   getX25519KeyAgreementKey2019,
 } from '../domain'
@@ -27,6 +23,8 @@ import { didDocumentJsonToNumAlgo1Did } from '../methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
 
+import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { KeyManagementApi, PublicJwk, X25519PublicJwk } from '../../kms'
 import didPeer1zQmY from './__fixtures__/didPeer1zQmY.json'
 
 describe('peer dids', () => {
@@ -34,24 +32,23 @@ describe('peer dids', () => {
 
   let didRepository: DidRepository
   let didResolverService: DidResolverService
-  let wallet: Wallet
   let agentContext: AgentContext
   let eventEmitter: EventEmitter
+  let kms: KeyManagementApi
 
   beforeEach(async () => {
-    wallet = new InMemoryWallet()
     const storageService = new InMemoryStorageService<DidRecord>()
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     didRepository = new DidRepository(storageService, eventEmitter)
 
     agentContext = getAgentContext({
-      wallet,
       registerInstances: [
         [DidRepository, didRepository],
         [InjectionSymbols.StorageService, storageService],
       ],
+      agentConfig: getAgentConfig('peer-did'),
     })
-    await wallet.createAndOpen(config.walletConfig)
+    kms = agentContext.resolve(KeyManagementApi)
 
     didResolverService = new DidResolverService(
       config.logger,
@@ -60,30 +57,39 @@ describe('peer dids', () => {
     )
   })
 
-  afterEach(async () => {
-    await wallet.delete()
-  })
-
   test('create a peer did method 1 document from ed25519 keys with a service', async () => {
     // The following scenario show how we could create a key and create a did document from it for DID Exchange
 
-    const ed25519Key = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('astringoftotalin32characterslong'),
-      keyType: KeyType.Ed25519,
+    const ed25519Key = await kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('astringoftotalin32characterslong'),
+        type: {
+          crv: 'Ed25519',
+          kty: 'OKP',
+        },
+      }).privateJwk,
     })
-    const mediatorEd25519Key = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('anotherstringof32characterslong1'),
-      keyType: KeyType.Ed25519,
-    })
+    const ed25519PublicJwk = PublicJwk.fromPublicJwk(ed25519Key.publicJwk)
 
-    const x25519Key = Key.fromPublicKey(convertPublicKeyToX25519(ed25519Key.publicKey), KeyType.X25519)
+    const mediatorEd25519Key = await kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('anotherstringof32characterslong1'),
+        type: {
+          crv: 'Ed25519',
+          kty: 'OKP',
+        },
+      }).privateJwk,
+    })
+    const mediatorEd25519PublicJwk = PublicJwk.fromPublicJwk(mediatorEd25519Key.publicJwk)
+
+    const x25519PublicJwk = ed25519PublicJwk.convertTo(X25519PublicJwk)
 
     const ed25519VerificationMethod = getEd25519VerificationKey2018({
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes
       id: '#d0d32199-851f-48e3-b178-6122bd4216a4',
-      key: ed25519Key,
+      publicJwk: ed25519PublicJwk,
       // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
     })
@@ -92,16 +98,16 @@ describe('peer dids', () => {
       // uuid is easier as it is consistent between different key types. Normally you would dynamically
       // generate the uuid, but static for testing purposes
       id: '#08673492-3c44-47fe-baa4-a1780c585d75',
-      key: x25519Key,
+      publicJwk: x25519PublicJwk,
       // For peer dids generated with method 1, the controller MUST be #id as we don't know the did yet
       controller: '#id',
     })
 
-    const mediatorEd25519DidKey = new DidKey(mediatorEd25519Key)
-    const mediatorX25519Key = Key.fromPublicKey(convertPublicKeyToX25519(mediatorEd25519Key.publicKey), KeyType.X25519)
+    const mediatorEd25519DidKey = new DidKey(mediatorEd25519PublicJwk)
+    const mediatorX25519PublicJwk = mediatorEd25519PublicJwk.convertTo(X25519PublicJwk)
 
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
-    const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519Key.fingerprint}`
+    const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519PublicJwk.fingerprint}`
 
     const service = new DidCommV1Service({
       id: '#service-0',

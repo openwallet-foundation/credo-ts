@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../../../../core/src/agent'
 import type { Routing } from '../../../../models'
 
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
-import { Key } from '../../../../../../core/src/crypto'
 import { DidRepository } from '../../../../../../core/src/modules/dids/repository/DidRepository'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
@@ -178,8 +178,12 @@ describe('MediationRecipientService', () => {
   })
 
   describe('addMediationRouting', () => {
-    const routingKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
-    const recipientKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
+    const routingKey = Kms.PublicJwk.fromFingerprint(
+      'z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'
+    ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    const recipientKey = Kms.PublicJwk.fromFingerprint(
+      'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
+    ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
     const routing: Routing = {
       routingKeys: [routingKey],
       recipientKey,
@@ -192,7 +196,7 @@ describe('MediationRecipientService', () => {
       state: MediationState.Granted,
       threadId: 'thread-id',
       endpoint: 'https://a-mediator-endpoint.com',
-      routingKeys: [routingKey.publicKeyBase58],
+      routingKeys: [TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)],
     })
 
     beforeEach(() => {

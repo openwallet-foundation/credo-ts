@@ -13,12 +13,11 @@ import {
   id_ce_subjectKeyIdentifier,
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
-
-import { Key } from '../../crypto/Key'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
-import { credoKeyTypeIntoCryptoKeyAlgorithm, spkiAlgorithmIntoCredoKeyType } from '../../crypto/webcrypto/utils'
+import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
 
+import { PublicJwk, assymetricPublicJwkMatches } from '../kms'
 import { X509Error } from './X509Error'
 import {
   convertName,
@@ -55,20 +54,32 @@ export enum X509ExtendedKeyUsage {
 }
 
 export type X509CertificateOptions = {
-  publicKey: Key
+  publicJwk: PublicJwk
   privateKey?: Uint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
-  public publicKey: Key
+  public publicJwk: PublicJwk
   public privateKey?: Uint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
-    this.publicKey = options.publicKey
+    this.publicJwk = options.publicJwk
     this.privateKey = options.privateKey
     this.x509Certificate = options.x509Certificate
+  }
+
+  public set keyId(keyId: string) {
+    this.publicJwk.keyId = keyId
+  }
+
+  public get keyId(): string {
+    return this.publicJwk.keyId
+  }
+
+  public get hasKeyId(): boolean {
+    return this.publicJwk.hasKeyId
   }
 
   public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
@@ -82,16 +93,13 @@ export class X509Certificate {
   }
 
   private static parseCertificate(certificate: x509.X509Certificate): X509Certificate {
-    const publicKey = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo)
+    const spki = AsnParser.parse(certificate.publicKey.rawData, SubjectPublicKeyInfo)
     const privateKey = certificate.privateKey ? new Uint8Array(certificate.privateKey.rawData) : undefined
 
-    const keyType = spkiAlgorithmIntoCredoKeyType(publicKey.algorithm)
-    const publicKeyBytes = new Uint8Array(publicKey.subjectPublicKey)
-
-    const key = new Key(publicKeyBytes, keyType)
+    const publicJwk = spkiToPublicJwk(spki)
 
     return new X509Certificate({
-      publicKey: key,
+      publicJwk,
       privateKey,
       x509Certificate: certificate,
     })
@@ -194,18 +202,18 @@ export class X509Certificate {
 
   public static async create(options: X509CreateCertificateOptions, webCrypto: CredoWebCrypto) {
     const subjectPublicKey = options.subjectPublicKey ?? options.authorityKey
-    const isSelfSignedCertificate = options.authorityKey.publicKeyBase58 === subjectPublicKey.publicKeyBase58
+    const isSelfSignedCertificate = assymetricPublicJwkMatches(options.authorityKey.toJson(), subjectPublicKey.toJson())
 
     const signingKey = new CredoWebCryptoKey(
       options.authorityKey,
-      credoKeyTypeIntoCryptoKeyAlgorithm(options.authorityKey.keyType),
+      publicJwkToCryptoKeyAlgorithm(options.authorityKey),
       false,
       'private',
       ['sign']
     )
     const publicKey = new CredoWebCryptoKey(
       subjectPublicKey,
-      credoKeyTypeIntoCryptoKeyAlgorithm(options.authorityKey.keyType),
+      publicJwkToCryptoKeyAlgorithm(options.authorityKey),
       true,
       'public',
       ['verify']
@@ -215,12 +223,14 @@ export class X509Certificate {
 
     const extensions: Array<x509.Extension | undefined> = []
     extensions.push(
-      createSubjectKeyIdentifierExtension(options.extensions?.subjectKeyIdentifier, { key: subjectPublicKey })
+      createSubjectKeyIdentifierExtension(options.extensions?.subjectKeyIdentifier, { publicJwk: subjectPublicKey })
     )
     extensions.push(createKeyUsagesExtension(options.extensions?.keyUsage))
     extensions.push(createExtendedKeyUsagesExtension(options.extensions?.extendedKeyUsage))
     extensions.push(
-      createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, { key: options.authorityKey })
+      createAuthorityKeyIdentifierExtension(options.extensions?.authorityKeyIdentifier, {
+        publicJwk: options.authorityKey,
+      })
     )
     extensions.push(createIssuerAlternativeNameExtension(options.extensions?.issuerAlternativeName))
     extensions.push(createSubjectAlternativeNameExtension(options.extensions?.subjectAlternativeName))
@@ -244,7 +254,9 @@ export class X509Certificate {
         webCrypto
       )
 
-      return X509Certificate.parseCertificate(certificate)
+      const certificateInstance = X509Certificate.parseCertificate(certificate)
+      if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+      return certificateInstance
     }
 
     if (!options.subject) {
@@ -266,7 +278,9 @@ export class X509Certificate {
       webCrypto
     )
 
-    return X509Certificate.parseCertificate(certificate)
+    const certificateInstance = X509Certificate.parseCertificate(certificate)
+    if (subjectPublicKey.hasKeyId) certificateInstance.publicJwk.keyId = subjectPublicKey.keyId
+    return certificateInstance
   }
 
   public get subject() {
@@ -280,11 +294,11 @@ export class X509Certificate {
   public async verify(
     {
       verificationDate = new Date(),
-      publicKey,
+      publicJwk,
       skipSignatureVerification = false,
     }: {
       verificationDate: Date
-      publicKey?: Key
+      publicJwk?: PublicJwk
 
       /**
        * Whether to skip the verification of the signature and only perform other checks (such
@@ -301,9 +315,9 @@ export class X509Certificate {
     webCrypto: CredoWebCrypto
   ) {
     let publicCryptoKey: CredoWebCryptoKey | undefined
-    if (publicKey) {
-      const cryptoKeyAlgorithm = credoKeyTypeIntoCryptoKeyAlgorithm(publicKey.keyType)
-      publicCryptoKey = new CredoWebCryptoKey(publicKey, cryptoKeyAlgorithm, true, 'public', ['verify'])
+    if (publicJwk) {
+      const cryptoKeyAlgorithm = publicJwkToCryptoKeyAlgorithm(publicJwk)
+      publicCryptoKey = new CredoWebCryptoKey(publicJwk, cryptoKeyAlgorithm, true, 'public', ['verify'])
     }
 
     // We use the library to validate the signature, but the date is manually verified
@@ -358,8 +372,15 @@ export class X509Certificate {
     return this.x509Certificate.issuerName.getField(field)
   }
 
-  public toString(format: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
-    return this.x509Certificate.toString(format)
+  /**
+   * @param format the format to export to, defaults to `pem`
+   */
+  public toString(format?: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
+    return this.x509Certificate.toString(format ?? 'pem')
+  }
+
+  private toJSON() {
+    return this.toString()
   }
 
   public equal(certificate: X509Certificate) {

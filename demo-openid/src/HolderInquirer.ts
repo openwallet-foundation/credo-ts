@@ -135,7 +135,7 @@ export class HolderInquirer extends BaseInquirer {
 
   public async addTrustedCertificate() {
     const trustedCertificate = await this.inquireInput('Enter trusted certificate: ')
-    await this.holder.agent.x509.addTrustedCertificate(trustedCertificate)
+    this.holder.agent.x509.config.addTrustedCertificate(trustedCertificate)
 
     console.log(greenText('Added trusted certificate'))
   }

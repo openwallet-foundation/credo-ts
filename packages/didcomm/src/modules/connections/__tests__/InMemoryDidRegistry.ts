@@ -4,6 +4,7 @@ import type {
   DidCreateResult,
   DidDeactivateResult,
   DidDocument,
+  DidDocumentKey,
   DidRegistrar,
   DidResolutionResult,
   DidResolver,
@@ -19,7 +20,14 @@ export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
 
   private dids: Record<string, DidDocument> = {}
 
-  public async create(agentContext: AgentContext, options: DidCreateOptions): Promise<DidCreateResult> {
+  public async create(
+    agentContext: AgentContext,
+    options: DidCreateOptions & {
+      options: {
+        keys: DidDocumentKey[]
+      }
+    }
+  ): Promise<DidCreateResult> {
     const { did, didDocument } = options
 
     if (!did || !didDocument) {
@@ -40,6 +48,7 @@ export class InMemoryDidRegistry implements DidRegistrar, DidResolver {
       did: didDocument.id,
       role: DidDocumentRole.Created,
       didDocument,
+      keys: options.options.keys,
     })
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     await didRepository.save(agentContext, didRecord)

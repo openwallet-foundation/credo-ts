@@ -38,6 +38,12 @@
   "peerDependencies": {
     "react-native": ">=0.71.4",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^1.8.0"
+    "react-native-get-random-values": "^1.8.0",
+    "@animo-id/expo-secure-environment": "^0.1.1"
+  },
+  "peerDependenciesMeta": {
+    "@animo-id/expo-secure-environment": {
+      "optional": true
+    }
   }
 }

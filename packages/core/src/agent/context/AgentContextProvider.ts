@@ -27,4 +27,6 @@ export interface AgentContextProvider {
    * called once for every session and the agent context MUST not be used after this method is called.
    */
   endSessionForAgentContext(agentContext: AgentContext): Promise<void>
+
+  deleteAgentContext(agentContext: AgentContext): Promise<void>
 }

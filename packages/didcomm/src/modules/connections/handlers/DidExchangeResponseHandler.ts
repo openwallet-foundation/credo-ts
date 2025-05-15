@@ -95,6 +95,10 @@ export class DidExchangeResponseHandler implements MessageHandler {
     messageContext.connection = connectionRecord
     const connection = await this.didExchangeProtocol.processResponse(messageContext, outOfBandRecord)
 
+    if (!outOfBandRecord.reusable) {
+      await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
+    }
+
     // TODO: should we only send complete message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the complete. So for now we'll only do it
     // if auto accept is enabled
@@ -104,9 +108,6 @@ export class DidExchangeResponseHandler implements MessageHandler {
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
 
-      if (!outOfBandRecord.reusable) {
-        await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
-      }
       return new OutboundMessageContext(message, { agentContext, connection })
     }
   }

@@ -23,16 +23,13 @@ import {
   JwsService,
   Jwt,
   JwtPayload,
-  Key,
-  KeyType,
+  Kms,
   MdocApi,
   Query,
   QueryOptions,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
-  getJwkFromJson,
-  getJwkFromKey,
   injectable,
   joinUriParts,
   utils,
@@ -69,8 +66,8 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import {
   addSecondsToDate,
   dateToSeconds,
-  getKeyFromDid,
-  getProofTypeFromKey,
+  getProofTypeFromPublicJwk,
+  getPublicJwkFromDid,
   getSupportedJwaSignatureAlgorithms,
 } from '../shared/utils'
 
@@ -495,11 +492,9 @@ export class OpenId4VcIssuerService {
       return {
         bindingMethod: 'jwk',
         keys: keyAttestation.payload.attested_keys.map((attestedKey) => {
-          const jwk = getJwkFromJson(attestedKey)
           return {
             method: 'jwk',
-            jwk,
-            key: jwk.key,
+            jwk: Kms.PublicJwk.fromUnknown(attestedKey),
           }
         }),
         proofType: 'attestation',
@@ -645,11 +640,9 @@ export class OpenId4VcIssuerService {
             proofType: 'jwt',
             bindingMethod: 'jwk',
             keys: keyAttestation.payload.attested_keys.map((attestedKey) => {
-              const jwk = getJwkFromJson(attestedKey)
               return {
                 method: 'jwk',
-                jwk,
-                key: jwk.key,
+                jwk: Kms.PublicJwk.fromUnknown(attestedKey),
               }
             }),
             keyAttestation,
@@ -666,7 +659,7 @@ export class OpenId4VcIssuerService {
           keys: signers.map((signer) => ({
             didUrl: signer.didUrl,
             method: 'did',
-            key: getJwkFromJson(signer.publicJwk).key,
+            jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
           })),
         }
       }
@@ -675,11 +668,9 @@ export class OpenId4VcIssuerService {
         proofType: 'jwt',
         bindingMethod: 'jwk',
         keys: (proofSigners as JwtSignerJwk[]).map((signer) => {
-          const jwk = getJwkFromJson(signer.publicJwk)
           return {
             method: 'jwk',
-            jwk,
-            key: jwk.key,
+            jwk: Kms.PublicJwk.fromUnknown(signer.publicJwk),
           }
         }),
       }
@@ -724,18 +715,20 @@ export class OpenId4VcIssuerService {
   }
 
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+
     // TODO: ideally we can store additional data with a key, such as:
     // - createdAt
     // - purpose
-    const accessTokenSignerKey = await agentContext.wallet.createKey({
-      keyType: options.accessTokenSignerKeyType ?? KeyType.Ed25519,
+    const accessTokenSignerKey = await kms.createKey({
+      type: options.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
     })
 
     const openId4VcIssuer = new OpenId4VcIssuerRecord({
       issuerId: options.issuerId ?? utils.uuid(),
       display: options.display,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
-      accessTokenPublicKeyFingerprint: accessTokenSignerKey.fingerprint,
+      accessTokenPublicJwk: accessTokenSignerKey.publicJwk,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,
@@ -751,13 +744,20 @@ export class OpenId4VcIssuerService {
     issuer: OpenId4VcIssuerRecord,
     options?: Pick<OpenId4VciCreateIssuerOptions, 'accessTokenSignerKeyType'>
   ) {
-    const accessTokenSignerKey = await agentContext.wallet.createKey({
-      keyType: options?.accessTokenSignerKeyType ?? KeyType.Ed25519,
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+
+    const previousKey = issuer.resolvedAccessTokenPublicJwk
+    const accessTokenSignerKey = await kms.createKey({
+      type: options?.accessTokenSignerKeyType ?? { kty: 'OKP', crv: 'Ed25519' },
     })
 
-    // TODO: ideally we can remove the previous key
-    issuer.accessTokenPublicKeyFingerprint = accessTokenSignerKey.fingerprint
+    issuer.accessTokenPublicJwk = accessTokenSignerKey.publicJwk
     await this.openId4VcIssuerRepository.update(agentContext, issuer)
+
+    // Remove previous key
+    await kms.deleteKey({
+      keyId: previousKey.keyId,
+    })
   }
 
   /**
@@ -836,19 +836,17 @@ export class OpenId4VcIssuerService {
     const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
     const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
-    const key = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-    const jwk = getJwkFromKey(key)
-
+    const key = issuer.resolvedAccessTokenPublicJwk
     const cNonce = await jwsService.createJwsCompact(agentContext, {
-      key,
+      keyId: key.keyId,
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
         exp: dateToSeconds(cNonceExpiresAt),
       }),
       protectedHeaderOptions: {
         typ: 'credo+cnonce',
-        kid: issuer.accessTokenPublicKeyFingerprint,
-        alg: jwk.supportedSignatureAlgorithms[0],
+        kid: key.keyId,
+        alg: key.signatureAlgorithm,
       },
     })
 
@@ -868,9 +866,7 @@ export class OpenId4VcIssuerService {
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    const key = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-    const jwk = getJwkFromKey(key)
-
+    const key = issuer.resolvedAccessTokenPublicJwk
     const jwt = Jwt.fromSerializedJwt(cNonce)
     jwt.payload.validate()
 
@@ -885,7 +881,7 @@ export class OpenId4VcIssuerService {
       jws: cNonce,
       jwsSigner: {
         method: 'jwk',
-        jwk,
+        jwk: key,
       },
     })
 
@@ -965,6 +961,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
     }
   ) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const { preAuthorizedCodeFlowConfig, authorizationCodeFlowConfig, issuerMetadata } = config
 
     // TOOD: export type
@@ -975,7 +972,7 @@ export class OpenId4VcIssuerService {
       const { txCode, authorizationServerUrl, preAuthorizedCode } = preAuthorizedCodeFlowConfig
 
       grants[preAuthorizedCodeGrantIdentifier] = {
-        'pre-authorized_code': preAuthorizedCode ?? (await agentContext.wallet.generateNonce()),
+        'pre-authorized_code': preAuthorizedCode ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
         tx_code: txCode,
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
@@ -1002,8 +999,7 @@ export class OpenId4VcIssuerService {
         issuer_state:
           // TODO: the issuer_state should not be guessable, so it's best if we generate it and now allow the user to provide it?
           // but same is true for the pre-auth code and users of credo can also provide that value. We can't easily do unique constraint with askat
-          authorizationCodeFlowConfig.issuerState ??
-          TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32)),
+          authorizationCodeFlowConfig.issuerState ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
         authorization_server: config.issuerMetadata.credentialIssuer.authorization_servers
           ? authorizationServerUrl
           : undefined,
@@ -1282,27 +1278,17 @@ export class OpenId4VcIssuerService {
     format: `${ClaimFormat.JwtVc}` | `${ClaimFormat.LdpVc}`,
     options: OpenId4VciSignW3cCredentials['credentials'][number]
   ) {
-    const key = await getKeyFromDid(agentContext, options.verificationMethod)
+    const publicJwk = await getPublicJwkFromDid(agentContext, options.verificationMethod)
     if (format === ClaimFormat.JwtVc) {
-      const supportedSignatureAlgorithms = getJwkFromKey(key).supportedSignatureAlgorithms
-      if (supportedSignatureAlgorithms.length === 0) {
-        throw new CredoError(`No supported JWA signature algorithms found for key with keyType ${key.keyType}`)
-      }
-
-      const alg = supportedSignatureAlgorithms[0]
-      if (!alg) {
-        throw new CredoError(`No supported JWA signature algorithms for key type ${key.keyType}`)
-      }
-
       return await this.w3cCredentialService.signCredential(agentContext, {
         format: ClaimFormat.JwtVc,
         credential: options.credential,
         verificationMethod: options.verificationMethod,
-        alg,
+        alg: publicJwk.signatureAlgorithm,
       })
     }
-    const proofType = getProofTypeFromKey(agentContext, key)
 
+    const proofType = getProofTypeFromPublicJwk(agentContext, publicJwk)
     return await this.w3cCredentialService.signCredential(agentContext, {
       format: ClaimFormat.LdpVc,
       credential: options.credential,

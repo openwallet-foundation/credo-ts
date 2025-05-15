@@ -1,8 +1,8 @@
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
 
-const agent = new Agent(getInMemoryAgentOptions('Faber Dids'))
+const agent = new Agent(getAgentOptions('Faber Dids'))
 
 describe('dids', () => {
   beforeAll(async () => {
@@ -11,7 +11,6 @@ describe('dids', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   it('should resolve a did:key did', async () => {
