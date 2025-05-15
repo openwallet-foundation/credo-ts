@@ -1,16 +1,19 @@
-import type { Response, Router } from 'express'
 import type { OpenId4VciCredentialIssuerMetadata } from '../../shared'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
+import type { OpenId4VcIssuanceGetRequest } from './requestContext'
 
 import { getAuthorizationServerMetadataFromList } from '@openid4vc/oauth2'
 
-import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
+import {
+    CredentialRequest,
+} from '@openid4vc/openid4vci'
+import { CredoRouter, getRequestContext } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import createHttpError from "http-errors";
 
-export function configureIssuerMetadataEndpoint(router: Router) {
+export function configureIssuerMetadataEndpoint(router: CredoRouter) {
   router.get(
     '/.well-known/openid-credential-issuer',
-    async (_request: OpenId4VcIssuanceRequest, response: Response, next) => {
+    async (_request: OpenId4VcIssuanceGetRequest<CredentialRequest>) => {
       const { agentContext, issuer } = getRequestContext(_request)
       try {
         const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
@@ -31,9 +34,9 @@ export function configureIssuerMetadataEndpoint(router: Router) {
           dpop_signing_alg_values_supported: issuerAuthorizationServer.dpop_signing_alg_values_supported,
         } satisfies OpenId4VciCredentialIssuerMetadata
 
-        return sendJsonResponse(response, next, transformedMetadata)
+        return transformedMetadata;
       } catch (e) {
-        return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, e)
+        throw createHttpError(500, e);
       }
     }
   )
