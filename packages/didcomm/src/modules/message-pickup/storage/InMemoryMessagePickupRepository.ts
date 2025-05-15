@@ -72,6 +72,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     const id = utils.uuid()
     this.messages.push({
       id,
+      receivedAt: options.receivedAt ?? new Date(),
       connectionId,
       encryptedMessage: payload,
       recipientDids,
