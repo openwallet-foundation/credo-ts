@@ -1,11 +1,11 @@
-import type { Key } from '@credo-ts/core'
+import type { Kms } from '@credo-ts/core'
 import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 
 import { parseIndyDid } from '@credo-ts/anoncreds'
 import { AgentContext, injectable } from '@credo-ts/core'
 import { CustomRequest } from '@hyperledger/indy-vdr-shared'
 
-import { verificationKeyForIndyDid } from './dids/didIndyUtil'
+import { verificationPublicJwkForIndyDid } from './dids/didIndyUtil'
 import { IndyVdrError } from './error'
 import { IndyVdrPoolService } from './pool'
 import { multiSignRequest, signRequest } from './utils/sign'
@@ -22,7 +22,7 @@ export class IndyVdrApi {
 
   private async multiSignRequest<Request extends IndyVdrRequest>(
     request: Request,
-    signingKey: Key,
+    signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>,
     identifier: string
   ) {
     return multiSignRequest(this.agentContext, request, signingKey, identifier)
@@ -61,7 +61,7 @@ export class IndyVdrApi {
    * @returns An endorsed transaction
    */
   public async endorseTransaction(transaction: string | Record<string, unknown>, endorserDid: string) {
-    const endorserSigningKey = await verificationKeyForIndyDid(this.agentContext, endorserDid)
+    const endorserSigningKey = await verificationPublicJwkForIndyDid(this.agentContext, endorserDid)
     const { namespaceIdentifier } = parseIndyDid(endorserDid)
 
     const request = new CustomRequest({ customRequest: transaction })

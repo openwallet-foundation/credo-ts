@@ -1,7 +1,4 @@
-import type { Wallet } from '@credo-ts/core'
-
-import { Key } from '@credo-ts/core'
-
+import { Kms } from '@credo-ts/core'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
@@ -13,13 +10,9 @@ const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
 jest.mock('../../repository/TenantRoutingRepository')
 const TenantRoutingRepositoryMock = TenantRoutingRepository as jest.Mock<TenantRoutingRepository>
 
-const wallet = {
-  generateWalletKey: jest.fn(() => Promise.resolve('walletKey')),
-} as unknown as Wallet
-
 const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
-const agentContext = getAgentContext({ wallet })
+const agentContext = getAgentContext({})
 
 const tenantRecordService = new TenantRecordService(tenantRepository, tenantRoutingRepository)
 
@@ -42,14 +35,9 @@ describe('TenantRecordService', () => {
         config: {
           label: 'Test Tenant',
           //connectionImageUrl: 'https://example.com/connection.png',
-          walletConfig: {
-            id: expect.any(String),
-            key: 'walletKey',
-          },
         },
       })
 
-      expect(agentContext.wallet.generateWalletKey).toHaveBeenCalled()
       expect(tenantRepository.save).toHaveBeenCalledWith(agentContext, tenantRecord)
     })
   })
@@ -70,10 +58,6 @@ describe('TenantRecordService', () => {
         id: 'tenant-id',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'tenant-wallet-id',
-            key: 'tenant-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -90,10 +74,6 @@ describe('TenantRecordService', () => {
         id: 'tenant-id',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'tenant-wallet-id',
-            key: 'tenant-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -128,7 +108,7 @@ describe('TenantRecordService', () => {
       const tenantRoutingRecord = jest.fn() as unknown as TenantRoutingRecord
       mockFunction(tenantRoutingRepository.findByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
-      const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+      const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
       const returnedTenantRoutingRecord = await tenantRecordService.findTenantRoutingRecordByRecipientKey(
         agentContext,
         recipientKey
@@ -141,7 +121,7 @@ describe('TenantRecordService', () => {
 
   describe('addTenantRoutingRecord', () => {
     test('creates a tenant routing record and stores it in the tenant routing repository', async () => {
-      const recipientKey = Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
+      const recipientKey = Kms.PublicJwk.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')
       const tenantRoutingRecord = await tenantRecordService.addTenantRoutingRecord(
         agentContext,
         'tenant-id',

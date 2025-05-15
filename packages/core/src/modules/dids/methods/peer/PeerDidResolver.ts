@@ -83,6 +83,10 @@ export class PeerDidResolver implements DidResolver {
         didResolutionMetadata: { contentType: 'application/did+ld+json' },
       }
     } catch (error) {
+      agentContext.config.logger.error(`Error resolving did '${did}'`, {
+        error,
+      })
+
       return {
         didDocument: null,
         didDocumentMetadata,

@@ -9,7 +9,7 @@ import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../
 import type { OpenId4VcIssuerRecord } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { TypedArrayEncoder, joinUriParts } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder, joinUriParts } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 
 import {
@@ -216,15 +216,14 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     scopes: requestedScopes,
   })
 
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
   // Store presentation during issuance session on the record
-  verificationSession.presentationDuringIssuanceSession = TypedArrayEncoder.toBase64URL(
-    agentContext.wallet.getRandomValues(32)
-  )
+  verificationSession.presentationDuringIssuanceSession = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
   await agentContext.dependencyManager
     .resolve(OpenId4VcVerificationSessionRepository)
     .update(agentContext, verificationSession)
 
-  const authSession = TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32))
+  const authSession = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
   issuanceSession.authorization = {
     ...issuanceSession.authorization,
     scopes: presentationScopes,
@@ -396,7 +395,8 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     })
 
   // Grant authorization
-  const authorizationCode = TypedArrayEncoder.toBase64URL(agentContext.wallet.getRandomValues(32))
+  const kms = agentContext.resolve(Kms.KeyManagementApi)
+  const authorizationCode = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
   const authorizationCodeExpiresAt = addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
   issuanceSession.authorization = {

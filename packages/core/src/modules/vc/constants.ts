@@ -5,7 +5,6 @@ export const SECURITY_CONTEXT_URL = SECURITY_CONTEXT_V2_URL
 export const SECURITY_X25519_CONTEXT_URL = 'https://w3id.org/security/suites/x25519-2019/v1'
 export const DID_V1_CONTEXT_URL = 'https://www.w3.org/ns/did/v1'
 export const CREDENTIALS_CONTEXT_V1_URL = 'https://www.w3.org/2018/credentials/v1'
-export const SECURITY_CONTEXT_BBS_URL = 'https://w3id.org/security/bbs/v1'
 export const CREDENTIALS_ISSUER_URL = 'https://www.w3.org/2018/credentials#issuer'
 export const SECURITY_PROOF_URL = 'https://w3id.org/security#proof'
 export const SECURITY_SIGNATURE_URL = 'https://w3id.org/security#signature'

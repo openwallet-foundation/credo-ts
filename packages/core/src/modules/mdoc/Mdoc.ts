@@ -1,6 +1,5 @@
 import type { IssuerSignedDocument } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
-import type { Key } from '../../crypto'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 
 import {
@@ -12,10 +11,11 @@ import {
   parseDeviceSigned,
   parseIssuerSigned,
 } from '@animo-id/mdoc'
-import { JwaSignatureAlgorithm, JwkJson, getJwkFromJson, getJwkFromKey } from '../../crypto'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
+import { KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
@@ -50,11 +50,11 @@ export class Mdoc {
   /**
    * Get the device key to which the mdoc is bound
    */
-  public get deviceKey(): Key | null {
+  public get deviceKey(): PublicJwk | null {
     const deviceKeyRaw = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
     if (!deviceKeyRaw) return null
 
-    return getJwkFromJson(COSEKey.import(deviceKeyRaw).toJWK() as JwkJson).key
+    return PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
   }
 
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
@@ -84,14 +84,15 @@ export class Mdoc {
     return this.issuerSignedDocument.docType
   }
 
-  public get alg(): JwaSignatureAlgorithm {
+  public get alg(): KnownJwaSignatureAlgorithm {
     const algName = this.issuerSignedDocument.issuerSigned.issuerAuth.algName
     if (!algName) {
       throw new MdocError('Cannot extract the signature algorithm from the mdoc.')
     }
-    if (Object.values(JwaSignatureAlgorithm).includes(algName as JwaSignatureAlgorithm)) {
-      return algName as JwaSignatureAlgorithm
+    if (isKnownJwaSignatureAlgorithm(algName)) {
+      return algName
     }
+
     throw new MdocError(`Cannot parse mdoc. The signature algorithm '${algName}' is not supported.`)
   }
 
@@ -125,38 +126,25 @@ export class Mdoc {
     )
   }
 
-  public get deviceKeyJwk() {
-    const deviceKey = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKey) return null
-
-    const publicDeviceJwk = COSEKey.import(deviceKey).toJWK()
-    const jwkInstance = getJwkFromJson(publicDeviceJwk as JwkJson)
-
-    return jwkInstance
-  }
-
   public static async sign(agentContext: AgentContext, options: MdocSignOptions) {
     const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
     const mdocContext = getMdocContext(agentContext)
 
-    const holderPublicJwk = getJwkFromKey(holderKey)
     const document = new Document(docType, mdocContext)
       .useDigestAlgorithm('SHA-256')
       .addValidityInfo(validityInfo)
-      .addDeviceKeyInfo({ deviceKey: holderPublicJwk.toJson() })
+      .addDeviceKeyInfo({ deviceKey: holderKey.toJson() })
 
     for (const [namespace, namespaceRecord] of Object.entries(namespaces)) {
       document.addIssuerNameSpace(namespace, namespaceRecord)
     }
 
-    const cert = X509Certificate.fromEncodedCertificate(issuerCertificate)
-    const issuerKey = getJwkFromKey(cert.publicKey)
-
+    const issuerKey = issuerCertificate.publicJwk
     const alg = issuerKey.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!alg) {
       throw new MdocError(
-        `Unable to create sign mdoc. No supported signature algorithm found to sign mdoc for jwk with key type ${
-          issuerKey.keyType
+        `Unable to create sign mdoc. No supported signature algorithm found to sign mdoc for jwk with key ${
+          issuerKey.jwkTypehumanDescription
         }. Key supports algs ${issuerKey.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`
@@ -167,8 +155,7 @@ export class Mdoc {
       {
         issuerPrivateKey: issuerKey.toJson(),
         alg,
-        issuerCertificate,
-        kid: cert.publicKey.fingerprint,
+        issuerCertificate: issuerCertificate.rawCertificate,
       },
       mdocContext
     )
@@ -221,5 +208,13 @@ export class Mdoc {
     } catch (error) {
       return { isValid: false, error: error.message }
     }
+  }
+
+  private toJSON() {
+    return this.base64Url
+  }
+
+  private toString() {
+    return this.base64Url
   }
 }

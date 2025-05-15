@@ -48,10 +48,6 @@ const logger = new TestLogger(LogLevel.info)
 
 const agentConfig: InitConfig = {
   label: process.env.AGENT_LABEL || 'Credo Mediator',
-  walletConfig: {
-    id: process.env.WALLET_NAME || 'Credo',
-    key: process.env.WALLET_KEY || 'Credo',
-  },
   logger,
 }
 
@@ -60,7 +56,13 @@ const agent = new Agent({
   config: agentConfig,
   dependencies: agentDependencies,
   modules: {
-    askar: new AskarModule({ askar }),
+    askar: new AskarModule({
+      askar,
+      store: {
+        id: process.env.WALLET_NAME || 'Credo',
+        key: process.env.WALLET_KEY || 'Credo',
+      },
+    }),
     didcomm: new DidCommModule({ endpoints }),
     oob: new OutOfBandModule(),
     messagePickup: new MessagePickupModule(),

@@ -1,14 +1,16 @@
 import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
-import type { Agent, FileSystem, WalletConfig } from '@credo-ts/core'
-import type { EntryObject } from '@openwallet-foundation/askar-shared'
+import type { Agent, FileSystem } from '@credo-ts/core'
+import { EntryObject, KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
-import { AskarWallet } from '@credo-ts/askar'
-import { InjectionSymbols, JsonTransformer, KeyDerivationMethod, TypedArrayEncoder } from '@credo-ts/core'
+import { InjectionSymbols, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { Key, KeyAlgorithm, Migration, Store } from '@openwallet-foundation/askar-shared'
 
+import { AskarModule } from '@credo-ts/askar'
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
-import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } from './utils'
+import { transformFromRecordTagValues } from './utils'
+
+type AskarAgent = Agent<{ askar: AskarModule }>
 
 /**
  *
@@ -25,18 +27,16 @@ import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } fro
  */
 export class IndySdkToAskarMigrationUpdater {
   private store?: Store
-  private walletConfig: WalletConfig
   private defaultLinkSecretId: string
-  private agent: Agent
+  private agent: AskarAgent
   private dbPath: string
   private fs: FileSystem
 
-  private constructor(walletConfig: WalletConfig, agent: Agent, dbPath: string, defaultLinkSecretId?: string) {
-    this.walletConfig = walletConfig
+  private constructor(agent: AskarAgent, dbPath: string, defaultLinkSecretId?: string) {
     this.dbPath = dbPath
     this.agent = agent
     this.fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    this.defaultLinkSecretId = defaultLinkSecretId ?? walletConfig.id
+    this.defaultLinkSecretId = defaultLinkSecretId ?? agent.modules.askar.config.store.id
   }
 
   public static async initialize({
@@ -45,23 +45,17 @@ export class IndySdkToAskarMigrationUpdater {
     defaultLinkSecretId,
   }: {
     dbPath: string
-    agent: Agent
+    agent: Agent<{ askar: AskarModule }>
     defaultLinkSecretId?: string
   }) {
-    const {
-      config: { walletConfig },
-    } = agent
     if (typeof process?.versions?.node !== 'undefined') {
       agent.config.logger.warn(
         'Node.JS is not fully supported. Using this will likely leave the wallet in a half-migrated state'
       )
     }
 
-    if (!walletConfig) {
-      throw new IndySdkToAskarMigrationError('Wallet config is required for updating the wallet')
-    }
-
-    if (walletConfig.storage && walletConfig.storage.type !== 'sqlite') {
+    const askarStoreConfig = agent.modules.askar.config.store
+    if (askarStoreConfig.database && askarStoreConfig.database.type !== 'sqlite') {
       throw new IndySdkToAskarMigrationError('Only sqlite wallets are supported, right now')
     }
 
@@ -69,11 +63,7 @@ export class IndySdkToAskarMigrationUpdater {
       throw new IndySdkToAskarMigrationError('Wallet migration can not be done on an initialized agent')
     }
 
-    if (!(agent.dependencyManager.resolve(InjectionSymbols.Wallet) instanceof AskarWallet)) {
-      throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
-    }
-
-    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, defaultLinkSecretId)
+    return new IndySdkToAskarMigrationUpdater(agent, dbPath, defaultLinkSecretId)
   }
 
   /**
@@ -83,10 +73,15 @@ export class IndySdkToAskarMigrationUpdater {
    */
   private async migrate() {
     const specUri = this.backupFile
-    const kdfLevel = this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
-    const walletName = this.walletConfig.id
-    const walletKey = this.walletConfig.key
-    const storageType = this.walletConfig.storage?.type ?? 'sqlite'
+    const storeConfig = this.agent.modules.askar.config.store
+
+    const kdfLevel = storeConfig.keyDerivationMethod ?? KdfMethod.Argon2IMod
+    // Migration tool uses the legacy key derivation method
+    const keyDerivationMethod =
+      kdfLevel === 'kdf:argon2i:mod' ? 'ARGON2I_MOD' : kdfLevel === 'kdf:argon2i:int' ? 'ARGON2I_INT' : 'RAW'
+    const walletName = storeConfig.id
+    const walletKey = storeConfig.key
+    const storageType = storeConfig.database?.type ?? 'sqlite'
 
     if (storageType !== 'sqlite') {
       throw new IndySdkToAskarMigrationError("Storage type defined and not of type 'sqlite'")
@@ -97,7 +92,7 @@ export class IndySdkToAskarMigrationUpdater {
     }
 
     this.agent.config.logger.info('Migration indy-sdk database structure to askar')
-    await Migration.migrate({ specUri, walletKey, kdfLevel, walletName })
+    await Migration.migrate({ specUri, walletKey, kdfLevel: keyDerivationMethod, walletName })
   }
 
   /*
@@ -120,14 +115,16 @@ export class IndySdkToAskarMigrationUpdater {
    * Location of the new wallet
    */
   public get newWalletPath() {
-    return `${this.fs.dataPath}/wallet/${this.walletConfig.id}/sqlite.db`
+    const storeConfig = this.agent.modules.askar.config.store
+    return `${this.fs.dataPath}/wallet/${storeConfig.id}/sqlite.db`
   }
 
   /**
    * Temporary backup location of the pre-migrated script
    */
   private get backupFile() {
-    return `${this.fs.tempPath}/${this.walletConfig.id}.db`
+    const storeConfig = this.agent.modules.askar.config.store
+    return `${this.fs.tempPath}/${storeConfig.id}.db`
   }
 
   private async copyDatabaseWithOptionalWal(src: string, dest: string) {
@@ -218,11 +215,14 @@ export class IndySdkToAskarMigrationUpdater {
     try {
       // Migrate the database
       await this.migrate()
+      const storeConfig = this.agent.modules.askar.config.store
 
-      const keyMethod = keyDerivationMethodToStoreKeyMethod(
-        this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
-      )
-      this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
+      const kdfLevel = storeConfig.keyDerivationMethod ?? KdfMethod.Argon2IMod
+      this.store = await Store.open({
+        uri: `sqlite://${this.backupFile}`,
+        passKey: storeConfig.key,
+        keyMethod: new StoreKeyMethod(kdfLevel as KdfMethod),
+      })
 
       // Update the values to reflect the new structure
       await this.updateKeys()
@@ -336,7 +336,7 @@ export class IndySdkToAskarMigrationUpdater {
       for (const row of masterSecrets) {
         this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
 
-        const isDefault = masterSecrets.length === 0 || row.name === this.walletConfig.id
+        const isDefault = row.name === this.defaultLinkSecretId
 
         const {
           value: { ms },

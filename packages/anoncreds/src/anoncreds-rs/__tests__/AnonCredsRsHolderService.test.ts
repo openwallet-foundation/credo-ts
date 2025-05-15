@@ -33,7 +33,6 @@ import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
 
-import { InMemoryWallet } from './../../../../../tests/InMemoryWallet'
 import {
   createCredentialDefinition,
   createCredentialForHolder,
@@ -71,8 +70,6 @@ const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock(
 
 const inMemoryStorageService = new InMemoryStorageService()
 
-const wallet = new InMemoryWallet()
-
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.AgentDependencies, agentDependencies],
@@ -96,7 +93,6 @@ const agentContext = getAgentContext({
     [SignatureSuiteToken, 'default'],
   ],
   agentConfig,
-  wallet,
 })
 
 describe('AnonCredsRsHolderService', () => {

@@ -1,5 +1,5 @@
-import { Key } from '../../../../../crypto/Key'
 import { JsonTransformer } from '../../../../../utils'
+import { P256PublicJwk, PublicJwk } from '../../../../kms'
 import didKeyP256Fixture from '../../../__tests__/__fixtures__/didKeyP256.json'
 import { VerificationMethod } from '../../verificationMethod'
 import { VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020 } from '../../verificationMethod/JsonWebKey2020'
@@ -10,7 +10,7 @@ const TEST_P256_DID = `did:key:${TEST_P256_FINGERPRINT}`
 
 describe('keyDidJsonWebKey', () => {
   it('should return a valid verification method', async () => {
-    const key = Key.fromFingerprint(TEST_P256_FINGERPRINT)
+    const key = PublicJwk.fromFingerprint(TEST_P256_FINGERPRINT) as PublicJwk<P256PublicJwk>
     const verificationMethods = keyDidJsonWebKey.getVerificationMethods(TEST_P256_DID, key)
 
     expect(JsonTransformer.toJSON(verificationMethods)).toMatchObject([didKeyP256Fixture.verificationMethod[0]])
@@ -22,21 +22,13 @@ describe('keyDidJsonWebKey', () => {
     ])
   })
 
-  it('returns key for JsonWebKey2020 verification method', () => {
-    const verificationMethod = JsonTransformer.fromJSON(didKeyP256Fixture.verificationMethod[0], VerificationMethod)
-
-    const key = keyDidJsonWebKey.getKeyFromVerificationMethod(verificationMethod)
-
-    expect(key.fingerprint).toBe(TEST_P256_FINGERPRINT)
-  })
-
   it('throws an error if an invalid verification method is passed', () => {
     const verificationMethod = JsonTransformer.fromJSON(didKeyP256Fixture.verificationMethod[0], VerificationMethod)
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidJsonWebKey.getKeyFromVerificationMethod(verificationMethod)).toThrow(
-      'Invalid verification method passed'
+    expect(() => keyDidJsonWebKey.getPublicJwkFromVerificationMethod(verificationMethod)).toThrow(
+      'Not supported for key did json web key'
     )
   })
 })

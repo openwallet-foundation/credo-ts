@@ -3,7 +3,7 @@ import type { ValidationOptions } from 'class-validator'
 import { IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
 import { CredoError } from '../../../../error'
-import { SingleOrArray, isJsonObject } from '../../../../utils'
+import { SingleOrArray, isJsonObject } from '../../../../types'
 import { getProtocolScheme } from '../../../../utils/uri'
 
 type ServiceEndpointType = SingleOrArray<string | Record<string, unknown>>

@@ -1,114 +1,76 @@
-import type { Key } from '../../../../crypto/Key'
-import type { VerificationMethod } from '../verificationMethod'
-
-import { KeyType } from '../../../../crypto/KeyType'
-import { getJwkFromJson } from '../../../../crypto/jose/jwk'
 import { CredoError } from '../../../../error'
-import { VERIFICATION_METHOD_TYPE_MULTIKEY, getKeyFromMultikey, isMultikey } from '../verificationMethod'
-import { VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
+import type { VerificationMethod } from '../verificationMethod'
+import { getPublicJwkFromMultikey, isMultikey } from '../verificationMethod'
+import { getPublicJwkFromJsonWebKey2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
 
-import { keyDidBls12381g1 } from './bls12381g1'
-import { keyDidBls12381g1g2 } from './bls12381g1g2'
-import { keyDidBls12381g2 } from './bls12381g2'
+import { Constructor } from '../../../../utils/mixins'
+import { PublicJwk } from '../../../kms'
+import { SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidSecp256k1 } from './secp256k1'
 import { keyDidX25519 } from './x25519'
 
-export interface KeyDidMapping {
-  getVerificationMethods: (did: string, key: Key) => VerificationMethod[]
-  getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key
+export interface KeyDidMapping<
+  PublicJwkType extends InstanceType<SupportedPublicJwkClass> = InstanceType<SupportedPublicJwkClass>,
+> {
+  PublicJwkTypes: Array<Constructor<PublicJwkType>>
+  getVerificationMethods: (did: string, publicJwk: PublicJwk<PublicJwkType>) => VerificationMethod[]
+  getPublicJwkFromVerificationMethod(verificationMethod: VerificationMethod): PublicJwk
   supportedVerificationMethodTypes: string[]
 }
 
-// TODO: Maybe we should make this dynamically?
-const keyDidMapping: Record<KeyType, KeyDidMapping> = {
-  [KeyType.Ed25519]: keyDidEd25519,
-  [KeyType.X25519]: keyDidX25519,
-  [KeyType.Bls12381g1]: keyDidBls12381g1,
-  [KeyType.Bls12381g2]: keyDidBls12381g2,
-  [KeyType.Bls12381g1g2]: keyDidBls12381g1g2,
-  [KeyType.P256]: keyDidJsonWebKey,
-  [KeyType.P384]: keyDidJsonWebKey,
-  [KeyType.P521]: keyDidJsonWebKey,
-  [KeyType.K256]: keyDidSecp256k1,
+const supportedKeyDids = [keyDidEd25519, keyDidX25519, keyDidJsonWebKey, keyDidSecp256k1]
+
+// TODO: at some point we should update all usages to Jwk / Multikey methods
+// so we don't need key type specific verification methods anymore
+export function getVerificationMethodsForPublicJwk(publicJwk: PublicJwk, did: string) {
+  const { getVerificationMethods } = getKeyDidMappingByPublicJwk(publicJwk)
+
+  return getVerificationMethods(did, publicJwk)
 }
 
-/**
- * Dynamically creates a mapping from verification method key type to the key Did interface
- * for all key types.
- *
- * {
- *    "Ed25519VerificationKey2018": KeyDidMapping
- * }
- */
-const verificationMethodKeyDidMapping = Object.values(KeyType).reduce<Record<string, KeyDidMapping>>(
-  (mapping, keyType) => {
-    const supported = keyDidMapping[keyType].supportedVerificationMethodTypes.reduce<Record<string, KeyDidMapping>>(
-      (accumulator, vMethodKeyType) => ({
-        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-        ...accumulator,
-        [vMethodKeyType]: keyDidMapping[keyType],
-      }),
-      {}
-    )
+export function getSupportedVerificationMethodTypesForPublicJwk(
+  publicJwk: PublicJwk | SupportedPublicJwkClass
+): string[] {
+  const { supportedVerificationMethodTypes } = getKeyDidMappingByPublicJwk(publicJwk)
 
-    return {
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-      ...mapping,
-      ...supported,
-    }
-  },
-  {}
-)
-
-export function getKeyDidMappingByKeyType(keyType: KeyType) {
-  const keyDid = keyDidMapping[keyType]
-
-  if (!keyDid) {
-    throw new CredoError(`Unsupported key did from key type '${keyType}'`)
-  }
-
-  return keyDid
+  return supportedVerificationMethodTypes
 }
 
-export function getKeyFromVerificationMethod(verificationMethod: VerificationMethod): Key {
+export function getPublicJwkFromVerificationMethod(verificationMethod: VerificationMethod): PublicJwk {
   // This is a special verification method, as it supports basically all key types.
   if (isJsonWebKey2020(verificationMethod)) {
-    // TODO: move this validation to another place
-    if (!verificationMethod.publicKeyJwk) {
-      throw new CredoError(
-        `Missing publicKeyJwk on verification method with type ${VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020}`
-      )
-    }
-
-    return getJwkFromJson(verificationMethod.publicKeyJwk).key
+    return getPublicJwkFromJsonWebKey2020(verificationMethod)
   }
 
   if (isMultikey(verificationMethod)) {
-    if (!verificationMethod.publicKeyMultibase) {
-      throw new CredoError(
-        `Missing publicKeyMultibase on verification method with type ${VERIFICATION_METHOD_TYPE_MULTIKEY}`
-      )
-    }
-
-    return getKeyFromMultikey(verificationMethod)
+    return getPublicJwkFromMultikey(verificationMethod)
   }
 
-  const keyDid = verificationMethodKeyDidMapping[verificationMethod.type]
+  const keyDid = supportedKeyDids.find((keyDid) =>
+    keyDid.supportedVerificationMethodTypes.includes(verificationMethod.type)
+  )
   if (!keyDid) {
     throw new CredoError(`Unsupported key did from verification method type '${verificationMethod.type}'`)
   }
 
-  return keyDid.getKeyFromVerificationMethod(verificationMethod)
+  return keyDid.getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
-export function getSupportedVerificationMethodTypesFromKeyType(keyType: KeyType) {
-  const keyDid = keyDidMapping[keyType]
+function getKeyDidMappingByPublicJwk(jwk: PublicJwk | SupportedPublicJwkClass): KeyDidMapping {
+  const jwkTypeClass = jwk instanceof PublicJwk ? jwk.JwkClass : jwk
+
+  const keyDid = supportedKeyDids.find((supportedKeyDid) =>
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    supportedKeyDid.PublicJwkTypes.includes(jwkTypeClass as any)
+  )
 
   if (!keyDid) {
-    throw new CredoError(`Unsupported key did from key type '${keyType}'`)
+    throw new CredoError(
+      `Unsupported did mapping for jwk '${jwk instanceof PublicJwk ? jwk.jwkTypehumanDescription : jwk.name}'`
+    )
   }
 
-  return keyDid.supportedVerificationMethodTypes
+  return keyDid as KeyDidMapping
 }

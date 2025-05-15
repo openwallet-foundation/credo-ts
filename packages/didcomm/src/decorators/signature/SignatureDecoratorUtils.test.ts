@@ -1,8 +1,6 @@
-import type { Wallet } from '../../../../core'
-
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { KeyType, TypedArrayEncoder } from '../../../../core'
-import { getAgentConfig } from '../../../../core/tests/helpers'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { Kms, TypedArrayEncoder } from '../../../../core'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
@@ -13,6 +11,11 @@ jest.mock('../../../../core/src/utils/timestamp', () => {
     default: jest.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
   }
 })
+
+const agentContext = getAgentContext({
+  agentConfig: getAgentConfig('SignatureDecoratorUtilsTest'),
+})
+const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   const data = {
@@ -40,30 +43,24 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
     signer: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
   })
 
-  let wallet: Wallet
-
-  beforeAll(async () => {
-    const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new InMemoryWallet()
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await wallet.createAndOpen(config.walletConfig!)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
-  })
-
   test('signData signs json object and returns SignatureDecorator', async () => {
-    const privateKey = TypedArrayEncoder.fromString('00000000000000000000000000000My1')
-    const key = await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000My1'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    const createdKey = await kms.importKey({ privateJwk })
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
 
-    const result = await signData(data, wallet, key.publicKeyBase58)
+    const result = await signData(agentContext, data, publicJwk)
 
     expect(result).toEqual(signedData)
   })
 
   test('unpackAndVerifySignatureDecorator unpacks signature decorator and verifies signature', async () => {
-    const result = await unpackAndVerifySignatureDecorator(signedData, wallet)
+    const result = await unpackAndVerifySignatureDecorator(agentContext, signedData)
     expect(result).toEqual(data)
   })
 
@@ -77,7 +74,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
     expect.assertions(1)
     try {
-      await unpackAndVerifySignatureDecorator(wronglySignedData, wallet)
+      await unpackAndVerifySignatureDecorator(agentContext, wronglySignedData)
     } catch (error) {
       expect(error.message).toEqual('Signature is not valid')
     }

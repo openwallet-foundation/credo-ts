@@ -14,23 +14,30 @@ import {
 } from '../../didcomm/src'
 import { Agent, JsonTransformer } from '../src'
 
-import {
-  getInMemoryAgentOptions,
-  makeConnection,
-  waitForAgentMessageProcessedEvent,
-  waitForBasicMessage,
-} from './helpers'
+import { getAgentOptions, makeConnection, waitForAgentMessageProcessedEvent, waitForBasicMessage } from './helpers'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions('Faber Message Handler Middleware', {
-    endpoints: ['rxjs:faber'],
-  })
+  getAgentOptions(
+    'Faber Message Handler Middleware',
+    {
+      endpoints: ['rxjs:faber'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions('Alice Message Handler Middleware', {
-    endpoints: ['rxjs:alice'],
-  })
+  getAgentOptions(
+    'Alice Message Handler Middleware',
+    {
+      endpoints: ['rxjs:alice'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 
 describe('Message Handler Middleware E2E', () => {
@@ -57,9 +64,7 @@ describe('Message Handler Middleware E2E', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Correctly calls the fallback message handler if no message handler is defined', async () => {

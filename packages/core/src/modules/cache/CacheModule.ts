@@ -1,5 +1,5 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { Optional } from '../../utils'
+import { Optional } from '../../types'
 import type { CacheModuleConfigOptions } from './CacheModuleConfig'
 
 import { CacheModuleConfig } from './CacheModuleConfig'

@@ -78,10 +78,8 @@ export class HttpOutboundTransport implements OutboundTransport {
       const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let response
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let responseMessage
+      let response: Response | undefined = undefined
+      let responseMessage: string | undefined = undefined
       try {
         response = await this.fetch(endpoint, {
           method: 'POST',

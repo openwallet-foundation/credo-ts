@@ -1,6 +1,4 @@
-import type { InitConfig, WalletConfig } from '@credo-ts/core'
+import type { InitConfig } from '@credo-ts/core'
 
-// FIXME: decide what to do with connectionImageUrl, since this would make this module dependant on didcomm
-export type TenantConfig = Pick<InitConfig, 'label'> & {
-  walletConfig: Pick<WalletConfig, 'id' | 'key' | 'keyDerivationMethod'>
-}
+// TODO: remove label from tenant config
+export type TenantConfig = Pick<InitConfig, 'label'>

@@ -15,7 +15,7 @@ import {
 import { Agent } from '../../../../../../../core'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
   testLogger,
@@ -32,7 +32,6 @@ import {
   MediationRecipientModule,
   MediatorModule,
   MediatorPickupStrategy,
-  MessageReceiver,
   ProofEventTypes,
   ProofState,
 } from '../../../../../../src'
@@ -43,7 +42,6 @@ describe('V2 Connectionless Proofs - Indy', () => {
   afterEach(async () => {
     for (const agent of agents) {
       await agent.shutdown()
-      await agent.wallet.delete()
     }
   })
 
@@ -118,13 +116,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -241,13 +239,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
-    })
+    const { invitationUrl, message: requestMessage } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        recordId: faberProofExchangeRecord.id,
+        message,
+        domain: 'https://a-domain.com',
+      })
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -270,7 +269,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const unique = uuid().substring(0, 4)
 
-    const mediatorOptions = getInMemoryAgentOptions(
+    const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
@@ -283,7 +282,8 @@ describe('V2 Connectionless Proofs - Indy', () => {
         mediator: new MediatorModule({
           autoAcceptMediationRequests: true,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const mediatorMessages = new Subject<SubjectMessage>()
@@ -305,7 +305,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const faberOptions = getInMemoryAgentOptions(
+    const faberOptions = getAgentOptions(
       `Connectionless proofs with mediator Faber-${unique}`,
       {},
       {},
@@ -319,10 +319,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
-    const aliceOptions = getInMemoryAgentOptions(
+    const aliceOptions = getAgentOptions(
       `Connectionless proofs with mediator Alice-${unique}`,
       {},
       {},
@@ -336,18 +337,17 @@ describe('V2 Connectionless Proofs - Indy', () => {
           }),
           mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const faberAgent = new Agent(faberOptions)
     faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
-    await faberAgent.modules.mediationRecipient.initialize()
 
     const aliceAgent = new Agent(aliceOptions)
     aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-    await aliceAgent.modules.mediationRecipient.initialize()
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
@@ -423,11 +423,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'https://a-domain.com',
-    })
+    const { message: requestMessage, invitationUrl } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        recordId: faberProofExchangeRecord.id,
+        message,
+        domain: 'https://a-domain.com',
+      })
 
     const mediationRecord = await faberAgent.modules.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) throw new Error('Faber agent has no default mediator')
@@ -440,7 +441,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -526,17 +527,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'rxjs:faber',
-    })
+    const { message: requestMessage, invitationUrl } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        recordId: faberProofExchangeRecord.id,
+        message,
+        domain: 'rxjs:faber',
+      })
 
     for (const transport of faberAgent.modules.didcomm.outboundTransports) {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       threadId: requestMessage.threadId,
@@ -610,11 +612,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
       autoAcceptProof: AutoAcceptProof.ContentApproved,
     })
 
-    const { message: requestMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-      recordId: faberProofExchangeRecord.id,
-      message,
-      domain: 'rxjs:faber',
-    })
+    const { message: requestMessage, invitationUrl } =
+      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        recordId: faberProofExchangeRecord.id,
+        message,
+        domain: 'rxjs:faber',
+      })
 
     for (const transport of faberAgent.modules.didcomm.outboundTransports) {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
@@ -624,7 +627,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.RequestReceived,
     })
 
-    await aliceAgent.dependencyManager.resolve(MessageReceiver).receiveMessage(requestMessage.toJSON())
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     await aliceAgent.modules.proofs.declineRequest({

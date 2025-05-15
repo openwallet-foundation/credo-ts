@@ -1,5 +1,5 @@
+import { type DidDocumentKey, Kms } from '@credo-ts/core'
 import { Agent } from '../../../../../core/src/agent/Agent'
-import { KeyType } from '../../../../../core/src/crypto'
 import {
   DidCommV1Service,
   DidDocumentBuilder,
@@ -10,13 +10,13 @@ import {
   getEd25519VerificationKey2018,
 } from '../../../../../core/src/modules/dids'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getInMemoryAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
+import { getAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
 import { DidExchangeState, HandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
 
-const faberAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Implicit',
   {
     endpoints: ['rxjs:faber'],
@@ -27,9 +27,10 @@ const faberAgentOptions = getInMemoryAgentOptions(
       resolvers: [inMemoryDidsRegistry],
       registrars: [inMemoryDidsRegistry],
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Agent OOB Implicit',
   {
     endpoints: ['rxjs:alice'],
@@ -40,7 +41,8 @@ const aliceAgentOptions = getInMemoryAgentOptions(
       resolvers: [inMemoryDidsRegistry],
       registrars: [inMemoryDidsRegistry],
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('out of band implicit', () => {
@@ -58,9 +60,7 @@ describe('out of band implicit', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   afterEach(async () => {
@@ -238,15 +238,19 @@ describe('out of band implicit', () => {
 })
 
 async function createInMemoryDid(agent: Agent, endpoint: string) {
-  const ed25519Key = await agent.wallet.createKey({
-    keyType: KeyType.Ed25519,
+  const ed25519Key = await agent.kms.createKey({
+    type: {
+      kty: 'OKP',
+      crv: 'Ed25519',
+    },
   })
+  const publicJwk = Kms.PublicJwk.fromPublicJwk(ed25519Key.publicJwk)
 
-  const did = `did:inmemory:${ed25519Key.fingerprint}`
+  const did = `did:inmemory:${publicJwk.fingerprint}`
   const builder = new DidDocumentBuilder(did)
   const ed25519VerificationMethod = getEd25519VerificationKey2018({
-    key: ed25519Key,
-    id: `${did}#${ed25519Key.fingerprint}`,
+    publicJwk,
+    id: `${did}#${publicJwk.fingerprint}`,
     controller: did,
   })
 
@@ -286,7 +290,19 @@ async function createInMemoryDid(agent: Agent, endpoint: string) {
   // Create the did:inmemory did
   const {
     didState: { state },
-  } = await agent.dids.create({ did, didDocument: builder.build() })
+  } = await agent.dids.create({
+    did,
+    didDocument: builder.build(),
+    options: {
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+          kmsKeyId: ed25519Key.keyId,
+        } satisfies DidDocumentKey,
+      ],
+    },
+  })
+
   if (state !== 'finished') {
     throw new Error('Error creating DID')
   }

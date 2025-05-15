@@ -5,16 +5,11 @@ import type { LinkedDataProofOptions } from './LinkedDataProof'
 
 import { ValidateNested } from 'class-validator'
 
-import {
-  IsInstanceOrArrayOfInstances,
-  JsonTransformer,
-  SingleOrArray,
-  asArray,
-  mapSingleOrArray,
-} from '../../../../utils'
+import { IsInstanceOrArrayOfInstances, JsonTransformer, asArray, mapSingleOrArray } from '../../../../utils'
 import { ClaimFormat } from '../../models/ClaimFormat'
 import { W3cCredential } from '../../models/credential/W3cCredential'
 
+import { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import { LinkedDataProof } from './LinkedDataProof'
 import { ProofTransformer } from './ProofTransformer'

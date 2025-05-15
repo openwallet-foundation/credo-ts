@@ -12,15 +12,27 @@ import {
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions } from './helpers'
+import { getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const aliceAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Alice', {
-  endpoints: ['rxjs:alice'],
-})
-const bobAgentOptions = getInMemoryAgentOptions('Multi Protocol Versions - Bob', {
-  endpoints: ['rxjs:bob'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Multi Protocol Versions - Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const bobAgentOptions = getAgentOptions(
+  'Multi Protocol Versions - Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('multi version protocols', () => {
   let aliceAgent: Agent
@@ -28,9 +40,7 @@ describe('multi version protocols', () => {
 
   afterAll(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('should successfully handle a message with a lower minor version than the currently supported version', async () => {

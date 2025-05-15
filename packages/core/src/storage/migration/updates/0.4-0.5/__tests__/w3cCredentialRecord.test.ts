@@ -1,23 +1,12 @@
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
-import { AgentConfig } from '../../../../../agent/AgentConfig'
 import { W3cCredentialRecord, W3cCredentialRepository, W3cJsonLdVerifiableCredential } from '../../../../../modules/vc'
 import { W3cJsonLdCredentialService } from '../../../../../modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/data-integrity/__tests__/fixtures'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../w3cCredentialRecord'
 
-const dependencyManager = {
-  resolve: (_injectionToken: unknown) => {
-    // no-op
-  },
-}
-
 const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.4-0.5')
-const agentContext = getAgentContext({
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  dependencyManager: dependencyManager as any,
-})
 
 const repository = {
   getAll: jest.fn(),
@@ -28,26 +17,20 @@ const w3cJsonLdCredentialService = {
   getExpandedTypesForCredential: jest.fn().mockResolvedValue(['https://example.com#example']),
 }
 
-dependencyManager.resolve = (injectionToken: unknown) => {
-  if (injectionToken === W3cJsonLdCredentialService) {
-    return w3cJsonLdCredentialService
-  }
-  if (injectionToken === W3cCredentialRepository) {
-    return repository
-  }
-  if (injectionToken === AgentConfig) {
-    return agentConfig
-  }
-
-  throw new Error('unknown injection token')
-}
+const agentContext = getAgentContext({
+  agentConfig,
+  registerInstances: [
+    [W3cJsonLdCredentialService, w3cJsonLdCredentialService],
+    [W3cCredentialRepository, repository],
+  ],
+})
 
 jest.mock('../../../../../agent/Agent', () => {
   return {
     Agent: jest.fn(() => ({
       config: agentConfig,
       context: agentContext,
-      dependencyManager,
+      dependencyManager: agentContext.dependencyManager,
     })),
   }
 })

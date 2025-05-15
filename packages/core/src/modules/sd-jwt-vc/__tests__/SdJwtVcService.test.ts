@@ -1,11 +1,11 @@
-import type { AgentContext, Jwk, Key } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
 import { randomUUID } from 'crypto'
 import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
 
-import { agentDependencies, getInMemoryAgentOptions } from '../../../../tests'
+import { agentDependencies, getAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
 import { SdJwtVcService } from '../SdJwtVcService'
 import { SdJwtVcRepository } from '../repository'
@@ -37,22 +37,17 @@ import {
   JwtPayload,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
   TypedArrayEncoder,
+  X509Certificate,
   X509ModuleConfig,
   getDomainFromUrl,
-  getJwkFromKey,
   parseDid,
 } from '@credo-ts/core'
-
-const jwkJsonWithoutUse = (jwk: Jwk) => {
-  const jwkJson = jwk.toJson()
-  jwkJson.use = undefined
-  return jwkJson
-}
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
+import { PublicJwk } from '../../kms'
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'sdjwtvcserviceagent',
     {},
     {},
@@ -65,15 +60,17 @@ const agent = new Agent(
   )
 )
 
-agent.context.wallet.generateNonce = jest.fn(() => Promise.resolve('salt'))
+agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
 Date.prototype.getTime = jest.fn(() => 1698151532000)
 
 jest.mock('../repository/SdJwtVcRepository')
 const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
 
+const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
+
 const generateStatusList = async (
   agentContext: AgentContext,
-  key: Key,
+  key: PublicJwk,
   issuerDidUrl: string,
   length: number,
   revokedIndexes: number[]
@@ -100,40 +97,88 @@ const generateStatusList = async (
 
   const jwsService = agentContext.dependencyManager.resolve(JwsService)
   return jwsService.createJwsCompact(agentContext, {
-    key,
+    keyId: key.keyId,
     payload: JwtPayload.fromJson(payload),
-    protectedHeaderOptions: header,
+    protectedHeaderOptions: {
+      ...header,
+      alg: 'EdDSA',
+    },
   })
 }
 
 describe('SdJwtVcService', () => {
   const verifierDid = 'did:key:zUC74VEqqhEHQcgv4zagSPkqFJxuNWuoBPKjJuHETEUeHLoSqWt92viSsmaWjy82y'
   let issuerDidUrl: string
-  let issuerKey: Key
-  let holderKey: Key
+  let issuerKey: PublicJwk
+  let holderKey: PublicJwk
   let sdJwtVcService: SdJwtVcService
 
   beforeAll(async () => {
     await agent.initialize()
 
-    issuerKey = await agent.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
+    const issuerPrivateJwk = transformSeedToPrivateJwk({
       seed: TypedArrayEncoder.fromString('00000000000000000000000000000000'),
-    })
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    issuerKey = PublicJwk.fromPublicJwk(
+      (
+        await agent.kms.importKey({
+          privateJwk: issuerPrivateJwk,
+        })
+      ).publicJwk
+    )
 
     const issuerDidKey = new DidKey(issuerKey)
     const issuerDidDocument = issuerDidKey.didDocument
     issuerDidUrl = (issuerDidDocument.verificationMethod ?? [])[0].id
-    await agent.dids.import({ didDocument: issuerDidDocument, did: issuerDidDocument.id })
-
-    holderKey = await agent.context.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+    await agent.dids.import({
+      didDocument: issuerDidDocument,
+      did: issuerDidDocument.id,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${issuerDidUrl.split('#')[1]}`,
+          kmsKeyId: issuerKey.keyId,
+        },
+      ],
     })
 
+    simpleX509Certificate.keyId = issuerKey.keyId
+
+    const holderPrivateJwk = transformSeedToPrivateJwk({
+      seed: TypedArrayEncoder.fromString('00000000000000000000000000000001'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+
+    // We use hardcoded SD-JWT VCs which don't have a `kid` in the credential JWK
+    // So we set the kid to the legacy key id
+    holderPrivateJwk.kid = TypedArrayEncoder.toBase58(PublicJwk.fromPublicJwk(holderPrivateJwk).publicKey.publicKey)
+
+    holderKey = PublicJwk.fromPublicJwk(
+      (
+        await agent.kms.importKey({
+          privateJwk: holderPrivateJwk,
+        })
+      ).publicJwk
+    )
     const holderDidKey = new DidKey(holderKey)
     const holderDidDocument = holderDidKey.didDocument
-    await agent.dids.import({ didDocument: holderDidDocument, did: holderDidDocument.id })
+    const holderDidUrl = (holderDidDocument.verificationMethod ?? [])[0].id
+    await agent.dids.import({
+      didDocument: holderDidDocument,
+      did: holderDidDocument.id,
+      keys: [
+        {
+          kmsKeyId: holderKey.keyId,
+          didDocumentRelativeKeyId: `#${holderDidUrl.split('#')[1]}`,
+        },
+      ],
+    })
 
     const sdJwtVcRepositoryMock = new SdJwtVcRepositoryMock()
     sdJwtVcService = new SdJwtVcService(sdJwtVcRepositoryMock)
@@ -149,11 +194,11 @@ describe('SdJwtVcService', () => {
           },
           holder: {
             method: 'jwk',
-            jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+            jwk: holderKey,
           },
           issuer: {
             method: 'x5c',
-            x5c: [simpleX509.trustedCertficate],
+            x5c: [simpleX509Certificate],
             issuer: 'some-issuer',
           },
         })
@@ -168,11 +213,11 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'x5c',
-          x5c: [simpleX509.trustedCertficate],
+          x5c: [simpleX509Certificate],
           issuer: simpleX509.certificateIssuer,
         },
         headerType: 'vc+sd-jwt',
@@ -192,7 +237,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: simpleX509.certificateIssuer,
-        cnf: { jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)) },
+        cnf: { jwk: holderKey.toJson() },
       })
     })
 
@@ -206,7 +251,7 @@ describe('SdJwtVcService', () => {
           // FIXME: is it nicer API to just pass either didUrl or JWK?
           // Or none if you don't want to bind it?
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -231,7 +276,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -276,10 +321,8 @@ describe('SdJwtVcService', () => {
           discloseableValue: false,
         },
         holder: {
-          // FIXME: is it nicer API to just pass either didUrl or JWK?
-          // Or none if you don't want to bind it?
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -303,7 +346,7 @@ describe('SdJwtVcService', () => {
         value: false,
         discloseableValue: false,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -314,7 +357,7 @@ describe('SdJwtVcService', () => {
         disclosureFrame: { _sd: ['claim'] },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -335,10 +378,10 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
-        _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
+        _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -348,7 +391,7 @@ describe('SdJwtVcService', () => {
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -380,7 +423,7 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -401,7 +444,7 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         address: {
-          _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
+          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
@@ -409,16 +452,16 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -441,7 +484,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -473,7 +516,7 @@ describe('SdJwtVcService', () => {
         },
         holder: {
           method: 'jwk',
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey,
         },
         issuer: {
           method: 'did',
@@ -494,17 +537,17 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
-          'yPhxDEM7k7p7eQ9eHHC-Ca6VEA8bzebZpYu7vYmwG6c',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'RDQeb-TXvRaGsX5jV4W2-xAKutsaYZVm8qEvMtP71pc',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -527,7 +570,7 @@ describe('SdJwtVcService', () => {
         is_over_21: true,
         is_over_65: true,
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -551,7 +594,7 @@ describe('SdJwtVcService', () => {
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -588,10 +631,10 @@ describe('SdJwtVcService', () => {
         vct: 'IdentityCredential',
         iat: Math.floor(new Date().getTime() / 1000),
         iss: issuerDidUrl.split('#')[0],
-        _sd: ['vcvFU4DsFKTqQ1vl4nelJWXTb_-0dNoBks6iqNFptyg'],
+        _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -615,22 +658,22 @@ describe('SdJwtVcService', () => {
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         address: {
-          _sd: ['NJnmct0BqBME1JfBlC6jRQVRuevpEONiYw7A7MHuJyQ', 'om5ZztZHB-Gd00LG21CV_xM4FaENSoiaOXnTAJNczB4'],
+          _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
           street_address: '123 Main St',
         },
         _sd_alg: 'sha-256',
         phone_number: '+1-202-555-0101',
         _sd: [
-          '1Cur2k2A2oIB5CshSIf_A_Kg-l26u_qKuWQ79P0Vdas',
-          'R1zTUvOYHgcepj0jHypGHz9EHttVKft0yswbc9ETPbU',
-          'eDqQpdTXJXbWhf-EsI7zw5X6OvYmFN-UZQQMesXwKPw',
-          'pdDk2_XAKHo7gOAfwF1b7OdCUVTit2kJHaxSECQ9xfc',
-          'psauKUNWEi09nu3Cl89xKXgmpWENZl5uy1N1nyn_jMk',
-          'sN_ge0pHXF6qmsYnX1A9SdwJ8ch8aENkxbODsT74YwI',
+          '1oLbHVhfmVs2oA3vhFNTXhMw4lGu7ql9dZ0T7p-vWqE',
+          '2xuzS3kUrT6VPJD-MySIkQ47HIB-gcyzF5NDY19cPBw',
+          'hn1gcrO_Q2HskW2Z_nzIrIl6KpgqldvScozutJdbhWM',
+          'jc73t3yBoDs_pDYb03lEYKYvCbtCq9NhuJ6_5A7QNSs',
+          'lKI_sY05pDIs9MDrjCO4v8XoDM963JXxrp9T2FNLyTY',
+          'sl0hkY5LeVwy3rIjNaCl4P4CJ3C3v8Ip-GH2lB9Sd_A',
         ],
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
 
@@ -668,7 +711,7 @@ describe('SdJwtVcService', () => {
           street_address: '123 Main St',
         },
         cnf: {
-          jwk: jwkJsonWithoutUse(getJwkFromKey(holderKey)),
+          jwk: holderKey.toJson(),
         },
       })
     })
@@ -715,7 +758,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
       })
 
@@ -753,7 +796,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
       })
 
@@ -772,7 +815,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce: await agent.context.wallet.generateNonce(),
+          nonce: 'salt',
         },
         presentationFrame: {
           is_over_65: true,
@@ -791,7 +834,6 @@ describe('SdJwtVcService', () => {
 
   describe('SdJwtVcService.verify', () => {
     test('Verify sd-jwt-vc without disclosures', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleJwtVc,
         // no disclosures
@@ -799,13 +841,13 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
 
@@ -826,7 +868,6 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify x509 protected sd-jwt-vc without disclosures', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: simpleX509.sdJwtVc,
         // no disclosures
@@ -834,16 +875,16 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
       })
 
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
+      x509ModuleConfig.addTrustedCertificate(simpleX509.trustedCertficate)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['claim'],
       })
 
@@ -1044,21 +1085,19 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify sd-jwt-vc with a disclosure', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
-
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
         presentationFrame: { claim: true },
       })
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         requiredClaimKeys: ['vct', 'cnf', 'claim', 'iat'],
       })
 
@@ -1079,8 +1118,6 @@ describe('SdJwtVcService', () => {
     })
 
     test('Verify sd-jwt-vc with multiple (nested) disclosure', async () => {
-      const nonce = await agent.context.wallet.generateNonce()
-
       const presentation = await sdJwtVcService.present<{
         is_over_65: boolean
         is_over_21: boolean
@@ -1092,7 +1129,7 @@ describe('SdJwtVcService', () => {
         verifierMetadata: {
           issuedAt: new Date().getTime() / 1000,
           audience: verifierDid,
-          nonce,
+          nonce: 'salt',
         },
         presentationFrame: {
           is_over_65: true,
@@ -1107,7 +1144,7 @@ describe('SdJwtVcService', () => {
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: presentation,
-        keyBinding: { audience: verifierDid, nonce },
+        keyBinding: { audience: verifierDid, nonce: 'salt' },
         // FIXME: this should be a requiredFrame to be consistent with the other methods
         // using frames
         requiredClaimKeys: [

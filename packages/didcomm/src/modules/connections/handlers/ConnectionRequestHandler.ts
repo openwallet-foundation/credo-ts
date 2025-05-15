@@ -9,6 +9,7 @@ import { CredoError, tryParseDid } from '@credo-ts/core'
 
 import { TransportService } from '../../../TransportService'
 import { OutboundMessageContext } from '../../../models'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
@@ -66,12 +67,20 @@ export class ConnectionRequestHandler implements MessageHandler {
       throw new CredoError(`A received did record for sender key ${senderKey.fingerprint} already exists.`)
     }
 
+    if (outOfBandRecord.state === OutOfBandState.Done) {
+      throw new CredoError('Out-of-band record has been already processed and it does not accept any new requests')
+    }
+
     const connectionRecord = await this.connectionService.processRequest(messageContext, outOfBandRecord)
 
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
       const transportService = agentContext.dependencyManager.resolve(TransportService)
       transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
+    }
+
+    if (!outOfBandRecord.reusable) {
+      await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
     }
 
     if (connectionRecord?.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {

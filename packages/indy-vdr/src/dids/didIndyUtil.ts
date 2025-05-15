@@ -10,11 +10,10 @@ import {
   DidsApi,
   Hasher,
   JsonTransformer,
-  Key,
-  KeyType,
+  Kms,
   TypedArrayEncoder,
   convertPublicKeyToX25519,
-  getKeyFromVerificationMethod,
+  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import { GetAttribRequest, GetNymRequest } from '@hyperledger/indy-vdr-shared'
 
@@ -152,7 +151,11 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
   const { namespace } = parseIndyDid(did)
   const { did: didFromVerkey } = indyDidFromNamespaceAndInitialKey(
     namespace,
-    Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
+    Kms.PublicJwk.fromPublicKey({
+      crv: 'Ed25519',
+      kty: 'OKP',
+      publicKey: TypedArrayEncoder.fromBase58(verkey),
+    })
   )
 
   if (didFromVerkey === did) {
@@ -162,11 +165,11 @@ export function isSelfCertifiedIndyDid(did: string, verkey: string): boolean {
   return false
 }
 
-export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Key) {
-  const buffer = Hasher.hash(initialKey.publicKey, 'sha-256')
+export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>) {
+  const buffer = Hasher.hash(initialKey.publicKey.publicKey, 'sha-256')
 
   const id = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-  const verkey = initialKey.publicKeyBase58
+  const verkey = TypedArrayEncoder.toBase58(initialKey.publicKey.publicKey)
   const did = `did:indy:${namespace}:${id}`
 
   return { did, id, verkey }
@@ -177,23 +180,21 @@ export function indyDidFromNamespaceAndInitialKey(namespace: string, initialKey:
  *
  * @throws {@link CredoError} if the did could not be resolved or the key could not be extracted
  */
-export async function verificationKeyForIndyDid(agentContext: AgentContext, did: string) {
-  // FIXME: we should store the didDocument in the DidRecord so we don't have to fetch our own did
-  // from the ledger to know which key is associated with the did
+export async function verificationPublicJwkForIndyDid(agentContext: AgentContext, did: string) {
   const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-  const didResult = await didsApi.resolve(did)
 
-  if (!didResult.didDocument) {
-    throw new CredoError(
-      `Could not resolve did ${did}. ${didResult.didResolutionMetadata.error} ${didResult.didResolutionMetadata.message}`
-    )
+  const { keys, didDocument } = await didsApi.resolveCreatedDidDocumentWithKeys(did)
+
+  const verificationMethod = didDocument.dereferenceKey('#verkey')
+  const key = keys?.find((key) => key.didDocumentRelativeKeyId === '#verkey')
+
+  const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+  if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+    throw new CredoError('Expected #verkey verification mehod to be of type Ed25519')
   }
 
-  // did:indy dids MUST have a verificationMethod with #verkey
-  const verificationMethod = didResult.didDocument.dereferenceKey(`${did}#verkey`)
-  const key = getKeyFromVerificationMethod(verificationMethod)
-
-  return key
+  publicJwk.keyId = key?.kmsKeyId ?? publicJwk.legacyKeyId
+  return publicJwk
 }
 
 export async function getPublicDid(pool: IndyVdrPool, unqualifiedDid: string) {
@@ -246,7 +247,6 @@ export async function getEndpointsForDid(agentContext: AgentContext, pool: IndyV
 
 export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdrPool, did: string) {
   const { namespaceIdentifier } = parseIndyDid(did)
-
   const nym = await getPublicDid(pool, namespaceIdentifier)
 
   // Create base Did Document
@@ -279,12 +279,11 @@ export async function buildDidDocument(agentContext: AgentContext, pool: IndyVdr
     return builder.build()
   }
   // Combine it with didDoc
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let diddocContent
+  let diddocContent: Record<string, unknown>
   try {
-    diddocContent = JSON.parse(nym.diddocContent) as Record<string, unknown>
+    diddocContent = JSON.parse(nym.diddocContent)
   } catch (error) {
-    agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${diddocContent}`)
+    agentContext.config.logger.error(`Nym diddocContent is not a valid json string: ${nym.diddocContent}`)
     throw new IndyVdrError(`Nym diddocContent failed to parse as JSON: ${error}`)
   }
   return combineDidDocumentWithJson(builder.build(), diddocContent)

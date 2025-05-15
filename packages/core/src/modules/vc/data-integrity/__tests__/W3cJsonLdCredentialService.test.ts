@@ -1,14 +1,12 @@
-import type { AgentContext } from '../../../../agent'
-import type { Wallet } from '../../../../wallet'
-
-import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
-import { getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
-import { KeyType } from '../../../../crypto'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../../tests/helpers'
 import { TypedArrayEncoder, asArray } from '../../../../utils'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
-import { WalletError } from '../../../../wallet/error'
 import {
   DidKey,
+  DidRepository,
+  DidsApi,
+  DidsModuleConfig,
+  KeyDidCreateOptions,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
@@ -23,6 +21,13 @@ import { W3cJsonLdVerifiablePresentation } from '../models/W3cJsonLdVerifiablePr
 import { CredentialIssuancePurpose } from '../proof-purposes/CredentialIssuancePurpose'
 import { Ed25519Signature2018 } from '../signature-suites'
 
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../askar/src'
+import { EventEmitter } from '../../../../agent/EventEmitter'
+import { InjectionSymbols } from '../../../../constants'
+import { ConsoleLogger, LogLevel } from '../../../../logger'
+import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../kms'
 import { customDocumentLoader } from './documentLoader'
 import { Ed25519Signature2018Fixtures } from './fixtures'
 
@@ -35,45 +40,33 @@ const signatureSuiteRegistry = new SignatureSuiteRegistry([
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
       VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
     ],
-    keyTypes: [KeyType.Ed25519],
+    supportedPublicJwkTypes: [Ed25519PublicJwk],
   },
 ])
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+const inMemoryStorage = new InMemoryStorageService<any>()
 const agentConfig = getAgentConfig('W3cJsonLdCredentialServiceTest')
+const agentContext = getAgentContext({
+  agentConfig,
+  registerInstances: [
+    [InjectionSymbols.Logger, new ConsoleLogger(LogLevel.off)],
+    [DidsModuleConfig, new DidsModuleConfig({})],
+    [DidRepository, new DidRepository(inMemoryStorage, new EventEmitter(agentDependencies, new Subject()))],
+  ],
+})
+
+const w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
+  signatureSuiteRegistry,
+  new W3cCredentialsModuleConfig({
+    documentLoader: customDocumentLoader,
+  })
+)
 
 describe('W3cJsonLdCredentialsService', () => {
-  let wallet: Wallet
-  let agentContext: AgentContext
-  let w3cJsonLdCredentialService: W3cJsonLdCredentialService
   const privateKey = TypedArrayEncoder.fromString('testseed000000000000000000000001')
 
-  beforeAll(async () => {
-    wallet = new InMemoryWallet()
-    await wallet.createAndOpen(agentConfig.walletConfig)
-    agentContext = getAgentContext({
-      agentConfig,
-      wallet,
-    })
-    w3cJsonLdCredentialService = new W3cJsonLdCredentialService(
-      signatureSuiteRegistry,
-      new W3cCredentialsModuleConfig({
-        documentLoader: customDocumentLoader,
-      })
-    )
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
-  })
-
   describe('Utility methods', () => {
-    describe('getKeyTypesByProofType', () => {
-      it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
-        const keyTypes = w3cJsonLdCredentialService.getKeyTypesByProofType('Ed25519Signature2018')
-        expect(keyTypes).toEqual([KeyType.Ed25519])
-      })
-    })
-
     describe('getVerificationMethodTypesByProofType', () => {
       it('should return the correct key types for Ed25519Signature2018 proof type', async () => {
         const verificationMethodTypes =
@@ -89,14 +82,31 @@ describe('W3cJsonLdCredentialsService', () => {
   describe('Ed25519Signature2018', () => {
     let issuerDidKey: DidKey
     let verificationMethod: string
+
     beforeAll(async () => {
-      // TODO: update to use did registrar
-      const issuerKey = await wallet.createKey({
-        keyType: KeyType.Ed25519,
-        privateKey,
+      const kms = agentContext.resolve(KeyManagementApi)
+      const dids = agentContext.resolve(DidsApi)
+
+      const importedKey = await kms.importKey({
+        privateJwk: transformPrivateKeyToPrivateJwk({
+          privateKey,
+          type: {
+            crv: 'Ed25519',
+            kty: 'OKP',
+          },
+        }).privateJwk,
       })
+      const issuerKey = PublicJwk.fromPublicJwk(importedKey.publicJwk)
+
+      await dids.create<KeyDidCreateOptions>({
+        method: 'key',
+        options: {
+          keyId: importedKey.keyId,
+        },
+      })
+
       issuerDidKey = new DidKey(issuerKey)
-      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.key.fingerprint}`
+      verificationMethod = `${issuerDidKey.did}#${issuerDidKey.publicJwk.fingerprint}`
     })
 
     describe('signCredential', () => {
@@ -134,7 +144,9 @@ describe('W3cJsonLdCredentialsService', () => {
             verificationMethod:
               'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
-        }).rejects.toThrowError(WalletError)
+        }).rejects.toThrow(
+          `No key management service supports 'sign' operation with algorithm 'EdDSA' that has a key with keyId 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7`
+        )
       })
     })
 

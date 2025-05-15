@@ -1,6 +1,5 @@
 import type { Agent, InitConfig } from '@credo-ts/core'
 import type { DidCommModuleConfig } from '../..//didcomm'
-import type { AskarWalletPostgresStorageConfig } from '../src/wallet'
 
 import path from 'path'
 import { LogLevel, utils } from '@credo-ts/core'
@@ -12,18 +11,11 @@ import { TestLogger } from '../../core/tests/logger'
 import { ConnectionsModule, HandshakeProtocol } from '../../didcomm'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
+import { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
-import { AskarModuleConfig } from '../src/AskarModuleConfig'
-import { AskarWallet } from '../src/wallet'
 
-export const askarModuleConfig = new AskarModuleConfig({ askar })
-registerAskar({ askar: askarModuleConfig.askar })
-export const askarModule = new AskarModule(askarModuleConfig)
+registerAskar({ askar })
 export { askar }
-
-// When using the AskarWallet directly, the native dependency won't be loaded by default.
-// So in tests depending on Askar, we import this wallet so we're sure the native dependency is loaded.
-export const RegisteredAskarTestWallet = AskarWallet
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
   ? path.resolve(process.env.GENESIS_TXN_PATH)
@@ -31,7 +23,7 @@ export const genesisPath = process.env.GENESIS_TXN_PATH
 
 export const publicDidSeed = process.env.TEST_AGENT_PUBLIC_DID_SEED ?? '000000000000000000000000Trustee9'
 
-export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
+export const askarPostgresStorageConfig: AskarPostgresStorageConfig = {
   type: 'postgres',
   config: {
     host: 'localhost:5432',
@@ -45,17 +37,12 @@ export const askarPostgresStorageConfig: AskarWalletPostgresStorageConfig = {
 export function getAskarPostgresAgentOptions(
   name: string,
   didcommConfig: Partial<DidCommModuleConfig>,
-  storageConfig: AskarWalletPostgresStorageConfig,
+  storageConfig: AskarPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `PostgresAgent: ${name} - ${random}`,
-    walletConfig: {
-      id: `PostgresWallet${name}${random}`,
-      key: `Key${name}`,
-      storage: storageConfig,
-    },
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -65,7 +52,14 @@ export function getAskarPostgresAgentOptions(
     dependencies: agentDependencies,
     modules: {
       ...getDefaultDidcommModules(didcommConfig),
-      askar: new AskarModule(askarModuleConfig),
+      askar: new AskarModule({
+        askar,
+        store: {
+          id: `PostgresWallet${name}${random}`,
+          key: `Key${name}`,
+          database: storageConfig,
+        },
+      }),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
       }),
@@ -82,11 +76,6 @@ export function getAskarSqliteAgentOptions(
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
     label: `SQLiteAgent: ${name} - ${random}`,
-    walletConfig: {
-      id: `SQLiteWallet${name} - ${random}`,
-      key: `Key${name}`,
-      storage: { type: 'sqlite', inMemory },
-    },
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -96,7 +85,14 @@ export function getAskarSqliteAgentOptions(
     dependencies: agentDependencies,
     modules: {
       ...getDefaultDidcommModules(didcommConfig),
-      askar: new AskarModule(askarModuleConfig),
+      askar: new AskarModule({
+        askar,
+        store: {
+          id: `SQLiteWallet${name} - ${random}`,
+          key: `Key${name}`,
+          database: { type: 'sqlite', config: { inMemory } },
+        },
+      }),
       connections: new ConnectionsModule({
         autoAcceptConnections: true,
       }),
