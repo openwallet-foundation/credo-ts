@@ -1,6 +1,6 @@
 import { CredoError } from '../../../error'
 import { injectAll, injectable } from '../../../plugins'
-import { SupportedPublicJwk, SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
+import { PublicJwk, SupportedPublicJwkClass } from '../../kms/jwk/PublicJwk'
 
 import { suites } from './libraries/jsonld-signatures'
 
@@ -35,9 +35,8 @@ export class SignatureSuiteRegistry {
     return this.suiteMapping.find((x) => x.verificationMethodTypes.includes(verificationMethodType))
   }
 
-  public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | SupportedPublicJwk) {
-    const publicJwkClass =
-      'publicKey' in publicJwkType ? (publicJwkType.constructor as SupportedPublicJwkClass) : publicJwkType
+  public getAllByPublicJwkType(publicJwkType: SupportedPublicJwkClass | PublicJwk) {
+    const publicJwkClass = publicJwkType instanceof PublicJwk ? publicJwkType.JwkClass : publicJwkType
     return this.suiteMapping.filter((x) => x.supportedPublicJwkTypes.includes(publicJwkClass))
   }
 

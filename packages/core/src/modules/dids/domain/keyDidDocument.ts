@@ -18,17 +18,17 @@ import { convertPublicKeyToX25519 } from './key-type/ed25519'
 import { getEd25519VerificationKey2018, getJsonWebKey2020, getX25519KeyAgreementKey2019 } from './verificationMethod'
 
 export function getDidDocumentForPublicJwk(did: string, publicJwk: PublicJwk) {
-  if (publicJwk.jwk instanceof Ed25519PublicJwk) {
+  if (publicJwk.is(Ed25519PublicJwk)) {
     return getEd25519DidDoc(did, publicJwk as PublicJwk<Ed25519PublicJwk>)
   }
-  if (publicJwk.jwk instanceof X25519PublicJwk) {
+  if (publicJwk.is(X25519PublicJwk)) {
     return getX25519DidDoc(did, publicJwk as PublicJwk<X25519PublicJwk>)
   }
   if (
-    publicJwk.jwk instanceof P256PublicJwk ||
-    publicJwk.jwk instanceof P384PublicJwk ||
-    publicJwk.jwk instanceof P521PublicJwk ||
-    publicJwk.jwk instanceof Secp256k1PublicJwk
+    publicJwk.is(P256PublicJwk) ||
+    publicJwk.is(P384PublicJwk) ||
+    publicJwk.is(P521PublicJwk) ||
+    publicJwk.is(Secp256k1PublicJwk)
   ) {
     return getJsonWebKey2020DidDocument(did, publicJwk)
   }

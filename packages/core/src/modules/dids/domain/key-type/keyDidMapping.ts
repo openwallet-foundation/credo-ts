@@ -4,8 +4,8 @@ import { getPublicJwkFromMultikey, isMultikey } from '../verificationMethod'
 import { getPublicJwkFromJsonWebKey2020, isJsonWebKey2020 } from '../verificationMethod/JsonWebKey2020'
 
 import { Constructor } from '../../../../utils/mixins'
-import { PublicJwk, getJwkHumanDescription } from '../../../kms'
-import { SupportedPublicJwk, SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
+import { PublicJwk } from '../../../kms'
+import { SupportedPublicJwkClass } from '../../../kms/jwk/PublicJwk'
 import { keyDidEd25519 } from './ed25519'
 import { keyDidJsonWebKey } from './keyDidJsonWebKey'
 import { keyDidSecp256k1 } from './secp256k1'
@@ -31,7 +31,7 @@ export function getVerificationMethodsForPublicJwk(publicJwk: PublicJwk, did: st
 }
 
 export function getSupportedVerificationMethodTypesForPublicJwk(
-  publicJwk: SupportedPublicJwk | PublicJwk | SupportedPublicJwkClass
+  publicJwk: PublicJwk | SupportedPublicJwkClass
 ): string[] {
   const { supportedVerificationMethodTypes } = getKeyDidMappingByPublicJwk(publicJwk)
 
@@ -58,8 +58,8 @@ export function getPublicJwkFromVerificationMethod(verificationMethod: Verificat
   return keyDid.getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
-function getKeyDidMappingByPublicJwk(jwk: SupportedPublicJwk | PublicJwk | SupportedPublicJwkClass): KeyDidMapping {
-  const jwkTypeClass = jwk instanceof PublicJwk ? jwk.jwk.constructor : 'publicKey' in jwk ? jwk.constructor : jwk
+function getKeyDidMappingByPublicJwk(jwk: PublicJwk | SupportedPublicJwkClass): KeyDidMapping {
+  const jwkTypeClass = jwk instanceof PublicJwk ? jwk.JwkClass : jwk
 
   const keyDid = supportedKeyDids.find((supportedKeyDid) =>
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -68,7 +68,7 @@ function getKeyDidMappingByPublicJwk(jwk: SupportedPublicJwk | PublicJwk | Suppo
 
   if (!keyDid) {
     throw new CredoError(
-      `Unsupported did mapping for jwk '${jwk instanceof PublicJwk ? jwk.jwkTypehumanDescription : 'publicKey' in jwk ? getJwkHumanDescription(jwk.jwk) : jwk.name}'`
+      `Unsupported did mapping for jwk '${jwk instanceof PublicJwk ? jwk.jwkTypehumanDescription : jwk.name}'`
     )
   }
 

@@ -34,7 +34,7 @@ export function findMatchingEd25519Key(
     .find((v): v is typeof v & { publicJwk: PublicJwk<Ed25519PublicJwk> } => {
       if (!v.publicJwk.is(Ed25519PublicJwk)) return false
 
-      const keyX25519 = PublicJwk.fromPublicJwk(v.publicJwk.jwk.toX25519PublicJwk())
+      const keyX25519 = v.publicJwk.convertTo(X25519PublicJwk)
       return assymetricPublicJwkMatches(keyX25519.toJson(), x25519Key.toJson())
     })
 }

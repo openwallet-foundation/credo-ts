@@ -56,7 +56,7 @@ export class W3cJsonLdCredentialService {
     const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
     const suiteInfo = this.signatureSuiteRegistry.getByProofType(options.proofType)
 
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey.jwk)
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey)
 
     if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')
@@ -183,7 +183,7 @@ export class W3cJsonLdCredentialService {
     }
 
     const signingKey = await this.getPublicJwkFromVerificationMethod(agentContext, options.verificationMethod)
-    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey.jwk)
+    const suitesForKey = this.signatureSuiteRegistry.getAllByPublicJwkType(signingKey)
 
     if (!suitesForKey.some(({ suiteClass }) => suiteClass === suiteInfo.suiteClass)) {
       throw new CredoError('The key type of the verification method does not match the suite')

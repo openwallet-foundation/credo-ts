@@ -374,7 +374,7 @@ describe('X509Service', () => {
     expect(validatedChain.length).toStrictEqual(3)
 
     const leafCertificate = validatedChain[validatedChain.length - 1]
-    expect(leafCertificate.publicJwk.jwk).toBeInstanceOf(P256PublicJwk)
+    expect(leafCertificate.publicJwk.is(P256PublicJwk)).toBe(true)
   })
 
   it('should verify a certificate chain where the root certificate is not in the provided chain, but is in trusted certificates', async () => {

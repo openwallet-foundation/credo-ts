@@ -70,7 +70,7 @@ export class EnvelopeService {
           key: {
             algorithm: 'ECDH-HSALSA20',
             // DIDComm v1 uses Ed25519 keys but encryption happens with X25519 keys
-            externalPublicJwk: recipientKey.jwk.toX25519PublicJwk(),
+            externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
           },
           encryption: {
             algorithm: 'XSALSA20-POLY1305',
@@ -85,7 +85,7 @@ export class EnvelopeService {
       const { encrypted, iv } = await kms.encrypt({
         key: {
           algorithm: 'ECDH-HSALSA20',
-          externalPublicJwk: recipientKey.jwk.toX25519PublicJwk(),
+          externalPublicJwk: recipientKey.convertTo(Kms.X25519PublicJwk).toJson(),
 
           // Sender key only needed for Authcrypt
           keyId: senderKey?.keyId,
@@ -209,7 +209,7 @@ export class EnvelopeService {
         keyId: recipientKey.keyId,
 
         // Optionally we have a sender
-        externalPublicJwk: senderPublicJwk?.jwk.toX25519PublicJwk(),
+        externalPublicJwk: senderPublicJwk?.convertTo(Kms.X25519PublicJwk).toJson(),
       },
     })
 

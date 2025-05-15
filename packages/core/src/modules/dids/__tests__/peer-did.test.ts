@@ -24,7 +24,7 @@ import { DidRecord, DidRepository } from '../repository'
 import { DidResolverService } from '../services'
 
 import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
-import { KeyManagementApi, PublicJwk } from '../../kms'
+import { KeyManagementApi, PublicJwk, X25519PublicJwk } from '../../kms'
 import didPeer1zQmY from './__fixtures__/didPeer1zQmY.json'
 
 describe('peer dids', () => {
@@ -82,7 +82,7 @@ describe('peer dids', () => {
     })
     const mediatorEd25519PublicJwk = PublicJwk.fromPublicJwk(mediatorEd25519Key.publicJwk)
 
-    const x25519PublicJwk = PublicJwk.fromPublicJwk(ed25519PublicJwk.jwk.toX25519PublicJwk())
+    const x25519PublicJwk = ed25519PublicJwk.convertTo(X25519PublicJwk)
 
     const ed25519VerificationMethod = getEd25519VerificationKey2018({
       // The id can either be the first 8 characters of the key data (for ed25519 it's publicKeyBase58)
@@ -104,7 +104,7 @@ describe('peer dids', () => {
     })
 
     const mediatorEd25519DidKey = new DidKey(mediatorEd25519PublicJwk)
-    const mediatorX25519PublicJwk = PublicJwk.fromPublicJwk(mediatorEd25519PublicJwk.jwk.toX25519PublicJwk())
+    const mediatorX25519PublicJwk = mediatorEd25519PublicJwk.convertTo(X25519PublicJwk)
 
     // Use ed25519 did:key, which also includes the x25519 key used for didcomm
     const mediatorRoutingKey = `${mediatorEd25519DidKey.did}#${mediatorX25519PublicJwk.fingerprint}`

@@ -422,7 +422,7 @@ export class DifPresentationExchangeService {
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk.jwk)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
         `Couldn't find a supported signature suite for the given jwk ${getJwkHumanDescription(publicJwk.toJson())}`

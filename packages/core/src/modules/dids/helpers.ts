@@ -32,7 +32,7 @@ export function verkeyToDidKey(verkey: string) {
 
 export function didKeyToEd25519PublicJwk(key: string) {
   const didKey = DidKey.fromDid(key)
-  if (didKey.publicJwk.jwk instanceof Ed25519PublicJwk) {
+  if (didKey.publicJwk.is(Ed25519PublicJwk)) {
     return didKey.publicJwk as PublicJwk<Ed25519PublicJwk>
   }
 

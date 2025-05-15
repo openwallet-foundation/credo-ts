@@ -57,7 +57,7 @@ export class DidCommDocumentService {
 
           // FIXME: we should handle X25519 here as well
           if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.jwk.constructor.name}`)
+            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
           }
 
           routingKeys.push(publicJwk)
@@ -83,7 +83,7 @@ export class DidCommDocumentService {
           }
 
           if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
-            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.jwk.constructor.name}`)
+            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
           }
 
           return publicJwk

@@ -43,7 +43,7 @@ type ExtractByJwk<T, K> = T extends { jwk: infer J } ? (K extends J ? T : never)
 type ExtractByPublicKey<T, K> = T extends { publicKey: infer J } ? (K extends J ? T : never) : never
 
 export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
-  private constructor(public readonly jwk: Jwk) {}
+  private constructor(private readonly jwk: Jwk) {}
 
   public static fromUnknown(jwkJson: unknown) {
     // We remove any private properties if they are present
@@ -153,6 +153,10 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return this.jwk.publicKey
   }
 
+  public get JwkClass() {
+    return this.jwk.constructor as SupportedPublicJwkClass
+  }
+
   /**
    * Get the signature algorithm to use with this jwk. If the jwk has an `alg` field defined
    * it will use that alg, and otherwise fall back to the first supported signature algorithm.
@@ -253,6 +257,23 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   ): this is PublicJwk<Jwk1> | PublicJwk<Jwk2> | PublicJwk<Jwk3> {
     const types = [jwkType1, jwkType2, jwkType3].filter(Boolean) as Constructor<SupportedPublicJwk>[]
     return types.some((type) => this.jwk.constructor === type)
+  }
+
+  /**
+   * Convert the PublicJwk to another type.
+   *
+   * NOTE: only supportedf or Ed25519 to X25519 at the moment
+   */
+  public convertTo(
+    type: Jwk extends Ed25519PublicJwk ? typeof X25519PublicJwk : never
+  ): Jwk extends Ed25519PublicJwk ? PublicJwk<X25519PublicJwk> : never {
+    if (!this.is(Ed25519PublicJwk) || type !== X25519PublicJwk) {
+      throw new KeyManagementError('Unsupported key conversion. Only Ed25519 to X25519 is supported.')
+    }
+
+    return PublicJwk.fromPublicJwk(this.jwk.toX25519PublicJwk()) as Jwk extends Ed25519PublicJwk
+      ? PublicJwk<X25519PublicJwk>
+      : never
   }
 
   /**
