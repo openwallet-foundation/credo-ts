@@ -5,7 +5,7 @@ import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '.
 import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
-
+import { CachedStorageService } from '../modules/cache/CachedStorageService'
 import { RepositoryEventTypes } from './RepositoryEvents'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -19,14 +19,22 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     storageService: StorageService<T>,
     eventEmitter: EventEmitter
   ) {
-    this.storageService = storageService
     this.recordClass = recordClass
+    this.storageService = storageService
     this.eventEmitter = eventEmitter
+  }
+
+  private getStorageService(agentContext: AgentContext): StorageService<T> {
+    if (agentContext.dependencyManager.isRegistered(CachedStorageService<T>)) {
+      return agentContext.resolve(CachedStorageService<T>)
+    }
+
+    return this.storageService
   }
 
   /** @inheritDoc {StorageService#save} */
   public async save(agentContext: AgentContext, record: T): Promise<void> {
-    await this.storageService.save(agentContext, record)
+    await this.getStorageService(agentContext).save(agentContext, record)
 
     this.eventEmitter.emit<RecordSavedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordSaved,
@@ -39,7 +47,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
   /** @inheritDoc {StorageService#update} */
   public async update(agentContext: AgentContext, record: T): Promise<void> {
-    await this.storageService.update(agentContext, record)
+    await this.getStorageService(agentContext).update(agentContext, record)
 
     this.eventEmitter.emit<RecordUpdatedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordUpdated,
@@ -52,7 +60,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
   /** @inheritDoc {StorageService#delete} */
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
-    await this.storageService.delete(agentContext, record)
+    await this.getStorageService(agentContext).delete(agentContext, record)
 
     this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordDeleted,
@@ -69,7 +77,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
    * @returns
    */
   public async deleteById(agentContext: AgentContext, id: string): Promise<void> {
-    await this.storageService.deleteById(agentContext, this.recordClass, id)
+    await this.getStorageService(agentContext).deleteById(agentContext, this.recordClass, id)
 
     this.eventEmitter.emit<RecordDeletedEvent<T>>(agentContext, {
       type: RepositoryEventTypes.RecordDeleted,
@@ -81,7 +89,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
   /** @inheritDoc {StorageService#getById} */
   public async getById(agentContext: AgentContext, id: string): Promise<T> {
-    return this.storageService.getById(agentContext, this.recordClass, id)
+    return this.getStorageService(agentContext).getById(agentContext, this.recordClass, id)
   }
 
   /**
@@ -91,7 +99,7 @@ export class Repository<T extends BaseRecord<any, any, any>> {
    */
   public async findById(agentContext: AgentContext, id: string): Promise<T | null> {
     try {
-      return await this.storageService.getById(agentContext, this.recordClass, id)
+      return await this.getStorageService(agentContext).getById(agentContext, this.recordClass, id)
     } catch (error) {
       if (error instanceof RecordNotFoundError) return null
 
@@ -101,12 +109,12 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
   /** @inheritDoc {StorageService#getAll} */
   public async getAll(agentContext: AgentContext): Promise<T[]> {
-    return this.storageService.getAll(agentContext, this.recordClass)
+    return this.getStorageService(agentContext).getAll(agentContext, this.recordClass)
   }
 
   /** @inheritDoc {StorageService#findByQuery} */
   public async findByQuery(agentContext: AgentContext, query: Query<T>, queryOptions?: QueryOptions): Promise<T[]> {
-    return this.storageService.findByQuery(agentContext, this.recordClass, query, queryOptions)
+    return this.getStorageService(agentContext).findByQuery(agentContext, this.recordClass, query, queryOptions)
   }
 
   /**
