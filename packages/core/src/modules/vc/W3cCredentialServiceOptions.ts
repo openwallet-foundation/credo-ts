@@ -1,4 +1,4 @@
-import type { SingleOrArray } from '../../utils/type'
+import type { SingleOrArray } from '../../types'
 import { KnownJwaSignatureAlgorithm } from '../kms'
 import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'

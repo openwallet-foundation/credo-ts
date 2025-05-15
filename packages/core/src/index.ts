@@ -17,8 +17,11 @@ export type {
   JsonValue,
   ResolvedDidCommService,
   XOR,
+  CanBePromise,
+  SingleOrArray,
+  Optional,
 } from './types'
-export type { CanBePromise } from './utils/type'
+export { isJsonObject } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { Repository } from './storage/Repository'
@@ -45,7 +48,6 @@ export * from './modules/dcql'
 export {
   JsonEncoder,
   JsonTransformer,
-  isJsonObject,
   TypedArrayEncoder,
   HashlinkEncoder,
   BaseName,
@@ -79,10 +81,6 @@ export { didDocumentJsonToNumAlgo1Did } from './modules/dids/methods/peer/peerDi
 export { didDocumentToNumAlgo2Did } from './modules/dids/methods/peer/peerDidNumAlgo2'
 export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNumAlgo4'
 
-export { SingleOrArray } from './utils'
-
-// TODO: clean up util exports
-export type { Optional } from './utils'
 export { getDomainFromUrl } from './utils/domain'
 export { MessageValidator } from './utils'
 
