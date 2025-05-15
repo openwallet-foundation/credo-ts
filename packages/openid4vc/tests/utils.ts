@@ -18,7 +18,7 @@ import {
   createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcIssuerExpressModule, OpenId4VcIssuerFastifyModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
   label: string,
@@ -185,4 +185,14 @@ export function waitForVerificationSessionRecordSubject(
       map((e) => e.payload.verificationSession)
     )
   )
+}
+
+export function getIssuerModuleClass(): any {
+    switch (process.env.ISSUER_MODULE) {
+        case 'fastify':
+            return OpenId4VcIssuerFastifyModule;
+        case 'express':
+        default:
+            return OpenId4VcIssuerExpressModule
+    }
 }
