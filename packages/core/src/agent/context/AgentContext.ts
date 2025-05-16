@@ -71,4 +71,13 @@ export class AgentContext {
   public resolve<T>(token: InjectionToken<T>): T {
     return this.dependencyManager.resolve(token)
   }
+
+  /**
+   * Resolve a dependency or return undefined
+   */
+  public resolveOptionally<T>(token: InjectionToken<T>): T | undefined {
+    try {
+      return this.dependencyManager.resolve(token)
+    } catch {}
+  }
 }

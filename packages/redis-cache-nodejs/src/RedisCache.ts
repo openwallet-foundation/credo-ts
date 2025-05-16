@@ -72,12 +72,6 @@ export class RedisCache implements Cache {
 
   public async destroy(agentContext: AgentContext) {
     const client = await this.client()
-    await this.removeNamespacedKeys(agentContext)
-    client.disconnect()
-  }
-
-  private async removeNamespacedKeys(agentContext: AgentContext): Promise<void> {
-    const client = await this.client()
     let cursor = '0'
 
     do {
@@ -86,7 +80,7 @@ export class RedisCache implements Cache {
         'MATCH',
         `${agentContext.contextCorrelationId}:*`,
         'COUNT',
-        '100'
+        '100' // limit
       )
 
       cursor = nextCursor

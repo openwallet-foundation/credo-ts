@@ -1,11 +1,15 @@
 import { AgentContext } from '../../agent'
+import { InjectionSymbols } from '../../constants'
+import { inject, injectable } from '../../plugins'
 import { BaseRecord } from '../../storage/BaseRecord'
 import { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
+import { JsonTransformer } from '../../utils'
 import { CacheModuleConfig } from './CacheModuleConfig'
 
+@injectable()
 // biome-ignore lint/suspicious/noExplicitAny:
 export class CachedStorageService<T extends BaseRecord<any, any, any>> implements StorageService<T> {
-  public constructor(private storageService: StorageService<T>) {}
+  public constructor(@inject(InjectionSymbols.StorageService) private storageService: StorageService<T>) {}
 
   private cache(agentContext: AgentContext) {
     return agentContext.resolve(CacheModuleConfig).cache
@@ -16,7 +20,7 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
   }
 
   public async save(agentContext: AgentContext, record: T): Promise<void> {
-    if (record.useCache) {
+    if (record.allowCache) {
       await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
     }
 
@@ -24,7 +28,7 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
   }
 
   public async update(agentContext: AgentContext, record: T): Promise<void> {
-    if (record.useCache) {
+    if (record.allowCache) {
       await this.cache(agentContext).set(agentContext, this.getCacheKey(record), record.toJSON())
     }
 
@@ -32,7 +36,7 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
   }
 
   public async delete(agentContext: AgentContext, record: T): Promise<void> {
-    if (record.useCache) {
+    if (record.allowCache) {
       await this.cache(agentContext).remove(agentContext, this.getCacheKey(record))
     }
     return await this.storageService.delete(agentContext, record)
@@ -43,21 +47,33 @@ export class CachedStorageService<T extends BaseRecord<any, any, any>> implement
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
-    if (recordClass.useCache) {
+    if (recordClass.allowCache) {
       await this.cache(agentContext).remove(agentContext, this.getCacheKey({ ...recordClass, id }))
     }
     return await this.storageService.deleteById(agentContext, recordClass, id)
   }
 
   public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
-    if (recordClass.useCache) {
-      const cachedValue = await this.cache(agentContext).get<T>(agentContext, `${recordClass.type}:${id}`)
+    if (recordClass.allowCache) {
+      const cachedValue = await this.cache(agentContext).get<T>(
+        agentContext,
+        this.getCacheKey({ type: recordClass.type, id })
+      )
 
-      // TODO: class transform
-      if (cachedValue) return cachedValue
+      if (cachedValue) return JsonTransformer.fromJSON<T>(cachedValue, recordClass)
     }
 
-    return await this.storageService.getById(agentContext, recordClass, id)
+    const record = await this.storageService.getById(agentContext, recordClass, id)
+
+    if (recordClass.allowCache) {
+      await this.cache(agentContext).set(
+        agentContext,
+        this.getCacheKey({ type: recordClass.type, id }),
+        record.toJSON()
+      )
+    }
+
+    return record
   }
 
   // TODO: not in caching interface, yet

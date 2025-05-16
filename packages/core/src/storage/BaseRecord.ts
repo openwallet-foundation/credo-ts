@@ -45,8 +45,8 @@ export abstract class BaseRecord<
   public static readonly type: string = 'BaseRecord'
 
   @Exclude()
-  public readonly useCache = BaseRecord.useCache
-  public static readonly useCache: boolean = false
+  public readonly allowCache = BaseRecord.allowCache
+  public static readonly allowCache: boolean = false
 
   /** @inheritdoc {Metadata#Metadata} */
   @MetadataTransformer()

@@ -2,7 +2,7 @@ import type { AgentContext } from '../agent'
 import type { EventEmitter } from '../agent/EventEmitter'
 import type { BaseRecord } from './BaseRecord'
 import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from './RepositoryEvents'
-import type { BaseRecordConstructor, StorageService } from './StorageService'
+import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
 import { CachedStorageService } from '../modules/cache/CachedStorageService'
