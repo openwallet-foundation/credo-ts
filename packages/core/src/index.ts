@@ -63,7 +63,7 @@ export {
 } from './utils'
 export * from './logger'
 export * from './error'
-export type { Constructor, Constructable } from './utils/mixins'
+export type { Constructor, Constructable, UnionToIntersection } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto'
 

@@ -1,0 +1,64 @@
+{
+  "name": "@credo-ts/drizzle-storage",
+  "version": "0.5.13",
+  "files": ["build"],
+  "license": "Apache-2.0",
+  "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./build/index.d.ts",
+        "default": "./build/index.js"
+      },
+      "./anoncreds": {
+        "types": "./build/anoncreds/index.d.ts",
+        "default": "./build/anoncreds/index.js"
+      },
+      "./didcomm": {
+        "types": "./build/didcomm/index.d.ts",
+        "default": "./build/didcomm/index.js"
+      }
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./anoncreds": {
+      "types": "./build/anoncreds/index.d.ts",
+      "default": "./build/anoncreds/index.js"
+    },
+    "./didcomm": {
+      "types": "./build/didcomm/index.d.ts",
+      "default": "./build/didcomm/index.js"
+    }
+  },
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/drizzle-storage"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@credo-ts/core": "workspace:*",
+    "@libsql/client": "^0.15.6",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.14.1",
+    "drizzle-orm": "^0.43.1",
+    "pg": "^8.16.0",
+    "tsyringe": "^4.8.0"
+  },
+  "devDependencies": {
+    "rimraf": "^4.4.0",
+    "typescript": "~5.5.2"
+  }
+}
