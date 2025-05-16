@@ -45,6 +45,7 @@ export * from './modules/sd-jwt-vc'
 export * from './modules/mdoc'
 export * as Kms from './modules/kms'
 export * from './modules/dcql'
+export * from './modules/generic-records'
 export {
   JsonEncoder,
   JsonTransformer,

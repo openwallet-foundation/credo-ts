@@ -27,62 +27,61 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
     return adapter as BaseDrizzleRecordAdapter<T, any, any, any, any>
   }
 
-  public async save(_agentContext: AgentContext, record: T): Promise<void> {
+  public async save(agentContext: AgentContext, record: T): Promise<void> {
+    record.createdAt = record.createdAt ?? new Date()
+    record.updatedAt = record.createdAt
+
     const adapter = this.getAdapterForRecordType(record.type)
 
     // TOOD: duplicate
-    await adapter.insert(record)
+    await adapter.insert(agentContext, record)
   }
 
-  public async update(_agentContext: AgentContext, record: T): Promise<void> {
-    const adapter = this.getAdapterForRecordType(record.type)
+  public async update(agentContext: AgentContext, record: T): Promise<void> {
+    record.updatedAt = new Date()
 
-    // TOOD: not found
-    await adapter.update(record)
+    const adapter = this.getAdapterForRecordType(record.type)
+    await adapter.update(agentContext, record)
   }
 
-  public async delete(_agentContext: AgentContext, record: T): Promise<void> {
+  public async delete(agentContext: AgentContext, record: T): Promise<void> {
     const adapter = this.getAdapterForRecordType(record.type)
-
-    // TOOD: not found
-    await adapter.delete(record.id)
+    await adapter.delete(agentContext, record.id)
   }
 
   public async deleteById(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     recordClass: BaseRecordConstructor<T>,
     id: string
   ): Promise<void> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
-    // TOOD: not found
-    await adapter.delete(id)
+    await adapter.delete(agentContext, id)
   }
 
-  public async getById(_agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
+  public async getById(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>, id: string): Promise<T> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
-    // TODO: what if not found?
-    const record = await adapter.getById(id)
+    const record = await adapter.getById(agentContext, id)
     return record
   }
 
-  public async getAll(_agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
+  public async getAll(agentContext: AgentContext, recordClass: BaseRecordConstructor<T>): Promise<T[]> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
-    const records = await adapter.query()
+    const records = await adapter.query(agentContext)
     return records
   }
 
   public async findByQuery(
-    _agentContext: AgentContext,
+    agentContext: AgentContext,
     recordClass: BaseRecordConstructor<T>,
     query: Query<T>,
     queryOptions?: QueryOptions
   ): Promise<T[]> {
     const adapter = this.getAdapterForRecordType(recordClass.type)
 
-    const records = await adapter.query(query, queryOptions)
+    const records = await adapter.query(agentContext, query, queryOptions)
     return records
   }
 }

@@ -1,121 +1,275 @@
-import { MdocRecord } from '@credo-ts/core'
-import { ConnectionRecord } from '@credo-ts/didcomm'
-import { mdoc } from '../../core/mdoc/postgres'
-import { createDrizzle } from '../../createDrizzle'
-import { didcommConnection } from '../../didcomm/connection/postgres'
-import { DrizzlePostgresDatabase } from '../../postgres'
+import { ConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
+import { pushSchema } from 'drizzle-kit/api'
+import { PgDatabase } from 'drizzle-orm/pg-core'
+import { drizzle } from 'drizzle-orm/pglite'
+import { DrizzlePostgresDatabase } from '../../DrizzleDatabase'
+import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
 
-const db = createDrizzle({
-  schema: {
-    mdoc,
-  },
-  databaseUrl: '',
-  type: 'postgres',
-}) as DrizzlePostgresDatabase<{ mdoc: typeof mdoc }>
+const { didcommConnection } = didcommConnectionSchema
 
-describe('queryToDrizzle', () => {
-  test('should transform simple query', () => {
-    expect(
-      db
-        .select()
-        .from(mdoc)
-        .where(
-          queryToDrizzlePostgres<MdocRecord>(
-            {
-              alg: 'ES256',
-              docType: 'something',
-              customTag: 'hey',
-            },
-            mdoc
-          )
-        )
-        .toSQL()
-    ).toEqual({
-      sql: `select "id", "created_at", "updated_at", "metadata", "custom_tags", "base64_url", "alg", "doc_type" from "Mdoc" where ("Mdoc"."alg" = $1 and "Mdoc"."doc_type" = $2 and "Mdoc"."custom_tags"->>'$3' = $4)`,
-      params: ['ES256', 'something', 'customTag', 'hey'],
+const db = drizzle('memory://', {
+  schema: didcommConnectionSchema,
+}) as unknown as DrizzlePostgresDatabase<typeof didcommConnectionSchema>
+
+describe('queryToDrizzlePostgres', () => {
+  beforeAll(async () => {
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    const { apply } = await pushSchema(didcommConnectionSchema, db as unknown as PgDatabase<any>)
+    await apply()
+
+    await db.insert(didcommConnection).values({
+      id: 'db0ddc8f-5339-431b-9675-749f8a2ac92f',
+      role: DidExchangeRole.Requester,
+      state: DidExchangeState.Abandoned,
+      connectionTypes: ['one', 'three', 'four'],
+      invitationDid: 'some string',
+      customTags: {
+        myCustomTag: ['First', 'Second'],
+        anotherCustomTag: true,
+      },
     })
   })
 
-  test('should transform query with array values', () => {
+  test('should correctly query column', async () => {
     expect(
-      db
+      await db
         .select()
         .from(didcommConnection)
         .where(
           queryToDrizzlePostgres<ConnectionRecord>(
             {
-              connectionTypes: ['one', 'two'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(1)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              invitationDid: 'some other string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
+  })
+
+  test('should correctly query array value column', async () => {
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one', 'three'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(1)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one', 'two', 'five'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(1)
+  })
+
+  test('should correctly query custom tag column value', async () => {
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              anotherCustomTag: true,
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(1)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              anotherCustomTag: false,
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
+  })
+
+  test('should correctly query custom tag column array value', async () => {
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
               myCustomTag: ['First', 'Second'],
               invitationDid: 'some string',
             },
             didcommConnection
           )
         )
-        .toSQL()
-    ).toEqual({
-      sql: 'select "id", "created_at", "updated_at", "metadata", "custom_tags", "state", "role", "did", "their_did", "their_label", "alias", "auto_accept_connection", "image_url", "thread_id", "invitation_did", "mediator_id", "out_of_band_id", "error_message", "protocol", "connection_types", "previous_dids", "previous_their_dids" from "DidcommConnection" where ("DidcommConnection"."connection_types" @> array[$1, $2] and "DidcommConnection"."custom_tags"->\'$3\' @> \'["First"]\'::jsonb AND "DidcommConnection"."custom_tags"->\'$4\' @> \'["Second"]\'::jsonb and "DidcommConnection"."invitation_did" = $5)',
-      params: ['one', 'two', 'myCustomTag', 'myCustomTag', 'some string'],
-    })
-  })
+    ).toHaveLength(1)
 
-  test('should transform query with and/or statements', () => {
     expect(
-      db
+      await db
         .select()
         .from(didcommConnection)
         .where(
           queryToDrizzlePostgres<ConnectionRecord>(
             {
-              connectionTypes: ['one', 'two'],
+              myCustomTag: ['Third'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              myCustomTag: ['First'],
+              invitationDid: 'some string',
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(1)
+  })
+
+  test('should correctly query with and/or', async () => {
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one'],
               $or: [
                 {
-                  connectionTypes: ['three', 'four'],
+                  connectionTypes: ['two'],
                 },
                 {
-                  connectionTypes: ['eight', 'nine'],
+                  connectionTypes: ['three'],
                 },
               ],
               $and: [
                 {
-                  connectionTypes: ['five', 'six'],
+                  connectionTypes: ['four'],
                 },
               ],
             },
             didcommConnection
           )
         )
-        .toSQL()
-    ).toEqual({
-      sql: 'select "id", "created_at", "updated_at", "metadata", "custom_tags", "state", "role", "did", "their_did", "their_label", "alias", "auto_accept_connection", "image_url", "thread_id", "invitation_did", "mediator_id", "out_of_band_id", "error_message", "protocol", "connection_types", "previous_dids", "previous_their_dids" from "DidcommConnection" where (("DidcommConnection"."connection_types" @> array[$1, $2] or "DidcommConnection"."connection_types" @> array[$3, $4]) and "DidcommConnection"."connection_types" @> array[$5, $6] and "DidcommConnection"."connection_types" @> array[$7, $8])',
-      params: ['three', 'four', 'eight', 'nine', 'five', 'six', 'one', 'two'],
-    })
-  })
+    ).toHaveLength(1)
 
-  test('should transform query with not statements', () => {
     expect(
-      db
+      await db
         .select()
         .from(didcommConnection)
         .where(
           queryToDrizzlePostgres<ConnectionRecord>(
             {
-              connectionTypes: ['connection-one', 'connection-two'],
+              connectionTypes: ['one'],
+              $or: [
+                {
+                  connectionTypes: ['two'],
+                },
+                {
+                  connectionTypes: ['three'],
+                },
+              ],
+              $and: [
+                {
+                  connectionTypes: ['four'],
+                },
+                {
+                  connectionTypes: ['two'],
+                },
+              ],
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
+  })
+
+  test('should correctly query with not', async () => {
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one'],
               $not: {
                 $and: [
                   {
-                    mediatorId: 'mediator-1',
+                    connectionTypes: ['two'],
                   },
                   {
-                    mediatorId: 'mediator-2',
+                    connectionTypes: ['five'],
                   },
                 ],
                 $or: [
                   {
-                    did: 'one',
+                    connectionTypes: ['two'],
                   },
                   {
-                    did: 'two',
+                    connectionTypes: ['three'],
                   },
                 ],
               },
@@ -123,10 +277,41 @@ describe('queryToDrizzle', () => {
             didcommConnection
           )
         )
-        .toSQL()
-    ).toEqual({
-      sql: 'select "id", "created_at", "updated_at", "metadata", "custom_tags", "state", "role", "did", "their_did", "their_label", "alias", "auto_accept_connection", "image_url", "thread_id", "invitation_did", "mediator_id", "out_of_band_id", "error_message", "protocol", "connection_types", "previous_dids", "previous_their_dids" from "DidcommConnection" where (not (("DidcommConnection"."did" = $1 or "DidcommConnection"."did" = $2) and ("DidcommConnection"."mediator_id" = $3 and "DidcommConnection"."mediator_id" = $4)) and "DidcommConnection"."connection_types" @> array[$5, $6])',
-      params: ['one', 'two', 'mediator-1', 'mediator-2', 'connection-one', 'connection-two'],
-    })
+    ).toHaveLength(1)
+
+    expect(
+      await db
+        .select()
+        .from(didcommConnection)
+        .where(
+          queryToDrizzlePostgres<ConnectionRecord>(
+            {
+              connectionTypes: ['one'],
+              $not: {
+                $and: [
+                  {
+                    connectionTypes: ['two'],
+                  },
+                  {
+                    connectionTypes: ['five'],
+                  },
+                  {
+                    connectionTypes: ['three'],
+                  },
+                ],
+                $or: [
+                  {
+                    connectionTypes: ['two'],
+                  },
+                  {
+                    connectionTypes: ['three'],
+                  },
+                ],
+              },
+            },
+            didcommConnection
+          )
+        )
+    ).toHaveLength(0)
   })
 })

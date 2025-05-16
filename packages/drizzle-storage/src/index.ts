@@ -3,18 +3,9 @@ export { DrizzleStorageService } from './storage'
 
 // Module
 export { DrizzleStorageModule } from './DrizzleStorageModule'
-export {
-  DrizzleStorageModuleConfig,
-  DrizzleStorageModuleConfigDatabaseOptions,
-  DrizzleStorageModuleConfigDatabasePostgresOptions,
-  DrizzleStorageModuleConfigDatabaseSqliteOptions,
-} from './DrizzleStorageModuleConfig'
+export { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
 
-export {
-  CreateDrizzleOptions,
-  DrizzleDatabase,
-  createDrizzle,
-} from './createDrizzle'
+export { DrizzleDatabase } from './DrizzleDatabase'
 
 export { postgresBaseRecordTable } from './postgres'
 export { sqliteBaseRecordTable } from './sqlite'
