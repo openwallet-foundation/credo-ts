@@ -13,4 +13,10 @@ export interface CredoRouter {
       req: HttpRequestType
     ) => Promise<HttpResponseBodyType | CredoHttpResponse<HttpResponseBodyType> | undefined>
   ): CredoRouter
+  get<HttpRequestType extends http.IncomingMessage, HttpResponseBodyType>(
+      path: string,
+      handler: (
+          req: HttpRequestType
+      ) => Promise<HttpResponseBodyType | CredoHttpResponse<HttpResponseBodyType> | undefined>
+  ): CredoRouter
 }

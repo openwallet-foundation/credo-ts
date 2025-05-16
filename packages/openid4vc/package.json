@@ -21,7 +21,9 @@
     "clean": "rimraf ./build",
     "compile": "tsc -p tsconfig.build.json",
     "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "test": "jest",
+    "test:fastify": "ISSUER_MODULE=fastify jest src/openid4vc-issuer/__tests__",
+    "test:express": "ISSUER_MODULE=express jest src/openid4vc-issuer/__tests__"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",

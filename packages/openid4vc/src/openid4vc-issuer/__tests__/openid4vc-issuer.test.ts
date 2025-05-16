@@ -41,6 +41,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerExpressModule } from '../OpenId4VcIssuerExpressModule'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
+import {getIssuerModuleClass} from "../../../tests/utils";
 
 const openBadgeCredential = {
   id: 'openBadgeCredential',
@@ -73,8 +74,9 @@ const universityDegreeCredentialSdJwt = {
   vct: 'UniversityDegreeCredential',
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
+const OpenId4VcIssuerModuleClass = getIssuerModuleClass()
 const modules = {
-  openId4VcIssuer: new OpenId4VcIssuerExpressModule({
+  openId4VcIssuer: new (OpenId4VcIssuerModuleClass)({
     baseUrl: 'https://openid4vc-issuer.com',
     credentialRequestToCredentialMapper: () => {
       throw new Error('Not implemented')
@@ -492,7 +494,7 @@ describe('OpenId4VcIssuer', () => {
           value: 'the-access-token',
         },
       },
-      credentialRequestToCredentialMapper: ({ issuanceSession }) => {
+      credentialRequestToCredentialMapper: ({ issuanceSession }: any) => {
         expect(issuanceSession.id).toEqual(result.issuanceSession.id)
         expect(issuanceSession.issuanceMetadata).toEqual({
           myIssuance: 'metadata',

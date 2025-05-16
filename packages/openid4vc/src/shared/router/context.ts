@@ -20,6 +20,13 @@ export interface OpenId4VcPostRequest<BodyType, RC extends Record<string, unknow
   body: BodyType
 }
 
+export interface OpenId4VcGetRequest<BodyType, RC extends Record<string, unknown> = Record<string, never>>
+    extends http.IncomingMessage,
+        HasRequestContext<RC> {
+  body: BodyType
+}
+
+
 export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
