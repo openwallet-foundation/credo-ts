@@ -75,7 +75,11 @@ describe('Cheqd DID resolver', () => {
     })
     expect(JsonTransformer.toJSON(resolveResult)).toMatchObject({
       didDocument: {
-        '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+        '@context': [          
+          'https://w3id.org/did/v1',
+          'https://w3id.org/security/suites/ed25519-2020/v1',
+          'https://www.w3.org/ns/did/v1',
+        ],
         id: did,
         controller: [did],
         verificationMethod: [
