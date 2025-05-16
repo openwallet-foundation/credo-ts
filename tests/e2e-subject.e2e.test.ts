@@ -4,7 +4,7 @@ import type { SubjectMessage } from './transport/SubjectInboundTransport'
 import { Subject } from 'rxjs'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
@@ -18,7 +18,7 @@ import {
   MediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 
-const recipientAgentOptions = getInMemoryAgentOptions(
+const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',
   {},
   {},
@@ -29,9 +29,10 @@ const recipientAgentOptions = getInMemoryAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'E2E Subject Mediator',
   {
     endpoints: ['rxjs:mediator'],
@@ -42,9 +43,10 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
     mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
-  }
+  },
+  { requireDidcomm: true }
 )
-const senderAgentOptions = getInMemoryAgentOptions(
+const senderAgentOptions = getAgentOptions(
   'E2E Subject Sender',
   {
     endpoints: ['rxjs:sender'],
@@ -58,7 +60,8 @@ const senderAgentOptions = getInMemoryAgentOptions(
       mediatorPollingInterval: 1000,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 describe('E2E Subject tests', () => {
@@ -74,11 +77,8 @@ describe('E2E Subject tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full Subject flow (connect, request mediation, issue, verify)', async () => {

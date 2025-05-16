@@ -1,18 +1,29 @@
-import { InMemoryWallet } from '../../../../../../../tests/InMemoryWallet'
-import { getAgentConfig, getAgentContext, testLogger } from '../../../../../tests'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../../../../../tests/InMemoryStorageService'
+import { AskarKeyManagementService, AskarModuleConfig, transformSeedToPrivateJwk } from '../../../../../../askar/src'
+import {
+  agentDependencies,
+  getAgentConfig,
+  getAgentContext,
+  getAskarStoreConfig,
+  testLogger,
+} from '../../../../../tests'
+import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
-import { JwsService, KeyType } from '../../../../crypto'
-import { JwaSignatureAlgorithm } from '../../../../crypto/jose/jwa'
-import { getJwkFromKey } from '../../../../crypto/jose/jwk'
+import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
 import { JsonTransformer } from '../../../../utils'
-import { DidJwk, DidKey, DidRepository, DidsModuleConfig } from '../../../dids'
+import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
+import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
 import { X509ModuleConfig } from '../../../x509'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../constants'
 import { ClaimFormat, W3cCredential, W3cPresentation } from '../../models'
 import { W3cJwtCredentialService } from '../W3cJwtCredentialService'
 import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { AskarStoreManager } from '../../../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../../../node/src/NodeFileSystem'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
@@ -23,41 +34,85 @@ import {
 import { didIonJwtVcPresentationProfileJwtVc } from './fixtures/jwt-vc-presentation-profile'
 import { didKeyTransmuteJwtVc, didKeyTransmuteJwtVp } from './fixtures/transmute-verifiable-data'
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+const storageSerivice = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cJwtCredentialService')
-const wallet = new InMemoryWallet()
 const agentContext = getAgentContext({
-  wallet,
   registerInstances: [
     [InjectionSymbols.Logger, testLogger],
     [DidsModuleConfig, new DidsModuleConfig()],
-    [DidRepository, {} as unknown as DidRepository],
+    [DidRepository, new DidRepository(storageSerivice, new EventEmitter(agentDependencies, new Subject()))],
+    [InjectionSymbols.StorageService, storageSerivice],
     [X509ModuleConfig, new X509ModuleConfig()],
+    [
+      AskarStoreManager,
+      new AskarStoreManager(
+        new NodeFileSystem(),
+        new AskarModuleConfig({
+          askar,
+          store: getAskarStoreConfig('W3cJwtCredentialService'),
+        })
+      ),
+    ],
   ],
+  kmsBackends: [new AskarKeyManagementService()],
   agentConfig: config,
 })
-
+const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+const dids = agentContext.dependencyManager.resolve(DidsApi)
 const jwsService = new JwsService()
 const w3cJwtCredentialService = new W3cJwtCredentialService(jwsService)
 
-// Runs in Node 18 because of usage of Askar
 describe('W3cJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
   let holderDidKey: DidKey
 
   beforeAll(async () => {
-    await wallet.createAndOpen(config.walletConfig)
-
-    const issuerKey = await agentContext.wallet.createKey({
-      keyType: KeyType.P256,
+    const issuerPrivateJwk = transformSeedToPrivateJwk({
+      type: {
+        kty: 'EC',
+        crv: 'P-256',
+      },
       seed: CredoEs256DidJwkJwtVcIssuerSeed,
-    })
-    issuerDidJwk = DidJwk.fromJwk(getJwkFromKey(issuerKey))
+    }).privateJwk
 
-    const holderKey = await agentContext.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      seed: CredoEs256DidJwkJwtVcSubjectSeed,
+    const importedIssuerKey = await kms.importKey({
+      privateJwk: issuerPrivateJwk,
     })
-    holderDidKey = new DidKey(holderKey)
+
+    issuerDidJwk = DidJwk.fromPublicJwk(PublicJwk.fromPublicJwk(importedIssuerKey.publicJwk))
+    await dids.import({
+      did: issuerDidJwk.did,
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#0',
+          kmsKeyId: importedIssuerKey.keyId,
+        },
+      ],
+    })
+
+    const holderPrivateJwk = transformSeedToPrivateJwk({
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+      seed: CredoEs256DidJwkJwtVcSubjectSeed,
+    }).privateJwk
+
+    const importedHolderKey = await kms.importKey({
+      privateJwk: holderPrivateJwk,
+    })
+
+    holderDidKey = new DidKey(PublicJwk.fromPublicJwk(importedHolderKey.publicJwk))
+    await dids.import({
+      did: holderDidKey.did,
+      keys: [
+        {
+          didDocumentRelativeKeyId: `#${holderDidKey.publicJwk.fingerprint}`,
+          kmsKeyId: importedHolderKey.keyId,
+        },
+      ],
+    })
   })
 
   describe('signCredential', () => {
@@ -65,7 +120,7 @@ describe('W3cJwtCredentialService', () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cCredential)
 
       const vcJwt = await w3cJwtCredentialService.signCredential(agentContext, {
-        alg: JwaSignatureAlgorithm.ES256,
+        alg: KnownJwaSignatureAlgorithms.ES256,
         format: ClaimFormat.JwtVc,
         verificationMethod: issuerDidJwk.verificationMethodId,
         credential,
@@ -90,23 +145,23 @@ describe('W3cJwtCredentialService', () => {
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: 'hello',
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError('Only did identifiers are supported as verification method')
+      ).rejects.toThrow('Only did identifiers are supported as verification method')
 
       // Throw when not according to data model
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: issuerDidJwk.verificationMethodId,
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON({ ...credentialJson, issuanceDate: undefined }, W3cCredential, {
             validate: false,
           }),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         'property issuanceDate has failed the following constraints: issuanceDate must be RFC 3339 date'
       )
 
@@ -114,11 +169,11 @@ describe('W3cJwtCredentialService', () => {
       await expect(
         w3cJwtCredentialService.signCredential(agentContext, {
           verificationMethod: `${issuerDidJwk.verificationMethodId}extra`,
-          alg: JwaSignatureAlgorithm.ES256,
+          alg: KnownJwaSignatureAlgorithms.ES256,
           credential: JsonTransformer.fromJSON(credentialJson, W3cCredential),
           format: ClaimFormat.JwtVc,
         })
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         `Unable to locate verification method with id 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InpRT293SUMxZ1dKdGRkZEI1R0F0NGxhdTZMdDhJaHk3NzFpQWZhbS0xcGMiLCJ5IjoiY2pEXzdvM2dkUTF2Z2lReTNfc01HczdXcndDTVU5RlFZaW1BM0h4bk1sdyJ9#0extra' in purposes assertionMethod`
       )
     })
@@ -288,11 +343,11 @@ describe('W3cJwtCredentialService', () => {
 
       const signedJwtVp = await w3cJwtCredentialService.signPresentation(agentContext, {
         presentation,
-        alg: JwaSignatureAlgorithm.EdDSA,
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
         format: ClaimFormat.JwtVp,
-        verificationMethod: `${holderDidKey.did}#${holderDidKey.key.fingerprint}`,
+        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
       })
 
       expect(signedJwtVp.serializedJwt).toEqual(CredoEs256DidKeyJwtVp)

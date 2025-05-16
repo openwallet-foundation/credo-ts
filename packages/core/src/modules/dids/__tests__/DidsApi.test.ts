@@ -1,17 +1,18 @@
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../askar/src'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDidNumAlgo4'
 
 import {
   DidDocument,
   DidDocumentService,
-  KeyType,
+  PeerDidCreateOptions,
   PeerDidNumAlgo,
   TypedArrayEncoder,
   createPeerDidDocumentFromServices,
 } from '@credo-ts/core'
 
-const agentOptions = getInMemoryAgentOptions('DidsApi')
+const agentOptions = getAgentOptions('DidsApi', undefined, undefined, undefined, { requireDidcomm: true })
 
 const agent = new Agent(agentOptions)
 
@@ -22,31 +23,32 @@ describe('DidsApi', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('import an existing did without providing a did document', async () => {
-    const createKeySpy = jest.spyOn(agent.context.wallet, 'createKey')
-
     // Private key is for public key associated with did:key did
-    const privateKey = TypedArrayEncoder.fromString('a-sample-seed-of-32-bytes-in-tot')
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('a-sample-seed-of-32-bytes-in-tot'),
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+    }).privateJwk
     const did = 'did:key:z6MkjEayvPpjVJKFLirX8SomBTPDboHm1XSCkUev2M4siQty'
+    const importedKey = await agent.kms.importKey({
+      privateJwk,
+    })
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
 
     await agent.dids.import({
       did,
-      privateKeys: [
+      keys: [
         {
-          privateKey,
-          keyType: KeyType.Ed25519,
+          didDocumentRelativeKeyId: '#z6MkjEayvPpjVJKFLirX8SomBTPDboHm1XSCkUev2M4siQty',
+          kmsKeyId: importedKey.keyId,
         },
       ],
-    })
-
-    expect(createKeySpy).toHaveBeenCalledWith({
-      privateKey,
-      keyType: KeyType.Ed25519,
     })
 
     const createdDids = await agent.dids.getCreatedDids({
@@ -108,10 +110,6 @@ describe('DidsApi', () => {
   })
 
   test('import an existing did with providing a did document', async () => {
-    const createKeySpy = jest.spyOn(agent.context.wallet, 'createKey')
-
-    // Private key is for public key associated with did:key did
-    const privateKey = TypedArrayEncoder.fromString('a-new-sample-seed-of-32-bytes-in')
     const did = 'did:peer:0z6Mkhu3G8viiebsWmCiSgWiQoCZrTeuX76oLDow81YNYvJQM'
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(0)
@@ -121,17 +119,6 @@ describe('DidsApi', () => {
       didDocument: new DidDocument({
         id: did,
       }),
-      privateKeys: [
-        {
-          privateKey,
-          keyType: KeyType.Ed25519,
-        },
-      ],
-    })
-
-    expect(createKeySpy).toHaveBeenCalledWith({
-      privateKey,
-      keyType: KeyType.Ed25519,
     })
 
     const createdDids = await agent.dids.getCreatedDids({
@@ -179,7 +166,7 @@ describe('DidsApi', () => {
         did,
         didDocument: didDocument2,
       })
-    ).rejects.toThrowError(
+    ).rejects.toThrow(
       "A created did did:example:123 already exists. If you want to override the existing did, set the 'overwrite' option to update the did."
     )
 
@@ -199,53 +186,26 @@ describe('DidsApi', () => {
     expect(createdDidsOverwrite[0].didDocument?.service).toHaveLength(1)
   })
 
-  test('providing privateKeys that already exist is allowd', async () => {
-    const privateKey = TypedArrayEncoder.fromString('another-samples-seed-of-32-bytes')
-
-    const did = 'did:example:456'
-    const didDocument = new DidDocument({ id: did })
-
-    await agent.dids.import({
-      did,
-      didDocument,
-      privateKeys: [
-        {
-          keyType: KeyType.Ed25519,
-          privateKey,
-        },
-      ],
-    })
-
-    // Provide the same key again, should work
-    await agent.dids.import({
-      did,
-      didDocument,
-      overwrite: true,
-      privateKeys: [
-        {
-          keyType: KeyType.Ed25519,
-          privateKey,
-        },
-      ],
-    })
-  })
-
   test('create and resolve did:peer:4 in short and long form', async () => {
     const routing = await agent.modules.mediationRecipient.getRouting({})
-    const didDocument = createPeerDidDocumentFromServices([
-      {
-        id: 'didcomm',
-        recipientKeys: [routing.recipientKey],
-        routingKeys: routing.routingKeys,
-        serviceEndpoint: routing.endpoints[0],
-      },
-    ])
+    const { didDocument, keys } = createPeerDidDocumentFromServices(
+      [
+        {
+          id: 'didcomm',
+          recipientKeys: [routing.recipientKey],
+          routingKeys: routing.routingKeys,
+          serviceEndpoint: routing.endpoints[0],
+        },
+      ],
+      true
+    )
 
-    const result = await agent.dids.create({
+    const result = await agent.dids.create<PeerDidCreateOptions>({
       method: 'peer',
       didDocument,
       options: {
         numAlgo: PeerDidNumAlgo.ShortFormAndLongForm,
+        keys,
       },
     })
 

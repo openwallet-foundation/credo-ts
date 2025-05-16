@@ -103,7 +103,7 @@ export class X509Service {
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
+      const publicJwk = previousCertificate ? previousCertificate.publicJwk : undefined
 
       // The only scenario where this will trigger is if the trusted certificates and the x509 chain both do not contain the
       // intermediate/root certificate needed. E.g. for ISO 18013-5 mDL the root cert MUST NOT be in the chain. If the signer
@@ -114,7 +114,7 @@ export class X509Service {
       // In this case we could skip the signature verification (not other verifications), as we already trust the signer certificate,
       // but i think the purpose of ISO 18013-5 mDL is that you trust the root certificate. If we can't verify the whole chain e.g.
       // when we receive a credential we have the chance it will fail later on.
-      const skipSignatureVerification = i === 0 && trustedCertificates && !publicKey
+      const skipSignatureVerification = i === 0 && trustedCertificates && !publicJwk
       // NOTE: at some point we might want to change this to throw an error instead of skipping the signature verification of the trusted
       // but it would basically prevent mDOCs from unknown issuers to be verified in the wallet. Verifiers should only trust the root certificate
       // anyway.
@@ -126,7 +126,7 @@ export class X509Service {
 
       await cert.verify(
         {
-          publicKey,
+          publicJwk,
           verificationDate,
           skipSignatureVerification,
         },

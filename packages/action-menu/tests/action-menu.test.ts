@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForActionMenuRecord } from './helpers'
 
@@ -12,22 +12,24 @@ const modules = {
   actionMenu: new ActionMenuModule(),
 }
 
-const faberAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
   'Faber Action Menu',
   {
     endpoints: ['rxjs:faber'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Action Menu',
   {
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Action Menu', () => {
@@ -83,9 +85,7 @@ describe('Action Menu', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice requests menu to Faber and selects an option once received', async () => {

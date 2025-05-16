@@ -62,7 +62,7 @@ const didDoc = new DidDoc({
 describe('convertToNewDidDocument', () => {
   test('create a new DidDocument and with authentication, publicKey and service from DidDoc', () => {
     const oldDocument = didDoc
-    const newDocument = convertToNewDidDocument(oldDocument)
+    const newDocument = convertToNewDidDocument(oldDocument).didDocument
 
     expect(newDocument.authentication).toEqual(['#EoGusetS', '#5UQ3drtE'])
 
@@ -116,7 +116,7 @@ describe('convertToNewDidDocument', () => {
         }),
       ],
     })
-    const newDocument = convertToNewDidDocument(oldDocument)
+    const newDocument = convertToNewDidDocument(oldDocument).didDocument
 
     expect(newDocument.service).toEqual([
       new IndyAgentService({
@@ -151,7 +151,7 @@ describe('convertToNewDidDocument', () => {
         }),
       ],
     })
-    const newDocument = convertToNewDidDocument(oldDocument)
+    const newDocument = convertToNewDidDocument(oldDocument).didDocument
 
     expect(newDocument.service).toEqual([
       new IndyAgentService({

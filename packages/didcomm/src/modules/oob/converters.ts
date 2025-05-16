@@ -9,14 +9,16 @@ import {
   verkeyToDidKey,
 } from '@credo-ts/core'
 
-import { ConnectionInvitationMessage } from '../connections/messages/ConnectionInvitationMessage'
+import {
+  ConnectionInvitationMessage,
+  ConnectionInvitationMessageOptions,
+} from '../connections/messages/ConnectionInvitationMessage'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { InvitationType, OutOfBandInvitation } from './messages/OutOfBandInvitation'
 
 export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let service
+  let service: string | OutOfBandDidCommService
 
   if (oldInvitation.did) {
     service = oldInvitation.did
@@ -52,8 +54,7 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
   // Taking first service, as we can only include one service in a legacy invitation.
   const [service] = newInvitation.getServices()
 
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-  let options
+  let options: ConnectionInvitationMessageOptions
   if (typeof service === 'string') {
     options = {
       id: newInvitation.id,
@@ -91,12 +92,12 @@ export function outOfBandServiceToNumAlgo4Did(service: OutOfBandDidCommService) 
         // FIXME: this should actually be local key references, not did:key:123#456 references
         recipientKeys: service.recipientKeys.map((recipientKey) => {
           const did = DidKey.fromDid(recipientKey)
-          return `${did.did}#${did.key.fingerprint}`
+          return `${did.did}#${did.publicJwk.fingerprint}`
         }),
         // Map did:key:xxx to actual did:key:xxx#123
         routingKeys: service.routingKeys?.map((routingKey) => {
           const did = DidKey.fromDid(routingKey)
-          return `${did.did}#${did.key.fingerprint}`
+          return `${did.did}#${did.publicJwk.fingerprint}`
         }),
       })
     )

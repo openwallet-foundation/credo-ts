@@ -14,28 +14,47 @@ import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandSt
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getInMemoryAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-import { Key } from '@credo-ts/core'
+import { TypedArrayEncoder } from '@credo-ts/core'
+import { Ed25519PublicJwk, PublicJwk } from '../src/modules/kms'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions('Faber Agent Connections', {
-    endpoints: ['rxjs:faber'],
-  })
+  getAgentOptions(
+    'Faber Agent Connections',
+    {
+      endpoints: ['rxjs:faber'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions('Alice Agent Connections', {
-    endpoints: ['rxjs:alice'],
-  })
+  getAgentOptions(
+    'Alice Agent Connections',
+    {
+      endpoints: ['rxjs:alice'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const acmeAgent = new Agent(
-  getInMemoryAgentOptions('Acme Agent Connections', {
-    endpoints: ['rxjs:acme'],
-  })
+  getAgentOptions(
+    'Acme Agent Connections',
+    {
+      endpoints: ['rxjs:acme'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 )
 const mediatorAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Mediator Agent Connections',
     {
       endpoints: ['rxjs:mediator'],
@@ -45,7 +64,8 @@ const mediatorAgent = new Agent(
       mediator: new MediatorModule({
         autoAcceptMediationRequests: true,
       }),
-    }
+    },
+    { requireDidcomm: true }
   )
 )
 
@@ -61,13 +81,9 @@ describe('connections', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
     await acmeAgent.shutdown()
-    await acmeAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
   })
 
   it('one agent should be able to send and receive a ping', async () => {
@@ -235,9 +251,10 @@ describe('connections', () => {
     let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
+
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
-    await faberAgent.modules.mediationRecipient.initialize()
+    const mediationRecord = await faberAgent.modules.mediationRecipient.provision(connectionRecord!)
+    faberAgent.modules.mediationRecipient.initiateMessagePickup(mediationRecord)
 
     // Create observable for event
     const keyAddMessageObservable = mediatorAgent.events
@@ -304,19 +321,27 @@ describe('connections', () => {
       expect.arrayContaining([
         {
           action: KeylistUpdateAction.add,
-          recipientKey: Key.fromFingerprint(faberOutOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            (
+              PublicJwk.fromFingerprint(
+                faberOutOfBandRecord.getTags().recipientKeyFingerprints[0]
+              ) as PublicJwk<Ed25519PublicJwk>
+            ).publicKey.publicKey
+          ),
         },
         {
           action: KeylistUpdateAction.add,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          recipientKey: (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0]
-            .publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0].publicKey.publicKey
+          ),
         },
         {
           action: KeylistUpdateAction.add,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          recipientKey: (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0]
-            .publicKeyBase58,
+          recipientKey: TypedArrayEncoder.toBase58(
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0].publicKey.publicKey
+          ),
         },
       ])
     )
@@ -342,8 +367,10 @@ describe('connections', () => {
         }))[0]
       ).toEqual({
         action: KeylistUpdateAction.remove,
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
-        recipientKey: (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKeyBase58,
+        recipientKey: TypedArrayEncoder.toBase58(
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKey.publicKey
+        ),
       })
     }
   })

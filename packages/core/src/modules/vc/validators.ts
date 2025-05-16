@@ -2,8 +2,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { ValidateBy, buildMessage, isString, isURL } from 'class-validator'
 
-import { isJsonObject } from '../../utils'
-
+import { isJsonObject } from '../../types'
 import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
 
 export function IsCredentialJsonLdContext(validationOptions?: ValidationOptions): PropertyDecorator {

@@ -23,6 +23,7 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  Kms,
   TypedArrayEncoder,
   injectable,
 } from '@credo-ts/core'
@@ -295,10 +296,11 @@ export class OpenId4VpHolderService {
     agentContext: AgentContext,
     options: OpenId4VpAcceptAuthorizationRequestOptions
   ) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
     const parsedClientId = getOpenid4vpClientId({
       responseMode: authorizationRequestPayload.response_mode,
@@ -406,6 +408,7 @@ export class OpenId4VpHolderService {
 
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       authorizationRequestPayload,
+      origin: options.origin,
       authorizationResponsePayload: {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,

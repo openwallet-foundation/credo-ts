@@ -3,8 +3,6 @@ import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
-
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeCompleteMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
@@ -47,9 +45,6 @@ export class DidExchangeCompleteHandler implements MessageHandler {
       throw new CredoError(`OutOfBand record for message ID ${message.thread?.parentThreadId} not found!`)
     }
 
-    if (!outOfBandRecord.reusable) {
-      await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
-    }
     await this.didExchangeProtocol.processComplete(messageContext, outOfBandRecord)
 
     return undefined

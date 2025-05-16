@@ -1,4 +1,4 @@
-import type { AgentContextProvider, UpdateAssistantUpdateOptions } from '@credo-ts/core'
+import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
 import type { EncryptedMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
 import type { TenantRecord } from '../repository'
 
@@ -8,8 +8,6 @@ import {
   EventEmitter,
   InjectionSymbols,
   JsonEncoder,
-  Key,
-  KeyType,
   Logger,
   UpdateAssistant,
   inject,
@@ -49,14 +47,25 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     this.listenForRoutingKeyCreatedEvents()
   }
 
-  public async getAgentContextForContextCorrelationId(contextCorrelationId: string) {
+  public getContextCorrelationIdForTenantId(tenantId: string) {
+    return this.tenantSessionCoordinator.getContextCorrelationIdForTenantId(tenantId)
+  }
+
+  public async getAgentContextForContextCorrelationId(
+    contextCorrelationId: string,
+    { provisionContext = false }: { provisionContext?: boolean } = {}
+  ) {
     // It could be that the root agent context is requested, in that case we return the root agent context
     if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) {
       return this.rootAgentContext
     }
 
+    // If not the root agent context, we require it to be a tenant context correlation id
+    this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+    const tenantId = this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId)
+
     // TODO: maybe we can look at not having to retrieve the tenant record if there's already a context available.
-    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, contextCorrelationId)
+    const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
     const shouldUpdate = !isStorageUpToDate(tenantRecord.storageVersion)
 
     // If the tenant storage is not up to date, and autoUpdate is disabled we throw an error
@@ -67,10 +76,11 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     }
 
     const agentContext = await this.tenantSessionCoordinator.getContextForSession(tenantRecord, {
+      provisionContext,
       runInMutex: shouldUpdate ? (agentContext) => this._updateTenantStorage(tenantRecord, agentContext) : undefined,
     })
 
-    this.logger.debug(`Created tenant agent context for tenant '${contextCorrelationId}'`)
+    this.logger.debug(`Created tenant agent context for context correlation id '${contextCorrelationId}'`)
 
     return agentContext
   }
@@ -80,8 +90,13 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       contextCorrelationId: options?.contextCorrelationId,
     })
 
-    let tenantId = options?.contextCorrelationId
-    let recipientKeys: Key[] = []
+    // TODO: what if context is for root agent context?
+    let tenantId =
+      options?.contextCorrelationId &&
+      this.tenantSessionCoordinator.isTenantContextCorrelationId(options.contextCorrelationId)
+        ? this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(options.contextCorrelationId)
+        : undefined
+    let recipientKeys: Kms.PublicJwk[] = []
 
     if (!tenantId && isValidJweStructure(inboundMessage)) {
       this.logger.trace("Inbound message is a JWE, extracting tenant id from JWE's protected header")
@@ -116,7 +131,8 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       throw new CredoError("Couldn't determine tenant id for inbound message. Unable to create context")
     }
 
-    const agentContext = await this.getAgentContextForContextCorrelationId(tenantId)
+    const contextCorrelationId = this.tenantSessionCoordinator.getContextCorrelationIdForTenantId(tenantId)
+    const agentContext = await this.getAgentContextForContextCorrelationId(contextCorrelationId)
 
     return agentContext
   }
@@ -125,26 +141,35 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     await this.tenantSessionCoordinator.endAgentContextSession(agentContext)
   }
 
-  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Key[] {
+  public async deleteAgentContext(agentContext: AgentContext): Promise<void> {
+    await this.tenantSessionCoordinator.deleteAgentContext(agentContext)
+  }
+
+  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Kms.PublicJwk[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
 
-    const recipientKeys: Key[] = []
+    const recipientKeys: Kms.PublicJwk[] = []
 
     for (const recipient of jweProtected.recipients) {
       // Check if recipient.header.kid is a string
       if (isJsonObject(recipient) && isJsonObject(recipient.header) && typeof recipient.header.kid === 'string') {
         // This won't work with other key types, we should detect what the encoding is of kid, and based on that
         // determine how we extract the key from the message
-        const key = Key.fromPublicKeyBase58(recipient.header.kid, KeyType.Ed25519)
-        recipientKeys.push(key)
+        const publicJwk = Kms.PublicJwk.fromPublicKey({
+          crv: 'Ed25519',
+          kty: 'OKP',
+          publicKey: TypedArrayEncoder.fromBase58(recipient.header.kid),
+        })
+
+        recipientKeys.push(publicJwk)
       }
     }
 
     return recipientKeys
   }
 
-  private async registerRecipientKeyForTenant(tenantId: string, recipientKey: Key) {
+  private async registerRecipientKeyForTenant(tenantId: string, recipientKey: Kms.PublicJwk) {
     this.logger.debug(`Registering recipient key ${recipientKey.fingerprint} for tenant ${tenantId}`)
     const tenantRecord = await this.tenantRecordService.getTenantById(this.rootAgentContext, tenantId)
     await this.tenantRecordService.addTenantRoutingRecord(this.rootAgentContext, tenantRecord.id, recipientKey)
@@ -159,10 +184,15 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       // We don't want to register the key if it's for the root agent context
       if (contextCorrelationId === this.rootAgentContext.contextCorrelationId) return
 
+      this.tenantSessionCoordinator.assertTenantContextCorrelationId(contextCorrelationId)
+
       this.logger.debug(
-        `Received routing key created event for tenant ${contextCorrelationId}, registering recipient key ${recipientKey.fingerprint} in base wallet`
+        `Received routing key created event for tenant context ${contextCorrelationId}, registering recipient key ${recipientKey.fingerprint} in base wallet`
       )
-      await this.registerRecipientKeyForTenant(contextCorrelationId, recipientKey)
+      await this.registerRecipientKeyForTenant(
+        this.tenantSessionCoordinator.getTenantIdForContextCorrelationId(contextCorrelationId),
+        recipientKey
+      )
     })
   }
 
@@ -204,11 +234,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
       const tenantAgent = new TenantAgent(agentContext)
       const updateAssistant = new UpdateAssistant(tenantAgent)
       await updateAssistant.initialize()
-      await updateAssistant.update({
-        ...updateOptions,
-        backupBeforeStorageUpdate:
-          updateOptions?.backupBeforeStorageUpdate ?? agentContext.config.backupBeforeStorageUpdate,
-      })
+      await updateAssistant.update(updateOptions)
 
       // Update the storage version in the tenant record
       tenantRecord.storageVersion = await updateAssistant.getCurrentAgentStorageVersion()

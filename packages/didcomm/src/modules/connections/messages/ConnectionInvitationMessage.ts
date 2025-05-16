@@ -25,6 +25,9 @@ export interface DIDInvitationOptions {
   did: string
 }
 
+export type ConnectionInvitationMessageOptions = BaseInvitationOptions &
+  (DIDInvitationOptions | InlineInvitationOptions)
+
 /**
  * Message to invite another agent to create a connection
  *
@@ -37,7 +40,7 @@ export class ConnectionInvitationMessage extends AgentMessage {
    * Create new ConnectionInvitationMessage instance.
    * @param options
    */
-  public constructor(options: BaseInvitationOptions & (DIDInvitationOptions | InlineInvitationOptions)) {
+  public constructor(options: ConnectionInvitationMessageOptions) {
     super()
 
     if (options) {

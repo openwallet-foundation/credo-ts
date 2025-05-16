@@ -1,5 +1,5 @@
-import type { JwaSignatureAlgorithm } from '../../crypto/jose/jwa'
-import type { SingleOrArray } from '../../utils/type'
+import type { SingleOrArray } from '../../types'
+import { KnownJwaSignatureAlgorithm } from '../kms'
 import type { ProofPurpose, W3cJsonLdVerifiablePresentation } from './data-integrity'
 import type { W3cJsonLdVerifiableCredential } from './data-integrity/models/W3cJsonLdVerifiableCredential'
 import type { W3cJwtVerifiableCredential } from './jwt-vc/W3cJwtVerifiableCredential'
@@ -57,7 +57,7 @@ export interface W3cJwtSignCredentialOptions extends W3cSignCredentialOptionsBas
    *
    * Must be a valid JWA signature algorithm.
    */
-  alg: JwaSignatureAlgorithm
+  alg: KnownJwaSignatureAlgorithm
 }
 
 export interface W3cJsonLdSignCredentialOptions extends W3cSignCredentialOptionsBase {
@@ -154,7 +154,7 @@ export interface W3cJwtSignPresentationOptions extends W3cSignPresentationOption
    *
    * Must be a valid JWA signature algorithm.
    */
-  alg: JwaSignatureAlgorithm
+  alg: KnownJwaSignatureAlgorithm
 }
 
 interface W3cVerifyPresentationOptionsBase {

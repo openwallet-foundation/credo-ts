@@ -8,18 +8,30 @@ import { ReplaySubject } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getInMemoryAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
+import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
-const faberAgentOptions = getInMemoryAgentOptions('Faber Discover Features V1 E2E', {
-  endpoints: ['rxjs:faber'],
-})
+const faberAgentOptions = getAgentOptions(
+  'Faber Discover Features V1 E2E',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
-const aliceAgentOptions = getInMemoryAgentOptions('Alice Discover Features V1 E2E', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceAgentOptions = getAgentOptions(
+  'Alice Discover Features V1 E2E',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('v1 discover features', () => {
   let faberAgent: Agent
@@ -39,9 +51,7 @@ describe('v1 discover features', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Faber asks Alice for revocation notification protocol support', async () => {

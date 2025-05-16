@@ -4,21 +4,15 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
 import { Agent, utils } from '../../../../src'
 import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
-import { DependencyManager } from '../../../plugins'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2022-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-
-const walletConfig = {
-  id: 'Wallet: 0.1 Update',
-  key: 'Key: 0.1 Update',
-}
 
 const mediationRoleUpdateStrategies: V0_1ToV0_2UpdateConfig['mediationRoleUpdateStrategy'][] = [
   'allMediator',
@@ -35,21 +29,16 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     for (const mediationRoleUpdateStrategy of mediationRoleUpdateStrategies) {
-      const dependencyManager = new DependencyManager()
-      const storageService = new InMemoryStorageService()
-      dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-      // If we register the AskarModule it will register the storage service, but we use in memory storage here
-      dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-      const agent = new Agent(
-        {
-          config: { label: 'Test Agent', walletConfig },
-          dependencies,
-          modules: getDefaultDidcommModules(),
+      const agent = new Agent({
+        config: { label: 'Test Agent' },
+        dependencies,
+        modules: {
+          inMemory: new InMemoryWalletModule(),
+          ...getDefaultDidcommModules(),
         },
-        dependencyManager
-      )
+      })
 
+      const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
       const updateAssistant = new UpdateAssistant(agent, {
         v0_1ToV0_2: {
           mediationRoleUpdateStrategy,
@@ -85,7 +74,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       )
 
       await agent.shutdown()
-      await agent.wallet.delete()
     }
   })
 
@@ -99,21 +87,16 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: { label: 'Test Agent', walletConfig },
-        dependencies,
-        modules: getDefaultDidcommModules(),
+    const agent = new Agent({
+      config: { label: 'Test Agent' },
+      dependencies,
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+        ...getDefaultDidcommModules(),
       },
-      dependencyManager
-    )
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -148,7 +131,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -163,21 +145,16 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: { label: 'Test Agent', walletConfig, autoUpdateStorageOnStartup: true },
-        dependencies,
-        modules: getDefaultDidcommModules(),
+    const agent = new Agent({
+      config: { label: 'Test Agent', autoUpdateStorageOnStartup: true },
+      dependencies,
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+        ...getDefaultDidcommModules(),
       },
-      dependencyManager
-    )
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -212,7 +189,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -227,25 +203,19 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-          autoUpdateStorageOnStartup: true,
-        },
-        modules: getDefaultDidcommModules(),
-        dependencies,
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
+        autoUpdateStorageOnStartup: true,
       },
-      dependencyManager
-    )
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+        ...getDefaultDidcommModules(),
+      },
+      dependencies,
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -280,7 +250,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })

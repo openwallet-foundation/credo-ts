@@ -1,14 +1,14 @@
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
-import { getDidDocumentForKey } from '../../domain/keyDidDocument'
+import { PublicJwk } from '../../../kms'
+import { getDidDocumentForPublicJwk } from '../../domain/keyDidDocument'
 import { parseDid } from '../../domain/parse'
 
 import { PeerDidNumAlgo, getNumAlgoFromPeerDid, isValidPeerDid } from './didPeer'
 
-export function keyToNumAlgo0DidDocument(key: Key) {
-  const did = `did:peer:0${key.fingerprint}`
+export function publicJwkToNumAlgo0DidDocument(publicJwk: PublicJwk) {
+  const did = `did:peer:0${publicJwk.fingerprint}`
 
-  return getDidDocumentForKey(did, key)
+  return getDidDocumentForPublicJwk(did, publicJwk)
 }
 
 export function didToNumAlgo0DidDocument(did: string) {
@@ -23,7 +23,7 @@ export function didToNumAlgo0DidDocument(did: string) {
     throw new CredoError(`Invalid numAlgo ${numAlgo}, expected ${PeerDidNumAlgo.InceptionKeyWithoutDoc}`)
   }
 
-  const key = Key.fromFingerprint(parsed.id.substring(1))
+  const publicJwk = PublicJwk.fromFingerprint(parsed.id.substring(1))
 
-  return getDidDocumentForKey(did, key)
+  return getDidDocumentForPublicJwk(did, publicJwk)
 }

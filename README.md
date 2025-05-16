@@ -43,6 +43,7 @@ Credo is a framework written in TypeScript for building **decentralized identity
 ## Quickstart
 
 Documentation on how to get started with Credo can be found at https://credo.js.org/
+DeepWiki AI-generated documentation on Credo can be found at https://deepwiki.com/openwallet-foundation/credo-ts
 
 ## Features
 

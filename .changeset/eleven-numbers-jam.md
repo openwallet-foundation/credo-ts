@@ -5,7 +5,6 @@
 '@credo-ts/action-menu': patch
 '@credo-ts/anoncreds': patch
 '@credo-ts/askar': patch
-'@credo-ts/bbs-signatures': patch
 '@credo-ts/cheqd': patch
 '@credo-ts/drpc': patch
 '@credo-ts/indy-sdk-to-askar-migration': patch

@@ -19,12 +19,18 @@ import {
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 
-const faberAgentOptions = getInMemoryAgentOptions('OOB mediation - Faber Agent', {
-  endpoints: ['rxjs:faber'],
-})
-const aliceAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
+  'OOB mediation - Faber Agent',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const aliceAgentOptions = getAgentOptions(
   'OOB mediation - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
@@ -34,15 +40,17 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'OOB mediation - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
   },
   {},
-  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
+  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) },
+  { requireDidcomm: true }
 )
 
 describe('out of band with mediation', () => {
@@ -126,11 +134,8 @@ describe('out of band with mediation', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
