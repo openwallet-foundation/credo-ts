@@ -1,5 +1,6 @@
 import { boolean, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { postgresBaseRecordTable } from '../../postgres'
+import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommConnectionStateEnum = pgEnum('DidcommConnectionState', [
   'start',
@@ -20,29 +21,33 @@ export const didcommConnectionHandshakeProtocolEnum = pgEnum('DidcommConnectionH
   'https://didcomm.org/connections/1.x',
 ])
 
-export const didcommConnection = pgTable('DidcommConnection', {
-  ...postgresBaseRecordTable,
+export const didcommConnection = pgTable(
+  'DidcommConnection',
+  {
+    ...postgresBaseRecordTable,
 
-  state: didcommConnectionStateEnum().notNull(),
-  role: didcommConnectionRoleEnum().notNull(),
+    state: didcommConnectionStateEnum().notNull(),
+    role: didcommConnectionRoleEnum().notNull(),
 
-  did: text(),
-  theirDid: text('their_did'),
-  theirLabel: text('their_label'),
-  alias: text(),
-  autoAcceptConnection: boolean('auto_accept_connection'),
-  imageUrl: text('image_url'),
-  threadId: text('thread_id').unique(),
-  invitationDid: text('invitation_did'),
+    did: text(),
+    theirDid: text('their_did'),
+    theirLabel: text('their_label'),
+    alias: text(),
+    autoAcceptConnection: boolean('auto_accept_connection'),
+    imageUrl: text('image_url'),
+    threadId: text('thread_id').unique(),
+    invitationDid: text('invitation_did'),
 
-  // TODO: references mediator/oob record
-  mediatorId: text('mediator_id'),
-  outOfBandId: text('out_of_band_id'),
+    // TODO: references mediator/oob record
+    mediatorId: text('mediator_id'),
+    outOfBandId: text('out_of_band_id'),
 
-  errorMessage: text('error_message'),
-  protocol: didcommConnectionHandshakeProtocolEnum(),
-  connectionTypes: text('connection_types').array(),
+    errorMessage: text('error_message'),
+    protocol: didcommConnectionHandshakeProtocolEnum(),
+    connectionTypes: text('connection_types').array(),
 
-  previousDids: text('previous_dids').array(),
-  previousTheirDids: text('previous_their_dids').array(),
-})
+    previousDids: text('previous_dids').array(),
+    previousTheirDids: text('previous_their_dids').array(),
+  },
+  (table) => postgresBaseRecordIndexes(table, 'didcommConnection')
+)

@@ -3,7 +3,7 @@ import { JsonTransformer } from '@credo-ts/core'
 import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { ConnectionRecord } from '@credo-ts/didcomm'
-import { DrizzleDatabase } from '../../createDrizzle'
+import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
@@ -47,10 +47,6 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
       connectionTypes,
       previousDids,
       previousTheirDids,
-      createdAt: record.createdAt,
-      id: record.id,
-      metadata: record.metadata.data,
-      updatedAt: record.updatedAt,
       alias: record.alias,
       autoAcceptConnection: record.autoAcceptConnection,
       errorMessage: record.errorMessage,

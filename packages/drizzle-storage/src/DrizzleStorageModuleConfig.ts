@@ -1,60 +1,44 @@
+import { DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
 import { DrizzleRecord } from './DrizzleRecord'
 import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
-import { DrizzleDatabase, createDrizzle } from './createDrizzle'
+import { coreDrizzleRecords } from './core'
 
-export interface DrizzleStorageModuleConfigDatabasePostgresOptions {
-  type: 'postgres'
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type AnyDrizzleDatabase = DrizzleDatabase<any, any>
 
+export interface DrizzleStorageModuleConfigOptions {
   /**
-   * The postgres database url
+   * The drizzle database to use. To not depend on specific drivers and support different
+   * environments you need to configure the database yourself.
+   *
+   * See https://orm.drizzle.team/docs/get-started for available drivers.
+   * All SQLite and Postgres database are supported.
    */
-  databaseUrl: string
-}
 
-export interface DrizzleStorageModuleConfigDatabaseSqliteOptions {
-  type: 'sqlite'
-
-  /**
-   * The path to the database file for the SQLite database
-   */
-  databaseUrl: string
-}
-
-export type DrizzleStorageModuleConfigDatabaseOptions =
-  | DrizzleStorageModuleConfigDatabasePostgresOptions
-  | DrizzleStorageModuleConfigDatabaseSqliteOptions
-
-export interface DrizzleStorageModuleConfigOptions<DrizzleRecords extends DrizzleRecord[] = DrizzleRecord[]> {
-  /**
-   * Database configuration used for postgres.
-   */
-  database: DrizzleStorageModuleConfigDatabaseOptions
+  database: AnyDrizzleDatabase
 
   /**
    * The drizzle records to register. Each drizzle record needs both an
    * sqlite and postgres definition, as well as an adapter.
    */
-  records: DrizzleRecords
+  records: DrizzleRecord[]
 }
 
 /**
  * @public
  */
 export class DrizzleStorageModuleConfig {
-  private options: DrizzleStorageModuleConfigOptions
-  public readonly database: DrizzleDatabase
+  public readonly database: AnyDrizzleDatabase
   public readonly adapters: AnyDrizzleAdapter[]
+  public readonly schemas: Record<string, unknown>
 
   public constructor(options: DrizzleStorageModuleConfigOptions) {
-    this.options = options
+    this.database = options.database
 
-    const schema = getSchemaFromDrizzleRecords(options.records, options.database.type) as Record<string, unknown>
-    this.database = createDrizzle({
-      ...options.database,
-      schema,
-    })
+    const allRecords = Array.from(new Set([...coreDrizzleRecords, ...options.records]))
+    this.adapters = allRecords.map((record) => new record.adapter(this.database))
 
-    this.adapters = options.records.map((record) => new record.adapter(this.database))
+    this.schemas = getSchemaFromDrizzleRecords(allRecords, getDrizzleDatabaseType(options.database))
   }
 }

@@ -2,7 +2,7 @@ import { JsonTransformer, MdocRecord } from '@credo-ts/core'
 
 import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { DrizzleDatabase } from '../../createDrizzle'
+import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
@@ -25,11 +25,7 @@ export class DrizzleMdocRecordAdapter extends BaseDrizzleRecordAdapter<
       alg,
       docType,
       base64Url: record.base64Url,
-      createdAt: record.createdAt,
       customTags,
-      id: record.id,
-      metadata: record.metadata.data,
-      updatedAt: record.updatedAt,
     }
   }
 
