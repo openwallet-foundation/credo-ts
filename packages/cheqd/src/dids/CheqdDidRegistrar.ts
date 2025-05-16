@@ -25,9 +25,15 @@ import {
   getKeyFromVerificationMethod,
   JsonTransformer,
   VerificationMethod,
+  SECURITY_JWS_CONTEXT_URL,
+  DID_V1_CONTEXT_URL,
 } from '@credo-ts/core'
 
-import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+import {
+  ED25519_SUITE_CONTEXT_URL_2018,
+  ED25519_SUITE_CONTEXT_URL_2020,
+  parseCheqdDid,
+} from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
 import {
@@ -39,6 +45,11 @@ import {
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
+  private contextMapping = {
+    Ed25519VerificationKey2018: ED25519_SUITE_CONTEXT_URL_2018,
+    Ed25519VerificationKey2020: ED25519_SUITE_CONTEXT_URL_2020,
+    JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
+  }
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
@@ -90,18 +101,6 @@ export class CheqdDidRegistrar implements DidRegistrar {
           network: withoutDidDocumentOptions.options.network as CheqdNetwork,
           publicKey: TypedArrayEncoder.toHex(key.publicKey),
         })
-
-        const contextMapping = {
-          Ed25519VerificationKey2018: 'https://w3id.org/security/suites/ed25519-2018/v1',
-          Ed25519VerificationKey2020: 'https://w3id.org/security/suites/ed25519-2020/v1',
-          JsonWebKey2020: 'https://w3id.org/security/suites/jws-2020/v1',
-        }
-        const contextUrl = contextMapping[verificationMethod.type]
-
-        // Add the context to the did document
-        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
-        // We should align these at some point. For now we just return a consistent value.
-        didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {
         return {
           didDocumentMetadata: {},
@@ -112,6 +111,25 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
+
+      // Normalize context to an array
+      const contextSet = new Set<string>(
+        typeof didDocument.context === 'string'
+          ? [didDocument.context]
+          : Array.isArray(didDocument.context)
+          ? didDocument.context
+          : []
+      )
+
+      for (const verificationMethod of didDocument.verificationMethod || []) {
+        const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
+        if (contextUrl) {
+          contextSet.add(contextUrl)
+        }
+      }
+
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
       const didDocumentJson = didDocument.toJSON() as DIDDocument
 
@@ -162,6 +180,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
     let didRecord: DidRecord | null
+    let contextSet: Set<string>
 
     try {
       if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
@@ -178,6 +197,14 @@ export class CheqdDidRegistrar implements DidRegistrar {
             },
           }
         }
+        // Normalize existing context to an array
+        contextSet = new Set<string>(
+          typeof didDocument.context === 'string'
+            ? [didDocument.context]
+            : Array.isArray(didDocument.context)
+            ? didDocument.context
+            : []
+        )
 
         if (verificationMethod) {
           const privateKey = verificationMethod.privateKey
@@ -213,6 +240,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
               VerificationMethod
             )
           )
+          const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
+          if (contextUrl) {
+            contextSet.add(contextUrl)
+          }
         }
       } else {
         return {
@@ -224,7 +255,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
-
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
       const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
@@ -300,7 +332,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didState: {
           state: 'finished',
           did: didDocument.id,
-          didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
+          didDocument: JsonTransformer.fromJSON(didRecord.didDocument, DidDocument),
           secret: options.secret,
         },
       }
