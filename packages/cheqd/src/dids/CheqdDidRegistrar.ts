@@ -180,6 +180,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
     let didRecord: DidRecord | null
+    let contextSet: Set<string>
 
     try {
       if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
@@ -197,7 +198,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           }
         }
         // Normalize existing context to an array
-        const contextSet = new Set<string>(
+        contextSet = new Set<string>(
           typeof didDocument.context === 'string'
             ? [didDocument.context]
             : Array.isArray(didDocument.context)
@@ -222,12 +223,6 @@ export class CheqdDidRegistrar implements DidRegistrar {
             keyType: KeyType.Ed25519,
             privateKey: privateKey,
           })
-          const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
-          if (contextUrl) {
-            contextSet.add(contextUrl)
-          }
-          // Add Cheqd default context to the did document
-          didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
           didDocument.verificationMethod?.concat(
             JsonTransformer.fromJSON(
@@ -245,6 +240,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
               VerificationMethod
             )
           )
+          const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
+          if (contextUrl) {
+            contextSet.add(contextUrl)
+          }
         }
       } else {
         return {
@@ -256,7 +255,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
-
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
       const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
