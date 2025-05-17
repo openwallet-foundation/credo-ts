@@ -1,4 +1,4 @@
-import { type EventEmitter, Kms, type StorageService } from '@credo-ts/core'
+import { CacheModuleConfig, type EventEmitter, InMemoryLruCache, Kms, type StorageService } from '@credo-ts/core'
 
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRoutingRecord } from '../TenantRoutingRecord'
@@ -8,7 +8,16 @@ const storageServiceMock = {
   findByQuery: jest.fn(),
 } as unknown as StorageService<TenantRoutingRecord>
 const eventEmitter = jest.fn() as unknown as EventEmitter
-const agentContext = getAgentContext()
+const agentContext = getAgentContext({
+  registerInstances: [
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
+  ],
+})
 
 const tenantRoutingRepository = new TenantRoutingRepository(storageServiceMock, eventEmitter)
 

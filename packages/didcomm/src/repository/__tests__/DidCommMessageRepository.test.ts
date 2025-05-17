@@ -1,6 +1,6 @@
 import type { StorageService } from '@credo-ts/core'
 
-import { EventEmitter, JsonTransformer } from '@credo-ts/core'
+import { CacheModuleConfig, EventEmitter, InMemoryLruCache, JsonTransformer } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
@@ -23,7 +23,16 @@ const invitationJson = {
 }
 
 const config = getAgentConfig('DidCommMessageRepository')
-const agentContext = getAgentContext()
+const agentContext = getAgentContext({
+  registerInstances: [
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
+  ],
+})
 
 describe('DidCommMessageRepository', () => {
   let repository: DidCommMessageRepository
