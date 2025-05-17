@@ -14,7 +14,7 @@ import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VcVerifierModule,
   getScopesFromCredentialConfigurationsSupported,
 } from '../src'
@@ -87,7 +87,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
     openId4VcVerifier: OpenId4VcVerifierModule
   }>
 
@@ -133,7 +133,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     expressApp = express()
 
     issuer = await createAgentFromModules('issuer', {
-      openId4VcIssuer: new OpenId4VcIssuerModule({
+      openId4VcIssuer: new OpenId4VcIssuerExpressModule({
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization:
           getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
