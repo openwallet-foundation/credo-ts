@@ -1,4 +1,3 @@
-import { InjectionSymbols } from '../../constants'
 import type { DependencyManager, Module } from '../../plugins'
 import type { CacheModuleConfigOptions } from './CacheModuleConfig'
 import { CachedStorageService } from './CachedStorageService'
@@ -22,7 +21,7 @@ export class CacheModule implements Module {
     // Allows us to use the `CachedStorageService` instead of the `StorageService`
     // This first checks the local cache to return a record
     if (this.config.useCachedStorageService) {
-      dependencyManager.registerSingleton(InjectionSymbols.CachedStorageService, CachedStorageService)
+      dependencyManager.registerSingleton(CachedStorageService)
     }
 
     // Custom handling for when we're using the SingleContextStorageLruCache

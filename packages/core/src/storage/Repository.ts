@@ -27,11 +27,11 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   }
 
   private getStorageService(agentContext: AgentContext): StorageService<T> {
-    try {
+    if (agentContext.dependencyManager.isRegistered(CachedStorageService, true)) {
       return agentContext.resolve(CachedStorageService<T>)
-    } catch {
-      return this.storageService
     }
+
+    return this.storageService
   }
 
   /** @inheritDoc {StorageService#save} */
@@ -132,8 +132,8 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     query: Query<T>,
     { cacheKey }: { cacheKey?: string } = {}
   ): Promise<T | null> {
-    const cache = agentContext.resolveOptionally(CacheModuleConfig)
-    const useCacheStorage = cache?.useCachedStorageService ?? false
+    const cache = agentContext.resolve(CacheModuleConfig)
+    const useCacheStorage = cache.useCachedStorageService ?? false
 
     if (useCacheStorage && cacheKey) {
       const recordId = (await cache?.cache.get<string>(agentContext, cacheKey)) ?? null
