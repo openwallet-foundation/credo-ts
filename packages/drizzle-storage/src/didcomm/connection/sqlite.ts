@@ -1,7 +1,7 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // TODO: package dependencies
-import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
+import type { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
 import { sqliteBaseRecordTable } from '../../sqlite'
 import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

@@ -1,9 +1,8 @@
-import { utils } from '@credo-ts/core'
 import { ExtraConfigColumn, jsonb, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
 
 export const baseRecordTable = {
   contextCorrelationId: text('context_correlation_id').notNull(),
-  id: text().$defaultFn(() => utils.uuid()),
+  id: text(),
 
   // createdAt is set in credo, to avoid having to query the
   // value from the database after creation

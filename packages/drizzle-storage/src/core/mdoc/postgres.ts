@@ -1,4 +1,4 @@
-import { Kms } from '@credo-ts/core'
+import type { Kms } from '@credo-ts/core'
 import { pgTable, text } from 'drizzle-orm/pg-core'
 import { postgresBaseRecordTable } from '../../postgres'
 import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'

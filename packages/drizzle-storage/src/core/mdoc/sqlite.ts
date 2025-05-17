@@ -1,4 +1,4 @@
-import { Kms } from '@credo-ts/core'
+import type { Kms } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { sqliteBaseRecordTable } from '../../sqlite'
 import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'

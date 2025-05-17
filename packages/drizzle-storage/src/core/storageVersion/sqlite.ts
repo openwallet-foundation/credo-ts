@@ -1,4 +1,4 @@
-import { VersionString } from '@credo-ts/core'
+import type { VersionString } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { sqliteBaseRecordTable } from '../../sqlite'
 import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
