@@ -1,5 +1,5 @@
 {
-  "name": "@credo-ts/redis-cache-nodejs",
+  "name": "@credo-ts/redis-cache",
   "main": "src/index",
   "types": "src/index",
   "version": "0.5.13",
