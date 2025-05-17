@@ -10,11 +10,11 @@
     "types": "build/index",
     "access": "public"
   },
-  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/redis-cache-nodejs",
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/redis-cache",
   "repository": {
     "type": "git",
     "url": "https://github.com/openwallet-foundation/credo-ts",
-    "directory": "packages/redis-cache-nodejs"
+    "directory": "packages/redis-cache"
   },
   "scripts": {
     "build": "pnpm run clean && pnpm run compile",
