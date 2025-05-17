@@ -1,5 +1,5 @@
 ---
-"@credo-ts/redis-cache-nodejs": patch
+"@credo-ts/redis-cache": patch
 "@credo-ts/didcomm": patch
 "@credo-ts/core": patch
 ---
