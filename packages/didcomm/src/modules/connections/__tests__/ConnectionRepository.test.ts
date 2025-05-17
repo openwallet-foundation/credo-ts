@@ -78,13 +78,15 @@ describe('ConnectionRepository', () => {
     await connectionRepository.save(agent.context, connectionRecord)
 
     // Registers the query + result in cache
-    await connectionRepository.findByDids(agent.context, dids)
+    const foundConnectionRecord = await connectionRepository.findByDids(agent.context, dids)
+    expect(foundConnectionRecord).toBeInstanceOf(ConnectionRecord)
     expect(cacheSetSpy).toHaveBeenCalled()
 
     const storageService = agent.context.resolve<StorageService<ConnectionRecord>>(InjectionSymbols.StorageService)
     const storageServiceFindByQuerySpy = jest.spyOn(storageService, 'findByQuery')
 
-    await connectionRepository.findByDids(agent.context, dids)
+    const foundConnectionRecord2 = await connectionRepository.findByDids(agent.context, dids)
+    expect(foundConnectionRecord2).toEqual(foundConnectionRecord)
 
     // Cache should be retrieved
     expect(cacheGetSpy).toHaveBeenCalled()

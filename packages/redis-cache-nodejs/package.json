@@ -25,8 +25,7 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "ioredis": "^5.6.1",
-    "redis": "^5.0.1"
+    "ioredis": "^5.6.1"
   },
   "devDependencies": {
     "rimraf": "^4.4.0",

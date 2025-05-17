@@ -90,4 +90,10 @@ export class RedisCache implements Cache {
       }
     } while (cursor !== '0')
   }
+
+  // TODO: we should have a method to close the cache, so we can hook into the
+  // shutdown method.
+  public async disconnect() {
+    await this._client.quit()
+  }
 }

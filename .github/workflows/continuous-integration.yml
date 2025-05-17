@@ -71,8 +71,6 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - uses: shogo82148/actions-setup-redis@v1
-
       # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
       - name: pnpm cache path
         id: pnpm-cache-path

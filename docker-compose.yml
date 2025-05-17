@@ -8,6 +8,11 @@ services:
     ports:
       - '5432:5432'
 
+  redis:
+    image: valkey/valkey
+    ports:
+      - '6379:6379'
+
   indy-pool:
     build:
       context: .

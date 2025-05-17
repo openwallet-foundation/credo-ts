@@ -5,7 +5,9 @@ import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '.
 import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 
 import { RecordDuplicateError, RecordNotFoundError } from '../error'
+import { CacheModuleConfig } from '../modules/cache/CacheModuleConfig'
 import { CachedStorageService } from '../modules/cache/CachedStorageService'
+import { JsonTransformer } from '../utils'
 import { RepositoryEventTypes } from './RepositoryEvents'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -120,12 +122,28 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   /**
    * Find a single record by query. Returns null if not found.
    * @param query the query
+   * @param cacheKey optional cache key to use for caching. By default query results are not cached, but if a cache key is provided
+   *                  as well as the record allows caching and the agent has a cached storage service enabled it will use the cache.
    * @returns the record, or null if not found
    * @throws {RecordDuplicateError} if multiple records are found for the given query
    */
-  public async findSingleByQuery(agentContext: AgentContext, query: Query<T>): Promise<T | null> {
-    const records = await this.findByQuery(agentContext, query)
+  public async findSingleByQuery(
+    agentContext: AgentContext,
+    query: Query<T>,
+    { cacheKey }: { cacheKey?: string } = {}
+  ): Promise<T | null> {
+    const cache = agentContext.resolveOptionally(CacheModuleConfig)
+    const useCacheStorage = cache?.useCachedStorageService ?? false
 
+    if (useCacheStorage && cacheKey) {
+      const recordId = (await cache?.cache.get<string>(agentContext, cacheKey)) ?? null
+      if (recordId !== null) {
+        const recordJson = await cache?.cache.get<T>(agentContext, recordId)
+        if (recordJson) return JsonTransformer.fromJSON(recordJson, this.recordClass)
+      }
+    }
+
+    const records = await this.findByQuery(agentContext, query)
     if (records.length > 1) {
       throw new RecordDuplicateError(`Multiple records found for given query '${JSON.stringify(query)}'`, {
         recordType: this.recordClass.type,
@@ -134,6 +152,11 @@ export class Repository<T extends BaseRecord<any, any, any>> {
 
     if (records.length < 1) {
       return null
+    }
+
+    if (useCacheStorage && cacheKey) {
+      await cache?.cache.set(agentContext, cacheKey, records[0].id)
+      await cache?.cache.set(agentContext, records[0].id, records[0].toJSON())
     }
 
     return records[0]

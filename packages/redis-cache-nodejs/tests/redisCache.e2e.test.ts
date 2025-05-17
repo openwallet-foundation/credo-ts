@@ -1,5 +1,5 @@
 import { getAgentContext } from '../../core/tests/helpers'
-import { RedisCache } from '../src/'
+import { RedisCache } from '../src'
 
 describe('RedisCache', () => {
   const agentContext = getAgentContext()
@@ -12,6 +12,7 @@ describe('RedisCache', () => {
 
   afterAll(async () => {
     await redisCache.destroy(agentContext)
+    await redisCache.disconnect()
   })
 
   it('should initialize the redis cache', () => {
