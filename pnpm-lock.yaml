@@ -569,9 +569,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@libsql/client':
-        specifier: ^0.15.6
-        version: 0.15.6
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -581,9 +578,6 @@ importers:
       drizzle-orm:
         specifier: ^0.43.1
         version: 0.43.1(@electric-sql/pglite@0.3.1)(@libsql/client@0.15.6)(pg@8.16.0)
-      pg:
-        specifier: ^8.16.0
-        version: 8.16.0
       tsyringe:
         specifier: ^4.8.0
         version: 4.8.0
@@ -591,9 +585,15 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.3.1
         version: 0.3.1
+      '@libsql/client':
+        specifier: ^0.15.6
+        version: 0.15.6
       drizzle-kit:
         specifier: ^0.31.1
         version: 0.31.1
+      pg:
+        specifier: ^8.16.0
+        version: 8.16.0
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -3174,6 +3174,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -5862,7 +5863,6 @@ packages:
 
   libsql@0.5.10:
     resolution: {integrity: sha512-lQu5RLqDLFuo6H5SuR3CnEstGVph77Jd8lm3fdW64p6tUjOC0X8Z9PlfAdZYxWyirYLH9uwcEZUrABsNKYwOiQ==}
-    cpu: [x64, arm64, wasm32, arm]
     os: [darwin, linux, win32]
 
   lighthouse-logger@1.4.2:
