@@ -12,6 +12,7 @@ import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../err
 import { Repository } from '../Repository'
 import { RepositoryEventTypes } from '../RepositoryEvents'
 
+import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
 import { TestRecord } from './TestRecord'
 
 jest.mock('../../../../../tests/InMemoryStorageService')
@@ -30,7 +31,16 @@ describe('Repository', () => {
     storageMock = new StorageMock()
     eventEmitter = new EventEmitter(config.agentDependencies, new Subject())
     repository = new Repository(TestRecord, storageMock, eventEmitter)
-    agentContext = getAgentContext()
+    agentContext = getAgentContext({
+      registerInstances: [
+        [
+          CacheModuleConfig,
+          new CacheModuleConfig({
+            cache: new InMemoryLruCache({ limit: 500 }),
+          }),
+        ],
+      ],
+    })
   })
 
   const getRecord = ({ id, tags }: { id?: string; tags?: TagsBase } = {}) => {

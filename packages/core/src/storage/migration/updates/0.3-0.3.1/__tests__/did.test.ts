@@ -48,7 +48,7 @@ describe('0.3-0.3.1 | Did', () => {
       expect(didRepository.save).toHaveBeenCalledTimes(1)
 
       const [, didRecord] = mockFunction(didRepository.save).mock.calls[0]
-      expect(didRecord).toEqual({
+      expect(didRecord).toMatchObject({
         type: 'DidRecord',
         id: expect.any(String),
         did: 'did:peer:123',
