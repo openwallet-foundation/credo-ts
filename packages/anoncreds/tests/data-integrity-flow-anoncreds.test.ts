@@ -3,8 +3,10 @@ import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 
 import {
   AgentContext,
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  InMemoryLruCache,
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
@@ -96,6 +98,12 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
   ],
   agentConfig,
 })

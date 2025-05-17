@@ -2,8 +2,10 @@ import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
 import type { DidRepository } from '@credo-ts/core'
 
 import {
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  InMemoryLruCache,
   InjectionSymbols,
   SignatureSuiteToken,
   W3cCredentialsModuleConfig,
@@ -83,6 +85,12 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
   ],
   agentConfig,
 })

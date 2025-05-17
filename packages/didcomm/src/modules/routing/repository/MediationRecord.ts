@@ -62,6 +62,9 @@ export class MediationRecord
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type
 
+  public static readonly allowCache = true
+  public readonly allowCache = true
+
   public constructor(props: MediationRecordProps) {
     super()
 

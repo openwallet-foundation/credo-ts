@@ -24,6 +24,7 @@ import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { AskarStoreManager } from '../../../../../../askar/src/AskarStoreManager'
 import { NodeFileSystem } from '../../../../../../node/src/NodeFileSystem'
+import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import {
   CredoEs256DidJwkJwtVc,
   CredoEs256DidJwkJwtVcIssuerSeed,
@@ -53,6 +54,12 @@ const agentContext = getAgentContext({
           store: getAskarStoreConfig('W3cJwtCredentialService'),
         })
       ),
+    ],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
     ],
   ],
   kmsBackends: [new AskarKeyManagementService()],
