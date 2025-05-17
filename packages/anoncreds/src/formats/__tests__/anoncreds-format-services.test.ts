@@ -1,8 +1,10 @@
 import type { DidRepository } from '@credo-ts/core'
 import {
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
   EventEmitter,
+  InMemoryLruCache,
   InjectionSymbols,
   Kms,
   SignatureSuiteToken,
@@ -99,6 +101,12 @@ const agentContext = getAgentContext({
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
     [SignatureSuiteToken, 'default'],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
   ],
   agentConfig,
 })

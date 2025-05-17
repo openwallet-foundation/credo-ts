@@ -27,11 +27,15 @@ export class Repository<T extends BaseRecord<any, any, any>> {
   }
 
   private getStorageService(agentContext: AgentContext): StorageService<T> {
-    if (agentContext.dependencyManager.isRegistered(CachedStorageService, true)) {
-      return agentContext.resolve(CachedStorageService<T>)
-    }
+    try {
+      if (agentContext.dependencyManager.isRegistered(CachedStorageService, true)) {
+        return agentContext.resolve(CachedStorageService<T>)
+      }
 
-    return this.storageService
+      return this.storageService
+    } catch {
+      return this.storageService
+    }
   }
 
   /** @inheritDoc {StorageService#save} */
