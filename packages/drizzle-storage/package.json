@@ -11,13 +11,29 @@
         "types": "./build/index.d.ts",
         "default": "./build/index.js"
       },
-      "./anoncreds": {
-        "types": "./build/anoncreds/index.d.ts",
-        "default": "./build/anoncreds/index.js"
-      },
       "./didcomm": {
         "types": "./build/didcomm/index.d.ts",
         "default": "./build/didcomm/index.js"
+      },
+      "./didcomm/sqlite": {
+        "types": "./build/didcomm/sqlite.d.ts",
+        "default": "./build/didcomm/sqlite.js"
+      },
+      "./didcomm/postgres": {
+        "types": "./build/didcomm/postgres.d.ts",
+        "default": "./build/didcomm/postgres.js"
+      },
+      "./core": {
+        "types": "./build/core/index.d.ts",
+        "default": "./build/core/index.js"
+      },
+      "./core/sqlite": {
+        "types": "./build/core/sqlite.d.ts",
+        "default": "./build/core/sqlite.js"
+      },
+      "./core/postgres": {
+        "types": "./build/core/postgres.d.ts",
+        "default": "./build/core/postgres.js"
       }
     }
   },
@@ -26,13 +42,29 @@
       "types": "./src/index.d.ts",
       "default": "./src/index.js"
     },
-    "./anoncreds": {
-      "types": "./build/anoncreds/index.d.ts",
-      "default": "./build/anoncreds/index.js"
-    },
     "./didcomm": {
-      "types": "./build/didcomm/index.d.ts",
-      "default": "./build/didcomm/index.js"
+      "types": "./src/didcomm/index.d.ts",
+      "default": "./src/didcomm/index.ts"
+    },
+    "./didcomm/sqlite": {
+      "types": "./src/didcomm/sqlite.d.ts",
+      "default": "./src/didcomm/sqlite.ts"
+    },
+    "./didcomm/postgres": {
+      "types": "./src/didcomm/postgres.d.ts",
+      "default": "./src/didcomm/postgres.ts"
+    },
+    "./core": {
+      "types": "./src/core/index.d.ts",
+      "default": "./src/core/index.ts"
+    },
+    "./core/sqlite": {
+      "types": "./src/core/sqlite.d.ts",
+      "default": "./src/core/sqlite.ts"
+    },
+    "./core/postgres": {
+      "types": "./src/core/postgres.d.ts",
+      "default": "./src/core/postgres.ts"
     }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",

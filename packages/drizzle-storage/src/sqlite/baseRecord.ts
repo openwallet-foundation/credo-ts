@@ -1,10 +1,9 @@
-import { utils } from '@credo-ts/core'
 import { SQLiteColumn, integer, primaryKey, text } from 'drizzle-orm/sqlite-core'
 
 export const baseRecordTable = {
   contextCorrelationId: text('context_correlation_id').notNull(),
 
-  id: text().$defaultFn(() => utils.uuid()),
+  id: text(),
 
   // createdAt is set in credo, to avoid having to query the
   // value from the database after creation

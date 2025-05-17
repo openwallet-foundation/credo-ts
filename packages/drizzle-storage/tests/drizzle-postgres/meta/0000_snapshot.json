@@ -1,0 +1,480 @@
+{
+  "id": "f39a2a61-7fbd-4b5a-8f39-766f7e6c4436",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.GenericRecord": {
+      "name": "GenericRecord",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "GenericRecord_context_correlation_id_id_pk": {
+          "name": "GenericRecord_context_correlation_id_id_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.SdJwtVc": {
+      "name": "SdJwtVc",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vct": {
+          "name": "vct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alg": {
+          "name": "alg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sd_alg": {
+          "name": "sd_alg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "compact_sd_jwt_vc": {
+          "name": "compact_sd_jwt_vc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "SdJwtVc_context_correlation_id_id_pk": {
+          "name": "SdJwtVc_context_correlation_id_id_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Mdoc": {
+      "name": "Mdoc",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base64_url": {
+          "name": "base64_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "alg": {
+          "name": "alg",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "doc_type": {
+          "name": "doc_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "Mdoc_context_correlation_id_id_pk": {
+          "name": "Mdoc_context_correlation_id_id_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.StorageVersion": {
+      "name": "StorageVersion",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "storage_version": {
+          "name": "storage_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "StorageVersion_context_correlation_id_id_pk": {
+          "name": "StorageVersion_context_correlation_id_id_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.DidcommConnection": {
+      "name": "DidcommConnection",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "DidcommConnectionState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "DidcommConnectionRole",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "did": {
+          "name": "did",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "their_did": {
+          "name": "their_did",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "their_label": {
+          "name": "their_label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alias": {
+          "name": "alias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_accept_connection": {
+          "name": "auto_accept_connection",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_url": {
+          "name": "image_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invitation_did": {
+          "name": "invitation_did",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mediator_id": {
+          "name": "mediator_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "out_of_band_id": {
+          "name": "out_of_band_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protocol": {
+          "name": "protocol",
+          "type": "DidcommConnectionHandshakeProtocol",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "connection_types": {
+          "name": "connection_types",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_dids": {
+          "name": "previous_dids",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "previous_their_dids": {
+          "name": "previous_their_dids",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {
+        "DidcommConnection_context_correlation_id_id_pk": {
+          "name": "DidcommConnection_context_correlation_id_id_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "DidcommConnection_thread_id_unique": {
+          "name": "DidcommConnection_thread_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["thread_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.DidcommConnectionHandshakeProtocol": {
+      "name": "DidcommConnectionHandshakeProtocol",
+      "schema": "public",
+      "values": ["https://didcomm.org/didexchange/1.x", "https://didcomm.org/connections/1.x"]
+    },
+    "public.DidcommConnectionRole": {
+      "name": "DidcommConnectionRole",
+      "schema": "public",
+      "values": ["requester", "responder"]
+    },
+    "public.DidcommConnectionState": {
+      "name": "DidcommConnectionState",
+      "schema": "public",
+      "values": [
+        "start",
+        "invitation-sent",
+        "invitation-received",
+        "request-sent",
+        "request-received",
+        "response-sent",
+        "response-received",
+        "abandoned",
+        "completed"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
