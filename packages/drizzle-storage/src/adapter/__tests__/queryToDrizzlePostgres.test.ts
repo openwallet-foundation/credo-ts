@@ -19,6 +19,9 @@ describe('queryToDrizzlePostgres', () => {
     await apply()
 
     await db.insert(didcommConnection).values({
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      contextCorrelationId: 'b2fc0867-d0d1-4182-ade7-813b695d43c2',
       id: 'db0ddc8f-5339-431b-9675-749f8a2ac92f',
       role: DidExchangeRole.Requester,
       state: DidExchangeState.Abandoned,

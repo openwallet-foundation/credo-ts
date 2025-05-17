@@ -59,7 +59,6 @@
     "@electric-sql/pglite": "^0.3.1",
     "drizzle-kit": "^0.31.1",
     "@libsql/client": "^0.15.6",
-    "pg": "^8.16.0",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   }
