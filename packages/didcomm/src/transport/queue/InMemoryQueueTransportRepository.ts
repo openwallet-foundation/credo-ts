@@ -1,13 +1,13 @@
-import type { MessagePickupRepository } from './MessagePickupRepository'
+import type { QueueTransportRepository } from './QueueTransportRepository'
 import type {
   AddMessageOptions,
   GetAvailableMessageCountOptions,
   RemoveMessagesOptions,
   TakeFromQueueOptions,
-} from './MessagePickupRepositoryOptions'
+} from './QueueTransportRepositoryOptions'
 import type { QueuedMessage } from './QueuedMessage'
 
-import { InjectionSymbols, Logger, inject, injectable, utils } from '@credo-ts/core'
+import { AgentContext, injectable, utils } from '@credo-ts/core'
 
 interface InMemoryQueuedMessage extends QueuedMessage {
   connectionId: string
@@ -16,16 +16,17 @@ interface InMemoryQueuedMessage extends QueuedMessage {
 }
 
 @injectable()
-export class InMemoryMessagePickupRepository implements MessagePickupRepository {
-  private logger: Logger
+export class InMemoryQueueTransportRepository implements QueueTransportRepository {
   private messages: InMemoryQueuedMessage[]
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger) {
-    this.logger = logger
+  public constructor() {
     this.messages = []
   }
 
-  public getAvailableMessageCount(options: GetAvailableMessageCountOptions): number | Promise<number> {
+  public getAvailableMessageCount(
+    _agentContext: AgentContext,
+    options: GetAvailableMessageCountOptions
+  ): number | Promise<number> {
     const { connectionId, recipientDid } = options
 
     const messages = this.messages.filter(
@@ -37,7 +38,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     return messages.length
   }
 
-  public takeFromQueue(options: TakeFromQueueOptions): QueuedMessage[] {
+  public takeFromQueue(agentContext: AgentContext, options: TakeFromQueueOptions): QueuedMessage[] {
     const { connectionId, recipientDid, limit, deleteMessages } = options
 
     let messages = this.messages.filter(
@@ -51,7 +52,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
 
     messages = messages.slice(0, messagesToTake)
 
-    this.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
+    agentContext.config.logger.debug(`Taking ${messagesToTake} messages from queue for connection ${connectionId}`)
 
     // Mark taken messages in order to prevent them of being retrieved again
     for (const msg of messages) {
@@ -60,13 +61,13 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     }
 
     if (deleteMessages) {
-      this.removeMessages({ connectionId, messageIds: messages.map((msg) => msg.id) })
+      this.removeMessages(agentContext, { connectionId, messageIds: messages.map((msg) => msg.id) })
     }
 
     return messages
   }
 
-  public addMessage(options: AddMessageOptions) {
+  public addMessage(_agentContext: AgentContext, options: AddMessageOptions) {
     const { connectionId, recipientDids, payload } = options
 
     const id = utils.uuid()
@@ -82,7 +83,7 @@ export class InMemoryMessagePickupRepository implements MessagePickupRepository 
     return id
   }
 
-  public removeMessages(options: RemoveMessagesOptions) {
+  public removeMessages(_agentContext: AgentContext, options: RemoveMessagesOptions) {
     const { messageIds } = options
 
     for (const messageId of messageIds) {
