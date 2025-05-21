@@ -21,7 +21,7 @@
       "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
       "role": "created",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
         "service": [
           {
@@ -73,7 +73,7 @@
       "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
       "role": "received",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
         "service": [
           {
@@ -123,7 +123,7 @@
       "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
       "role": "created",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
         "service": [
           {
@@ -173,7 +173,7 @@
       "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
       "role": "created",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
         "service": [
           {
@@ -225,7 +225,7 @@
       "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
       "role": "received",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
         "service": [
           {
@@ -275,7 +275,7 @@
       "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
       "role": "received",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
         "service": [
           {
@@ -325,7 +325,7 @@
       "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
       "role": "received",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
         "service": [
           {
@@ -375,7 +375,7 @@
       "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
       "role": "created",
       "didDocument": {
-        "@context": ["https://w3id.org/did/v1"],
+        "@context": ["https://www.w3.org/ns/did/v1"],
         "id": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
         "service": [
           {

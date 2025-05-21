@@ -1,5 +1,5 @@
 {
-  "@context": ["https://w3id.org/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
+  "@context": ["https://www.w3.org/ns/did/v1", "https://w3id.org/security/suites/jws-2020/v1"],
   "id": "did:key:z2J9gaYxrKVpdoG9A4gRnmpnRCcxU6agDtFVVBVdn1JedouoZN7SzcyREXXzWgt3gGiwpoHq7K68X4m32D8HgzG8wv3sY5j7",
   "verificationMethod": [
     {
