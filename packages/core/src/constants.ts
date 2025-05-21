@@ -6,6 +6,5 @@ export const InjectionSymbols = {
   AgentDependencies: Symbol('AgentDependencies'),
   Stop$: Symbol('Stop$'),
   FileSystem: Symbol('FileSystem'),
-  Wallet: Symbol('Wallet'),
   WebCrypto: Symbol('WebCrypto'),
 }
