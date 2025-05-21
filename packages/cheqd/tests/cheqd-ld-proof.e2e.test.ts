@@ -153,6 +153,8 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
     const createResult = await faberAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
+        .addController(did)
+        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
@@ -161,7 +163,6 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
           })
         )
         .addAssertionMethod(`${did}#${ed25519Key.fingerprint}`)
-        .addAuthentication(`${did}#${ed25519Key.fingerprint}`)
         .build(),
     })
 
@@ -173,9 +174,8 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
 
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
       '@context': [
-        'https://w3id.org/did/v1',
-        'https://w3id.org/security/suites/ed25519-2018/v1',
         'https://www.w3.org/ns/did/v1',
+        'https://w3id.org/security/suites/ed25519-2018/v1',
       ],
       verificationMethod: [
         {

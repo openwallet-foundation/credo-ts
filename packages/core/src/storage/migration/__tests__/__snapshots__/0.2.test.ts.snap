@@ -266,7 +266,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmWxKCTkKYQvzdUshMWy7b8vy3Y7uLtB9hp6BbQhKEtQCd",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -331,7 +331,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmavZzrLPRYRGd5CgyKV4GBZG43eGzjic9FHXc7jLHY14W",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -394,7 +394,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmZqQYzwqsYjj7z8kixxDXf9nux8TAsqj2izSpX1oCrd7q",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -457,7 +457,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmRnGYmYBdSinH2953ZgfHWEpqp5W6kJmmYBgRaCs4Yudx",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -522,7 +522,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmb9oo8fn8AZ7rWh1DAfTbM3mnPp9Hq2bJFdHiqjnZX2Ce",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -585,7 +585,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmSzC6uhWYcxtkr2fBepr66kjvSHuRsSfbmei7nrGj7HfN",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -648,7 +648,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmPaCELen1JWMWmhVZS16nDmrAC9yGKQcJCcBs5spXakA3",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {
@@ -711,7 +711,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
       "did": "did:peer:1zQmUo1HoiciJS628w4SHweg4Pzs4bZLM4KLZgroSmUwBw7S",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "authentication": [
           {

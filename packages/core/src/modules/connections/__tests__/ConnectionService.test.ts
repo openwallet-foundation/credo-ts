@@ -260,7 +260,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
@@ -319,7 +319,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
