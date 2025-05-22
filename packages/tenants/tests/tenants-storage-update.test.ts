@@ -15,10 +15,6 @@ import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig = {
   label: 'Tenant Agent',
-  walletConfig: {
-    id: 'tenants-agent-04',
-    key: 'tenants-agent-04',
-  },
   logger: testLogger,
 } satisfies InitConfig
 
@@ -26,8 +22,12 @@ const modules = {
   ...getDefaultDidcommModules(),
   tenants: new TenantsModule(),
   askar: new AskarModule({
-    askar: askar,
+    askar,
     multiWalletDatabaseScheme: AskarMultiWalletDatabaseScheme.ProfilePerWallet,
+    store: {
+      id: 'tenants-agent-04',
+      key: 'tenants-agent-04',
+    },
   }),
   connections: new ConnectionsModule({
     autoAcceptConnections: true,
@@ -44,10 +44,6 @@ describe('Tenants Storage Update', () => {
       config: {
         ...agentConfig,
         autoUpdateStorageOnStartup: true,
-
-        // export not supported for askar profile wallet
-        // so we skip creating a backup
-        backupBeforeStorageUpdate: false,
       },
       modules,
       dependencies: agentDependencies,
@@ -55,14 +51,17 @@ describe('Tenants Storage Update', () => {
 
     // Delete existing wallet at this path
     const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', agentConfig.walletConfig.id))
+    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', modules.askar.config.store.id))
 
-    // Import the wallet
-    await agent.wallet.import(agentConfig.walletConfig, {
-      key: agentConfig.walletConfig.key,
-      path: path.join(__dirname, 'tenants-04.db'),
+    const askarStoreConfig = agent.modules.askar.config.store
+    await agent.modules.askar.importStore({
+      importFromStore: {
+        id: askarStoreConfig.id,
+        key: askarStoreConfig.key,
+        keyDerivationMethod: askarStoreConfig.keyDerivationMethod,
+        database: { type: 'sqlite', config: { path: path.join(__dirname, 'tenants-04.db') } },
+      },
     })
-
     await agent.initialize()
 
     // Expect tenant storage version to be still 0.4
@@ -78,41 +77,6 @@ describe('Tenants Storage Update', () => {
     const updatedTenant = await agent.modules.tenants.getTenantById('1d45d3c2-3480-4375-ac6f-47c322f091b0')
     expect(updatedTenant.storageVersion).toBe('0.5')
 
-    await agent.wallet.delete()
-    await agent.shutdown()
-  })
-
-  test('error when trying to open session for tenant when backupBeforeStorageUpdate is not disabled because profile cannot be exported', async () => {
-    // Create multi-tenant agents
-    const agent = new Agent({
-      config: { ...agentConfig, autoUpdateStorageOnStartup: true, backupBeforeStorageUpdate: true },
-      modules,
-      dependencies: agentDependencies,
-    })
-
-    // Delete existing wallet at this path
-    const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', agentConfig.walletConfig.id))
-
-    // Import the wallet
-    await agent.wallet.import(agentConfig.walletConfig, {
-      key: agentConfig.walletConfig.key,
-      path: path.join(__dirname, 'tenants-04.db'),
-    })
-
-    // Initialize agent
-    await agent.initialize()
-
-    // Expect tenant storage version to be still 0.4
-    const tenant = await agent.modules.tenants.getTenantById('1d45d3c2-3480-4375-ac6f-47c322f091b0')
-    expect(tenant.storageVersion).toBe('0.4')
-
-    // Should throw error because not up to date and backupBeforeStorageUpdate is true
-    await expect(
-      agent.modules.tenants.getTenantAgent({ tenantId: '1d45d3c2-3480-4375-ac6f-47c322f091b0' })
-    ).rejects.toThrow(/the wallet backend does not support exporting/)
-
-    await agent.wallet.delete()
     await agent.shutdown()
   })
 
@@ -126,12 +90,16 @@ describe('Tenants Storage Update', () => {
 
     // Delete existing wallet at this path
     const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', agentConfig.walletConfig.id))
+    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', modules.askar.config.store.id))
 
-    // Import the wallet
-    await agent.wallet.import(agentConfig.walletConfig, {
-      key: agentConfig.walletConfig.key,
-      path: path.join(__dirname, 'tenants-04.db'),
+    const askarStoreConfig = agent.modules.askar.config.store
+    await agent.modules.askar.importStore({
+      importFromStore: {
+        id: askarStoreConfig.id,
+        key: askarStoreConfig.key,
+        keyDerivationMethod: askarStoreConfig.keyDerivationMethod,
+        database: { type: 'sqlite', config: { path: path.join(__dirname, 'tenants-04.db') } },
+      },
     })
 
     // Update root agent (but not tenants)
@@ -151,7 +119,6 @@ describe('Tenants Storage Update', () => {
       agent.modules.tenants.getTenantAgent({ tenantId: '1d45d3c2-3480-4375-ac6f-47c322f091b0' })
     ).rejects.toThrow(/Current agent storage for tenant 1d45d3c2-3480-4375-ac6f-47c322f091b0 is not up to date/)
 
-    await agent.wallet.delete()
     await agent.shutdown()
   })
 
@@ -165,12 +132,16 @@ describe('Tenants Storage Update', () => {
 
     // Delete existing wallet at this path
     const fileSystem = agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
-    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', agentConfig.walletConfig.id))
+    await fileSystem.delete(path.join(fileSystem.dataPath, 'wallet', modules.askar.config.store.id))
 
-    // Import the wallet
-    await agent.wallet.import(agentConfig.walletConfig, {
-      key: agentConfig.walletConfig.key,
-      path: path.join(__dirname, 'tenants-04.db'),
+    const askarStoreConfig = agent.modules.askar.config.store
+    await agent.modules.askar.importStore({
+      importFromStore: {
+        id: askarStoreConfig.id,
+        key: askarStoreConfig.key,
+        keyDerivationMethod: askarStoreConfig.keyDerivationMethod,
+        database: { type: 'sqlite', config: { path: path.join(__dirname, 'tenants-04.db') } },
+      },
     })
 
     // Update root agent (but not tenants)
@@ -196,9 +167,6 @@ describe('Tenants Storage Update', () => {
     // Update tenant
     await agent.modules.tenants.updateTenantStorage({
       tenantId: tenant.id,
-      updateOptions: {
-        backupBeforeStorageUpdate: false,
-      },
     })
 
     // Should have closed session after upgrade
@@ -222,9 +190,6 @@ describe('Tenants Storage Update', () => {
     const updatePromises = outdatedTenants.map((tenant) =>
       agent.modules.tenants.updateTenantStorage({
         tenantId: tenant.id,
-        updateOptions: {
-          backupBeforeStorageUpdate: false,
-        },
       })
     )
 
@@ -234,7 +199,6 @@ describe('Tenants Storage Update', () => {
     const outdatedTenantsAfterUpdate = await agent.modules.tenants.getTenantsWithOutdatedStorage()
     expect(outdatedTenantsAfterUpdate).toHaveLength(0)
 
-    await agent.wallet.delete()
     await agent.shutdown()
   })
 })

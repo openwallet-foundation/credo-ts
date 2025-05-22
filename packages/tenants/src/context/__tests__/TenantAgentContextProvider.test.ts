@@ -1,13 +1,13 @@
 import type { AgentContext } from '@credo-ts/core'
 
-import { Key } from '@credo-ts/core'
+import { Kms } from '@credo-ts/core'
 
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
-import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
+import { TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
 
 jest.mock('../../../../core/src/agent/EventEmitter')
 jest.mock('../../services/TenantRecordService')
@@ -23,6 +23,11 @@ const tenantSessionCoordinator = new TenantSessionCoordinatorMock()
 const rootAgentContext = getAgentContext()
 const agentConfig = getAgentConfig('TenantAgentContextProvider')
 const eventEmitter = new EventEmitterMock()
+
+tenantSessionCoordinator.getTenantIdForContextCorrelationId = (id) => id.replace('tenant-', '')
+tenantSessionCoordinator.getContextCorrelationIdForTenantId = (tenantId) => `tenant-${tenantId}`
+tenantSessionCoordinator.isTenantContextCorrelationId = (id): id is TenantContextCorrelationId =>
+  id.startsWith('tenant-')
 
 const tenantAgentContextProvider = new TenantAgentContextProvider(
   tenantRecordService,
@@ -52,10 +57,6 @@ describe('TenantAgentContextProvider', () => {
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -70,6 +71,7 @@ describe('TenantAgentContextProvider', () => {
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
+        provisionContext: false,
       })
       expect(returnedAgentContext).toBe(tenantAgentContext)
     })
@@ -81,10 +83,6 @@ describe('TenantAgentContextProvider', () => {
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -96,12 +94,13 @@ describe('TenantAgentContextProvider', () => {
 
       const returnedAgentContext = await tenantAgentContextProvider.getContextForInboundMessage(
         {},
-        { contextCorrelationId: 'tenant1' }
+        { contextCorrelationId: 'tenant-tenant1' }
       )
 
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
+        provisionContext: false,
       })
       expect(returnedAgentContext).toBe(tenantAgentContext)
       expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).not.toHaveBeenCalled()
@@ -126,10 +125,6 @@ describe('TenantAgentContextProvider', () => {
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -145,11 +140,12 @@ describe('TenantAgentContextProvider', () => {
       expect(tenantRecordService.getTenantById).toHaveBeenCalledWith(rootAgentContext, 'tenant1')
       expect(tenantSessionCoordinator.getContextForSession).toHaveBeenCalledWith(tenantRecord, {
         runInMutex: undefined,
+        provisionContext: false,
       })
       expect(returnedAgentContext).toBe(tenantAgentContext)
       expect(tenantRecordService.findTenantRoutingRecordByRecipientKey).toHaveBeenCalledWith(
         rootAgentContext,
-        expect.any(Key)
+        expect.any(Kms.PublicJwk)
       )
 
       const actualKey = mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mock.calls[0][1]

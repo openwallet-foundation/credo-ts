@@ -1,6 +1,6 @@
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import { TypedArrayEncoder } from '../../../../utils'
+import { PublicJwk, X25519PublicJwk } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -12,12 +12,16 @@ type X25519KeyAgreementKey2019 = VerificationMethod & {
 /**
  * Get a X25519KeyAgreementKey2019 verification method.
  */
-export function getX25519KeyAgreementKey2019({ key, id, controller }: { id: string; key: Key; controller: string }) {
+export function getX25519KeyAgreementKey2019({
+  publicJwk,
+  id,
+  controller,
+}: { id: string; publicJwk: PublicJwk<X25519PublicJwk>; controller: string }) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
     controller,
-    publicKeyBase58: key.publicKeyBase58,
+    publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
   })
 }
 
@@ -33,10 +37,14 @@ export function isX25519KeyAgreementKey2019(
 /**
  * Get a key from a X25519KeyAgreementKey2019 verification method.
  */
-export function getKeyFromX25519KeyAgreementKey2019(verificationMethod: X25519KeyAgreementKey2019) {
+export function getPublicJwkFrommX25519KeyAgreementKey2019(verificationMethod: X25519KeyAgreementKey2019) {
   if (!verificationMethod.publicKeyBase58) {
     throw new CredoError('verification method is missing publicKeyBase58')
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.X25519)
+  return PublicJwk.fromPublicKey({
+    kty: 'OKP',
+    crv: 'X25519',
+    publicKey: TypedArrayEncoder.fromBase58(verificationMethod.publicKeyBase58),
+  })
 }

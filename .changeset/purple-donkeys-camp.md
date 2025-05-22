@@ -1,6 +1,5 @@
 ---
 '@credo-ts/question-answer': minor
-'@credo-ts/bbs-signatures': minor
 '@credo-ts/action-menu': minor
 '@credo-ts/anoncreds': minor
 '@credo-ts/indy-vdr': minor

@@ -50,6 +50,17 @@ export class CheqdLedgerService {
     }
   }
 
+  public async disconnect() {
+    for (const network of this.networks) {
+      const _a = await network.sdk
+      if (!network.sdk) {
+        await this.initializeSdkForNetwork(network)
+      } else {
+        this.logger.debug(`Not connecting to network ${network} as SDK already initialized`)
+      }
+    }
+  }
+
   private async getSdk(did: string) {
     const parsedDid = parseCheqdDid(did)
     if (!parsedDid) {

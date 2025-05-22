@@ -8,7 +8,7 @@ import {
 import { Agent, DidsModule, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
-import { getInMemoryAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrIndyDidResolver, IndyVdrModule, IndyVdrSovDidResolver } from '../src'
 import { IndyVdrAnonCredsRegistry } from '../src/anoncreds/IndyVdrAnonCredsRegistry'
 import { IndyVdrIndyDidRegistrar } from '../src/dids/IndyVdrIndyDidRegistrar'
@@ -20,7 +20,7 @@ import { indyVdrModuleConfig } from './helpers'
 const indyVdrAnonCredsRegistry = new IndyVdrAnonCredsRegistry()
 
 const endorser = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'IndyVdrAnonCredsRegistryEndorser',
     {},
     {},
@@ -38,7 +38,7 @@ const endorser = new Agent(
 )
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'IndyVdrAnonCredsRegistryAgent',
     {},
     {},
@@ -82,9 +82,7 @@ describe('IndyVdrAnonCredsRegistry', () => {
     }
 
     await endorser.shutdown()
-    await endorser.wallet.delete()
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('register and resolve a schema and credential definition (internal, issuerDid != endorserDid)', async () => {

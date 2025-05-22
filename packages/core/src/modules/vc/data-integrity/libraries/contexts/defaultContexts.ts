@@ -1,5 +1,4 @@
 import { X25519_V1 } from './X25519_v1'
-import { BBS_V1 } from './bbs_v1'
 import { CREDENTIALS_V1 } from './credentials_v1'
 import { DATA_INTEGRITY_V2 } from './dataIntegrity_v2'
 import { DID_V1 } from './did_v1'
@@ -14,8 +13,6 @@ import { PRESENTATION_SUBMISSION } from './submission'
 import { VC_REVOCATION_LIST_2020 } from './vc_revocation_list_2020'
 
 export const DEFAULT_CONTEXTS = {
-  'https://w3id.org/security/suites/bls12381-2020/v1': BBS_V1,
-  'https://w3id.org/security/bbs/v1': BBS_V1,
   'https://w3id.org/security/v1': SECURITY_V1,
   'https://w3id.org/security/v2': SECURITY_V2,
   'https://w3id.org/security/suites/x25519-2019/v1': X25519_V1,

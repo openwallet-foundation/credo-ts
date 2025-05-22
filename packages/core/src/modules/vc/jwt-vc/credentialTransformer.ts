@@ -5,7 +5,8 @@ import { isObject } from 'class-validator'
 
 import { JwtPayload } from '../../../crypto/jose/jwt'
 import { CredoError } from '../../../error'
-import { JsonTransformer, isJsonObject } from '../../../utils'
+import { isJsonObject } from '../../../types'
+import { JsonTransformer } from '../../../utils'
 import { W3cCredential } from '../models/credential/W3cCredential'
 import { w3cDate } from '../util'
 

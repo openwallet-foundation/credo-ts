@@ -1,4 +1,5 @@
 import type { Checked, PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import { PEX, Status } from '@animo-id/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
   SdJwtDecodedVerifiableCredential,
@@ -22,14 +23,11 @@ import type {
 } from './models'
 import type { PresentationToCreate } from './utils'
 
-import { PEVersion, PEX, Status } from '@animo-id/pex'
-import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
-import { getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
-import { DidsApi, getKeyFromVerificationMethod } from '../dids'
+import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
 import {
   Mdoc,
   MdocApi,
@@ -51,6 +49,8 @@ import {
   AnonCredsDataIntegrityServiceSymbol,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
+import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
+import { getJwkHumanDescription } from '../kms'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
@@ -134,7 +134,7 @@ export class DifPresentationExchangeService {
         ? presentations.map(getSphereonOriginalVerifiablePresentation)
         : getSphereonOriginalVerifiablePresentation(presentations),
       {
-        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+        limitDisclosureSignatureSuites: ['DataIntegrityProof.anoncreds-2023'],
         presentationSubmission,
       }
     )
@@ -321,25 +321,26 @@ export class DifPresentationExchangeService {
     verificationMethod: VerificationMethod,
     suitableAlgorithms?: Array<string>
   ) {
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const jwk = getJwkFromKey(key)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
     if (suitableAlgorithms) {
-      const possibleAlgorithms = jwk.supportedSignatureAlgorithms.filter((alg) => suitableAlgorithms?.includes(alg))
+      const possibleAlgorithms = publicJwk.supportedSignatureAlgorithms.filter((alg) =>
+        suitableAlgorithms?.includes(alg)
+      )
       if (!possibleAlgorithms || possibleAlgorithms.length === 0) {
         throw new DifPresentationExchangeError(
           [
             'Found no suitable signing algorithm.',
-            `Algorithms supported by Verification method: ${jwk.supportedSignatureAlgorithms.join(', ')}`,
+            `Algorithms supported by Verification method: ${publicJwk.supportedSignatureAlgorithms.join(', ')}`,
             `Suitable algorithms: ${suitableAlgorithms.join(', ')}`,
           ].join('\n')
         )
       }
+
+      return possibleAlgorithms[0]
     }
 
-    const alg = jwk.supportedSignatureAlgorithms[0]
-    if (!alg) throw new DifPresentationExchangeError(`No supported algs for key type: ${key.keyType}`)
-    return alg
+    return publicJwk.signatureAlgorithm
   }
 
   private getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
@@ -420,11 +421,11 @@ export class DifPresentationExchangeService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
-        `Couldn't find a supported signature suite for the given key type '${key.keyType}'`
+        `Couldn't find a supported signature suite for the given jwk ${getJwkHumanDescription(publicJwk.toJson())}`
       )
     }
 
@@ -438,7 +439,7 @@ export class DifPresentationExchangeService {
           [
             'No possible signature suite found for the given verification method.',
             `Verification method type: ${verificationMethod.type}`,
-            `Key type: ${key.keyType}`,
+            `jwk type: ${getJwkHumanDescription(publicJwk.toJson())}`,
             `SupportedSignatureSuites: '${supportedSignatureSuites.map((s) => s.proofType).join(', ')}'`,
             `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
           ].join('\n')

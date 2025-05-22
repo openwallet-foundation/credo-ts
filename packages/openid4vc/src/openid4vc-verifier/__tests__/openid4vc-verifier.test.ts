@@ -1,7 +1,5 @@
 import { Jwt } from '@credo-ts/core'
-
-import { AskarModule } from '../../../../askar/src'
-import { askarModuleConfig } from '../../../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { type AgentType, createAgentFromModules } from '../../../tests/utils'
 import { universityDegreePresentationDefinition } from '../../../tests/utilsVp'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
@@ -10,7 +8,7 @@ const modules = {
   openId4VcVerifier: new OpenId4VcVerifierModule({
     baseUrl: 'http://redirect-uri',
   }),
-  askar: new AskarModule(askarModuleConfig),
+  inMemory: new InMemoryWalletModule(),
 }
 
 describe('OpenId4VcVerifier', () => {
@@ -22,7 +20,6 @@ describe('OpenId4VcVerifier', () => {
 
   afterEach(async () => {
     await verifier.agent.shutdown()
-    await verifier.agent.wallet.delete()
   })
 
   describe('Verification', () => {

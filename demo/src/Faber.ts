@@ -3,10 +3,11 @@ import type { ConnectionRecord, ConnectionStateChangedEvent } from '@credo-ts/di
 import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
-import { KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
 import { ConnectionEventTypes } from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
 
+import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
 import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 
@@ -39,15 +40,28 @@ export class Faber extends BaseAgent {
     const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
     const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
     const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
+    const didDocumentRelativeKeyId = registry === RegistryOptions.indy ? '#verkey' : '#key-1'
 
     const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+      privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+    })
+
+    const { keyId } = await this.agent.kms.importKey({
+      privateJwk,
+    })
+
     await this.agent.dids.import({
       did,
       overwrite: true,
-      privateKeys: [
+      keys: [
         {
-          keyType: KeyType.Ed25519,
-          privateKey: TypedArrayEncoder.fromString('afjdemoverysercure00000000000000'),
+          didDocumentRelativeKeyId,
+          kmsKeyId: keyId,
         },
       ],
     })
@@ -74,7 +88,9 @@ export class Faber extends BaseAgent {
 
     console.log(
       Output.ConnectionLink,
-      outOfBand.outOfBandInvitation.toUrl({ domain: `http://localhost:${this.port}` }),
+      outOfBand.outOfBandInvitation.toUrl({
+        domain: `http://localhost:${this.port}`,
+      }),
       '\n'
     )
   }

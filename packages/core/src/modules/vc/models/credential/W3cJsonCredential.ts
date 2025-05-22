@@ -1,5 +1,4 @@
-import type { JsonObject } from '../../../../types'
-import type { SingleOrArray } from '../../../../utils'
+import type { JsonObject, SingleOrArray } from '../../../../types'
 
 export interface W3cJsonCredential {
   '@context': Array<string | JsonObject>

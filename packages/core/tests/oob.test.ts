@@ -26,17 +26,16 @@ import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRol
 import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { Agent } from '../src/agent/Agent'
-import { Key } from '../src/crypto'
-import { JsonEncoder, JsonTransformer } from '../src/utils'
+import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
-import { getInMemoryAgentOptions, waitForCredentialRecord } from './helpers'
+import { getAgentOptions, waitForCredentialRecord } from './helpers'
 import testLogger from './logger'
 
-import { CredoError } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 
 const faberAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Faber Agent OOB',
     {
       endpoints: ['rxjs:faber'],
@@ -44,11 +43,12 @@ const faberAgent = new Agent(
     {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    })
+    }),
+    { requireDidcomm: true }
   )
 )
 const aliceAgent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Alice Agent OOB',
     {
       endpoints: ['rxjs:alice'],
@@ -58,7 +58,8 @@ const aliceAgent = new Agent(
     },
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    })
+    }),
+    { requireDidcomm: true }
   )
 )
 
@@ -137,9 +138,7 @@ describe('out of band', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   afterEach(async () => {
@@ -375,12 +374,22 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation with multiple endpoints uses first endpoint for invitation', async () => {
+      const routingKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      routingKey.keyId = routingKey.legacyKeyId
+
+      const recipientKey = Kms.PublicJwk.fromFingerprint(
+        'z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      recipientKey.keyId = recipientKey.legacyKeyId
+
       const { invitation } = await faberAgent.modules.oob.createLegacyInvitation({
         ...makeConnectionConfig,
         routing: {
           endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
-          routingKeys: [Key.fromFingerprint('z6MkiP5ghmdLFh1GyGRQQQLVJhJtjQjTpxUY3AnY3h5gu3BE')],
-          recipientKey: Key.fromFingerprint('z6MkuXrzmDjBoy7r9LA1Czjv9eQXMGr9gt6JBH8zPUMKkCQH'),
+          routingKeys: [routingKey],
+          recipientKey,
         },
       })
 
@@ -955,9 +964,9 @@ describe('out of band', () => {
       const faberCredentialRequest = await faberAgent.modules.credentials.findRequestMessage(faberCredentialRecord.id)
 
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
         serviceEndpoint: routing.endpoints[0],
-        routingKeys: routing.routingKeys.map((r) => r.publicKeyBase58),
+        routingKeys: routing.routingKeys.map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
       })
     })
 
@@ -1029,9 +1038,9 @@ describe('out of band', () => {
       const faberCredentialRequest = await faberAgent.modules.credentials.findRequestMessage(faberCredentialRecord.id)
 
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
-        recipientKeys: [routing.recipientKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
         serviceEndpoint: routing.endpoints[0],
-        routingKeys: routing.routingKeys.map((r) => r.publicKeyBase58),
+        routingKeys: routing.routingKeys.map((r) => TypedArrayEncoder.toBase58(r.publicKey.publicKey)),
       })
     })
 

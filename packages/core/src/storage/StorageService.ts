@@ -29,6 +29,7 @@ export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | Simp
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
   type: string
+  allowCache: boolean
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>

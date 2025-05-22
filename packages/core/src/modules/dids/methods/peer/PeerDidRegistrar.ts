@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../../../agent'
-import type { Key, KeyType } from '../../../../crypto'
-import type { Buffer } from '../../../../utils'
+
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
@@ -9,8 +8,11 @@ import { DidDocument } from '../../domain'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
+import { XOR } from '../../../../types'
+import { KeyManagementApi, KmsCreateKeyOptions, KmsCreateKeyTypeAssymetric, PublicJwk } from '../../../kms'
+import { DidDocumentKey } from '../../DidsApiOptions'
 import { PeerDidNumAlgo, getAlternativeDidsForPeerDid } from './didPeer'
-import { keyToNumAlgo0DidDocument } from './peerDidNumAlgo0'
+import { publicJwkToNumAlgo0DidDocument } from './peerDidNumAlgo0'
 import { didDocumentJsonToNumAlgo1Did } from './peerDidNumAlgo1'
 import { didDocumentToNumAlgo2Did } from './peerDidNumAlgo2'
 import { didDocumentToNumAlgo4Did } from './peerDidNumAlgo4'
@@ -26,65 +28,80 @@ export class PeerDidRegistrar implements DidRegistrar {
       | PeerDidNumAlgo2CreateOptions
       | PeerDidNumAlgo4CreateOptions
   ): Promise<DidCreateResult> {
+    const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
 
     let did: string
     let didDocument: DidDocument
 
+    let keys: DidDocumentKey[]
+
     try {
       if (isPeerDidNumAlgo0CreateOptions(options)) {
-        const keyType = options.options.keyType
-        const seed = options.secret?.seed
-        const privateKey = options.secret?.privateKey
+        let publicJwk: PublicJwk
 
-        let key = options.options.key
-
-        if (key && (keyType || seed || privateKey)) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Key instance cannot be combined with key type, seed or private key',
+        if (options.options.createKey) {
+          const createKeyResult = await kms.createKey(options.options.createKey)
+          publicJwk = PublicJwk.fromPublicJwk(createKeyResult.publicJwk)
+          keys = [
+            {
+              didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+              kmsKeyId: createKeyResult.keyId,
             },
-          }
-        }
-
-        if (keyType) {
-          key = await agentContext.wallet.createKey({
-            keyType,
-            seed,
-            privateKey,
+          ]
+        } else {
+          const _publicJwk = await kms.getPublicKey({
+            keyId: options.options.keyId,
           })
-        }
 
-        if (!key) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Missing key type or key instance',
-            },
+          if (!_publicJwk) {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `notFound: key with key id '${options.options.keyId}' not found`,
+              },
+            }
           }
+
+          if (_publicJwk.kty === 'oct') {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `notFound: key with key id '${options.options.keyId}' uses unsupported kty 'oct' for did:key`,
+              },
+            }
+          }
+
+          publicJwk = PublicJwk.fromPublicJwk(_publicJwk)
+          keys = [
+            {
+              didDocumentRelativeKeyId: `#${publicJwk.fingerprint}`,
+              kmsKeyId: options.options.keyId,
+            },
+          ]
         }
 
-        // TODO: validate did:peer document
-
-        didDocument = keyToNumAlgo0DidDocument(key)
+        didDocument = publicJwkToNumAlgo0DidDocument(publicJwk)
         did = didDocument.id
       } else if (isPeerDidNumAlgo1CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
         did = didDocumentJsonToNumAlgo1Did(didDocumentJson)
+        keys = options.options.keys
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo2CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
         did = didDocumentToNumAlgo2Did(options.didDocument)
+        keys = options.options.keys
 
         didDocument = JsonTransformer.fromJSON({ ...didDocumentJson, id: did }, DidDocument)
       } else if (isPeerDidNumAlgo4CreateOptions(options)) {
         const didDocumentJson = options.didDocument.toJSON()
+        keys = options.options.keys
 
         const { longFormDid, shortFormDid } = didDocumentToNumAlgo4Did(options.didDocument)
 
@@ -104,11 +121,23 @@ export class PeerDidRegistrar implements DidRegistrar {
         }
       }
 
+      if (!keys || keys.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: `Missing required 'keys' linking did document verification method id to the kms key id. Provide at least one key in the create options`,
+          },
+        }
+      }
+
       // Save the did so we know we created it and can use it for didcomm
       const didRecord = new DidRecord({
         did,
         role: DidDocumentRole.Created,
         didDocument: isPeerDidNumAlgo1CreateOptions(options) ? didDocument : undefined,
+        keys,
         tags: {
           // We need to save the recipientKeys, so we can find the associated did
           // of a key when we receive a message from another connection.
@@ -125,15 +154,6 @@ export class PeerDidRegistrar implements DidRegistrar {
           state: 'finished',
           did: didDocument.id,
           didDocument,
-          secret: {
-            // FIXME: the uni-registrar creates the seed in the registrar method
-            // if it doesn't exist so the seed can always be returned. Currently
-            // we can only return it if the seed was passed in by the user. Once
-            // we have a secure method for generating seeds we should use the same
-            // approach
-            seed: options.secret?.seed,
-            privateKey: options.secret?.privateKey,
-          },
         },
       }
     } catch (error) {
@@ -142,7 +162,7 @@ export class PeerDidRegistrar implements DidRegistrar {
         didRegistrationMetadata: {},
         didState: {
           state: 'failed',
-          reason: `unknown error: ${error.message}`,
+          reason: `unknownError: ${error.message}`,
         },
       }
     }
@@ -198,14 +218,9 @@ export interface PeerDidNumAlgo0CreateOptions extends DidCreateOptions {
   did?: never
   didDocument?: never
   options: {
-    keyType?: KeyType
-    key?: Key
     numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc
-  }
-  secret?: {
-    seed?: Buffer
-    privateKey?: Buffer
-  }
+  } & XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAssymetric> }, { keyId: string }>
+  secret?: never
 }
 
 export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
@@ -214,8 +229,16 @@ export interface PeerDidNumAlgo1CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.GenesisDoc
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
-  secret?: undefined
+  secret?: never
 }
 
 export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
@@ -224,8 +247,16 @@ export interface PeerDidNumAlgo2CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.MultipleInceptionKeyWithoutDoc
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
-  secret?: undefined
+  secret?: never
 }
 
 export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
@@ -234,8 +265,16 @@ export interface PeerDidNumAlgo4CreateOptions extends DidCreateOptions {
   didDocument: DidDocument
   options: {
     numAlgo: PeerDidNumAlgo.ShortFormAndLongForm
+
+    /**
+     * The linking between the did document keys and the kms keys. If you want to use
+     * the DID within Credo you MUST add the key here. All keys must be present in the did
+     * document, but not all did document keys must be present in this array, to allow for keys
+     * that are not controleld by this agent.
+     */
+    keys: DidDocumentKey[]
   }
-  secret?: undefined
+  secret?: never
 }
 
 // Update and Deactivate not supported for did:peer

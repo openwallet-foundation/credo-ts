@@ -1,4 +1,4 @@
-import type { SingleOrArray } from './type'
+import type { SingleOrArray } from '../types'
 
 export const asArray = <T>(val?: SingleOrArray<T>): Array<T> => {
   if (!val) return []

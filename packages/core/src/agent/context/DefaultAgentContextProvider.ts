@@ -50,6 +50,17 @@ export class DefaultAgentContextProvider implements AgentContextProvider {
       )
     }
 
-    // We won't dispose the agent context as we don't keep track of the total number of sessions for the root agent context.65
+    // We won't dispose the agent context as we don't keep track of the total number of sessions for the root agent context.
+  }
+
+  public async deleteAgentContext(agentContext: AgentContext): Promise<void> {
+    // Throw an error if the context correlation id does not match to prevent misuse.
+    if (agentContext.contextCorrelationId !== this.agentContext.contextCorrelationId) {
+      throw new CredoError(
+        `Could not delete agent context with contextCorrelationId '${agentContext.contextCorrelationId}'. Only contextCorrelationId '${this.agentContext.contextCorrelationId}' is provided by this provider.`
+      )
+    }
+
+    await agentContext.dependencyManager.deleteAgentContext(agentContext)
   }
 }

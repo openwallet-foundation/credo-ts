@@ -2,7 +2,7 @@ import type { ConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
 
 import { waitForQuestionAnswerRecord } from './helpers'
 
@@ -12,22 +12,24 @@ const modules = {
   questionAnswer: new QuestionAnswerModule(),
 }
 
-const bobAgentOptions = getInMemoryAgentOptions(
+const bobAgentOptions = getAgentOptions(
   'Bob Question Answer',
   {
     endpoints: ['rxjs:bob'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
-const aliceAgentOptions = getInMemoryAgentOptions(
+const aliceAgentOptions = getAgentOptions(
   'Alice Question Answer',
   {
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Question Answer', () => {
@@ -47,9 +49,7 @@ describe('Question Answer', () => {
 
   afterEach(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice sends a question and Bob answers', async () => {

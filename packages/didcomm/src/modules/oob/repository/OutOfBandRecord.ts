@@ -9,6 +9,11 @@ import { Type } from 'class-transformer'
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
 import { OutOfBandInvitation } from '../messages'
 
+export interface OutOfBandInlineServiceKey {
+  recipientKeyFingerprint: string
+  kmsKeyId: string
+}
+
 type DefaultOutOfBandRecordTags = {
   role: OutOfBandRole
   state: OutOfBandState
@@ -22,7 +27,19 @@ type DefaultOutOfBandRecordTags = {
 }
 
 interface CustomOutOfBandRecordTags extends TagsBase {
+  /**
+   * The fingerprints of the recipient keys from the out of band invitation.
+   * When we created the invitation this will be our keys, when we received this
+   * invitation it will be the other parties' keys.
+   */
   recipientKeyFingerprints: string[]
+
+  /**
+   * The fingerprint from the {@link OutOfBandRecordMetadataKeys.RecipientRouting} recipient key.
+   *
+   * This will always be a key from our recipient
+   */
+  recipientRoutingKeyFingerprint?: string
 }
 
 export interface OutOfBandRecordProps {
@@ -39,6 +56,11 @@ export interface OutOfBandRecordProps {
   mediatorId?: string
   reuseConnectionId?: string
   threadId?: string
+
+  /**
+   * The keys associated with the inline services of the out of band invitation
+   */
+  invitationInlineServiceKeys?: OutOfBandInlineServiceKey[]
 }
 
 export class OutOfBandRecord extends BaseRecord<
@@ -55,6 +77,11 @@ export class OutOfBandRecord extends BaseRecord<
   public autoAcceptConnection?: boolean
   public mediatorId?: string
   public reuseConnectionId?: string
+
+  /**
+   * The keys associated with the inline services of the out of band invitation
+   */
+  invitationInlineServiceKeys?: Array<OutOfBandInlineServiceKey>
 
   public static readonly type = 'OutOfBandRecord'
   public readonly type = OutOfBandRecord.type
@@ -73,6 +100,7 @@ export class OutOfBandRecord extends BaseRecord<
       this.reusable = props.reusable ?? false
       this.mediatorId = props.mediatorId
       this.reuseConnectionId = props.reuseConnectionId
+      this.invitationInlineServiceKeys = props.invitationInlineServiceKeys
       this._tags = props.tags ?? { recipientKeyFingerprints: [] }
     }
   }

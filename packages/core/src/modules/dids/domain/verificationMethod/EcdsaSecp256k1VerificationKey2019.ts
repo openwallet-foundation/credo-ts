@@ -1,6 +1,6 @@
-import { KeyType } from '../../../../crypto'
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import { TypedArrayEncoder } from '../../../../utils'
+import { PublicJwk, Secp256k1PublicJwk } from '../../../kms'
 
 import { VerificationMethod } from './VerificationMethod'
 
@@ -14,19 +14,19 @@ type EcdsaSecp256k1VerificationKey2019 = VerificationMethod & {
  * Get a EcdsaSecp256k1VerificationKey2019 verification method.
  */
 export function getEcdsaSecp256k1VerificationKey2019({
-  key,
+  publicJwk,
   id,
   controller,
 }: {
   id: string
-  key: Key
+  publicJwk: PublicJwk<Secp256k1PublicJwk>
   controller: string
 }) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_ECDSA_SECP256K1_VERIFICATION_KEY_2019,
     controller,
-    publicKeyBase58: key.publicKeyBase58,
+    publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
   })
 }
 
@@ -40,12 +40,18 @@ export function isEcdsaSecp256k1VerificationKey2019(
 }
 
 /**
- * Get a key from a EcdsaSecp256k1VerificationKey2019 verification method.
+ * Get a public jwk from a EcdsaSecp256k1VerificationKey2019 verification method.
  */
-export function getKeyFromEcdsaSecp256k1VerificationKey2019(verificationMethod: EcdsaSecp256k1VerificationKey2019) {
+export function getPublicJwkFromEcdsaSecp256k1VerificationKey2019(
+  verificationMethod: EcdsaSecp256k1VerificationKey2019
+) {
   if (!verificationMethod.publicKeyBase58) {
     throw new CredoError('verification method is missing publicKeyBase58')
   }
 
-  return Key.fromPublicKeyBase58(verificationMethod.publicKeyBase58, KeyType.K256)
+  return PublicJwk.fromPublicKey({
+    kty: 'EC',
+    crv: 'secp256k1',
+    publicKey: TypedArrayEncoder.fromBase58(verificationMethod.publicKeyBase58),
+  })
 }

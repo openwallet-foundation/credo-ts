@@ -40,7 +40,15 @@ export class MediationRecord
   public connectionId!: string
   public threadId!: string
   public endpoint?: string
+
+  /**
+   * Base58 encoded recipient keys
+   */
   public recipientKeys!: string[]
+
+  /**
+   * Base58 encoded routing keys
+   */
   public routingKeys!: string[]
 
   @Transform(({ value }) => {
@@ -53,6 +61,9 @@ export class MediationRecord
 
   public static readonly type = 'MediationRecord'
   public readonly type = MediationRecord.type
+
+  public static readonly allowCache = true
+  public readonly allowCache = true
 
   public constructor(props: MediationRecordProps) {
     super()

@@ -5,7 +5,7 @@ import { filter, first, map, timeout } from 'rxjs/operators'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getInMemoryAgentOptions } from '../../../../../core/tests/helpers'
+import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { DidExchangeState } from '../models'
@@ -44,7 +44,7 @@ describe('Manual Connection Flow', () => {
   // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
   // This was only present in the manual flow, which is almost never used.
   it('can connect multiple times using the same reusable invitation without manually using the connections api', async () => {
-    const aliceAgentOptions = getInMemoryAgentOptions(
+    const aliceAgentOptions = getAgentOptions(
       'Manual Connection Flow Alice',
       {
         endpoints: ['rxjs:alice'],
@@ -56,9 +56,10 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
-    const bobAgentOptions = getInMemoryAgentOptions(
+    const bobAgentOptions = getAgentOptions(
       'Manual Connection Flow Bob',
       {
         endpoints: ['rxjs:bob'],
@@ -70,9 +71,10 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
-    const faberAgentOptions = getInMemoryAgentOptions(
+    const faberAgentOptions = getAgentOptions(
       'Manual Connection Flow Faber',
       {
         endpoints: ['rxjs:faber'],
@@ -82,7 +84,8 @@ describe('Manual Connection Flow', () => {
         connections: new ConnectionsModule({
           autoAcceptConnections: false,
         }),
-      }
+      },
+      { requireDidcomm: true }
     )
 
     const aliceAgent = new Agent(aliceAgentOptions)
@@ -145,11 +148,8 @@ describe('Manual Connection Flow', () => {
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)
 
-    await aliceAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await bobAgent.wallet.delete()
     await bobAgent.shutdown()
-    await faberAgent.wallet.delete()
     await faberAgent.shutdown()
   })
 })

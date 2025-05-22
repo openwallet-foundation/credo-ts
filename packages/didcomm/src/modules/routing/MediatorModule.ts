@@ -42,6 +42,11 @@ export class MediatorModule implements Module {
         roles: [MediationRole.Mediator],
       })
     )
+  }
+
+  public async onInitializeContext(agentContext: AgentContext): Promise<void> {
+    // Mediator initialization only supported for root agent
+    if (!agentContext.isRootAgentContext) return
 
     const mediatorService = agentContext.dependencyManager.resolve(MediatorService)
     agentContext.config.logger.debug('Mediator routing record not loaded yet, retrieving from storage')
