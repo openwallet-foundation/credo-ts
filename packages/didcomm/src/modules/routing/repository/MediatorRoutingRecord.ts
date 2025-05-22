@@ -36,6 +36,9 @@ export class MediatorRoutingRecord extends BaseRecord<DefaultMediatorRoutingReco
   public static readonly type = 'MediatorRoutingRecord'
   public readonly type = MediatorRoutingRecord.type
 
+  public static readonly allowCache = true
+  public readonly allowCache = true
+
   public constructor(props: MediatorRoutingRecordProps) {
     super()
 

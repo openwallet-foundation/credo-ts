@@ -2,7 +2,7 @@ import type { ApiModule, DependencyManager, Module } from '../plugins'
 import type { IsAny } from '../types'
 import type { Constructor } from '../utils/mixins'
 
-import { CacheModule } from '../modules/cache'
+import { CacheModule, SingleContextStorageLruCache } from '../modules/cache'
 import { DcqlModule } from '../modules/dcql/DcqlModule'
 import { DidsModule } from '../modules/dids'
 import { DifPresentationExchangeModule } from '../modules/dif-presentation-exchange'
@@ -107,7 +107,7 @@ function getDefaultAgentModules() {
     genericRecords: () => new GenericRecordsModule(),
     dids: () => new DidsModule(),
     w3cCredentials: () => new W3cCredentialsModule(),
-    cache: () => new CacheModule(),
+    cache: () => new CacheModule({ cache: new SingleContextStorageLruCache({ limit: 500 }) }),
     pex: () => new DifPresentationExchangeModule(),
     sdJwtVc: () => new SdJwtVcModule(),
     x509: () => new X509Module(),
