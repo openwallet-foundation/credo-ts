@@ -6,7 +6,7 @@
       "createdAt": "2022-04-30T13:02:21.577Z",
       "did": "XajWZZmHGAWUvYCi7CApaG",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "XajWZZmHGAWUvYCi7CApaG#1",
@@ -36,7 +36,7 @@
       "verkey": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
       "theirDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "theirDidDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "3KAjJWF5NjiDTUm6JpPBQD#1",
@@ -98,7 +98,7 @@
       "createdAt": "2022-04-30T13:02:21.608Z",
       "did": "SDqTzbVuCowusqGBNbNDjH",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "SDqTzbVuCowusqGBNbNDjH#1",
@@ -128,7 +128,7 @@
       "verkey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
       "theirDid": "YUH4t3KMkEJiXgmqsncrY9",
       "theirDidDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "YUH4t3KMkEJiXgmqsncrY9#1",
@@ -187,15 +187,15 @@
       "metadata": {},
       "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
       "createdAt": "2022-04-30T13:02:21.628Z",
-      "did": "RtH4qxVPL1Dpmdv7GytjBv",
+      "did": "3KAjJWF5NjiDTUm6JpPBQD",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "RtH4qxVPL1Dpmdv7GytjBv#1",
-            "controller": "RtH4qxVPL1Dpmdv7GytjBv",
+            "controller": "3KAjJWF5NjiDTUm6JpPBQD",
             "type": "Ed25519VerificationKey2018",
-            "publicKeyBase58": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"
+            "publicKeyBase58": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"
           }
         ],
         "service": [
@@ -204,7 +204,7 @@
             "serviceEndpoint": "rxjs:alice",
             "type": "IndyAgent",
             "priority": 0,
-            "recipientKeys": ["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],
+            "recipientKeys": ["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],
             "routingKeys": []
           }
         ],
@@ -214,12 +214,12 @@
             "type": "Ed25519SignatureAuthentication2018"
           }
         ],
-        "id": "RtH4qxVPL1Dpmdv7GytjBv"
+        "id": "3KAjJWF5NjiDTUm6JpPBQD"
       },
-      "verkey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "verkey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "theirDid": "Ak15GBhMYpdS8XX3QDMv31",
       "theirDidDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "Ak15GBhMYpdS8XX3QDMv31#1",
@@ -254,7 +254,7 @@
         "@type": "https://didcomm.org/connections/1.0/invitation",
         "@id": "21ef606f-b25b-48c6-bafa-e79193732413",
         "label": "Agent: PopulateWallet",
-        "recipientKeys": ["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],
+        "recipientKeys": ["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],
         "serviceEndpoint": "rxjs:alice",
         "routingKeys": []
       },
@@ -266,11 +266,11 @@
     "tags": {
       "state": "requested",
       "role": "inviter",
-      "invitationKey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
-      "verkey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "verkey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "theirKey": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
-      "did": "RtH4qxVPL1Dpmdv7GytjBv",
+      "did": "3KAjJWF5NjiDTUm6JpPBQD",
       "theirDid": "Ak15GBhMYpdS8XX3QDMv31"
     }
   },
@@ -281,7 +281,7 @@
       "createdAt": "2022-04-30T13:02:21.635Z",
       "did": "WewvCdyBi4HL8ogyGviYVS",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "WewvCdyBi4HL8ogyGviYVS#1",
@@ -339,7 +339,7 @@
       "createdAt": "2022-04-30T13:02:21.641Z",
       "did": "TMnQftvJJJwoYogYkQgVjg",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "TMnQftvJJJwoYogYkQgVjg#1",
@@ -369,7 +369,7 @@
       "verkey": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
       "theirDid": "9jTqUnV4k5ucxbyxumAaV7",
       "theirDidDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "9jTqUnV4k5ucxbyxumAaV7#1",
@@ -431,7 +431,7 @@
       "createdAt": "2022-04-30T13:02:21.646Z",
       "did": "GkEeb96MGT94K1HyQQzpj1",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "GkEeb96MGT94K1HyQQzpj1#1",
@@ -461,7 +461,7 @@
       "verkey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
       "theirDid": "YKc7qhYN1TckZAMUf7jgwc",
       "theirDidDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "YKc7qhYN1TckZAMUf7jgwc#1",
@@ -523,7 +523,7 @@
       "createdAt": "2022-04-20T13:02:21.646Z",
       "did": "WSwJQMBHGZbQsq9LDBTWjX",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "WSwJQMBHGZbQsq9LDBTWjX#1",
@@ -581,7 +581,7 @@
       "createdAt": "2022-04-30T13:02:21.653Z",
       "did": "Ud6AWCk6WrwfYKZUw5tJmt",
       "didDoc": {
-        "@context": "https://w3id.org/did/v1",
+        "@context": "https://www.w3.org/ns/did/v1",
         "publicKey": [
           {
             "id": "Ud6AWCk6WrwfYKZUw5tJmt#1",

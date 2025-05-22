@@ -54,7 +54,7 @@ describe('DidRegistrar', () => {
           state: 'finished',
           did: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
           didDocument: {
-            '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+            '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
             id: 'did:jwk:eyJrdHkiOiJFQyIsImNydiI6IlAtMjU2IiwieCI6InRlQTNYV1pQTXUyYVRtelB1aVM1eVRkeUhUY3JGNWJJUG4yTlNYS0gwLVEiLCJ5IjoiX3QybE01dGNGOFV2dDZ0QlFZRTVlOHVweGtlbGtEZ3QtWFc0aXhyQUlKayJ9',
             verificationMethod: [
               {

@@ -437,9 +437,6 @@ export class CheqdDidRegistrar implements DidRegistrar {
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
-
-      // Save the did so we know we created it and can issue with it
-        
       // Normalize existing context to an array
       const contextSet = new Set<string>()
 
@@ -452,6 +449,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
       // Add Cheqd default context to the did document
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
+      // Save the did so we know we created it and can issue with it
       didRecord.didDocument = didDocument
       await didRepository.update(agentContext, didRecord)
 
@@ -534,7 +532,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didState: {
           state: 'finished',
           did: didDocument.id,
-          didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
+          didDocument: JsonTransformer.fromJSON(didRecord.didDocument, DidDocument),
           secret: options.secret,
         },
       }

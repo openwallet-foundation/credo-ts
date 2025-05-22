@@ -39,7 +39,7 @@ interface DidDocumentOptions {
 export class DidDocument {
   @Expose({ name: '@context' })
   @IsStringOrStringArray()
-  public context: string | string[] = ['https://w3id.org/did/v1']
+  public context: string | string[] = ['https://www.w3.org/ns/did/v1']
 
   @IsString()
   public id!: string
