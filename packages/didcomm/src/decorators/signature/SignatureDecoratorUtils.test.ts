@@ -21,7 +21,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   const data = {
     did: 'did',
     did_doc: {
-      '@context': 'https://w3id.org/did/v1',
+      '@context': 'https://www.w3.org/ns/did/v1',
       service: [
         {
           id: 'did:example:123456789abcdefghi#did-communication',
@@ -37,9 +37,9 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   const signedData = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',
-    signature: 'zOSmKNCHKqOJGDJ6OlfUXTPJiirEAXrFn1kPiFDZfvG5hNTBKhsSzqAvlg44apgWBu7O57vGWZsXBF2BWZ5JAw',
+    signature: 'TeVQ7m4v7y4Gg80JZWN50H9GjWc3XFDQJ3QpoY2kuAK1ZzX9a_7Tls-X-GI9-JLCysPKzB5EnzAy3EIPi082BA',
     signatureData:
-      'AAAAAAAAAAB7ImRpZCI6ImRpZCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsInNlcnZpY2UiOlt7ImlkIjoiZGlkOmV4YW1wbGU6MTIzNDU2Nzg5YWJjZGVmZ2hpI2RpZC1jb21tdW5pY2F0aW9uIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsic29tZVZlcmtleSJdLCJyb3V0aW5nS2V5cyI6W10sInNlcnZpY2VFbmRwb2ludCI6Imh0dHBzOi8vYWdlbnQuZXhhbXBsZS5jb20vIn1dfX0',
+      'AAAAAAAAAAB7ImRpZCI6ImRpZCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxIiwic2VydmljZSI6W3siaWQiOiJkaWQ6ZXhhbXBsZToxMjM0NTY3ODlhYmNkZWZnaGkjZGlkLWNvbW11bmljYXRpb24iLCJ0eXBlIjoiZGlkLWNvbW11bmljYXRpb24iLCJwcmlvcml0eSI6MCwicmVjaXBpZW50S2V5cyI6WyJzb21lVmVya2V5Il0sInJvdXRpbmdLZXlzIjpbXSwic2VydmljZUVuZHBvaW50IjoiaHR0cHM6Ly9hZ2VudC5leGFtcGxlLmNvbS8ifV19fQ',
     signer: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
   })
 

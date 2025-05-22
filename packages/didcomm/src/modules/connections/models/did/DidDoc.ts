@@ -2,7 +2,7 @@ import type { DidDocumentService } from '@credo-ts/core'
 import type { Authentication } from './authentication'
 import type { PublicKey } from './publicKey'
 
-import { DidCommV1Service, IndyAgentService, ServiceTransformer } from '@credo-ts/core'
+import { DID_V1_CONTEXT_URL, DidCommV1Service, IndyAgentService, ServiceTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
 
@@ -13,8 +13,8 @@ type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authenticati
 
 export class DidDoc {
   @Expose({ name: '@context' })
-  @Equals('https://w3id.org/did/v1')
-  public context = 'https://w3id.org/did/v1'
+  @Equals('https://www.w3.org/ns/did/v1')
+  public context = DID_V1_CONTEXT_URL
 
   @IsString()
   public id!: string

@@ -158,9 +158,9 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'finished',
-            did: 'did:peer:1zQmUTNcSy2J2sAmX6Ad2bdPvhVnHPUaod8Skpt8DWPpZaiL',
+            did: 'did:peer:1zQmbvrBNuBynkbtTDT61wg346fFAZFbpLGshKihF2YkMsK3',
             didDocument: {
-              '@context': ['https://w3id.org/did/v1'],
+              '@context': ['https://www.w3.org/ns/did/v1'],
               alsoKnownAs: undefined,
               controller: undefined,
               verificationMethod: [
@@ -186,14 +186,14 @@ describe('DidRegistrar', () => {
               keyAgreement: undefined,
               capabilityInvocation: undefined,
               capabilityDelegation: undefined,
-              id: 'did:peer:1zQmUTNcSy2J2sAmX6Ad2bdPvhVnHPUaod8Skpt8DWPpZaiL',
+              id: 'did:peer:1zQmbvrBNuBynkbtTDT61wg346fFAZFbpLGshKihF2YkMsK3',
             },
           },
         })
       })
 
       it('should store the did with the did document', async () => {
-        const did = 'did:peer:1zQmUTNcSy2J2sAmX6Ad2bdPvhVnHPUaod8Skpt8DWPpZaiL'
+        const did = 'did:peer:1zQmbvrBNuBynkbtTDT61wg346fFAZFbpLGshKihF2YkMsK3'
 
         const { didState } = await peerDidRegistrar.create(agentContext, {
           method: 'peer',
@@ -270,7 +270,7 @@ describe('DidRegistrar', () => {
             state: 'finished',
             did: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiNrZXktMSJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
             didDocument: {
-              '@context': ['https://w3id.org/did/v1'],
+              '@context': ['https://www.w3.org/ns/did/v1'],
               id: 'did:peer:2.Vz6MkkjPVCX7M8D6jJSCQNzYb4T6giuSN8Fm463gWNZ65DMSc.SeyJzIjoiaHR0cHM6Ly9leGFtcGxlLmNvbSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbIiNrZXktMSJdLCJhIjpbImRpZGNvbW0vYWlwMjtlbnY9cmZjMTkiXX0',
               service: [
                 {
@@ -370,8 +370,8 @@ describe('DidRegistrar', () => {
         })
 
         const longFormDid =
-          'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e'
-        const shortFormDid = 'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4'
+          'did:peer:4zQmZJVsg5xdo5gVX3HCEvwp29MxrCMvnBnPM2TTYqXjLseo:z72PjTR6nroWmhFJuXs5WUQ8NxVGvXQSLQKxsztQRxqcbNMndPt2GXVKX3fjbRX9h9qfjZWUBvvnmceMz1hyvdfdBnADMJQNeCcdivUypvyiFWkgq8DCTkjcQkjZqc7dubX5E8cd2npbrXbfmkw9sRPGi7vFxfdLCKiskUW2mpksEXwXvxZ8VFd56ZPqfStaajERmqiSU9vSxWfXC8SrwbcaHWm9KAWE5yYHKvUCtNqDB7VxNw5ApwkqpLajn58UANRHgCz2yf5bTvfRCWuUtdFe3n8aroc6chpMtS6j3RwxsL12kSjnWm24vEdsqq3KbGVanLeEFQ1HjKBFxwRsJrxGfT7wVPUbKu7hWemuf6cz2tZ5kPhAHVxWjahHNTATZXKzM8oDEn3PYC34pjkgZP6BeLeeAyK1hzcjCghaN6bdpTbYhSUqWKi6oaccX11gS6JLAt1ryUzG3sCeurVTUVrf1GntJpGkiPWRQhU66MpT4K7L7kZgrmcF8eL95pSbtZqhkQCyrsurKaVmNfwrCfNRr9JzxnXprbmjs4tikDVfSBk4TkDKcXck1YkZ6CjA8S1yHWKo7pGGfw3425SGAfXXLrYA29tAaQyxDKGjsFWorwKMUGdRA8psZgnFptcrwi1moAdn7cTExBFPr9PSk'
+        const shortFormDid = 'did:peer:4zQmZJVsg5xdo5gVX3HCEvwp29MxrCMvnBnPM2TTYqXjLseo'
         expect(JsonTransformer.toJSON(result)).toMatchObject({
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
@@ -379,7 +379,7 @@ describe('DidRegistrar', () => {
             state: 'finished',
             did: longFormDid,
             didDocument: {
-              '@context': ['https://w3id.org/did/v1'],
+              '@context': ['https://www.w3.org/ns/did/v1'],
               id: longFormDid,
               alsoKnownAs: [shortFormDid],
               service: [
@@ -408,8 +408,8 @@ describe('DidRegistrar', () => {
 
       it('should store the did without the did document', async () => {
         const longFormDid =
-          'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4:zD6dcwCdYV2zR4EBGTpxfEaRDLEq3ncjbutZpYTrMcGqaWip2P8vT6LrSH4cCVWfTdZgpuzBV4qY3ZasBMAs8M12JWstLTQHRVtu5ongsGvHCaWdWGS5cQaK6KLABnpBB5KgjPAN391Eekn1Zm4e14atfuj6gKHGp6V41GEumQFGM3YDwijVH82prvah5CqhRx6gXh4CYXu8MJVKiY5HBFdWyNLBtzaPWasGSEdLXYx6FcDv21igJfpcVbwQHwbU43wszfPypKiL9GDyys2n5zAWek5nQFGmDwrF65Vqy74CMFt8fZcvfBc1PTXSexhEwZkUY5inmeBbLXjbJU33FpWK6GxyDANxq5opQeRtAzUCtqeWxdafK56LYUes1THq6DzEKN2VirvvqygtnfPSJUfQWcRYixXq6bGGk5bjt14YygT7mALy5Ne6APGysjnNfH1MA3hrfEM9Ho8tuGSA2JeDvqYebV41chQDfKWoJrsG2bdFwZGgnkb3aBPHd4qyPvEdWiFLawR4mNj8qrtTagX1CyWvcAiWMKbspo5mVvCqP1SJuuT451X4uRBXazC9JGD2k7P63p71HU25zff4LvYkLeU8izcdBva1Tu4RddJN7jMFg4ifkTeZscFfbLPejFTmEDNRFswK1e'
-        const shortFormDid = 'did:peer:4zQmUJdJN7h66RpdeNEkNQ1tpUpN9nr2LcDz4Ftd3xKSgmn4'
+          'did:peer:4zQmZJVsg5xdo5gVX3HCEvwp29MxrCMvnBnPM2TTYqXjLseo:z72PjTR6nroWmhFJuXs5WUQ8NxVGvXQSLQKxsztQRxqcbNMndPt2GXVKX3fjbRX9h9qfjZWUBvvnmceMz1hyvdfdBnADMJQNeCcdivUypvyiFWkgq8DCTkjcQkjZqc7dubX5E8cd2npbrXbfmkw9sRPGi7vFxfdLCKiskUW2mpksEXwXvxZ8VFd56ZPqfStaajERmqiSU9vSxWfXC8SrwbcaHWm9KAWE5yYHKvUCtNqDB7VxNw5ApwkqpLajn58UANRHgCz2yf5bTvfRCWuUtdFe3n8aroc6chpMtS6j3RwxsL12kSjnWm24vEdsqq3KbGVanLeEFQ1HjKBFxwRsJrxGfT7wVPUbKu7hWemuf6cz2tZ5kPhAHVxWjahHNTATZXKzM8oDEn3PYC34pjkgZP6BeLeeAyK1hzcjCghaN6bdpTbYhSUqWKi6oaccX11gS6JLAt1ryUzG3sCeurVTUVrf1GntJpGkiPWRQhU66MpT4K7L7kZgrmcF8eL95pSbtZqhkQCyrsurKaVmNfwrCfNRr9JzxnXprbmjs4tikDVfSBk4TkDKcXck1YkZ6CjA8S1yHWKo7pGGfw3425SGAfXXLrYA29tAaQyxDKGjsFWorwKMUGdRA8psZgnFptcrwi1moAdn7cTExBFPr9PSk'
+        const shortFormDid = 'did:peer:4zQmZJVsg5xdo5gVX3HCEvwp29MxrCMvnBnPM2TTYqXjLseo'
         await peerDidRegistrar.create(agentContext, {
           method: 'peer',
           didDocument,

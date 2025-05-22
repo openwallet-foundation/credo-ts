@@ -51,7 +51,7 @@ describe('dids', () => {
         did: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         didDocument: {
           '@context': [
-            'https://w3id.org/did/v1',
+            'https://www.w3.org/ns/did/v1',
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
@@ -122,7 +122,7 @@ describe('dids', () => {
         did: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         didDocument: {
           '@context': [
-            'https://w3id.org/did/v1',
+            'https://www.w3.org/ns/did/v1',
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],

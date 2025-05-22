@@ -4,8 +4,8 @@ import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
-import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
-import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { createCheqdSDK, DIDModule, ResourceModule, CheqdNetwork, FeemarketModule } from '@cheqd/sdk'
+import { CredoError, inject, injectable, InjectionSymbols, Logger } from '@credo-ts/core'
 
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
