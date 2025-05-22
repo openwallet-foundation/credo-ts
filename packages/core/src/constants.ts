@@ -1,5 +1,4 @@
 export const InjectionSymbols = {
-  TransportSessionRepository: Symbol('TransportSessionRepository'),
   MessagePickupRepository: Symbol('MessagePickupRepository'), // TODO: Move to DIDComm
   StorageService: Symbol('StorageService'),
   Logger: Symbol('Logger'),
