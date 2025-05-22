@@ -31,8 +31,8 @@ import { OutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
-import { InMemoryTransportSessionRepository } from '../transport'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { InMemoryTransportSessionRepository } from '../transport'
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')

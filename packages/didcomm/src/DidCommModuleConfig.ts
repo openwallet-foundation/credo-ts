@@ -1,5 +1,5 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import type { TransportSessionRepository } from './transport'
+import { InMemoryTransportSessionRepository, type TransportSessionRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -23,10 +23,12 @@ export interface DidCommModuleConfigOptions {
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
+  private _transportSessionRepository: TransportSessionRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
     this._endpoints = options?.endpoints
+    this._transportSessionRepository = options?.transportSessionRepository ?? new InMemoryTransportSessionRepository()
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -74,6 +76,6 @@ export class DidCommModuleConfig {
 
   /** See {@link DidCommModuleConfig.transportSessionRepository} */
   public get transportSessionRepository() {
-    return this.options.transportSessionRepository
+    return this._transportSessionRepository
   }
 }
