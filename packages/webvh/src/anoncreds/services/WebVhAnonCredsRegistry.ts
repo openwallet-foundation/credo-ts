@@ -1,18 +1,12 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { WebVhCredDefContent, WebVhRevRegDefContent } from '../utils/transform'
 import type {
   AnonCredsRegistry,
   GetCredentialDefinitionReturn,
   GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
   GetSchemaReturn,
-  RegisterSchemaOptions,
   RegisterSchemaReturn,
-  RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
@@ -25,9 +19,8 @@ import { WebvhDidResolver } from '../../dids'
 import { encodeMultihash } from '../utils/multihash'
 import { WebVhResource } from '../utils/transform'
 
-// Define a type for the resolution result to avoid using 'any' or repeating the structure
-// Adjust this based on the actual expected structure from WebvhDidResolver
-type DidResolutionResult = {
+// Define a type for the resource resolution result
+type DidResourceResolutionResult = {
   error?: string
   message?: string
   content?: Record<string, unknown> | unknown[] | string // More specific than any, but still flexible
@@ -56,9 +49,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     agentContext: AgentContext,
     resourceId: string,
     resourceTypeString: string
-  ): Promise<{ resourceObject: WebVhResource; resolutionResult: DidResolutionResult }> {
+  ): Promise<{ resourceObject: WebVhResource; resolutionResult: DidResourceResolutionResult }> {
     const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
-    // Basic validation
     if (!this.supportedIdentifier.test(resourceId))
       throw new CredoError(`Invalid ${resourceTypeString} ID: ${resourceId}`)
 
@@ -66,17 +58,14 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       `Attempting to resolve ${resourceTypeString} resource '${resourceId}' via did:webvh resolver`
     )
 
-    // Attempt to resolve the resource
     const resolutionResult = await webvhDidResolver.resolveResource(agentContext, resourceId)
 
-    // Check for resolution errors first
     if (resolutionResult.error || !resolutionResult.content) {
       throw new CredoError(
         `Resource ${resourceId} could not be resolved or is missing data. Error: ${resolutionResult.error} - ${resolutionResult.message}`
       )
     }
 
-    // Parse the resource data using JsonTransformer
     let resourceObject: WebVhResource
     try {
       agentContext.config.logger.trace(
@@ -305,7 +294,6 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       const revRegDefContent = resourceObject.content
 
-      // Type check for WebVhRevRegDefContent
       if (
         !('revocDefType' in revRegDefContent) ||
         !('credDefId' in revRegDefContent) ||
@@ -372,11 +360,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
-    timestamp: number // TODO: How should timestamp be handled with did:web? Query param? Fragment? Specific path?
+    timestamp: number // TODO: How should timestamp be handled?
   ): Promise<GetRevocationStatusListReturn> {
     try {
       const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
-      // Basic validation, might need refinement based on actual did:web anoncreds format
       if (!revocationRegistryId.startsWith('did:web:'))
         throw new CredoError(`Invalid revocationRegistryId: ${revocationRegistryId}`)
 
@@ -421,7 +408,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       return {
         resolutionMetadata: {
-          error: 'notFound', // Or determine error type more accurately
+          error: 'notFound',
           message: `unable to resolve revocation registry status list: ${error.message}`,
         },
         revocationStatusListMetadata: {},
@@ -429,35 +416,24 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  // Add register methods that throw 'Not Implemented'
-  public async registerSchema(
-    agentContext: AgentContext,
-    options: RegisterSchemaOptions
-  ): Promise<RegisterSchemaReturn> {
+  public async registerSchema(agentContext: AgentContext): Promise<RegisterSchemaReturn> {
     agentContext.config.logger.warn('registerSchema not implemented for WebVhAnonCredsRegistry')
     throw new CredoError('Method not implemented.')
   }
 
-  public async registerCredentialDefinition(
-    agentContext: AgentContext,
-    options: RegisterCredentialDefinitionOptions
-  ): Promise<RegisterCredentialDefinitionReturn> {
+  public async registerCredentialDefinition(agentContext: AgentContext): Promise<RegisterCredentialDefinitionReturn> {
     agentContext.config.logger.warn('registerCredentialDefinition not implemented for WebVhAnonCredsRegistry')
     throw new CredoError('Method not implemented.')
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext,
-    options: RegisterRevocationRegistryDefinitionOptions
+    agentContext: AgentContext
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     agentContext.config.logger.warn('registerRevocationRegistryDefinition not implemented for WebVhAnonCredsRegistry')
     throw new CredoError('Method not implemented.')
   }
 
-  public async registerRevocationStatusList(
-    agentContext: AgentContext,
-    options: RegisterRevocationStatusListOptions
-  ): Promise<RegisterRevocationStatusListReturn> {
+  public async registerRevocationStatusList(agentContext: AgentContext): Promise<RegisterRevocationStatusListReturn> {
     agentContext.config.logger.warn('registerRevocationStatusList not implemented for WebVhAnonCredsRegistry')
     throw new CredoError('Method not implemented.')
   }
