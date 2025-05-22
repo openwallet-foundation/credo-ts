@@ -10,24 +10,24 @@ jest.mock('didwebvh-ts', () => ({
   resolveDID: jest.fn().mockResolvedValue({
     doc: {
       '@context': ['https://www.w3.org/ns/did/v1'],
-      id: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr',
+      id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
       verificationMethod: [
         {
-          id: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr#key-1',
+          id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1',
           type: 'Ed25519VerificationKey2020',
-          controller: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr',
+          controller: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
           publicKeyMultibase: 'z6MkkBaWtQKyx7Mr54XaXyMAEpNKqphK4x7ztuBpSfR6Wqwr',
         },
       ],
-      authentication: ['did:webvh:example.com:z6MkkBaWtQKyx7Mr#key-1'],
+      authentication: ['did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example#key-1'],
     },
-    did: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr',
+    did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
   createDID: jest.fn().mockResolvedValue({
-    did: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr',
+    did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
   updateDID: jest.fn().mockResolvedValue({
-    did: 'did:webvh:example.com:z6MkkBaWtQKyx7Mr',
+    did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
   AbstractCrypto: jest.fn().mockImplementation(() => ({
     sign: jest.fn().mockResolvedValue({
@@ -70,6 +70,6 @@ describe('WebVH DID resolver', () => {
 
     expect(err).toBeUndefined()
     expect(res?.didDocument).toBeDefined()
-    expect(res?.didDocument?.id).toBe('did:webvh:example.com:z6MkkBaWtQKyx7Mr')
+    expect(res?.didDocument?.id).toBe('did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example')
   })
 })
