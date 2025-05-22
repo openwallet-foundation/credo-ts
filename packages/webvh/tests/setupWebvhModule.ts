@@ -1,13 +1,9 @@
 import { DidsModule } from '@credo-ts/core'
 
-import { WebvhModule, WebvhDidResolver, WebvhModuleConfig } from '../src'
+import { WebvhModule, WebvhDidResolver } from '../src'
 
-export const getWebvhModules = (baseUrl?: string) => ({
-  webvhSdk: new WebvhModule(
-    new WebvhModuleConfig({
-      baseUrl: baseUrl ?? 'https://didwebvh.info',
-    })
-  ),
+export const getWebvhModules = () => ({
+  webvhSdk: new WebvhModule(),
   dids: new DidsModule({
     resolvers: [new WebvhDidResolver()],
   }),
