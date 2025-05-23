@@ -5,7 +5,6 @@ import type { FeatureRegistry } from '../../../../FeatureRegistry'
 import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
 import type { InboundMessageContext } from '../../../../models'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
-import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -14,7 +13,7 @@ import type {
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
 
-import { CredoError, EventEmitter, InjectionSymbols, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
 import { AgentEventTypes } from '../../../../Events'
 import { OutboundMessageContext, Protocol } from '../../../../models'
@@ -22,6 +21,7 @@ import { MessagePickupEventTypes } from '../../MessagePickupEvents'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
 
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { V1BatchHandler, V1BatchPickupHandler } from './handlers'
 import { BatchMessageMessage, V1BatchMessage, V1BatchPickupMessage } from './messages'
 
@@ -68,13 +68,12 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 
-    const pickupMessageQueue = agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
     const messagesToDeliver =
       messages ??
-      (await pickupMessageQueue.takeFromQueue({
+      (await queueTransportRepository.takeFromQueue(agentContext, {
         connectionId: connectionRecord.id,
         limit: batchSize, // TODO: Define as config parameter for message holder side
         deleteMessages: true,
@@ -105,13 +104,12 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const { message } = messageContext
+    const { message, agentContext } = messageContext
 
-    const pickupMessageQueue = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
-    const messages = await pickupMessageQueue.takeFromQueue({
+    const messages = await queueTransportRepository.takeFromQueue(agentContext, {
       connectionId: connection.id,
       limit: message.batchSize,
       deleteMessages: true,

@@ -6,7 +6,6 @@ import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
 import type { InboundMessageContext } from '../../../../models'
 import type { EncryptedMessage } from '../../../../types'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
-import type { MessagePickupRepository } from '../../storage/MessagePickupRepository'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -16,7 +15,7 @@ import type {
   SetLiveDeliveryModeProtocolReturnType,
 } from '../MessagePickupProtocolOptions'
 
-import { EventEmitter, InjectionSymbols, injectable, verkeyToDidKey } from '@credo-ts/core'
+import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 
 import { AgentEventTypes } from '../../../../Events'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
@@ -29,6 +28,7 @@ import { MessagePickupSessionRole } from '../../MessagePickupSession'
 import { MessagePickupSessionService } from '../../services'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
 
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import {
   V2DeliveryRequestHandler,
   V2LiveDeliveryChangeHandler,
@@ -95,14 +95,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const { connectionRecord, recipientKey, messages } = options
     connectionRecord.assertReady()
 
-    const messagePickupRepository = agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
     // Get available messages from queue, but don't delete them
     const messagesToDeliver =
       messages ??
-      (await messagePickupRepository.takeFromQueue({
+      (await queueTransportRepository.takeFromQueue(agentContext, {
         connectionId: connectionRecord.id,
         recipientDid: recipientKey,
         limit: 10, // TODO: Define as config parameter
@@ -147,15 +146,15 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
     const recipientKey = messageContext.message.recipientKey
+    const agentContext = messageContext.agentContext
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
       recipientKey,
-      messageCount: await messagePickupRepository.getAvailableMessageCount({
+      messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
         connectionId: connection.id,
         recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       }),
@@ -172,14 +171,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const connection = messageContext.assertReadyConnection()
     const recipientKey = messageContext.message.recipientKey
 
-    const { message } = messageContext
+    const { agentContext, message } = messageContext
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
     // Get available messages from queue, but don't delete them
-    const messages = await messagePickupRepository.takeFromQueue({
+    const messages = await queueTransportRepository.takeFromQueue(agentContext, {
       connectionId: connection.id,
       recipientDid: recipientKey ? verkeyToDidKey(recipientKey) : undefined,
       limit: message.limit,
@@ -219,19 +217,23 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
-    const { message } = messageContext
+    const { agentContext, message } = messageContext
 
-    const messageRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
 
     if (message.messageIdList.length) {
-      await messageRepository.removeMessages({ connectionId: connection.id, messageIds: message.messageIdList })
+      await queueTransportRepository.removeMessages(agentContext, {
+        connectionId: connection.id,
+        messageIds: message.messageIdList,
+      })
     }
 
     const statusMessage = new V2StatusMessage({
       threadId: messageContext.message.threadId,
-      messageCount: await messageRepository.getAvailableMessageCount({ connectionId: connection.id }),
+      messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
+        connectionId: connection.id,
+      }),
     })
 
     return new OutboundMessageContext(statusMessage, {
@@ -278,9 +280,9 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
 
     const connection = messageContext.assertReadyConnection()
 
-    const messagePickupRepository = messageContext.agentContext.dependencyManager.resolve<MessagePickupRepository>(
-      InjectionSymbols.MessagePickupRepository
-    )
+    const queueTransportRepository =
+      agentContext.dependencyManager.resolve(DidCommModuleConfig).queueTransportRepository
+
     const sessionService = messageContext.agentContext.dependencyManager.resolve(MessagePickupSessionService)
 
     if (message.liveDelivery) {
@@ -296,7 +298,9 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     const statusMessage = new V2StatusMessage({
       threadId: message.threadId,
       liveDelivery: message.liveDelivery,
-      messageCount: await messagePickupRepository.getAvailableMessageCount({ connectionId: connection.id }),
+      messageCount: await queueTransportRepository.getAvailableMessageCount(agentContext, {
+        connectionId: connection.id,
+      }),
     })
 
     return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })

@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../../types'
+import type { EncryptedMessage } from '../../types'
 
 /**
  * Basic representation of an encrypted message in a Message Pickup Queue
