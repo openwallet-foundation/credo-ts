@@ -1,8 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DecryptedMessageContext } from './EnvelopeService'
-import type { TransportSession } from './TransportService'
 import type { ConnectionRecord } from './modules/connections/repository'
-import type { InboundTransport } from './transport'
+import type { InboundTransport, TransportSession } from './transport'
 import type { EncryptedMessage, PlaintextMessage } from './types'
 
 import {
@@ -167,13 +166,13 @@ export class MessageReceiver {
         senderKey: recipientKey,
       }
       session.keys = keys
-      session.inboundMessage = message
+      session.hasReturnRoute = message.hasAnyReturnRoute()
       // We allow unready connections to be attached to the session as we want to be able to
       // use return routing to make connections. This is especially useful for creating connections
       // with mediators when you don't have a public endpoint yet.
       session.connectionId = connection?.id
       messageContext.sessionId = session.id
-      this.transportService.saveSession(session)
+      await this.transportService.saveSession(session)
     } else if (session) {
       // No need to wait for session to stay open if we're not actually going to respond to the message.
       await session.close()

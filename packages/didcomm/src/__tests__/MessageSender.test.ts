@@ -116,11 +116,11 @@ describe('MessageSender', () => {
     routingKeys: [],
     senderKey: senderKey,
   }
-  session.inboundMessage = inboundMessage
+  session.hasReturnRoute = inboundMessage.hasAnyReturnRoute()
   session.send = jest.fn()
 
   const sessionWithoutKeys = new DummyTransportSession('sessionWithoutKeys-123')
-  sessionWithoutKeys.inboundMessage = inboundMessage
+  sessionWithoutKeys.hasReturnRoute = inboundMessage.hasAnyReturnRoute()
   sessionWithoutKeys.send = jest.fn()
 
   const transportService = new TransportService(getAgentContext(), eventEmitter)
@@ -239,7 +239,7 @@ describe('MessageSender', () => {
 
     test('call send message when session send method fails', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      transportServiceFindSessionMock.mockReturnValue(session)
+      transportServiceFindSessionMock.mockReturnValue(Promise.resolve(session))
       session.send = jest.fn().mockRejectedValue(new Error('some error'))
 
       messageSender.registerOutboundTransport(outboundTransport)
@@ -320,7 +320,7 @@ describe('MessageSender', () => {
 
     test('call send message when session send method fails with missing keys', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
+      transportServiceFindSessionMock.mockReturnValue(Promise.resolve(sessionWithoutKeys))
 
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
@@ -348,7 +348,7 @@ describe('MessageSender', () => {
     })
 
     test('call send message on session when outbound message has sessionId attached', async () => {
-      transportServiceFindSessionByIdMock.mockReturnValue(session)
+      transportServiceFindSessionByIdMock.mockReturnValue(Promise.resolve(session))
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       // @ts-ignore
