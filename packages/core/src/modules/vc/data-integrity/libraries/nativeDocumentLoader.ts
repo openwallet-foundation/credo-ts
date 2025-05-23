@@ -6,3 +6,4 @@ export function getNativeDocumentLoader(): () => DocumentLoader {
 
   return loader as () => DocumentLoader
 }
+ 
