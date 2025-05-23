@@ -32,7 +32,6 @@ import { InMemoryMessagePickupRepository } from '../modules/message-pickup/stora
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { InMemoryTransportSessionRepository } from '../transport'
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
@@ -124,11 +123,7 @@ describe('MessageSender', () => {
   sessionWithoutKeys.hasReturnRoute = inboundMessage.hasAnyReturnRoute()
   sessionWithoutKeys.send = jest.fn()
 
-  const transportService = new TransportService(
-    getAgentContext(),
-    eventEmitter,
-    new InMemoryTransportSessionRepository()
-  )
+  const transportService = new TransportService(getAgentContext(), eventEmitter)
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
   const transportServiceFindSessionByIdMock = mockFunction(transportService.findSessionById)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
