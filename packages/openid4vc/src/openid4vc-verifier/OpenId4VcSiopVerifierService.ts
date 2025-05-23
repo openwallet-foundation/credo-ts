@@ -79,6 +79,8 @@ import {
 import { OpenId4VcRelyingPartyEventHandler } from './repository/OpenId4VcRelyingPartyEventEmitter'
 import { OpenId4VcRelyingPartySessionManager } from './repository/OpenId4VcRelyingPartySessionManager'
 
+type Result<T, E> = { ok: true; value: T } | { ok: false; error: E }
+
 /**
  * @internal
  */
@@ -171,22 +173,24 @@ export class OpenId4VcSiopVerifierService {
     // is created. To not use arbitrary timeouts, we wait for the specific RecordSavedEvent
     // that is emitted when the verification session record is created.
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-    const verificationSessionCreatedPromise = firstValueFrom(
-      eventEmitter
-        .observable<RecordSavedEvent<OpenId4VcVerificationSessionRecord>>(RepositoryEventTypes.RecordSaved)
-        .pipe(
-          filter((e) => e.metadata.contextCorrelationId === agentContext.contextCorrelationId),
-          filter(
-            (e) => e.payload.record.id === correlationId && e.payload.record.verifierId === options.verifier.verifierId
-          ),
-          first(),
-          timeout({
-            first: 10000,
-            meta: 'OpenId4VcSiopVerifierService.createAuthorizationRequest',
-          }),
-          map((e) => e.payload.record)
-        )
-    )
+    const verificationSessionCreatedPromise: Promise<Result<OpenId4VcVerificationSessionRecord, unknown>> =
+      firstValueFrom(
+        eventEmitter
+          .observable<RecordSavedEvent<OpenId4VcVerificationSessionRecord>>(RepositoryEventTypes.RecordSaved)
+          .pipe(
+            filter((e) => e.metadata.contextCorrelationId === agentContext.contextCorrelationId),
+            filter(
+              (e) =>
+                e.payload.record.id === correlationId && e.payload.record.verifierId === options.verifier.verifierId
+            ),
+            first(),
+            timeout({
+              first: 10000,
+              meta: 'OpenId4VcSiopVerifierService.createAuthorizationRequest',
+            }),
+            map((e) => ({ ok: true as const, value: e.payload.record }))
+          )
+      ).catch((e) => ({ ok: false, error: e }))
 
     const authorizationRequest = await relyingParty.createAuthorizationRequest({
       correlationId,
@@ -205,11 +209,15 @@ export class OpenId4VcSiopVerifierService {
       authorizationRequestUri = authorizationRequestUri.replace('openid4vp://', 'openid://')
     }
 
-    const verificationSession = await verificationSessionCreatedPromise
+    const verificationSessionResult = await verificationSessionCreatedPromise
+    if (!verificationSessionResult.ok) {
+      throw verificationSessionResult.error
+    }
+    const verificationSession = verificationSessionResult.value
 
     return {
       authorizationRequest: authorizationRequestUri,
-      verificationSession,
+      verificationSession: verificationSession,
     }
   }
 
@@ -260,26 +268,27 @@ export class OpenId4VcSiopVerifierService {
     // is updated. To not use arbitrary timeouts, we wait for the specific RecordUpdatedEvent
     // that is emitted when the verification session record is updated.
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-    const verificationSessionUpdatedPromise = firstValueFrom(
-      eventEmitter
-        .observable<RecordUpdatedEvent<OpenId4VcVerificationSessionRecord>>(RepositoryEventTypes.RecordUpdated)
-        .pipe(
-          filter((e) => e.metadata.contextCorrelationId === agentContext.contextCorrelationId),
-          filter(
-            (e) =>
-              e.payload.record.id === options.verificationSession.id &&
-              e.payload.record.verifierId === options.verificationSession.verifierId &&
-              (e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified ||
-                e.payload.record.state === OpenId4VcVerificationSessionState.Error)
-          ),
-          first(),
-          timeout({
-            first: 10000,
-            meta: 'OpenId4VcSiopVerifierService.verifyAuthorizationResponse',
-          }),
-          map((e) => e.payload.record)
-        )
-    )
+    const verificationSessionUpdatedPromise: Promise<Result<OpenId4VcVerificationSessionRecord, unknown>> =
+      firstValueFrom(
+        eventEmitter
+          .observable<RecordUpdatedEvent<OpenId4VcVerificationSessionRecord>>(RepositoryEventTypes.RecordUpdated)
+          .pipe(
+            filter((e) => e.metadata.contextCorrelationId === agentContext.contextCorrelationId),
+            filter(
+              (e) =>
+                e.payload.record.id === options.verificationSession.id &&
+                e.payload.record.verifierId === options.verificationSession.verifierId &&
+                (e.payload.record.state === OpenId4VcVerificationSessionState.ResponseVerified ||
+                  e.payload.record.state === OpenId4VcVerificationSessionState.Error)
+            ),
+            first(),
+            timeout({
+              first: 10000,
+              meta: 'OpenId4VcSiopVerifierService.verifyAuthorizationResponse',
+            }),
+            map((e) => ({ ok: true as const, value: e.payload.record }))
+          )
+      ).catch((e) => ({ ok: false, error: e }))
 
     await relyingParty.verifyAuthorizationResponse(options.authorizationResponse, {
       audience: requestClientId,
@@ -299,13 +308,16 @@ export class OpenId4VcSiopVerifierService {
       },
     })
 
-    const verificationSession = await verificationSessionUpdatedPromise
+    const verificationSessionResult = await verificationSessionUpdatedPromise
+    if (!verificationSessionResult.ok) {
+      throw verificationSessionResult.error
+    }
+    const verificationSession = verificationSessionResult.value
     const verifiedAuthorizationResponse = await this.getVerifiedAuthorizationResponse(verificationSession)
 
     return {
       ...verifiedAuthorizationResponse,
-
-      verificationSession: await verificationSessionUpdatedPromise,
+      verificationSession,
     }
   }
 
