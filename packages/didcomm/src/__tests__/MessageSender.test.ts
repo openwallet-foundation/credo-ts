@@ -2,8 +2,7 @@ import type { DidDocumentService, IndyAgentService } from '../../../core/src/mod
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { AgentMessageSentEvent } from '../Events'
 import type { ConnectionRecord } from '../modules'
-import type { MessagePickupRepository } from '../modules/message-pickup/storage'
-import type { OutboundTransport } from '../transport'
+import { InMemoryQueueTransportRepository, type OutboundTransport } from '../transport'
 import type { EncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'
@@ -21,25 +20,22 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../core/tests/helpers'
-import testLogger from '../../../core/tests/logger'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { AgentEventTypes } from '../Events'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { OutboundMessageContext, OutboundMessageSendStatus } from '../models'
-import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { AgentConfig, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 jest.mock('../../../core/src/modules/dids/DidsApi')
 jest.mock('../services/DidCommDocumentService')
-
-const logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidsApiMock = DidsApi as jest.Mock<DidsApi>
@@ -141,12 +137,14 @@ describe('MessageSender', () => {
 
   let messageSender: MessageSender
   let outboundTransport: OutboundTransport
-  let messagePickupRepository: MessagePickupRepository
   let connection: ConnectionRecord
   let outboundMessageContext: OutboundMessageContext
   const agentConfig = getAgentConfig('MessageSender')
   const agentContext = getAgentContext({
-    registerInstances: [[DidsApi, didsApi]],
+    registerInstances: [
+      [DidsApi, didsApi],
+      [AgentConfig, agentConfig],
+    ],
   })
   const eventListenerMock = jest.fn()
 
@@ -158,12 +156,10 @@ describe('MessageSender', () => {
       eventEmitter.on<AgentMessageSentEvent>(AgentEventTypes.AgentMessageSent, eventListenerMock)
 
       outboundTransport = new DummyHttpOutboundTransport()
-      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messagePickupRepository,
-        logger,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )
@@ -523,8 +519,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new InMemoryMessagePickupRepository(agentConfig.logger),
-        logger,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )
@@ -661,12 +656,10 @@ describe('MessageSender', () => {
   describe('packMessage', () => {
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
-      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messagePickupRepository,
-        logger,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )

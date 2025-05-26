@@ -1,14 +1,12 @@
 import type { DependencyManager } from '../../../../../core/src/plugins'
 import type { MessagePickupProtocol } from '../protocol/MessagePickupProtocol'
 
-import { InjectionSymbols } from '../../../../../core'
 import { getAgentContext } from '../../../../../core/tests'
 import { MessageHandlerRegistry } from '../../..//MessageHandlerRegistry'
 import { FeatureRegistry } from '../../../FeatureRegistry'
 import { MessagePickupModule } from '../MessagePickupModule'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
 import { MessagePickupSessionService } from '../services'
-import { InMemoryMessagePickupRepository } from '../storage'
 
 describe('MessagePickupModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -26,11 +24,7 @@ describe('MessagePickupModule', () => {
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerInstance).toHaveBeenCalledWith(MessagePickupModuleConfig, module.config)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(
-      InjectionSymbols.MessagePickupRepository,
-      InMemoryMessagePickupRepository
-    )
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(1)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(MessagePickupSessionService)
   })
 
