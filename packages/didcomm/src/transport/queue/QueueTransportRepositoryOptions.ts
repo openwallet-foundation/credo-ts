@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../../types'
+import { EncryptedMessage } from '../../types'
 
 export interface GetAvailableMessageCountOptions {
   connectionId: string
