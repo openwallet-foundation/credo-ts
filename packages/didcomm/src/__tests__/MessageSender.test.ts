@@ -20,7 +20,6 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../core/tests/helpers'
-import testLogger from '../../../core/tests/logger'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { AgentEventTypes } from '../Events'
 import { MessageSender } from '../MessageSender'
@@ -37,8 +36,6 @@ jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
 jest.mock('../../../core/src/modules/dids/DidsApi')
 jest.mock('../services/DidCommDocumentService')
-
-const _logger = testLogger
 
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
 const DidsApiMock = DidsApi as jest.Mock<DidsApi>
