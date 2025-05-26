@@ -1,31 +1,22 @@
-import type { Router } from 'express'
+import type { RouterFactory, SupportedRouterTypes } from '../shared/router'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
-
-import { importExpress } from '../shared/router'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
-export interface OpenId4VcIssuerModuleConfigOptions {
+export const OpenId4VcIssuerModuleConfigSymbol = Symbol('OpenId4VcIssuerModuleConfig')
+
+export interface BaseOpenId4VcIssuerModuleConfigOptions {
   /**
    * Base url at which the issuer endpoints will be hosted. All endpoints will be exposed with
    * this path as prefix.
    */
   baseUrl: string
-
-  /**
-   * Express router on which the openid4vci endpoints will be registered. If
-   * no router is provided, a new one will be created.
-   *
-   * NOTE: you must manually register the router on your express app and
-   * expose this on a public url that is reachable when `baseUrl` is called.
-   */
-  router?: Router
 
   /**
    * The time after which a cNonce will expire.
@@ -141,9 +132,8 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   }
 }
 
-export class OpenId4VcIssuerModuleConfig {
-  private options: OpenId4VcIssuerModuleConfigOptions
-  public readonly router: Router
+export class BaseOpenId4VcIssuerModuleConfig {
+  private options: BaseOpenId4VcIssuerModuleConfigOptions
 
   /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
@@ -154,12 +144,10 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
 
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
+  public constructor(options: BaseOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
     this.getVerificationSessionForIssuanceSessionAuthorization =
       options.getVerificationSessionForIssuanceSessionAuthorization
-
-    this.router = options.router ?? importExpress().Router()
   }
 
   public get baseUrl() {
@@ -288,5 +276,31 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get jwksEndpointPath(): string {
     return this.options.endpoints?.jwks ?? '/jwks'
+  }
+}
+
+export interface OpenId4VcIssuerModuleConfigOptions<RouterType extends SupportedRouterTypes>
+  extends BaseOpenId4VcIssuerModuleConfigOptions {
+  /**
+   * Express router or Fastify instance which the openid4vci endpoints will be registered. If
+   * no router is provided, a new one will be created.
+   *
+   * NOTE: you must manually register the router on your express app and
+   * expose this on a public url that is reachable when `baseUrl` is called.
+   */
+  router?: RouterType
+}
+
+export class OpenId4VcIssuerModuleConfig<
+  RouterType extends SupportedRouterTypes,
+> extends BaseOpenId4VcIssuerModuleConfig {
+  public readonly router: RouterType
+
+  public constructor(
+    options: OpenId4VcIssuerModuleConfigOptions<RouterType>,
+    routerFactory: RouterFactory<RouterType>
+  ) {
+    super(options)
+    this.router = options.router ?? routerFactory?.create()
   }
 }

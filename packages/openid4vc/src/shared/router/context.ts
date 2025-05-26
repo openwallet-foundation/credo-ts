@@ -1,45 +1,39 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
 import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
-import type { NextFunction, Request, Response } from 'express'
+import type { NextFunction, Request, Response, Router } from 'express'
+import type { FastifyInstance } from 'fastify'
 
+import * as http from 'node:http'
 import { CredoError } from '@credo-ts/core'
-import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
 
-export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
+export interface HasRequestContext<RC extends Record<string, unknown>> {
   requestContext?: RC & OpenId4VcRequestContext
 }
+
+export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>>
+  extends Request,
+    HasRequestContext<RC> {}
+
+export interface OpenId4VcPostRequest<BodyType, RC extends Record<string, unknown> = Record<string, never>>
+  extends http.IncomingMessage,
+    HasRequestContext<RC> {
+  body: BodyType
+}
+
+export interface OpenId4VcGetRequest<BodyType, RC extends Record<string, unknown> = Record<string, never>>
+    extends http.IncomingMessage,
+        HasRequestContext<RC> {
+  body: BodyType
+}
+
 
 export interface OpenId4VcRequestContext {
   agentContext: AgentContext
 }
 
-export function sendUnauthorizedError(
-  response: Response,
-  next: NextFunction,
-  logger: Logger,
-  error: unknown | Oauth2ResourceUnauthorizedError,
-  status?: number
-) {
-  const errorMessage = error instanceof Error ? error.message : error
-  logger.warn(`[OID4VC] Sending authorization error response: ${JSON.stringify(errorMessage)}`, {
-    error,
-  })
+export type SupportedRouterTypes = Router | FastifyInstance
 
-  const unauhorizedError =
-    error instanceof Oauth2ResourceUnauthorizedError
-      ? error
-      : new Oauth2ResourceUnauthorizedError('Unknown error occured', [
-          { scheme: SupportedAuthenticationScheme.DPoP },
-          { scheme: SupportedAuthenticationScheme.Bearer },
-        ])
-
-  response
-    .setHeader('WWW-Authenticate', unauhorizedError.toHeaderValue())
-    .status(status ?? 403)
-    .send()
-  next(error)
-}
-
+/* TODO move out of context to express specific helpers */
 export function sendOauth2ErrorResponse(
   response: Response,
   next: NextFunction,
@@ -117,7 +111,7 @@ export function sendJsonResponse(
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function getRequestContext<T extends OpenId4VcRequest<any>>(request: T): NonNullable<T['requestContext']> {
+export function getRequestContext<T extends HasRequestContext<any>>(request: T): NonNullable<T['requestContext']> {
   const requestContext = request.requestContext
   if (!requestContext) throw new CredoError('Request context not set.')
 
