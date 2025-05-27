@@ -49,6 +49,45 @@ export class CheqdDidRegistrar implements DidRegistrar {
     JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
   }
 
+  private collectAllVerificationMethods(didDocument: DidDocument): VerificationMethod[] {
+    const methods: VerificationMethod[] = []
+    // Add all top-level verification methods
+    if (Array.isArray(didDocument.verificationMethod)) {
+      methods.push(...didDocument.verificationMethod)
+    }
+    // List of verification relationships to check for embedded verification methods
+    // Note: these are the relationships defined in the DID Core spec
+    const relationships = [
+      'authentication',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+      'keyAgreement',
+    ] as const
+    // Collect verification methods from relationships
+    for (const rel of relationships) {
+      const entries = (didDocument as any)[rel]
+      if (Array.isArray(entries)) {
+        for (const entry of entries) {
+          if (typeof entry === 'object' && entry.type) {
+            // Embedded verification method object
+            methods.push(entry)
+          } else if (typeof entry === 'string' && Array.isArray(didDocument.verificationMethod)) {
+            // Reference: resolve from top-level verificationMethod array
+            const found = didDocument.verificationMethod.find(vm => vm.id === entry)
+            if (found) methods.push(found)
+          }
+        }
+      }
+    }
+    // Remove duplicates by id
+    const unique = new Map<string, VerificationMethod>()
+    for (const m of methods) {
+      unique.set(m.id, m)
+    }
+    return Array.from(unique.values())
+  }
+
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
@@ -186,7 +225,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           : []
       )
 
-      for (const verificationMethod of didDocument.verificationMethod || []) {
+      for (const verificationMethod of this.collectAllVerificationMethods(didDocument)) {
         const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
         if (contextUrl) {
           contextSet.add(contextUrl)
@@ -440,7 +479,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       // Normalize existing context to an array
       const contextSet = new Set<string>()
 
-      for (const verificationMethod of didDocument.verificationMethod || []) {
+      for (const verificationMethod of this.collectAllVerificationMethods(didDocument)) {
         const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
         if (contextUrl) {
           contextSet.add(contextUrl)
