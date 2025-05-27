@@ -5,7 +5,6 @@ import {
   Agent,
   DidDocumentBuilder,
   Kms,
-  SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
@@ -179,10 +178,7 @@ describe('Cheqd DID registrar', () => {
     })
 
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
-      '@context': [
-        'https://www.w3.org/ns/did/v1',
-        'https://w3id.org/security/suites/ed25519-2018/v1',
-      ],
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
       verificationMethod: [
         {
           controller: did,

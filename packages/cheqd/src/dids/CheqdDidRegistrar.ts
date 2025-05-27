@@ -30,7 +30,11 @@ import {
   utils,
 } from '@credo-ts/core'
 
-import { ED25519_SUITE_CONTEXT_URL_2018, ED25519_SUITE_CONTEXT_URL_2020, parseCheqdDid } from '../anoncreds/utils/identifiers'
+import {
+  ED25519_SUITE_CONTEXT_URL_2018,
+  ED25519_SUITE_CONTEXT_URL_2020,
+  parseCheqdDid,
+} from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
 import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
@@ -54,8 +58,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
       typeof didDocument.context === 'string'
         ? [didDocument.context]
         : Array.isArray(didDocument.context)
-        ? didDocument.context
-        : []
+          ? didDocument.context
+          : []
     )
     // List of verification relationships to check for embedded verification methods
     // Note: these are the relationships defined in the DID Core spec
@@ -69,17 +73,19 @@ export class CheqdDidRegistrar implements DidRegistrar {
     ] as const
     // Collect verification methods from relationships
     for (const rel of relationships) {
-      const entries = (didDocument as any)[rel]
+      const entries = didDocument[rel]
       if (entries) {
         for (const entry of entries) {
-          const contextUrl = this.contextMapping[entry.type as keyof typeof this.contextMapping]
-          if (contextUrl) {
-            contextSet.add(contextUrl)
+          if (typeof entry !== 'string' && entry.type) {
+            const contextUrl = this.contextMapping[entry.type as keyof typeof this.contextMapping]
+            if (contextUrl) {
+              contextSet.add(contextUrl)
+            }
           }
         }
       }
     }
-    return contextSet;
+    return contextSet
   }
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
