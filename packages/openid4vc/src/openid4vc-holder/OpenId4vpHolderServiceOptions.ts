@@ -1,4 +1,5 @@
 import type {
+  CanBePromise,
   DcqlCredentialsForRequest,
   DcqlQueryResult,
   DifPexCredentialsForRequest,
@@ -6,15 +7,22 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
-import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
+import { Openid4vpAuthorizationRequestDcApi, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { OpenId4VpAuthorizationRequestPayload, Openid4vpAuthorizationRequest } from '../shared'
 
 // TODO: export from oid4vp
 export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizationRequest['transactionData']>[number]
 
+export type VerifyAuthorizationRequestOptions = {
+  authorizationRequest: Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
+}
+
+export type VerifyAuthorizationRequestCallback = (options: VerifyAuthorizationRequestOptions) => CanBePromise<boolean>
+
 export interface ResolveOpenId4VpAuthorizationRequestOptions {
   trustedCertificates?: EncodedX509Certificate[]
   origin?: string
+  verifyAuthorizationRequestCallback?: VerifyAuthorizationRequestCallback
 }
 
 type VerifiedJarRequest = NonNullable<ResolvedOpenid4vpAuthorizationRequest['jar']>

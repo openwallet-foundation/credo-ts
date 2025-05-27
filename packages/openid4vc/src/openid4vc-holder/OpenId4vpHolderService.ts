@@ -141,6 +141,16 @@ export class OpenId4VpHolderService {
 
     const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
 
+    if (options?.verifyAuthorizationRequestCallback) {
+      const result = await options.verifyAuthorizationRequestCallback({
+        authorizationRequest: verifiedAuthorizationRequest.authorizationRequestPayload,
+      })
+
+      if (!result) {
+        throw new CredoError('verificationAuthorizationCallback returned false. User-provided validation failed.')
+      }
+    }
+
     agentContext.config.logger.debug('verified Authorization Request')
     agentContext.config.logger.debug(`request '${authorizationRequest}'`)
 
