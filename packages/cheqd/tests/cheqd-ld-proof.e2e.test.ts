@@ -153,6 +153,7 @@ describe('Cheqd V2 Credentials - JSON-LD - Ed25519', () => {
     const createResult = await faberAgent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
+        .addController(did)
         .addVerificationMethod(
           getEd25519VerificationKey2018({
             key: ed25519Key,
