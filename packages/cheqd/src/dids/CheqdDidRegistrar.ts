@@ -49,12 +49,14 @@ export class CheqdDidRegistrar implements DidRegistrar {
     JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
   }
 
-  private collectAllVerificationMethods(didDocument: DidDocument): VerificationMethod[] {
-    const methods: VerificationMethod[] = []
-    // Add all top-level verification methods
-    if (Array.isArray(didDocument.verificationMethod)) {
-      methods.push(...didDocument.verificationMethod)
-    }
+  private collectAllContexts(didDocument: DidDocument): Set<string> {
+    const contextSet = new Set<string>(
+      typeof didDocument.context === 'string'
+        ? [didDocument.context]
+        : Array.isArray(didDocument.context)
+        ? didDocument.context
+        : []
+    )
     // List of verification relationships to check for embedded verification methods
     // Note: these are the relationships defined in the DID Core spec
     const relationships = [
@@ -63,29 +65,21 @@ export class CheqdDidRegistrar implements DidRegistrar {
       'capabilityInvocation',
       'capabilityDelegation',
       'keyAgreement',
+      'verificationMethod',
     ] as const
     // Collect verification methods from relationships
     for (const rel of relationships) {
       const entries = (didDocument as any)[rel]
-      if (Array.isArray(entries)) {
+      if (entries) {
         for (const entry of entries) {
-          if (typeof entry === 'object' && entry.type) {
-            // Embedded verification method object
-            methods.push(entry)
-          } else if (typeof entry === 'string' && Array.isArray(didDocument.verificationMethod)) {
-            // Reference: resolve from top-level verificationMethod array
-            const found = didDocument.verificationMethod.find(vm => vm.id === entry)
-            if (found) methods.push(found)
+          const contextUrl = this.contextMapping[entry.type as keyof typeof this.contextMapping]
+          if (contextUrl) {
+            contextSet.add(contextUrl)
           }
         }
       }
     }
-    // Remove duplicates by id
-    const unique = new Map<string, VerificationMethod>()
-    for (const m of methods) {
-      unique.set(m.id, m)
-    }
-    return Array.from(unique.values())
+    return contextSet;
   }
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
@@ -216,22 +210,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
 
-      // Normalize context to an array
-      const contextSet = new Set<string>(
-        typeof didDocument.context === 'string'
-          ? [didDocument.context]
-          : Array.isArray(didDocument.context)
-          ? didDocument.context
-          : []
-      )
-
-      for (const verificationMethod of this.collectAllVerificationMethods(didDocument)) {
-        const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
-        if (contextUrl) {
-          contextSet.add(contextUrl)
-        }
-      }
-
+      // Collect all contexts from the didDic into a set
+      const contextSet = this.collectAllContexts(didDocument)
       // Add Cheqd default context to the did document
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
@@ -476,16 +456,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
-      // Normalize existing context to an array
-      const contextSet = new Set<string>()
-
-      for (const verificationMethod of this.collectAllVerificationMethods(didDocument)) {
-        const contextUrl = this.contextMapping[verificationMethod.type as keyof typeof this.contextMapping]
-        if (contextUrl) {
-          contextSet.add(contextUrl)
-        }
-      }
-
+      // Collect all contexts from the didDic into a set
+      const contextSet = this.collectAllContexts(didDocument)
       // Add Cheqd default context to the did document
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       // Save the did so we know we created it and can issue with it
