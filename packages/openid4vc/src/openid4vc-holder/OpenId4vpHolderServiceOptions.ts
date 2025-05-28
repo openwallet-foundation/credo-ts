@@ -1,4 +1,5 @@
 import type {
+  AgentContext,
   CanBePromise,
   DcqlCredentialsForRequest,
   DcqlQueryResult,
@@ -6,7 +7,6 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
-  JwsService,
 } from '@credo-ts/core'
 import { Openid4vpAuthorizationRequestDcApi, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload, Openid4vpAuthorizationRequest } from '../shared'
@@ -15,8 +15,8 @@ import type { OpenId4VpAuthorizationRequestPayload, Openid4vpAuthorizationReques
 export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizationRequest['transactionData']>[number]
 
 export type VerifyAuthorizationRequestOptions = {
+  agentContext: AgentContext
   authorizationRequest: Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
-  jwsService: JwsService
   // NOTE: `ParsedClientIdentifier` is not exported from @openid4vc/openid4vp
   client: ResolvedOpenid4vpAuthorizationRequest['client']
 }

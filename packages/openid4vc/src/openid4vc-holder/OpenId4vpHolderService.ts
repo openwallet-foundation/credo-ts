@@ -23,7 +23,6 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
-  JwsService,
   Kms,
   TypedArrayEncoder,
   injectable,
@@ -146,18 +145,15 @@ export class OpenId4VpHolderService {
     if (options?.verifyAuthorizationRequestCallback) {
       try {
         await options.verifyAuthorizationRequestCallback({
+          agentContext,
           authorizationRequest:
             verifiedAuthorizationRequest.authorizationRequestPayload as Openid4vpAuthorizationRequest,
-          jwsService: agentContext.resolve(JwsService),
           client,
         })
       } catch (e) {
-        throw new CredoError(
-          `verificationAuthorizationCallback returned false. User-provided validation failed. cause: ${e}`,
-          {
-            cause: e,
-          }
-        )
+        throw new CredoError(`error during call to User-provided verificationAuthorizationCallback. Cause: ${e}`, {
+          cause: e,
+        })
       }
     }
 
