@@ -929,7 +929,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "invitationId": "21ef606f-b25b-48c6-bafa-e79193732413",
       "invitationRequestsThreadIds": undefined,
       "recipientKeyFingerprints": [
-        "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
+        "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
       "role": "sender",
       "state": "done",
@@ -939,7 +939,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "_tags": {
         "recipientKeyFingerprints": [
-          "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
+          "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
         ],
       },
       "alias": undefined,
@@ -969,7 +969,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
             "accept": undefined,
             "id": "#inline",
             "recipientKeys": [
-              "did:key:z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
+              "did:key:z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
             ],
             "routingKeys": [],
             "serviceEndpoint": "rxjs:alice",
@@ -1263,36 +1263,36 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-      "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3QxdHNwMTVjbkREN3dCQ0ZnZWhpUjJTeEhYMWFQeHQ0c3VlRTI0dHdIOUJkI3o2TWt0MXRzcDE1Y25ERDd3QkNGZ2VoaVIyU3hIWDFhUHh0NHN1ZUUyNHR3SDlCZCJdLCJyIjpbXX0",
-      "invitationKey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
+      "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "mediatorId": undefined,
       "outOfBandId": "3-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "request-received",
-      "theirDid": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
+      "theirDid": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
       "theirKey": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
-      "verkey": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
+      "verkey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
     },
     "type": "ConnectionRecord",
     "value": {
       "autoAcceptConnection": false,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.628Z",
-      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
+      "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
       "id": "7781341d-be29-441b-9b79-4a957d8c6d37",
-      "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3QxdHNwMTVjbkREN3dCQ0ZnZWhpUjJTeEhYMWFQeHQ0c3VlRTI0dHdIOUJkI3o2TWt0MXRzcDE1Y25ERDd3QkNGZ2VoaVIyU3hIWDFhUHh0NHN1ZUUyNHR3SDlCZCJdLCJyIjpbXX0",
+      "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "metadata": {},
       "outOfBandId": "3-4e4f-41d9-94c4-f49351b811f1",
       "previousDids": [],
       "previousTheirDids": [],
       "role": "responder",
       "state": "request-received",
-      "theirDid": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
+      "theirDid": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "a0c0e4d2-1501-42a2-a09b-7d5adc90b353",
       "updatedAt": "2022-01-21T22:50:20.522Z",
@@ -1303,7 +1303,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": "connection alias",
       "connectionTypes": [],
-      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
+      "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "invitationKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "mediatorId": undefined,
@@ -1312,7 +1312,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "requester",
       "state": "completed",
-      "theirDid": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "theirDid": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "theirKey": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
@@ -1323,7 +1323,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "alias": "connection alias",
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.577Z",
-      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
+      "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
       "id": "8f4908ee-15ad-4058-9106-eda26eae735c",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2ZpUE1QeENRZVNEWkdNa0N2bTFZMnJCb1BzbXc0WkhNdjcxalh0Y1dSUmlNI3o2TWtmaVBNUHhDUWVTRFpHTWtDdm0xWTJyQm9Qc213NFpITXY3MWpYdGNXUlJpTSJdLCJyIjpbXX0",
       "metadata": {},
@@ -1332,7 +1332,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "requester",
       "state": "completed",
-      "theirDid": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "theirDid": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "fe287ec6-711b-4582-bb2b-d155aee86e61",
       "updatedAt": "2022-01-21T22:50:20.522Z",
@@ -1343,7 +1343,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+      "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3RDWkFRTkd2V2I0V0hBandCcVB0WGhaZERZb3JiU0prR1c5dmoxdWh3MUhEI3o2TWt0Q1pBUU5HdldiNFdIQWp3QnFQdFhoWmREWW9yYlNKa0dXOXZqMXVodzFIRCJdLCJyIjpbXX0",
       "invitationKey": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
       "mediatorId": undefined,
@@ -1352,7 +1352,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "responder",
       "state": "completed",
-      "theirDid": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
+      "theirDid": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
       "theirKey": "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
@@ -1362,7 +1362,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.608Z",
-      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+      "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
       "id": "9383d8e5-c002-4aae-8300-4a21384c919e",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3RDWkFRTkd2V2I0V0hBandCcVB0WGhaZERZb3JiU0prR1c5dmoxdWh3MUhEI3o2TWt0Q1pBUU5HdldiNFdIQWp3QnFQdFhoWmREWW9yYlNKa0dXOXZqMXVodzFIRCJdLCJyIjpbXX0",
       "metadata": {},
@@ -1371,7 +1371,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "responder",
       "state": "completed",
-      "theirDid": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
+      "theirDid": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "0b2f1133-ced9-49f1-83a1-eb6ba1c24cdf",
       "updatedAt": "2022-01-21T22:50:20.522Z",
@@ -1394,7 +1394,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3VXVEVtSDFtVW82Vzk2elNXeUg2MTJoRkhvd1J6TkVzY1BZQkwyQ0NNeUMyI3o2TWt1V1RFbUgxbVVvNlc5NnpTV3lINjEyaEZIb3dSek5Fc2NQWUJMMkNDTXlDMiJdLCJyIjpbXX0",
       "invitationKey": "G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe",
       "mediatorId": undefined,
@@ -1413,7 +1413,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": true,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.653Z",
-      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "id": "b65c2ccd-277c-4140-9d87-c8dd30e7a98c",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa3VXVEVtSDFtVW82Vzk2elNXeUg2MTJoRkhvd1J6TkVzY1BZQkwyQ0NNeUMyI3o2TWt1V1RFbUgxbVVvNlc5NnpTV3lINjEyaEZIb3dSek5Fc2NQWUJMMkNDTXlDMiJdLCJyIjpbXX0",
       "metadata": {},
@@ -1430,7 +1430,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
+      "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa28zMURORTNncU1SWmoxSk5odjJCSGIxY2FRc2hjZDluamdLa0VRWHNnRlJwI3o2TWtvMzFETkUzZ3FNUlpqMUpOaHYyQkhiMWNhUXNoY2Q5bmpnS2tFUVhzZ0ZScCJdLCJyIjpbXX0",
       "invitationKey": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
       "mediatorId": undefined,
@@ -1439,7 +1439,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "responder",
       "state": "response-sent",
-      "theirDid": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "theirDid": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "theirKey": "J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
@@ -1450,7 +1450,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": true,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.646Z",
-      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
+      "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
       "id": "da518433-0e55-4b74-a05b-aa75c1095a99",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczphbGljZSIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa28zMURORTNncU1SWmoxSk5odjJCSGIxY2FRc2hjZDluamdLa0VRWHNnRlJwI3o2TWtvMzFETkUzZ3FNUlpqMUpOaHYyQkhiMWNhUXNoY2Q5bmpnS2tFUVhzZ0ZScCJdLCJyIjpbXX0",
       "metadata": {},
@@ -1459,516 +1459,19 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "responder",
       "state": "response-sent",
-      "theirDid": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "theirDid": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "6eeb6a80-cd75-491d-b2e0-7bae65ced1c3",
       "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
-  "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT": {
-    "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
+  "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG": {
+    "id": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
     "tags": {
-      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
-      "legacyUnqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
-      "recipientKeyFingerprints": [
-        "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.608Z",
-      "did": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#EkJ7p82V",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#EkJ7p82V",
-            "publicKeyBase58": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmP96nW6vbNjzwPt19z1NYqhnAfgnAFqfLHcktkmdUFzhT",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"SDqTzbVuCowusqGBNbNDjH#1","controller":"SDqTzbVuCowusqGBNbNDjH","type":"Ed25519VerificationKey2018","publicKeyBase58":"EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"}],"service":[{"id":"SDqTzbVuCowusqGBNbNDjH#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"],"routingKeys":[]}],"authentication":[{"publicKey":"SDqTzbVuCowusqGBNbNDjH#1","type":"Ed25519SignatureAuthentication2018"}],"id":"SDqTzbVuCowusqGBNbNDjH"}",
-          "unqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56": {
-    "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-    "tags": {
-      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-      "legacyUnqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-      "recipientKeyFingerprints": [
-        "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.646Z",
-      "did": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#9akAmyoF",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#9akAmyoF",
-            "publicKeyBase58": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmPbGa8KDwyjcw9UgwCCgJMV7jU5kKCyvBuwFVc88WxA56",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"GkEeb96MGT94K1HyQQzpj1#1","controller":"GkEeb96MGT94K1HyQQzpj1","type":"Ed25519VerificationKey2018","publicKeyBase58":"9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"}],"service":[{"id":"GkEeb96MGT94K1HyQQzpj1#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],"routingKeys":[]}],"authentication":[{"publicKey":"GkEeb96MGT94K1HyQQzpj1#1","type":"Ed25519SignatureAuthentication2018"}],"id":"GkEeb96MGT94K1HyQQzpj1"}",
-          "unqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ": {
-    "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-    "tags": {
-      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-      "legacyUnqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-      "recipientKeyFingerprints": [
-        "z6Mkw81EsWQioXYC9YJ7uKHCRh6LTN7sfD9sJbSPBGXmUpzC",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.577Z",
-      "did": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#HfkCHGAH",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#HfkCHGAH",
-            "publicKeyBase58": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmRAfQ6J5qk4qcbHyoStFVkhusazLT9xQcFhdC9dhhQ1cJ",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"XajWZZmHGAWUvYCi7CApaG#1","controller":"XajWZZmHGAWUvYCi7CApaG","type":"Ed25519VerificationKey2018","publicKeyBase58":"HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"}],"service":[{"id":"XajWZZmHGAWUvYCi7CApaG#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"],"routingKeys":[]}],"authentication":[{"publicKey":"XajWZZmHGAWUvYCi7CApaG#1","type":"Ed25519SignatureAuthentication2018"}],"id":"XajWZZmHGAWUvYCi7CApaG"}",
-          "unqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb": {
-    "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-    "tags": {
-      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-      "legacyUnqualifiedDid": "RtH4qxVPL1Dpmdv7GytjBv",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-      "recipientKeyFingerprints": [
-        "z6Mkt1tsp15cnDD7wBCFgehiR2SxHX1aPxt4sueE24twH9Bd",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.628Z",
-      "did": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#EZdqDkqB",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#EZdqDkqB",
-            "publicKeyBase58": "EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmSMBVNMDrh7fyE8bkAmk1ZatshjinpsEqPA3nx8JYjuKb",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#1","controller":"RtH4qxVPL1Dpmdv7GytjBv","type":"Ed25519VerificationKey2018","publicKeyBase58":"EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"}],"service":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["EZdqDkqBSfiepgMZ15jsZvtxTwjiz5diBtjJBnvvMvQF"],"routingKeys":[]}],"authentication":[{"publicKey":"RtH4qxVPL1Dpmdv7GytjBv#1","type":"Ed25519SignatureAuthentication2018"}],"id":"RtH4qxVPL1Dpmdv7GytjBv"}",
-          "unqualifiedDid": "RtH4qxVPL1Dpmdv7GytjBv",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU": {
-    "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-    "tags": {
-      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-      "legacyUnqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-      "recipientKeyFingerprints": [
-        "z6Mkwc6efk75y4Y1agRx4NGpvtrpKxtKvMfgBEdQkHBwU8Xu",
-      ],
-      "role": "received",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.608Z",
-      "did": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#J9qc5Vre",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:faber",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#J9qc5Vre",
-            "publicKeyBase58": "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmXYj3nNwsF37WXXdb8XkCAtsTCBpJJbsLKPPGfi2PWCTU",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"YUH4t3KMkEJiXgmqsncrY9#1","controller":"YUH4t3KMkEJiXgmqsncrY9","type":"Ed25519VerificationKey2018","publicKeyBase58":"J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"}],"service":[{"id":"YUH4t3KMkEJiXgmqsncrY9#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"],"routingKeys":[]}],"authentication":[{"publicKey":"YUH4t3KMkEJiXgmqsncrY9#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YUH4t3KMkEJiXgmqsncrY9"}",
-          "unqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
-        },
-      },
-      "role": "received",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy": {
-    "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-    "tags": {
-      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-      "legacyUnqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-      "recipientKeyFingerprints": [
-        "z6MkvW9GxjjUdL9qpaj2qQW6YBhCjZY7Zkzrks3cgpJaRjxR",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-20T13:02:21.646Z",
-      "did": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#H3tENVV3",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#H3tENVV3",
-            "publicKeyBase58": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmZ2tdw35SaLncSHhf9zBv3e9QmJmLErZRSLsDdYowPHXy",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#1","controller":"WSwJQMBHGZbQsq9LDBTWjX","type":"Ed25519VerificationKey2018","publicKeyBase58":"H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"}],"service":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"],"routingKeys":[]}],"authentication":[{"publicKey":"WSwJQMBHGZbQsq9LDBTWjX#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WSwJQMBHGZbQsq9LDBTWjX"}",
-          "unqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf": {
-    "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-    "tags": {
-      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-      "legacyUnqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-      "recipientKeyFingerprints": [
-        "z6MktpVtPC5j91aycGPT5pceiu8EGKDzM5RLwqAZBuCgxw4V",
-      ],
-      "role": "created",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.641Z",
-      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#FNEqnwqH",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:alice",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#FNEqnwqH",
-            "publicKeyBase58": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"TMnQftvJJJwoYogYkQgVjg#1","controller":"TMnQftvJJJwoYogYkQgVjg","type":"Ed25519VerificationKey2018","publicKeyBase58":"FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"}],"service":[{"id":"TMnQftvJJJwoYogYkQgVjg#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"],"routingKeys":[]}],"authentication":[{"publicKey":"TMnQftvJJJwoYogYkQgVjg#1","type":"Ed25519SignatureAuthentication2018"}],"id":"TMnQftvJJJwoYogYkQgVjg"}",
-          "unqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
-        },
-      },
-      "role": "created",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga": {
-    "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
-    "tags": {
-      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "did": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "legacyUnqualifiedDid": "YKc7qhYN1TckZAMUf7jgwc",
       "method": "peer",
-      "methodSpecificIdentifier": "1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "methodSpecificIdentifier": "1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "recipientKeyFingerprints": [
         "z6MkwXNXTehVH7YijDmN1PtaXaSaCniTyaVepmY1EJgS15xq",
       ],
@@ -1978,10 +1481,10 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "_tags": {},
       "createdAt": "2022-04-30T13:02:21.646Z",
-      "did": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "did": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "alsoKnownAs": undefined,
         "assertionMethod": undefined,
@@ -1991,7 +1494,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         "capabilityDelegation": undefined,
         "capabilityInvocation": undefined,
         "controller": undefined,
-        "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+        "id": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
         "keyAgreement": undefined,
         "service": [
           {
@@ -2021,11 +1524,11 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
           },
         ],
       },
-      "id": "did:peer:1zQmadmBfngrYSWhYYxZ24fpW29iwhKhQ6CB6euLabbSK6ga",
+      "id": "did:peer:1zQmNStEDy8UHJCMFjJPJBJD36esBNX6YPa97y2jpRfCyLvG",
       "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"YKc7qhYN1TckZAMUf7jgwc#1","controller":"YKc7qhYN1TckZAMUf7jgwc","type":"Ed25519VerificationKey2018","publicKeyBase58":"J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"}],"service":[{"id":"YKc7qhYN1TckZAMUf7jgwc#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"],"routingKeys":[]}],"authentication":[{"publicKey":"YKc7qhYN1TckZAMUf7jgwc#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YKc7qhYN1TckZAMUf7jgwc"}",
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"YKc7qhYN1TckZAMUf7jgwc#1","controller":"YKc7qhYN1TckZAMUf7jgwc","type":"Ed25519VerificationKey2018","publicKeyBase58":"J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"}],"service":[{"id":"YKc7qhYN1TckZAMUf7jgwc#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J57UsQT3wa4FcivfKpvjgUtaPDScZhFJ8kd5Q2iR5sBT"],"routingKeys":[]}],"authentication":[{"publicKey":"YKc7qhYN1TckZAMUf7jgwc#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YKc7qhYN1TckZAMUf7jgwc"}",
           "unqualifiedDid": "YKc7qhYN1TckZAMUf7jgwc",
         },
       },
@@ -2033,84 +1536,13 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
-  "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ": {
-    "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
+  "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx": {
+    "id": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
     "tags": {
-      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
-      "legacyUnqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
-      "method": "peer",
-      "methodSpecificIdentifier": "1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
-      "recipientKeyFingerprints": [
-        "z6MkjmCrDWJVf8H2pCHcu11UDs4jb6FVu8nn5yQW24rrgez6",
-      ],
-      "role": "received",
-    },
-    "type": "DidRecord",
-    "value": {
-      "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.628Z",
-      "did": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
-      "didDocument": {
-        "@context": [
-          "https://w3id.org/did/v1",
-        ],
-        "alsoKnownAs": undefined,
-        "assertionMethod": undefined,
-        "authentication": [
-          "#6JwodG44",
-        ],
-        "capabilityDelegation": undefined,
-        "capabilityInvocation": undefined,
-        "controller": undefined,
-        "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
-        "keyAgreement": undefined,
-        "service": [
-          {
-            "id": "#IndyAgentService",
-            "priority": 0,
-            "recipientKeys": [
-              "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
-            ],
-            "routingKeys": [],
-            "serviceEndpoint": "rxjs:faber",
-            "type": "IndyAgent",
-          },
-        ],
-        "verificationMethod": [
-          {
-            "blockchainAccountId": undefined,
-            "controller": "#id",
-            "ethereumAddress": undefined,
-            "id": "#6JwodG44",
-            "publicKeyBase58": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
-            "publicKeyBase64": undefined,
-            "publicKeyHex": undefined,
-            "publicKeyJwk": undefined,
-            "publicKeyMultibase": undefined,
-            "publicKeyPem": undefined,
-            "type": "Ed25519VerificationKey2018",
-          },
-        ],
-      },
-      "id": "did:peer:1zQmc3BZoTinpVaG3oZ4PmRVN4JMdNZGCmPkS6smmTNLnvEZ",
-      "keys": undefined,
-      "metadata": {
-        "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"Ak15GBhMYpdS8XX3QDMv31#1","controller":"Ak15GBhMYpdS8XX3QDMv31","type":"Ed25519VerificationKey2018","publicKeyBase58":"6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"}],"service":[{"id":"Ak15GBhMYpdS8XX3QDMv31#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"],"routingKeys":[]}],"authentication":[{"publicKey":"Ak15GBhMYpdS8XX3QDMv31#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ak15GBhMYpdS8XX3QDMv31"}",
-          "unqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
-        },
-      },
-      "role": "received",
-      "updatedAt": "2022-01-21T22:50:20.522Z",
-    },
-  },
-  "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui": {
-    "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
-    "tags": {
-      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "did": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "legacyUnqualifiedDid": "9jTqUnV4k5ucxbyxumAaV7",
       "method": "peer",
-      "methodSpecificIdentifier": "1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "methodSpecificIdentifier": "1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "recipientKeyFingerprints": [
         "z6MkjDJL4X7YGoH6gjamhZR2NzowPZqtJfX5kPuNuWiVdjMr",
       ],
@@ -2120,10 +1552,10 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "_tags": {},
       "createdAt": "2022-04-30T13:02:21.641Z",
-      "did": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "did": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "alsoKnownAs": undefined,
         "assertionMethod": undefined,
@@ -2133,7 +1565,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         "capabilityDelegation": undefined,
         "capabilityInvocation": undefined,
         "controller": undefined,
-        "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+        "id": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
         "keyAgreement": undefined,
         "service": [
           {
@@ -2163,11 +1595,11 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
           },
         ],
       },
-      "id": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "id": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"9jTqUnV4k5ucxbyxumAaV7#1","controller":"9jTqUnV4k5ucxbyxumAaV7","type":"Ed25519VerificationKey2018","publicKeyBase58":"5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"}],"service":[{"id":"9jTqUnV4k5ucxbyxumAaV7#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"],"routingKeys":[]}],"authentication":[{"publicKey":"9jTqUnV4k5ucxbyxumAaV7#1","type":"Ed25519SignatureAuthentication2018"}],"id":"9jTqUnV4k5ucxbyxumAaV7"}",
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"9jTqUnV4k5ucxbyxumAaV7#1","controller":"9jTqUnV4k5ucxbyxumAaV7","type":"Ed25519VerificationKey2018","publicKeyBase58":"5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"}],"service":[{"id":"9jTqUnV4k5ucxbyxumAaV7#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU"],"routingKeys":[]}],"authentication":[{"publicKey":"9jTqUnV4k5ucxbyxumAaV7#1","type":"Ed25519SignatureAuthentication2018"}],"id":"9jTqUnV4k5ucxbyxumAaV7"}",
           "unqualifiedDid": "9jTqUnV4k5ucxbyxumAaV7",
         },
       },
@@ -2175,43 +1607,43 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
-  "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw": {
-    "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+  "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4": {
+    "id": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
     "tags": {
-      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
-      "legacyUnqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
+      "did": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
+      "legacyUnqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
       "method": "peer",
-      "methodSpecificIdentifier": "1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "methodSpecificIdentifier": "1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
       "recipientKeyFingerprints": [
-        "z6MkvcgxQSsX5WA8vcBokLZ46znnhRBH6aKAGYnonEUfUnQV",
+        "z6MkvW9GxjjUdL9qpaj2qQW6YBhCjZY7Zkzrks3cgpJaRjxR",
       ],
       "role": "created",
     },
     "type": "DidRecord",
     "value": {
       "_tags": {},
-      "createdAt": "2022-04-30T13:02:21.635Z",
-      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "createdAt": "2022-04-20T13:02:21.646Z",
+      "did": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "alsoKnownAs": undefined,
         "assertionMethod": undefined,
         "authentication": [
-          "#HARupCd5",
+          "#H3tENVV3",
         ],
         "capabilityDelegation": undefined,
         "capabilityInvocation": undefined,
         "controller": undefined,
-        "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+        "id": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
         "keyAgreement": undefined,
         "service": [
           {
             "id": "#IndyAgentService",
             "priority": 0,
             "recipientKeys": [
-              "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+              "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
             ],
             "routingKeys": [],
             "serviceEndpoint": "rxjs:alice",
@@ -2223,8 +1655,8 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
             "blockchainAccountId": undefined,
             "controller": "#id",
             "ethereumAddress": undefined,
-            "id": "#HARupCd5",
-            "publicKeyBase58": "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+            "id": "#H3tENVV3",
+            "publicKeyBase58": "H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3",
             "publicKeyBase64": undefined,
             "publicKeyHex": undefined,
             "publicKeyJwk": undefined,
@@ -2234,25 +1666,25 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
           },
         ],
       },
-      "id": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "id": "did:peer:1zQmPZuVfKzdmtdStmwKpaSwRH3sAwaKffNcP9ThfSksmvP4",
       "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"WewvCdyBi4HL8ogyGviYVS#1","controller":"WewvCdyBi4HL8ogyGviYVS","type":"Ed25519VerificationKey2018","publicKeyBase58":"HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"}],"service":[{"id":"WewvCdyBi4HL8ogyGviYVS#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"],"routingKeys":[]}],"authentication":[{"publicKey":"WewvCdyBi4HL8ogyGviYVS#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WewvCdyBi4HL8ogyGviYVS"}",
-          "unqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#1","controller":"WSwJQMBHGZbQsq9LDBTWjX","type":"Ed25519VerificationKey2018","publicKeyBase58":"H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"}],"service":[{"id":"WSwJQMBHGZbQsq9LDBTWjX#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["H3tENVV3HnfNi5tL9qYFh69CuzGG9skW4r8grYLZWXB3"],"routingKeys":[]}],"authentication":[{"publicKey":"WSwJQMBHGZbQsq9LDBTWjX#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WSwJQMBHGZbQsq9LDBTWjX"}",
+          "unqualifiedDid": "WSwJQMBHGZbQsq9LDBTWjX",
         },
       },
       "role": "created",
       "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
-  "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX": {
-    "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+  "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr": {
+    "id": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
     "tags": {
-      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "did": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
       "method": "peer",
-      "methodSpecificIdentifier": "1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "methodSpecificIdentifier": "1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "recipientKeyFingerprints": [
         "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
       ],
@@ -2262,10 +1694,10 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "_tags": {},
       "createdAt": "2022-04-30T13:02:21.577Z",
-      "did": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "did": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "alsoKnownAs": undefined,
         "assertionMethod": undefined,
@@ -2275,7 +1707,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         "capabilityDelegation": undefined,
         "capabilityInvocation": undefined,
         "controller": undefined,
-        "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+        "id": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
         "keyAgreement": undefined,
         "service": [
           {
@@ -2305,11 +1737,11 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
           },
         ],
       },
-      "id": "did:peer:1zQmeHpGaZ48DnAP2k3KntXB1vmd8MgLEdcb4EQzqWJDHcbX",
+      "id": "did:peer:1zQmQCp3iNUVGMDW5zuJQZxSajZQrBeo8jiuq1FPW4ZXVhNr",
       "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#1","controller":"3KAjJWF5NjiDTUm6JpPBQD","type":"Ed25519VerificationKey2018","publicKeyBase58":"2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"}],"service":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],"routingKeys":[]}],"authentication":[{"publicKey":"3KAjJWF5NjiDTUm6JpPBQD#1","type":"Ed25519SignatureAuthentication2018"}],"id":"3KAjJWF5NjiDTUm6JpPBQD"}",
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#1","controller":"3KAjJWF5NjiDTUm6JpPBQD","type":"Ed25519VerificationKey2018","publicKeyBase58":"2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"}],"service":[{"id":"3KAjJWF5NjiDTUm6JpPBQD#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],"routingKeys":[]}],"authentication":[{"publicKey":"3KAjJWF5NjiDTUm6JpPBQD#1","type":"Ed25519SignatureAuthentication2018"}],"id":"3KAjJWF5NjiDTUm6JpPBQD"}",
           "unqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
         },
       },
@@ -2317,13 +1749,368 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "updatedAt": "2022-01-21T22:50:20.522Z",
     },
   },
-  "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv": {
-    "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+  "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE": {
+    "id": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
     "tags": {
-      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+      "legacyUnqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+      "recipientKeyFingerprints": [
+        "z6MktCZAQNGvWb4WHAjwBqPtXhZdDYorbSJkGW9vj1uhw1HD",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#EkJ7p82V",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#EkJ7p82V",
+            "publicKeyBase58": "EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmSL5aqVsh36Ei4r8NkohfkMiaPLjtu3jqzRr9pSqnfTkE",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"SDqTzbVuCowusqGBNbNDjH#1","controller":"SDqTzbVuCowusqGBNbNDjH","type":"Ed25519VerificationKey2018","publicKeyBase58":"EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"}],"service":[{"id":"SDqTzbVuCowusqGBNbNDjH#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["EkJ7p82VB3a3AfuEWGS3gc1dPyY1BZ4PaVEztjwh1nVq"],"routingKeys":[]}],"authentication":[{"publicKey":"SDqTzbVuCowusqGBNbNDjH#1","type":"Ed25519SignatureAuthentication2018"}],"id":"SDqTzbVuCowusqGBNbNDjH"}",
+          "unqualifiedDid": "SDqTzbVuCowusqGBNbNDjH",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho": {
+    "id": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+    "tags": {
+      "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "legacyUnqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "recipientKeyFingerprints": [
+        "z6MkfiPMPxCQeSDZGMkCvm1Y2rBoPsmw4ZHMv71jXtcWRRiM",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#2G8Johwy",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#2G8Johwy",
+            "publicKeyBase58": "2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmVxHfU6ZgzxZfwAm6W5t4HKeupKctxpF6FaHgBmnvhEho",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#1","controller":"3KAjJWF5NjiDTUm6JpPBQD","type":"Ed25519VerificationKey2018","publicKeyBase58":"2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"}],"service":[{"id":"RtH4qxVPL1Dpmdv7GytjBv#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["2G8JohwyJtj69ruWFC3hBkdoaJW5eg31E66ohceVWCvy"],"routingKeys":[]}],"authentication":[{"publicKey":"RtH4qxVPL1Dpmdv7GytjBv#1","type":"Ed25519SignatureAuthentication2018"}],"id":"3KAjJWF5NjiDTUm6JpPBQD"}",
+          "unqualifiedDid": "3KAjJWF5NjiDTUm6JpPBQD",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M": {
+    "id": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+    "tags": {
+      "did": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+      "legacyUnqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+      "recipientKeyFingerprints": [
+        "z6Mkwc6efk75y4Y1agRx4NGpvtrpKxtKvMfgBEdQkHBwU8Xu",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.608Z",
+      "did": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#J9qc5Vre",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#J9qc5Vre",
+            "publicKeyBase58": "J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmYQSKmHhPGGnvcAshQMpTjKA27DTWwGtGtiGkYBiQJT5M",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"YUH4t3KMkEJiXgmqsncrY9#1","controller":"YUH4t3KMkEJiXgmqsncrY9","type":"Ed25519VerificationKey2018","publicKeyBase58":"J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"}],"service":[{"id":"YUH4t3KMkEJiXgmqsncrY9#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["J9qc5VredX3YUBbFNoJz5oJpWPcUWURKVDiUv1DvYukX"],"routingKeys":[]}],"authentication":[{"publicKey":"YUH4t3KMkEJiXgmqsncrY9#1","type":"Ed25519SignatureAuthentication2018"}],"id":"YUH4t3KMkEJiXgmqsncrY9"}",
+          "unqualifiedDid": "YUH4t3KMkEJiXgmqsncrY9",
+        },
+      },
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx": {
+    "id": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+    "tags": {
+      "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+      "legacyUnqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+      "recipientKeyFingerprints": [
+        "z6MkvcgxQSsX5WA8vcBokLZ46znnhRBH6aKAGYnonEUfUnQV",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.635Z",
+      "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#HARupCd5",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#HARupCd5",
+            "publicKeyBase58": "HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"WewvCdyBi4HL8ogyGviYVS#1","controller":"WewvCdyBi4HL8ogyGviYVS","type":"Ed25519VerificationKey2018","publicKeyBase58":"HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"}],"service":[{"id":"WewvCdyBi4HL8ogyGviYVS#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HARupCd5jxffp7M74mbDFuEnsquRgh4oaXsswxWeZZd7"],"routingKeys":[]}],"authentication":[{"publicKey":"WewvCdyBi4HL8ogyGviYVS#1","type":"Ed25519SignatureAuthentication2018"}],"id":"WewvCdyBi4HL8ogyGviYVS"}",
+          "unqualifiedDid": "WewvCdyBi4HL8ogyGviYVS",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy": {
+    "id": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+    "tags": {
+      "did": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+      "legacyUnqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+      "recipientKeyFingerprints": [
+        "z6MkjmCrDWJVf8H2pCHcu11UDs4jb6FVu8nn5yQW24rrgez6",
+      ],
+      "role": "received",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.628Z",
+      "did": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#6JwodG44",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:faber",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#6JwodG44",
+            "publicKeyBase58": "6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmc4nkRDFTaXX7DZDbGAuBBmivNV84qh8Ry3pAhVFgXhDy",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"Ak15GBhMYpdS8XX3QDMv31#1","controller":"Ak15GBhMYpdS8XX3QDMv31","type":"Ed25519VerificationKey2018","publicKeyBase58":"6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"}],"service":[{"id":"Ak15GBhMYpdS8XX3QDMv31#IndyAgentService","serviceEndpoint":"rxjs:faber","type":"IndyAgent","priority":0,"recipientKeys":["6JwodG44KanZhhSvDS3dNmWjmWyeVFYRPxVaBntqmSCi"],"routingKeys":[]}],"authentication":[{"publicKey":"Ak15GBhMYpdS8XX3QDMv31#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ak15GBhMYpdS8XX3QDMv31"}",
+          "unqualifiedDid": "Ak15GBhMYpdS8XX3QDMv31",
+        },
+      },
+      "role": "received",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e": {
+    "id": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
+    "tags": {
+      "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "legacyUnqualifiedDid": "Ud6AWCk6WrwfYKZUw5tJmt",
       "method": "peer",
-      "methodSpecificIdentifier": "1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "methodSpecificIdentifier": "1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "recipientKeyFingerprints": [
         "z6MkuWTEmH1mUo6W96zSWyH612hFHowRzNEscPYBL2CCMyC2",
       ],
@@ -2333,10 +2120,10 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "_tags": {},
       "createdAt": "2022-04-30T13:02:21.653Z",
-      "did": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "did": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "didDocument": {
         "@context": [
-          "https://w3id.org/did/v1",
+          "https://www.w3.org/ns/did/v1",
         ],
         "alsoKnownAs": undefined,
         "assertionMethod": undefined,
@@ -2346,7 +2133,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
         "capabilityDelegation": undefined,
         "capabilityInvocation": undefined,
         "controller": undefined,
-        "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+        "id": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
         "keyAgreement": undefined,
         "service": [
           {
@@ -2376,12 +2163,225 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
           },
         ],
       },
-      "id": "did:peer:1zQmfDAtfDZcK4trJBsvVTXrBx9uaLCHSUZH9X2LFaAd3JKv",
+      "id": "did:peer:1zQmctp3J5DumzD4DDtirW6LvbEPPLUih2UacpX25wjqvC8e",
       "keys": undefined,
       "metadata": {
         "_internal/legacyDid": {
-          "didDocumentString": "{"@context":"https://w3id.org/did/v1","publicKey":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#1","controller":"Ud6AWCk6WrwfYKZUw5tJmt","type":"Ed25519VerificationKey2018","publicKeyBase58":"G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"}],"service":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"],"routingKeys":[]}],"authentication":[{"publicKey":"Ud6AWCk6WrwfYKZUw5tJmt#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ud6AWCk6WrwfYKZUw5tJmt"}",
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#1","controller":"Ud6AWCk6WrwfYKZUw5tJmt","type":"Ed25519VerificationKey2018","publicKeyBase58":"G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"}],"service":[{"id":"Ud6AWCk6WrwfYKZUw5tJmt#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["G4CCB2mL9Fc32c9jqQKF9w9FUEfaaUzWvNdFVkEBSkQe"],"routingKeys":[]}],"authentication":[{"publicKey":"Ud6AWCk6WrwfYKZUw5tJmt#1","type":"Ed25519SignatureAuthentication2018"}],"id":"Ud6AWCk6WrwfYKZUw5tJmt"}",
           "unqualifiedDid": "Ud6AWCk6WrwfYKZUw5tJmt",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2": {
+    "id": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+    "tags": {
+      "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+      "legacyUnqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+      "recipientKeyFingerprints": [
+        "z6Mkw81EsWQioXYC9YJ7uKHCRh6LTN7sfD9sJbSPBGXmUpzC",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.577Z",
+      "did": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#HfkCHGAH",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#HfkCHGAH",
+            "publicKeyBase58": "HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmdBUroNDMEZX7An4NZWpuPXsmvYoFm6KkNUr6T2FvoKf2",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"XajWZZmHGAWUvYCi7CApaG#1","controller":"XajWZZmHGAWUvYCi7CApaG","type":"Ed25519VerificationKey2018","publicKeyBase58":"HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"}],"service":[{"id":"XajWZZmHGAWUvYCi7CApaG#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["HfkCHGAHTz3j33TRDkKMabYLdnr2FKuWcaXTLzZkZcCp"],"routingKeys":[]}],"authentication":[{"publicKey":"XajWZZmHGAWUvYCi7CApaG#1","type":"Ed25519SignatureAuthentication2018"}],"id":"XajWZZmHGAWUvYCi7CApaG"}",
+          "unqualifiedDid": "XajWZZmHGAWUvYCi7CApaG",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT": {
+    "id": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+    "tags": {
+      "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+      "legacyUnqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+      "recipientKeyFingerprints": [
+        "z6Mko31DNE3gqMRZj1JNhv2BHb1caQshcd9njgKkEQXsgFRp",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.646Z",
+      "did": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#9akAmyoF",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#9akAmyoF",
+            "publicKeyBase58": "9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmfCM4v4QbeYNWSv48dhxxnB6TmAydwj1G4mcS1TrmhBjT",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"GkEeb96MGT94K1HyQQzpj1#1","controller":"GkEeb96MGT94K1HyQQzpj1","type":"Ed25519VerificationKey2018","publicKeyBase58":"9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"}],"service":[{"id":"GkEeb96MGT94K1HyQQzpj1#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["9akAmyoFVow6cWTg2M4LSVTckqbrCjuS3fQpQ8Zrm2eS"],"routingKeys":[]}],"authentication":[{"publicKey":"GkEeb96MGT94K1HyQQzpj1#1","type":"Ed25519SignatureAuthentication2018"}],"id":"GkEeb96MGT94K1HyQQzpj1"}",
+          "unqualifiedDid": "GkEeb96MGT94K1HyQQzpj1",
+        },
+      },
+      "role": "created",
+      "updatedAt": "2022-01-21T22:50:20.522Z",
+    },
+  },
+  "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa": {
+    "id": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+    "tags": {
+      "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+      "legacyUnqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
+      "method": "peer",
+      "methodSpecificIdentifier": "1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+      "recipientKeyFingerprints": [
+        "z6MktpVtPC5j91aycGPT5pceiu8EGKDzM5RLwqAZBuCgxw4V",
+      ],
+      "role": "created",
+    },
+    "type": "DidRecord",
+    "value": {
+      "_tags": {},
+      "createdAt": "2022-04-30T13:02:21.641Z",
+      "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+      "didDocument": {
+        "@context": [
+          "https://www.w3.org/ns/did/v1",
+        ],
+        "alsoKnownAs": undefined,
+        "assertionMethod": undefined,
+        "authentication": [
+          "#FNEqnwqH",
+        ],
+        "capabilityDelegation": undefined,
+        "capabilityInvocation": undefined,
+        "controller": undefined,
+        "id": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+        "keyAgreement": undefined,
+        "service": [
+          {
+            "id": "#IndyAgentService",
+            "priority": 0,
+            "recipientKeys": [
+              "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
+            ],
+            "routingKeys": [],
+            "serviceEndpoint": "rxjs:alice",
+            "type": "IndyAgent",
+          },
+        ],
+        "verificationMethod": [
+          {
+            "blockchainAccountId": undefined,
+            "controller": "#id",
+            "ethereumAddress": undefined,
+            "id": "#FNEqnwqH",
+            "publicKeyBase58": "FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7",
+            "publicKeyBase64": undefined,
+            "publicKeyHex": undefined,
+            "publicKeyJwk": undefined,
+            "publicKeyMultibase": undefined,
+            "publicKeyPem": undefined,
+            "type": "Ed25519VerificationKey2018",
+          },
+        ],
+      },
+      "id": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
+      "keys": undefined,
+      "metadata": {
+        "_internal/legacyDid": {
+          "didDocumentString": "{"@context":"https://www.w3.org/ns/did/v1","publicKey":[{"id":"TMnQftvJJJwoYogYkQgVjg#1","controller":"TMnQftvJJJwoYogYkQgVjg","type":"Ed25519VerificationKey2018","publicKeyBase58":"FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"}],"service":[{"id":"TMnQftvJJJwoYogYkQgVjg#IndyAgentService","serviceEndpoint":"rxjs:alice","type":"IndyAgent","priority":0,"recipientKeys":["FNEqnwqHoU6WVmYkQFeosoaESjx8wCAzFpFdMdEg3iH7"],"routingKeys":[]}],"authentication":[{"publicKey":"TMnQftvJJJwoYogYkQgVjg#1","type":"Ed25519SignatureAuthentication2018"}],"id":"TMnQftvJJJwoYogYkQgVjg"}",
+          "unqualifiedDid": "TMnQftvJJJwoYogYkQgVjg",
         },
       },
       "role": "created",
@@ -2393,7 +2393,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
+      "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2pESkw0WDdZR29INmdqYW1oWlIyTnpvd1BacXRKZlg1a1B1TnVXaVZkak1yI3o2TWtqREpMNFg3WUdvSDZnamFtaFpSMk56b3dQWnF0SmZYNWtQdU51V2lWZGpNciJdLCJyIjpbXX0",
       "invitationKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
       "mediatorId": undefined,
@@ -2402,7 +2402,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "requester",
       "state": "response-received",
-      "theirDid": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "theirDid": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "theirKey": "5m3HUGs6wFndaEk51zTBXuFwZza2tnGj4NzT5EkUiWaU",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
@@ -2413,7 +2413,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "autoAcceptConnection": false,
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.641Z",
-      "did": "did:peer:1zQma8LpnJ22GxQdyASV5jP6psacAGtJ6ytk4pVayYp4erRf",
+      "did": "did:peer:1zQmfLL2K1xoNdBEcjLCuGH7sq5hUF4zgeWH9WhmZwwucqfa",
       "id": "e3f9bc2b-f0a1-4a2c-ab81-2f0a3488c199",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa2pESkw0WDdZR29INmdqYW1oWlIyTnpvd1BacXRKZlg1a1B1TnVXaVZkak1yI3o2TWtqREpMNFg3WUdvSDZnamFtaFpSMk56b3dQWnF0SmZYNWtQdU51V2lWZGpNciJdLCJyIjpbXX0",
       "metadata": {},
@@ -2422,7 +2422,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
       "previousTheirDids": [],
       "role": "requester",
       "state": "response-received",
-      "theirDid": "did:peer:1zQmcXZepLE55VGCMELEFjMd4nKrzp3GGyRR3r3MYermagui",
+      "theirDid": "did:peer:1zQmNkzNydAs2BdtWxM44sV2gMUtpxUw66nxMVTmswyb9Zhx",
       "theirLabel": "Agent: PopulateWallet2",
       "threadId": "daf3372c-1ee2-4246-a1f4-f62f54f7d68b",
       "updatedAt": "2022-01-21T22:50:20.522Z",
@@ -2433,7 +2433,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "tags": {
       "alias": undefined,
       "connectionTypes": [],
-      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa21vZDh2cDJuVVJWa3RWQzVjZVFleXIyVlV6MjZpdTJaQU5MTlZnOXBNYXdhI3o2TWttb2Q4dnAyblVSVmt0VkM1Y2VRZXlyMlZVejI2aXUyWkFOTE5WZzlwTWF3YSJdLCJyIjpbXX0",
       "invitationKey": "8MN6LZnM8t1HmzMNw5Sp8kUVfQkFK1nCUMRSfQBoSNAC",
       "mediatorId": undefined,
@@ -2451,7 +2451,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
     "value": {
       "connectionTypes": [],
       "createdAt": "2022-04-30T13:02:21.635Z",
-      "did": "did:peer:1zQmduuYkxRKJuVyvDqttdd9eDfBwDnF1DAU5FFQo4whx7Uw",
+      "did": "did:peer:1zQmYfrkcLycyPxZZSrSw3LEMYZNLJLD3HjQ1VpSV692bcZx",
       "id": "ee88e2e1-e27e-46a6-a910-f87690109e32",
       "invitationDid": "did:peer:2.SeyJzIjoicnhqczpmYWJlciIsInQiOiJkaWQtY29tbXVuaWNhdGlvbiIsInByaW9yaXR5IjowLCJyZWNpcGllbnRLZXlzIjpbImRpZDprZXk6ejZNa21vZDh2cDJuVVJWa3RWQzVjZVFleXIyVlV6MjZpdTJaQU5MTlZnOXBNYXdhI3o2TWttb2Q4dnAyblVSVmt0VkM1Y2VRZXlyMlZVejI2aXUyWkFOTE5WZzlwTWF3YSJdLCJyIjpbXX0",
       "metadata": {},

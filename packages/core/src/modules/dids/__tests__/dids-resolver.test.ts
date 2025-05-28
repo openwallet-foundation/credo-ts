@@ -19,7 +19,7 @@ describe('dids', () => {
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://w3id.org/did/v1',
+          'https://www.w3.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
@@ -69,7 +69,7 @@ describe('dids', () => {
     expect(JsonTransformer.toJSON(did)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://w3id.org/did/v1',
+          'https://www.w3.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
