@@ -1,5 +1,5 @@
 {
-  "@context": ["https://w3id.org/did/v1"],
+  "@context": ["https://www.w3.org/ns/did/v1"],
   "verificationMethod": [
     {
       "id": "#E6D1m3eE",
@@ -26,5 +26,5 @@
       "routingKeys": []
     }
   ],
-  "id": "did:peer:1zQmU1AYVxXvPeQujvUxnSVGUMsqvFNQHN2TMMMQz6TbXor8"
+  "id": "did:peer:1zQmVE7oiMPo9GBMkpfN8DNZhCnqbqEbCmkGapKQosJ3KEeE"
 }
