@@ -43,6 +43,7 @@ import {
 } from '../src'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 
+import { z } from 'zod'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
@@ -154,7 +155,20 @@ describe('OpenId4Vc', () => {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
-        x509: new X509Module(),
+        x509: new X509Module({
+          trustedCertificates: [
+            `-----BEGIN CERTIFICATE-----
+MIIBdTCCARugAwIBAgIUHsSmbGuWAVZVXjqoidqAVClGx4YwCgYIKoZIzj0EAwIw
+GzEZMBcGA1UEAwwQR2VybWFuIFJlZ2lzdHJhcjAeFw0yNTAzMzAxOTU4NTFaFw0y
+NjAzMzAxOTU4NTFaMBsxGTAXBgNVBAMMEEdlcm1hbiBSZWdpc3RyYXIwWTATBgcq
+hkjOPQIBBggqhkjOPQMBBwNCAASQWCESFd0Ywm9sK87XxqxDP4wOAadEKgcZFVX7
+npe3ALFkbjsXYZJsTGhVp0+B5ZtUao2NsyzJCKznPwTz2wJcoz0wOzAaBgNVHREE
+EzARgg9mdW5rZS13YWxsZXQuZGUwHQYDVR0OBBYEFMxnKLkGifbTKrxbGXcFXK6R
+FQd3MAoGCCqGSM49BAMCA0gAMEUCIQD4RiLJeuVDrEHSvkPiPfBvMxAXRC6PuExo
+pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
+-----END CERTIFICATE-----`,
+          ],
+        }),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
       global.fetch
@@ -429,14 +443,154 @@ describe('OpenId4Vc', () => {
 
     await expect(
       holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
-        verifyAuthorizationRequestCallback: () => false,
+        verifyAuthorizationRequestCallback: () => {
+          throw Error('testing error')
+        },
       })
     ).rejects.toThrow()
 
     await expect(
       holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
-        verifyAuthorizationRequestCallback: () => true,
+        verifyAuthorizationRequestCallback: () => {},
       })
+    ).resolves.toBeDefined()
+  })
+
+  it('e2e flow with tenants, holder verification callback for authorization request succeeds', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+
+    await expect(
+      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+        'openid4vp://?client_id=x509_san_dns%3Afunke-wallet.de&request_uri=https%3A%2F%2Ffunke-wallet.de%2Foid4vp%2Fdraft-24%2Fvalid-request%2Fdcql',
+        {
+          verifyAuthorizationRequestCallback: async ({ authorizationRequest, jwsService, client }) => {
+            if (!authorizationRequest.verifier_attestations) return
+            for (const va of authorizationRequest.verifier_attestations) {
+              // Here we verify it as a registration certificate according to
+              // https://bmi.usercontent.opencode.de/eudi-wallet/eidas-2.0-architekturkonzept/flows/Wallet-Relying-Party-Authentication/#registration-certificate
+              if (va.format === 'jwt') {
+                if (typeof va.data !== 'string') {
+                  throw new Error('Only inline JWTs are supported')
+                }
+
+                const { isValid } = await jwsService.verifyJws(holder.agent.context, { jws: va.data })
+                const jwt = Jwt.fromSerializedJwt(va.data)
+
+                if (!isValid) {
+                  throw new Error('Invalid signature on JWT provided in the verifier_attestations')
+                }
+
+                if (jwt.header.typ !== 'rc-rp+jwt') {
+                  throw new Error(`only 'rc-rp+jwt' is supported as header typ. Request included: ${jwt.header.typ}`)
+                }
+
+                const registrationCertificateHeaderSchema = z
+                  .object({
+                    typ: z.literal('rc-rp+jwt'),
+                    alg: z.string(),
+                    // sprin-d did not define this
+                    x5u: z.string().url().optional(),
+                    // sprin-d did not define this
+                    'x5t#s256': z.string().optional(),
+                  })
+                  .passthrough()
+
+                // TODO: does not support intermediaries
+                const registrationCertificatePayloadSchema = z
+                  .object({
+                    credentials: z.array(
+                      z.object({
+                        id: z.string().optional(),
+                        format: z.string(),
+                        multiple: z.boolean().default(false),
+                        meta: z
+                          .object({
+                            vct_values: z.array(z.string()).optional(),
+                            doctype_value: z.string().optional(),
+                          })
+                          .optional(),
+                        trusted_authorities: z
+                          .array(z.object({ type: z.string(), values: z.array(z.string()) }))
+                          .nonempty()
+                          .optional(),
+                        require_cryptographic_holder_binding: z.boolean().default(true),
+                        claims: z
+                          .array(
+                            z.object({
+                              id: z.string().optional(),
+                              path: z.array(z.string()).nonempty().nonempty(),
+                              values: z.array(z.number().or(z.boolean())).optional(),
+                            })
+                          )
+                          .nonempty()
+                          .optional(),
+                        claim_sets: z.array(z.array(z.string())).nonempty().optional(),
+                      })
+                    ),
+                    contact: z.object({
+                      website: z.string().url(),
+                      'e-mail': z.string().email(),
+                      phone: z.string(),
+                    }),
+                    sub: z.string(),
+                    // Should be service
+                    services: z.array(z.object({ lang: z.string(), name: z.string() })),
+                    public_body: z.boolean().default(false),
+                    entitlements: z.array(z.any()),
+                    provided_attestations: z
+                      .array(
+                        z.object({
+                          format: z.string(),
+                          meta: z.any(),
+                        })
+                      )
+                      .optional(),
+                    privacy_policy: z.string().url(),
+                    iat: z.number().optional(),
+                    exp: z.number().optional(),
+                    purpose: z
+                      .array(
+                        z.object({
+                          locale: z.string().optional(),
+                          lang: z.string().optional(),
+                          name: z.string(),
+                        })
+                      )
+                      .optional(),
+                    status: z.any(),
+                  })
+                  .passthrough()
+
+                const _parsedHeader = registrationCertificateHeaderSchema.parse(jwt.header)
+                const parsedPayload = registrationCertificatePayloadSchema.parse(jwt.payload.toJson())
+
+                if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri') {
+                  throw new Error(`Unsupported client scheme ${client.scheme}`)
+                }
+
+                const [rpCertEncoded] = client.x5c
+                const rpCert = X509Certificate.fromEncodedCertificate(rpCertEncoded)
+
+                if (rpCert.subject !== parsedPayload.sub) {
+                  throw new Error(
+                    `Subject in the certificate of the auth request: '${rpCert.subject}' is not equal to the subject of the registration certificate: '${parsedPayload.sub}'`
+                  )
+                }
+
+                if (parsedPayload.iat && new Date().getTime() / 1000 <= parsedPayload.iat) {
+                  throw new Error('Issued at timestamp of the registration certificate is in the future')
+                }
+
+                // TODO: check the status of the registration certificate
+
+                // TODO: validate if they can request the credentials!!!!
+              } else {
+                throw new Error(`only format of 'jwt' is supported`)
+              }
+            }
+          },
+        }
+      )
     ).resolves.toBeDefined()
   })
 

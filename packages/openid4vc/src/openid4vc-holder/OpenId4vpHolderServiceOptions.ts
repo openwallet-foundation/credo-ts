@@ -6,6 +6,7 @@ import type {
   DifPexInputDescriptorToCredentials,
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
+  JwsService,
 } from '@credo-ts/core'
 import { Openid4vpAuthorizationRequestDcApi, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload, Openid4vpAuthorizationRequest } from '../shared'
@@ -15,9 +16,12 @@ export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizat
 
 export type VerifyAuthorizationRequestOptions = {
   authorizationRequest: Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
+  jwsService: JwsService
+  // NOTE: `ParsedClientIdentifier` is not exported from @openid4vc/openid4vp
+  client: ResolvedOpenid4vpAuthorizationRequest['client']
 }
 
-export type VerifyAuthorizationRequestCallback = (options: VerifyAuthorizationRequestOptions) => CanBePromise<boolean>
+export type VerifyAuthorizationRequestCallback = (options: VerifyAuthorizationRequestOptions) => CanBePromise<void>
 
 export interface ResolveOpenId4VpAuthorizationRequestOptions {
   trustedCertificates?: EncodedX509Certificate[]

@@ -23,11 +23,13 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  JwsService,
   Kms,
   TypedArrayEncoder,
   injectable,
 } from '@credo-ts/core'
 import {
+  Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationResponse,
   Openid4vpClient,
   VpToken,
@@ -142,12 +144,20 @@ export class OpenId4VpHolderService {
     const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
 
     if (options?.verifyAuthorizationRequestCallback) {
-      const result = await options.verifyAuthorizationRequestCallback({
-        authorizationRequest: verifiedAuthorizationRequest.authorizationRequestPayload,
-      })
-
-      if (!result) {
-        throw new CredoError('verificationAuthorizationCallback returned false. User-provided validation failed.')
+      try {
+        await options.verifyAuthorizationRequestCallback({
+          authorizationRequest:
+            verifiedAuthorizationRequest.authorizationRequestPayload as Openid4vpAuthorizationRequest,
+          jwsService: agentContext.resolve(JwsService),
+          client,
+        })
+      } catch (e) {
+        throw new CredoError(
+          `verificationAuthorizationCallback returned false. User-provided validation failed. cause: ${e}`,
+          {
+            cause: e,
+          }
+        )
       }
     }
 
