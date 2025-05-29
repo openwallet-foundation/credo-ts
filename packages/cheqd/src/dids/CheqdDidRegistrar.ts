@@ -385,9 +385,25 @@ export class CheqdDidRegistrar implements DidRegistrar {
         data,
       })
       const payloadToSign = MsgCreateResourcePayload.encode(resourcePayload).finish()
-
       const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
+
+      const authentication = didDocumentInstance.authentication?.map((authentication) =>
+        typeof authentication === 'string'
+          ? didDocumentInstance.dereferenceVerificationMethod(authentication)
+          : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
       const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
