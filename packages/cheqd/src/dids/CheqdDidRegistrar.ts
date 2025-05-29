@@ -458,9 +458,9 @@ export class CheqdDidRegistrar implements DidRegistrar {
       )
       if (!authentication || authentication.length === 0) {
         return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
+          resourceMetadata: {},
+          resourceRegistrationMetadata: {},
+          resourceState: {
             state: 'failed',
             reason: "No keys to sign with in 'authentication' of DID document",
           },
