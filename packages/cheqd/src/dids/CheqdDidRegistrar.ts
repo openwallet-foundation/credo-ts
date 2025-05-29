@@ -132,9 +132,23 @@ export class CheqdDidRegistrar implements DidRegistrar {
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
       const didDocumentJson = didDocument.toJSON() as DIDDocument
-
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocumentJson, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+
+      const authentication = didDocument.authentication?.map((authentication) =>
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
 
       const response = await cheqdLedgerService.create(didDocumentJson, signInputs, versionId)
       if (response.code !== 0) {
@@ -258,9 +272,28 @@ export class CheqdDidRegistrar implements DidRegistrar {
       // Add Cheqd default context to the did document
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
 
-      const response = await cheqdLedgerService.update(didDocument as DIDDocument, signInputs, versionId)
+      const authentication = didDocument.authentication?.map((authentication) =>
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
+
+      const response = await cheqdLedgerService.update(
+        didDocument as DIDDocument,
+        // TOOD: we should also sign with the authentication entries that are removed (so we should diff)
+        signInputs,
+        versionId
+      )
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
@@ -318,7 +351,24 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
       const payloadToSign = createMsgDeactivateDidDocPayloadToSign(didDocument, versionId)
       const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
+
+      const authentication = didDocumentInstance.authentication?.map((authentication) =>
+        typeof authentication === 'string'
+          ? didDocumentInstance.dereferenceVerificationMethod(authentication)
+          : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
       const response = await cheqdLedgerService.deactivate(didDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
