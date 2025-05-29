@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- a17d8da: fix: error during shutdown of agent in React Native due to usage of unavailable event method on socket `.once`
+
 ## 0.5.15
 
 ## 0.5.14
