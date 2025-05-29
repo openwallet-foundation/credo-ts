@@ -8,6 +8,7 @@ import {
   KeyType,
   TypedArrayEncoder,
   W3cJwtVerifiableCredential,
+  W3cCredentialService,
 } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 
@@ -96,6 +97,13 @@ describe('OpenId4VcHolder', () => {
         .reply(200, fixture.wellKnownDid)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
+
+      // The credential issued by mattr launchpad is expired, so we mock the verification...
+      const w3cCredentialService = holder.dependencyManager.resolve(W3cCredentialService)
+      jest
+        .spyOn(w3cCredentialService, 'verifyCredential')
+        .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
+
       const credentials = await holder.modules.openId4VcHolder.acceptCredentialOfferUsingPreAuthorizedCode(resolved, {
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
