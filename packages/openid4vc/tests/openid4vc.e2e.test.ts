@@ -1,16 +1,8 @@
-import type {
-  AgentContext,
-  DcqlQuery,
-  DifPresentationExchangeDefinitionV2,
-  Mdoc,
-  MdocDeviceResponse,
-  SdJwtVc,
-} from '@credo-ts/core'
+import type { DcqlQuery, DifPresentationExchangeDefinitionV2, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   DateOnly,
-  DcqlService,
   DidsApi,
   JwsService,
   Jwt,
@@ -24,9 +16,6 @@ import {
   X509Certificate,
   X509Module,
   X509Service,
-  deepEquality,
-  equalsIgnoreOrder,
-  equalsWithOrder,
   getPublicJwkFromVerificationMethod,
   parseDid,
   w3cDate,
@@ -40,7 +29,6 @@ import {
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-import { z } from 'zod'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
@@ -52,7 +40,7 @@ import {
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
-import type { OpenId4VciCredentialBindingResolver, VerifyAuthorizationRequestOptions } from '../src/openid4vc-holder'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
 import {
@@ -463,32 +451,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         verifyAuthorizationRequestCallback: () => {},
       })
     ).resolves.toBeDefined()
-  })
-
-  it('e2e flow with tenants, holder verification callback for authorization request succeeds', async () => {
-    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-
-    await expect(
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
-        'openid4vp://?client_id=x509_san_dns%3Afunke-wallet.de&request_uri=https%3A%2F%2Ffunke-wallet.de%2Foid4vp%2Fdraft-24%2Fvalid-request%2Fdcql',
-        {
-          verifyAuthorizationRequestCallback,
-        }
-      )
-    ).resolves.toBeDefined()
-  })
-
-  it('e2e flow with tenants, holder verification callback for authorization request fails with overasking', async () => {
-    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-
-    await expect(
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
-        'openid4vp://?client_id=x509_san_dns%3Afunke-wallet.de&request_uri=https%3A%2F%2Ffunke-wallet.de%2Foid4vp%2Fdraft-24%2Foverask%2Fdcql',
-        {
-          verifyAuthorizationRequestCallback,
-        }
-      )
-    ).rejects.toThrow()
   })
 
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
@@ -2987,281 +2949,3 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 })
-
-// TODO: might move this to the dcql module and expose it as a util function
-function isDcqlRequestValidSubsetOfOtherDcqlRequest(
-  agentContext: AgentContext,
-  arq: DcqlQuery,
-  rcq: DcqlQuery
-): boolean {
-  const dcqlService = agentContext.resolve(DcqlService)
-  dcqlService.validateDcqlQuery(arq)
-  // TODO: validate required the `id` property, which is not in the rcq
-  // const rcqQuery = dcqlService.validateDcqlQuery(arq)
-
-  if (rcq.credential_sets) {
-    agentContext.config.logger.warn(
-      'credential_sets are not allowed on the dcql query for the registration certificate'
-    )
-    return false
-  }
-
-  if (rcq.credentials.some((c) => c.id)) {
-    agentContext.config.logger.warn(
-      'credentials[n].id is not allowed on the dcql query for the registration certificate'
-    )
-    return false
-  }
-
-  // Short-circuit for exact match
-  if (deepEquality(arq.credentials, rcq.credentials)) return true
-
-  // only sd-jwt and mdoc are supported
-  if (arq.credentials.some((c) => c.format !== 'mso_mdoc' && c.format !== 'vc+sd-jwt' && c.format !== 'dc+sd-jwt')) {
-    return false
-  }
-
-  credentialQueryLoop: for (const credentialQuery of arq.credentials) {
-    const matchingRcqCredentialQueriesBasedOnFormat = rcq.credentials.filter((c) => c.format === credentialQuery.format)
-
-    if (matchingRcqCredentialQueriesBasedOnFormat.length === 0) return false
-
-    switch (credentialQuery.format) {
-      case 'mso_mdoc': {
-        const doctypeValue = credentialQuery.meta?.doctype_value
-        if (!doctypeValue) return false
-        if (typeof credentialQuery.meta?.doctype_value !== 'string') return false
-
-        const foundMatchingRequests = matchingRcqCredentialQueriesBasedOnFormat.filter(
-          (c): c is typeof c & { format: 'mso_mdoc' } =>
-            !!(c.format === 'mso_mdoc' && c.meta && c.meta.doctype_value === doctypeValue)
-        )
-
-        // We do not know which one we have to pick based on the meta+format
-        if (foundMatchingRequests.length === 0) return false
-
-        let foundFullyMatching = false
-        for (const matchedRequest of foundMatchingRequests) {
-          // credentialQuery.claims must match or be subset of matchedRequest
-
-          // If the claims is empty, everything within the specific format+meta is allowed
-          if (!matchedRequest.claims) continue credentialQueryLoop
-
-          // If no specific claims are request, we allow it as the format+meta is allowed to be requested
-          // but this requests no additional claims
-          if (!credentialQuery.claims) continue credentialQueryLoop
-
-          // Every claim request in the authorization request must be found in the registration certificate
-          // for mdoc, this means matching the `path[0]` (namespace) and `path[1]` (value name)
-          const isEveryClaimAllowedToBeRequested = credentialQuery.claims.every(
-            (c) =>
-              'path' in c &&
-              matchedRequest.claims?.some(
-                (mrc) => 'path' in mrc && c.path[0] === mrc.path[0] && c.path[1] === mrc.path[1]
-              )
-          )
-          if (isEveryClaimAllowedToBeRequested) {
-            foundFullyMatching = true
-          }
-        }
-
-        if (!foundFullyMatching) return false
-
-        break
-      }
-      case 'dc+sd-jwt':
-      case 'vc+sd-jwt': {
-        const vctValues = credentialQuery.meta?.vct_values
-        if (!vctValues) return false
-        if (credentialQuery.meta?.vct_values?.length === 0) return false
-
-        const foundMatchingRequests = matchingRcqCredentialQueriesBasedOnFormat.filter(
-          (c): c is typeof c & ({ format: 'dc+sd-jwt' } | { format: 'vc+sd-jwt' }) =>
-            !!(
-              (c.format === 'dc+sd-jwt' || c.format === 'vc+sd-jwt') &&
-              c.meta?.vct_values &&
-              equalsIgnoreOrder(c.meta.vct_values, vctValues)
-            )
-        )
-
-        // We do not know which one we have to pick based on the meta+format
-        if (foundMatchingRequests.length === 0) return false
-
-        let foundFullyMatching = false
-        for (const matchedRequest of foundMatchingRequests) {
-          // credentialQuery.claims must match or be subset of matchedRequest
-
-          // If the claims is empty, everything within the specific format+meta is allowed
-          if (!matchedRequest.claims) continue credentialQueryLoop
-
-          // If no specific claims are request, we allow it as the format+meta is allowed to be requested
-          // but this requests no additional claims
-          if (!credentialQuery.claims) continue credentialQueryLoop
-
-          // Every claim request in the authorization request must be found in the registration certificate
-          // for sd-jwt, this means making sure that every `path[n]` is in the registration certificate
-          const isEveryClaimAllowedToBeRequested = credentialQuery.claims.every(
-            (c) =>
-              'path' in c && matchedRequest.claims?.some((mrc) => 'path' in mrc && equalsWithOrder(c.path, mrc.path))
-          )
-          if (isEveryClaimAllowedToBeRequested) {
-            foundFullyMatching = true
-          }
-        }
-
-        if (!foundFullyMatching) return false
-
-        break
-      }
-      default:
-        return false
-    }
-  }
-
-  return true
-}
-
-const verifyAuthorizationRequestCallback = async ({
-  agentContext,
-  authorizationRequest,
-  client,
-}: VerifyAuthorizationRequestOptions) => {
-  if (!authorizationRequest.verifier_attestations) return
-  for (const va of authorizationRequest.verifier_attestations) {
-    // Here we verify it as a registration certificate according to
-    // https://bmi.usercontent.opencode.de/eudi-wallet/eidas-2.0-architekturkonzept/flows/Wallet-Relying-Party-Authentication/#registration-certificate
-    if (va.format === 'jwt') {
-      if (typeof va.data !== 'string') {
-        throw new Error('Only inline JWTs are supported')
-      }
-
-      const jwsService = agentContext.resolve(JwsService)
-      const { isValid } = await jwsService.verifyJws(agentContext, { jws: va.data })
-      const jwt = Jwt.fromSerializedJwt(va.data)
-
-      if (!isValid) {
-        throw new Error('Invalid signature on JWT provided in the verifier_attestations')
-      }
-
-      if (jwt.header.typ !== 'rc-rp+jwt') {
-        throw new Error(`only 'rc-rp+jwt' is supported as header typ. Request included: ${jwt.header.typ}`)
-      }
-
-      const registrationCertificateHeaderSchema = z
-        .object({
-          typ: z.literal('rc-rp+jwt'),
-          alg: z.string(),
-          // sprin-d did not define this
-          x5u: z.string().url().optional(),
-          // sprin-d did not define this
-          'x5t#s256': z.string().optional(),
-        })
-        .passthrough()
-
-      // TODO: does not support intermediaries
-      const registrationCertificatePayloadSchema = z
-        .object({
-          credentials: z.array(
-            z.object({
-              format: z.string(),
-              multiple: z.boolean().default(false),
-              meta: z
-                .object({
-                  vct_values: z.array(z.string()).optional(),
-                  doctype_value: z.string().optional(),
-                })
-                .optional(),
-              trusted_authorities: z
-                .array(z.object({ type: z.string(), values: z.array(z.string()) }))
-                .nonempty()
-                .optional(),
-              require_cryptographic_holder_binding: z.boolean().default(true),
-              claims: z
-                .array(
-                  z.object({
-                    id: z.string().optional(),
-                    path: z.array(z.string()).nonempty().nonempty(),
-                    values: z.array(z.number().or(z.boolean())).optional(),
-                  })
-                )
-                .nonempty()
-                .optional(),
-              claim_sets: z.array(z.array(z.string())).nonempty().optional(),
-            })
-          ),
-          contact: z.object({
-            website: z.string().url(),
-            'e-mail': z.string().email(),
-            phone: z.string(),
-          }),
-          sub: z.string(),
-          // Should be service
-          services: z.array(z.object({ lang: z.string(), name: z.string() })),
-          public_body: z.boolean().default(false),
-          entitlements: z.array(z.any()),
-          provided_attestations: z
-            .array(
-              z.object({
-                format: z.string(),
-                meta: z.any(),
-              })
-            )
-            .optional(),
-          privacy_policy: z.string().url(),
-          iat: z.number().optional(),
-          exp: z.number().optional(),
-          purpose: z
-            .array(
-              z.object({
-                locale: z.string().optional(),
-                lang: z.string().optional(),
-                name: z.string(),
-              })
-            )
-            .optional(),
-          status: z.any(),
-        })
-        .passthrough()
-
-      registrationCertificateHeaderSchema.parse(jwt.header)
-      const parsedPayload = registrationCertificatePayloadSchema.parse(jwt.payload.toJson())
-
-      if (client.scheme !== 'x509_san_dns' && client.scheme !== 'x509_san_uri') {
-        throw new Error(`Unsupported client scheme ${client.scheme}`)
-      }
-
-      const [rpCertEncoded] = client.x5c
-      const rpCert = X509Certificate.fromEncodedCertificate(rpCertEncoded)
-
-      if (rpCert.subject !== parsedPayload.sub) {
-        throw new Error(
-          `Subject in the certificate of the auth request: '${rpCert.subject}' is not equal to the subject of the registration certificate: '${parsedPayload.sub}'`
-        )
-      }
-
-      if (parsedPayload.iat && new Date().getTime() / 1000 <= parsedPayload.iat) {
-        throw new Error('Issued at timestamp of the registration certificate is in the future')
-      }
-
-      // TODO: check the status of the registration certificate
-
-      // TODO: validate if they can request the credentials!!!!
-      if (!authorizationRequest.dcql_query) {
-        throw new Error('DCQL must be used when working registration certificates')
-      }
-      const isValidDcqlQuery = isDcqlRequestValidSubsetOfOtherDcqlRequest(
-        agentContext,
-        authorizationRequest.dcql_query as DcqlQuery,
-        parsedPayload as unknown as DcqlQuery
-      )
-
-      if (!isValidDcqlQuery) {
-        throw new Error(
-          'DCQL query in the authorization request is not equal or a valid subset of the DCQl query provided in the registration certificate'
-        )
-      }
-    } else {
-      throw new Error(`only format of 'jwt' is supported`)
-    }
-  }
-}

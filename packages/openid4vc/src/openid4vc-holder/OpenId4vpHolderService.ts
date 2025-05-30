@@ -28,7 +28,6 @@ import {
   injectable,
 } from '@credo-ts/core'
 import {
-  Openid4vpAuthorizationRequest,
   Openid4vpAuthorizationResponse,
   Openid4vpClient,
   VpToken,
@@ -136,35 +135,8 @@ export class OpenId4VpHolderService {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
-    const pexResult = pex?.presentation_definition
-      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
-      : undefined
-
-    const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
-
-    if (options?.verifyAuthorizationRequestCallback) {
-      try {
-        await options.verifyAuthorizationRequestCallback({
-          agentContext,
-          authorizationRequest:
-            verifiedAuthorizationRequest.authorizationRequestPayload as Openid4vpAuthorizationRequest,
-          client,
-        })
-      } catch (e) {
-        throw new CredoError(`error during call to User-provided verificationAuthorizationCallback. Cause: ${e}`, {
-          cause: e,
-        })
-      }
-    }
-
-    agentContext.config.logger.debug('verified Authorization Request')
-    agentContext.config.logger.debug(`request '${authorizationRequest}'`)
-
-    return {
+    const returnValue = {
       authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
-      transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
-      presentationExchange: pexResult?.pex,
-      dcql: dcqlResult?.dcql,
       origin: options?.origin,
       signedAuthorizationRequest: verifiedAuthorizationRequest.jar
         ? {
@@ -173,6 +145,35 @@ export class OpenId4VpHolderService {
             header: verifiedAuthorizationRequest.jar.jwt.header,
           }
         : undefined,
+    }
+
+    if (options?.verifyAuthorizationRequestCallback) {
+      try {
+        await options.verifyAuthorizationRequestCallback({
+          agentContext,
+          ...returnValue,
+        })
+      } catch (e) {
+        throw new CredoError(`error during call to User-provided verificationAuthorizationCallback. Cause: ${e}`, {
+          cause: e,
+        })
+      }
+    }
+
+    const pexResult = pex?.presentation_definition
+      ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
+      : undefined
+
+    const dcqlResult = dcql?.query ? await this.handleDcqlRequest(agentContext, dcql.query, transactionData) : undefined
+
+    agentContext.config.logger.debug('verified Authorization Request')
+    agentContext.config.logger.debug(`request '${authorizationRequest}'`)
+
+    return {
+      ...returnValue,
+      transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
+      presentationExchange: pexResult?.pex,
+      dcql: dcqlResult?.dcql,
     }
   }
 

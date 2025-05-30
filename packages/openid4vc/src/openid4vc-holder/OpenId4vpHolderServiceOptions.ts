@@ -8,18 +8,15 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import { Openid4vpAuthorizationRequestDcApi, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
-import type { OpenId4VpAuthorizationRequestPayload, Openid4vpAuthorizationRequest } from '../shared'
+import { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp
 export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizationRequest['transactionData']>[number]
 
 export type VerifyAuthorizationRequestOptions = {
   agentContext: AgentContext
-  authorizationRequest: Openid4vpAuthorizationRequest | Openid4vpAuthorizationRequestDcApi
-  // NOTE: `ParsedClientIdentifier` is not exported from @openid4vc/openid4vp
-  client: ResolvedOpenid4vpAuthorizationRequest['client']
-}
+} & Pick<OpenId4VpResolvedAuthorizationRequest, 'authorizationRequestPayload' | 'signedAuthorizationRequest' | 'origin'>
 
 export type VerifyAuthorizationRequestCallback = (options: VerifyAuthorizationRequestOptions) => CanBePromise<void>
 
