@@ -1,4 +1,6 @@
 import type {
+  AgentContext,
+  CanBePromise,
   DcqlCredentialsForRequest,
   DcqlQueryResult,
   DifPexCredentialsForRequest,
@@ -12,9 +14,16 @@ import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 // TODO: export from oid4vp
 export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizationRequest['transactionData']>[number]
 
+export type VerifyAuthorizationRequestOptions = {
+  agentContext: AgentContext
+} & Pick<OpenId4VpResolvedAuthorizationRequest, 'authorizationRequestPayload' | 'signedAuthorizationRequest' | 'origin'>
+
+export type VerifyAuthorizationRequestCallback = (options: VerifyAuthorizationRequestOptions) => CanBePromise<void>
+
 export interface ResolveOpenId4VpAuthorizationRequestOptions {
   trustedCertificates?: EncodedX509Certificate[]
   origin?: string
+  verifyAuthorizationRequestCallback?: VerifyAuthorizationRequestCallback
 }
 
 type VerifiedJarRequest = NonNullable<ResolvedOpenid4vpAuthorizationRequest['jar']>
