@@ -772,6 +772,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         presentationExchange: {
           definition: presentationDefinition,
         },
+        verifierAttestations: [{ format: 'jwt', data: { hello: 'world' } }],
       })
 
     expect(authorizationRequest).toEqual(
@@ -783,6 +784,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedAuthorizationRequest =
       await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
+
+    expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
+      verifier_attestations: [{ format: 'jwt', data: { hello: 'world' } }],
+    })
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,

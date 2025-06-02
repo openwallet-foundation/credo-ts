@@ -15,6 +15,13 @@ import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps }
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
+// TODO: get type from @openid4vc/openid4vp
+export type VerifierAttestations = {
+  format: string
+  data: string | Record<string, unknown>
+  credential_ids?: string[]
+}[]
+
 export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
@@ -34,6 +41,8 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    * Transaction data entries that need to be hashes and signed over by a specific credential
    */
   transactionData?: TransactionDataEntry[]
+
+  verifierAttestations?: VerifierAttestations
 
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.

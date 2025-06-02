@@ -128,6 +128,11 @@ export class OpenId4VpVerifierService {
     if (version === 'v1.draft21' && options.dcql) {
       throw new CredoError(`OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1.draft24' instead.`)
     }
+    if (version === 'v1.draft21' && options.verifierAttestations) {
+      throw new CredoError(
+        `OpenID4VP version '${version}' cannot be used with verifier attestations. Use version 'v1.draft24' instead.`
+      )
+    }
 
     // Check to prevent direct_post from being used with mDOC
     const hasMdocRequest =
@@ -219,6 +224,7 @@ export class OpenId4VpVerifierService {
       response_mode: responseMode,
       response_type: 'vp_token',
       client_metadata,
+      verifier_attestations: options.verifierAttestations,
     } as const
 
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
