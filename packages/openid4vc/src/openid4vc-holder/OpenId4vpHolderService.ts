@@ -147,19 +147,6 @@ export class OpenId4VpHolderService {
         : undefined,
     }
 
-    if (options?.verifyAuthorizationRequestCallback) {
-      try {
-        await options.verifyAuthorizationRequestCallback({
-          agentContext,
-          ...returnValue,
-        })
-      } catch (e) {
-        throw new CredoError(`error during call to User-provided verificationAuthorizationCallback. Cause: ${e}`, {
-          cause: e,
-        })
-      }
-    }
-
     const pexResult = pex?.presentation_definition
       ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
       : undefined
