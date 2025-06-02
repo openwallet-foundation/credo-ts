@@ -1,9 +1,4 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
-import type { OpenId4VciSignMdocCredentials } from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType, TenantType } from './utils'
-
 import {
   ClaimFormat,
   CredoError,
@@ -25,6 +20,7 @@ import {
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
+import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
   HashAlgorithm,
   Oauth2AuthorizationServer,
@@ -33,7 +29,10 @@ import {
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
+import type { OpenId4VciSignMdocCredentials } from '../src'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
@@ -41,10 +40,9 @@ import {
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierModule,
 } from '../src'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
-
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { setupNockToExpress } from '../../../tests/nockToExpress'
+import type { AgentType, TenantType } from './utils'
 import {
   createAgentFromModules,
   createTenantForAgent,
@@ -154,7 +152,20 @@ describe('OpenId4Vc', () => {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
-        x509: new X509Module(),
+        x509: new X509Module({
+          trustedCertificates: [
+            `-----BEGIN CERTIFICATE-----
+MIIBdTCCARugAwIBAgIUHsSmbGuWAVZVXjqoidqAVClGx4YwCgYIKoZIzj0EAwIw
+GzEZMBcGA1UEAwwQR2VybWFuIFJlZ2lzdHJhcjAeFw0yNTAzMzAxOTU4NTFaFw0y
+NjAzMzAxOTU4NTFaMBsxGTAXBgNVBAMMEEdlcm1hbiBSZWdpc3RyYXIwWTATBgcq
+hkjOPQIBBggqhkjOPQMBBwNCAASQWCESFd0Ywm9sK87XxqxDP4wOAadEKgcZFVX7
+npe3ALFkbjsXYZJsTGhVp0+B5ZtUao2NsyzJCKznPwTz2wJcoz0wOzAaBgNVHREE
+EzARgg9mdW5rZS13YWxsZXQuZGUwHQYDVR0OBBYEFMxnKLkGifbTKrxbGXcFXK6R
+FQd3MAoGCCqGSM49BAMCA0gAMEUCIQD4RiLJeuVDrEHSvkPiPfBvMxAXRC6PuExo
+pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
+-----END CERTIFICATE-----`,
+          ],
+        }),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
       global.fetch
@@ -351,6 +362,95 @@ describe('OpenId4Vc', () => {
 
     await holderTenant.endSession()
     clearNock()
+  })
+
+  it('e2e flow with tenants, holder verification callback for authorization request fails', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+
+    const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
+      format: ClaimFormat.JwtVc,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: issuer.verificationMethod.id,
+    })
+
+    const signedCredential2 = await issuer.agent.w3cCredentials.signCredential({
+      format: ClaimFormat.JwtVc,
+      credential: new W3cCredential({
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: new W3cIssuer({ id: issuer.did }),
+        credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: issuer.verificationMethod.id,
+    })
+
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential1 })
+    await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
+
+    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
+      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifierTenant1.verifierId,
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier1.verificationMethod.id,
+        },
+        presentationExchange: {
+          definition: openBadgePresentationDefinition,
+        },
+      })
+
+    expect(authorizationRequestUri1).toEqual(
+      `openid4vp://?client_id=${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+        verificationSession1.authorizationRequestUri as string
+      )}`
+    )
+
+    const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
+      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier2.verificationMethod.id,
+        },
+        presentationExchange: {
+          definition: universityDegreePresentationDefinition,
+        },
+        verifierId: openIdVerifierTenant2.verifierId,
+      })
+
+    expect(authorizationRequestUri2).toEqual(
+      `openid4vp://?client_id=${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+        verificationSession2.authorizationRequestUri as string
+      )}`
+    )
+
+    await verifierTenant1.endSession()
+    await verifierTenant2.endSession()
+
+    await expect(
+      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
+        verifyAuthorizationRequestCallback: () => {
+          throw Error('testing error')
+        },
+      })
+    ).rejects.toThrow()
+
+    await expect(
+      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
+        verifyAuthorizationRequestCallback: () => {},
+      })
+    ).resolves.toBeDefined()
   })
 
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {

@@ -135,6 +135,31 @@ export class OpenId4VpHolderService {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
+    const returnValue = {
+      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      origin: options?.origin,
+      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
+        ? {
+            signer: verifiedAuthorizationRequest.jar?.signer,
+            payload: verifiedAuthorizationRequest.jar.jwt.payload,
+            header: verifiedAuthorizationRequest.jar.jwt.header,
+          }
+        : undefined,
+    }
+
+    if (options?.verifyAuthorizationRequestCallback) {
+      try {
+        await options.verifyAuthorizationRequestCallback({
+          agentContext,
+          ...returnValue,
+        })
+      } catch (e) {
+        throw new CredoError(`error during call to User-provided verificationAuthorizationCallback. Cause: ${e}`, {
+          cause: e,
+        })
+      }
+    }
+
     const pexResult = pex?.presentation_definition
       ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
       : undefined
@@ -145,18 +170,10 @@ export class OpenId4VpHolderService {
     agentContext.config.logger.debug(`request '${authorizationRequest}'`)
 
     return {
-      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      ...returnValue,
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
       dcql: dcqlResult?.dcql,
-      origin: options?.origin,
-      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
-        ? {
-            signer: verifiedAuthorizationRequest.jar?.signer,
-            payload: verifiedAuthorizationRequest.jar.jwt.payload,
-            header: verifiedAuthorizationRequest.jar.jwt.header,
-          }
-        : undefined,
     }
   }
 
