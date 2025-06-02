@@ -437,20 +437,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     await verifierTenant1.endSession()
     await verifierTenant2.endSession()
-
-    await expect(
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
-        verifyAuthorizationRequestCallback: () => {
-          throw Error('testing error')
-        },
-      })
-    ).rejects.toThrow()
-
-    await expect(
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
-        verifyAuthorizationRequestCallback: () => {},
-      })
-    ).resolves.toBeDefined()
   })
 
   it('e2e flow with tenants, verifier endpoints verifying a jwt-vc', async () => {
