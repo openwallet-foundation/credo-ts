@@ -676,6 +676,111 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
+  it('Invalid verifier attestation in combination with dcql', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: { commonName: 'Credo', countryName: 'NL' },
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+    })
+
+    verifier.agent.x509.config.addTrustedCertificate(certificate.toString('base64'))
+
+    expect(
+      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        requestSigner: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+            some_extra_prop: 'is_allowed',
+          },
+        ],
+        dcql: {
+          query: {
+            credentials: [{ id: 'SomeDifferentId', format: 'mso_mdoc' }],
+          },
+        },
+        verifierAttestations: [{ format: 'jwt', data: { hello: 'world' }, credential_ids: ['SomeOtherId'] }],
+      })
+    ).rejects.toThrow()
+  })
+
+  it('Invalid verifier attestation in combination with presentation exchange', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const certificate = await verifier.agent.x509.createCertificate({
+      issuer: { commonName: 'Credo', countryName: 'NL' },
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
+      extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
+    })
+
+    verifier.agent.x509.config.addTrustedCertificate(certificate.toString('base64'))
+
+    const presentationDefinition = {
+      id: 'OpenBadgeCredential',
+      input_descriptors: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: {
+            'vc+sd-jwt': {
+              'sd-jwt_alg_values': ['EdDSA'],
+            },
+          },
+          constraints: {
+            limit_disclosure: 'required',
+            fields: [
+              {
+                path: ['$.vct'],
+                filter: {
+                  type: 'string',
+                  const: 'OpenBadgeCredential',
+                },
+              },
+              {
+                path: ['$.university'],
+              },
+            ],
+          },
+        },
+      ],
+    } satisfies DifPresentationExchangeDefinitionV2
+
+    expect(
+      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        responseMode: 'direct_post.jwt',
+        requestSigner: {
+          method: 'x5c',
+          x5c: [certificate],
+        },
+        transactionData: [
+          {
+            type: 'OpenBadgeTx',
+            credential_ids: ['OpenBadgeCredentialDescriptor'],
+            transaction_data_hashes_alg: ['sha-256'],
+            some_extra_prop: 'is_allowed',
+          },
+        ],
+        presentationExchange: {
+          definition: presentationDefinition,
+        },
+        verifierAttestations: [{ format: 'jwt', data: { hello: 'world' }, credential_ids: ['SomeOtherId'] }],
+      })
+    ).rejects.toThrow()
+  })
+
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
@@ -758,6 +863,9 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         presentationExchange: {
           definition: presentationDefinition,
         },
+        verifierAttestations: [
+          { format: 'jwt', data: { hello: 'world' }, credential_ids: ['OpenBadgeCredentialDescriptor'] },
+        ],
       })
 
     expect(authorizationRequest).toEqual(
@@ -769,6 +877,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const resolvedAuthorizationRequest =
       await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
+
+    expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
+      verifier_attestations: [{ format: 'jwt', data: { hello: 'world' } }],
+    })
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
