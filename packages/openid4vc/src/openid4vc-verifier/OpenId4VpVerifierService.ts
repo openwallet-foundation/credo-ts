@@ -10,18 +10,6 @@ import {
   QueryOptions,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type {
-  OpenId4VpCreateAuthorizationRequestOptions,
-  OpenId4VpCreateAuthorizationRequestReturn,
-  OpenId4VpCreateVerifierOptions,
-  OpenId4VpVerifiedAuthorizationResponse,
-  OpenId4VpVerifiedAuthorizationResponseDcql,
-  OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
-  OpenId4VpVerifiedAuthorizationResponseTransactionData,
-  OpenId4VpVerifyAuthorizationResponseOptions,
-  ResponseMode,
-} from './OpenId4VpVerifierServiceOptions'
-
 import {
   CredoError,
   DcqlService,
@@ -66,16 +54,25 @@ import {
   isOpenid4vpAuthorizationRequestDcApi,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
-
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { addSecondsToDate, getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
-
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
+import { addSecondsToDate, getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
+import type {
+  OpenId4VpCreateAuthorizationRequestOptions,
+  OpenId4VpCreateAuthorizationRequestReturn,
+  OpenId4VpCreateVerifierOptions,
+  OpenId4VpVerifiedAuthorizationResponse,
+  OpenId4VpVerifiedAuthorizationResponseDcql,
+  OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
+  OpenId4VpVerifiedAuthorizationResponseTransactionData,
+  OpenId4VpVerifyAuthorizationResponseOptions,
+  ResponseMode,
+} from './OpenId4VpVerifierServiceOptions'
 import {
   OpenId4VcVerificationSessionRecord,
   OpenId4VcVerificationSessionRepository,
@@ -128,11 +125,6 @@ export class OpenId4VpVerifierService {
     if (version === 'v1.draft21' && options.dcql) {
       throw new CredoError(`OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1.draft24' instead.`)
     }
-    if (version === 'v1.draft21' && options.verifierAttestations) {
-      throw new CredoError(
-        `OpenID4VP version '${version}' cannot be used with verifier attestations. Use version 'v1.draft24' instead.`
-      )
-    }
 
     // Check to prevent direct_post from being used with mDOC
     const hasMdocRequest =
@@ -142,6 +134,29 @@ export class OpenId4VpVerifierService {
       throw new CredoError(
         "Unable to create authorization request with response mode 'direct_post' containing mDOC credentials. ISO 18013-7 requires the usage of response mode 'direct_post.jwt', and needs parameters from the encrypted response header to verify the mDOC sigature."
       )
+    }
+
+    if (options.verifierAttestations) {
+      const hasValidCredentialIdsForDcql =
+        options?.dcql?.query.credentials.every(({ id }) =>
+          options.verifierAttestations?.every((va) => va.credential_ids?.includes(id))
+        ) ?? true
+
+      if (!hasValidCredentialIdsForDcql) {
+        throw new CredoError(
+          'Dcql is used as query language and verifier attestations were provided, but the dcql query used credential ids that are not supported by the verifier attestations'
+        )
+      }
+
+      const hasValidCredentialIdsForPex = options?.presentationExchange?.definition.input_descriptors.every(({ id }) =>
+        options.verifierAttestations?.every((va) => va.credential_ids?.includes(id))
+      )
+
+      if (!hasValidCredentialIdsForPex) {
+        throw new CredoError(
+          'Presentation Exchange is used as query language and verifier attestations were provided, but the presentation exchange query used credential ids that are not supported by the verifier attestations'
+        )
+      }
     }
 
     const authorizationRequestId = utils.uuid()

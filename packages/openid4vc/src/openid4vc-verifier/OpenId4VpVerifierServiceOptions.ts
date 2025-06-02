@@ -9,18 +9,15 @@ import type {
   HashName,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type { TransactionDataEntry, createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type {
+  TransactionDataEntry,
+  VerifierAttestations,
+  createOpenid4vpAuthorizationRequest,
+} from '@openid4vc/openid4vp'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
-
-// TODO: get type from @openid4vc/openid4vp
-export type VerifierAttestations = {
-  format: string
-  data: string | Record<string, unknown>
-  credential_ids?: string[]
-}[]
 
 export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
@@ -42,6 +39,11 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    */
   transactionData?: TransactionDataEntry[]
 
+  /**
+   *
+   * Verifier Attestations allow the Verifier to provide additional context or metadata as part of the Authorization Request attested by a trusted third party. These inputs can support a variety of use cases, such as helping the Wallet apply policy decisions, validating eligibility, or presenting more meaningful information to the End-User during consent.
+   *
+   */
   verifierAttestations?: VerifierAttestations
 
   /**
