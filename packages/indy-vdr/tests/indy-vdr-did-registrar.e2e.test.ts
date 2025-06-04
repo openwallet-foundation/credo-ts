@@ -94,7 +94,7 @@ describe('Indy VDR Indy Did Registrar', () => {
         state: 'finished',
         did: expect.stringMatching(didIndyRegex),
         didDocument: {
-          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+          '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
           id: expect.stringMatching(didIndyRegex),
           alsoKnownAs: undefined,
           controller: undefined,
@@ -126,7 +126,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     })
 
     expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
       id: did,
       alsoKnownAs: undefined,
       controller: undefined,
@@ -212,7 +212,7 @@ describe('Indy VDR Indy Did Registrar', () => {
         state: 'finished',
         did,
         didDocument: {
-          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+          '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
           id: did,
           alsoKnownAs: undefined,
           controller: undefined,
@@ -241,7 +241,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     })
 
     expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
       id: did,
       alsoKnownAs: undefined,
       controller: undefined,
@@ -293,7 +293,7 @@ describe('Indy VDR Indy Did Registrar', () => {
         state: 'finished',
         did,
         didDocument: {
-          '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+          '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
           id: did,
           alsoKnownAs: undefined,
           controller: undefined,
@@ -322,7 +322,7 @@ describe('Indy VDR Indy Did Registrar', () => {
     })
 
     expect(JsonTransformer.toJSON(didDocument)).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
       id: did,
       alsoKnownAs: undefined,
       controller: undefined,
@@ -394,7 +394,7 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const expectedDidDocument = {
       '@context': [
-        'https://w3id.org/did/v1',
+        'https://www.w3.org/ns/did/v1',
         'https://w3id.org/security/suites/ed25519-2018/v1',
         'https://w3id.org/security/suites/x25519-2019/v1',
         'https://didcomm.org/messaging/contexts/v2',
@@ -546,7 +546,7 @@ describe('Indy VDR Indy Did Registrar', () => {
 
     const expectedDidDocument = {
       '@context': [
-        'https://w3id.org/did/v1',
+        'https://www.w3.org/ns/did/v1',
         'https://w3id.org/security/suites/ed25519-2018/v1',
         'https://w3id.org/security/suites/x25519-2019/v1',
         'https://didcomm.org/messaging/contexts/v2',

@@ -116,13 +116,11 @@ describe('Cheqd DID resolver', () => {
       id: resourceResult3.resourceState.resourceId,
     })
 
-    // Date in past should match first created resource
+    // Date in past should return undefined
     resource = getClosestResourceVersion(
       didResult.didDocumentMetadata.linkedResourceMetadata,
       new Date('2022-11-16T10:56:34Z')
     )
-    expect(resource).toMatchObject({
-      id: resourceResult1.resourceState.resourceId,
-    })
+    expect(resource).toBeUndefined()
   })
 })

@@ -1,5 +1,5 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { InMemoryTransportSessionRepository, type TransportSessionRepository } from './transport'
+import { InMemoryQueueTransportRepository, InMemoryTransportSessionRepository, QueueTransportRepository, TransportSessionRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -18,17 +18,20 @@ export interface DidCommModuleConfigOptions {
    *
    */
   transportSessionRepository?: TransportSessionRepository
+  queueTransportRepository?: QueueTransportRepository
 }
 
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
   private _transportSessionRepository: TransportSessionRepository
+  private _queueTransportRepository: QueueTransportRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
     this._endpoints = options?.endpoints
     this._transportSessionRepository = options?.transportSessionRepository ?? new InMemoryTransportSessionRepository()
+    this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -77,5 +80,13 @@ export class DidCommModuleConfig {
   /** See {@link DidCommModuleConfig.transportSessionRepository} */
   public get transportSessionRepository() {
     return this._transportSessionRepository
+  }
+
+  /**
+   * Allows to specify a custom queue transport queue. It defaults to an in-memory queue
+   *
+   */
+  public get queueTransportRepository() {
+    return this._queueTransportRepository
   }
 }

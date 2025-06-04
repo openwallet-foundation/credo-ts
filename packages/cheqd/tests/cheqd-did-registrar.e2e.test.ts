@@ -5,7 +5,6 @@ import {
   Agent,
   DidDocumentBuilder,
   Kms,
-  SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
@@ -127,7 +126,7 @@ describe('Cheqd DID registrar', () => {
         didDocument,
       },
     })
-
+    expect(updateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
     const deactivateResult = await agent.dids.deactivate({ did })
     expect(deactivateResult.didState.didDocument?.toJSON()).toMatchObject(didDocument.toJSON())
     expect(deactivateResult.didState.state).toEqual('finished')
@@ -152,7 +151,6 @@ describe('Cheqd DID registrar', () => {
     const createResult = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
       didDocument: new DidDocumentBuilder(did)
-        .addContext(SECURITY_JWS_CONTEXT_URL)
         .addController(did)
         .addAuthentication(`${did}#${publicJwk.fingerprint}`)
         .addVerificationMethod(
@@ -180,7 +178,7 @@ describe('Cheqd DID registrar', () => {
     })
 
     expect(createResult.didState.didDocument?.toJSON()).toMatchObject({
-      '@context': ['https://w3id.org/did/v1', 'https://w3id.org/security/suites/jws-2020/v1'],
+      '@context': ['https://www.w3.org/ns/did/v1', 'https://w3id.org/security/suites/ed25519-2018/v1'],
       verificationMethod: [
         {
           controller: did,
@@ -210,7 +208,6 @@ describe('Cheqd DID registrar', () => {
         ],
       },
       didDocument: new DidDocumentBuilder(did)
-        .addContext(SECURITY_JWS_CONTEXT_URL)
         .addController(did)
         .addAuthentication(`${did}#${publicJwk.fingerprint}`)
         .addVerificationMethod(

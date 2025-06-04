@@ -58,6 +58,7 @@ export {
   IsStringOrInstance,
   asArray,
   equalsIgnoreOrder,
+  equalsWithOrder,
   DateTransformer,
 } from './utils'
 export * from './logger'

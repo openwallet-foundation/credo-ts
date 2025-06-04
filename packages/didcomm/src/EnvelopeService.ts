@@ -120,7 +120,7 @@ export class EnvelopeService {
     // Perofrm the actual encryption
     const { encrypted, iv, tag } = await kms.encrypt({
       encryption: {
-        algorithm: 'XC20P',
+        algorithm: 'C20P',
         aad: TypedArrayEncoder.fromString(protectedString),
       },
       data: JsonEncoder.toBuffer(message),
@@ -225,7 +225,7 @@ export class EnvelopeService {
 
     const { data: message } = await kms.decrypt({
       decryption: {
-        algorithm: 'XC20P',
+        algorithm: 'C20P',
         iv: TypedArrayEncoder.fromBase64(encryptedMessage.iv),
         tag: TypedArrayEncoder.fromBase64(encryptedMessage.tag),
         aad: TypedArrayEncoder.fromString(encryptedMessage.protected),
