@@ -1,5 +1,10 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { InMemoryQueueTransportRepository, InMemoryTransportSessionRepository, QueueTransportRepository, TransportSessionRepository } from './transport'
+import {
+  InMemoryQueueTransportRepository,
+  InMemoryTransportSessionRepository,
+  QueueTransportRepository,
+  TransportSessionRepository,
+} from './transport'
 import { DidCommMimeType } from './types'
 
 /**
