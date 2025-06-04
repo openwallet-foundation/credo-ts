@@ -462,8 +462,8 @@ export class CheqdDidRegistrar implements DidRegistrar {
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
-      // Collect all contexts from the didDic into a set
-      const contextSet = this.collectAllContexts(didDocument)
+      // Collect all contexts, override existing context if provided
+      const contextSet = this.collectAllContexts(options.didDocument || didDocument)
       // Add Cheqd default context to the did document
       didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       // Save the did so we know we created it and can issue with it
