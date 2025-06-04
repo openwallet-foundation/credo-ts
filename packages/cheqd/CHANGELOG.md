@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- 593d1e5: Populate contexts for Cheqd DID Document Records in wallet
+- 495b88a: Fixes CheqdDidRegistrar to sign transactions with only authentication verification methods rather than all verification methods
+- Updated dependencies [a17d8da]
+  - @credo-ts/core@0.5.16
+  - @credo-ts/anoncreds@0.5.16
+
 ## 0.5.15
 
 ### Patch Changes
