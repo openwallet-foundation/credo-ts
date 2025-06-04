@@ -234,14 +234,10 @@ export class CheqdDidRegistrar implements DidRegistrar {
           },
         }
       }
-      // Normalize existing context to an array
-      contextSet = new Set<string>(
-        typeof didDocument.context === 'string'
-          ? [didDocument.context]
-          : Array.isArray(didDocument.context)
-          ? didDocument.context
-          : []
-      )
+
+      // Normalize context to an array, override existing context if provided
+      const context = options.didDocument.context || didDocument.context
+      contextSet = new Set<string>(typeof context === 'string' ? [context] : Array.isArray(context) ? context : [])
 
       if (verificationMethod) {
         const privateKey = verificationMethod.privateKey
@@ -302,12 +298,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
       const signInputs = await this.signPayload(agentContext, payloadToSign, authentication)
 
-      const response = await cheqdLedgerService.update(
-        didDocument as DIDDocument,
-        // TOOD: we should also sign with the authentication entries that are removed (so we should diff)
-        signInputs,
-        versionId
-      )
+      const response = await cheqdLedgerService.update(didDocument as DIDDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
