@@ -2,7 +2,11 @@ import type { DidDocumentService, IndyAgentService } from '../../../core/src/mod
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { AgentMessageSentEvent } from '../Events'
 import type { ConnectionRecord } from '../modules'
-import { InMemoryQueueTransportRepository, type OutboundTransport } from '../transport'
+import {
+  InMemoryQueueTransportRepository,
+  InMemoryTransportSessionRepository,
+  type OutboundTransport,
+} from '../transport'
 import type { EncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'
@@ -91,6 +95,10 @@ describe('MessageSender', () => {
   const eventEmitter = new EventEmitter(agentDependencies, new Subject())
   const resolveCreatedDidDocumentWithKeysMock = mockFunction(didsApi.resolveCreatedDidDocumentWithKeys)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
+  const didcommConfig = new DidCommModuleConfig({
+    queueTransportRepository: new InMemoryQueueTransportRepository(),
+    transportSessionRepository: new InMemoryTransportSessionRepository(),
+  })
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
@@ -119,7 +127,7 @@ describe('MessageSender', () => {
   sessionWithoutKeys.hasReturnRoute = inboundMessage.hasAnyReturnRoute()
   sessionWithoutKeys.send = jest.fn()
 
-  const transportService = new TransportService(getAgentContext(), eventEmitter)
+  const transportService = new TransportService(getAgentContext(), eventEmitter, didcommConfig)
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
   const transportServiceFindSessionByIdMock = mockFunction(transportService.findSessionById)
   const transportServiceHasInboundEndpoint = mockFunction(transportService.hasInboundEndpoint)
@@ -159,7 +167,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didcommConfig,
         didCommDocumentService,
         eventEmitter
       )
@@ -519,7 +527,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didcommConfig,
         didCommDocumentService,
         eventEmitter
       )
@@ -659,7 +667,7 @@ describe('MessageSender', () => {
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didcommConfig,
         didCommDocumentService,
         eventEmitter
       )

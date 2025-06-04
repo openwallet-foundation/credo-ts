@@ -3,7 +3,11 @@ import type { TransportSession, TransportSessionRepository, TransportSessionTabl
 
 @injectable()
 export class InMemoryTransportSessionRepository implements TransportSessionRepository {
-  private transportSessionTable: TransportSessionTable = {}
+  private transportSessionTable: TransportSessionTable
+
+  public constructor() {
+    this.transportSessionTable = {}
+  }
 
   public addTransportSessionToSessionTable(session: TransportSession) {
     this.transportSessionTable[session.id] = session
@@ -24,6 +28,8 @@ export class InMemoryTransportSessionRepository implements TransportSessionRepos
   }
 
   public removeTransportSessionById(sessionId: string) {
-    delete this.transportSessionTable[sessionId]
+    this.transportSessionTable = Object.fromEntries(
+      Object.entries(this.transportSessionTable).filter(([key]) => key !== sessionId)
+    )
   }
 }

@@ -1,5 +1,6 @@
 import type { DidDocument } from '@credo-ts/core'
 import type { TransportSession, TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
+import { TransportSessionRepository } from './transport'
 
 import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
@@ -11,16 +12,15 @@ import { TransportEventTypes } from './transport'
 export class TransportService {
   private agentContext: AgentContext
   private eventEmitter: EventEmitter
+  private transportSessionRepository: TransportSessionRepository
 
-  public constructor(agentContext: AgentContext, eventEmitter: EventEmitter) {
+  public constructor(agentContext: AgentContext, eventEmitter: EventEmitter, didCommModuleConfig: DidCommModuleConfig) {
     this.agentContext = agentContext
     this.eventEmitter = eventEmitter
+    this.transportSessionRepository = didCommModuleConfig.transportSessionRepository
   }
 
   public async saveSession(session: TransportSession) {
-    const transportSessionRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).transportSessionRepository
-
     if (session.connectionId) {
       const oldSessions = await this.getExistingSessionsForConnectionIdAndType(session.connectionId, session.type)
 
@@ -30,7 +30,7 @@ export class TransportService {
         }
       }
     }
-    await transportSessionRepository.addTransportSessionToSessionTable(session)
+    await this.transportSessionRepository.addTransportSessionToSessionTable(session)
 
     this.eventEmitter.emit<TransportSessionSavedEvent>(this.agentContext, {
       type: TransportEventTypes.TransportSessionSaved,
@@ -41,9 +41,7 @@ export class TransportService {
   }
 
   public async findSessionByConnectionId(connectionId: string) {
-    const transportSessionRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).transportSessionRepository
-    return await transportSessionRepository.findTransportSessionByConnectionId(connectionId)
+    return await this.transportSessionRepository.findTransportSessionByConnectionId(connectionId)
   }
 
   public async setConnectionIdForSession(sessionId: string, connectionId: string) {
@@ -60,17 +58,11 @@ export class TransportService {
   }
 
   public async findSessionById(sessionId: string) {
-    const transportSessionRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).transportSessionRepository
-
-    return await transportSessionRepository.findTransportSessionById(sessionId)
+    return await this.transportSessionRepository.findTransportSessionById(sessionId)
   }
 
   public async removeSession(session: TransportSession) {
-    const transportSessionRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).transportSessionRepository
-
-    await transportSessionRepository.removeTransportSessionById(session.id)
+    await this.transportSessionRepository.removeTransportSessionById(session.id)
     this.eventEmitter.emit<TransportSessionRemovedEvent>(this.agentContext, {
       type: TransportEventTypes.TransportSessionRemoved,
       payload: {
@@ -80,9 +72,6 @@ export class TransportService {
   }
 
   private async getExistingSessionsForConnectionIdAndType(connectionId: string, type: string) {
-    const transportSessionRepository =
-      this.agentContext.dependencyManager.resolve(DidCommModuleConfig).transportSessionRepository
-
-    return await transportSessionRepository.findExistingSessionsForConnectionIdAndType(connectionId, type)
+    return await this.transportSessionRepository.findExistingSessionsForConnectionIdAndType(connectionId, type)
   }
 }

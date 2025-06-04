@@ -5,6 +5,8 @@ import { agentDependencies, getAgentContext, getMockConnection } from '../../../
 import { TransportService } from '../TransportService'
 import { DidExchangeRole } from '../modules'
 
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
+import { InMemoryTransportSessionRepository } from '../transport'
 import { DummyTransportSession } from './stubs'
 
 describe('TransportService', () => {
@@ -12,7 +14,13 @@ describe('TransportService', () => {
     let transportService: TransportService
 
     beforeEach(() => {
-      transportService = new TransportService(getAgentContext(), new EventEmitter(agentDependencies, new Subject()))
+      transportService = new TransportService(
+        getAgentContext(),
+        new EventEmitter(agentDependencies, new Subject()),
+        new DidCommModuleConfig({
+          transportSessionRepository: new InMemoryTransportSessionRepository(),
+        })
+      )
     })
 
     test('remove session saved for a given connection', async () => {
