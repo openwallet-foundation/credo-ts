@@ -58,5 +58,23 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@2060.io/ffi-napi@4.0.9": "patches/@2060.io__ffi-napi@4.0.9.patch"
+    },
+    "onlyBuiltDependencies": [
+      "@2060.io/ffi-napi",
+      "@2060.io/ref-napi",
+      "@hyperledger/aries-askar-nodejs",
+      "@hyperledger/anoncreds-nodejs",
+      "@hyperledger/indy-vdr-nodejs",
+      "@openwallet-foundation/askar-nodejs",
+      "@biomejs/biome",
+      "es5-ext",
+      "esbuild",
+      "protobufjs",
+      "zstd-napi"
+    ]
   }
 }

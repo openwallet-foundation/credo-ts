@@ -1,0 +1,34 @@
+{
+  "name": "@credo-ts/hedera",
+  "main": "src/index",
+  "types": "src/index",
+  "version": "0.5.13",
+  "files": ["build"],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/hedera",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/hedera"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@hiero-did-sdk-js/anoncreds": "npm:@hiero-did-sdk-js/anoncreds@0.0.1",
+    "@swiss-digital-assets-institute/registrar": "0.3.0"
+  },
+  "devDependencies": {
+    "rimraf": "^4.0.7",
+    "typescript": "~5.5.2"
+  }
+}

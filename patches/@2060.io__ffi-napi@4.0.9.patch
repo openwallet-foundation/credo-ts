@@ -1,0 +1,14 @@
+diff --git a/deps/libffi/libffi.gyp b/deps/libffi/libffi.gyp
+index d02bef739c0cfb9c1bbb0a666ab3363fd34c5041..5d49572898681902fca1079b7b25d02f15f7617a 100644
+--- a/deps/libffi/libffi.gyp
++++ b/deps/libffi/libffi.gyp
+@@ -74,8 +74,7 @@
+               '<(INTERMEDIATE_DIR)/<(RULE_INPUT_ROOT).asm',
+             ],
+             'action': [
+-              'call',
+-              'preprocess_asm.cmd',
++              '../../../deps/libffi/preprocess_asm.cmd',
+                 'include',
+                 'config/<(OS)/<(target_arch)',
+                 '<(RULE_INPUT_PATH)',
