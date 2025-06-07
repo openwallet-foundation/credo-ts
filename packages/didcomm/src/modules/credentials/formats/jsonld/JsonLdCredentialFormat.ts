@@ -1,6 +1,5 @@
-import type { JsonObject, SingleOrArray, W3cIssuerOptions } from '@credo-ts/core'
+import type { CredentialStatusBasedOnType, JsonObject, SingleOrArray, W3cIssuerOptions } from '@credo-ts/core'
 import type { CredentialFormat } from '../CredentialFormat'
-import { CredentialStatusBasedOnType } from '@credo-ts/core/build/modules/vc/models/credential/w3c-credential-status/W3cCredentialStatus'
 
 export interface JsonCredential {
   '@context': Array<string> | JsonObject
