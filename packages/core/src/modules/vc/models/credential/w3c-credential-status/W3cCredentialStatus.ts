@@ -29,7 +29,6 @@ export class W3cCredentialStatus {
   public id!: string
 
   @IsString()
-  // @IsEnum(W3cCredentialStatusSupportedTypes, { message: 'Invalid credential status type' })
   public type!: string
 }
 
