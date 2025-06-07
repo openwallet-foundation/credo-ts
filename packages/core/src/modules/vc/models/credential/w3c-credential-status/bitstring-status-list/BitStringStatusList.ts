@@ -45,7 +45,7 @@ export class BitStringStatusListMessage {
 export class BitStringStatusListEntry extends W3cCredentialStatus {
   public static type = 'BitstringStatusListEntry'
 
-  public constructor(options: IBitStringStatusListEntryOptions) {
+  public constructor(options: BitStringStatusListEntryOptions) {
     super({ id: options.id, type: BitStringStatusListEntry.type })
 
     if (options) {
@@ -88,7 +88,7 @@ export interface BitStringStatusListStatusMessage {
   [key: string]: unknown
 }
 
-export interface IBitStringStatusListEntryOptions {
+export interface BitStringStatusListEntryOptions {
   id: string
   type: string
   statusPurpose: string
