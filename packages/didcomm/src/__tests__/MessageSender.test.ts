@@ -2,18 +2,16 @@ import type { DidDocumentService, IndyAgentService } from '../../../core/src/mod
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { AgentMessageSentEvent } from '../Events'
 import type { ConnectionRecord } from '../modules'
-import type { MessagePickupRepository } from '../modules/message-pickup/storage'
-import type { OutboundTransport } from '../transport'
+import { InMemoryQueueTransportRepository, type OutboundTransport } from '../transport'
 import type { EncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
-import { Key, KeyType } from '../../../core/src/crypto'
 import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
+import { DidsApi } from '../../../core/src/modules/dids/DidsApi'
 import { DidCommV1Service } from '../../../core/src/modules/dids/domain/service/DidCommV1Service'
-import { verkeyToInstanceOfKey } from '../../../core/src/modules/dids/helpers'
-import { DidResolverService } from '../../../core/src/modules/dids/services/DidResolverService'
+import { verkeyToPublicJwk } from '../../../core/src/modules/dids/helpers'
 import { TestMessage } from '../../../core/tests/TestMessage'
 import {
   agentDependencies,
@@ -22,27 +20,25 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../core/tests/helpers'
-import testLogger from '../../../core/tests/logger'
 import { EnvelopeService as EnvelopeServiceImpl } from '../EnvelopeService'
 import { AgentEventTypes } from '../Events'
 import { MessageSender } from '../MessageSender'
 import { TransportService } from '../TransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { OutboundMessageContext, OutboundMessageSendStatus } from '../models'
-import { InMemoryMessagePickupRepository } from '../modules/message-pickup/storage'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
+import { AgentConfig, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DummyTransportSession } from './stubs'
 
 jest.mock('../TransportService')
 jest.mock('../EnvelopeService')
-jest.mock('../../../core/src/modules/dids/services/DidResolverService')
+jest.mock('../../../core/src/modules/dids/DidsApi')
 jest.mock('../services/DidCommDocumentService')
 
-const logger = testLogger
-
 const TransportServiceMock = TransportService as jest.MockedClass<typeof TransportService>
-const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
+const DidsApiMock = DidsApi as jest.Mock<DidsApi>
 const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
 
 class DummyHttpOutboundTransport implements OutboundTransport {
@@ -90,17 +86,26 @@ describe('MessageSender', () => {
   const enveloperService = new EnvelopeService()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
-  const didResolverService = new DidResolverServiceMock()
+  const didsApi = new DidsApiMock()
   const didCommDocumentService = new DidCommDocumentServiceMock()
   const eventEmitter = new EventEmitter(agentDependencies, new Subject())
-  const didResolverServiceResolveMock = mockFunction(didResolverService.resolveDidDocument)
+  const resolveCreatedDidDocumentWithKeysMock = mockFunction(didsApi.resolveCreatedDidDocumentWithKeys)
   const didResolverServiceResolveDidServicesMock = mockFunction(didCommDocumentService.resolveServicesFromDid)
 
   const inboundMessage = new TestMessage()
   inboundMessage.setReturnRouting(ReturnRouteTypes.all)
 
-  const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
-  const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
+  const recipientKey = Kms.PublicJwk.fromPublicKey({
+    crv: 'Ed25519',
+    kty: 'OKP',
+    publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+  })
+  const senderKey = Kms.PublicJwk.fromPublicKey({
+    crv: 'Ed25519',
+    kty: 'OKP',
+    publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+  })
+
   const session = new DummyTransportSession('session-123')
   session.keys = {
     recipientKeys: [recipientKey],
@@ -132,28 +137,29 @@ describe('MessageSender', () => {
 
   let messageSender: MessageSender
   let outboundTransport: OutboundTransport
-  let messagePickupRepository: MessagePickupRepository
   let connection: ConnectionRecord
   let outboundMessageContext: OutboundMessageContext
   const agentConfig = getAgentConfig('MessageSender')
-  const agentContext = getAgentContext()
+  const agentContext = getAgentContext({
+    registerInstances: [
+      [DidsApi, didsApi],
+      [AgentConfig, agentConfig],
+    ],
+  })
   const eventListenerMock = jest.fn()
 
   describe('sendMessage', () => {
     beforeEach(() => {
       TransportServiceMock.mockClear()
-      DidResolverServiceMock.mockClear()
+      DidsApiMock.mockClear()
 
       eventEmitter.on<AgentMessageSentEvent>(AgentEventTypes.AgentMessageSent, eventListenerMock)
 
       outboundTransport = new DummyHttpOutboundTransport()
-      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messagePickupRepository,
-        logger,
-        didResolverService,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )
@@ -171,7 +177,10 @@ describe('MessageSender', () => {
       const didDocumentInstance = getMockDidDocument({
         service: [firstDidCommService, secondDidCommService],
       })
-      didResolverServiceResolveMock.mockResolvedValue(didDocumentInstance)
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: didDocumentInstance,
+        keys: [],
+      })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([
         getMockResolvedDidService(firstDidCommService),
         getMockResolvedDidService(secondDidCommService),
@@ -203,7 +212,10 @@ describe('MessageSender', () => {
     test('throw error when there is no service or queue', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockResolvedValue(getMockDidDocument({ service: [] }))
+      resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
+        didDocument: getMockDidDocument({ service: [] }),
+        keys: [],
+      })
       didResolverServiceResolveDidServicesMock.mockResolvedValue([])
 
       await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
@@ -282,12 +294,12 @@ describe('MessageSender', () => {
     test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      didResolverServiceResolveMock.mockRejectedValue(
+      resolveCreatedDidDocumentWithKeysMock.mockRejectedValue(
         new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
       )
 
       await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrowError(
-        `Unable to resolve DID Document for '${connection.did}`
+        `Unable to send message using connection 'test-123'. Unble to resolve did`
       )
 
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -399,13 +411,13 @@ describe('MessageSender', () => {
       })
 
       //@ts-ignore
-      expect(sendMessage.serviceParams.senderKey.publicKeyBase58).toEqual(
-        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'
+      expect(sendMessage.serviceParams.senderKey.fingerprint).toEqual(
+        'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1'
       )
 
       //@ts-ignore
-      expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
-        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.fingerprint)).toEqual([
+        'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1',
       ])
 
       expect(sendToServiceSpy).toHaveBeenCalledTimes(1)
@@ -452,12 +464,12 @@ describe('MessageSender', () => {
       })
 
       //@ts-ignore
-      expect(sendMessage.serviceParams.senderKey.publicKeyBase58).toEqual(
-        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d'
+      expect(sendMessage.serviceParams.senderKey.fingerprint).toEqual(
+        'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1'
       )
       //@ts-ignore
-      expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.publicKeyBase58)).toEqual([
-        'EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d',
+      expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.fingerprint)).toEqual([
+        'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1',
       ])
 
       expect(sendToServiceSpy).toHaveBeenCalledTimes(2)
@@ -486,20 +498,28 @@ describe('MessageSender', () => {
   describe('sendMessageToService', () => {
     const service: ResolvedDidCommService = {
       id: 'out-of-band',
-      recipientKeys: [Key.fromFingerprint('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL')],
+      recipientKeys: [
+        Kms.PublicJwk.fromPublicKey({
+          crv: 'Ed25519',
+          kty: 'OKP',
+          publicKey: TypedArrayEncoder.fromBase58('z6Mkk7yqnGF3YwTrLpqrW6PGsKci7dNqh1CjnvMbzrMerSeL'),
+        }),
+      ],
       routingKeys: [],
       serviceEndpoint: 'https://example.com',
     }
-    const senderKey = Key.fromFingerprint('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th')
+    const senderKey = Kms.PublicJwk.fromPublicKey({
+      crv: 'Ed25519',
+      kty: 'OKP',
+      publicKey: TypedArrayEncoder.fromBase58('z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'),
+    })
 
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        new InMemoryMessagePickupRepository(agentConfig.logger),
-        logger,
-        didResolverService,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )
@@ -636,13 +656,10 @@ describe('MessageSender', () => {
   describe('packMessage', () => {
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
-      messagePickupRepository = new InMemoryMessagePickupRepository(agentConfig.logger)
       messageSender = new MessageSender(
         enveloperService,
         transportService,
-        messagePickupRepository,
-        logger,
-        didResolverService,
+        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
         didCommDocumentService,
         eventEmitter
       )
@@ -697,7 +714,7 @@ function getMockResolvedDidService(service: DidCommV1Service | IndyAgentService)
   return {
     id: service.id,
     serviceEndpoint: service.serviceEndpoint,
-    recipientKeys: [verkeyToInstanceOfKey('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
+    recipientKeys: [verkeyToPublicJwk('EoGusetSxDJktp493VCyh981nUnzMamTRjvBaHZAy68d')],
     routingKeys: [],
   }
 }

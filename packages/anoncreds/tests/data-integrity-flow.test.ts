@@ -1,4 +1,4 @@
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, SuiteInfo } from '@credo-ts/core'
 import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
@@ -9,7 +9,7 @@ import {
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
+  Kms,
   SignatureSuiteToken,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -27,7 +27,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -70,8 +69,6 @@ const didsModuleConfig = new DidsModuleConfig({
 })
 const fileSystem = new agentDependencies.FileSystem()
 
-const wallet = new InMemoryWallet()
-
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
@@ -96,12 +93,11 @@ const agentContext = getAgentContext({
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
         ],
-        keyTypes: [KeyType.Ed25519],
-      },
+        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+      } satisfies SuiteInfo,
     ],
   ],
   agentConfig,
-  wallet,
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
@@ -115,8 +111,6 @@ describe('data integrity format service (w3c)', () => {
   let holderKdv: CreateDidKidVerificationMethodReturn
 
   beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })

@@ -1,7 +1,7 @@
-import type { AgentContext, Key, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { TenantConfig } from '../models/TenantConfig'
 
-import { KeyDerivationMethod, UpdateAssistant, injectable, utils } from '@credo-ts/core'
+import { UpdateAssistant, injectable, utils } from '@credo-ts/core'
 
 import { TenantRecord, TenantRepository, TenantRoutingRecord, TenantRoutingRepository } from '../repository'
 
@@ -15,22 +15,12 @@ export class TenantRecordService {
     this.tenantRoutingRepository = tenantRoutingRepository
   }
 
-  public async createTenant(agentContext: AgentContext, config: Omit<TenantConfig, 'walletConfig'>) {
+  public async createTenant(agentContext: AgentContext, config: TenantConfig) {
     const tenantId = utils.uuid()
-
-    const walletId = `tenant-${tenantId}`
-    const walletKey = await agentContext.wallet.generateWalletKey()
 
     const tenantRecord = new TenantRecord({
       id: tenantId,
-      config: {
-        ...config,
-        walletConfig: {
-          id: walletId,
-          key: walletKey,
-          keyDerivationMethod: KeyDerivationMethod.Raw,
-        },
-      },
+      config,
       storageVersion: UpdateAssistant.frameworkStorageVersion,
     })
 
@@ -79,7 +69,7 @@ export class TenantRecordService {
 
   public async findTenantRoutingRecordByRecipientKey(
     agentContext: AgentContext,
-    recipientKey: Key
+    recipientKey: Kms.PublicJwk
   ): Promise<TenantRoutingRecord | null> {
     return this.tenantRoutingRepository.findByRecipientKey(agentContext, recipientKey)
   }
@@ -87,7 +77,7 @@ export class TenantRecordService {
   public async addTenantRoutingRecord(
     agentContext: AgentContext,
     tenantId: string,
-    recipientKey: Key
+    recipientKey: Kms.PublicJwk
   ): Promise<TenantRoutingRecord> {
     const tenantRoutingRecord = new TenantRoutingRecord({
       tenantId,

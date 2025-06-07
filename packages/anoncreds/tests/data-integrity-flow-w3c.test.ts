@@ -1,4 +1,4 @@
-import type { DidRepository } from '@credo-ts/core'
+import type { DidRepository, SuiteInfo } from '@credo-ts/core'
 import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 
 import {
@@ -9,7 +9,7 @@ import {
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
-  KeyType,
+  Kms,
   SignatureSuiteToken,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
@@ -27,7 +27,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
@@ -36,6 +35,7 @@ import {
   createDidKidVerificationMethod,
   getAgentConfig,
   getAgentContext,
+  getAskarStoreConfig,
   testLogger,
 } from '../../core/tests'
 import {
@@ -46,6 +46,9 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
+import { AskarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
 
@@ -69,8 +72,6 @@ const didsModuleConfig = new DidsModuleConfig({
   resolvers: [new KeyDidResolver()],
 })
 const fileSystem = new agentDependencies.FileSystem()
-
-const wallet = new InMemoryWallet()
 
 const agentContext = getAgentContext({
   registerInstances: [
@@ -96,12 +97,19 @@ const agentContext = getAgentContext({
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
           VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
         ],
-        keyTypes: [KeyType.Ed25519],
-      },
+        supportedPublicJwkTypes: [Kms.Ed25519PublicJwk],
+      } satisfies SuiteInfo,
+    ],
+    [
+      AskarModuleConfig,
+      new AskarModuleConfig({
+        askar,
+        store: getAskarStoreConfig('data-integrity-flow-w3c'),
+      }),
     ],
   ],
   agentConfig,
-  wallet,
+  kmsBackends: [new AskarKeyManagementService()],
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
@@ -113,8 +121,6 @@ describe('data integrity format service (w3c)', () => {
   let holderKdv: CreateDidKidVerificationMethodReturn
 
   beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-
     issuerKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598g')
     holderKdv = await createDidKidVerificationMethod(agentContext, '96213c3d7fc8d4d6754c7a0fd969598f')
   })

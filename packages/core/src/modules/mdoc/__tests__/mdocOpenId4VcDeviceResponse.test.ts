@@ -1,13 +1,12 @@
 import type { DifPresentationExchangeDefinition } from '../../dif-presentation-exchange'
 
 import { cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
-import { getInMemoryAgentOptions } from '../../../../tests'
+import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
-import { KeyType } from '../../../crypto'
-import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
-import { Buffer, TypedArrayEncoder } from '../../../utils'
+import { TypedArrayEncoder } from '../../../utils'
+import { PublicJwk } from '../../kms'
+import { X509Certificate } from '../../x509'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 
@@ -17,22 +16,21 @@ const DEVICE_JWK_PUBLIC_P256 = {
   y: 'oxS1OAORJ7XNUHNfVFGeM8E0RQVFxWA62fJj-sxW03c',
   crv: 'P-256',
   use: undefined,
-}
+} as const
 
 const DEVICE_JWK_PRIVATE_P256 = {
   ...DEVICE_JWK_PUBLIC_P256,
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
-}
+} as const
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export const ISSUER_PRIVATE_KEY_JWK_P256 = {
+const ISSUER_PRIVATE_KEY_JWK_P256 = {
   kty: 'EC',
   kid: '1234',
   x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
   y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
   crv: 'P-256',
   d: 'o6PrzBm1dCfSwqJHW6DVqmJOCQSIAosrCPfbFJDMNp4',
-}
+} as const
 
 const ISSUER_CERTIFICATE_P256 = `-----BEGIN CERTIFICATE-----
 MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIw
@@ -134,28 +132,28 @@ describe('mdoc device-response openid4vp test', () => {
 
   describe('P256', () => {
     beforeEach(async () => {
-      agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
+      agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
       await agent.initialize()
 
-      const devicePrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(DEVICE_JWK_PRIVATE_P256) })
-      await agent.context.wallet.createKey({
-        keyType: KeyType.P256,
-        privateKey: Buffer.from(devicePrivateAskar.secretBytes),
+      const importedDeviceKey = await agent.kms.importKey({
+        privateJwk: DEVICE_JWK_PRIVATE_P256,
       })
+      const deviceKeyPublicJwk = PublicJwk.fromPublicJwk(importedDeviceKey.publicJwk)
 
-      const issuerPrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(ISSUER_PRIVATE_KEY_JWK_P256) })
-      await agent.context.wallet.createKey({
-        keyType: KeyType.P256,
-        privateKey: Buffer.from(issuerPrivateAskar.secretBytes),
+      const importedIssuerKey = await agent.kms.importKey({
+        privateJwk: ISSUER_PRIVATE_KEY_JWK_P256,
       })
+      const issuerCertificate = X509Certificate.fromEncodedCertificate(ISSUER_CERTIFICATE_P256)
+      issuerCertificate.keyId = importedIssuerKey.keyId
+
       mdoc = await Mdoc.sign(agent.context, {
         docType: 'org.iso.18013.5.1.mDL',
         validityInfo: {
           signed: new Date('2023-10-24'),
           validUntil: new Date('2050-10-24'),
         },
-        holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC_P256).key,
-        issuerCertificate: ISSUER_CERTIFICATE_P256,
+        holderKey: deviceKeyPublicJwk,
+        issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
             family_name: 'Jones',
@@ -291,21 +289,27 @@ describe('mdoc device-response openid4vp test', () => {
 
   describe('EdDSA', () => {
     beforeEach(async () => {
-      agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent-eddsa', {}))
+      agent = new Agent(getAgentOptions('mdoc-test-agent-eddsa', {}))
       await agent.initialize()
     })
 
     test('should verify with EdDSA', async () => {
-      const issuerKey = await agent.context.wallet.createKey({
-        keyType: KeyType.Ed25519,
+      const issuerKey = await agent.kms.createKey({
+        type: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+        },
       })
 
-      const holderKey = await agent.context.wallet.createKey({
-        keyType: KeyType.Ed25519,
+      const holderKey = await agent.kms.createKey({
+        type: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+        },
       })
 
       const issuerCertificate = await agent.x509.createCertificate({
-        authorityKey: issuerKey,
+        authorityKey: PublicJwk.fromPublicJwk(issuerKey.publicJwk),
         issuer: 'C=US,ST=New York',
         validity: {
           notBefore: new Date('2020-01-01'),
@@ -319,8 +323,8 @@ describe('mdoc device-response openid4vp test', () => {
           signed: new Date('2023-10-24'),
           validUntil: new Date('2050-10-24'),
         },
-        holderKey,
-        issuerCertificate: issuerCertificate.toString('pem'),
+        holderKey: PublicJwk.fromPublicJwk(holderKey.publicJwk),
+        issuerCertificate,
         namespaces: {
           'org.iso.18013.5.1': {
             family_name: 'Jones',

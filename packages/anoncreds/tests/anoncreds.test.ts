@@ -1,6 +1,6 @@
-import { Agent, KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests'
+import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
 
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
@@ -71,7 +71,7 @@ const existingRevocationStatusLists = {
 }
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'credo-anoncreds-package',
     {},
     {},
@@ -88,6 +88,9 @@ const agent = new Agent(
           }),
         ],
       }),
+    },
+    {
+      requireDidcomm: true,
     }
   )
 )
@@ -98,7 +101,6 @@ describe('AnonCreds API', () => {
   })
 
   afterEach(async () => {
-    await agent.wallet.delete()
     await agent.shutdown()
   })
 
@@ -181,9 +183,13 @@ describe('AnonCreds API', () => {
 
   test('register a credential definition', async () => {
     // Create key
-    await agent.wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000My1'),
-      keyType: KeyType.Ed25519,
+    await agent.kms.importKey({
+      privateJwk: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+        x: '6cZ2bZKmKiUiF9MLKCV8IIYIEsOLHsJG5qBJ9SrQYBk',
+        d: 'MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDBNeTE',
+      },
     })
 
     const issuerId = 'did:indy:pool:localhost:VsKV7grR1BUE29mG2Fm2kX'

@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getInMemoryAgentOptions } from '../packages/core/tests/helpers'
+import { getAgentOptions } from '../packages/core/tests/helpers'
 
 import { e2eTest } from './e2e-test'
 
@@ -15,7 +15,7 @@ import {
 } from '@credo-ts/didcomm'
 import { HttpInboundTransport } from '@credo-ts/node'
 
-const recipientAgentOptions = getInMemoryAgentOptions(
+const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
   {},
   {},
@@ -27,11 +27,12 @@ const recipientAgentOptions = getInMemoryAgentOptions(
       mediatorPollingInterval: 500,
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const mediatorPort = 3000
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'E2E HTTP Mediator',
   {
     endpoints: [`http://localhost:${mediatorPort}`],
@@ -44,11 +45,12 @@ const mediatorAgentOptions = getInMemoryAgentOptions(
     mediator: new MediatorModule({
       autoAcceptMediationRequests: true,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
 
 const senderPort = 3001
-const senderAgentOptions = getInMemoryAgentOptions(
+const senderAgentOptions = getAgentOptions(
   'E2E HTTP Sender',
   {
     endpoints: [`http://localhost:${senderPort}`],
@@ -56,7 +58,8 @@ const senderAgentOptions = getInMemoryAgentOptions(
   {},
   getAnonCredsModules({
     autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-  })
+  }),
+  { requireDidcomm: true }
 )
 
 describe('E2E HTTP tests', () => {
@@ -72,11 +75,8 @@ describe('E2E HTTP tests', () => {
 
   afterEach(async () => {
     await recipientAgent.shutdown()
-    await recipientAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
     await senderAgent.shutdown()
-    await senderAgent.wallet.delete()
   })
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {

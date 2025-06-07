@@ -57,7 +57,7 @@ import {
   SchemaRequest,
 } from '@hyperledger/indy-vdr-shared'
 
-import { verificationKeyForIndyDid } from '../dids/didIndyUtil'
+import { verificationPublicJwkForIndyDid } from '../dids/didIndyUtil'
 import { IndyVdrPoolService } from '../pool'
 import { multiSignRequest } from '../utils/sign'
 
@@ -177,7 +177,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           schema: { id: legacySchemaId, name, ver: '1.0', version, attrNames },
         })
 
-        const submitterKey = await verificationKeyForIndyDid(agentContext, issuerId)
+        const submitterKey = await verificationPublicJwkForIndyDid(agentContext, issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           schemaRequest,
@@ -201,7 +201,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
 
         if (endorserMode === 'internal' && endorserDid !== issuerId) {
-          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          const endorserKey = await verificationPublicJwkForIndyDid(agentContext, endorserDid as string)
           await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }
@@ -407,7 +407,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           },
         })
 
-        const submitterKey = await verificationKeyForIndyDid(agentContext, issuerId)
+        const submitterKey = await verificationPublicJwkForIndyDid(agentContext, issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           credentialDefinitionRequest,
@@ -431,7 +431,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
 
         if (endorserMode === 'internal' && endorserDid !== issuerId) {
-          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          const endorserKey = await verificationPublicJwkForIndyDid(agentContext, endorserDid as string)
           await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }
@@ -657,7 +657,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           },
         })
 
-        const submitterKey = await verificationKeyForIndyDid(agentContext, revocationRegistryDefinition.issuerId)
+        const submitterKey = await verificationPublicJwkForIndyDid(agentContext, revocationRegistryDefinition.issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           revocationRegistryDefinitionRequest,
@@ -681,7 +681,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
 
         if (endorserMode === 'internal' && endorserDid !== revocationRegistryDefinition.issuerId) {
-          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          const endorserKey = await verificationPublicJwkForIndyDid(agentContext, endorserDid as string)
           await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }
@@ -890,7 +890,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
           revocationRegistryDefinitionId: legacyRevocationRegistryDefinitionId,
         })
 
-        const submitterKey = await verificationKeyForIndyDid(agentContext, revocationStatusList.issuerId)
+        const submitterKey = await verificationPublicJwkForIndyDid(agentContext, revocationStatusList.issuerId)
         writeRequest = await pool.prepareWriteRequest(
           agentContext,
           revocationRegistryDefinitionRequest,
@@ -913,7 +913,7 @@ export class IndyVdrAnonCredsRegistry implements AnonCredsRegistry {
         }
 
         if (endorserMode === 'internal' && endorserDid !== revocationStatusList.issuerId) {
-          const endorserKey = await verificationKeyForIndyDid(agentContext, endorserDid as string)
+          const endorserKey = await verificationPublicJwkForIndyDid(agentContext, endorserDid as string)
           await multiSignRequest(agentContext, writeRequest, endorserKey, parseIndyDid(endorserDid).namespaceIdentifier)
         }
       }

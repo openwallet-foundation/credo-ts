@@ -13,10 +13,6 @@ describe('TenantRecord', () => {
       },
       config: {
         label: 'test',
-        walletConfig: {
-          id: 'test',
-          key: 'test',
-        },
       },
       storageVersion: '0.5',
     })
@@ -26,10 +22,6 @@ describe('TenantRecord', () => {
     expect(tenantRecord.createdAt).toBe(createdAt)
     expect(tenantRecord.config).toEqual({
       label: 'test',
-      walletConfig: {
-        id: 'test',
-        key: 'test',
-      },
     })
     expect(tenantRecord.getTags()).toEqual({
       label: 'test',
@@ -48,10 +40,6 @@ describe('TenantRecord', () => {
       },
       config: {
         label: 'test',
-        walletConfig: {
-          id: 'test',
-          key: 'test',
-        },
       },
       storageVersion: '0.5',
     })
@@ -67,10 +55,6 @@ describe('TenantRecord', () => {
       },
       config: {
         label: 'test',
-        walletConfig: {
-          id: 'test',
-          key: 'test',
-        },
       },
     })
 
@@ -81,10 +65,6 @@ describe('TenantRecord', () => {
     expect(instance.createdAt.getTime()).toBe(createdAt.getTime())
     expect(instance.config).toEqual({
       label: 'test',
-      walletConfig: {
-        id: 'test',
-        key: 'test',
-      },
     })
     expect(instance.getTags()).toEqual({
       label: 'test',

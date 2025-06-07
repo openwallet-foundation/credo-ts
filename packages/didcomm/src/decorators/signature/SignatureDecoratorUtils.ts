@@ -1,6 +1,6 @@
-import type { Wallet } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import { Buffer, CredoError, JsonEncoder, Key, KeyType, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { Buffer, CredoError, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 
 import { SignatureDecorator } from './SignatureDecorator'
 
@@ -13,24 +13,35 @@ import { SignatureDecorator } from './SignatureDecorator'
  * @return Resulting data
  */
 export async function unpackAndVerifySignatureDecorator(
-  decorator: SignatureDecorator,
-  wallet: Wallet
+  agentContext: AgentContext,
+  decorator: SignatureDecorator
 ): Promise<Record<string, unknown>> {
   const signerVerkey = decorator.signer
-  const key = Key.fromPublicKeyBase58(signerVerkey, KeyType.Ed25519)
+  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+  const publicJwk = Kms.PublicJwk.fromPublicKey({
+    kty: 'OKP',
+    crv: 'Ed25519',
+    publicKey: TypedArrayEncoder.fromBase58(signerVerkey),
+  })
 
   // first 8 bytes are for 64 bit integer from unix epoch
   const signedData = TypedArrayEncoder.fromBase64(decorator.signatureData)
   const signature = TypedArrayEncoder.fromBase64(decorator.signature)
 
-  // const isValid = await wallet.verify(signerVerkey, signedData, signature)
-  const isValid = await wallet.verify({ signature, data: signedData, key })
+  const result = await kms.verify({
+    algorithm: 'EdDSA',
+    data: signedData,
+    key: {
+      publicJwk: publicJwk.toJson(),
+    },
+    signature,
+  })
 
-  if (!isValid) {
+  if (!result.verified) {
     throw new CredoError('Signature is not valid')
   }
 
-  // TODO: return Connection instance instead of raw json
   return JsonEncoder.fromBuffer(signedData.slice(8))
 }
 
@@ -39,21 +50,25 @@ export async function unpackAndVerifySignatureDecorator(
  *
  * @param data the data to sign
  * @param wallet the wallet containing a key to use for signing
- * @param signerKey signers verkey
+ * @param signerKey signer key
  *
  * @returns Resulting signature decorator.
  */
-export async function signData(data: unknown, wallet: Wallet, signerKey: string): Promise<SignatureDecorator> {
+export async function signData(
+  agentContext: AgentContext,
+  data: unknown,
+  signerKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+): Promise<SignatureDecorator> {
+  const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
   const dataBuffer = Buffer.concat([utils.timestamp(), JsonEncoder.toBuffer(data)])
-  const key = Key.fromPublicKeyBase58(signerKey, KeyType.Ed25519)
 
-  const signatureBuffer = await wallet.sign({ key, data: dataBuffer })
+  const result = await kms.sign({ data: dataBuffer, algorithm: 'EdDSA', keyId: signerKey.keyId })
 
   const signatureDecorator = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',
-    signature: TypedArrayEncoder.toBase64URL(signatureBuffer),
+    signature: TypedArrayEncoder.toBase64URL(result.signature),
     signatureData: TypedArrayEncoder.toBase64URL(dataBuffer),
-    signer: signerKey,
+    signer: TypedArrayEncoder.toBase58(signerKey.publicKey.publicKey),
   })
 
   return signatureDecorator

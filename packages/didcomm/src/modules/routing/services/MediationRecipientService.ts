@@ -1,4 +1,4 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { InboundMessageContext, Routing } from '../../../models'
 import type { ConnectionRecord } from '../../connections/repository'
@@ -10,8 +10,7 @@ import {
   CredoError,
   DidKey,
   EventEmitter,
-  Key,
-  KeyType,
+  TypedArrayEncoder,
   didKeyToVerkey,
   filterContextCorrelationId,
   injectable,
@@ -150,7 +149,7 @@ export class MediationRecipientService {
   public async keylistUpdateAndAwait(
     agentContext: AgentContext,
     mediationRecord: MediationRecord,
-    updates: { recipientKey: Key; action: KeylistUpdateAction }[],
+    updates: { recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; action: KeylistUpdateAction }[],
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<MediationRecord> {
     const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
@@ -170,7 +169,9 @@ export class MediationRecipientService {
         (item) =>
           new KeylistUpdate({
             action: item.action,
-            recipientKey: useDidKey ? new DidKey(item.recipientKey).did : item.recipientKey.publicKeyBase58,
+            recipientKey: useDidKey
+              ? new DidKey(item.recipientKey).did
+              : TypedArrayEncoder.toBase58(item.recipientKey.publicKey.publicKey),
           })
       )
     )
@@ -242,7 +243,9 @@ export class MediationRecipientService {
       ...routing,
       mediatorId: mediationRecord.id,
       endpoints: mediationRecord.endpoint ? [mediationRecord.endpoint] : routing.endpoints,
-      routingKeys: mediationRecord.routingKeys.map((key) => Key.fromPublicKeyBase58(key, KeyType.Ed25519)),
+      routingKeys: mediationRecord.routingKeys.map((key) =>
+        Kms.PublicJwk.fromPublicKey({ kty: 'OKP', crv: 'Ed25519', publicKey: TypedArrayEncoder.fromBase58(key) })
+      ),
     }
   }
 

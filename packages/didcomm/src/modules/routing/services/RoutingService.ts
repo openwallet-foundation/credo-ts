@@ -1,8 +1,8 @@
-import type { AgentContext, Key } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 import type { Routing } from '../../../models'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
-import { EventEmitter, KeyType, injectable } from '@credo-ts/core'
+import { EventEmitter, Kms, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { RoutingEventTypes } from '../RoutingEvents'
@@ -25,14 +25,16 @@ export class RoutingService {
     agentContext: AgentContext,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
   ): Promise<Routing> {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const didcommConfig = agentContext.resolve(DidCommModuleConfig)
+
     // Create and store new key
-    const recipientKey = await agentContext.wallet.createKey({ keyType: KeyType.Ed25519 })
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
+    const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
 
     let routing: Routing = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
-      recipientKey,
+      recipientKey: Kms.PublicJwk.fromPublicJwk(recipientKey.publicJwk),
     }
 
     // Extend routing with mediator keys (if applicable)
@@ -74,7 +76,7 @@ export interface RemoveRoutingOptions {
   /**
    * Keys to remove routing from
    */
-  recipientKeys: Key[]
+  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
 
   /**
    * Identifier of the mediator used when routing has been set up

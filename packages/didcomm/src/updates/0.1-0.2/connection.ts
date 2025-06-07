@@ -166,7 +166,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
       `Found a legacy did document for did ${oldOurDidDoc.id} in connection record didDoc. Converting it to a peer did document.`
     )
 
-    const newOurDidDocument = convertToNewDidDocument(oldOurDidDoc)
+    const { didDocument: newOurDidDocument } = convertToNewDidDocument(oldOurDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
     // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. As this is the update from 0.1 to 0.2,
@@ -215,7 +215,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, 
       `Found a legacy did document for theirDid ${oldTheirDidDoc.id} in connection record theirDidDoc. Converting it to a peer did document.`
     )
 
-    const newTheirDidDocument = convertToNewDidDocument(oldTheirDidDoc)
+    const { didDocument: newTheirDidDocument } = convertToNewDidDocument(oldTheirDidDoc)
 
     // Maybe we already have a record for this did because the migration failed previously
     // NOTE: in 0.3.0 the id property was updated to be a uuid, and a new did property was added. As this is the update from 0.1 to 0.2,
@@ -330,7 +330,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       .map((s) => s.recipientKeys)
       // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
       .reduce((acc, curr) => [...acc, ...curr], [])
-      .map((didKey) => DidKey.fromDid(didKey).key.fingerprint)
+      .map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
 
     const oobRole = connectionRecord.role === DidExchangeRole.Responder ? OutOfBandRole.Sender : OutOfBandRole.Receiver
     const oobRecords = await oobRepository.findByQuery(agent.context, {

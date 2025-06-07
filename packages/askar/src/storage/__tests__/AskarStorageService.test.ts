@@ -1,38 +1,54 @@
 import type { AgentContext, TagsBase } from '@credo-ts/core'
 
-import { RecordDuplicateError, RecordNotFoundError, SigningProviderRegistry, TypedArrayEncoder } from '@credo-ts/core'
+import { RecordDuplicateError, RecordNotFoundError, TypedArrayEncoder } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
-import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import { AskarWallet } from '../../wallet/AskarWallet'
+import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../../core/tests/helpers'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import { AskarModuleConfig } from '../../AskarModuleConfig'
+import { AskarStoreManager } from '../../AskarStoreManager'
 import { AskarStorageService } from '../AskarStorageService'
 import { askarQueryFromSearchQuery } from '../utils'
 
 const startDate = Date.now()
 
 describe('AskarStorageService', () => {
-  let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
+  let storeManager: AskarStoreManager
   let agentContext: AgentContext
 
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
 
-    wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
     agentContext = getAgentContext({
-      wallet,
       agentConfig,
     })
-    await wallet.createAndOpen(agentConfig.walletConfig)
-    storageService = new AskarStorageService<TestRecord>()
+    storeManager = new AskarStoreManager(
+      new NodeFileSystem(),
+      new AskarModuleConfig({
+        askar,
+        store: getAskarStoreConfig('AskarStorageServiceTest', {
+          inMemory: true,
+        }),
+      })
+    )
+    storageService = new AskarStorageService<TestRecord>(storeManager)
+
+    await storeManager.provisionStore(agentContext)
   })
 
   afterEach(async () => {
-    await wallet.delete()
+    await storeManager.deleteStore(agentContext)
   })
 
-  const insertRecord = async ({ id, tags }: { id?: string; tags?: TagsBase }) => {
+  const insertRecord = async ({
+    id,
+    tags,
+  }: {
+    id?: string
+    tags?: TagsBase
+  }) => {
     const props = {
       id,
       foo: 'bar',
@@ -59,7 +75,7 @@ describe('AskarStorageService', () => {
         },
       })
 
-      const retrieveRecord = await wallet.withSession((session) =>
+      const retrieveRecord = await storeManager.withSession(agentContext, (session) =>
         askar.sessionFetch({
           category: record.type,
           name: record.id,
@@ -83,7 +99,8 @@ describe('AskarStorageService', () => {
     })
 
     it('should correctly transform tag values from string after retrieving', async () => {
-      await wallet.withSession(
+      await storeManager.withSession(
+        agentContext,
         async (session) =>
           await askar.sessionUpdate({
             category: TestRecord.type,
@@ -130,7 +147,7 @@ describe('AskarStorageService', () => {
     it('should throw RecordDuplicateError if a record with the id already exists', async () => {
       const record = await insertRecord({ id: 'test-id' })
 
-      return expect(() => storageService.save(agentContext, record)).rejects.toThrowError(RecordDuplicateError)
+      return expect(() => storageService.save(agentContext, record)).rejects.toThrow(RecordDuplicateError)
     })
 
     it('should save the record', async () => {
@@ -148,7 +165,7 @@ describe('AskarStorageService', () => {
 
   describe('getById()', () => {
     it('should throw RecordNotFoundError if the record does not exist', async () => {
-      return expect(() => storageService.getById(agentContext, TestRecord, 'does-not-exist')).rejects.toThrowError(
+      return expect(() => storageService.getById(agentContext, TestRecord, 'does-not-exist')).rejects.toThrow(
         RecordNotFoundError
       )
     })
@@ -169,7 +186,7 @@ describe('AskarStorageService', () => {
         tags: { some: 'tag' },
       })
 
-      return expect(() => storageService.update(agentContext, record)).rejects.toThrowError(RecordNotFoundError)
+      return expect(() => storageService.update(agentContext, record)).rejects.toThrow(RecordNotFoundError)
     })
 
     it('should update the record', async () => {
@@ -197,14 +214,14 @@ describe('AskarStorageService', () => {
         tags: { some: 'tag' },
       })
 
-      return expect(() => storageService.delete(agentContext, record)).rejects.toThrowError(RecordNotFoundError)
+      await expect(() => storageService.delete(agentContext, record)).rejects.toThrow(RecordNotFoundError)
     })
 
     it('should delete the record', async () => {
       const record = await insertRecord({ id: 'test-id' })
       await storageService.delete(agentContext, record)
 
-      return expect(() => storageService.getById(agentContext, TestRecord, record.id)).rejects.toThrowError(
+      await expect(() => storageService.getById(agentContext, TestRecord, record.id)).rejects.toThrow(
         RecordNotFoundError
       )
     })
@@ -219,7 +236,6 @@ describe('AskarStorageService', () => {
       )
 
       const records = await storageService.getAll(agentContext, TestRecord)
-
       expect(records).toEqual(expect.arrayContaining(createdRecords))
     })
   })
@@ -237,7 +253,9 @@ describe('AskarStorageService', () => {
     })
 
     it('finds records using $and statements', async () => {
-      const expectedRecord = await insertRecord({ tags: { myTag: 'foo', anotherTag: 'bar' } })
+      const expectedRecord = await insertRecord({
+        tags: { myTag: 'foo', anotherTag: 'bar' },
+      })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
       const records = await storageService.findByQuery(agentContext, TestRecord, {
@@ -250,7 +268,9 @@ describe('AskarStorageService', () => {
 
     it('finds records using $or statements', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
-      const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
+      const expectedRecord2 = await insertRecord({
+        tags: { anotherTag: 'bar' },
+      })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
       const records = await storageService.findByQuery(agentContext, TestRecord, {
@@ -263,7 +283,9 @@ describe('AskarStorageService', () => {
 
     it('finds records using $not statements', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foo' } })
-      const expectedRecord2 = await insertRecord({ tags: { anotherTag: 'bar' } })
+      const expectedRecord2 = await insertRecord({
+        tags: { anotherTag: 'bar' },
+      })
       await insertRecord({ tags: { myTag: 'notfoobar' } })
 
       const records = await storageService.findByQuery(agentContext, TestRecord, {
@@ -289,8 +311,18 @@ describe('AskarStorageService', () => {
             $or: undefined,
             $not: undefined,
             $and: [
-              { theNumber: 'n__0', $and: undefined, $or: undefined, $not: undefined },
-              { theNumber: 'n__1', $and: undefined, $or: undefined, $not: undefined },
+              {
+                theNumber: 'n__0',
+                $and: undefined,
+                $or: undefined,
+                $not: undefined,
+              },
+              {
+                theNumber: 'n__1',
+                $and: undefined,
+                $or: undefined,
+                $not: undefined,
+              },
             ],
           },
         ],
@@ -303,7 +335,12 @@ describe('AskarStorageService', () => {
             $not: undefined,
           },
         ],
-        $not: { myTag: 'notfoobar', $and: undefined, $or: undefined, $not: undefined },
+        $not: {
+          myTag: 'notfoobar',
+          $and: undefined,
+          $or: undefined,
+          $not: undefined,
+        },
       }
 
       expect(

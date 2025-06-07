@@ -9,7 +9,11 @@ import type {
   HashName,
   VerifiablePresentation,
 } from '@credo-ts/core'
-import type { TransactionDataEntry, createOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type {
+  TransactionDataEntry,
+  VerifierAttestations,
+  createOpenid4vpAuthorizationRequest,
+} from '@openid4vc/openid4vp'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
@@ -34,6 +38,13 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
    * Transaction data entries that need to be hashes and signed over by a specific credential
    */
   transactionData?: TransactionDataEntry[]
+
+  /**
+   *
+   * Verifier Attestations allow the Verifier to provide additional context or metadata as part of the Authorization Request attested by a trusted third party. These inputs can support a variety of use cases, such as helping the Wallet apply policy decisions, validating eligibility, or presenting more meaningful information to the End-User during consent.
+   *
+   */
+  verifierAttestations?: VerifierAttestations
 
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.

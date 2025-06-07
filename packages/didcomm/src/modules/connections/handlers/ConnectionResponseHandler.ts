@@ -8,6 +8,7 @@ import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { OutboundMessageContext } from '../../../models'
+import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionResponseMessage } from '../messages'
 import { DidExchangeRole } from '../models'
 
@@ -77,6 +78,10 @@ export class ConnectionResponseHandler implements MessageHandler {
     messageContext.connection = connectionRecord
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
+    if (!outOfBandRecord.reusable) {
+      await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
+    }
+
     // TODO: should we only send ping message in case of autoAcceptConnection or always?
     // In AATH we have a separate step to send the ping. So for now we'll only do it
     // if auto accept is enable
@@ -88,6 +93,7 @@ export class ConnectionResponseHandler implements MessageHandler {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
+
       return new OutboundMessageContext(message, { agentContext: messageContext.agentContext, connection })
     }
   }

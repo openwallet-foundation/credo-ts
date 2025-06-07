@@ -1,4 +1,4 @@
-import type { JwaSignatureAlgorithm, RecordTags, TagsBase } from '@credo-ts/core'
+import { Kms, RecordTags, TagsBase } from '@credo-ts/core'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -6,7 +6,7 @@ import type {
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
 
-import { BaseRecord, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import { Transform, TransformationType } from 'class-transformer'
 
@@ -24,16 +24,15 @@ export type OpenId4VcIssuerRecordProps = {
   issuerId: string
 
   /**
-   * The fingerprint (multibase encoded) of the public key used to sign access tokens for
-   * this issuer.
+   * The public jwk of the key used to sign access tokens for this issuer. Must include a `kid` parameter.
    */
-  accessTokenPublicKeyFingerprint: string
+  accessTokenPublicJwk: Kms.KmsJwkPublicAsymmetric
 
   /**
    * The DPoP signing algorithms supported by this issuer.
    * If not provided, dPoP is considered unsupported.
    */
-  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
@@ -56,7 +55,13 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public readonly type = OpenId4VcIssuerRecord.type
 
   public issuerId!: string
-  public accessTokenPublicKeyFingerprint!: string
+
+  /**
+   * @deprecated accessTokenPublicJwk should be used
+   * @todo remove in migration
+   */
+  public accessTokenPublicKeyFingerprint?: string
+  public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
 
   /**
    * Only here for class transformation. If credentialsSupported is set we transform
@@ -95,8 +100,24 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   })
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
-  public dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  public get resolvedAccessTokenPublicJwk() {
+    if (this.accessTokenPublicJwk) {
+      return Kms.PublicJwk.fromPublicJwk(this.accessTokenPublicJwk)
+    }
+
+    // From before we introduced key ids, uses legacy key id
+    if (this.accessTokenPublicKeyFingerprint) {
+      const publicJwk = Kms.PublicJwk.fromFingerprint(this.accessTokenPublicKeyFingerprint)
+      publicJwk.keyId = publicJwk.legacyKeyId
+    }
+
+    throw new CredoError(
+      'Neither accessTokenPublicJwk or accessTokenPublicKeyFingerprint defined. Unable to resolve access token public jwk.'
+    )
+  }
 
   public constructor(props: OpenId4VcIssuerRecordProps) {
     super()
@@ -107,7 +128,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this._tags = props.tags ?? {}
 
       this.issuerId = props.issuerId
-      this.accessTokenPublicKeyFingerprint = props.accessTokenPublicKeyFingerprint
+      this.accessTokenPublicJwk = props.accessTokenPublicJwk
       this.credentialConfigurationsSupported = props.credentialConfigurationsSupported
       this.dpopSigningAlgValuesSupported = props.dpopSigningAlgValuesSupported
       this.display = props.display

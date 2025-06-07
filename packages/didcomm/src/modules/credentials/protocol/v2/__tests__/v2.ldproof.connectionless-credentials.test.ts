@@ -1,14 +1,12 @@
-import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
-import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
-
-import { KeyType } from '../../../../../../../core/src/crypto'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { CREDENTIALS_CONTEXT_V1_URL } from '../../../../../../../core/src/modules/vc/constants'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
+import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
 import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { MessageReceiver } from '../../../../../MessageReceiver'
 import { CredentialState } from '../../../models'
 import { CredentialExchangeRecord } from '../../../repository'
+import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 const signCredentialOptions = {
   credential: {
@@ -47,17 +45,30 @@ describe('credentials', () => {
       createConnections: false,
     }))
 
-    await faberAgent.context.wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-      keyType: KeyType.Ed25519,
+    const key = await faberAgent.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        type: {
+          crv: 'Ed25519',
+          kty: 'OKP',
+        },
+      }).privateJwk,
+    })
+
+    await faberAgent.dids.import({
+      did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          kmsKeyId: key.keyId,
+        },
+      ],
     })
   })
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
@@ -93,14 +104,13 @@ describe('credentials', () => {
       },
     })
 
-    const { message: connectionlessOfferMessage } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
-    await aliceAgent.context.dependencyManager
-      .resolve(MessageReceiver)
-      .receiveMessage(connectionlessOfferMessage.toJSON())
+
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,

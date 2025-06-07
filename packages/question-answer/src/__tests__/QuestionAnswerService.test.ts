@@ -1,4 +1,4 @@
-import type { AgentConfig, AgentContext, Repository, Wallet } from '@credo-ts/core'
+import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
 import { EventEmitter } from '@credo-ts/core'
@@ -6,7 +6,6 @@ import { DidExchangeState, InboundMessageContext } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
-import { InMemoryWallet } from '../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
 
 import {
@@ -19,6 +18,7 @@ import {
   QuestionAnswerState,
   QuestionMessage,
 } from '@credo-ts/question-answer'
+import { InMemoryStorageService } from '../../../../tests/InMemoryStorageService'
 
 jest.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as jest.Mock<QuestionAnswerRepository>
@@ -30,7 +30,6 @@ describe('QuestionAnswerService', () => {
     state: DidExchangeState.Completed,
   })
 
-  let wallet: Wallet
   let agentConfig: AgentConfig
   let questionAnswerRepository: Repository<QuestionAnswerRecord>
   let questionAnswerService: QuestionAnswerService
@@ -61,20 +60,15 @@ describe('QuestionAnswerService', () => {
 
   beforeAll(async () => {
     agentConfig = getAgentConfig('QuestionAnswerServiceTest')
-    wallet = new InMemoryWallet()
-    agentContext = getAgentContext()
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await wallet.createAndOpen(agentConfig.walletConfig!)
+    agentContext = getAgentContext({
+      registerInstances: [[InMemoryStorageService, new InMemoryStorageService()]],
+    })
   })
 
   beforeEach(async () => {
     questionAnswerRepository = new QuestionAnswerRepositoryMock()
     eventEmitter = new EventEmitter(agentDependencies, new Subject())
     questionAnswerService = new QuestionAnswerService(questionAnswerRepository, eventEmitter, agentConfig.logger)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
   })
 
   describe('create question', () => {

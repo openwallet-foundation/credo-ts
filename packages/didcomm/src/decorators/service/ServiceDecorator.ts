@@ -1,6 +1,6 @@
 import type { ResolvedDidCommService } from '@credo-ts/core'
 
-import { utils, verkeyToInstanceOfKey } from '@credo-ts/core'
+import { TypedArrayEncoder, utils, verkeyToPublicJwk } from '@credo-ts/core'
 import { IsArray, IsOptional, IsString } from 'class-validator'
 
 export interface ServiceDecoratorOptions {
@@ -39,16 +39,16 @@ export class ServiceDecorator {
   public get resolvedDidCommService(): ResolvedDidCommService {
     return {
       id: utils.uuid(),
-      recipientKeys: this.recipientKeys.map(verkeyToInstanceOfKey),
-      routingKeys: this.routingKeys?.map(verkeyToInstanceOfKey) ?? [],
+      recipientKeys: this.recipientKeys.map(verkeyToPublicJwk),
+      routingKeys: this.routingKeys?.map(verkeyToPublicJwk) ?? [],
       serviceEndpoint: this.serviceEndpoint,
     }
   }
 
   public static fromResolvedDidCommService(service: ResolvedDidCommService): ServiceDecorator {
     return new ServiceDecorator({
-      recipientKeys: service.recipientKeys.map((k) => k.publicKeyBase58),
-      routingKeys: service.routingKeys.map((k) => k.publicKeyBase58),
+      recipientKeys: service.recipientKeys.map((k) => TypedArrayEncoder.toBase58(k.publicKey.publicKey)),
+      routingKeys: service.routingKeys.map((k) => TypedArrayEncoder.toBase58(k.publicKey.publicKey)),
       serviceEndpoint: service.serviceEndpoint,
     })
   }

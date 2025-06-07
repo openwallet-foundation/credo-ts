@@ -1,5 +1,4 @@
-import type { DependencyManager } from '../../plugins'
-import type { Wallet } from '../../wallet'
+import type { DependencyManager, InjectionToken } from '../../plugins'
 import type { AgentContextProvider } from './AgentContextProvider'
 
 import { InjectionSymbols } from '../../constants'
@@ -23,15 +22,20 @@ export class AgentContext {
    */
   public readonly contextCorrelationId: string
 
+  public readonly isRootAgentContext: boolean
+
   public constructor({
     dependencyManager,
     contextCorrelationId,
+    isRootAgentContext = false,
   }: {
     dependencyManager: DependencyManager
     contextCorrelationId: string
+    isRootAgentContext?: boolean
   }) {
     this.dependencyManager = dependencyManager
     this.contextCorrelationId = contextCorrelationId
+    this.isRootAgentContext = isRootAgentContext
   }
 
   /**
@@ -39,13 +43,6 @@ export class AgentContext {
    */
   public get config() {
     return this.dependencyManager.resolve(AgentConfig)
-  }
-
-  /**
-   * Convenience method to access the wallet for the current context.
-   */
-  public get wallet() {
-    return this.dependencyManager.resolve<Wallet>(InjectionSymbols.Wallet)
   }
 
   /**
@@ -66,5 +63,12 @@ export class AgentContext {
     return {
       contextCorrelationId: this.contextCorrelationId,
     }
+  }
+
+  /**
+   * Resolve a dependency
+   */
+  public resolve<T>(token: InjectionToken<T>): T {
+    return this.dependencyManager.resolve(token)
   }
 }

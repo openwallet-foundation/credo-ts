@@ -3,8 +3,7 @@ import path from 'path'
 import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
-import { agentDependencies, getAskarWalletConfig } from '../../../../core/tests'
+import { agentDependencies } from '../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { anoncreds } from '../../../tests/helpers'
 import { AnonCredsModule } from '../../AnonCredsModule'
@@ -32,8 +31,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})
@@ -42,7 +39,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       {
         config: {
           label: 'Test Agent',
-          walletConfig: getAskarWalletConfig('0.3 Update AnonCreds - Holder', { inMemory: false, random: 'static' }),
         },
         dependencies: agentDependencies,
         modules: {
@@ -90,7 +86,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -108,8 +103,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(AnonCredsIssuerServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsHolderServiceSymbol, {})
     dependencyManager.registerInstance(AnonCredsVerifierServiceSymbol, {})
@@ -118,7 +111,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
       {
         config: {
           label: 'Test Agent',
-          walletConfig: getAskarWalletConfig('0.3 Update AnonCreds - Issuer', { inMemory: false, random: 'static' }),
         },
         dependencies: agentDependencies,
         modules: {
@@ -232,7 +224,6 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })

@@ -8,7 +8,7 @@ import type {
   OpenId4VcVerificationSessionStateChangedEvent,
 } from '../src'
 
-import { Agent, LogLevel, getDomainFromUrl, getJwkFromKey, utils } from '@credo-ts/core'
+import { Agent, LogLevel, getDomainFromUrl } from '@credo-ts/core'
 import { ReplaySubject, catchError, filter, lastValueFrom, map, take, timeout } from 'rxjs'
 
 import {
@@ -29,7 +29,6 @@ export async function createAgentFromModules<MM extends ModulesMap>(
   const agent = new Agent<MM>({
     config: {
       label,
-      walletConfig: { id: utils.uuid(), key: utils.uuid() },
       allowInsecureHttpUrls: true,
       logger: new TestLogger(LogLevel.off),
     },
@@ -49,7 +48,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
   await agent.initialize()
   const data = await createDidKidVerificationMethod(agent.context, secretKey)
-  const certificate = await createX509Certificate(agent.context, dns, data.key)
+  const certificate = await createX509Certificate(agent.context, dns, data.publicJwk)
 
   const [replaySubject] = setupEventReplaySubjects(
     [agent],
@@ -58,7 +57,7 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
   return {
     ...data,
-    jwk: getJwkFromKey(data.key),
+    jwk: data.publicJwk,
     certificate: certificate.certificate,
     agent,
     replaySubject,

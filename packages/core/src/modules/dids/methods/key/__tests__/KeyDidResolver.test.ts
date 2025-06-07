@@ -60,7 +60,7 @@ describe('DidResolver', () => {
         didDocumentMetadata: {},
         didResolutionMetadata: {
           error: 'notFound',
-          message: `resolver_error: Unable to resolve did 'did:key:z6MkmjYasdfasfd8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th': Error: Unsupported key type from multicodec code '107'`,
+          message: `resolver_error: Unable to resolve did 'did:key:z6MkmjYasdfasfd8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th': KeyManagementError: Unsupported multicodec public key with prefix '107'`,
         },
       })
     })

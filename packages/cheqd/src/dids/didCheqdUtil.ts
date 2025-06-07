@@ -114,14 +114,24 @@ export interface IDidDocOptions {
 }
 
 export function getClosestResourceVersion(resources: Metadata[], date: Date) {
-  const result = [...resources].sort((a, b) => {
-    if (!a.created || !b.created) throw new CredoError("Missing required property 'created' on resource")
-    const distancea = Math.abs(date.getTime() - a.created.getTime())
-    const distanceb = Math.abs(date.getTime() - b.created.getTime())
-    return distancea - distanceb
-  })
+  let minDiff = Number.POSITIVE_INFINITY
+  let closest: Metadata | undefined = undefined
 
-  return result[0]
+  // TODO: if the cheqd/sdk returns sorted resources, change this to binary search
+  for (const resource of resources) {
+    if (!resource.created) throw new CredoError("Missing required property 'created' on resource")
+
+    if (resource.created.getTime() < date.getTime()) {
+      const diff = date.getTime() - resource.created.getTime()
+
+      if (diff < minDiff) {
+        closest = resource
+        minDiff = diff
+      }
+    }
+  }
+
+  return closest
 }
 
 export function filterResourcesByNameAndType(resources: Metadata[], name: string, type: string) {

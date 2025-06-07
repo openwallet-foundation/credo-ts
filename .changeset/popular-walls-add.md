@@ -2,7 +2,6 @@
 '@credo-ts/action-menu': minor
 '@credo-ts/anoncreds': minor
 '@credo-ts/askar': minor
-'@credo-ts/bbs-signatures': minor
 '@credo-ts/cheqd': minor
 '@credo-ts/core': minor
 '@credo-ts/drpc': minor

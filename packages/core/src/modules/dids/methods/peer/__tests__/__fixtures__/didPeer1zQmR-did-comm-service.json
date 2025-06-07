@@ -1,5 +1,5 @@
 {
-  "@context": ["https://w3id.org/did/v1"],
+  "@context": ["https://www.w3.org/ns/did/v1"],
   "id": "did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i",
   "keyAgreement": [
     {

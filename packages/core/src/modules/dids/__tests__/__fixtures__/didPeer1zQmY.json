@@ -1,6 +1,6 @@
 {
-  "@context": ["https://w3id.org/did/v1"],
-  "id": "did:peer:1zQmchWGXSsHohSMrgts5oxG76zAfG49RkMZbhrYqPJeVXc1",
+  "@context": ["https://www.w3.org/ns/did/v1"],
+  "id": "did:peer:1zQmfUsTQProCfdpDrNbHsKoJEwKWpUKn2bqK63f4e9K3cko",
   "service": [
     {
       "id": "#service-0",

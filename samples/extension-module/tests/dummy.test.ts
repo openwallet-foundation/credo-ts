@@ -1,9 +1,7 @@
 import type { ConnectionRecord } from '@credo-ts/didcomm'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
-import { AskarModule } from '@credo-ts/askar'
 import { Agent } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
@@ -17,9 +15,6 @@ import { waitForDummyRecord } from './helpers'
 
 const modules = {
   dummy: new DummyModule(),
-  askar: new AskarModule({
-    askar: askar,
-  }),
 }
 
 const bobAgentOptions = getAgentOptions(
@@ -28,7 +23,8 @@ const bobAgentOptions = getAgentOptions(
     endpoints: ['rxjs:bob'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getAgentOptions(
@@ -37,7 +33,8 @@ const aliceAgentOptions = getAgentOptions(
     endpoints: ['rxjs:alice'],
   },
   {},
-  modules
+  modules,
+  { requireDidcomm: true }
 )
 
 describe('Dummy extension module test', () => {
@@ -68,9 +65,7 @@ describe('Dummy extension module test', () => {
 
   afterEach(async () => {
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice sends a request and Bob answers', async () => {

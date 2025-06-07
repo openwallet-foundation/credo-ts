@@ -1,10 +1,10 @@
 import type {
   AgentContext,
-  Buffer,
   DidCreateOptions,
   DidCreateResult,
   DidDeactivateResult,
   DidDocument,
+  DidDocumentKey,
   DidDocumentService,
   DidOperationStateActionBase,
   DidRegistrar,
@@ -23,8 +23,7 @@ import {
   DidRepository,
   Hasher,
   IndyAgentService,
-  Key,
-  KeyType,
+  Kms,
   NewDidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
@@ -38,8 +37,7 @@ import {
   createKeyAgreementKey,
   didDocDiff,
   indyDidDocumentFromDid,
-  isSelfCertifiedIndyDid,
-  verificationKeyForIndyDid,
+  verificationPublicJwkForIndyDid,
 } from './didIndyUtil'
 import { endpointsAttribFromServices } from './didSovUtil'
 
@@ -65,7 +63,11 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  private didCreateFailedResult({ reason }: { reason: string }): IndyVdrDidCreateResult {
+  private didCreateFailedResult({
+    reason,
+  }: {
+    reason: string
+  }): IndyVdrDidCreateResult {
     return {
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -77,14 +79,10 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   }
 
   private didCreateFinishedResult({
-    seed,
-    privateKey,
     did,
     didDocument,
     namespace,
   }: {
-    seed: Buffer | undefined
-    privateKey: Buffer | undefined
     did: string
     didDocument: DidDocument
     namespace: string
@@ -98,106 +96,92 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         state: 'finished',
         did,
         didDocument,
-        secret: {
-          // FIXME: the uni-registrar creates the seed in the registrar method
-          // if it doesn't exist so the seed can always be returned. Currently
-          // we can only return it if the seed was passed in by the user. Once
-          // we have a secure method for generating seeds we should use the same
-          // approach
-          seed: seed,
-          privateKey: privateKey,
-        },
       },
     }
   }
 
   public async parseInput(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<ParseInputResult> {
-    let did = options.did
-    let namespaceIdentifier: string
-    let verificationKey: Key
-    const seed = options.secret?.seed
-    const privateKey = options.secret?.privateKey
-
     if (options.options.endorsedTransaction) {
-      const _did = did as string
-      const { namespace } = parseIndyDid(_did)
+      if (!options.did || typeof options.did !== 'string') {
+        return {
+          status: 'error',
+          reason: 'If endorsedTransaction is provided, a DID must also be provided',
+        }
+      }
+      const { namespace, namespaceIdentifier } = parseIndyDid(options.did)
       // endorser did from the transaction
       const endorserNamespaceIdentifier = JSON.parse(options.options.endorsedTransaction.nymRequest).identifier
 
       return {
         status: 'ok',
-        did: _did,
-        namespace: namespace,
-        namespaceIdentifier: parseIndyDid(_did).namespaceIdentifier,
+        type: 'endorsedTransaction',
+        endorsedTransaction: options.options.endorsedTransaction,
+        did: options.did,
+        namespace,
+        namespaceIdentifier,
         endorserNamespaceIdentifier,
-        seed,
-        privateKey,
       }
     }
 
     const endorserDid = options.options.endorserDid
     const { namespace: endorserNamespace, namespaceIdentifier: endorserNamespaceIdentifier } = parseIndyDid(endorserDid)
 
-    const allowOne = [privateKey, seed, did].filter((e) => e !== undefined)
-    if (allowOne.length > 1) {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+    const _verificationKey = options.options.keyId
+      ? await kms.getPublicKey({ keyId: options.options.keyId })
+      : (
+          await kms.createKey({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          })
+        ).publicJwk
+
+    if (_verificationKey.kty !== 'OKP' || _verificationKey.crv !== 'Ed25519') {
       return {
         status: 'error',
-        reason: `Only one of 'seed', 'privateKey' and 'did' must be provided`,
+        reason: `keyId must point to an Ed25519 key, but found ${Kms.getJwkHumanDescription(_verificationKey)}`,
       }
     }
 
-    if (did) {
-      if (!options.options.verkey) {
-        return {
-          status: 'error',
-          reason: 'If a did is defined, a matching verkey must be provided',
-        }
-      }
+    const verificationKey = Kms.PublicJwk.fromPublicJwk(_verificationKey) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-      const { namespace: didNamespace, namespaceIdentifier: didNamespaceIdentifier } = parseIndyDid(did)
-      namespaceIdentifier = didNamespaceIdentifier
-      verificationKey = Key.fromPublicKeyBase58(options.options.verkey, KeyType.Ed25519)
+    // Create a new key and calculate did according to the rules for indy did method
+    const buffer = Hasher.hash(verificationKey.publicKey.publicKey, 'sha-256')
 
-      if (!isSelfCertifiedIndyDid(did, options.options.verkey)) {
-        return {
-          status: 'error',
-          reason: `Initial verkey ${options.options.verkey} does not match did ${did}`,
-        }
-      }
-
-      if (didNamespace !== endorserNamespace) {
-        return {
-          status: 'error',
-          reason: `The endorser did uses namespace: '${endorserNamespace}' and the did to register uses namespace: '${didNamespace}'. Namespaces must match.`,
-        }
-      }
-    } else {
-      // Create a new key and calculate did according to the rules for indy did method
-      verificationKey = await agentContext.wallet.createKey({ privateKey, seed, keyType: KeyType.Ed25519 })
-      const buffer = Hasher.hash(verificationKey.publicKey, 'sha-256')
-
-      namespaceIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
-      did = `did:indy:${endorserNamespace}:${namespaceIdentifier}`
-    }
+    const namespaceIdentifier = TypedArrayEncoder.toBase58(buffer.slice(0, 16))
+    const did = `did:indy:${endorserNamespace}:${namespaceIdentifier}`
 
     return {
       status: 'ok',
+      type: 'create',
       did,
       verificationKey,
+      endorserDid: options.options.endorserDid,
+      alias: options.options.alias,
+      role: options.options.role,
+      services: options.options.services,
+      useEndpointAttrib: options.options.useEndpointAttrib,
       namespaceIdentifier,
       namespace: endorserNamespace,
       endorserNamespaceIdentifier,
-      seed,
-      privateKey,
     }
   }
 
-  public async saveDidRecord(agentContext: AgentContext, did: string, didDocument: DidDocument): Promise<void> {
+  public async saveDidRecord(
+    agentContext: AgentContext,
+    did: string,
+    didDocument: DidDocument,
+    keys: DidDocumentKey[]
+  ): Promise<void> {
     // Save the did so we know we created it and can issue with it
     const didRecord = new DidRecord({
       did,
       role: DidDocumentRole.Created,
       didDocument,
+      keys,
     })
 
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
@@ -206,14 +190,14 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
 
   private createDidDocument(
     did: string,
-    verificationKey: Key,
+    verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>,
     services: DidDocumentService[] | undefined,
     useEndpointAttrib: boolean | undefined
   ) {
+    const verificationKeyBase58 = TypedArrayEncoder.toBase58(verificationKey.publicKey.publicKey)
     // Create base did document
-    const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKey.publicKeyBase58)
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let diddocContent
+    const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKeyBase58)
+    let diddocContent: Record<string, unknown> | undefined = undefined
 
     // Add services if object was passed
     if (services) {
@@ -245,7 +229,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           .addVerificationMethod({
             controller: did,
             id: keyAgreementId,
-            publicKeyBase58: createKeyAgreementKey(verificationKey.publicKeyBase58),
+            publicKeyBase58: createKeyAgreementKey(verificationKeyBase58),
             type: 'X25519KeyAgreementKey2019',
           })
           .addKeyAgreement(keyAgreementId)
@@ -261,7 +245,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         // create diddocContent parameter based on the diff between the base and the resulting DID Document
         diddocContent = didDocDiff(
           didDocumentBuilder.build().toJSON(),
-          indyDidDocumentFromDid(did, verificationKey.publicKeyBase58).build().toJSON()
+          indyDidDocumentFromDid(did, verificationKeyBase58).build().toJSON()
         )
       }
     }
@@ -275,29 +259,39 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
+  // FIXME: we need to completely revamp this logic, it's overly complex
+  // We might even want to look at ditching the whole generic DIDs api ...
   public async create(agentContext: AgentContext, options: IndyVdrDidCreateOptions): Promise<IndyVdrDidCreateResult> {
     try {
       const res = await this.parseInput(agentContext, options)
       if (res.status === 'error') return this.didCreateFailedResult({ reason: res.reason })
 
-      const { did, namespaceIdentifier, endorserNamespaceIdentifier, verificationKey, namespace, seed, privateKey } =
-        res
+      const did = res.did
 
-      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(namespace)
+      const pool = agentContext.dependencyManager.resolve(IndyVdrPoolService).getPoolForNamespace(res.namespace)
 
       let nymRequest: NymRequest | CustomRequest
       let didDocument: DidDocument | undefined
       let attribRequest: AttribRequest | CustomRequest | undefined
-      let alias: string | undefined
+      let verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined = undefined
 
-      if (options.options.endorsedTransaction) {
-        const { nymRequest: _nymRequest, attribRequest: _attribRequest } = options.options.endorsedTransaction
+      if (res.type === 'endorsedTransaction') {
+        const { nymRequest: _nymRequest, attribRequest: _attribRequest } = res.endorsedTransaction
         nymRequest = new CustomRequest({ customRequest: _nymRequest })
         attribRequest = _attribRequest ? new CustomRequest({ customRequest: _attribRequest }) : undefined
       } else {
-        const { services, useEndpointAttrib } = options.options
-        alias = options.options.alias
-        if (!verificationKey) throw new Error('VerificationKey not defined')
+        const {
+          services,
+          useEndpointAttrib,
+          alias,
+          endorserNamespaceIdentifier,
+          namespaceIdentifier,
+          did,
+          role,
+          endorserDid,
+          namespace,
+        } = res
+        verificationKey = res.verificationKey
 
         const { didDocument: _didDocument, diddocContent } = this.createDidDocument(
           did,
@@ -307,9 +301,10 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
         )
         didDocument = _didDocument
 
-        let didRegisterSigningKey: Key | undefined = undefined
-        if (options.options.endorserMode === 'internal')
-          didRegisterSigningKey = await verificationKeyForIndyDid(agentContext, options.options.endorserDid)
+        const didRegisterSigningKey =
+          options.options.endorserMode === 'internal'
+            ? await verificationPublicJwkForIndyDid(agentContext, options.options.endorserDid)
+            : undefined
 
         nymRequest = await this.createRegisterDidWriteRequest({
           agentContext,
@@ -320,7 +315,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
           verificationKey,
           alias,
           diddocContent,
-          role: options.options.role,
+          role,
         })
 
         if (services && useEndpointAttrib) {
@@ -329,33 +324,56 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
             agentContext,
             pool,
             signingKey: verificationKey,
-            endorserDid: options.options.endorserMode === 'external' ? options.options.endorserDid : undefined,
+            endorserDid: options.options.endorserMode === 'external' ? endorserDid : undefined,
             unqualifiedDid: namespaceIdentifier,
             endpoints,
           })
         }
 
         if (options.options.endorserMode === 'external') {
+          // We already save the did record, including the link between kms key id and did key id
+          await this.saveDidRecord(agentContext, did, didDocument, [
+            {
+              didDocumentRelativeKeyId: '#verkey',
+              kmsKeyId: verificationKey.keyId,
+            },
+          ])
           const didAction: EndorseDidTxAction = {
             state: 'action',
             action: 'endorseIndyTransaction',
-            endorserDid: options.options.endorserDid,
+            endorserDid: endorserDid,
             nymRequest: nymRequest.body,
             attribRequest: attribRequest?.body,
             did: did,
-            secret: { seed, privateKey },
           }
 
           return this.didCreateActionResult({ namespace, didAction, did })
         }
       }
+
       await this.registerPublicDid(agentContext, pool, nymRequest)
       if (attribRequest) await this.setEndpointsForDid(agentContext, pool, attribRequest)
+
+      // DID Document is undefined if this method is called based on external endorsement
+      // but in that case the did document is already saved
+      if (verificationKey && didDocument) {
+        await this.saveDidRecord(agentContext, did, didDocument, [
+          {
+            didDocumentRelativeKeyId: '#verkey',
+            kmsKeyId: verificationKey.keyId,
+          },
+        ])
+      }
+
       didDocument = didDocument ?? (await buildDidDocument(agentContext, pool, did))
-      await this.saveDidRecord(agentContext, did, didDocument)
-      return this.didCreateFinishedResult({ did, didDocument, namespace, seed, privateKey })
+      return this.didCreateFinishedResult({ did, didDocument, namespace: res.namespace })
     } catch (error) {
-      return this.didCreateFailedResult({ reason: `unknownError: ${error.message}` })
+      agentContext.config.logger.error('Error creating indy did', {
+        error,
+      })
+      return this.didCreateFailedResult({
+        reason: `unknownError: ${error.message}`,
+      })
     }
   }
 
@@ -386,8 +404,8 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     pool: IndyVdrPool
     submitterNamespaceIdentifier: string
     namespaceIdentifier: string
-    verificationKey: Key
-    signingKey?: Key
+    verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    signingKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
     alias: string | undefined
     diddocContent?: Record<string, unknown>
     role?: NymRequestRole
@@ -411,7 +429,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const request = new NymRequest({
       submitterDid: submitterNamespaceIdentifier,
       dest: namespaceIdentifier,
-      verkey: verificationKey.publicKeyBase58,
+      verkey: TypedArrayEncoder.toBase58(verificationKey.publicKey.publicKey),
       alias,
       role,
     })
@@ -447,7 +465,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   private async createSetDidEndpointsRequest(options: {
     agentContext: AgentContext
     pool: IndyVdrPool
-    signingKey: Key
+    signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
     endorserDid?: string
     unqualifiedDid: string
     endpoints: IndyEndpointAttrib
@@ -488,14 +506,21 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
   }
 }
 
-interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
+interface IndyVdrDidCreateOptionsWithoutDid extends DidCreateOptions {
   didDocument?: never // Not yet supported
+  did?: never
+  method: 'indy'
   options: {
+    /**
+     * Optionally an existing keyId can be provided, in this case the did will be created
+     * based on the existing key
+     */
+    keyId?: string
+
     alias?: string
     role?: NymRequestRole
     services?: DidDocumentService[]
     useEndpointAttrib?: boolean
-    verkey?: string
 
     // endorserDid is always required. We just have internal or external mode
     endorserDid: string
@@ -504,20 +529,6 @@ interface IndyVdrDidCreateOptionsBase extends DidCreateOptions {
     endorserMode: 'internal' | 'external'
     endorsedTransaction?: never
   }
-  secret?: {
-    seed?: Buffer
-    privateKey?: Buffer
-  }
-}
-
-interface IndyVdrDidCreateOptionsWithDid extends IndyVdrDidCreateOptionsBase {
-  method?: never
-  did: string
-}
-
-interface IndyVdrDidCreateOptionsWithoutDid extends IndyVdrDidCreateOptionsBase {
-  method: 'indy'
-  did?: never
 }
 
 // When transactions have been endorsed. Only supported for external mode
@@ -536,31 +547,38 @@ interface IndyVdrDidCreateOptionsForSubmission extends DidCreateOptions {
       attribRequest?: string
     }
   }
-  secret?: {
-    seed?: Buffer
-    privateKey?: Buffer
-  }
 }
 
-export type IndyVdrDidCreateOptions =
-  | IndyVdrDidCreateOptionsWithDid
-  | IndyVdrDidCreateOptionsWithoutDid
-  | IndyVdrDidCreateOptionsForSubmission
+export type IndyVdrDidCreateOptions = IndyVdrDidCreateOptionsWithoutDid | IndyVdrDidCreateOptionsForSubmission
 
-type ParseInputOk = {
+type ParseInputOkEndorsedTransaction = {
   status: 'ok'
   did: string
-  verificationKey?: Key
+  type: 'endorsedTransaction'
+  endorsedTransaction: IndyVdrDidCreateOptionsForSubmission['options']['endorsedTransaction']
   namespaceIdentifier: string
   namespace: string
   endorserNamespaceIdentifier: string
-  seed: Buffer | undefined
-  privateKey: Buffer | undefined
+}
+
+type ParseInputOkCreate = {
+  status: 'ok'
+  type: 'create'
+  did: string
+  verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  namespaceIdentifier: string
+  namespace: string
+  endorserNamespaceIdentifier: string
+  endorserDid: string
+  alias?: string
+  role?: NymRequestRole
+  services?: DidDocumentService[]
+  useEndpointAttrib?: boolean
 }
 
 type parseInputError = { status: 'error'; reason: string }
 
-type ParseInputResult = ParseInputOk | parseInputError
+type ParseInputResult = ParseInputOkEndorsedTransaction | ParseInputOkCreate | parseInputError
 
 export interface EndorseDidTxAction extends DidOperationStateActionBase {
   action: 'endorseIndyTransaction'
