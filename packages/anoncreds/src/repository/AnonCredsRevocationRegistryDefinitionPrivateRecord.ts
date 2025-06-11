@@ -13,7 +13,6 @@ export interface AnonCredsRevocationRegistryDefinitionPrivateRecordProps {
   revocationRegistryDefinitionId: string
   credentialDefinitionId: string
   value: Record<string, unknown>
-  index?: number
   state?: AnonCredsRevocationRegistryState
 }
 

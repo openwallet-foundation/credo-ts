@@ -252,6 +252,18 @@ describe('AskarStorageService', () => {
       expect(records).toEqual(expect.arrayContaining([expectedRecord, expectedRecord2]))
     })
 
+    // FIXME: this should actually return 1 record, but we currently return 2
+    // See https://github.com/openwallet-foundation/credo-ts/issues/2315
+    it.failing('should not return records with null tag values', async () => {
+      const expectedRecord = await insertRecord({ tags: { myTag: 'foobar' } })
+      await insertRecord({ tags: { myTag: null } })
+
+      const records = await storageService.findByQuery(agentContext, TestRecord, { myTag: null })
+
+      expect(records.length).toBe(1)
+      expect(records).toEqual(expect.arrayContaining([expectedRecord]))
+    })
+
     it('finds records using $and statements', async () => {
       const expectedRecord = await insertRecord({
         tags: { myTag: 'foo', anotherTag: 'bar' },
