@@ -5,7 +5,10 @@ import { LibSQLDatabase, drizzle as drizzleSqlite } from 'drizzle-orm/libsql'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { drizzle as drizzlePostgres } from 'drizzle-orm/pglite'
 import { DrizzleStorageModule } from '../src'
-import { didcommDrizzleRecords } from '../src/didcomm'
+import actionMenuDrizzleBundle from '../src/action-menu/bundle'
+import anoncredsDrizzleBundle from '../src/anoncreds/bundle'
+import coreDrizzleBundle from '../src/core/bundle'
+import didcommDrizzleBundle from '../src/didcomm/bundle'
 
 describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type) => {
   let agent: Agent
@@ -13,7 +16,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
   beforeAll(async () => {
     const drizzleModule = new DrizzleStorageModule({
       database: type === 'postgres' ? drizzlePostgres('memory://') : drizzleSqlite(':memory:'),
-      records: [...didcommDrizzleRecords],
+      bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
     })
 
     agent = new Agent({
@@ -26,6 +29,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
       },
     })
 
+    // Usually the actual migrations should be applied beforehand, but for tests we just push the current state
     if (type === 'postgres') {
       const { apply } = await pushSchema(
         drizzleModule.config.schemas,
@@ -43,11 +47,6 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
     }
 
     await agent.initialize()
-  })
-
-  afterAll(async () => {
-    // Doesn't do anything yet, but we use in memory so ok
-    // await agent.dependencyManager.deleteAgentContext(agent.context)
   })
 
   test('create, retrieve, update, query and delete generic record', async () => {

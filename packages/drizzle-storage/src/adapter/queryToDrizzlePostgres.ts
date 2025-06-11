@@ -161,6 +161,9 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
 
     const value = query[field as keyof typeof query]
 
+    // Skip undefined values
+    if (value === undefined) continue
+
     // Check if the field exists in the table
     // In that case, query the column
     if (field in table && table[field as keyof typeof table] instanceof PgColumn) {

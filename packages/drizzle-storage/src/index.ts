@@ -10,6 +10,12 @@ export { DrizzleDatabase } from './DrizzleDatabase'
 export { postgresBaseRecordTable } from './postgres'
 export { sqliteBaseRecordTable } from './sqlite'
 
-export { DrizzleRecord } from './DrizzleRecord'
+export type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 
 export { GetSchemaFromDrizzleRecords, getSchemaFromDrizzleRecords } from './combineSchemas'
+
+export {
+  ReactNativeDrizzleMigration,
+  ReactNativeDrizzleMigrationsOptions,
+  applyReactNativeMigrations,
+} from './applyReactNativeMigrations'

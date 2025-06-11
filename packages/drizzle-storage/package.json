@@ -1,9 +1,10 @@
 {
   "name": "@credo-ts/drizzle-storage",
   "version": "0.5.13",
-  "files": ["build"],
+  "files": ["build", "cli-build", "migrations", "types"],
   "license": "Apache-2.0",
   "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
+  "bin": "./cli-build/bin.js",
   "publishConfig": {
     "access": "public",
     "exports": {
@@ -11,60 +12,32 @@
         "types": "./build/index.d.ts",
         "default": "./build/index.js"
       },
-      "./didcomm": {
-        "types": "./build/didcomm/index.d.ts",
-        "default": "./build/didcomm/index.js"
+      "./*/sqlite": {
+        "types": "./build/*/sqlite.ts",
+        "default": "./build/*/sqlite.d.ts"
       },
-      "./didcomm/sqlite": {
-        "types": "./build/didcomm/sqlite.d.ts",
-        "default": "./build/didcomm/sqlite.js"
+      "./*/postgres": {
+        "types": "./build/*/postgres.ts",
+        "default": "./build/*/postgres.d.ts"
       },
-      "./didcomm/postgres": {
-        "types": "./build/didcomm/postgres.d.ts",
-        "default": "./build/didcomm/postgres.js"
+      "./*": {
+        "default": "./build/*/bundle.js",
+        "types": "./build/*/bundle.d.ts"
       },
-      "./core": {
-        "types": "./build/core/index.d.ts",
-        "default": "./build/core/index.js"
-      },
-      "./core/sqlite": {
-        "types": "./build/core/sqlite.d.ts",
-        "default": "./build/core/sqlite.js"
-      },
-      "./core/postgres": {
-        "types": "./build/core/postgres.d.ts",
-        "default": "./build/core/postgres.js"
+      "./*/sqlite/migrations": {
+        "default": "./migrations/*/sqlite/migrations.js",
+        "types": "./types/migrations.d.ts"
       }
     }
   },
   "exports": {
-    ".": {
-      "types": "./src/index.d.ts",
-      "default": "./src/index.js"
-    },
-    "./didcomm": {
-      "types": "./src/didcomm/index.d.ts",
-      "default": "./src/didcomm/index.ts"
-    },
-    "./didcomm/sqlite": {
-      "types": "./src/didcomm/sqlite.d.ts",
-      "default": "./src/didcomm/sqlite.ts"
-    },
-    "./didcomm/postgres": {
-      "types": "./src/didcomm/postgres.d.ts",
-      "default": "./src/didcomm/postgres.ts"
-    },
-    "./core": {
-      "types": "./src/core/index.d.ts",
-      "default": "./src/core/index.ts"
-    },
-    "./core/sqlite": {
-      "types": "./src/core/sqlite.d.ts",
-      "default": "./src/core/sqlite.ts"
-    },
-    "./core/postgres": {
-      "types": "./src/core/postgres.d.ts",
-      "default": "./src/core/postgres.ts"
+    ".": "./src/index.ts",
+    "./*/sqlite": "./src/*/sqlite.ts",
+    "./*/postgres": "./src/*/postgres.ts",
+    "./*": "./src/*/bundle.ts",
+    "./*/sqlite/migrations": {
+      "default": "./migrations/*/sqlite/migrations.js",
+      "types": "./types/migrations.d.ts"
     }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",
@@ -74,23 +47,35 @@
     "directory": "packages/drizzle-storage"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
+    "build": "pnpm run clean && pnpm run compile && pnpm run compile:cli",
+    "clean": "rimraf ./build ./cli-build",
     "compile": "tsc -p tsconfig.build.json",
+    "compile:cli": "tsc -p tsconfig.cli.json",
     "prepublishOnly": "pnpm run build",
+    "cli:dev": "ts-node --project tsconfig.cli.json ./cli/cli.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu",
+    "cli:dev:generate": "pnpm cli:dev generate",
+    "cli:dev:migrate:postgres": "pnpm cli:dev migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:dev:migrate:sqlite": "pnpm cli:dev migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:dev:studio:postgres": "pnpm cli:dev studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:local.db\"",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "dependencies": {
+    "@credo-ts/action-menu": "workspace:*",
+    "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
+    "@credo-ts/didcomm": "workspace:*",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "drizzle-orm": "^0.43.1",
+    "shell": "^0.12.0",
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.1",
-    "drizzle-kit": "^0.31.1",
     "@libsql/client": "^0.15.6",
+    "@types/yargs": "^17.0.33",
+    "drizzle-kit": "^0.31.1",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   }

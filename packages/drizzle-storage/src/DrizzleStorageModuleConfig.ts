@@ -1,13 +1,13 @@
 import { DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
-import { DrizzleRecord } from './DrizzleRecord'
+import { DrizzleRecordBundle } from './DrizzleRecord'
 import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
-import { coreDrizzleRecords } from './core'
+import coreDrizzleBundle from './core/bundle'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-type AnyDrizzleDatabase = DrizzleDatabase<any, any>
+export type AnyDrizzleDatabase = DrizzleDatabase<any, any>
 
-export interface DrizzleStorageModuleConfigOptions {
+export interface DrizzleStorageModuleConfigOptions<Database extends AnyDrizzleDatabase = AnyDrizzleDatabase> {
   /**
    * The drizzle database to use. To not depend on specific drivers and support different
    * environments you need to configure the database yourself.
@@ -15,14 +15,13 @@ export interface DrizzleStorageModuleConfigOptions {
    * See https://orm.drizzle.team/docs/get-started for available drivers.
    * All SQLite and Postgres database are supported.
    */
-
-  database: AnyDrizzleDatabase
+  database: Database
 
   /**
-   * The drizzle records to register. Each drizzle record needs both an
+   * The drizzle bundles to register. Each drizzle bundles consists of records, which need to contain both an
    * sqlite and postgres definition, as well as an adapter.
    */
-  records: DrizzleRecord[]
+  bundles: DrizzleRecordBundle[]
 }
 
 /**
@@ -36,7 +35,10 @@ export class DrizzleStorageModuleConfig {
   public constructor(options: DrizzleStorageModuleConfigOptions) {
     this.database = options.database
 
-    const allRecords = Array.from(new Set([...coreDrizzleRecords, ...options.records]))
+    // core MUST always be registered
+    const allRecords = Array.from(
+      new Set([...coreDrizzleBundle.records, ...options.bundles.flatMap((bundle) => bundle.records)])
+    )
     this.adapters = allRecords.map((record) => new record.adapter(this.database))
 
     this.schemas = getSchemaFromDrizzleRecords(allRecords, getDrizzleDatabaseType(options.database))

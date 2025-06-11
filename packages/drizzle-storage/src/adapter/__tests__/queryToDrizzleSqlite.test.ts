@@ -17,6 +17,9 @@ describe('queryToDrizzleSqlite', () => {
     await apply()
 
     await db.insert(didcommConnection).values({
+      contextCorrelationId: 'something',
+      createdAt: new Date(),
+      updatedAt: new Date(),
       id: 'something',
       role: DidExchangeRole.Requester,
       state: DidExchangeState.Abandoned,

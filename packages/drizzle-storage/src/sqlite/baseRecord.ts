@@ -15,7 +15,7 @@ export const baseRecordTable = {
 
   metadata: text({ mode: 'json' }).$type<Record<string, Record<string, unknown> | undefined>>(),
   customTags: text('custom_tags', { mode: 'json' }).$type<
-    Record<string, string | number | boolean | null | string[]>
+    Record<string, string | number | undefined | boolean | null | string[]>
   >(),
 } as const
 

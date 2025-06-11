@@ -35,7 +35,7 @@ export function getSchemaFromDrizzleRecords<
     for (const key in schema) {
       if (Object.prototype.hasOwnProperty.call(schema, key)) {
         // Merge each property from the current schema into our combined schema
-        Object.assign(combinedSchema, { [key]: schema[key] })
+        Object.assign(combinedSchema as object, { [key]: schema[key] })
       }
     }
   }
