@@ -1,12 +1,12 @@
 import { GenericRecord, JsonTransformer, TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleGenericRecordAdapterValues = DrizzleAdapterValues<(typeof sqlite)['genericRecord']>
+type DrizzleGenericRecordAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['genericRecord']>
 export class DrizzleGenericRecordAdapter extends BaseDrizzleRecordAdapter<
   GenericRecord,
   typeof postgres.genericRecord,
@@ -18,7 +18,7 @@ export class DrizzleGenericRecordAdapter extends BaseDrizzleRecordAdapter<
     super(database, { postgres: postgres.genericRecord, sqlite: sqlite.genericRecord }, 'GenericRecord')
   }
 
-  public getValues(record: GenericRecord): DrizzleGenericRecordAdapterValues {
+  public getValues(record: GenericRecord) {
     return {
       content: record.content,
       customTags: record.getTags() as Record<string, string>,

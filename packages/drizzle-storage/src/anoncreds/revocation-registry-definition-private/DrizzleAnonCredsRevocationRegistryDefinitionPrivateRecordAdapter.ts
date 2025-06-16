@@ -1,13 +1,13 @@
 import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { AnonCredsRevocationRegistryDefinitionPrivateRecord } from '@credo-ts/anoncreds'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleAnonCredsRevocationRegistryDefinitionPrivateAdapterValues = DrizzleAdapterValues<
+type DrizzleAnonCredsRevocationRegistryDefinitionPrivateAdapterValues = DrizzleAdapterRecordValues<
   (typeof sqlite)['anonCredsRevocationRegistryDefinitionPrivate']
 >
 export class DrizzleAnonCredsRevocationRegistryDefinitionPrivateRecordAdapter extends BaseDrizzleRecordAdapter<
@@ -28,9 +28,7 @@ export class DrizzleAnonCredsRevocationRegistryDefinitionPrivateRecordAdapter ex
     )
   }
 
-  public getValues(
-    record: AnonCredsRevocationRegistryDefinitionPrivateRecord
-  ): DrizzleAnonCredsRevocationRegistryDefinitionPrivateAdapterValues {
+  public getValues(record: AnonCredsRevocationRegistryDefinitionPrivateRecord) {
     const { revocationRegistryDefinitionId, credentialDefinitionId, state, ...customTags } = record.getTags()
 
     return {

@@ -1,13 +1,23 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { didDrizzleRecord } from './did'
 import { genericRecordDrizzleRecord } from './genericRecord'
 import { mdocDrizzleRecord } from './mdoc'
 import { sdJwtVcDrizzleRecord } from './sdJwtVc'
+import { singleContextLruCacheDrizzleRecord } from './singleContextLruCache'
 import { storageVersionDrizzleRecord } from './storageVersion'
+import { w3cCredentialDrizzleRecord } from './w3cCredential'
 
 export default {
   name: 'core',
-  records: [sdJwtVcDrizzleRecord, mdocDrizzleRecord, storageVersionDrizzleRecord, genericRecordDrizzleRecord],
-
+  records: [
+    sdJwtVcDrizzleRecord,
+    mdocDrizzleRecord,
+    storageVersionDrizzleRecord,
+    genericRecordDrizzleRecord,
+    didDrizzleRecord,
+    w3cCredentialDrizzleRecord,
+    singleContextLruCacheDrizzleRecord,
+  ],
   migrations: {
     postgres: {
       schemaModule: '@credo-ts/drizzle-storage/core/postgres',

@@ -18,11 +18,13 @@ export type AnyDrizzleAdapter = BaseDrizzleRecordAdapter<any, any, any, any, any
 
 export type DrizzleAdapterValues<Table extends _SQLiteTable> = Simplify<
   Omit<
-    {
-      [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key]
-    },
+    { [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key] },
     Exclude<keyof typeof sqliteBaseRecordTable, 'customTags'>
   >
+>
+
+export type DrizzleAdapterRecordValues<Table extends _SQLiteTable> = Simplify<
+  Omit<{ [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key] }, 'contextCorrelationId'>
 >
 
 export abstract class BaseDrizzleRecordAdapter<
@@ -67,7 +69,7 @@ export abstract class BaseDrizzleRecordAdapter<
     }
   }
 
-  public abstract toRecord(values: DrizzleAdapterValues<SQLiteTable>): CredoRecord
+  public abstract toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord
 
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
     if (isDrizzlePostgresDatabase(this.database)) {
@@ -92,7 +94,9 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const result = await queryResult
-      return result.map(({ contextCorrelationId, ...item }) => this.toRecord(item as DrizzleAdapterValues<SQLiteTable>))
+      return result.map(({ contextCorrelationId, ...item }) =>
+        this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+      )
     }
 
     if (isDrizzleSqliteDatabase(this.database)) {
@@ -117,7 +121,9 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const result = await queryResult
-      return result.map(({ contextCorrelationId, ...item }) => this.toRecord(item as DrizzleAdapterValues<SQLiteTable>))
+      return result.map(({ contextCorrelationId, ...item }) =>
+        this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+      )
     }
 
     // @ts-expect-error
@@ -144,7 +150,7 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const { contextCorrelationId, ...item } = result
-      return this.toRecord(item as DrizzleAdapterValues<SQLiteTable>)
+      return this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
     }
 
     if (isDrizzleSqliteDatabase(this.database)) {
@@ -166,7 +172,7 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const { contextCorrelationId, ...item } = result
-      return this.toRecord(item as DrizzleAdapterValues<SQLiteTable>)
+      return this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
     }
 
     // @ts-expect-error

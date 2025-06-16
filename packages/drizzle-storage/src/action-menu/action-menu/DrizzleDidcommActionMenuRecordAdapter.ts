@@ -1,13 +1,13 @@
 import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { ActionMenuOptions, ActionMenuRecord, ActionMenuSelectionOptions } from '@credo-ts/action-menu'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleDidcommActionMenuAdapterValues = DrizzleAdapterValues<(typeof sqlite)['didcommActionMenu']>
+type DrizzleDidcommActionMenuAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommActionMenu']>
 export class DrizzleDidcommActionMenuRecordAdapter extends BaseDrizzleRecordAdapter<
   ActionMenuRecord,
   typeof postgres.didcommActionMenu,
@@ -19,7 +19,7 @@ export class DrizzleDidcommActionMenuRecordAdapter extends BaseDrizzleRecordAdap
     super(database, { postgres: postgres.didcommActionMenu, sqlite: sqlite.didcommActionMenu }, 'ActionMenuRecord')
   }
 
-  public getValues(record: ActionMenuRecord): DrizzleDidcommActionMenuAdapterValues {
+  public getValues(record: ActionMenuRecord) {
     const { role, connectionId, threadId, ...customTags } = record.getTags()
 
     return {

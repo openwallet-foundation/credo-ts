@@ -1,13 +1,13 @@
 import { JsonTransformer } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { ConnectionRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleDidcommConnectionAdapterValues = DrizzleAdapterValues<(typeof sqlite)['didcommConnection']>
+type DrizzleDidcommConnectionAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommConnection']>
 export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdapter<
   ConnectionRecord,
   typeof postgres.didcommConnection,
@@ -19,7 +19,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
     super(database, { postgres: postgres.didcommConnection, sqlite: sqlite.didcommConnection }, 'ConnectionRecord')
   }
 
-  public getValues(record: ConnectionRecord): DrizzleDidcommConnectionAdapterValues {
+  public getValues(record: ConnectionRecord) {
     const {
       state,
       role,

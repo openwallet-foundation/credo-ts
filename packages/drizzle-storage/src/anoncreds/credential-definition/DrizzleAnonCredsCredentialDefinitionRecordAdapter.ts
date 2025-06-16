@@ -1,13 +1,13 @@
 import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { AnonCredsCredentialDefinitionRecord } from '@credo-ts/anoncreds'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleAnonCredsCredentialDefinitionAdapterValues = DrizzleAdapterValues<
+type DrizzleAnonCredsCredentialDefinitionAdapterValues = DrizzleAdapterRecordValues<
   (typeof sqlite)['anonCredsCredentialDefinition']
 >
 export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizzleRecordAdapter<
@@ -25,7 +25,7 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
     )
   }
 
-  public getValues(record: AnonCredsCredentialDefinitionRecord): DrizzleAnonCredsCredentialDefinitionAdapterValues {
+  public getValues(record: AnonCredsCredentialDefinitionRecord) {
     const {
       schemaId: schemaIdTag,
       credentialDefinitionId,

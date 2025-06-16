@@ -1,12 +1,12 @@
 import { JsonTransformer, SdJwtVcRecord } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
-type DrizzleSdJwtVcAdapterValues = DrizzleAdapterValues<(typeof sqlite)['sdJwtVc']>
+type DrizzleSdJwtVcAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['sdJwtVc']>
 export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
   SdJwtVcRecord,
   typeof postgres.sdJwtVc,
@@ -18,7 +18,7 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
     super(database, { postgres: postgres.sdJwtVc, sqlite: sqlite.sdJwtVc }, 'SdJwtVcRecord')
   }
 
-  public getValues(record: SdJwtVcRecord): DrizzleSdJwtVcAdapterValues {
+  public getValues(record: SdJwtVcRecord) {
     const { alg, sdAlg, vct, ...customTags } = record.getTags()
 
     return {
