@@ -1,28 +1,28 @@
-import { ActionMenuOptions, ActionMenuRole, ActionMenuSelectionOptions, ActionMenuState } from '@credo-ts/action-menu'
+import { DrpcRequest, DrpcResponse, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection/postgres'
 import { postgresBaseRecordTable } from '../../postgres'
 import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
-export const didcommActionMenuStateEnum = pgEnum('DidcommActionMenuState', ActionMenuState)
-export const didcommActionMenuRoleEnum = pgEnum('DidcommActionMenuRole', ActionMenuRole)
+export const didcommDrpcStateEnum = pgEnum('DidcommDrpcState', DrpcState)
+export const didcommDrpcRoleEnum = pgEnum('DidcommDrpcRole', DrpcRole)
 
-export const didcommActionMenu = pgTable(
-  'DidcommActionMenu',
+export const didcommDrpc = pgTable(
+  'DidcommDrpc',
   {
     ...postgresBaseRecordTable,
 
-    state: didcommActionMenuStateEnum().notNull(),
-    role: didcommActionMenuRoleEnum().notNull(),
+    request: jsonb().$type<DrpcRequest>(),
+    response: jsonb().$type<DrpcResponse>(),
+
+    state: didcommDrpcStateEnum().notNull(),
+    role: didcommDrpcRoleEnum().notNull(),
 
     connectionId: text('connection_id').notNull(),
     threadId: text('thread_id').notNull(),
-
-    menu: jsonb('menu').$type<ActionMenuOptions>(),
-    performedAction: jsonb('performed_action').$type<ActionMenuSelectionOptions>(),
   },
   (table) => [
-    ...postgresBaseRecordIndexes(table, 'didcommActionMenu'),
+    ...postgresBaseRecordIndexes(table, 'didcommDrpc'),
     unique().on(table.contextCorrelationId, table.threadId),
     foreignKey({
       columns: [table.connectionId, table.contextCorrelationId],

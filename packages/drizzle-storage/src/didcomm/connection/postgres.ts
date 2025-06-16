@@ -1,4 +1,4 @@
-import { boolean, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { postgresBaseRecordTable } from '../../postgres'
 import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
@@ -35,7 +35,7 @@ export const didcommConnection = pgTable(
     alias: text(),
     autoAcceptConnection: boolean('auto_accept_connection'),
     imageUrl: text('image_url'),
-    threadId: text('thread_id').unique(),
+    threadId: text('thread_id'),
     invitationDid: text('invitation_did'),
 
     // TODO: references mediator/oob record
@@ -49,5 +49,8 @@ export const didcommConnection = pgTable(
     previousDids: text('previous_dids').array(),
     previousTheirDids: text('previous_their_dids').array(),
   },
-  (table) => postgresBaseRecordIndexes(table, 'didcommConnection')
+  (table) => [
+    ...postgresBaseRecordIndexes(table, 'didcommConnection'),
+    unique().on(table.contextCorrelationId, table.threadId),
+  ]
 )

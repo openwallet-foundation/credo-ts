@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 // TODO: package dependencies
 import type { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
@@ -31,7 +31,7 @@ export const didcommConnection = sqliteTable(
     alias: text('alias'),
     autoAcceptConnection: integer('auto_accept_connection', { mode: 'boolean' }),
     imageUrl: text('image_url'),
-    threadId: text('thread_id').unique(),
+    threadId: text('thread_id'),
     invitationDid: text('invitation_did'),
 
     // TODO: references mediator/oob record
@@ -46,5 +46,8 @@ export const didcommConnection = sqliteTable(
     previousDids: text('previous_dids', { mode: 'json' }).$type<string[]>(),
     previousTheirDids: text('previous_their_dids', { mode: 'json' }).$type<string[]>(),
   },
-  (table) => sqliteBaseRecordIndexes(table, 'didcommConnection')
+  (table) => [
+    ...sqliteBaseRecordIndexes(table, 'didcommConnection'),
+    unique().on(table.contextCorrelationId, table.threadId),
+  ]
 )

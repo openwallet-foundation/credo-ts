@@ -1,31 +1,26 @@
 import { foreignKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
-import type {
-  ActionMenuOptions,
-  ActionMenuRole,
-  ActionMenuSelectionOptions,
-  ActionMenuState,
-} from '@credo-ts/action-menu'
+import { DrpcRequest, DrpcResponse, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import { didcommConnection } from '../../didcomm/connection/sqlite'
 import { sqliteBaseRecordTable } from '../../sqlite'
 import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
-export const didcommActionMenu = sqliteTable(
-  'DidcommActionMenu',
+export const didcommDrpc = sqliteTable(
+  'DidcommDrpc',
   {
     ...sqliteBaseRecordTable,
 
-    state: text('state').$type<ActionMenuState>().notNull(),
-    role: text('role').$type<ActionMenuRole>().notNull(),
+    request: text({ mode: 'json' }).$type<DrpcRequest>(),
+    response: text({ mode: 'json' }).$type<DrpcResponse>(),
+
+    state: text('state').$type<DrpcState>().notNull(),
+    role: text('role').$type<DrpcRole>().notNull(),
 
     connectionId: text('connection_id').notNull(),
     threadId: text('thread_id').notNull(),
-
-    menu: text('menu', { mode: 'json' }).$type<ActionMenuOptions>(),
-    performedAction: text('performed_action', { mode: 'json' }).$type<ActionMenuSelectionOptions>(),
   },
   (table) => [
-    ...sqliteBaseRecordIndexes(table, 'didcommActionMenu'),
+    ...sqliteBaseRecordIndexes(table, 'didcommDrpc'),
     unique().on(table.contextCorrelationId, table.threadId),
     foreignKey({
       columns: [table.connectionId, table.contextCorrelationId],

@@ -6,26 +6,35 @@ export async function resolveBundle(bundle: string) {
 
   for (const option of options) {
     try {
-      const module = require(option)
+      require.resolve(option)
+    } catch {
+      continue
+    }
 
-      if (!module.default) {
-        throw new Error(`Expected bundle ${bundle} to export default object defining the bundle.`)
-      }
-      return module.default as {
-        name: string
-        migrations: {
-          sqlite: {
-            schemaModule: string
-            migrationsPath: string
-          }
-          postgres: {
-            schemaModule: string
-            migrationsPath: string
-          }
+    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    let module: any
+
+    try {
+      module = require(option)
+    } catch {
+      throw new Error(`Error during require of ${option}`)
+    }
+
+    if (!module.default) {
+      throw new Error(`Expected bundle ${bundle} to export default object defining the bundle.`)
+    }
+    return module.default as {
+      name: string
+      migrations: {
+        sqlite: {
+          schemaModule: string
+          migrationsPath: string
+        }
+        postgres: {
+          schemaModule: string
+          migrationsPath: string
         }
       }
-    } catch {
-      // no-op
     }
   }
 
