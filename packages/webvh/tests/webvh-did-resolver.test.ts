@@ -1,6 +1,7 @@
 import { Agent } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 
 import { validDid } from './setup'
 import { getWebvhModules } from './setupWebvhModule'
@@ -41,8 +42,8 @@ describe('WebVH DID resolver', () => {
   let agent: Agent<ReturnType<typeof getWebvhModules>>
 
   beforeAll(async () => {
-    const agentOptions = getInMemoryAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
-    agent = new Agent(agentOptions)
+    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
+    agent = new Agent({...agentOptions, modules: { ...getWebvhModules(), inMemory: new InMemoryWalletModule() }})
 
     const initPromise = agent.initialize()
     const timeoutPromise = new Promise((_, reject) =>
@@ -55,7 +56,6 @@ describe('WebVH DID resolver', () => {
   afterAll(async () => {
     if (agent) {
       await agent.shutdown()
-      await agent.wallet.delete()
     }
   })
 
