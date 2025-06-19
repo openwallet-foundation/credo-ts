@@ -8,7 +8,7 @@ import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerExpressModule,
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
@@ -24,7 +24,7 @@ describe('OpenId4Vc Batch Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openId4VcIssuer: OpenId4VcIssuerExpressModule
   }>
 
   let holder: AgentType<{
@@ -35,7 +35,7 @@ describe('OpenId4Vc Batch Issuance', () => {
     expressApp = express()
 
     issuer = await createAgentFromModules('issuer', {
-      openId4VcIssuer: new OpenId4VcIssuerModule({
+      openId4VcIssuer: new OpenId4VcIssuerExpressModule({
         baseUrl: issuerBaseUrl,
         credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
           if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {

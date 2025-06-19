@@ -1,6 +1,6 @@
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts, utils } from '@credo-ts/core'
@@ -22,11 +22,11 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
-export function configureAccessTokenEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
+export function configureAccessTokenEndpoint(router: Router, config: BaseOpenId4VcIssuerModuleConfig) {
   router.post(config.accessTokenEndpointPath, handleTokenRequest(config))
 }
 
-export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
+export function handleTokenRequest(config: BaseOpenId4VcIssuerModuleConfig) {
   return async (request: OpenId4VcIssuanceRequest, response: Response, next: NextFunction) => {
     response.set({ 'Cache-Control': 'no-store', Pragma: 'no-cache' })
     const requestContext = getRequestContext(request)

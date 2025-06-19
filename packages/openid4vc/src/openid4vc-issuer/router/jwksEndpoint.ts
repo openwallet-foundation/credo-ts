@@ -1,11 +1,11 @@
 import type { Jwk, JwkSet } from '@openid4vc/oauth2'
 import type { Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
+import type { BaseOpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 
-export function configureJwksEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
+export function configureJwksEndpoint(router: Router, config: BaseOpenId4VcIssuerModuleConfig) {
   router.get(config.jwksEndpointPath, async (_request: OpenId4VcIssuanceRequest, response: Response, next) => {
     const { agentContext, issuer } = getRequestContext(_request)
     try {
