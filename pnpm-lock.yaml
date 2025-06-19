@@ -1068,12 +1068,27 @@ importers:
 
   packages/webvh:
     dependencies:
+      '@credo-ts/anoncreds':
+        specifier: workspace:*
+        version: link:../anoncreds
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@multiformats/base-x':
+        specifier: ^4.0.1
+        version: 4.0.1
+      class-transformer:
+        specifier: ^0.5.1
+        version: 0.5.1
+      class-validator:
+        specifier: 0.14.1
+        version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.0.0
+        specifier: ^2.2.0
         version: 2.3.2
+      json-canonicalize:
+        specifier: ^1.0.6
+        version: 1.0.6
       tsyringe:
         specifier: ^4.8.0
         version: 4.8.0

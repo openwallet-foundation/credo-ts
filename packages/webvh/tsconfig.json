@@ -3,6 +3,11 @@
   "compilerOptions": {
     "types": ["jest"],
     "moduleResolution": "node",
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@credo-ts/core": ["../core/build"],
+      "@credo-ts/core/*": ["../core/build/*"]
+    }
   }
 }
