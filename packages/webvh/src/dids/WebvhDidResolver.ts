@@ -16,7 +16,7 @@ export class WebvhDidResolver implements DidResolver {
     try {
       return await this.resolveDidDoc(agentContext, did)
     } catch (error) {
-      process.stdout.write(`DIRECT LOG: Error resolving DID: ${error}\n`)
+      agentContext.config.logger.error(`Error resolving DID: ${error}`)
       return {
         didDocument: null,
         didDocumentMetadata,
