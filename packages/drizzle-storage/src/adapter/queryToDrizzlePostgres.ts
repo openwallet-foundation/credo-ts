@@ -1,7 +1,11 @@
 import { BaseRecord, Query, TagValue } from '@credo-ts/core'
 import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { PgColumn, pgTable } from 'drizzle-orm/pg-core'
+import { CredoDrizzleStorageError } from '../error'
 import { postgresBaseRecordTable } from '../postgres'
+
+// We only support one layer of nesting at the moment for mapped keys
+export type DrizzleCustomTagKeyMapping = Record<string, readonly [string, string]>
 
 /**
  * Checks if a PostgreSQL array column contains all values from the given array
@@ -57,9 +61,10 @@ function jsonEqual<T extends PgColumn>(column: T, field: string, value: TagValue
  */
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> = BaseRecord>(
-  query: Query<Record>,
-  table: ReturnType<typeof pgTable<string, typeof postgresBaseRecordTable>>
+export function queryToDrizzlePostgres<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
+  query: Query<CredoRecord>,
+  table: ReturnType<typeof pgTable<string, typeof postgresBaseRecordTable>>,
+  customTagKeyMapping?: DrizzleCustomTagKeyMapping
 ): SQL {
   // Handle empty WQL
   if (!query || Object.keys(query).length === 0) {
@@ -72,18 +77,20 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
   if (query.$or && Array.isArray(query.$or) && query.$or.length > 0) {
     const _$or = query.$or as Query<BaseRecord>[]
 
-    const orCondition = or(..._$or.map((or) => queryToDrizzlePostgres(or, table)).filter((sql) => sql !== undefined))
+    const orCondition = or(
+      ..._$or.map((or) => queryToDrizzlePostgres(or, table, customTagKeyMapping)).filter((sql) => sql !== undefined)
+    )
     if (orCondition) {
       conditions.push(orCondition)
     }
   }
 
-  // Process $or operator
+  // Process $and operator
   if (query.$and && Array.isArray(query.$and) && query.$and.length > 0) {
     const _$and = query.$and as Query<BaseRecord>[]
 
     const andCondition = and(
-      ..._$and.map((and) => queryToDrizzlePostgres(and, table)).filter((sql) => sql !== undefined)
+      ..._$and.map((and) => queryToDrizzlePostgres(and, table, customTagKeyMapping)).filter((sql) => sql !== undefined)
     )
     if (andCondition) {
       conditions.push(andCondition)
@@ -103,7 +110,7 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
       // This is equivalent to NOT(condition1) AND NOT(condition2) AND NOT(condition3)
       const andNotConditions = _$and
         .map((andItem) => {
-          const condition = queryToDrizzlePostgres(andItem, table)
+          const condition = queryToDrizzlePostgres(andItem, table, customTagKeyMapping)
           return condition ? not(condition) : undefined
         })
         .filter((condition) => condition !== undefined)
@@ -119,7 +126,9 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
       const _$or = notQuery.$or as Query<BaseRecord>[]
 
       // We need at least one false, so NOT(condition1 AND condition2 AND condition3)
-      const orCondition = and(..._$or.map((orItem) => queryToDrizzlePostgres(orItem, table)).filter(Boolean))
+      const orCondition = and(
+        ..._$or.map((orItem) => queryToDrizzlePostgres(orItem, table, customTagKeyMapping)).filter(Boolean)
+      )
 
       if (orCondition) {
         notConditions.push(not(orCondition))
@@ -138,7 +147,8 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
 
       const condition = queryToDrizzlePostgres(
         { [field]: notQuery[field as keyof typeof notQuery] } as Query<BaseRecord>,
-        table
+        table,
+        customTagKeyMapping
       )
       if (condition) {
         notConditions.push(not(condition))
@@ -174,11 +184,30 @@ export function queryToDrizzlePostgres<Record extends BaseRecord<any, any, any> 
         conditions.push(eq(column, value))
       }
     } else {
-      // Handle custom tag
+      // Check if field has a custom mapping
+      let targetField = field
+      let targetColumn: PgColumn = table.customTags
+
+      if (customTagKeyMapping && field in customTagKeyMapping) {
+        const mapping = customTagKeyMapping[field]
+        const [columnName, fieldName] = mapping
+
+        // Check if the mapped column exists in the table
+        if (columnName in table && table[columnName as keyof typeof table] instanceof PgColumn) {
+          targetColumn = table[columnName as keyof typeof table] as PgColumn
+          targetField = fieldName
+        } else {
+          throw new CredoDrizzleStorageError(
+            `Query defined custom mapping from key '${field}' to column ${columnName}, but the column does not exist in the table.`
+          )
+        }
+      }
+
+      // Handle custom tag or mapped field
       if (Array.isArray(value)) {
-        conditions.push(jsonArrayContainsAll(table.customTags, field, value))
+        conditions.push(jsonArrayContainsAll(targetColumn, targetField, value))
       } else {
-        conditions.push(jsonEqual(table.customTags, field, value as TagValue))
+        conditions.push(jsonEqual(targetColumn, targetField, value as TagValue))
       }
     }
   }

@@ -1,0 +1,15 @@
+import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
+import { postgresBaseRecordTable } from '../../postgres'
+import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+
+import { OpenId4VpVerifierClientMetadata } from '@credo-ts/openid4vc'
+
+export const openid4vcVerifier = pgTable(
+  'Openid4vcVerifier',
+  {
+    ...postgresBaseRecordTable,
+    verifierId: text('verifier_id').unique().notNull(),
+    clientMetadata: jsonb('client_metadata').$type<OpenId4VpVerifierClientMetadata>(),
+  },
+  (table) => postgresBaseRecordIndexes(table, 'openid4vcVerifier')
+)

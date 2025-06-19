@@ -626,6 +626,18 @@ importers:
       '@credo-ts/didcomm':
         specifier: workspace:*
         version: link:../didcomm
+      '@credo-ts/drpc':
+        specifier: workspace:*
+        version: link:../drpc
+      '@credo-ts/openid4vc':
+        specifier: workspace:*
+        version: link:../openid4vc
+      '@credo-ts/question-answer':
+        specifier: workspace:*
+        version: link:../question-answer
+      '@credo-ts/tenants':
+        specifier: workspace:*
+        version: link:../tenants
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -641,6 +653,9 @@ importers:
       tsyringe:
         specifier: ^4.8.0
         version: 4.8.0
+      zod:
+        specifier: ^3.24.2
+        version: 3.24.2
     devDependencies:
       '@electric-sql/pglite':
         specifier: ^0.3.1

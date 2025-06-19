@@ -1,9 +1,10 @@
 import { BaseRecord, Query } from '@credo-ts/core'
 import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
-import type { AnySQLiteColumn } from 'drizzle-orm/sqlite-core'
+import type { AnySQLiteColumn, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { CredoDrizzleStorageError } from '../error'
 import { sqliteBaseRecordTable } from '../sqlite'
+import { DrizzleCustomTagKeyMapping } from './queryToDrizzlePostgres'
 
 /**
  * Checks if an array column (stored as JSON text in SQLite) contains all values from the given array
@@ -45,15 +46,15 @@ function jsonArrayContainsAll<T extends AnySQLiteColumn>(column: T, tag: string,
     sql` AND `
   )
 }
-
 /**
  * Converts a WQL object to Drizzle SQLite where conditions
  */
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = BaseRecord>(
-  query: Query<Record>,
-  table: ReturnType<typeof sqliteTable<string, typeof sqliteBaseRecordTable>>
+export function queryToDrizzleSqlite<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
+  query: Query<CredoRecord>,
+  table: ReturnType<typeof sqliteTable<string, typeof sqliteBaseRecordTable>>,
+  customTagKeyMapping?: DrizzleCustomTagKeyMapping
 ): SQL {
   // Handle empty WQL
   if (!query || Object.keys(query).length === 0) {
@@ -67,7 +68,9 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
     const _$or = query.$or as Query<BaseRecord>[]
 
     const orCondition = or(
-      ..._$or.map((orItem) => queryToDrizzleSqlite(orItem, table)).filter((sql) => sql !== undefined)
+      ..._$or
+        .map((orItem) => queryToDrizzleSqlite(orItem, table, customTagKeyMapping))
+        .filter((sql) => sql !== undefined)
     )
     if (orCondition) {
       conditions.push(orCondition)
@@ -79,7 +82,9 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
     const _$and = query.$and as Query<BaseRecord>[]
 
     const andCondition = and(
-      ..._$and.map((andItem) => queryToDrizzleSqlite(andItem, table)).filter((sql) => sql !== undefined)
+      ..._$and
+        .map((andItem) => queryToDrizzleSqlite(andItem, table, customTagKeyMapping))
+        .filter((sql) => sql !== undefined)
     )
     if (andCondition) {
       conditions.push(andCondition)
@@ -99,7 +104,7 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
       // This is equivalent to NOT(condition1) AND NOT(condition2) AND NOT(condition3)
       const andNotConditions = _$and
         .map((andItem) => {
-          const condition = queryToDrizzleSqlite(andItem, table)
+          const condition = queryToDrizzleSqlite(andItem, table, customTagKeyMapping)
           return condition ? not(condition) : undefined
         })
         .filter((condition) => condition !== undefined)
@@ -115,7 +120,9 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
       const _$or = notQuery.$or as Query<BaseRecord>[]
 
       // We need at least one false, so NOT(condition1 AND condition2 AND condition3)
-      const orCondition = and(..._$or.map((orItem) => queryToDrizzleSqlite(orItem, table)).filter(Boolean))
+      const orCondition = and(
+        ..._$or.map((orItem) => queryToDrizzleSqlite(orItem, table, customTagKeyMapping)).filter(Boolean)
+      )
 
       if (orCondition) {
         notConditions.push(not(orCondition))
@@ -134,7 +141,8 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
 
       const condition = queryToDrizzleSqlite(
         { [field]: notQuery[field as keyof typeof notQuery] } as Query<BaseRecord>,
-        table
+        table,
+        customTagKeyMapping
       )
       if (condition) {
         notConditions.push(not(condition))
@@ -170,13 +178,32 @@ export function queryToDrizzleSqlite<Record extends BaseRecord<any, any, any> = 
         conditions.push(eq(column, value))
       }
     } else {
-      // Handle custom tag - assuming customTags is stored as a JSON string in SQLite
+      // Check if field has a custom mapping
+      let targetField = field
+      let targetColumn: SQLiteColumn = table.customTags
+
+      if (customTagKeyMapping && field in customTagKeyMapping) {
+        const mapping = customTagKeyMapping[field]
+        const [columnName, fieldName] = mapping
+
+        if (columnName in table && table[columnName as keyof typeof table] instanceof Object) {
+          // Check if the mapped column exists in the table
+          targetColumn = table[columnName as keyof typeof table] as AnySQLiteColumn
+          targetField = fieldName
+        } else {
+          throw new CredoDrizzleStorageError(
+            `Query defined custom mapping from key '${field}' to column ${columnName}, but the column does not exist in the table.`
+          )
+        }
+      }
+
+      // Handle custom tag or mapped field
       if (Array.isArray(value)) {
-        conditions.push(jsonArrayContainsAll(table.customTags, field, value))
+        conditions.push(jsonArrayContainsAll(targetColumn, targetField, value))
       } else {
-        const jsonPath = `$."${field}"`
+        const jsonPath = `$."${targetField}"`
         // For scalar values, we need to extract and compare in SQLite syntax
-        conditions.push(eq(sql`json_extract(${table.customTags}, ${jsonPath})`, value))
+        conditions.push(eq(sql`json_extract(${targetColumn}, ${jsonPath})`, value))
       }
     }
   }

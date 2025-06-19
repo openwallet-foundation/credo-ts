@@ -10,7 +10,7 @@ import { DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } f
 import { CredoDrizzleStorageError } from '../error'
 import { postgresBaseRecordTable } from '../postgres'
 import { sqliteBaseRecordTable } from '../sqlite'
-import { queryToDrizzlePostgres } from './queryToDrizzlePostgres'
+import { DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
 import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -41,6 +41,13 @@ export abstract class BaseDrizzleRecordAdapter<
     postgres: PostgresTable
     sqlite: SQLiteTable
   }
+
+  /**
+   * Allows overriding top level tags (as used by Credo record classes)
+   * to the database structure. For example mapping from the tag `presentationAuthSession`
+   * to the nested database json structure `presentation.authSession`.
+   */
+  public tagKeyMapping?: DrizzleCustomTagKeyMapping
 
   public constructor(
     public database: DrizzleDatabase<PostgresSchema, SQLiteSchema>,
@@ -80,7 +87,7 @@ export abstract class BaseDrizzleRecordAdapter<
           and(
             // Always filter based on context correlation id
             eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
-            queryToDrizzlePostgres(query ?? {}, this.table.postgres)
+            queryToDrizzlePostgres(query ?? {}, this.table.postgres, this.tagKeyMapping)
           )
         ) as typeof queryResult
       }
@@ -107,7 +114,7 @@ export abstract class BaseDrizzleRecordAdapter<
           and(
             // Always filter based on context correlation id
             eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
-            queryToDrizzleSqlite(query ?? {}, this.table.sqlite)
+            queryToDrizzleSqlite(query ?? {}, this.table.sqlite, this.tagKeyMapping)
           )
         ) as unknown as typeof queryResult
       }
