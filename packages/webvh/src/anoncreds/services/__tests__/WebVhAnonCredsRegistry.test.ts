@@ -1,19 +1,15 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import type { AgentContext } from '@credo-ts/core'
-
 import { JsonTransformer } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
 import { WebvhDidResolver } from '../../../dids'
 import { encodeMultihash } from '../../utils/multihash'
 import { WebVhResource } from '../../utils/transform'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
-import { issuerDid, MockSchemaResource, MockCredDefResource, MockRevRegDefResource } from './mock-resources'
-
+import { MockSchemaResource, MockCredDefResource, MockRevRegDefResource } from './mock-resources'
+ 
 // Mock the WebvhDidResolver
 const mockResolveResource = jest.fn()
 jest.mock('../../../dids/WebvhDidResolver', () => {
@@ -25,7 +21,7 @@ jest.mock('../../../dids/WebvhDidResolver', () => {
 })
 
 describe('WebVhAnonCredsRegistry', () => {
-  let agentContext: AgentContext
+  let agentContext: any
   let registry: WebVhAnonCredsRegistry
 
   beforeEach(() => {
@@ -33,11 +29,7 @@ describe('WebVhAnonCredsRegistry', () => {
     mockResolveResource.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
-    const wallet = new InMemoryWallet()
-    agentContext = getAgentContext({
-      agentConfig,
-      wallet,
-    })
+    agentContext = getAgentContext({ agentConfig })
     // Register the mocked resolver instance
     agentContext.dependencyManager.registerInstance(WebvhDidResolver, new WebvhDidResolver())
     registry = new WebVhAnonCredsRegistry()
