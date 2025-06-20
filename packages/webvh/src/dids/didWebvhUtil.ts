@@ -1,4 +1,4 @@
-import { type AgentContext, Buffer, KeyType, Key } from '@credo-ts/core'
+import { type AgentContext, Buffer, Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { AbstractCrypto, type SigningOutput } from 'didwebvh-ts'
 
 export class DIDWebvhCrypto extends AbstractCrypto {
@@ -27,13 +27,23 @@ export class DIDWebvhCrypto extends AbstractCrypto {
         throw new Error('Agent context is required')
       }
 
-      const key = new Key(publicKey, KeyType.Ed25519)
+      // Use the JWK + KMS approach like in WebVhAnonCredsRegistry
+      const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-      return await this.agentContext.wallet.verify({
-        key,
-        data: Buffer.from(message),
-        signature: Buffer.from(signature),
+      const publicJwk = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: publicKey,
       })
+
+      const verificationResult = await kms.verify({
+        key: { publicJwk: publicJwk.toJson() },
+        algorithm: 'EdDSA',
+        signature: signature,
+        data: message
+      })
+
+      return verificationResult.verified
     } catch (error) {
       // Log error in a non-production environment
       if (process.env.NODE_ENV !== 'production') {

@@ -11,11 +11,11 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
-import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder, Kms } from '@credo-ts/core'
+import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidResolver } from '../../dids'
+import { WebvhDidResolver, DIDWebvhCrypto } from '../../dids'
 import { encodeMultihash } from '../utils/multihash'
 import { decodeFromBase58 } from '../utils/base58'
 import { WebVhResource } from '../utils/transform'
@@ -546,23 +546,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // Decode the signature from the proofValue (should be multibase encoded)
       const signatureBuffer = decodeMultibase(proof.proofValue as string)
 
-      // Verify the signature using EdDSA (Ed25519)
-      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+      const crypto = new DIDWebvhCrypto(agentContext)
+      const isVerified = await crypto.verify(signatureBuffer.data, documentBytes, publicKeyBytes)
 
-      const publicJwk = Kms.PublicJwk.fromPublicKey({
-        kty: 'OKP',
-        crv: 'Ed25519',
-        publicKey: publicKeyBytes,
-      })
-
-      const verificationResult = await kms.verify({
-        key: { publicJwk: publicJwk.toJson() },
-        algorithm: 'EdDSA',
-        signature: signatureBuffer.data,
-        data: documentBytes
-      })
-
-      if (!verificationResult.verified) {
+      if (!isVerified) {
         agentContext.config.logger.error('Signature verification failed')
         return false
       }
