@@ -25,12 +25,15 @@ export class DrizzleDidRecordAdapter extends BaseDrizzleRecordAdapter<
       method,
       methodSpecificIdentifier,
       alternativeDids,
+      did,
+      legacyUnqualifiedDid,
+      role,
       ...customTags
     } = record.getTags()
 
     return {
       did: record.did,
-      role: record.role,
+      role: role,
       didDocument: record.didDocument,
       keys: record.keys,
 
