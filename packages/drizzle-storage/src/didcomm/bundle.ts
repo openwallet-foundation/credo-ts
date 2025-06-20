@@ -1,9 +1,25 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { didcommBasicMessageDrizzleRecord } from './basic-message'
 import { didcommConnectionDrizzleRecord } from './connection'
+import { didcommCredentialExchangeDrizzleRecord } from './credential-exchange'
+import { didcommMessageDrizzleRecord } from './didcomm-message'
+import { didcommMediatorDrizzleRecord } from './mediator'
+import { didcommMediatorRoutingDrizzleRecord } from './mediator-routing'
+import { didcommOutOfBandDrizzleRecord } from './out-of-band'
+import { didcommProofExchangeDrizzleRecord } from './proof-exchange'
 
 export default {
   name: 'didcomm',
-  records: [didcommConnectionDrizzleRecord],
+  records: [
+    didcommBasicMessageDrizzleRecord,
+    didcommConnectionDrizzleRecord,
+    didcommCredentialExchangeDrizzleRecord,
+    didcommMessageDrizzleRecord,
+    didcommMediatorDrizzleRecord,
+    didcommMediatorRoutingDrizzleRecord,
+    didcommOutOfBandDrizzleRecord,
+    didcommProofExchangeDrizzleRecord,
+  ],
 
   migrations: {
     postgres: {

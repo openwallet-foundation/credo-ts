@@ -37,7 +37,7 @@ Install the `@credo-ts/drizzle-storage` package and add the `DrizzleStorageModul
 You then need to provide two items to the module on creation:
 
 - The database instance to use
-- The database records (models) to register.
+- The database bundles (models) to register.
 
 ```ts
 import { didcommDrizzleRecords } from "@credo-ts/drizzle-storage/didcomm";
@@ -46,7 +46,7 @@ const agent = new Agent({
   modules: {
     drizzleStorage: new DrizzleStorageModule({
       database,
-      records,
+      bundles,
     }),
   },
 });
