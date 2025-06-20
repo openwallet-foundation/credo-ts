@@ -4,6 +4,7 @@ import { DidDocument } from '@credo-ts/core'
 import { resolveDID } from 'didwebvh-ts'
 
 import { DIDWebvhCrypto } from './didWebvhUtil'
+import { toASCII } from 'punycode'
 
 export class WebvhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
@@ -28,25 +29,54 @@ export class WebvhDidResolver implements DidResolver {
     }
   }
 
+  public getBaseUrl = (id: string) => {
+    // Handle DID URL paths - split on first slash to separate DID from URL path
+    const slashIndex = id.indexOf('/')
+    let didPart = id
+    let urlPath = ''
+    
+    if (slashIndex !== -1) {
+      didPart = id.substring(0, slashIndex)
+      urlPath = id.substring(slashIndex)
+    }
+    
+    const parts = didPart.split(':');
+    if (!didPart.startsWith('did:webvh:') || parts.length < 4) {
+      throw new Error(`${id} is not a valid did:webvh identifier`);
+    }
+  
+    // Extract domain and path parts from the DID (after did:webvh:CID)
+    const domainAndPathParts = parts.slice(3)
+    const protocol = domainAndPathParts.join(':').includes('localhost') ? 'http' : 'https';
+  
+    // First part is domain, rest are path components
+    const domain = domainAndPathParts[0]
+    const pathComponents = domainAndPathParts.slice(1)
+    
+    // Check if domain has port
+    const [host, port] = domain.split(':')
+    const normalizedHost = port ? `${host}:${port}` : host;
+    
+    // Build the base URL
+    let baseUrl = `${protocol}://${normalizedHost}`
+    if (pathComponents.length > 0) {
+      baseUrl += '/' + pathComponents.join('/')
+    }
+    
+    // Append the URL path if present
+    if (urlPath) {
+      baseUrl += urlPath
+    }
+  
+    return baseUrl;
+  }
+
   public async resolveResource(agentContext: AgentContext, resourceUrl: string) {
     try {
       agentContext.config.logger.debug(`Attempting to resolve resource: ${resourceUrl}`)
       
-      // Parse the did:webvh resource URL
-      // Format: did:webvh:CID:domain.com/resources/hash.json
-      const urlParts = resourceUrl.split(':')
-      
-      if (urlParts.length < 3 || urlParts[0] !== 'did' || urlParts[1] !== 'webvh') {
-        throw new Error('Invalid did:webvh resource URL format')
-      }
-      
-      // Extract the domain and resource path
-      const cidAndDomain = urlParts.slice(2).join(':')
-      const [cid, ...domainParts] = cidAndDomain.split(':')
-      const domainAndPath = domainParts.join(':')
-      
-      // Construct the HTTPS URL
-      const httpsUrl = `https://${domainAndPath}`
+      // Use the getBaseUrl method to parse the did:webvh resource URL
+      const httpsUrl = this.getBaseUrl(resourceUrl)
       
       agentContext.config.logger.debug(`Fetching resource from: ${httpsUrl}`)
       
@@ -68,7 +98,7 @@ export class WebvhDidResolver implements DidResolver {
       
       agentContext.config.logger.debug(`Successfully fetched resource, content type: ${contentType}`)
       
-      const result = {
+      return {
         content: content,
         contentMetadata: {
           contentType: contentType,
@@ -78,15 +108,12 @@ export class WebvhDidResolver implements DidResolver {
           contentType: contentType
         },
       }
-      
-      return result
     } catch (error) {
       agentContext.config.logger.error(`Error resolving resource ${resourceUrl}:`, error)
-      const errorResult = {
+      return {
         error: 'notFound',
         message: `resolver_error: Unable to resolve resource '${resourceUrl}': ${error instanceof Error ? error.message : String(error)}`,
       }
-      return errorResult
     }
   }
 

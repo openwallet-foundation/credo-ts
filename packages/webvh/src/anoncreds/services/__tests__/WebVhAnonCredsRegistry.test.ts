@@ -323,64 +323,8 @@ describe('WebVhAnonCredsRegistry', () => {
         schemaMetadata: {},
       })
     })
-
-    it.skip('should resolve and verify real resource from samples.identifier.me', async () => {
-      // Test with a real resource - this will make actual network calls
-      const realResourceId = 'did:webvh:QmbR4dX7SoRRYDMfbkbnJNeExoaEE5hV3jA9wHubJFrCZc:samples.identifier.me/resources/zQmcA2WtiXGsvJHhk5fVE3HU6gBfsg3iRdWCrzpATojPoQf.json'
-      
-      // Clear mocks to allow real network calls
-      jest.restoreAllMocks()
-      
-      // Unmock the WebvhDidResolver module specifically for this test
-      jest.unmock('../../../dids/WebvhDidResolver')
-      
-      // Import the real WebvhDidResolver (not the mocked one)
-      const { WebvhDidResolver } = await import('../../../dids/WebvhDidResolver')
-      const resolverInstance = new WebvhDidResolver()
-      
-      // Unregister the mocked instance and register the real one
-      try {
-        agentContext.dependencyManager.unregisterInstance(WebvhDidResolver)
-      } catch (e) {
-        // Ignore if not registered
-      }
-      agentContext.dependencyManager.registerInstance(WebvhDidResolver, resolverInstance)
-      
-      // Update the dependency manager resolve mock to return the real resolver for WebvhDidResolver
-      const originalResolve = agentContext.dependencyManager.resolve.bind(agentContext.dependencyManager)
-      agentContext.dependencyManager.resolve = jest.fn().mockImplementation((token) => {
-        if (token === WebvhDidResolver || token?.name === 'WebvhDidResolver') {
-          return resolverInstance
-        }
-        return originalResolve(token)
-      })
-      
-      try {
-        const result = await registry.getSchema(agentContext, realResourceId)
-        
-        if (!result.resolutionMetadata.error) {
-          expect(result.schema).toBeDefined()
-          expect(result.schema?.name).toBeDefined()
-          expect(result.schema?.version).toBeDefined()
-          expect(result.schema?.attrNames).toBeDefined()
-          expect(Array.isArray(result.schema?.attrNames)).toBe(true)
-        } else {
-          console.log('Resolution metadata error:', result.resolutionMetadata)
-          throw new Error('Resolution metadata error should not be defined')
-        }
-      } catch (error) {
-        console.error('Test error:', error.message)
-        console.error('Stack:', error.stack)
-        throw error
-      }
-    })
   })
 
-  // Add tests for getCredentialDefinition, getRevocationRegistryDefinition, getRevocationStatusList
-  // following a similar pattern, mocking resolveResource and expecting 'Method not implemented.'
-  // or specific errors based on input validation.
-
-  // Example for getCredentialDefinition
   describe('getCredentialDefinition', () => {
     it('should return resolutionMetadata with error for invalid prefix (tested via helper)', async () => {
       const credDefId = 'did:web:example.com/resource/credDef123' // Invalid prefix for this registry
