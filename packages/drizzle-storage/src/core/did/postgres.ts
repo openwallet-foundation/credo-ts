@@ -1,10 +1,8 @@
-import { ClaimFormat, DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
+import { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { baseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
-export const didClaimFormat = pgEnum('W3cClaimFormat', [ClaimFormat.LdpVc, ClaimFormat.JwtVc])
-
-const didRole = pgEnum('didRole', [DidDocumentRole.Created, DidDocumentRole.Received])
+export const didRoleEnum = pgEnum('didRole', DidDocumentRole)
 
 export const did = pgTable(
   'Did',
@@ -12,7 +10,7 @@ export const did = pgTable(
     ...baseRecordTable,
 
     did: text().notNull(),
-    role: didRole().notNull(),
+    role: didRoleEnum().notNull(),
     didDocument: jsonb('did_document'),
     keys: jsonb().$type<DidDocumentKey[]>(),
 

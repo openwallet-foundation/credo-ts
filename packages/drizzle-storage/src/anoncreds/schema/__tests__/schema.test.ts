@@ -1,43 +1,14 @@
 import { AnonCredsSchemaRecord, AnonCredsSchemaRepository } from '@credo-ts/anoncreds'
 import { Agent, JsonTransformer } from '@credo-ts/core'
-import { agentDependencies } from '@credo-ts/node'
 
-import { inMemoryDatabase, pushDrizzleSchema } from '../../../../tests/testDatabase'
-import { DrizzleStorageModule } from '../../../DrizzleStorageModule'
+import { setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { anonCredsSchemaDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('AnonCredsSchemaRecord with %s', (type) => {
   let agent: Agent
 
   beforeAll(async () => {
-    const drizzleModule = new DrizzleStorageModule({
-      database: inMemoryDatabase(type),
-      bundles: [
-        {
-          name: 'anoncredsSchema',
-          records: [anonCredsSchemaDrizzleRecord],
-          migrations: {
-            sqlite: { migrationsPath: '', schemaModule: '' },
-            postgres: { migrationsPath: '', schemaModule: '' },
-          },
-        },
-      ],
-    })
-
-    // Push schema during tests (no migrations applied)
-    await pushDrizzleSchema(drizzleModule, type)
-
-    agent = new Agent({
-      dependencies: agentDependencies,
-      config: {
-        label: 'Hello',
-      },
-      modules: {
-        storage: drizzleModule,
-      },
-    })
-
-    await agent.initialize()
+    agent = await setupDrizzleRecordTest(type, anonCredsSchemaDrizzleRecord)
   })
 
   test('create, retrieve, update, query and delete schema record', async () => {

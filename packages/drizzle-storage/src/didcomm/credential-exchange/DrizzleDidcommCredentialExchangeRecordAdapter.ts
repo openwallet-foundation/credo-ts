@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonObject, JsonTransformer } from '@credo-ts/core'
 
 import {
   BaseDrizzleRecordAdapter,
@@ -41,12 +41,12 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
       state,
       role,
       autoAcceptCredential: record.autoAcceptCredential,
-      revocationNotification: record.revocationNotification,
+      revocationNotification: JsonTransformer.toJSON(record.revocationNotification),
       errorMessage: record.errorMessage,
       protocolVersion: record.protocolVersion,
       credentials: record.credentials,
       credentialIds,
-      credentialAttributes: record.credentialAttributes,
+      credentialAttributes: JsonTransformer.toJSON(record.credentialAttributes) as JsonObject[],
       linkedAttachments: record.linkedAttachments?.map((a) => JsonTransformer.toJSON(a)),
 
       customTags,

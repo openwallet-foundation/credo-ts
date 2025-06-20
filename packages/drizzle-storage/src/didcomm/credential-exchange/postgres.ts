@@ -1,12 +1,5 @@
 import { JsonObject } from '@credo-ts/core'
-import {
-  AutoAcceptCredential,
-  CredentialPreviewAttributeOptions,
-  CredentialRecordBinding,
-  CredentialRole,
-  CredentialState,
-  RevocationNotification,
-} from '@credo-ts/didcomm'
+import { AutoAcceptCredential, CredentialRecordBinding, CredentialRole, CredentialState } from '@credo-ts/didcomm'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { postgresBaseRecordTable } from '../../postgres'
 import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
@@ -30,14 +23,14 @@ export const didcommCredentialExchange = pgTable(
     state: didcommCredentialExchangeStateEnum().notNull(),
     role: didcommCredentialExchangeRoleEnum().notNull(),
     autoAcceptCredential: didcommCredentialExchangeAutoAcceptEnum('auto_accept_credential'),
-    revocationNotification: jsonb('revocation_notification').$type<RevocationNotification>(),
+    revocationNotification: jsonb('revocation_notification').$type<JsonObject>(),
     errorMessage: text('error_message'),
     protocolVersion: text('protocol_version'),
 
     credentials: jsonb().$type<CredentialRecordBinding[]>(),
     credentialIds: text('credential_ids').array(), // same as credentials, but queryable
 
-    credentialAttributes: jsonb('credential_attributes').$type<CredentialPreviewAttributeOptions[]>(),
+    credentialAttributes: jsonb('credential_attributes').$type<JsonObject[]>(),
     linkedAttachments: jsonb('linked_attachments').$type<JsonObject[]>(),
   },
   (table) => [

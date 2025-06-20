@@ -76,6 +76,14 @@ export abstract class BaseDrizzleRecordAdapter<
     }
   }
 
+  private _toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord {
+    const filteredValues = Object.fromEntries(
+      Object.entries(values).filter(([_key, value]) => value !== null)
+    ) as DrizzleAdapterRecordValues<SQLiteTable>
+
+    return this.toRecord(filteredValues)
+  }
+
   public abstract toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord
 
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
@@ -102,7 +110,7 @@ export abstract class BaseDrizzleRecordAdapter<
 
       const result = await queryResult
       return result.map(({ contextCorrelationId, ...item }) =>
-        this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+        this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       )
     }
 
@@ -129,7 +137,7 @@ export abstract class BaseDrizzleRecordAdapter<
 
       const result = await queryResult
       return result.map(({ contextCorrelationId, ...item }) =>
-        this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+        this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       )
     }
 
@@ -157,7 +165,7 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const { contextCorrelationId, ...item } = result
-      return this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+      return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
     }
 
     if (isDrizzleSqliteDatabase(this.database)) {
@@ -179,7 +187,7 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       const { contextCorrelationId, ...item } = result
-      return this.toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+      return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
     }
 
     // @ts-expect-error

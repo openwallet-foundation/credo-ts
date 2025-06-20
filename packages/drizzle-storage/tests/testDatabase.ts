@@ -1,12 +1,46 @@
+import { Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { pushSQLiteSchema, pushSchema } from 'drizzle-kit/api'
 import { LibSQLDatabase } from 'drizzle-orm/libsql'
 import { drizzle as drizzleSqlite } from 'drizzle-orm/libsql'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { drizzle as drizzlePostgres } from 'drizzle-orm/pglite'
-import { DrizzleStorageModule } from '../src'
+import { DrizzleRecord, DrizzleStorageModule } from '../src'
 import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
 
 type DatabaseType = 'postgres' | 'sqlite'
+
+export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite', drizzleRecord: DrizzleRecord) {
+  const drizzleModule = new DrizzleStorageModule({
+    database: inMemoryDatabase(databaseType),
+    bundles: [
+      {
+        name: 'drizzleRecordTest',
+        records: [drizzleRecord],
+        migrations: {
+          sqlite: { migrationsPath: '', schemaModule: '' },
+          postgres: { migrationsPath: '', schemaModule: '' },
+        },
+      },
+    ],
+  })
+
+  // Push schema during tests (no migrations applied)
+  await pushDrizzleSchema(drizzleModule, databaseType)
+
+  const agent = new Agent({
+    dependencies: agentDependencies,
+    config: {
+      label: 'Hello',
+    },
+    modules: {
+      storage: drizzleModule,
+    },
+  })
+
+  await agent.initialize()
+  return agent
+}
 
 export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule, type: DatabaseType) {
   if (type === 'postgres') {
