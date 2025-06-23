@@ -1,7 +1,6 @@
 import { AnonCredsRevocationRegistryState } from '@credo-ts/anoncreds'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const anonCredsRevocationRegistryStateEnum = pgEnum(
   'AnonCredsRevocationRegistryState',
@@ -11,7 +10,7 @@ export const anonCredsRevocationRegistryStateEnum = pgEnum(
 export const anonCredsRevocationRegistryDefinitionPrivate = pgTable(
   'AnonCredsRevocationRegistryDefinitionPrivate',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
     state: anonCredsRevocationRegistryStateEnum('state').notNull(),
 
     revocationRegistryDefinitionId: text('revocation_registry_definition_id').notNull().unique(),

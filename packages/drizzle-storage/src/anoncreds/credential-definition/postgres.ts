@@ -1,12 +1,11 @@
 import type { AnonCredsCredentialDefinition } from '@credo-ts/anoncreds'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const anonCredsCredentialDefinition = pgTable(
   'AnonCredsCredentialDefinition',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     credentialDefinitionId: text('credential_definition_id').notNull().unique(),
     credentialDefinition: jsonb('credential_definition')

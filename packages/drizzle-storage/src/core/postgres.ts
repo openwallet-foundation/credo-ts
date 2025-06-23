@@ -1,3 +1,4 @@
+export * from './context/postgres'
 export * from './did/postgres'
 export * from './genericRecord/postgres'
 export * from './mdoc/postgres'

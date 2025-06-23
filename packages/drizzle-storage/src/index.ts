@@ -7,8 +7,8 @@ export { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
 
 export { DrizzleDatabase } from './DrizzleDatabase'
 
-export { postgresBaseRecordTable } from './postgres'
-export { sqliteBaseRecordTable } from './sqlite'
+export { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from './postgres'
+export { getSqliteBaseRecordTable } from './sqlite'
 
 export type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 

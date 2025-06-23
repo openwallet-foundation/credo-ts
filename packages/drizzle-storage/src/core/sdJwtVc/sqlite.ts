@@ -1,11 +1,11 @@
 import { Kms } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { baseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const sdJwtVc = sqliteTable(
   'SdJwtVc',
   {
-    ...baseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     vct: text().notNull(),
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),

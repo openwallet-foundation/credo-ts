@@ -1,12 +1,11 @@
 import type { VersionString } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const storageVersion = sqliteTable(
   'StorageVersion',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     storageVersion: text('storage_version').notNull().$type<VersionString>(),
   },

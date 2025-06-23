@@ -1,7 +1,6 @@
 import { BasicMessageRole } from '@credo-ts/didcomm'
 import { foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { didcommConnection } from '../postgres'
 
 export const didcommBasicMessageRoleEnum = pgEnum('DidcommBasicMessageRole', BasicMessageRole)
@@ -9,7 +8,7 @@ export const didcommBasicMessageRoleEnum = pgEnum('DidcommBasicMessageRole', Bas
 export const didcommBasicMessage = pgTable(
   'DidcommBasicMessage',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     content: text().notNull(),
 

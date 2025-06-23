@@ -1,8 +1,7 @@
 import { DrpcRequest, DrpcResponse, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection/postgres'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommDrpcStateEnum = pgEnum('DidcommDrpcState', DrpcState)
 export const didcommDrpcRoleEnum = pgEnum('DidcommDrpcRole', DrpcRole)
@@ -10,7 +9,7 @@ export const didcommDrpcRoleEnum = pgEnum('DidcommDrpcRole', DrpcRole)
 export const didcommDrpc = pgTable(
   'DidcommDrpc',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     request: jsonb().$type<DrpcRequest>(),
     response: jsonb().$type<DrpcResponse>(),

@@ -1,11 +1,10 @@
 import { boolean, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const anonCredsLinkSecret = pgTable(
   'AnonCredsLinkSecret',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     linkSecretId: text('link_secret_id').notNull(),
     isDefault: boolean('is_default').notNull().default(false),

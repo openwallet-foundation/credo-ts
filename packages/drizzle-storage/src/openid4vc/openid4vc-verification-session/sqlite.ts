@@ -4,14 +4,13 @@ import {
   OpenId4VpAuthorizationResponsePayload,
 } from '@credo-ts/openid4vc'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { openid4vcVerifier } from '../sqlite'
 
 export const openId4VcVerificationSession = sqliteTable(
   'OpenId4VcVerificationSession',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     verifierId: text('verifier_id')
       .notNull()

@@ -1,11 +1,11 @@
 import { ClaimFormat, W3cVerifiableCredential } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { baseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const w3cCredential = sqliteTable(
   'W3cCredential',
   {
-    ...baseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     // JWT vc is string, JSON-LD vc is object
     credential: text({ mode: 'json' }).$type<W3cVerifiableCredential['encoded']>().notNull(),

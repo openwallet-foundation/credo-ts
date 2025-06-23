@@ -1,14 +1,13 @@
 import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import { AutoAcceptProof, ProofRole, ProofState } from '@credo-ts/didcomm'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 
 export const didcommProofExchange = sqliteTable(
   'DidcommProofExchange',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     connectionId: text('connection_id'),
     threadId: text('thread_id').notNull(),

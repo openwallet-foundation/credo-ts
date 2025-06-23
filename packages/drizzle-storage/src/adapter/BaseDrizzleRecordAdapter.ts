@@ -8,8 +8,8 @@ import { PgTable, pgTable } from 'drizzle-orm/pg-core'
 import { SQLiteTable as _SQLiteTable, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
 import { CredoDrizzleStorageError } from '../error'
-import { postgresBaseRecordTable } from '../postgres'
-import { sqliteBaseRecordTable } from '../sqlite'
+import { getPostgresBaseRecordTable } from '../postgres'
+import { getSqliteBaseRecordTable } from '../sqlite'
 import { DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
 import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
@@ -19,7 +19,7 @@ export type AnyDrizzleAdapter = BaseDrizzleRecordAdapter<any, any, any, any, any
 export type DrizzleAdapterValues<Table extends _SQLiteTable> = Simplify<
   Omit<
     { [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key] },
-    Exclude<keyof typeof sqliteBaseRecordTable, 'customTags'>
+    Exclude<keyof ReturnType<typeof getSqliteBaseRecordTable>, 'customTags'>
   >
 >
 
@@ -30,9 +30,9 @@ export type DrizzleAdapterRecordValues<Table extends _SQLiteTable> = Simplify<
 export abstract class BaseDrizzleRecordAdapter<
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   CredoRecord extends BaseRecord<any, any, any>,
-  PostgresTable extends ReturnType<typeof pgTable<string, typeof postgresBaseRecordTable>>,
+  PostgresTable extends ReturnType<typeof pgTable<string, ReturnType<typeof getPostgresBaseRecordTable>>>,
   PostgresSchema extends Record<string, unknown>,
-  SQLiteTable extends ReturnType<typeof sqliteTable<string, typeof sqliteBaseRecordTable>>,
+  SQLiteTable extends ReturnType<typeof sqliteTable<string, ReturnType<typeof getSqliteBaseRecordTable>>>,
   SQLiteSchema extends Record<string, unknown>,
 > {
   public recordType: CredoRecord['type']

@@ -1,11 +1,10 @@
 import { integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const anonCredsLinkSecret = sqliteTable(
   'AnonCredsLinkSecret',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     linkSecretId: text('link_secret_id').notNull(),
     isDefault: integer('is_default', { mode: 'boolean' }).notNull().default(false),

@@ -1,12 +1,11 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const anonCredsRevocationRegistryDefinition = sqliteTable(
   'AnonCredsRevocationRegistryDefinition',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     revocationRegistryDefinitionId: text('revocation_registry_definition_id').notNull().unique(),
     revocationRegistryDefinition: text('revocation_registry_definition', { mode: 'json' })

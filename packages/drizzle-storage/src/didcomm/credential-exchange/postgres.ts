@@ -1,8 +1,7 @@
 import { JsonObject } from '@credo-ts/core'
 import { AutoAcceptCredential, CredentialRecordBinding, CredentialRole, CredentialState } from '@credo-ts/didcomm'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommCredentialExchangeStateEnum = pgEnum('DidcommCredentialExchangeState', CredentialState)
 export const didcommCredentialExchangeRoleEnum = pgEnum('DidcommCredentialExchangeRole', CredentialRole)
@@ -14,7 +13,7 @@ export const didcommCredentialExchangeAutoAcceptEnum = pgEnum(
 export const didcommCredentialExchange = pgTable(
   'DidcommCredentialExchange',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     connectionId: text('connection_id'),
     threadId: text('thread_id').notNull(),

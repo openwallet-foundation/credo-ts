@@ -8,14 +8,13 @@ import {
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { openid4vcIssuer } from '../sqlite'
 
 export const openId4VcIssuanceSession = sqliteTable(
   'OpenId4VcIssuanceSession',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     issuerId: text('issuer_id')
       .notNull()

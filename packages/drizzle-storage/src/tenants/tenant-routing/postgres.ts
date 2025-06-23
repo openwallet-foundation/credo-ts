@@ -1,12 +1,11 @@
 import { foreignKey, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { tenant } from '../postgres'
 
 export const tenantRouting = pgTable(
   'TenantRouting',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     tenantId: text('tenant_id').notNull(),
     recipientKeyFingerprint: text('recipient_key_fingerprint').notNull(),

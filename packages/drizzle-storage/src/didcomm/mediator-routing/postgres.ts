@@ -1,12 +1,11 @@
 import { MediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommMediatorRouting = pgTable(
   'DidcommMediatorRouting',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     routingKeys: jsonb('routing_keys').$type<Array<string | MediatorRoutingRecordRoutingKey>>().notNull(),
     routingKeyFingerprints: text('routing_key_fingerprints').array().notNull(),

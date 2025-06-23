@@ -2,7 +2,7 @@ import { BaseRecord, Query, TagValue } from '@credo-ts/core'
 import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { PgColumn, pgTable } from 'drizzle-orm/pg-core'
 import { CredoDrizzleStorageError } from '../error'
-import { postgresBaseRecordTable } from '../postgres'
+import { getPostgresBaseRecordTable } from '../postgres'
 
 // We only support one layer of nesting at the moment for mapped keys
 export type DrizzleCustomTagKeyMapping = Record<string, readonly [string, string]>
@@ -21,10 +21,10 @@ function arrayContainsAll<T extends PgColumn>(column: T, values: unknown[]): SQL
 
   // Instead of manually formatting, let Drizzle handle the parameter binding
   // We create an array literal in PostgreSQL syntax and bind the values safely
-  return sql`${column} @> array[${sql.join(
+  return sql`to_jsonb(${column}) @> to_jsonb(array[${sql.join(
     values.map((v) => sql`${v}`),
     sql`, `
-  )}]`
+  )}])`
 }
 
 /**
@@ -40,7 +40,7 @@ function jsonArrayContainsAll<T extends PgColumn>(column: T, field: string, valu
     return sql`true` // Empty array always matches
   }
 
-  const path = sql`${column}->'${sql.raw(field)}'`
+  const path = sql`to_jsonb(${column})->'${sql.raw(field)}'`
 
   // Create conditions for each value in the array
   const conditions = values.map((value) => {
@@ -63,7 +63,7 @@ function jsonEqual<T extends PgColumn>(column: T, field: string, value: TagValue
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function queryToDrizzlePostgres<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
   query: Query<CredoRecord>,
-  table: ReturnType<typeof pgTable<string, typeof postgresBaseRecordTable>>,
+  table: ReturnType<typeof pgTable<string, ReturnType<typeof getPostgresBaseRecordTable>>>,
   customTagKeyMapping?: DrizzleCustomTagKeyMapping
 ): SQL {
   // Handle empty WQL

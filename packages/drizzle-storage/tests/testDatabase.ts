@@ -6,6 +6,7 @@ import { drizzle as drizzleSqlite } from 'drizzle-orm/libsql'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { drizzle as drizzlePostgres } from 'drizzle-orm/pglite'
 import { DrizzleRecord, DrizzleStorageModule } from '../src'
+import { isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
 import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
 
 type DatabaseType = 'postgres' | 'sqlite'
@@ -26,7 +27,7 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
   })
 
   // Push schema during tests (no migrations applied)
-  await pushDrizzleSchema(drizzleModule, databaseType)
+  await pushDrizzleSchema(drizzleModule)
 
   const agent = new Agent({
     dependencies: agentDependencies,
@@ -42,8 +43,8 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
   return agent
 }
 
-export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule, type: DatabaseType) {
-  if (type === 'postgres') {
+export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
+  if (isDrizzlePostgresDatabase(drizzleModule.config.database)) {
     const { apply } = await pushSchema(
       drizzleModule.config.schemas,
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>

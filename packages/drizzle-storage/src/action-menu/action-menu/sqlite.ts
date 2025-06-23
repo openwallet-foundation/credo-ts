@@ -7,13 +7,12 @@ import type {
   ActionMenuState,
 } from '@credo-ts/action-menu'
 import { didcommConnection } from '../../didcomm/connection/sqlite'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommActionMenu = sqliteTable(
   'DidcommActionMenu',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     state: text('state').$type<ActionMenuState>().notNull(),
     role: text('role').$type<ActionMenuRole>().notNull(),

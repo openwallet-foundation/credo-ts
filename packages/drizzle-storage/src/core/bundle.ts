@@ -1,4 +1,5 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { contextDrizzleRecord } from './context'
 import { didDrizzleRecord } from './did'
 import { genericRecordDrizzleRecord } from './genericRecord'
 import { mdocDrizzleRecord } from './mdoc'
@@ -10,6 +11,7 @@ import { w3cCredentialDrizzleRecord } from './w3cCredential'
 export default {
   name: 'core',
   records: [
+    contextDrizzleRecord,
     sdJwtVcDrizzleRecord,
     mdocDrizzleRecord,
     storageVersionDrizzleRecord,

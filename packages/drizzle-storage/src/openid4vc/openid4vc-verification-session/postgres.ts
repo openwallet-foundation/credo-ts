@@ -4,8 +4,7 @@ import {
   OpenId4VpAuthorizationResponsePayload,
 } from '@credo-ts/openid4vc'
 import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { openid4vcVerifier } from '../postgres'
 
 export const openId4VcVerificationSessionStateEnum = pgEnum(
@@ -16,7 +15,7 @@ export const openId4VcVerificationSessionStateEnum = pgEnum(
 export const openId4VcVerificationSession = pgTable(
   'OpenId4VcVerificationSession',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     verifierId: text('verifier_id')
       .notNull()

@@ -1,5 +1,5 @@
 import { DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
-import { DrizzleRecordBundle } from './DrizzleRecord'
+import { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
 import coreDrizzleBundle from './core/bundle'
@@ -36,10 +36,12 @@ export class DrizzleStorageModuleConfig {
     this.database = options.database
 
     // core MUST always be registered
-    const allRecords = Array.from(
+    const allRecords: DrizzleRecord[] = Array.from(
       new Set([...coreDrizzleBundle.records, ...options.bundles.flatMap((bundle) => bundle.records)])
     )
-    this.adapters = allRecords.map((record) => new record.adapter(this.database))
+    this.adapters = allRecords
+      .map((record) => (record.adapter ? new record.adapter(this.database) : undefined))
+      .filter((adapter) => adapter !== undefined)
 
     this.schemas = getSchemaFromDrizzleRecords(allRecords, getDrizzleDatabaseType(options.database))
   }

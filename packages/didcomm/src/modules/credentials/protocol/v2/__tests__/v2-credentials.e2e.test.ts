@@ -62,6 +62,7 @@ describe('v2 credentials', () => {
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+      useDrizzleStorage: 'postgres',
     }))
 
     indyCredentialProposal = {

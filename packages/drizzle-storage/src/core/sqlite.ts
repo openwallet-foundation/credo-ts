@@ -1,3 +1,4 @@
+export * from './context/sqlite'
 export * from './did/sqlite'
 export * from './genericRecord/sqlite'
 export * from './mdoc/sqlite'

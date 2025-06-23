@@ -1,6 +1,5 @@
 import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommConnectionStateEnum = pgEnum('DidcommConnectionState', [
   'start',
@@ -24,7 +23,7 @@ export const didcommConnectionHandshakeProtocolEnum = pgEnum('DidcommConnectionH
 export const didcommConnection = pgTable(
   'DidcommConnection',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     state: didcommConnectionStateEnum().notNull(),
     role: didcommConnectionRoleEnum().notNull(),

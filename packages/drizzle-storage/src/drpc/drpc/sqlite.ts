@@ -2,13 +2,12 @@ import { foreignKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 import { DrpcRequest, DrpcResponse, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import { didcommConnection } from '../../didcomm/connection/sqlite'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommDrpc = sqliteTable(
   'DidcommDrpc',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     request: text({ mode: 'json' }).$type<DrpcRequest>(),
     response: text({ mode: 'json' }).$type<DrpcResponse>(),

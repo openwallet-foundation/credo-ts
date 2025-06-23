@@ -6,13 +6,12 @@ import {
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '@credo-ts/openid4vc'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const openid4vcIssuer = pgTable(
   'Openid4vcIssuer',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     issuerId: text('issuer_id').unique().notNull(),
     accessTokenPublicKeyFingerprint: jsonb('access_token_public_key_fingerprint'),

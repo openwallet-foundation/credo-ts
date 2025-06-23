@@ -1,8 +1,7 @@
 import { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
 import { boolean, foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection/postgres'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommQuestionAnswerStateEnum = pgEnum('DidcommQuestionAnswerState', QuestionAnswerState)
 export const didcommQuestionAnswerRoleEnum = pgEnum('DidcommQuestionAnswerRole', QuestionAnswerRole)
@@ -10,7 +9,7 @@ export const didcommQuestionAnswerRoleEnum = pgEnum('DidcommQuestionAnswerRole',
 export const didcommQuestionAnswer = pgTable(
   'DidcommQuestionAnswer',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     state: didcommQuestionAnswerStateEnum().notNull(),
     role: didcommQuestionAnswerRoleEnum().notNull(),

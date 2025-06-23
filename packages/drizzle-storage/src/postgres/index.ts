@@ -1,1 +1,1 @@
-export { baseRecordTable as postgresBaseRecordTable } from './baseRecord'
+export { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from './baseRecord'

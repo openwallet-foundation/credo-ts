@@ -1,1 +1,1 @@
-export { baseRecordTable as sqliteBaseRecordTable } from './baseRecord'
+export { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from './baseRecord'

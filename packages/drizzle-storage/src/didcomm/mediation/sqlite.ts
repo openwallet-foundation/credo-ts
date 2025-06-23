@@ -1,14 +1,13 @@
 import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 
 export const didcommMediation = sqliteTable(
   'DidcommMediation',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     state: text().$type<MediationState>().notNull(),
     role: text().$type<MediationRole>().notNull(),

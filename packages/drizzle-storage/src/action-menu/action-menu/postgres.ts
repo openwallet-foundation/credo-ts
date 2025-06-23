@@ -1,8 +1,7 @@
 import { ActionMenuOptions, ActionMenuRole, ActionMenuSelectionOptions, ActionMenuState } from '@credo-ts/action-menu'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection/postgres'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommActionMenuStateEnum = pgEnum('DidcommActionMenuState', ActionMenuState)
 export const didcommActionMenuRoleEnum = pgEnum('DidcommActionMenuRole', ActionMenuRole)
@@ -10,7 +9,7 @@ export const didcommActionMenuRoleEnum = pgEnum('DidcommActionMenuRole', ActionM
 export const didcommActionMenu = pgTable(
   'DidcommActionMenu',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     state: didcommActionMenuStateEnum().notNull(),
     role: didcommActionMenuRoleEnum().notNull(),

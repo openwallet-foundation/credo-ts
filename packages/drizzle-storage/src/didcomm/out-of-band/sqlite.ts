@@ -1,13 +1,12 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommOutOfBand = sqliteTable(
   'DidcommOutOfBand',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     outOfBandInvitation: text('out_of_band_invitation', { mode: 'json' }).$type<PlaintextMessage>().notNull(),
     role: text().$type<OutOfBandRole>().notNull(),
@@ -26,7 +25,7 @@ export const didcommOutOfBand = sqliteTable(
     invitationRequestsThreadIds: text('invitation_requests_thread_ids', { mode: 'json' }).$type<string[]>(),
 
     // Custom tags
-    recipientKeyFingerprints: text('recipient_key_fingerprints').$type<string[]>(),
+    recipientKeyFingerprints: text('recipient_key_fingerprints', { mode: 'json' }).$type<string[]>(),
     recipientRoutingKeyFingerprint: text('recipient_routing_key_fingerprint'),
   },
   (table) => [

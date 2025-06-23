@@ -1,7 +1,6 @@
 import { AutoAcceptProof, ProofRole, ProofState } from '@credo-ts/didcomm'
 import { boolean, foreignKey, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { didcommConnection } from '../postgres'
 
 export const didcommProofExchangeRoleEnum = pgEnum('DidcommProofExchangeRole', ProofRole)
@@ -11,7 +10,7 @@ export const didcommProofExchangeAutoAcceptEnum = pgEnum('DidcommProofExchangeAu
 export const didcommProofExchange = pgTable(
   'DidcommProofExchange',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     connectionId: text('connection_id'),
     threadId: text('thread_id').notNull(),

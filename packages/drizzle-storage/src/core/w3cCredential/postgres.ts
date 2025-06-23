@@ -1,13 +1,13 @@
 import { ClaimFormat, W3cVerifiableCredential } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { baseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const w3cCredentialClaimFormat = pgEnum('W3cClaimFormat', [ClaimFormat.LdpVc, ClaimFormat.JwtVc])
 
 export const w3cCredential = pgTable(
   'W3cCredential',
   {
-    ...baseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     // JWT vc is string, JSON-LD vc is object
     credential: jsonb().$type<W3cVerifiableCredential['encoded']>().notNull(),

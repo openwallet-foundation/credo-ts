@@ -1,12 +1,11 @@
 import type { AnonCredsSchema } from '@credo-ts/anoncreds'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const anonCredsSchema = pgTable(
   'AnonCredsSchema',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     schemaId: text('schema_id').notNull().unique(),
     schema: jsonb('schema').$type<Omit<AnonCredsSchema, 'issuerId' | 'name' | 'version'>>().notNull(),

@@ -1,11 +1,11 @@
 import { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { baseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const did = sqliteTable(
   'Did',
   {
-    ...baseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     did: text().notNull(),
     role: text().$type<DidDocumentRole.Created | DidDocumentRole.Received>().notNull(),

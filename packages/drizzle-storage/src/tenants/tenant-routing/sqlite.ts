@@ -1,12 +1,11 @@
 import { foreignKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { tenant } from '../sqlite'
 
 export const tenantRouting = sqliteTable(
   'TenantRouting',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     tenantId: text('tenant_id').notNull(),
     recipientKeyFingerprint: text('recipient_key_fingerprint').notNull(),

@@ -8,8 +8,7 @@ import {
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { openid4vcIssuer } from '../postgres'
 
 export const openId4VcIssuanceSessionStateEnum = pgEnum('OpenId4VcIssuanceSessionState', OpenId4VcIssuanceSessionState)
@@ -17,7 +16,7 @@ export const openId4VcIssuanceSessionStateEnum = pgEnum('OpenId4VcIssuanceSessio
 export const openId4VcIssuanceSession = pgTable(
   'OpenId4VcIssuanceSession',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     issuerId: text('issuer_id')
       .notNull()

@@ -1,12 +1,11 @@
 import type { AnonCredsCredential } from '@credo-ts/anoncreds'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const anonCredsCredential = sqliteTable(
   'AnonCredsCredential',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     credentialId: text('credential_id').notNull(),
     credentialRevocationId: text('credential_revocation_id'),

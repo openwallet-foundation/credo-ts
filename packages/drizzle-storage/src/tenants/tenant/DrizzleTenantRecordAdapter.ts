@@ -1,6 +1,10 @@
 import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import {
+  BaseDrizzleRecordAdapter,
+  DrizzleAdapterRecordValues,
+  DrizzleAdapterValues,
+} from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { TenantRecord } from '@credo-ts/tenants'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
@@ -19,12 +23,13 @@ export class DrizzleTenantRecordAdapter extends BaseDrizzleRecordAdapter<
     super(database, { postgres: postgres.tenant, sqlite: sqlite.tenant }, 'TenantRecord')
   }
 
-  public getValues(record: TenantRecord) {
+  public getValues(record: TenantRecord): DrizzleAdapterValues<(typeof sqlite)['tenant']> {
     const { label, storageVersion, ...customTags } = record.getTags()
 
     return {
       label,
       storageVersion,
+      config: record.config,
       customTags,
     }
   }

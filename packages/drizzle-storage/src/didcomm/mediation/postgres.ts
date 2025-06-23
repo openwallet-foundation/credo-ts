@@ -1,7 +1,6 @@
 import { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
 import { boolean, foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { didcommConnection } from '../postgres'
 
 export const didcommMediationStateEnum = pgEnum('DidcommMediationState', MediationState)
@@ -11,7 +10,7 @@ export const didcommMediationPickupStrategyEnum = pgEnum('DidcommMediationPickup
 export const didcommMediation = pgTable(
   'DidcommMediation',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
     state: didcommMediationStateEnum().notNull(),
     role: didcommMediationRoleEnum().notNull(),
     connectionId: text('connection_id').notNull(),

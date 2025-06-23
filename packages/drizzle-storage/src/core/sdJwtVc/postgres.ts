@@ -1,11 +1,11 @@
 import type { Kms } from '@credo-ts/core'
 import { pgTable, text } from 'drizzle-orm/pg-core'
-import { baseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const sdJwtVc = pgTable(
   'SdJwtVc',
   {
-    ...baseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     vct: text().notNull(),
     alg: text().$type<Kms.KnownJwaSignatureAlgorithm>().notNull(),

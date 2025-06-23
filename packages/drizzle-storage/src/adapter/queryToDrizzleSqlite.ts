@@ -3,7 +3,7 @@ import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import type { AnySQLiteColumn, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { CredoDrizzleStorageError } from '../error'
-import { sqliteBaseRecordTable } from '../sqlite'
+import { getSqliteBaseRecordTable } from '../sqlite'
 import { DrizzleCustomTagKeyMapping } from './queryToDrizzlePostgres'
 
 /**
@@ -53,7 +53,7 @@ function jsonArrayContainsAll<T extends AnySQLiteColumn>(column: T, tag: string,
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function queryToDrizzleSqlite<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
   query: Query<CredoRecord>,
-  table: ReturnType<typeof sqliteTable<string, typeof sqliteBaseRecordTable>>,
+  table: ReturnType<typeof sqliteTable<string, ReturnType<typeof getSqliteBaseRecordTable>>>,
   customTagKeyMapping?: DrizzleCustomTagKeyMapping
 ): SQL {
   // Handle empty WQL

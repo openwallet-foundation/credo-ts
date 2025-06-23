@@ -2,13 +2,12 @@ import { foreignKey, integer, sqliteTable, text, unique } from 'drizzle-orm/sqli
 
 import { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
 import { didcommConnection } from '../../didcomm/connection/sqlite'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommQuestionAnswer = sqliteTable(
   'DidcommQuestionAnswer',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     state: text('state').$type<QuestionAnswerState>().notNull(),
     role: text('role').$type<QuestionAnswerRole>().notNull(),

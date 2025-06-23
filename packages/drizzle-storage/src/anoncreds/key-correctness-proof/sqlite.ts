@@ -1,11 +1,10 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const anonCredsKeyCorrectnessProof = sqliteTable(
   'AnonCredsKeyCorrectnessProof',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     credentialDefinitionId: text('credential_definition_id').notNull().unique(),
 

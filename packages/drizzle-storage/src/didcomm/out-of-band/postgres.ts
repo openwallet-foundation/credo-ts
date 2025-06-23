@@ -1,7 +1,6 @@
 import { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
 import { boolean, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommOutOfBandRoleEnum = pgEnum('DidcommOutOfBandRole', OutOfBandRole)
 export const didcommOutOfBandStateEnum = pgEnum('DidcommOutOfBandState', OutOfBandState)
@@ -9,7 +8,7 @@ export const didcommOutOfBandStateEnum = pgEnum('DidcommOutOfBandState', OutOfBa
 export const didcommOutOfBand = pgTable(
   'DidcommOutOfBand',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     outOfBandInvitation: jsonb('out_of_band_invitation').$type<PlaintextMessage>().notNull(),
     role: didcommOutOfBandRoleEnum().notNull(),

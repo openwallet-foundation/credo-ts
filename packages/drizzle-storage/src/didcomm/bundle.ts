@@ -3,7 +3,7 @@ import { didcommBasicMessageDrizzleRecord } from './basic-message'
 import { didcommConnectionDrizzleRecord } from './connection'
 import { didcommCredentialExchangeDrizzleRecord } from './credential-exchange'
 import { didcommMessageDrizzleRecord } from './didcomm-message'
-import { didcommMediatorDrizzleRecord } from './mediator'
+import { didcommMediationDrizzleRecord } from './mediation'
 import { didcommMediatorRoutingDrizzleRecord } from './mediator-routing'
 import { didcommOutOfBandDrizzleRecord } from './out-of-band'
 import { didcommProofExchangeDrizzleRecord } from './proof-exchange'
@@ -15,7 +15,7 @@ export default {
     didcommConnectionDrizzleRecord,
     didcommCredentialExchangeDrizzleRecord,
     didcommMessageDrizzleRecord,
-    didcommMediatorDrizzleRecord,
+    didcommMediationDrizzleRecord,
     didcommMediatorRoutingDrizzleRecord,
     didcommOutOfBandDrizzleRecord,
     didcommProofExchangeDrizzleRecord,

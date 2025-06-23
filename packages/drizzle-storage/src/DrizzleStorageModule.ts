@@ -3,7 +3,12 @@ import type { DrizzleStorageModuleConfigOptions } from './DrizzleStorageModuleCo
 
 import { CredoError, InjectionSymbols, StorageUpdateService } from '@credo-ts/core'
 
+import { eq } from 'drizzle-orm'
+import { isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from './DrizzleDatabase'
 import { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
+import { context as postgresContext } from './core/postgres'
+import { context as sqliteContext } from './core/sqlite'
+import { CredoDrizzleStorageError } from './error'
 import { DrizzleStorageService } from './storage'
 
 export class DrizzleStorageModule implements Module {
@@ -38,7 +43,7 @@ export class DrizzleStorageModule implements Module {
       // were on 0.1 before the record was added, but since this module is introduced in 0.6
       // we can be sure that's not the case.
       if (!(await storageUpdateService.hasStorageVersionRecord(agentContext))) {
-        await storageUpdateService.setCurrentStorageVersion(agentContext, StorageUpdateService.frameworkStorageVersion)
+        await this.createNewContextInDatabase(agentContext)
       }
     }
   }
@@ -48,14 +53,60 @@ export class DrizzleStorageModule implements Module {
     // but to be sure if that changesin the future
     if (agentContext.isRootAgentContext) return
 
-    // For new contexts, we need to set the storage version
-    const storageUpdateService = agentContext.resolve(StorageUpdateService)
-    await storageUpdateService.setCurrentStorageVersion(agentContext, StorageUpdateService.frameworkStorageVersion)
+    await this.createNewContextInDatabase(agentContext)
   }
 
-  public async onDeleteContext(_agentContext: AgentContext): Promise<void> {
-    // TODO: delete all tables where the contextCorrelationId is this context correlation id
-    // TODO: we need to add a deleteAllByContextCorrelationId to the adapter
-    // const tables = this.config.adapters.forEach(a => a.delete())
+  public async onDeleteContext(agentContext: AgentContext): Promise<void> {
+    // If it's the root agent context, we want to delete all the tenants as well
+    if (agentContext.isRootAgentContext) {
+      // Do we want to allow this? It can be quite impactfull
+      await this.deleteContextQuery()
+    } else {
+      await this.deleteContextQuery().where(eq(sqliteContext.contextCorrelationId, agentContext.contextCorrelationId))
+    }
+  }
+
+  private deleteContextQuery() {
+    // TODO: we could probably add some extra abstraction here.
+    if (isDrizzlePostgresDatabase(this.config.database)) {
+      return this.config.database.delete(postgresContext)
+    }
+
+    if (isDrizzleSqliteDatabase(this.config.database)) {
+      return this.config.database.delete(sqliteContext)
+    }
+
+    throw new CredoDrizzleStorageError(
+      'Unable to delete context. Database must be instance of postgres or sqlite database.'
+    )
+  }
+
+  private async createNewContextInDatabase(agentContext: AgentContext) {
+    // For new contexts, we need to set the storage version
+    const storageUpdateService = agentContext.resolve(StorageUpdateService)
+
+    if (isDrizzlePostgresDatabase(this.config.database)) {
+      // Create a new context record. This is mostly used to allow deleting a context and
+      // cascade delete all other records.
+      await this.config.database
+        .insert(postgresContext)
+        .values({
+          contextCorrelationId: agentContext.contextCorrelationId,
+        })
+        .onConflictDoNothing()
+    } else if (isDrizzleSqliteDatabase(this.config.database)) {
+      await this.config.database
+        .insert(sqliteContext)
+        .values({
+          contextCorrelationId: agentContext.contextCorrelationId,
+        })
+        .onConflictDoNothing()
+    } else {
+      throw new CredoDrizzleStorageError(
+        'Unable to provision context. Database must be instance of postgres or sqlite database.'
+      )
+    }
+
+    await storageUpdateService.setCurrentStorageVersion(agentContext, StorageUpdateService.frameworkStorageVersion)
   }
 }

@@ -1,13 +1,12 @@
 import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 import type { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommConnection = sqliteTable(
   'DidcommConnection',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     state: text('state').$type<DidExchangeState>().notNull(),
     role: text('role').$type<DidExchangeRole>().notNull(),

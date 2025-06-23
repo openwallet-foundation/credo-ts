@@ -1,14 +1,13 @@
 import { foreignKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import { BasicMessageRole } from '@credo-ts/didcomm'
-import { sqliteBaseRecordTable } from '../../sqlite'
-import { sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
+import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 
 export const didcommBasicMessage = sqliteTable(
   'DidcommBasicMessage',
   {
-    ...sqliteBaseRecordTable,
+    ...getSqliteBaseRecordTable(),
 
     content: text().notNull(),
 

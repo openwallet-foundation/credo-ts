@@ -1,14 +1,13 @@
 import { DidCommMessageRole, PlaintextMessage } from '@credo-ts/didcomm'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
-import { postgresBaseRecordTable } from '../../postgres'
-import { postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommMessageRoleEnum = pgEnum('DidcommMessageRole', DidCommMessageRole)
 
 export const didcommMessage = pgTable(
   'DidcommMessage',
   {
-    ...postgresBaseRecordTable,
+    ...getPostgresBaseRecordTable(),
 
     message: jsonb().$type<PlaintextMessage>().notNull(),
     role: didcommMessageRoleEnum().notNull(),
