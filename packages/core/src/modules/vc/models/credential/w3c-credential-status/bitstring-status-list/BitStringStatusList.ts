@@ -1,16 +1,9 @@
-import { Type } from 'class-transformer'
-import {
-  IsNumberString,
-  IsString,
-  registerDecorator,
-  ValidationArguments,
-  ValidationOptions,
-} from 'class-validator'
+import { IsNumberString, IsString, ValidationArguments, ValidationOptions, registerDecorator } from 'class-validator'
 
+import { Type } from 'class-transformer'
+import { JsonTransformer } from '../../../../../../utils'
 import { W3cCredentialStatus } from '../W3cCredentialStatus'
 import { BitstringStatusListCredentialStatusPurpose } from './BitStringStatusListCredential'
-import { JsonTransformer } from '../../../../../../utils'
-
 
 export interface BitStringStatusListMessageOptions {
   // a string representing the hexadecimal value of the status prefixed with 0x
@@ -73,7 +66,6 @@ export class BitStringStatusListEntry extends W3cCredentialStatus {
   @Type(() => BitStringStatusListMessage)
   public statusMessage?: BitStringStatusListStatusMessage[]
 
-
   public static fromJson(json: Record<string, unknown>) {
     return JsonTransformer.fromJSON(json, BitStringStatusListEntry)
   }
@@ -110,17 +102,19 @@ export interface BitStringStatusListEntryOptions {
 }
 
 export function IsSupportedStatusPurpose(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  return (object: Object, propertyName: string) => {
     registerDecorator({
       name: 'isSupportedStatusPurpose',
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        validate(value: any, _args: ValidationArguments) {
           return Object.values(BitstringStatusListCredentialStatusPurpose).includes(value)
         },
-        defaultMessage(args: ValidationArguments) {
+        defaultMessage(_args: ValidationArguments) {
           return `The statusPurpose must be one of the following: ${Object.values(
             BitstringStatusListCredentialStatusPurpose
           ).join(', ')}`

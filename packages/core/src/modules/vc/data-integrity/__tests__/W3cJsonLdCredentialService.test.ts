@@ -292,7 +292,10 @@ describe('W3cJsonLdCredentialsService', () => {
           W3cJsonLdVerifiableCredential
         )
 
-        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, { credential: vc, verifyCredentialStatus: false })
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, {
+          credential: vc,
+          verifyCredentialStatus: false,
+        })
 
         expect(result).toEqual({
           isValid: true,

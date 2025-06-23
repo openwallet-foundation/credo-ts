@@ -1,13 +1,16 @@
-import type { BitStringStatusListEntry } from './BitStringStatusList'
-import type { BitStringStatusListCredential } from './BitStringStatusListCredential'
-import type { AgentContext } from '../../../../../../agent/context'
+import {
+  W3cJsonLdVerifyCredentialOptions,
+  W3cJwtVerifyCredentialOptions,
+} from '../../../../W3cCredentialServiceOptions'
 
 import { inflate } from 'pako'
-
+import type { AgentContext } from '../../../../../../agent/context'
 import { CredoError } from '../../../../../../error'
 import { W3cCredentialService } from '../../../../W3cCredentialService'
-import { W3cJsonLdVerifyCredentialOptions, W3cJwtVerifyCredentialOptions } from '../../../../W3cCredentialServiceOptions'
 import { ClaimFormat } from '../../../ClaimFormat'
+import { W3cVerifyCredentialResult } from '../../../W3cVerifyResult'
+import type { BitStringStatusListEntry } from './BitStringStatusList'
+import type { BitStringStatusListCredential } from './BitStringStatusListCredential'
 
 // Function to fetch and parse the bit string status list credential
 const fetchBitStringStatusListCredential = async (
@@ -27,7 +30,7 @@ const fetchBitStringStatusListCredential = async (
     agentContext.config.logger.debug('returning fetched BitStringStatusListCredential')
     return (await response.json()) as BitStringStatusListCredential
   } catch (error) {
-    throw new CredoError('Failed to parse the bit string status list credential')
+    throw new CredoError('Failed to parse the bit string status list credential', { cause: error })
   }
 }
 
@@ -69,25 +72,35 @@ export const verifyBitStringCredentialStatus = async (
     // verify signatures of the credential
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
-    let result
-    if (credentialFormat === ClaimFormat.JwtVc){
-      result = await w3cCredentialService.verifyCredential(agentContext, bitStringStatusListCredential as unknown as W3cJwtVerifyCredentialOptions)
-    } else if (credentialFormat === ClaimFormat.LdpVc){
-      result = await w3cCredentialService.verifyCredential(agentContext, bitStringStatusListCredential as unknown as W3cJsonLdVerifyCredentialOptions)
+    let result: W3cVerifyCredentialResult
+    if (credentialFormat === ClaimFormat.JwtVc) {
+      result = await w3cCredentialService.verifyCredential(
+        agentContext,
+        bitStringStatusListCredential as unknown as W3cJwtVerifyCredentialOptions
+      )
+    } else if (credentialFormat === ClaimFormat.LdpVc) {
+      result = await w3cCredentialService.verifyCredential(
+        agentContext,
+        bitStringStatusListCredential as unknown as W3cJsonLdVerifyCredentialOptions
+      )
+    } else {
+      throw new CredoError(
+        'Unsupported credential type for BSLC. Credential must be either a W3cJsonLdVerifiableCredential or a W3cJwtVerifiableCredential'
+      )
     }
     if (result && !result.isValid) {
       throw new CredoError(`Failed to validate credential, error = ${result.error}`)
     }
 
     // Decode the encoded bit string
-    let decodedBitStringArray;
+    let decodedBitStringArray: Array<string>
     try {
       const encodedBitString = bitStringStatusListCredential.credentialSubject.encodedList
       // 3rd approach
       const decodedBitString = expand(encodedBitString)
       decodedBitStringArray = [...decodedBitString]
-    } catch(err) {
-      throw new CredoError('Error decoding Bitstring of fetched Bitstring StatusList Credential')
+    } catch (err) {
+      throw new CredoError('Error decoding Bitstring of fetched Bitstring StatusList Credential', { cause: err })
     }
 
     const statusListIndex = Number(credentialStatus.statusListIndex)
@@ -115,13 +128,13 @@ export const verifyBitStringCredentialStatus = async (
 }
 
 function expand(encodedList: string): string {
-    // Step 1: Decode Base64url (assuming no Multibase prefix, otherwise use multibase)
-    const compressedData = Buffer.from(encodedList, "base64url");
-    // Step 2: Decompress using GZIP (Pako)
-    const decompressedData = inflate(compressedData);
-    // Step 3: Convert Uint8Array to Bitstring
-    return Array.from(decompressedData)
-        .map(byte => byte.toString(2).padStart(8, "0")) // Convert each byte to 8-bit binary
-        .join(""); // Join all bits into a string
+  // Step 1: Decode Base64url (assuming no Multibase prefix, otherwise use multibase)
+  // biome-ignore lint/style/noRestrictedGlobals: <explanation>
+  const compressedData = Buffer.from(encodedList, 'base64url')
+  // Step 2: Decompress using GZIP (Pako)
+  const decompressedData = inflate(compressedData)
+  // Step 3: Convert Uint8Array to Bitstring
+  return Array.from(decompressedData)
+    .map((byte) => byte.toString(2).padStart(8, '0')) // Convert each byte to 8-bit binary
+    .join('') // Join all bits into a string
 }
-

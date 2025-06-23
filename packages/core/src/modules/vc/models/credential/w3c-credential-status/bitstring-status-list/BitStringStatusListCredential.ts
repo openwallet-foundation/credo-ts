@@ -1,11 +1,19 @@
 import { Transform, TransformationType } from 'class-transformer'
-import { buildMessage, IsEnum, isInstance, IsString, registerDecorator, ValidateBy, ValidationArguments, ValidationOptions } from 'class-validator'
-
+import {
+  IsString,
+  ValidateBy,
+  ValidationArguments,
+  ValidationOptions,
+  buildMessage,
+  isInstance,
+  registerDecorator,
+} from 'class-validator'
 import { W3cCredential, W3cCredentialOptions } from '../../W3cCredential'
 import { W3cCredentialSubject, W3cCredentialSubjectOptions } from '../../index'
-import { mapSingleOrArray } from '../../../../../../utils'
-import type { SingleOrArray } from '../../../../../../types'
+
 import { CredoError } from '../../../../../../error'
+import type { SingleOrArray } from '../../../../../../types'
+import { mapSingleOrArray } from '../../../../../../utils'
 import { IsSupportedStatusPurpose } from './BitStringStatusList'
 
 // The purpose can be anything apart from this as well
@@ -48,7 +56,6 @@ export class BitStringStatusListCredentialSubject extends W3cCredentialSubject {
   public encodedList!: string
 }
 
-
 /**
  * StatusListCredential describes the format of the verifiable credential that encapsulates the status list.
  *
@@ -84,7 +91,9 @@ export class BitStringStatusListCredential extends W3cCredential {
   private static ensureTypes(types?: string[]): string[] {
     const requiredTypes = new Set(BitStringStatusListCredential.defaultTypes)
     const finalTypes = new Set(types ?? [])
-    requiredTypes.forEach((type) => finalTypes.add(type))
+    for (const presentType of requiredTypes) {
+      finalTypes.add(presentType)
+    }
     return Array.from(finalTypes)
   }
 }
@@ -144,7 +153,8 @@ export function BitStringStatusListCredentialSubjectTransformer() {
         }
 
         return Array.isArray(value) ? value.map(vToClass) : vToClass(value)
-      } else if (transformationType === TransformationType.CLASS_TO_PLAIN) {
+      }
+      if (transformationType === TransformationType.CLASS_TO_PLAIN) {
         const vToJson = (v: unknown) => {
           if (v instanceof BitStringStatusListCredentialSubject) {
             const base = v.id ? { ...v.claims, id: v.id } : { ...v.claims }
@@ -175,7 +185,7 @@ export function IsBitStringStatusListCredentialSubject(validationOptions?: Valid
         },
         defaultMessage: buildMessage(
           (eachPrefix) =>
-            eachPrefix + '$property must be an object or an array of objects with an optional id property',
+            `${eachPrefix}$property must be an object or an array of objects with an optional id property`,
           validationOptions
         ),
       },
@@ -187,17 +197,17 @@ export function IsBitStringStatusListCredentialSubject(validationOptions?: Valid
 /**
  * Custom validator to check if the subject matches the `BitStringStatusListCredentialSubject` type.
  */
-export function IsBitStringStatusListCredentialSubjectOrW3cCredentialSubject(
-  validationOptions?: ValidationOptions
-) {
-  return function (object: Object, propertyName: string) {
+export function IsBitStringStatusListCredentialSubjectOrW3cCredentialSubject(validationOptions?: ValidationOptions) {
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  return (object: Object, propertyName: string) => {
     registerDecorator({
       name: 'IsBitStringStatusListCredentialSubjectOrW3cCredentialSubject',
       target: object.constructor,
       propertyName: propertyName,
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        validate(value: any, _args: ValidationArguments) {
           if (Array.isArray(value)) {
             return value.every(
               (subject) =>
@@ -206,12 +216,12 @@ export function IsBitStringStatusListCredentialSubjectOrW3cCredentialSubject(
           }
           return value instanceof BitStringStatusListCredentialSubject || value instanceof W3cCredentialSubject
         },
-        defaultMessage(args: ValidationArguments) {
-          return `The credentialSubject must either be a W3cCredentialSubject or BitStringStatusListCredentialSubject.`;
+        defaultMessage(_args: ValidationArguments) {
+          return 'The credentialSubject must either be a W3cCredentialSubject or BitStringStatusListCredentialSubject.'
         },
       },
-    });
-  };
+    })
+  }
 }
 
 /**
@@ -221,13 +231,13 @@ export function CredentialSubjectTransformer() {
   return Transform(({ value }) => {
     if (Array.isArray(value)) {
       return value.map((subject) =>
-        (subject instanceof BitStringStatusListCredentialSubject && subject.type === 'BitstringStatusList')
+        subject instanceof BitStringStatusListCredentialSubject && subject.type === 'BitstringStatusList'
           ? new BitStringStatusListCredentialSubject(subject)
           : new W3cCredentialSubject(subject)
       )
     }
-    return (value instanceof BitStringStatusListCredentialSubject && value.type === 'BitstringStatusList'
+    return value instanceof BitStringStatusListCredentialSubject && value.type === 'BitstringStatusList'
       ? new BitStringStatusListCredentialSubject(value)
-      : new W3cCredentialSubject(value))
-  });
+      : new W3cCredentialSubject(value)
+  })
 }

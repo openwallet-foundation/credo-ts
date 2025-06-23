@@ -1,7 +1,7 @@
-import { IsEnum, IsString } from 'class-validator'
+import { IsString } from 'class-validator'
 
 import { IsUri } from '../../../../../utils/validators'
-import { BitStringStatusListEntry } from './bitstring-status-list';
+import { BitStringStatusListEntry } from './bitstring-status-list'
 
 export interface W3cCredentialStatusOptions {
   id: string
@@ -31,4 +31,3 @@ export class W3cCredentialStatus {
   @IsString()
   public type!: string
 }
-

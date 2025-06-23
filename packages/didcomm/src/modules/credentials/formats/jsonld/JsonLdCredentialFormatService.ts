@@ -379,7 +379,6 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     if (!utils.areObjectsEqual(jsonCredential, request.credential)) {
       throw new CredoError('Received credential does not match credential request')
     }
-
   }
 
   public supportsFormat(format: string): boolean {

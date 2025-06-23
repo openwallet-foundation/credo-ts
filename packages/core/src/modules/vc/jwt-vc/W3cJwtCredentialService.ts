@@ -7,7 +7,12 @@ import type {
   W3cJwtVerifyCredentialOptions,
   W3cJwtVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import { ClaimFormat, type SingleValidationResult, type W3cVerifyCredentialResult, type W3cVerifyPresentationResult } from '../models'
+import {
+  ClaimFormat,
+  type SingleValidationResult,
+  type W3cVerifyCredentialResult,
+  type W3cVerifyPresentationResult,
+} from '../models'
 
 import { JwsService } from '../../../crypto'
 import { CredoError } from '../../../error'
@@ -21,11 +26,11 @@ import {
   getSupportedVerificationMethodTypesForPublicJwk,
 } from '../../dids/domain/key-type/keyDidMapping'
 import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
+import { validateStatus } from '../data-integrity/libraries/credentialStatus'
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
 import { getJwtPayloadFromPresentation } from './presentationTransformer'
-import { validateStatus } from '../data-integrity/libraries/credentialStatus'
 
 /**
  * Supports signing and verification of credentials according to the [Verifiable Credential Data Model](https://www.w3.org/TR/vc-data-model)
@@ -200,7 +205,7 @@ export class W3cJwtCredentialService {
       } else if (verifyCredentialStatus && credential.credentialStatus) {
         // TODO: Add similar verification for JWT VCs
         validationResults.validations.credentialStatus = {
-          isValid: await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.JwtVc)
+          isValid: await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.JwtVc),
         }
       }
 
