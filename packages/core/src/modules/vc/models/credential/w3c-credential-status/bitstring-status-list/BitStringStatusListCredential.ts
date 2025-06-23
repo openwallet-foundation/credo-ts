@@ -3,7 +3,8 @@ import { buildMessage, IsEnum, isInstance, IsString, registerDecorator, Validate
 
 import { W3cCredential, W3cCredentialOptions } from '../../W3cCredential'
 import { W3cCredentialSubject, W3cCredentialSubjectOptions } from '../../index'
-import { mapSingleOrArray, SingleOrArray } from '../../../../../../utils'
+import { mapSingleOrArray } from '../../../../../../utils'
+import type { SingleOrArray } from '../../../../../../types'
 import { CredoError } from '../../../../../../error'
 import { IsSupportedStatusPurpose } from './BitStringStatusList'
 

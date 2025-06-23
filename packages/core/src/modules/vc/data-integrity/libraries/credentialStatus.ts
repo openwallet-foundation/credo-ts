@@ -8,7 +8,7 @@ import {
   verifyBitStringCredentialStatus,
 } from '../../models/credential/w3c-credential-status'
 import { W3cCredentialStatusSupportedTypes } from '../../models/credential/w3c-credential-status/W3cCredentialStatus'
-import { SingleOrArray } from '../../../../utils'
+import type { SingleOrArray } from '../../../../types'
 import { ClaimFormat } from '../../models'
 
 // Function to validate the status using the updated method
