@@ -140,22 +140,15 @@
           "name": "anonCredsCredential_fk_context",
           "tableFrom": "AnonCredsCredential",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsCredential_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsCredential_pk"
         }
       },
@@ -260,9 +253,7 @@
       "indexes": {
         "AnonCredsCredentialDefinition_credential_definition_id_unique": {
           "name": "AnonCredsCredentialDefinition_credential_definition_id_unique",
-          "columns": [
-            "credential_definition_id"
-          ],
+          "columns": ["credential_definition_id"],
           "isUnique": true
         }
       },
@@ -271,22 +262,15 @@
           "name": "anonCredsCredentialDefinition_fk_context",
           "tableFrom": "AnonCredsCredentialDefinition",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsCredentialDefinition_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsCredentialDefinition_pk"
         }
       },
@@ -356,9 +340,7 @@
       "indexes": {
         "AnonCredsCredentialDefinitionPrivate_credential_definition_id_unique": {
           "name": "AnonCredsCredentialDefinitionPrivate_credential_definition_id_unique",
-          "columns": [
-            "credential_definition_id"
-          ],
+          "columns": ["credential_definition_id"],
           "isUnique": true
         }
       },
@@ -367,22 +349,15 @@
           "name": "anonCredsCredentialDefinitionPrivate_fk_context",
           "tableFrom": "AnonCredsCredentialDefinitionPrivate",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsCredentialDefinitionPrivate_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsCredentialDefinitionPrivate_pk"
         }
       },
@@ -452,9 +427,7 @@
       "indexes": {
         "AnonCredsKeyCorrectnessProof_credential_definition_id_unique": {
           "name": "AnonCredsKeyCorrectnessProof_credential_definition_id_unique",
-          "columns": [
-            "credential_definition_id"
-          ],
+          "columns": ["credential_definition_id"],
           "isUnique": true
         }
       },
@@ -463,22 +436,15 @@
           "name": "anonCredsKeyCorrectnessProof_fk_context",
           "tableFrom": "AnonCredsKeyCorrectnessProof",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsKeyCorrectnessProof_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsKeyCorrectnessProof_pk"
         }
       },
@@ -556,10 +522,7 @@
       "indexes": {
         "link_secret_id_context_correlation_id_unique": {
           "name": "link_secret_id_context_correlation_id_unique",
-          "columns": [
-            "link_secret_id",
-            "context_correlation_id"
-          ],
+          "columns": ["link_secret_id", "context_correlation_id"],
           "isUnique": true
         }
       },
@@ -568,22 +531,15 @@
           "name": "anonCredsLinkSecret_fk_context",
           "tableFrom": "AnonCredsLinkSecret",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsLinkSecret_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsLinkSecret_pk"
         }
       },
@@ -660,9 +616,7 @@
       "indexes": {
         "AnonCredsRevocationRegistryDefinition_revocation_registry_definition_id_unique": {
           "name": "AnonCredsRevocationRegistryDefinition_revocation_registry_definition_id_unique",
-          "columns": [
-            "revocation_registry_definition_id"
-          ],
+          "columns": ["revocation_registry_definition_id"],
           "isUnique": true
         }
       },
@@ -671,22 +625,15 @@
           "name": "anonCredsRevocationRegistryDefinition_fk_context",
           "tableFrom": "AnonCredsRevocationRegistryDefinition",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsRevocationRegistryDefinition_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsRevocationRegistryDefinition_pk"
         }
       },
@@ -770,9 +717,7 @@
       "indexes": {
         "AnonCredsRevocationRegistryDefinitionPrivate_revocation_registry_definition_id_unique": {
           "name": "AnonCredsRevocationRegistryDefinitionPrivate_revocation_registry_definition_id_unique",
-          "columns": [
-            "revocation_registry_definition_id"
-          ],
+          "columns": ["revocation_registry_definition_id"],
           "isUnique": true
         }
       },
@@ -781,22 +726,15 @@
           "name": "anonCredsRevocationRegistryDefinitionPrivate_fk_context",
           "tableFrom": "AnonCredsRevocationRegistryDefinitionPrivate",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsRevocationRegistryDefinitionPrivate_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsRevocationRegistryDefinitionPrivate_pk"
         }
       },
@@ -901,9 +839,7 @@
       "indexes": {
         "AnonCredsSchema_schema_id_unique": {
           "name": "AnonCredsSchema_schema_id_unique",
-          "columns": [
-            "schema_id"
-          ],
+          "columns": ["schema_id"],
           "isUnique": true
         }
       },
@@ -912,22 +848,15 @@
           "name": "anonCredsSchema_fk_context",
           "tableFrom": "AnonCredsSchema",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "anonCredsSchema_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "anonCredsSchema_pk"
         }
       },

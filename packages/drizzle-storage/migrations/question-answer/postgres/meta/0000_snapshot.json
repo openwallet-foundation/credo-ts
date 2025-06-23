@@ -105,12 +105,8 @@
           "name": "didcommQuestionAnswer_fk_context",
           "tableFrom": "DidcommQuestionAnswer",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -118,14 +114,8 @@
           "name": "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommQuestionAnswer",
           "tableTo": "DidcommConnection",
-          "columnsFrom": [
-            "connection_id",
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "id",
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -133,20 +123,14 @@
       "compositePrimaryKeys": {
         "didcommQuestionAnswer_pk": {
           "name": "didcommQuestionAnswer_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {
         "DidcommQuestionAnswer_context_correlation_id_thread_id_unique": {
           "name": "DidcommQuestionAnswer_context_correlation_id_thread_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "context_correlation_id",
-            "thread_id"
-          ]
+          "columns": ["context_correlation_id", "thread_id"]
         }
       },
       "policies": {},
@@ -158,20 +142,12 @@
     "public.DidcommQuestionAnswerState": {
       "name": "DidcommQuestionAnswerState",
       "schema": "public",
-      "values": [
-        "question-sent",
-        "question-received",
-        "answer-received",
-        "answer-sent"
-      ]
+      "values": ["question-sent", "question-received", "answer-received", "answer-sent"]
     },
     "public.DidcommQuestionAnswerRole": {
       "name": "DidcommQuestionAnswerRole",
       "schema": "public",
-      "values": [
-        "questioner",
-        "responder"
-      ]
+      "values": ["questioner", "responder"]
     }
   },
   "schemas": {},
