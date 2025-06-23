@@ -42,6 +42,27 @@ export const Ed25519Signature2018Fixtures = {
       birthDate: '1958-07-17',
     },
   },
+  TEST_LD_DOCUMENT_REVOCABLE: {
+    '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
+    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+    issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+    issuanceDate: '2017-10-22T12:23:48Z',
+    credentialSubject: {
+      degree: {
+        type: 'BachelorDegree',
+        name: 'Bachelor of Science and Arts',
+      },
+    },
+    credentialStatus: {
+      // TODO: change the url to mock retrieval of BSLC
+      id: "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json#1",
+      type: "BitstringStatusListEntry",
+      statusListCredential:
+        "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json",
+      statusListIndex: "0",
+      statusPurpose: "revocation",
+    },
+  },
 
   TEST_LD_DOCUMENT_SIGNED: {
     '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
@@ -83,6 +104,73 @@ export const Ed25519Signature2018Fixtures = {
       jws: 'eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..Ej5aEUBTgeNm3_a4uO_AuNnisldnYTMMGMom4xLb-_TmoYe7467Yo046Bw2QqdfdBja6y-HBbBj4SonOlwswAg',
     },
   },
+  TEST_LD_REVOCABLE_DOCUMENT_SIGNED: {
+    "@context": [
+      CREDENTIALS_CONTEXT_V1_URL,
+      "https://www.w3.org/2018/credentials/examples/v1"
+    ],
+    type: [
+      "VerifiableCredential",
+      "UniversityDegreeCredential"
+    ],
+    issuer: "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+    issuanceDate: "2017-10-22T12:23:48Z",
+    credentialSubject: {
+      degree: {
+        type: "BachelorDegree",
+        name: "Bachelor of Science and Arts"
+      }
+    },
+    credentialStatus: {
+      id: "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json#1",
+      type: "BitstringStatusListEntry",
+      statusListCredential: "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json",
+      statusListIndex: "0",
+      statusPurpose: "revocation"
+    },
+    proof: {
+      verificationMethod: "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+      type: "Ed25519Signature2018",
+      created: "2025-06-23T04:40:28Z",
+      proofPurpose: "assertionMethod",
+      jws: "eyJhbGciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..KgyaMnJHAC7p_6vdH7HO4yFRl6dwpPaK0yRG8uilaQVIuZfonB_v7io1HyApBUAS-cPSQ1p8ZrQDs-7kvCJtAg"
+    }
+  },
+
+  TEST_LD_REVOCABLE_DOCUMENT_BAD_SIGNED: {
+    "@context": [
+      CREDENTIALS_CONTEXT_V1_URL,
+      "https://www.w3.org/2018/credentials/examples/v1"
+    ],
+    type: [
+      "VerifiableCredential",
+      "UniversityDegreeCredential"
+    ],
+    issuer: "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+    issuanceDate: "2017-10-22T12:23:48Z",
+    credentialSubject: {
+      degree: {
+        type: "BachelorDegree",
+        name: "Bachelor of Science and Arts"
+      }
+    },
+    credentialStatus: {
+      id: "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json#1",
+      type: "BitstringStatusListEntry",
+      statusListCredential: "https://ghkrishna.github.io/schemas/revocationSchemas/signed1.json",
+      statusListIndex: "0",
+      statusPurpose: "revocation"
+    },
+    proof: {
+      verificationMethod: "did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL",
+      type: "Ed25519Signature2018",
+      created: "2025-06-23T04:40:28Z",
+      proofPurpose: "assertionMethod",
+      // Replaced 6th character 'G' with 'g'
+      jws: "eyJhbgciOiJFZERTQSIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..KgyaMnJHAC7p_6vdH7HO4yFRl6dwpPaK0yRG8uilaQVIuZfonB_v7io1HyApBUAS-cPSQ1p8ZrQDs-7kvCJtAg"
+    }
+  },
+
   TEST_VP_DOCUMENT: {
     '@context': [CREDENTIALS_CONTEXT_V1_URL],
     type: ['VerifiablePresentation'],
