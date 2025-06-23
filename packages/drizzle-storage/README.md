@@ -200,8 +200,12 @@ module.exports = config;
 
 ## Developing storage bundles
 
-1. Defining database models for PostgreSQL and SQLite
-2. Generating migrations
+Developing a custom Drizzle storage bundle for Credo requires the following:
+
+- A bundle definition describing the records, and metadata about the migrations
+- A set of record files with the PostgreSQL and SQLite database definitions, as well as the Credo record adapters.
+
+The Drizzle storage module for Credo is still in an experimental phase, and documentation for creating Drizzle bundles is not available yet. You can look at the bundles from thie repository (such as `action-menu`), to see how a storage bundle can be defined.
 
 > [!WARNING]  
 > Drizzle requires TypeScript files to be used for generation of migrations. For this reason if you're developing storage bundles for Drizzle in Credo, you MUST write the storage bundle in TypeScript. We recommend every JavaScript/Credo project to be written in TypeScript, but for Drizzle it is required.
