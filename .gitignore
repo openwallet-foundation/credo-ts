@@ -13,4 +13,4 @@ logs/
 .pnpm-store
 ngrok.auth.yml
 cli-build
-./packages/drizzle-storage/local.db
+*.db
