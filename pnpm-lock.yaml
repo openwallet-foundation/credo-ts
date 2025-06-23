@@ -474,6 +474,12 @@ importers:
       object-inspect:
         specifier: ^1.10.3
         version: 1.13.1
+      pako:
+        specifier: ^2.1.0
+        version: 2.1.0
+      query-string:
+        specifier: ^7.0.1
+        version: 7.1.3
       reflect-metadata:
         specifier: ^0.1.13
         version: 0.1.14
@@ -505,6 +511,9 @@ importers:
       '@types/object-inspect':
         specifier: ^1.8.0
         version: 1.13.0
+      '@types/pako':
+        specifier: ^2.0.3
+        version: 2.0.3
       '@types/uuid':
         specifier: ^9.0.1
         version: 9.0.8
@@ -2966,6 +2975,9 @@ packages:
 
   '@types/oidc-provider@8.8.1':
     resolution: {integrity: sha512-Yi/OJ7s0CFJ1AWAQrY2EO/zkV9uppLtiGAzrA07lBDveUOvxtYh7GflnHFXcgufVaPxVAjdykizjTYTMNVhdJw==}
+
+  '@types/pako@2.0.3':
+    resolution: {integrity: sha512-bq0hMV9opAcrmE0Byyo0fY3Ew4tgOevJmQ9grUhpXQhYfyLJ1Kqg3P33JT5fdbT2AjeAjR51zqqVjAL/HMkx7Q==}
 
   '@types/qs@6.9.15':
     resolution: {integrity: sha512-uXHQKES6DQKKCLh441Xv/dwxOq1TVS3JPUMlEqoEglvlhR6Mxnlew/Xq/LRVHpLyk7iK3zODe1qYHIMltO7XGg==}
@@ -10942,6 +10954,8 @@ snapshots:
       '@types/keygrip': 1.0.6
       '@types/koa': 2.15.0
       '@types/node': 18.18.8
+
+  '@types/pako@2.0.3': {}
 
   '@types/qs@6.9.15': {}
 

@@ -6,7 +6,7 @@ import type {
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
 } from '../W3cCredentialServiceOptions'
-import type { W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
+import { ClaimFormat, type W3cVerifyCredentialResult, type W3cVerifyPresentationResult } from '../models'
 import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { createKmsKeyPairClass } from '../../../crypto/KmsKeyPair'
@@ -22,6 +22,7 @@ import { SingleOrArray } from '../../../types'
 import { PublicJwk } from '../../kms'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'
+import { validateStatus } from './libraries/credentialStatus'
 import jsonld from './libraries/jsonld'
 import vc from './libraries/vc'
 import { W3cJsonLdVerifiableCredential } from './models'
@@ -115,10 +116,9 @@ export class W3cJsonLdCredentialService {
         credential: JsonTransformer.toJSON(options.credential),
         suite: suites,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-        checkStatus: ({ credential }: { credential: W3cJsonCredential }) => {
-          // Only throw error if credentialStatus is present
-          if (verifyCredentialStatus && 'credentialStatus' in credential) {
-            throw new CredoError('Verifying credential status for JSON-LD credentials is currently not supported')
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
+          if (verifyCredentialStatus && credential.credentialStatus) {
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
           }
           return {
             verified: true,
@@ -265,12 +265,21 @@ export class W3cJsonLdCredentialService {
       )
       const allSuites = presentationSuites.concat(...credentialSuites)
 
+      const verifyCredentialStatus = options.verifyCredentialStatus ?? true
       const verifyOptions: Record<string, unknown> = {
         presentation: JsonTransformer.toJSON(options.presentation),
         suite: allSuites,
         challenge: options.challenge,
         domain: options.domain,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
+        checkStatus: async ({ credential }: { credential: W3cJsonCredential }) => {
+          if (verifyCredentialStatus && credential.credentialStatus) {
+            await validateStatus(credential.credentialStatus, agentContext, ClaimFormat.LdpVc)
+          }
+          return {
+            verified: true,
+          }
+        },
       }
 
       // this is a hack because vcjs throws if purpose is passed as undefined or null

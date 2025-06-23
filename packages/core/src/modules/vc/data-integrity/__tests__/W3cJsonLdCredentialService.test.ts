@@ -130,6 +130,26 @@ describe('W3cJsonLdCredentialsService', () => {
         expect(asArray(vc.proof)[0].verificationMethod).toEqual(verificationMethod)
       })
 
+      it('should return a successfully signed revocable bitstring credential', async () => {
+        const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_REVOCABLE
+
+        const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
+
+        const vc = await w3cJsonLdCredentialService.signCredential(agentContext, {
+          format: ClaimFormat.LdpVc,
+          credential,
+          proofType: 'Ed25519Signature2018',
+          verificationMethod: verificationMethod,
+        })
+
+        expect(vc).toBeInstanceOf(W3cJsonLdVerifiableCredential)
+        expect(vc.issuer).toEqual(issuerDidKey.did)
+        expect(Array.isArray(vc.proof)).toBe(false)
+        expect(vc.proof).toBeInstanceOf(LinkedDataProof)
+
+        expect(asArray(vc.proof)[0].verificationMethod).toEqual(verificationMethod)
+      })
+
       it('should throw because of verificationMethod does not belong to this wallet', async () => {
         const credentialJson = Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT
         credentialJson.issuer = issuerDidKey.did
@@ -265,6 +285,52 @@ describe('W3cJsonLdCredentialsService', () => {
       })
     })
 
+    describe('verifyCredential revocable', () => {
+      it('should verify a revocable credential successfully', async () => {
+        const vc = JsonTransformer.fromJSON(
+          Ed25519Signature2018Fixtures.TEST_LD_REVOCABLE_DOCUMENT_SIGNED,
+          W3cJsonLdVerifiableCredential
+        )
+
+        const result = await w3cJsonLdCredentialService.verifyCredential(agentContext, {
+          credential: vc,
+          verifyCredentialStatus: false,
+        })
+
+        expect(result).toEqual({
+          isValid: true,
+          error: undefined,
+          validations: {
+            vcJs: {
+              isValid: true,
+              results: expect.any(Array),
+              log: [
+                {
+                  id: 'expiration',
+                  valid: true,
+                },
+                {
+                  id: 'valid_signature',
+                  valid: true,
+                },
+                {
+                  id: 'issuer_did_resolves',
+                  valid: true,
+                },
+                {
+                  id: 'revocation_status',
+                  valid: true,
+                },
+              ],
+              statusResult: {
+                verified: true,
+              },
+            },
+          },
+        })
+      })
+      // TODO: add more tests
+    })
     describe('signPresentation', () => {
       it('should successfully create a presentation from single verifiable credential', async () => {
         const presentation = JsonTransformer.fromJSON(Ed25519Signature2018Fixtures.TEST_VP_DOCUMENT, W3cPresentation)
