@@ -1,5 +1,46 @@
 packages:
-  - 'packages/*'
-  - 'demo'
-  - 'demo-openid'
-  - 'samples/*'
+  - packages/*
+  - demo
+  - demo-openid
+  - samples/*
+
+catalog:
+  "@types/node": ^20.19.0
+  tsyringe: ^4.10.0
+  rxjs: ^7.8.2
+  class-transformer: 0.5.1
+  class-validator: 0.14.1
+  reflect-metadata: ^0.2.2
+  rimraf: ^6.0.1
+  typescript: ~5.8.3
+  "@stablelib/ed25519": ^1.0.3
+  zod: ^3.25.56
+  nock: ^14.0.5
+  express: ^4.21.2
+  "@openwallet-foundation/askar-nodejs": ^0.3.2
+  "@openwallet-foundation/askar-shared": ^0.3.2
+  "@hyperledger/indy-vdr-nodejs": ^0.2.2
+  "@hyperledger/indy-vdr-shared": ^0.2.2
+  "@hyperledger/anoncreds-nodejs": ^0.3.1
+  "@hyperledger/anoncreds-shared": ^0.3.1
+  "@astronautlabs/jsonpath": ^1.1.2
+  "@sphereon/pex-models": ^2.3.2
+  "@animo-id/pex": ^6.1.0
+  ts-node: ^10.9.2
+  "@types/express": ^4.17.23
+  "@types/ws": ^8.18.1
+  ws: ^8.18.2
+
+ignoredBuiltDependencies:
+  - es5-ext
+  - esbuild
+  - protobufjs
+  - secp256k1
+
+onlyBuiltDependencies:
+  - "@2060.io/ffi-napi"
+  - "@2060.io/ref-napi"
+  - "@biomejs/biome"
+  - "@hyperledger/anoncreds-nodejs"
+  - "@hyperledger/indy-vdr-nodejs"
+  - "@openwallet-foundation/askar-nodejs"
