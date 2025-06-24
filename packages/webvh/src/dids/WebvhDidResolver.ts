@@ -4,7 +4,6 @@ import { DidDocument } from '@credo-ts/core'
 import { resolveDID } from 'didwebvh-ts'
 
 import { DIDWebvhCrypto } from './didWebvhUtil'
-import { toASCII } from 'punycode'
 
 export class WebvhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']

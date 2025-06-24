@@ -25,9 +25,10 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@multiformats/base-x": "^4.0.1",
+    "@stablelib/ed25519": "^2.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
-    "didwebvh-ts": "^2.2.0",
+    "didwebvh-ts": "^2.3.2",
     "json-canonicalize": "^1.0.6",
     "tsyringe": "^4.8.0"
   },
