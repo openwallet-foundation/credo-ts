@@ -94,9 +94,9 @@ export function indyVdrCreateLatestRevocationDelta(
 
   if (previousDelta) {
     revocationStatusList.forEach((revocationStatus, idx) => {
-      // Check whether the revocationStatusList entry is not included in the previous delta issued indices
-      if (revocationStatus === RevocationState.Active && !previousDelta.issued.includes(idx)) {
-        issued.push(idx)
+      // If the current status is Active and this index was previously revoked, it means the credential was just unrevoked, so add it to the issued list
+      if (revocationStatus === RevocationState.Active && previousDelta.revoked.includes(idx)) {
+        issued.push(idx);
       }
 
       // Check whether the revocationStatusList entry is not included in the previous delta revoked indices
