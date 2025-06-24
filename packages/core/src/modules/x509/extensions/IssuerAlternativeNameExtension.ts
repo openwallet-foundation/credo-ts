@@ -14,7 +14,7 @@ export class IssuerAlternativeNameExtension extends Extension {
     if (data instanceof ArrayBuffer) {
       super(data)
     } else {
-      super(id_ce_issuerAltName, !!critical, new GeneralNames(data).rawData)
+      super(id_ce_issuerAltName, !!critical, new GeneralNames(data as JsonGeneralNames).rawData)
     }
   }
 
