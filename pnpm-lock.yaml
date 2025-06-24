@@ -1077,6 +1077,9 @@ importers:
       '@multiformats/base-x':
         specifier: ^4.0.1
         version: 4.0.1
+      '@stablelib/ed25519':
+        specifier: ^2.0.2
+        version: 2.0.2
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -1084,7 +1087,7 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.2.0
+        specifier: ^2.3.2
         version: 2.3.2
       json-canonicalize:
         specifier: ^1.0.6

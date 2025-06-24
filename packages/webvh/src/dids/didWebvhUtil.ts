@@ -1,4 +1,4 @@
-import { type AgentContext, Buffer, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { type AgentContext, Kms } from '@credo-ts/core'
 import { AbstractCrypto, type SigningOutput } from 'didwebvh-ts'
 
 export class DIDWebvhCrypto extends AbstractCrypto {
@@ -21,13 +21,16 @@ export class DIDWebvhCrypto extends AbstractCrypto {
     throw new Error('Not implemented')
   }
 
-  public async verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+  private async isKmsAvailable(): Promise<boolean> {
     try {
-      if (!this.agentContext) {
-        throw new Error('Agent context is required')
-      }
+      return !!(this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi))
+    } catch {
+      return false
+    }
+  }
 
-      // Use the JWK + KMS approach like in WebVhAnonCredsRegistry
+  private async verifyWithKms(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+    try {
       const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
       const publicJwk = Kms.PublicJwk.fromPublicKey({
@@ -44,6 +47,58 @@ export class DIDWebvhCrypto extends AbstractCrypto {
       })
 
       return verificationResult.verified
+    } catch (error) {
+      this.agentContext.config.logger.error('KMS verification failed:', error)
+      return false
+    }
+  }
+
+  private async verifyWithLegacyMethod(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+    try {
+      // Fallback for older versions of Credo-TS without KMS
+      // Use @stablelib/ed25519 for Ed25519 verification
+      try {
+        const { verify } = await import('@stablelib/ed25519')
+        
+        this.agentContext.config.logger.debug('Using @stablelib/ed25519 for signature verification')
+        
+        if (publicKey.length !== 32) {
+          this.agentContext.config.logger.error(`Invalid public key length: expected 32 bytes, got ${publicKey.length}`)
+          return false
+        }
+        
+        if (signature.length !== 64) {
+          this.agentContext.config.logger.error(`Invalid signature length: expected 64 bytes, got ${signature.length}`)
+          return false
+        }
+        return verify(publicKey, message, signature)
+      } catch (importError) {
+        this.agentContext.config.logger.error('Failed to import @stablelib/ed25519:', importError)
+        this.agentContext.config.logger.warn('No crypto utilities available for signature verification')
+        return false
+      }
+    } catch (error) {
+      this.agentContext.config.logger.error('Legacy verification failed:', error)
+      return false
+    }
+  }
+
+  public async verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
+    try {
+      if (!this.agentContext) {
+        throw new Error('Agent context is required')
+      }
+
+      // Check if KMS is available in this version of Credo-TS
+      const kmsAvailable = await this.isKmsAvailable()
+      
+      if (kmsAvailable) {
+        this.agentContext.config.logger.debug('Using KMS for signature verification')
+        return await this.verifyWithKms(signature, message, publicKey)
+      } else {
+        this.agentContext.config.logger.debug('KMS not available, using legacy verification method')
+        return await this.verifyWithLegacyMethod(signature, message, publicKey)
+      }
     } catch (error) {
       // Log error in a non-production environment
       if (process.env.NODE_ENV !== 'production') {
