@@ -3,19 +3,25 @@ import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
 import { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
 import * as didcommConnectionSchema from '../../didcomm/connection/sqlite'
+import * as coreContextSchema from '../../core/context/sqlite'
 import { queryToDrizzleSqlite } from '../queryToDrizzleSqlite'
+
+const { context } = coreContextSchema
 const { didcommConnection } = didcommConnectionSchema
 
 const db = drizzle(':memory:', {
-  schema: didcommConnectionSchema,
+  schema: { ...didcommConnectionSchema, ...coreContextSchema },
 }) as unknown as DrizzleSqliteDatabase<typeof didcommConnectionSchema>
 
 describe('queryToDrizzleSqlite', () => {
   beforeAll(async () => {
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    const { apply } = await pushSQLiteSchema(didcommConnectionSchema, db as any)
+    const { apply } = await pushSQLiteSchema({ ...didcommConnectionSchema, ...coreContextSchema }, db as any)
     await apply()
 
+    await db.insert(context).values({
+      contextCorrelationId: 'something',
+    })
     await db.insert(didcommConnection).values({
       contextCorrelationId: 'something',
       createdAt: new Date(),

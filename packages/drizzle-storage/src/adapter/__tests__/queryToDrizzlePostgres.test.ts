@@ -4,20 +4,28 @@ import { PgDatabase } from 'drizzle-orm/pg-core'
 import { drizzle } from 'drizzle-orm/pglite'
 import { DrizzlePostgresDatabase } from '../../DrizzleDatabase'
 import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
+import * as coreContextSchema from '../../core/context/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
 
 const { didcommConnection } = didcommConnectionSchema
+const { context } = coreContextSchema
 
 const db = drizzle('memory://', {
-  schema: didcommConnectionSchema,
+  schema: { ...didcommConnectionSchema, ...coreContextSchema },
 }) as unknown as DrizzlePostgresDatabase<typeof didcommConnectionSchema>
 
 describe('queryToDrizzlePostgres', () => {
   beforeAll(async () => {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    const { apply } = await pushSchema(didcommConnectionSchema, db as unknown as PgDatabase<any>)
+    const { apply } = await pushSchema(
+      { ...didcommConnectionSchema, ...coreContextSchema },
+      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      db as unknown as PgDatabase<any>
+    )
     await apply()
 
+    await db.insert(context).values({
+      contextCorrelationId: 'b2fc0867-d0d1-4182-ade7-813b695d43c2',
+    })
     await db.insert(didcommConnection).values({
       createdAt: new Date(),
       updatedAt: new Date(),
