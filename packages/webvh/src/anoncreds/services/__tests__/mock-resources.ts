@@ -1,7 +1,7 @@
 export const issuerDid =
   'did:webvh:QmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN:id.anoncreds.vc:demo:863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4'
 
-export const MockSchemaResource = {
+export const mockSchemaResource = {
   '@context': ['https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
   id: 'did:webvh:QmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN:id.anoncreds.vc:demo:863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmc3ZT6N3s3UhqTcC5kWcWVoHwnkK6dZVBVfkLtYKY8YJm',
@@ -27,7 +27,7 @@ export const MockSchemaResource = {
   },
 }
 
-export const MockCredDefResource = {
+export const mockCredDefResource = {
   '@context': ['https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
   id: 'did:webvh:QmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN:id.anoncreds.vc:demo:863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmVrh8pxBhaieoJZG8syFUm3axcC928JrE1gaWo9EBVWMM',
@@ -55,7 +55,7 @@ export const MockCredDefResource = {
   },
 }
 
-export const MockRevRegDefResource = {
+export const mockRevRegDefResource = {
   '@context': ['https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
   id: 'did:webvh:QmRxso8yoATm66gKhp3AKbPSH6ys4XcNVgKT786M99JRpN:id.anoncreds.vc:demo:863862bf-cd3b-44e3-89d4-0a2d7f5cc8d4/resources/zQmWnvUkdcwB3nHhAWyAdQ4Vh3WZwtoatK7rhLTVpABGMqt',

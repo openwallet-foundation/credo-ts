@@ -7,41 +7,21 @@ import {
   ValidateNested,
   IsObject,
   Validate,
-  ValidatorConstraint,
-  ValidatorConstraintInterface,
-  ValidationArguments,
   IsNumber,
 } from 'class-validator'
-
-@ValidatorConstraint({ name: 'isStringOrStringArray', async: false })
-export class IsStringOrStringArray implements ValidatorConstraintInterface {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public validate(value: unknown, _args: ValidationArguments) {
-    if (typeof value === 'string') {
-      return true
-    }
-    if (Array.isArray(value)) {
-      return value.every((item) => typeof item === 'string')
-    }
-    return false
-  }
-
-  public defaultMessage(args: ValidationArguments) {
-    return `${args.property} must be a string or an array of strings`
-  }
-}
+import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
 
 export class WebVhSchemaContent {
   @IsArray()
   @IsString({ each: true })
-  @ArrayMinSize(1) // Example validation: ensure attrNames is not empty
+  @ArrayMinSize(1)
   @Type(() => String)
   public attrNames!: string[]
 
-  @IsString() // Example validation
+  @IsString()
   public name!: string
 
-  @IsString() // Example validation
+  @IsString()
   public version!: string
 
   @IsOptional()
@@ -112,22 +92,21 @@ export class WebVhResource {
   public '@context'!: string[]
 
   @Validate(IsStringOrStringArray)
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value])) // Normalize to array after validation
-  @Type(() => String) // Keep Type for transformation if needed
-  public type!: string[] // Keep as array internally after normalization
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value]))
+  @Type(() => String)
+  public type!: string[]
 
   @IsString()
   public id!: string
 
   @Expose()
   @Transform(({ value }) => {
-    // Determine which class to use based on the content
     if (value && 'attrNames' in value) {
-      return Object.assign(new WebVhSchemaContent(), value)
+      return JsonTransformer.fromJSON(value, WebVhSchemaContent)
     } else if (value && 'schemaId' in value) {
-      return Object.assign(new WebVhCredDefContent(), value)
+      return JsonTransformer.fromJSON(value, WebVhCredDefContent)
     } else if (value && 'revocDefType' in value) {
-      return Object.assign(new WebVhRevRegDefContent(), value)
+      return JsonTransformer.fromJSON(value, WebVhRevRegDefContent)
     }
     return value
   })
@@ -138,7 +117,6 @@ export class WebVhResource {
   public proof!: WebVhProof
 
   @IsOptional()
-  // Add validation if metadata structure is known
   public metadata?: Record<string, unknown>
 
   @IsOptional()

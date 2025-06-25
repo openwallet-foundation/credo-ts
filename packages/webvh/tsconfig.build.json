@@ -3,11 +3,7 @@
   "compilerOptions": {
     "outDir": "./build",
     "baseUrl": ".",
-    "skipDefaultLibCheck": true,
-    "paths": {
-      "@credo-ts/core": ["../core/build"],
-      "@credo-ts/core/*": ["../core/build/*"]
-    }
+    "skipDefaultLibCheck": true
   },
   "include": ["src/**/*"]
 }

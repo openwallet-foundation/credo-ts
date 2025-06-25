@@ -3,7 +3,7 @@ import { Agent } from '@credo-ts/core'
 import { getAgentOptions } from '../../core/tests/helpers'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 
-import { validDid } from './setup'
+import { validDid } from './utils'
 import { getWebvhModules } from './setupWebvhModule'
 
 // Simplified mock
@@ -45,12 +45,7 @@ describe('WebVH DID resolver', () => {
     const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
     agent = new Agent({...agentOptions, modules: { ...getWebvhModules(), inMemory: new InMemoryWalletModule() }})
 
-    const initPromise = agent.initialize()
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Agent initialization timed out')), 5000)
-    )
-
-    await Promise.race([initPromise, timeoutPromise])
+    await agent.initialize()
   })
 
   afterAll(async () => {
@@ -60,16 +55,9 @@ describe('WebVH DID resolver', () => {
   })
 
   it('should resolve a valid WebVH DID', async () => {
-    let err, res
-    try {
-      const didResolutionResult = await agent.dids.resolve(validDid)
-      res = didResolutionResult
-    } catch (e) {
-      err = e
-    }
-
-    expect(err).toBeUndefined()
-    expect(res?.didDocument).toBeDefined()
-    expect(res?.didDocument?.id).toBe('did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example')
+    const didResolutionResult = await agent.dids.resolve(
+      validDid)
+    expect(didResolutionResult.didDocument).toBeDefined()
+    expect(didResolutionResult.didDocument?.id).toBe('did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example')
   })
 })

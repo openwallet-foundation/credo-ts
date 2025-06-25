@@ -71,12 +71,20 @@ export {
   isJsonObject,
   isValidJweStructure,
   TypedArrayEncoder,
+<<<<<<< HEAD
+=======
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  HashlinkEncoder,
+  BaseName,
+>>>>>>> 455d19cc (feat(webvh): enhance WebVH support after code review)
   Buffer,
   deepEquality,
   isDid,
   asArray,
   equalsIgnoreOrder,
   DateTransformer,
+  IsStringOrStringArray
 } from './utils'
 export * from './logger'
 export * from './error'

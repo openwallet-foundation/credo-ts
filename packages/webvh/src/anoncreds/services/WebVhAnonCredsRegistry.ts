@@ -11,27 +11,13 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
-import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder } from '@credo-ts/core'
+import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder, MultiBaseEncoder, MultiHashEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { WebvhDidResolver, DIDWebvhCrypto } from '../../dids'
-import { encodeMultihash } from '../utils/multihash'
-import { decodeFromBase58 } from '../utils/base58'
 import { WebVhResource } from '../utils/transform'
 
-// Simple multibase decoder for base58btc (z prefix)
-function decodeMultibase(data: string): { data: Uint8Array; baseName: string } {
-  if (data[0] === 'z') {
-    // base58btc encoding
-    const base58Data = data.substring(1)
-    const decoded = decodeFromBase58(base58Data)
-    return { data: decoded, baseName: 'base58btc' }
-  }
-  throw new Error(`Unsupported multibase prefix '${data[0]}'`)
-}
-
-// Define a type for the resource resolution result
 type DidResourceResolutionResult = {
   error?: string
   message?: string
@@ -128,8 +114,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const contentString = canonicalize(contentObject)
-      const actualHash = createHash('sha256').update(contentString).digest()
-      const actualHashMultibase = encodeMultihash(actualHash)
+      const actualHashMultibase = MultiBaseEncoder.encode(MultiHashEncoder.encode(TypedArrayEncoder.fromString(contentString), 'sha-256'), 'base58btc')
 
       if (actualHashMultibase !== expectedMultibaseHash) {
         throw new CredoError(
@@ -160,7 +145,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       return { resourceObject, resolutionResult }
     } catch (error) {
-      agentContext.config.logger.error(`Error in _resolveAndValidateAttestedResource:`, error)
+      agentContext.config.logger.error(`Error in did:webvh _resolveAndValidateAttestedResource:`, error)
       throw error
     }
   }
@@ -464,28 +449,28 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     try {
       // Type check the proof object
       if (!proof || typeof proof !== 'object') {
-        agentContext.config.logger.error('Invalid proof: proof must be an object')
+        agentContext.config.logger.error('Invalid proof: proof must be an object in did:webvh resource proof')
         return false
       }
 
       // Validate proof structure for DataIntegrityProof
       if (proof.type !== 'DataIntegrityProof') {
-        agentContext.config.logger.error(`Unsupported proof type: ${proof.type}`)
+        agentContext.config.logger.error(`Unsupported type: ${proof.type} in did:webvh resource proof`)
         return false
       }
 
       if (proof.cryptosuite !== 'eddsa-jcs-2022') {
-        agentContext.config.logger.error(`Unsupported cryptosuite: ${proof.cryptosuite}`)
+        agentContext.config.logger.error(`Unsupported cryptosuite: ${proof.cryptosuite} in did:webvh resource proof`)
         return false
       }
 
       if (!proof.verificationMethod || typeof proof.verificationMethod !== 'string') {
-        agentContext.config.logger.error('Invalid verificationMethod in proof')
+        agentContext.config.logger.error('Invalid verificationMethod in did:webvh resource proof')
         return false
       }
 
       if (!proof.proofValue || typeof proof.proofValue !== 'string') {
-        agentContext.config.logger.error('Invalid proofValue in proof')
+        agentContext.config.logger.error('Invalid proofValue in did:webvh resource proof')
         return false
       }
 
@@ -494,7 +479,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       const didDocument = await didsApi.resolveDidDocument(proof.verificationMethod as string)
       
       if (!didDocument) {
-        agentContext.config.logger.error('Could not resolve verification method DID document')
+        agentContext.config.logger.error('Could not resolve verification method did:webvh DID document')
         return false
       }
 
@@ -508,17 +493,17 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       if (!verificationMethod) {
-        agentContext.config.logger.error('Could not find verification method in DID document')
+        agentContext.config.logger.error('Could not find verification method in did:webvh DID document')
         return false
       }
 
       // Extract public key from verification method
       let publicKeyBytes: Uint8Array
       if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-        const publicKeyBuffer = decodeMultibase(verificationMethod.publicKeyMultibase)
+        const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
         publicKeyBytes = publicKeyBuffer.data
       } else {
-        agentContext.config.logger.error('Verification method does not contain a supported public key format')
+        agentContext.config.logger.error('did:webvh resource verification method does not contain a supported public key format')
         return false
       }
 
@@ -544,13 +529,13 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       const documentBytes = TypedArrayEncoder.fromString(canonicalizedDocument)
 
       // Decode the signature from the proofValue (should be multibase encoded)
-      const signatureBuffer = decodeMultibase(proof.proofValue as string)
+      const signatureBuffer = MultiBaseEncoder.decode(proof.proofValue as string)
 
       const crypto = new DIDWebvhCrypto(agentContext)
       const isVerified = await crypto.verify(signatureBuffer.data, documentBytes, publicKeyBytes)
 
       if (!isVerified) {
-        agentContext.config.logger.error('Signature verification failed')
+        agentContext.config.logger.error('Signature verification failed for did:webvh resource')
         return false
       }
 
@@ -558,7 +543,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       return true
 
     } catch (error) {
-      agentContext.config.logger.error('Error during proof validation', {
+      agentContext.config.logger.error('Error during proof validation of did:webvh resource', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined
       })

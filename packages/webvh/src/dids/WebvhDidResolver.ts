@@ -7,8 +7,8 @@ import { DIDWebvhCrypto } from './didWebvhUtil'
 
 export class WebvhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
-  public readonly allowsCaching = false
-  public readonly allowsLocalDidRecord = false
+  public readonly allowsCaching = true
+  public readonly allowsLocalDidRecord = true
 
   public async resolve(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
     const didDocumentMetadata = {}
@@ -16,7 +16,7 @@ export class WebvhDidResolver implements DidResolver {
     try {
       return await this.resolveDidDoc(agentContext, did)
     } catch (error) {
-      agentContext.config.logger.error(`Error resolving DID: ${error}`)
+      agentContext.config.logger.error(`Error resolving DID ${did}: ${error}`)
       return {
         didDocument: null,
         didDocumentMetadata,
