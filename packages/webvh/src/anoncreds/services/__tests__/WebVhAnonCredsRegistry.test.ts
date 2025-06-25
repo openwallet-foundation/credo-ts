@@ -1,14 +1,13 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { DidsApi, JsonTransformer, Kms, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
 import { WebvhDidResolver } from '../../../dids'
-import { encodeMultihash } from '../../utils/multihash'
 import { WebVhResource } from '../../utils/transform'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
-import { MockSchemaResource, MockCredDefResource, MockRevRegDefResource } from './mock-resources'
+import { mockSchemaResource, mockCredDefResource, mockRevRegDefResource } from './mock-resources'
 
 // Mock the WebvhDidResolver
 const mockResolveResource = jest.fn()
@@ -43,26 +42,13 @@ describe('WebVhAnonCredsRegistry', () => {
     mockVerify.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
-    agentContext = getAgentContext({ agentConfig })
-    
-    // Register the mocked resolver instance
-    agentContext.dependencyManager.registerInstance(WebvhDidResolver, new WebvhDidResolver())
-    
-    // Mock the dependency manager resolve method
-    const originalResolve = agentContext.dependencyManager.resolve.bind(agentContext.dependencyManager)
-    agentContext.dependencyManager.resolve = jest.fn().mockImplementation((token) => {
-      const tokenString = token?.name || token?.toString?.() || String(token)
-      
-      if (tokenString.includes('DidsApi')) {
-        return mockDidsApi
-      }
-      if (tokenString.includes('KeyManagementApi')) {
-        return mockKeyManagementApi
-      }
-      if (token === WebvhDidResolver || tokenString.includes('WebvhDidResolver')) {
-        return { resolveResource: mockResolveResource }
-      }
-      return originalResolve(token)
+    agentContext = getAgentContext({
+      agentConfig,
+      registerInstances: [
+        [DidsApi, mockDidsApi],
+        [Kms.KeyManagementApi, mockKeyManagementApi],
+        [WebvhDidResolver, { resolveResource: mockResolveResource }],
+      ],
     })
     
     // Default mock for verifyProof to return true (will be overridden in verifyProof tests)
@@ -73,11 +59,11 @@ describe('WebVhAnonCredsRegistry', () => {
 
   describe('getSchema', () => {
     it('should correctly resolve and parse a valid schema using MockSchemaResource', async () => {
-      const schemaId = MockSchemaResource.id
+      const schemaId = mockSchemaResource.id
 
       const mockResolverResponse = {
-        content: MockSchemaResource,
-        contentMetadata: MockSchemaResource.metadata || {},
+        content: mockSchemaResource,
+        contentMetadata: mockSchemaResource.metadata || {},
         dereferencingMetadata: { contentType: 'application/json' },
       }
 
@@ -90,14 +76,14 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
       expect(result).toEqual({
         schema: {
-          attrNames: MockSchemaResource.content.attrNames,
-          name: MockSchemaResource.content.name,
-          version: MockSchemaResource.content.version,
+          attrNames: mockSchemaResource.content.attrNames,
+          name: mockSchemaResource.content.name,
+          version: mockSchemaResource.content.version,
           issuerId: expectedIssuerId,
         },
         schemaId,
         resolutionMetadata: mockResolverResponse.dereferencingMetadata,
-        schemaMetadata: MockSchemaResource.metadata,
+        schemaMetadata: mockSchemaResource.metadata,
       })
     })
 
@@ -165,11 +151,11 @@ describe('WebVhAnonCredsRegistry', () => {
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
       const contentString = canonicalize(schemaContent)
       const digestBuffer = createHash('sha256').update(contentString).digest()
-      const multibaseHash = encodeMultihash(digestBuffer)
+      const multibaseHash = MultiHashEncoder.encode(digestBuffer, 'sha-256')
       const schemaId = `did:webvh:example.com:resource:noattest/${multibaseHash}`
 
       const mockWebResource = {
-        ...MockSchemaResource,
+        ...mockSchemaResource,
         type: 'IncorrectType',
       }
       mockResolveResource.mockResolvedValue({
@@ -199,7 +185,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
       const contentString = canonicalize(schemaContent)
       const digestBuffer = createHash('sha256').update(contentString).digest()
-      const multibaseHash = encodeMultihash(digestBuffer)
+      const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(digestBuffer, 'sha-256'), 'base58btc')
       const schemaId = `did:webvh:example.com:resource:badproof/${multibaseHash}`
 
       const mockWebResource = {
@@ -285,8 +271,8 @@ describe('WebVhAnonCredsRegistry', () => {
         version: '1.0',
       }
       const contentString = canonicalize(incompleteContent)
-      const digestBuffer = createHash('sha256').update(contentString).digest()
-      const multibaseHash = encodeMultihash(digestBuffer)
+      const contentBuffer = TypedArrayEncoder.fromString(contentString)
+      const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(contentBuffer, 'sha-256'), 'base58btc')
       const schemaId = `did:webvh:example.com:resource:incomplete/${multibaseHash}`
 
       const mockWebResource = {
@@ -357,14 +343,12 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
-  // TODO: Add similar tests for getRevocationRegistryDefinition and getRevocationStatusList
-
   describe('getRevocationRegistryDefinition', () => {
     it('should correctly resolve and parse a valid RevRegDef resource', async () => {
-      const revRegDefId = MockRevRegDefResource.id
+      const revRegDefId = mockRevRegDefResource.id
       const mockResolverResponse = {
-        content: MockRevRegDefResource,
-        contentMetadata: MockRevRegDefResource.metadata || {},
+        content: mockRevRegDefResource,
+        contentMetadata: mockRevRegDefResource.metadata || {},
         dereferencingMetadata: { contentType: 'application/json' },
       }
 
@@ -380,12 +364,12 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(verifyProofSpy).toHaveBeenCalled()
       expect(result.resolutionMetadata.error).toBeUndefined()
       expect(result.revocationRegistryDefinition).toBeDefined()
-      expect(result.revocationRegistryDefinition?.issuerId).toBe(MockRevRegDefResource.content.issuerId)
-      expect(result.revocationRegistryDefinition?.revocDefType).toBe(MockRevRegDefResource.content.revocDefType)
-      expect(result.revocationRegistryDefinition?.credDefId).toBe(MockRevRegDefResource.content.credDefId)
-      expect(result.revocationRegistryDefinition?.tag).toBe(MockRevRegDefResource.content.tag)
-      expect(result.revocationRegistryDefinition?.value).toEqual(MockRevRegDefResource.content.value)
-      expect(result.revocationRegistryDefinitionMetadata).toEqual(MockRevRegDefResource.metadata)
+        expect(result.revocationRegistryDefinition?.issuerId).toBe(mockRevRegDefResource.content.issuerId)
+      expect(result.revocationRegistryDefinition?.revocDefType).toBe(mockRevRegDefResource.content.revocDefType)
+      expect(result.revocationRegistryDefinition?.credDefId).toBe(mockRevRegDefResource.content.credDefId)
+      expect(result.revocationRegistryDefinition?.tag).toBe(mockRevRegDefResource.content.tag)
+      expect(result.revocationRegistryDefinition?.value).toEqual(mockRevRegDefResource.content.value)
+      expect(result.revocationRegistryDefinitionMetadata).toEqual(mockRevRegDefResource.metadata)
       expect(result.resolutionMetadata).toEqual(mockResolverResponse.dereferencingMetadata)
 
       verifyProofSpy.mockRestore()
@@ -397,7 +381,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
   describe('Resource Transformation', () => {
     it('should correctly transform a schema resource', () => {
-      const resource = JsonTransformer.fromJSON(MockSchemaResource, WebVhResource)
+      const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhResource)
 
       expect(resource).toBeInstanceOf(WebVhResource)
       expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
@@ -416,7 +400,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should correctly transform a credential definition resource', () => {
-      const resource = JsonTransformer.fromJSON(MockCredDefResource, WebVhResource)
+      const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
 
       expect(resource).toBeInstanceOf(WebVhResource)
       expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])

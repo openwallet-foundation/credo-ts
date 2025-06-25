@@ -2,11 +2,11 @@ import { JsonTransformer } from '@credo-ts/core'
 
 import { WebVhResource } from '../../utils/transform'
 
-import { MockSchemaResource, MockCredDefResource } from './mock-resources'
+import { mockSchemaResource, mockCredDefResource } from './mock-resources'
 
 describe('WebVhTransform', () => {
   it('should correctly transform a schema resource', () => {
-    const resource = JsonTransformer.fromJSON(MockSchemaResource, WebVhResource)
+    const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
     expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
@@ -24,7 +24,7 @@ describe('WebVhTransform', () => {
   })
 
   it('should correctly transform a credential definition resource', () => {
-    const resource = JsonTransformer.fromJSON(MockCredDefResource, WebVhResource)
+    const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
     expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])

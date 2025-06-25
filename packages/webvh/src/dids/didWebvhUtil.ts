@@ -85,10 +85,6 @@ export class DIDWebvhCrypto extends AbstractCrypto {
 
   public async verify(signature: Uint8Array, message: Uint8Array, publicKey: Uint8Array): Promise<boolean> {
     try {
-      if (!this.agentContext) {
-        throw new Error('Agent context is required')
-      }
-
       // Check if KMS is available in this version of Credo-TS
       const kmsAvailable = await this.isKmsAvailable()
       
@@ -100,20 +96,8 @@ export class DIDWebvhCrypto extends AbstractCrypto {
         return await this.verifyWithLegacyMethod(signature, message, publicKey)
       }
     } catch (error) {
-      // Log error in a non-production environment
-      if (process.env.NODE_ENV !== 'production') {
-        this.agentContext.config.logger.error('Error verifying signature:', error)
-      }
+      this.agentContext.config.logger.error('Error verifying signature:', error)
       return false
     }
   }
-}
-
-export interface IDidDocOptions {
-  verificationMethods: {
-    publicKeyMultibase: string
-    privateKeyMultibase?: string
-  }[]
-  updateKeys: string[]
-  baseUrl: string
 }
