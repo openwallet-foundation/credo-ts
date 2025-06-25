@@ -7,7 +7,7 @@ export type Constructor<T = {}> = new (...args: any[]) => T
 
 export type NonConstructable<T> = Omit<T, 'new'>
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export type Constructable<T> = T & (new (...args: any) => T)
+export type Constructable<T, ConstructorParams extends any[] = any[]> = T & (new (...args: ConstructorParams) => T)
 
 // Turns A | B | C into A & B & C
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>

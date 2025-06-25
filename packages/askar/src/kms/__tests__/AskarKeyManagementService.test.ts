@@ -1,5 +1,5 @@
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { askar } from '@openwallet-foundation/askar-shared'
+import { AskarError, askar } from '@openwallet-foundation/askar-shared'
 
 import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
@@ -899,7 +899,9 @@ describe('AskarKeyManagementService', () => {
       }
 
       await expect(service.importKey(agentContext, { privateJwk })).rejects.toThrow(
-        new Kms.KeyManagementError('Error importing key', { cause: new Error('Base64 decoding error') })
+        new Kms.KeyManagementError('Error importing key', {
+          cause: new AskarError({ code: 5, message: 'Base64 decoding error' }),
+        })
       )
     })
 

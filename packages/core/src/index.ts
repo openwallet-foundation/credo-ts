@@ -45,6 +45,7 @@ export * from './modules/sd-jwt-vc'
 export * from './modules/mdoc'
 export * as Kms from './modules/kms'
 export * from './modules/dcql'
+export * from './modules/generic-records'
 export {
   JsonEncoder,
   JsonTransformer,
@@ -63,7 +64,7 @@ export {
 } from './utils'
 export * from './logger'
 export * from './error'
-export type { Constructor, Constructable } from './utils/mixins'
+export type { Constructor, Constructable, UnionToIntersection } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto'
 
