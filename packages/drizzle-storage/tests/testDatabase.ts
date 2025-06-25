@@ -1,10 +1,6 @@
 import { Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
-import { pushSQLiteSchema, pushSchema } from 'drizzle-kit/api'
-import { LibSQLDatabase } from 'drizzle-orm/libsql'
-import { drizzle as drizzleSqlite } from 'drizzle-orm/libsql'
 import { PgDatabase } from 'drizzle-orm/pg-core'
-import { drizzle as drizzlePostgres } from 'drizzle-orm/pglite'
 import { DrizzleRecord, DrizzleStorageModule } from '../src'
 import { isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
 import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
@@ -44,6 +40,7 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
 }
 
 export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
+  const { pushSQLiteSchema, pushSchema } = require('drizzle-kit/api')
   if (isDrizzlePostgresDatabase(drizzleModule.config.database)) {
     const { apply } = await pushSchema(
       drizzleModule.config.schemas,
@@ -55,12 +52,16 @@ export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
     const { apply } = await pushSQLiteSchema(
       drizzleModule.config.schemas,
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      drizzleModule.config.database as LibSQLDatabase<any>
+      drizzleModule.config.database as any
     )
     await apply()
   }
 }
 
 export function inMemoryDatabase(type: DatabaseType): AnyDrizzleDatabase {
-  return type === 'postgres' ? drizzlePostgres('memory://') : drizzleSqlite(':memory:')
+  if (type === 'postgres') {
+    return require('drizzle-orm/pglite').drizzle('memory://')
+  }
+
+  return require('drizzle-orm/libsql').drizzle(':memory:')
 }
