@@ -1,5 +1,5 @@
 import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { askar, AskarError } from '@openwallet-foundation/askar-shared'
+import { AskarError, askar } from '@openwallet-foundation/askar-shared'
 
 import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'

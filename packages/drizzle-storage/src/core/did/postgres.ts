@@ -16,8 +16,8 @@ export const did = pgTable(
 
     // Default Tags
     recipientKeyFingerprints: jsonb('recipient_key_fingerprints'),
-    method: text(),
-    methodSpecificIdentifier: text('method_specific_identifier'),
+    method: text().notNull(),
+    methodSpecificIdentifier: text('method_specific_identifier').notNull(),
     // Not adding this here, since it's legacy
     // legacyUnqualifiedDid
 

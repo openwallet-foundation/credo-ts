@@ -62,7 +62,10 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
       },
       AnonCredsCredentialDefinitionRecord
     )
-    record.setTags({ ...customTags, unqualifiedCredentialDefinitionId } as TagsBase)
+    record.setTags({
+      ...customTags,
+      unqualifiedCredentialDefinitionId: unqualifiedCredentialDefinitionId ?? undefined,
+    } as TagsBase)
 
     return record
   }

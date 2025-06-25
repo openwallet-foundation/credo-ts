@@ -3,8 +3,8 @@ import { pushSchema } from 'drizzle-kit/api'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { drizzle } from 'drizzle-orm/pglite'
 import { DrizzlePostgresDatabase } from '../../DrizzleDatabase'
-import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
 import * as coreContextSchema from '../../core/context/postgres'
+import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
 
 const { didcommConnection } = didcommConnectionSchema

@@ -1,4 +1,4 @@
-import { JsonTransformer, TagsBase } from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
@@ -43,7 +43,11 @@ export class DrizzleAnonCredsSchemaRecordAdapter extends BaseDrizzleRecordAdapte
       { ...remainingValues, schema: { ...remainingValues.schema, issuerId, name: schemaName, version: schemaVersion } },
       AnonCredsSchemaRecord
     )
-    record.setTags({ ...customTags, unqualifiedSchemaId } as TagsBase)
+
+    record.setTags({
+      ...customTags,
+      unqualifiedSchemaId: unqualifiedSchemaId ?? undefined,
+    })
 
     return record
   }

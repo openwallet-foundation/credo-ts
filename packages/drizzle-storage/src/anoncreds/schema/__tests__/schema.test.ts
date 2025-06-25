@@ -24,9 +24,7 @@ describe.each(['postgres', 'sqlite'] as const)('AnonCredsSchemaRecord with %s', 
         },
         methodName: 'web',
         createdAt: new Date(),
-        _tags: {
-          unqualifiedSchemaId: null,
-        },
+        _tags: {},
       },
       AnonCredsSchemaRecord
     )

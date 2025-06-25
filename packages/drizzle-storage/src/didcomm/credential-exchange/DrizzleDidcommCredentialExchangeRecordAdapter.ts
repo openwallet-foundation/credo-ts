@@ -1,4 +1,4 @@
-import { JsonObject, JsonTransformer } from '@credo-ts/core'
+import { JsonObject, JsonTransformer, TagsBase } from '@credo-ts/core'
 
 import {
   BaseDrizzleRecordAdapter,
@@ -57,8 +57,7 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
     const { customTags, credentialIds, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, CredentialExchangeRecord)
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    record.setTags(customTags as any)
+    record.setTags(customTags as TagsBase)
 
     return record
   }

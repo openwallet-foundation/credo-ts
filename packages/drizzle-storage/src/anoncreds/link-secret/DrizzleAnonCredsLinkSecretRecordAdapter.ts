@@ -38,7 +38,7 @@ export class DrizzleAnonCredsLinkSecretRecordAdapter extends BaseDrizzleRecordAd
     const { customTags, isDefault, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, AnonCredsLinkSecretRecord)
-    record.setTags({ ...customTags, isDefault } as TagsBase)
+    record.setTags({ ...customTags, isDefault: isDefault ?? undefined } as TagsBase)
 
     return record
   }

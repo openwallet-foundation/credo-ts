@@ -1,4 +1,4 @@
-import { JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
 import {
   BaseDrizzleRecordAdapter,
@@ -68,8 +68,7 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
       values
 
     const record = JsonTransformer.fromJSON(remainingValues, DidCommMessageRecord)
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    record.setTags(customTags as any)
+    record.setTags(customTags as TagsBase)
 
     return record
   }
