@@ -12,7 +12,6 @@ import type {
 import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder, MultiBaseEncoder, MultiHashEncoder } from '@credo-ts/core'
-import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { WebvhDidResolver, DIDWebvhCrypto } from '../../dids'
