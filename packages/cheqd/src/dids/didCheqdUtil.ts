@@ -1,4 +1,4 @@
-import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
+import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey, VerificationMethod } from '@cheqd/sdk'
 import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 
 import {
@@ -159,4 +159,8 @@ export function getCosmosPayerWallet(cosmosPayerSeed?: string) {
   return EnglishMnemonic._mnemonicMatcher.test(cosmosPayerSeed)
     ? DirectSecp256k1HdWallet.fromMnemonic(cosmosPayerSeed, { prefix: 'cheqd' })
     : DirectSecp256k1Wallet.fromKey(TypedArrayEncoder.fromString(cosmosPayerSeed.replace(/^0x/, '')), 'cheqd')
+}
+
+export function getVerificationMethodId(vm: string | VerificationMethod) {
+  return typeof vm === 'string' ? vm : vm.id
 }
