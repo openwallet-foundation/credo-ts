@@ -380,6 +380,9 @@ importers:
       '@stablelib/ed25519':
         specifier: ^1.0.3
         version: 1.0.3
+      base64url:
+        specifier: ^3.0.1
+        version: 3.0.1
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
