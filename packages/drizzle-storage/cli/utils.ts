@@ -1,3 +1,4 @@
+import { existsSync } from 'fs'
 import path from 'path'
 
 export async function resolveBundle(bundle: string) {
@@ -58,8 +59,18 @@ export function getMigrationsDirectory(schemaFile: string, migrationsPath: strin
   return schemaMigrationsDirectory
 }
 
-export async function getDrizzleKitCliPath() {
+export function getDrizzleConfigPath() {
+  return existsSync(path.join(__dirname, 'drizzle.config.ts'))
+    ? path.join(__dirname, 'drizzle.config.ts')
+    : path.join(__dirname, 'drizzle.config.js')
+}
+
+export function getDrizzleKitCliPath() {
   return path.join(path.dirname(require.resolve('drizzle-kit')), 'bin.cjs')
+}
+
+export function getTsNodeCliPath() {
+  return path.join(path.dirname(require.resolve('ts-node')), 'bin.js')
 }
 
 export function log(message: string, ...optionalParams: unknown[]) {

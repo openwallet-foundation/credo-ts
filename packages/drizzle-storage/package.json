@@ -75,6 +75,7 @@
     "drizzle-kit": "^0.31.4",
     "shell": "^0.12.0",
     "tsyringe": "^4.8.0",
+    "ts-node": "catalog:",
     "zod": "^3.24.2"
   },
   "devDependencies": {

@@ -16,8 +16,8 @@ CREATE TABLE "Did" (
 	"did_document" jsonb,
 	"keys" jsonb,
 	"recipient_key_fingerprints" jsonb,
-	"method" text,
-	"method_specific_identifier" text,
+	"method" text NOT NULL,
+	"method_specific_identifier" text NOT NULL,
 	"alternative_dids" text[],
 	CONSTRAINT "did_pk" PRIMARY KEY("context_correlation_id","id")
 );

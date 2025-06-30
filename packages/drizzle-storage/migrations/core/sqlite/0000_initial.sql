@@ -14,8 +14,8 @@ CREATE TABLE `Did` (
 	`did_document` text,
 	`keys` text,
 	`recipient_key_fingerprints` text,
-	`method` text,
-	`method_specific_identifier` text,
+	`method` text NOT NULL,
+	`method_specific_identifier` text NOT NULL,
 	`alternative_dids` text,
 	PRIMARY KEY(`context_correlation_id`, `id`),
 	FOREIGN KEY (`context_correlation_id`) REFERENCES `Context`(`context_correlation_id`) ON UPDATE no action ON DELETE cascade

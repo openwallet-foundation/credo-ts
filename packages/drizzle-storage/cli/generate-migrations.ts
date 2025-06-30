@@ -1,6 +1,14 @@
 import { spawnSync } from 'child_process'
 import path from 'path'
-import { getDrizzleKitCliPath, getMigrationsDirectory, log, resolveBundle, resolveSchemaFile } from './utils'
+import {
+  getDrizzleConfigPath,
+  getDrizzleKitCliPath,
+  getMigrationsDirectory,
+  getTsNodeCliPath,
+  log,
+  resolveBundle,
+  resolveSchemaFile,
+} from './utils'
 
 export type Dialect = 'sqlite' | 'postgres'
 
@@ -12,8 +20,10 @@ interface GenerateMigrationOptions {
 
 export async function generateMigrations({ dialects, bundles, name }: GenerateMigrationOptions): Promise<void> {
   const tsconfig = path.resolve(__dirname, '..', 'tsconfig.json')
-  const drizzleKitCliPath = await getDrizzleKitCliPath()
-  const configPath = path.join(__dirname, '..', 'cli', 'drizzle.config.ts')
+
+  const drizzleKitCliPath = getDrizzleKitCliPath()
+  const drizzleConfigPath = getDrizzleConfigPath()
+  const tsNodeCliPath = getTsNodeCliPath()
 
   for (const bundleModule of bundles) {
     const bundle = await resolveBundle(bundleModule)
@@ -24,15 +34,14 @@ export async function generateMigrations({ dialects, bundles, name }: GenerateMi
       const drizzleMigrationsFolder = getMigrationsDirectory(schemaFile, dialectBundle.migrationsPath)
 
       const migrateResult = spawnSync(
-        'npx',
+        tsNodeCliPath,
         [
-          'ts-node',
           '--project',
           tsconfig,
           drizzleKitCliPath,
           'generate',
           '--config',
-          configPath,
+          drizzleConfigPath,
           ...(name ? ['--name', name] : []),
         ],
         {

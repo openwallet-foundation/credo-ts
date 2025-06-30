@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "4cda47ec-35d0-4385-b204-55a219993756",
+  "id": "d7935d94-63bd-4575-ade5-f62bb5633303",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "AnonCredsCredential": {

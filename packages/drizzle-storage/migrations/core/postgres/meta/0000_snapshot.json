@@ -1,5 +1,5 @@
 {
-  "id": "5668c507-bc29-41c9-a296-422a6c04e995",
+  "id": "4812f0a0-7b98-4165-9a83-1c362c73c5a3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -97,13 +97,13 @@
           "name": "method",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "method_specific_identifier": {
           "name": "method_specific_identifier",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "alternative_dids": {
           "name": "alternative_dids",
