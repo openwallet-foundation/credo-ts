@@ -62,6 +62,7 @@ describe('v2 credentials', () => {
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
       attributeNames: ['name', 'age', 'x-ray', 'profile_picture'],
+      useDrizzleStorage: 'postgres',
     }))
 
     indyCredentialProposal = {
@@ -253,7 +254,7 @@ describe('v2 credentials', () => {
       holderCredentialExchangeRecord.credentials[0].credentialRecordId
     )
 
-    return expect(aliceAgent.modules.credentials.getById(holderCredentialExchangeRecord.id)).rejects.toThrowError(
+    return expect(aliceAgent.modules.credentials.getById(holderCredentialExchangeRecord.id)).rejects.toThrow(
       `CredentialRecord: record with id ${holderCredentialExchangeRecord.id} not found.`
     )
   })
