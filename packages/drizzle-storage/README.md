@@ -126,11 +126,17 @@ In the example below we're assuming `postgres` is used as the database dialect, 
 - `dialect` - the dialect to use for migrations. Either `postgres` or `sqlite` and MUST match with the database being used during runtime in your Credo agent.
 - `database-url` - the url to connect to the database. You can also provide this using the `DRIZZLE_DATABASE_URL` environment variable (recommended).
 
-If the `@credo-ts/drizzle-storage` package is already installed in your project, you can directly use it to run the CLI. You can also use `npx` to execute the CLI, but make sure that you install the correct version matching the version that is used for your runtime agent. You also need to make sure that all extension modules are installed so the migration files can be resolved (which can be done using `--project` in `npx`).
+If the `@credo-ts/drizzle-storage` package is already installed in your project, you can directly use it to run the CLI with the `drizzle-storage` command. You can also use `npx` to execute the CLI, but make sure that you install the correct version matching the version that is used for your runtime agent. You also need to make sure that all extension modules are installed so the migration files can be resolved (which can be done using `--project` in `npx`).
+
+> [!NOTE]  
+> When running migrations always make sure to provide the core module. While for the `bundles` in the `DrizzleStorageModule` the `core` bundle is added by default, due to imcreased control over the migration process, no bundles are added by default in the migration command.
 
 ```sh
 # or npm or yarn
-pnpm @credo-ts/drizzle-storage@^0.x migrate --bundle core --bundle didcomm --bundle anoncreds --database-url postgresql://postgres:postgres@localhost:5432/postgres`
+pnpm drizzle-storage migrate --bundle core --bundle didcomm --bundle anoncreds --database-url postgresql://postgres:postgres@localhost:5432/postgres`
+
+# using npx
+npx @credo-ts/drizzle-storage@^x.x migrate
 ```
 
 ### React Native

@@ -61,13 +61,9 @@ export function getMigrationsDirectory(schemaFile: string, migrationsPath: strin
 
 export async function getDrizzleKitCliPath() {
   // Find drizzle-kit CLI path
-  const result = spawnSync(
-    'npx',
-    ['--package', 'which', '--package', 'drizzle-kit', '-c', 'node -p "require.resolve(\'drizzle-kit\')"'],
-    {
-      encoding: 'utf-8',
-    }
-  )
+  const result = spawnSync('npx', ['--package', 'drizzle-kit', '-c', 'node -p "require.resolve(\'drizzle-kit\')"'], {
+    encoding: 'utf-8',
+  })
 
   if (result.status !== 0) {
     throw new Error(`Expected command to return status 0, received ${result.status}. Error: ${result.stderr}`)
