@@ -141,8 +141,7 @@ export abstract class BaseDrizzleRecordAdapter<
       )
     }
 
-    // @ts-expect-error
-    throw new CredoError(`Unsupported database type '${this.database.type}'`)
+    throw new CredoError('Unsupported database type')
   }
 
   public async getById(agentContext: AgentContext, id: string) {
@@ -190,8 +189,7 @@ export abstract class BaseDrizzleRecordAdapter<
       return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
     }
 
-    // @ts-expect-error
-    throw new CredoError(`Unsupported database type '${this.database.type}'`)
+    throw new CredoError('Unsupported database type')
   }
 
   public async insert(agentContext: AgentContext, record: CredoRecord) {
@@ -207,8 +205,7 @@ export abstract class BaseDrizzleRecordAdapter<
       return
     }
 
-    // @ts-expect-error
-    throw new CredoError(`Unsupported database type '${this.database.type}'`)
+    throw new CredoError('Unsupported database type')
   }
 
   public async update(agentContext: AgentContext, record: CredoRecord) {
@@ -250,7 +247,6 @@ export abstract class BaseDrizzleRecordAdapter<
             eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
           )
         )
-        // @ts-expect-error
         .returning({
           id: this.table.sqlite.id,
         })
@@ -264,8 +260,7 @@ export abstract class BaseDrizzleRecordAdapter<
       return
     }
 
-    // @ts-expect-error
-    throw new CredoError(`Unsupported database type '${this.database.type}'`)
+    throw new CredoError('Unsupported database type')
   }
 
   public async delete(agentContext: AgentContext, id: string) {
@@ -305,7 +300,6 @@ export abstract class BaseDrizzleRecordAdapter<
             eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
           )
         )
-        // @ts-expect-error
         .returning({
           id: this.table.sqlite.id,
         })
