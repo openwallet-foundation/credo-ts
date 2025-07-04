@@ -1,21 +1,24 @@
+import { utils } from '@credo-ts/core'
 import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
-import { isURL } from 'class-validator'
+import { isDid } from 'packages/core/src/utils'
 import { injectable } from 'tsyringe'
-import { CredoError } from '../../../../error'
-import { fetchWithTimeout } from './../../../../utils/fetch'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
 import { parseDid } from '../../../dids'
+import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
 import { SdJwtVcService } from '../../SdJwtVcService'
 import { TokenStatusListError } from './TokenStatusListError'
+import { PublishTokenStatusListOptions, TokenStatusListRegistry } from './TokenStatusListRegistry'
 
 export interface CreateTokenStatusListOptions {
+  statusListId: string
   issuer: SdJwtVcIssuer
   name: string
   tag: string
   size: number
   publish: boolean
+  publishTokenStatusListOptions?: PublishTokenStatusListOptions
 }
 
 export interface CreateTokenStatusListResult {
@@ -26,6 +29,7 @@ export interface CreateTokenStatusListResult {
 export interface RevokeIndicesOptions {
   issuer: SdJwtVcIssuer
   publish: boolean
+  publishTokenStatusListOptions?: PublishTokenStatusListOptions
   indices: number[]
 }
 
@@ -34,7 +38,11 @@ export interface RevokeIndicesOptions {
  */
 @injectable()
 export class TokenStatusListService {
-  public static type = 'TokenStatusList'
+  private sdJwtVcModuleConfig: SdJwtVcModuleConfig
+
+  public constructor(sdJwtVcModuleConfig: SdJwtVcModuleConfig) {
+    this.sdJwtVcModuleConfig = sdJwtVcModuleConfig
+  }
 
   async createStatusList(
     agentContext: AgentContext,
@@ -69,9 +77,11 @@ export class TokenStatusListService {
       },
     })
 
-    if (options.publish) {
+    const statusListId = options.statusListId
+
+    if (options.publish && options.publishTokenStatusListOptions) {
       // extended by different registries
-      const uri = await this.publishStatusList(agentContext, jwt)
+      const uri = await this.publishStatusList(agentContext, statusListId, jwt, options.publishTokenStatusListOptions)
       return { jwt, uri }
     }
 
@@ -125,8 +135,8 @@ export class TokenStatusListService {
       },
     })
 
-    if (options.publish) {
-      await this.publishStatusList(agentContext, jwt)
+    if (options.publish && options.publishTokenStatusListOptions) {
+      await this.publishStatusList(agentContext, statusListId, jwt, options.publishTokenStatusListOptions)
     }
 
     return true
@@ -141,43 +151,50 @@ export class TokenStatusListService {
   async getStatusList(agentContext: AgentContext, statusListId: string): Promise<string> {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    let jwt: string
-    if (isURL(statusListId)) {
-      jwt = await this.getStatusListFetcher(agentContext)(statusListId)
-    } else {
-      throw new Error('Not supported')
+    const registry = this.findRegistry(statusListId)
+    if (!registry) {
+      throw new TokenStatusListError(`No token status list registry registered for statusListId ${statusListId}`)
     }
 
-    const verified = await jwsService.verifyJws(agentContext, { jws: jwt })
+    const jwt = await registry.retrieve(agentContext, statusListId)
 
     // verify jwt
+    const verified = await jwsService.verifyJws(agentContext, { jws: jwt })
     if (!verified.isValid) {
       throw new TokenStatusListError('Invalid Jwt in the provided statusListId')
     }
+
     return jwt
   }
 
-  private getStatusListFetcher(agentContext: AgentContext) {
-    return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
-      })
-
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
+  async publishStatusList(
+    agentContext: AgentContext,
+    statusListId: string,
+    jwt: string,
+    options: PublishTokenStatusListOptions
+  ): Promise<string> {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+    // verify jwt
+    const verified = await jwsService.verifyJws(agentContext, { jws: jwt })
+    if (!verified.isValid) {
+      throw new TokenStatusListError('Invalid Jwt in the provided statusListId')
     }
+
+    const registry = this.findRegistry(statusListId)
+    if (!registry) {
+      throw new TokenStatusListError(`No token status list registry registered for statusListId ${statusListId}`)
+    }
+    return await registry.publish(agentContext, statusListId, jwt, options)
   }
 
-  async publishStatusList(_agentContext: AgentContext, _jwt: string): Promise<string> {
-    throw new Error('Not implemented')
+  private findRegistry(statusListId: string): TokenStatusListRegistry | null {
+    let method: string
+    if (isDid(statusListId)) {
+      method = parseDid(statusListId).method
+    } else {
+      method = 'http' // TODO: implement default handler
+    }
+
+    return this.sdJwtVcModuleConfig.registries.find((r) => r.supportedMethods.includes(method)) ?? null
   }
 }
