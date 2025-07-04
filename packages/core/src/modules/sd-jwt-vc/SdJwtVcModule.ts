@@ -3,6 +3,7 @@ import type { DependencyManager, Module } from '../../plugins'
 import { AgentConfig } from '../../agent/AgentConfig'
 
 import { SdJwtVcApi } from './SdJwtVcApi'
+import { SdJwtVcModuleConfig, SdJwtVcModuleConfigOptions } from './SdJwtVcModuleConfig'
 import { SdJwtVcService } from './SdJwtVcService'
 import { SdJwtVcRepository } from './repository'
 
@@ -10,12 +11,21 @@ import { SdJwtVcRepository } from './repository'
  * @public
  */
 export class SdJwtVcModule implements Module {
+  public readonly config: SdJwtVcModuleConfig
+
+  public constructor(config?: SdJwtVcModuleConfigOptions) {
+    this.config = new SdJwtVcModuleConfig(config)
+  }
+
   public readonly api = SdJwtVcApi
 
   /**
    * Registers the dependencies of the sd-jwt-vc module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    // Config
+    dependencyManager.registerInstance(SdJwtVcModuleConfig, this.config)
+
     // Warn about experimental module
     dependencyManager
       .resolve(AgentConfig)

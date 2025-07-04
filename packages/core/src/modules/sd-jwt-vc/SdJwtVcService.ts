@@ -488,7 +488,7 @@ export class SdJwtVcService {
     }
   }
 
-  private async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
+  public async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
     if (issuer.method === 'did') {
       const parsedDid = parseDid(issuer.didUrl)
       if (!parsedDid.fragment) {
