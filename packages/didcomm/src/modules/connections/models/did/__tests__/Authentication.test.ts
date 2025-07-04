@@ -98,7 +98,7 @@ describe('Did | Authentication', () => {
         authentication: [referencedAuthenticationJson],
       }
 
-      expect(() => plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)).toThrowError(
+      expect(() => plainToInstance(AuthenticationTransformerTest, authenticationWrapperJson)).toThrow(
         `Invalid public key referenced ${referencedAuthenticationJson.publicKey}`
       )
     })

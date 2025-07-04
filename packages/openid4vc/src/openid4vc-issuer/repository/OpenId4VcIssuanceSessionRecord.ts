@@ -77,6 +77,11 @@ export interface OpenId4VcIssuanceSessionPresentation {
   openId4VcVerificationSessionId?: string
 }
 
+export interface OpenId4VcIssuanceSessionPkce {
+  codeChallengeMethod: PkceCodeChallengeMethod
+  codeChallenge: string
+}
+
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   issuerId: string
   cNonce?: string
@@ -189,10 +194,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Proof Key Code Exchange
    */
-  public pkce?: {
-    codeChallengeMethod: PkceCodeChallengeMethod
-    codeChallenge: string
-  }
+  public pkce?: OpenId4VcIssuanceSessionPkce
 
   walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
   dpop?: OpenId4VcIssuanceSessionDpop

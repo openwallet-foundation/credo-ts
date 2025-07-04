@@ -60,6 +60,8 @@ import {
   parseIndySchemaId,
 } from '../src'
 
+import { DrizzleStorageModule } from '../../drizzle-storage/src'
+import { pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
 import {
@@ -304,6 +306,7 @@ export async function setupAnonCredsTests<
   attributeNames,
   preCreatedDefinition,
   createConnections,
+  useDrizzleStorage = false,
 }: {
   issuerName: string
   holderName: string
@@ -313,6 +316,7 @@ export async function setupAnonCredsTests<
   attributeNames?: string[]
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
+  useDrizzleStorage?: boolean | 'postgres' | 'sqlite'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
     getAgentOptions(
@@ -327,7 +331,7 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
-      { requireDidcomm: true }
+      { requireDidcomm: true, useDrizzleStorage }
     )
   )
 
@@ -342,7 +346,7 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
-      { requireDidcomm: true }
+      { requireDidcomm: true, useDrizzleStorage }
     )
   )
 
@@ -358,7 +362,7 @@ export async function setupAnonCredsTests<
             autoAcceptCredentials,
             autoAcceptProofs,
           }),
-          { requireDidcomm: true }
+          { requireDidcomm: true, useDrizzleStorage }
         )
       )
     : undefined
@@ -372,6 +376,16 @@ export async function setupAnonCredsTests<
       AgentEventTypes.AgentMessageProcessed,
     ]
   )
+
+  if (issuerAgent.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(issuerAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
+  if (holderAgent.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(holderAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
+  if (verifierAgent?.dependencyManager.registeredModules.drizzle) {
+    await pushDrizzleSchema(verifierAgent.dependencyManager.registeredModules.drizzle as DrizzleStorageModule)
+  }
 
   await issuerAgent.initialize()
   await holderAgent.initialize()

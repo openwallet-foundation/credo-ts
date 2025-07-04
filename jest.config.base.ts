@@ -6,14 +6,13 @@ const config: Config.InitialOptions = {
   // NOTE: overridden in e2e test. Make sure to
   // update that match as well when changing this one
   testMatch: ['**/?(*.)test.ts'],
-  moduleNameMapper: {
-    '@credo-ts/(.+)': ['<rootDir>/../../packages/$1/src', '<rootDir>/../packages/$1/src', '<rootDir>/packages/$1/src'],
-  },
   transform: {
-    '\\.tsx?$': [
+    '\\.(t|j)sx?$': [
       'ts-jest',
       {
-        isolatedModules: true,
+        tsconfig: {
+          isolatedModules: true,
+        },
       },
     ],
   },

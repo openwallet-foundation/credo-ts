@@ -109,7 +109,7 @@ describe('convertToNewInvitation', () => {
       { validate: false }
     )
 
-    expect(() => convertToNewInvitation(connectionInvitation)).toThrowError()
+    expect(() => convertToNewInvitation(connectionInvitation)).toThrow()
   })
 })
 

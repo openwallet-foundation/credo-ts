@@ -195,8 +195,8 @@ export class OpenId4VpHolderService {
     }
 
     const credentialsToTransactionData: Record<string, ParsedTransactionDataEntry[]> = {}
-    for (const transactionDataIndex in transactionData) {
-      const transactionDataEntry = transactionData[transactionDataIndex]
+
+    transactionData.forEach((transactionDataEntry, transactionDataIndex) => {
       const { credentialId } = selectedTransactionDataCredentials[transactionDataIndex]
 
       if (!transactionDataEntry.transactionData.credential_ids.includes(credentialId)) {
@@ -230,7 +230,7 @@ export class OpenId4VpHolderService {
         credentialsToTransactionData[credentialId] = []
       }
       credentialsToTransactionData[credentialId].push(transactionDataEntry)
-    }
+    })
 
     const updatedCredentials = {
       ...selectedCredentials,

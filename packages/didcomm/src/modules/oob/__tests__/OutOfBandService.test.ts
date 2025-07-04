@@ -62,7 +62,7 @@ describe('OutOfBandService', () => {
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse message must have a parent thread id')
       )
     })
@@ -78,7 +78,7 @@ describe('OutOfBandService', () => {
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('No out of band record found for handshake-reuse message')
       )
     })
@@ -101,13 +101,13 @@ describe('OutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record role receiver, expected is sender.')
       )
 
       mockOob.state = OutOfBandState.PrepareResponse
       mockOob.role = OutOfBandRole.Sender
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record state prepare-response, valid states are: await-response.')
       )
     })
@@ -130,7 +130,7 @@ describe('OutOfBandService', () => {
       mockOob.outOfBandInvitation.addRequest(reuseMessage)
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError('Handshake reuse should only be used when no requests are present')
       )
     })
@@ -152,7 +152,7 @@ describe('OutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuse(messageContext)).rejects.toThrow(
         new CredoError(`No connection associated with incoming message ${reuseMessage.type}`)
       )
     })
@@ -271,7 +271,7 @@ describe('OutOfBandService', () => {
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse-accepted message must have a parent thread id')
       )
     })
@@ -288,7 +288,7 @@ describe('OutOfBandService', () => {
         recipientKey: key,
       })
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('No out of band record found for handshake-reuse-accepted message')
       )
     })
@@ -312,13 +312,13 @@ describe('OutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record role sender, expected is receiver.')
       )
 
       mockOob.state = OutOfBandState.AwaitResponse
       mockOob.role = OutOfBandRole.Receiver
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('Invalid out-of-band record state await-response, valid states are: prepare-response.')
       )
     })
@@ -341,7 +341,7 @@ describe('OutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError(`No connection associated with incoming message ${reuseAcceptedMessage.type}`)
       )
     })
@@ -366,7 +366,7 @@ describe('OutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrowError(
+      await expect(outOfBandService.processHandshakeReuseAccepted(messageContext)).rejects.toThrow(
         new CredoError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
       )
     })
@@ -489,7 +489,7 @@ describe('OutOfBandService', () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.getById).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.getById(agentContext, expected.id)
-      expect(outOfBandRepository.getById).toBeCalledWith(agentContext, expected.id)
+      expect(outOfBandRepository.getById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -498,7 +498,7 @@ describe('OutOfBandService', () => {
       const expected = getMockOutOfBand()
       mockFunction(outOfBandRepository.findById).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.findById(agentContext, expected.id)
-      expect(outOfBandRepository.findById).toBeCalledWith(agentContext, expected.id)
+      expect(outOfBandRepository.findById).toHaveBeenCalledWith(agentContext, expected.id)
 
       expect(result).toBe(expected)
     })
@@ -508,7 +508,7 @@ describe('OutOfBandService', () => {
 
       mockFunction(outOfBandRepository.getAll).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.getAll(agentContext)
-      expect(outOfBandRepository.getAll).toBeCalledWith(agentContext)
+      expect(outOfBandRepository.getAll).toHaveBeenCalledWith(agentContext)
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })
@@ -518,7 +518,7 @@ describe('OutOfBandService', () => {
 
       mockFunction(outOfBandRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.findAllByQuery(agentContext, { state: OutOfBandState.Initial }, {})
-      expect(outOfBandRepository.findByQuery).toBeCalledWith(agentContext, { state: OutOfBandState.Initial }, {})
+      expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(agentContext, { state: OutOfBandState.Initial }, {})
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

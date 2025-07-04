@@ -39,7 +39,7 @@ const validPresentation = {
 
 describe('W3cPresentation', () => {
   test('throws an error when verifiable credential context is missing or not the first entry', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validPresentation, '@context': [] }, W3cPresentation)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, '@context': [] }, W3cPresentation)).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
 
@@ -51,13 +51,13 @@ describe('W3cPresentation', () => {
         },
         W3cPresentation
       )
-    ).toThrowError(
+    ).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, '@context': { some: 'property' } }, W3cPresentation)
-    ).toThrowError(
+    ).toThrow(
       /context must be an array of strings or objects, where the first item is the verifiable credential context URL./
     )
   })
@@ -65,25 +65,25 @@ describe('W3cPresentation', () => {
   test('throws an error when id is present and it is not an uri', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, id: 'f8c7d9c9-3f9f-4d1d-9c0d-5b3b5d7b8f5c' }, W3cPresentation)
-    ).toThrowError(/id must be an URI/)
+    ).toThrow(/id must be an URI/)
 
-    expect(() => JsonTransformer.fromJSON({ ...validPresentation, id: 10 }, W3cPresentation)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, id: 10 }, W3cPresentation)).toThrow(
       /id must be an URI/
     )
   })
 
   test('throws an error when type is not an array of string or does not include VerifiablePresentation', () => {
-    expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: [] }, W3cPresentation)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: [] }, W3cPresentation)).toThrow(
       /type must be an array of strings which includes "VerifiablePresentation"/
     )
 
-    expect(() =>
-      JsonTransformer.fromJSON({ ...validPresentation, type: ['AnotherType'] }, W3cPresentation)
-    ).toThrowError(/type must be an array of strings which includes "VerifiablePresentation"/)
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: ['AnotherType'] }, W3cPresentation)).toThrow(
+      /type must be an array of strings which includes "VerifiablePresentation"/
+    )
 
-    expect(() =>
-      JsonTransformer.fromJSON({ ...validPresentation, type: { some: 'prop' } }, W3cPresentation)
-    ).toThrowError(/type must be an array of strings which includes "VerifiablePresentation"/)
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: { some: 'prop' } }, W3cPresentation)).toThrow(
+      /type must be an array of strings which includes "VerifiablePresentation"/
+    )
   })
 
   test('throws an error when holder is present and it is not an uri', () => {
@@ -92,9 +92,9 @@ describe('W3cPresentation', () => {
         { ...validPresentation, holder: 'f8c7d9c9-3f9f-4d1d-9c0d-5b3b5d7b8f5c' },
         W3cPresentation
       )
-    ).toThrowError(/holder must be an URI/)
+    ).toThrow(/holder must be an URI/)
 
-    expect(() => JsonTransformer.fromJSON({ ...validPresentation, holder: 10 }, W3cPresentation)).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, holder: 10 }, W3cPresentation)).toThrow(
       /holder must be an URI/
     )
   })
@@ -102,23 +102,21 @@ describe('W3cPresentation', () => {
   test('throws an error when verifiableCredential is not a credential or an array of credentials', () => {
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: undefined }, W3cPresentation)
-    ).toThrowError(
+    ).toThrow(
       /verifiableCredential value must be an instance of, or an array of instances containing W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential/
     )
 
-    expect(() =>
-      JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [] }, W3cPresentation)
-    ).toThrowError(
+    expect(() => JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [] }, W3cPresentation)).toThrow(
       /verifiableCredential value must be an instance of, or an array of instances containing W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential/
     )
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: [{ random: 'prop' }] }, W3cPresentation)
-    ).toThrowError(/property verifiableCredential\[0\]\./)
+    ).toThrow(/property verifiableCredential\[0\]\./)
 
     expect(() =>
       JsonTransformer.fromJSON({ ...validPresentation, verifiableCredential: ['ey.incorrect.jwt'] }, W3cPresentation)
-    ).toThrowError(/value 'ey.incorrect.jwt' is not a valid W3cJwtVerifiableCredential. Invalid JWT./)
+    ).toThrow(/value 'ey.incorrect.jwt' is not a valid W3cJwtVerifiableCredential. Invalid JWT./)
 
     // Deeply nested property missing
     expect(() =>
@@ -131,7 +129,7 @@ describe('W3cPresentation', () => {
         },
         W3cPresentation
       )
-    ).toThrowError(
+    ).toThrow(
       /property verifiableCredential\[0\]\.proof\.verificationMethod has failed the following constraints: verificationMethod must be a string/
     )
   })

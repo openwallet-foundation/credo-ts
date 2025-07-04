@@ -31,6 +31,10 @@ import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { DrizzleStorageModule } from '../../drizzle-storage/src'
+import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
+import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
+import { inMemoryDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import { TenantsModule } from '../../tenants/src'
 import type { OpenId4VciSignMdocCredentials } from '../src'
 import {
@@ -86,6 +90,26 @@ describe('OpenId4Vc', () => {
 
   let credentialIssuerCertificate: X509Certificate
 
+  const issuerDrizzleModule = new DrizzleStorageModule({
+    database: inMemoryDatabase('postgres'),
+    bundles: [openid4vcBundle, tenantsBundle],
+  })
+  const holderDrizzleModule = new DrizzleStorageModule({
+    database: inMemoryDatabase('postgres'),
+    bundles: [openid4vcBundle, tenantsBundle],
+  })
+  // Use SQLite for verifier
+  const verifierDrizzleModule = new DrizzleStorageModule({
+    database: inMemoryDatabase('sqlite'),
+    bundles: [openid4vcBundle, tenantsBundle],
+  })
+
+  beforeAll(async () => {
+    await pushDrizzleSchema(issuerDrizzleModule)
+    await pushDrizzleSchema(holderDrizzleModule)
+    await pushDrizzleSchema(verifierDrizzleModule)
+  })
+
   beforeEach(async () => {
     expressApp = express()
 
@@ -93,7 +117,8 @@ describe('OpenId4Vc', () => {
       'issuer',
       {
         x509: new X509Module(),
-        inMemory: new InMemoryWalletModule(),
+        inMemory: new InMemoryWalletModule({ enableStorage: false }),
+        issuerDrizzleModule,
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
 
@@ -150,7 +175,8 @@ describe('OpenId4Vc', () => {
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        inMemory: new InMemoryWalletModule(),
+        inMemory: new InMemoryWalletModule({ enableStorage: false }),
+        holderDrizzleModule,
         tenants: new TenantsModule(),
         x509: new X509Module({
           trustedCertificates: [
@@ -178,7 +204,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
         }),
-        inMemory: new InMemoryWalletModule(),
+        inMemory: new InMemoryWalletModule({ enableStorage: false }),
+        verifierDrizzleModule,
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f',
@@ -200,6 +227,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await issuer.agent.shutdown()
     await holder.agent.shutdown()
     await verifier.agent.shutdown()
+
+    // Should we add a public/higher level method to the Credo API to delete the root agent?
+    await issuer.agent.dependencyManager.deleteAgentContext(issuer.agent.context)
+    await holder.agent.dependencyManager.deleteAgentContext(holder.agent.context)
+    await verifier.agent.dependencyManager.deleteAgentContext(verifier.agent.context)
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {

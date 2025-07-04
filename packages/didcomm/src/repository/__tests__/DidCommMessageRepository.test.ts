@@ -64,7 +64,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
         agentContext,
         DidCommMessageRecord,
         {
@@ -88,7 +88,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
         agentContext,
         DidCommMessageRecord,
         {
@@ -110,7 +110,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
         agentContext,
         DidCommMessageRecord,
         {
@@ -133,7 +133,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.save).toBeCalledWith(
+      expect(storageMock.save).toHaveBeenCalledWith(
         agentContext,
         expect.objectContaining({
           role: DidCommMessageRole.Receiver,
@@ -153,7 +153,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.save).toBeCalledWith(
+      expect(storageMock.save).toHaveBeenCalledWith(
         agentContext,
         expect.objectContaining({
           role: DidCommMessageRole.Receiver,
@@ -172,7 +172,7 @@ describe('DidCommMessageRepository', () => {
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
-      expect(storageMock.findByQuery).toBeCalledWith(
+      expect(storageMock.findByQuery).toHaveBeenCalledWith(
         agentContext,
         DidCommMessageRecord,
         {
@@ -183,7 +183,7 @@ describe('DidCommMessageRepository', () => {
         },
         undefined
       )
-      expect(storageMock.update).toBeCalledWith(agentContext, record)
+      expect(storageMock.update).toHaveBeenCalledWith(agentContext, record)
     })
   })
 })

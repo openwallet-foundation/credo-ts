@@ -55,6 +55,7 @@ describe('V2 Credentials Auto Accept', () => {
         holderName: 'alice agent: always v2',
         autoAcceptCredentials: AutoAcceptCredential.Always,
         preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
+        useDrizzleStorage: 'sqlite',
       }))
     })
 

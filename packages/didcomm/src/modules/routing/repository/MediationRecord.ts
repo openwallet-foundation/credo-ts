@@ -21,6 +21,7 @@ export interface MediationRecordProps {
 }
 
 export type CustomMediationTags = {
+  // TODO: we should make this part of the record rather than just a tag
   default?: boolean
 }
 
