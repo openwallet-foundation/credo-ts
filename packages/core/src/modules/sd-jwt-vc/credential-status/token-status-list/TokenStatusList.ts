@@ -1,24 +1,23 @@
-import { utils } from '@credo-ts/core'
 import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
-import { isDid } from 'packages/core/src/utils'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
-import { parseDid } from '../../../dids'
+import { CredoError } from '../../../../error'
+import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
 import { SdJwtVcService } from '../../SdJwtVcService'
 import { TokenStatusListError } from './TokenStatusListError'
-import { PublishTokenStatusListOptions, TokenStatusListRegistry } from './TokenStatusListRegistry'
+import {
+  PublishTokenStatusListOptions,
+  TokenStatusListJwtPayload,
+  TokenStatusListRegistry,
+  TokenStatusListResponse,
+} from './TokenStatusListRegistry'
 
-export interface CreateTokenStatusListOptions {
-  statusListId: string
-  issuer: SdJwtVcIssuer
-  name: string
-  tag: string
+export interface CreateTokenStatusListOptions extends PublishTokenStatusListOptions {
   size: number
   publish: boolean
-  publishTokenStatusListOptions?: PublishTokenStatusListOptions
 }
 
 export interface CreateTokenStatusListResult {
@@ -27,10 +26,8 @@ export interface CreateTokenStatusListResult {
 }
 
 export interface RevokeIndicesOptions {
-  issuer: SdJwtVcIssuer
-  publish: boolean
-  publishTokenStatusListOptions?: PublishTokenStatusListOptions
   indices: number[]
+  publish: boolean
 }
 
 /**
@@ -46,6 +43,7 @@ export class TokenStatusListService {
 
   async createStatusList(
     agentContext: AgentContext,
+    issuer: SdJwtVcIssuer,
     options: CreateTokenStatusListOptions
   ): Promise<CreateTokenStatusListResult> {
     const sdJwtService = agentContext.dependencyManager.resolve(SdJwtVcService)
@@ -53,11 +51,11 @@ export class TokenStatusListService {
 
     const statusList = new StatusList(new Array(options.size).fill(0), 1)
 
-    const issuer = await sdJwtService.extractKeyFromIssuer(agentContext, options.issuer, true)
+    const issuerKey = await sdJwtService.extractKeyFromIssuer(agentContext, issuer, true)
 
     // construct jwt payload
     const jwtPayload = new JwtPayload({
-      iss: issuer.iss,
+      iss: issuerKey.iss,
       iat: Math.floor(Date.now() / 1000),
       additionalClaims: {
         status_list: {
@@ -70,37 +68,42 @@ export class TokenStatusListService {
     // sign JWT
     const jwt = await jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: issuer.publicJwk.keyId,
+      keyId: issuerKey.publicJwk.keyId,
       protectedHeaderOptions: {
-        alg: issuer.alg,
+        alg: issuerKey.alg,
         typ: 'statuslist+jwt',
+        kid: issuerKey.kid,
       },
     })
 
-    const statusListId = options.statusListId
-
-    if (options.publish && options.publishTokenStatusListOptions) {
-      // extended by different registries
-      const uri = await this.publishStatusList(agentContext, statusListId, jwt, options.publishTokenStatusListOptions)
+    if (options.publish) {
+      const uri = await this.publishStatusList(agentContext, issuer, jwt, options)
       return { jwt, uri }
     }
 
     return { jwt }
   }
 
-  async revokeIndex(agentContext: AgentContext, statusListId: string, options: RevokeIndicesOptions): Promise<boolean> {
+  async revokeIndex(
+    agentContext: AgentContext,
+    issuer: SdJwtVcIssuer,
+    statusListUri: SdJwtVcIssuer,
+    options: RevokeIndicesOptions
+  ): Promise<boolean> {
     const sdJwtService = agentContext.dependencyManager.resolve(SdJwtVcService)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
-    const currentStatusListJwt = await this.getStatusList(agentContext, statusListId)
+    const { indices, publish, ...publishOptions } = options
+
+    const { jwt: currentStatusListJwt, name } = await this.getStatusList(agentContext, statusListUri)
     const parsedStatusListJwt = Jwt.fromSerializedJwt(currentStatusListJwt)
 
     // extract and validate iss
     const iss = parsedStatusListJwt.payload.iss as string
-    if (options.issuer.method === 'did' && parseDid(options.issuer.didUrl).did !== iss) {
+    if (issuer.method === 'did' && parseDid(issuer.didUrl).did !== iss) {
       throw new TokenStatusListError('Invalid issuer')
     }
-    if (options.issuer.method === 'x5c' && options.issuer.issuer !== iss) {
+    if (issuer.method === 'x5c' && issuer.issuer !== iss) {
       throw new TokenStatusListError('Invalid issuer')
     }
 
@@ -112,7 +115,7 @@ export class TokenStatusListService {
       statusList.setStatus(revokedIndex, 1)
     }
 
-    const issuer = await sdJwtService.extractKeyFromIssuer(agentContext, options.issuer, true)
+    const issuerKey = await sdJwtService.extractKeyFromIssuer(agentContext, issuer, true)
 
     // construct jwt payload
     const jwtPayload = new JwtPayload({
@@ -124,77 +127,104 @@ export class TokenStatusListService {
           lst: statusList.compressStatusList(),
         },
       },
-    })
+    } satisfies TokenStatusListJwtPayload)
 
     const jwt = await jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      keyId: issuer.publicJwk.keyId,
+      keyId: issuerKey.publicJwk.keyId,
       protectedHeaderOptions: {
-        alg: issuer.alg,
+        alg: issuerKey.alg,
         typ: header.typ,
+        kid: issuerKey.kid,
       },
     })
 
-    if (options.publish && options.publishTokenStatusListOptions) {
-      await this.publishStatusList(agentContext, statusListId, jwt, options.publishTokenStatusListOptions)
+    if (options.publish) {
+      await this.publishStatusList(agentContext, issuer, jwt, {
+        ...publishOptions,
+        name,
+      })
     }
 
     return true
   }
 
-  async getStatus(agentContext: AgentContext, statusListId: string, index: number): Promise<number> {
-    const currentStatusListJwt = await this.getStatusList(agentContext, statusListId)
+  async getStatus(agentContext: AgentContext, statusListUri: SdJwtVcIssuer, index: number): Promise<number> {
+    const { jwt: currentStatusListJwt } = await this.getStatusList(agentContext, statusListUri)
     const statusList = getListFromStatusListJWT(currentStatusListJwt)
     return statusList.getStatus(index)
   }
 
-  async getStatusList(agentContext: AgentContext, statusListId: string): Promise<string> {
-    const jwsService = agentContext.dependencyManager.resolve(JwsService)
-
-    const registry = this.findRegistry(statusListId)
+  async getStatusList(agentContext: AgentContext, statusListUri: SdJwtVcIssuer): Promise<TokenStatusListResponse> {
+    const registry = this.findRegistry(statusListUri)
     if (!registry) {
-      throw new TokenStatusListError(`No token status list registry registered for statusListId ${statusListId}`)
+      throw new TokenStatusListError(`No token status list registry registered for statusListUri ${statusListUri}`)
     }
-
-    const jwt = await registry.retrieve(agentContext, statusListId)
+    const response = await registry.retrieve(agentContext, statusListUri)
 
     // verify jwt
-    const verified = await jwsService.verifyJws(agentContext, { jws: jwt })
+    const verified = await this.verifyStatusList(agentContext, statusListUri, response.jwt)
     if (!verified.isValid) {
-      throw new TokenStatusListError('Invalid Jwt in the provided statusListId')
+      throw new TokenStatusListError('Invalid Jwt in the provided statusListUri')
     }
 
-    return jwt
+    return response
   }
 
   async publishStatusList(
     agentContext: AgentContext,
-    statusListId: string,
+    issuer: SdJwtVcIssuer,
     jwt: string,
     options: PublishTokenStatusListOptions
   ): Promise<string> {
-    const jwsService = agentContext.dependencyManager.resolve(JwsService)
     // verify jwt
-    const verified = await jwsService.verifyJws(agentContext, { jws: jwt })
+    const verified = await this.verifyStatusList(agentContext, issuer, jwt)
     if (!verified.isValid) {
-      throw new TokenStatusListError('Invalid Jwt in the provided statusListId')
+      throw new TokenStatusListError('Invalid Jwt in the provided statusListUri')
     }
 
-    const registry = this.findRegistry(statusListId)
+    const registry = this.findRegistry(issuer)
     if (!registry) {
-      throw new TokenStatusListError(`No token status list registry registered for statusListId ${statusListId}`)
+      throw new TokenStatusListError(`No token status list registry registered for issuer ${issuer}`)
     }
-    return await registry.publish(agentContext, statusListId, jwt, options)
+    return await registry.publish(agentContext, issuer, jwt, options)
   }
 
-  private findRegistry(statusListId: string): TokenStatusListRegistry | null {
+  private findRegistry(issuer: SdJwtVcIssuer): TokenStatusListRegistry | null {
     let method: string
-    if (isDid(statusListId)) {
-      method = parseDid(statusListId).method
+    if (issuer.method === 'did') {
+      method = parseDid(issuer.didUrl).method
     } else {
-      method = 'http' // TODO: implement default handler
+      method = 'http' // TODO: implement x5c handler
     }
 
     return this.sdJwtVcModuleConfig.registries.find((r) => r.supportedMethods.includes(method)) ?? null
+  }
+
+  private async verifyStatusList(agentContext: AgentContext, issuer: SdJwtVcIssuer, jwt: string) {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+    return await jwsService.verifyJws(agentContext, {
+      jws: jwt,
+      resolveJwsSigner: async ({ protectedHeader: { alg, kid } }) => {
+        if (issuer.method === 'did') {
+          if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
+
+          const { did } = parseDid(issuer.didUrl)
+          const didUrl = `${did}${kid}`
+          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+          const didDocument = await didsApi.resolveDidDocument(did)
+          const verificationMethod = didDocument.dereferenceKey(didUrl)
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+          return {
+            alg,
+            method: issuer.method,
+            didUrl,
+            jwk: publicJwk,
+          }
+        }
+        throw new Error('To be implemented') // TODO: Handle x5c
+      },
+    })
   }
 }

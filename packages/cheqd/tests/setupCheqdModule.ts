@@ -1,8 +1,9 @@
 import type { CheqdModuleConfigOptions } from '../src'
 
-import { DidsModule } from '@credo-ts/core'
+import { DidsModule, SdJwtVcModule } from '@credo-ts/core'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../src'
+import { CheqdTokenStatusListRegistry } from '../src/wrappers/CheqdTokenStatusListRegistry'
 
 export const cheqdPayerSeeds = [
   'sketch mountain erode window enact net enrich smoke claim kangaroo another visual write meat latin bacon pulp similar forum guilt father state erase bright',
@@ -35,5 +36,8 @@ export const getCheqdModules = (seed?: string, rpcUrl?: string) => ({
   dids: new DidsModule({
     registrars: [new CheqdDidRegistrar()],
     resolvers: [new CheqdDidResolver()],
+  }),
+  sdJwtVc: new SdJwtVcModule({
+    registries: [new CheqdTokenStatusListRegistry()],
   }),
 })
