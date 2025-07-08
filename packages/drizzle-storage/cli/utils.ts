@@ -2,7 +2,10 @@ import { existsSync } from 'fs'
 import path from 'path'
 
 export async function resolveBundle(bundle: string) {
-  const options = [`@credo-ts/drizzle-storage/${bundle}`, bundle]
+  const options = [bundle]
+  if (!bundle.startsWith('/')) {
+    options.push(`@credo-ts/drizzle-storage/${bundle}`)
+  }
 
   for (const option of options) {
     try {
