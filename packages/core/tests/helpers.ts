@@ -56,7 +56,7 @@ import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import { inMemoryDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
+import { inMemoryDatabase } from '../../drizzle-storage/tests/testDatabase'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -177,10 +177,6 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
           }),
         }
       : {}),
-  }
-
-  if (drizzleModules.drizzle) {
-    pushDrizzleSchema(drizzleModules.drizzle)
   }
 
   return {
