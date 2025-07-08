@@ -214,26 +214,26 @@ export class TokenStatusListService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
     return await jwsService.verifyJws(agentContext, {
       jws: jwt,
-      resolveJwsSigner: async ({ protectedHeader: { alg, kid } }) => {
-        if (issuer.method === 'did') {
-          if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
+      resolveJwsSigner:
+        issuer.method === 'did'
+          ? async ({ protectedHeader: { alg, kid } }) => {
+              if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
 
-          const { did } = parseDid(issuer.didUrl)
-          const didUrl = `${did}${kid}`
-          const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-          const didDocument = await didsApi.resolveDidDocument(did)
-          const verificationMethod = didDocument.dereferenceKey(didUrl)
-          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+              const { did } = parseDid(issuer.didUrl)
+              const didUrl = `${did}${kid}`
+              const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+              const didDocument = await didsApi.resolveDidDocument(did)
+              const verificationMethod = didDocument.dereferenceKey(didUrl)
+              const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
-          return {
-            alg,
-            method: issuer.method,
-            didUrl,
-            jwk: publicJwk,
-          }
-        }
-        throw new Error('To be implemented') // TODO: Handle x5c
-      },
+              return {
+                alg,
+                method: issuer.method,
+                didUrl,
+                jwk: publicJwk,
+              }
+            }
+          : undefined,
     })
   }
 }

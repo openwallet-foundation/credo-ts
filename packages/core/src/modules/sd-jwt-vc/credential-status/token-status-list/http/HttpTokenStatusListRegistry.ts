@@ -5,7 +5,7 @@ import { SdJwtVcIssuerX5c } from '../../../SdJwtVcOptions'
 import { PublishTokenStatusListOptions, TokenStatusListRegistry } from '../TokenStatusListRegistry'
 
 export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
-  public readonly supportedMethods = ['http']
+  public readonly supportedMethods = ['http', 'key']
   public readonly allowsCaching = true
 
   /**

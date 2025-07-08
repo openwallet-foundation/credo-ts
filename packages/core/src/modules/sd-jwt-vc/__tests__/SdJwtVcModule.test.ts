@@ -2,6 +2,7 @@ import type { DependencyManager } from '@credo-ts/core'
 
 import { SdJwtVcModule } from '../SdJwtVcModule'
 import { SdJwtVcService } from '../SdJwtVcService'
+import { TokenStatusListService } from '../credential-status'
 import { SdJwtVcRepository } from '../repository'
 
 const dependencyManager = {
@@ -16,8 +17,9 @@ describe('SdJwtVcModule', () => {
     const sdJwtVcModule = new SdJwtVcModule()
     sdJwtVcModule.register(dependencyManager)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(3)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SdJwtVcService)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(SdJwtVcRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(TokenStatusListService)
   })
 })
