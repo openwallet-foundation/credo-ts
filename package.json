@@ -17,7 +17,7 @@
     "build": "pnpm -r --parallel run build",
     "test:unit": "pnpm test --testPathIgnorePatterns '(e2e.test.ts|drizzle.test.ts)$'",
     "test:e2e": "pnpm test --testPathIgnorePatterns '(drizzle.test.ts$|drizzle.e2e.test.ts$|drizzle)' --testMatch '**/?(*.)e2e.test.ts'",
-    "test": "NODE_OPTIONS=\"$NODE_OPTIONS --experimental-vm-modules\" jest",
+    "test": "jest",
     "validate": "pnpm types:check && pnpm style:check",
     "run-mediator": "ts-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
