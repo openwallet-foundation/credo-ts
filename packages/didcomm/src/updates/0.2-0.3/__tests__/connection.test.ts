@@ -76,9 +76,9 @@ describe('0.2-0.3 | Connection', () => {
 
       await testModule.migrateConnectionRecordToV0_3(agent)
 
-      expect(connectionRepository.getAll).toBeCalledTimes(1)
-      expect(mediationRepository.getAll).toBeCalledTimes(1)
-      expect(connectionRepository.update).toBeCalledTimes(connectionRecords.length)
+      expect(connectionRepository.getAll).toHaveBeenCalledTimes(1)
+      expect(mediationRepository.getAll).toHaveBeenCalledTimes(1)
+      expect(connectionRepository.update).toHaveBeenCalledTimes(connectionRecords.length)
     })
   })
 
