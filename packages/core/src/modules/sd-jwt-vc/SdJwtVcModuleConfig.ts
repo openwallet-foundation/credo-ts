@@ -1,4 +1,5 @@
-import { TokenStatusListRegistry } from './credential-status/token-status-list/TokenStatusListRegistry'
+import { TokenStatusListRegistry } from './credential-status'
+import { HttpTokenStatusListRegistry } from './credential-status/token-status-list/http/HttpTokenStatusListRegistry'
 
 /**
  * SdJwtVcModuleConfigOptions defines the interface for the options of the SdJwtVcModuleConfig class.
@@ -30,7 +31,7 @@ export class SdJwtVcModuleConfig {
     // This prevents creating new instances every time this property is accessed
     if (this._registries) return this._registries
 
-    this._registries = this.options.registries ?? []
+    this._registries = [...(this.options.registries || []), new HttpTokenStatusListRegistry()]
 
     return this._registries
   }

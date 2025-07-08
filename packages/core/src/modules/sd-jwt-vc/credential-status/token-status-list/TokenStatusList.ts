@@ -1,9 +1,9 @@
 import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
-import { isDid } from 'packages/core/src/utils'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
 import { CredoError } from '../../../../error'
+import { isDid } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
@@ -204,7 +204,7 @@ export class TokenStatusListService {
     if (issuer.method === 'did') {
       method = parseDid(issuer.didUrl).method
     } else {
-      method = 'http' // TODO: implement x5c handler
+      method = 'http'
     }
 
     return this.sdJwtVcModuleConfig.registries.find((r) => r.supportedMethods.includes(method)) ?? null
