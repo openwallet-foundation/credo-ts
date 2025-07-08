@@ -24,7 +24,7 @@ describe('TenantSessionMutex', () => {
       expect(tenantSessionMutex.currentSessions).toBe(0)
       await tenantSessionMutex.acquireSession()
       expect(tenantSessionMutex.currentSessions).toBe(1)
-      await expect(tenantSessionMutex.acquireSession()).rejects.toThrowError(
+      await expect(tenantSessionMutex.acquireSession()).rejects.toThrow(
         'Failed to acquire an agent context session within 0ms'
       )
       expect(tenantSessionMutex.currentSessions).toBe(1)
