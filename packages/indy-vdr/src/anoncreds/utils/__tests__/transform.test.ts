@@ -102,7 +102,7 @@ describe('transform', () => {
           delta,
           true
         )
-      ).toThrowError()
+      ).toThrow()
     })
   })
 
@@ -184,7 +184,7 @@ describe('transform', () => {
 
       const revocationStatusList = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
 
-      expect(() => indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)).toThrowError()
+      expect(() => indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)).toThrow()
     })
   })
 })
