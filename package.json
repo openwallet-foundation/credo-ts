@@ -15,7 +15,7 @@
     "style:fix": "biome check --write --unsafe",
     "clean": "pnpm -r --parallel run clean",
     "build": "pnpm -r --parallel run build",
-    "test:unit": "pnpm test --testPathIgnorePatterns '(e2e.test.ts|drizzle.test.ts)$'",
+    "test:unit": "pnpm test --testPathIgnorePatterns '(e2e.test.ts$|drizzle.test.ts$|drizzle)'",
     "test:e2e": "pnpm test --testPathIgnorePatterns '(drizzle.test.ts$|drizzle.e2e.test.ts$|drizzle)' --testMatch '**/?(*.)e2e.test.ts'",
     "test": "jest",
     "validate": "pnpm types:check && pnpm style:check",
