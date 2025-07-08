@@ -13,12 +13,12 @@
         "default": "./build/index.js"
       },
       "./*/sqlite": {
-        "types": "./build/*/sqlite.ts",
-        "default": "./build/*/sqlite.d.ts"
+        "types": "./build/*/sqlite.d.ts",
+        "default": "./build/*/sqlite.ts"
       },
       "./*/postgres": {
-        "types": "./build/*/postgres.ts",
-        "default": "./build/*/postgres.d.ts"
+        "types": "./build/*/postgres.d.ts",
+        "default": "./build/*/postgres.ts"
       },
       "./*": {
         "default": "./build/*/bundle.js",
