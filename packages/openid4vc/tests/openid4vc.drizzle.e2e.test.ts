@@ -20,6 +20,7 @@ import {
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
+import { TenantsModule } from '@credo-ts/tenants'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
   HashAlgorithm,
@@ -35,7 +36,6 @@ import { DrizzleStorageModule } from '../../drizzle-storage/src'
 import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
 import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
 import { inMemoryDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
-import { TenantsModule } from '../../tenants/src'
 import type { OpenId4VciSignMdocCredentials } from '../src'
 import {
   OpenId4VcHolderModule,

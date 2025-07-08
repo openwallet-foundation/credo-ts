@@ -25,8 +25,13 @@ if (drizzleDialect === 'sqlite') {
           table: drizzleMigrationsTable,
         }
       : undefined,
-    driver: !drizzleDatabaseUrl ? 'expo' : undefined,
-    ...(drizzleDatabaseUrl ? { dbCredentials: { url: drizzleDatabaseUrl } } : {}),
+    ...(drizzleDatabaseUrl
+      ? {
+          dbCredentials: { url: drizzleDatabaseUrl },
+        }
+      : {
+          driver: 'expo',
+        }),
   })
 } else {
   drizzleConfig = defineConfig({
@@ -38,8 +43,13 @@ if (drizzleDialect === 'sqlite') {
           table: drizzleMigrationsTable,
         }
       : undefined,
-    driver: !drizzleDatabaseUrl ? 'pglite' : undefined,
-    ...(drizzleDatabaseUrl ? { dbCredentials: { url: drizzleDatabaseUrl } } : {}),
+    ...(drizzleDatabaseUrl
+      ? {
+          dbCredentials: { url: drizzleDatabaseUrl },
+        }
+      : {
+          driver: 'pglite',
+        }),
   })
 }
 

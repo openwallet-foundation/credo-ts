@@ -1,14 +1,14 @@
+import type { EventReplaySubject } from '@credo-ts/core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
 
-import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import {
   waitForAgentMessageProcessedEventSubject,
   waitForCredentialRecord,
   waitForCredentialRecordSubject,
-} from '../../../../../../../core/tests/helpers'
-import testLogger from '../../../../../../../core/tests/logger'
+} from '@credo-ts/core/tests/helpers'
+import testLogger from '@credo-ts/core/tests/logger'
+import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 import { CredentialRole } from '../../../models'
 import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
 import { CredentialState } from '../../../models/CredentialState'
