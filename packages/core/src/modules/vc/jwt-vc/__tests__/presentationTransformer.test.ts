@@ -68,10 +68,10 @@ describe('presentationTransformer', () => {
     test(`throw error if jwt payload does not contain 'vp' property or it is not an object`, () => {
       const jwtPayload = new JwtPayload({})
 
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError("JWT does not contain a valid 'vp' claim")
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow("JWT does not contain a valid 'vp' claim")
 
       jwtPayload.additionalClaims.vp = 'invalid'
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError("JWT does not contain a valid 'vp' claim")
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow("JWT does not contain a valid 'vp' claim")
     })
 
     test('throw error if jwt vp has an id and it does not match the jti', () => {
@@ -85,7 +85,7 @@ describe('presentationTransformer', () => {
         },
       })
 
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError('JWT jti and vp.id do not match')
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow('JWT jti and vp.id do not match')
     })
 
     test('throw error if jwt vp has an holder id and it does not match the iss', () => {
@@ -99,11 +99,11 @@ describe('presentationTransformer', () => {
         },
       })
 
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError('JWT iss and vp.holder(.id) do not match')
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow('JWT iss and vp.holder(.id) do not match')
 
       // nested holder object
       vp.holder = { id: '123' }
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError('JWT iss and vp.holder(.id) do not match')
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow('JWT iss and vp.holder(.id) do not match')
     })
 
     test('throw validation error if vp is not a valid w3c vp', () => {
@@ -119,7 +119,7 @@ describe('presentationTransformer', () => {
         },
       })
 
-      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrowError(
+      expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow(
         'property type has failed the following constraints: type must be an array of strings which includes "VerifiablePresentation"'
       )
     })
