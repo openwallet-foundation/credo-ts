@@ -60,6 +60,7 @@ import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
 import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
+import { replaceError } from '@credo-ts/core'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
@@ -965,7 +966,7 @@ export class OpenId4VciHolderService {
       if (!verificationResults.every((result) => result.isValid)) {
         agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
         throw new CredoError(
-          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults)}`
+          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
         )
       }
 
