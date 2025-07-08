@@ -1,4 +1,5 @@
 import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
+import { isDid } from 'packages/core/src/utils'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
@@ -12,7 +13,6 @@ import {
   PublishTokenStatusListOptions,
   TokenStatusListJwtPayload,
   TokenStatusListRegistry,
-  TokenStatusListResponse,
 } from './TokenStatusListRegistry'
 
 export interface CreateTokenStatusListOptions extends PublishTokenStatusListOptions {
@@ -95,7 +95,7 @@ export class TokenStatusListService {
 
     const { indices, publish, ...publishOptions } = options
 
-    const { jwt: currentStatusListJwt, name } = await this.getStatusList(agentContext, statusListUri)
+    const currentStatusListJwt = await this.getStatusList(agentContext, statusListUri)
     const parsedStatusListJwt = Jwt.fromSerializedJwt(currentStatusListJwt)
 
     // extract and validate iss
@@ -142,7 +142,7 @@ export class TokenStatusListService {
     if (options.publish) {
       await this.publishStatusList(agentContext, issuer, jwt, {
         ...publishOptions,
-        name,
+        previousStatusListUri: statusListUri,
       })
     }
 
@@ -150,25 +150,34 @@ export class TokenStatusListService {
   }
 
   async getStatus(agentContext: AgentContext, statusListUri: SdJwtVcIssuer, index: number): Promise<number> {
-    const { jwt: currentStatusListJwt } = await this.getStatusList(agentContext, statusListUri)
+    const currentStatusListJwt = await this.getStatusList(agentContext, statusListUri)
     const statusList = getListFromStatusListJWT(currentStatusListJwt)
     return statusList.getStatus(index)
   }
 
-  async getStatusList(agentContext: AgentContext, statusListUri: SdJwtVcIssuer): Promise<TokenStatusListResponse> {
+  async getStatusList(agentContext: AgentContext, statusListUri: SdJwtVcIssuer): Promise<string> {
     const registry = this.findRegistry(statusListUri)
     if (!registry) {
       throw new TokenStatusListError(`No token status list registry registered for statusListUri ${statusListUri}`)
     }
-    const response = await registry.retrieve(agentContext, statusListUri)
+    const jwt = await registry.retrieve(agentContext, statusListUri)
 
     // verify jwt
-    const verified = await this.verifyStatusList(agentContext, statusListUri, response.jwt)
+    const verified = await this.verifyStatusList(agentContext, statusListUri, jwt)
     if (!verified.isValid) {
       throw new TokenStatusListError('Invalid Jwt in the provided statusListUri')
     }
 
-    return response
+    return jwt
+  }
+
+  getStatusListFetcher(agentContext: AgentContext) {
+    return async (uri: string) => {
+      const statusListUri: SdJwtVcIssuer = isDid(uri)
+        ? { method: 'did', didUrl: uri }
+        : { method: 'x5c', issuer: uri, x5c: [] }
+      return await this.getStatusList(agentContext, statusListUri)
+    }
   }
 
   async publishStatusList(

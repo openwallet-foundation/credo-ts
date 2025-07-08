@@ -23,13 +23,13 @@ import { X509Service } from '../../modules/x509/X509Service'
 import { JsonObject } from '../../types'
 import { TypedArrayEncoder, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
+import { TokenStatusListService } from './credential-status'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
@@ -749,31 +749,11 @@ export class SdJwtVcService {
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
     const kms = agentContext.resolve(KeyManagementApi)
-
+    const tokenStatusListService = agentContext.dependencyManager.resolve(TokenStatusListService)
     return {
       hasher: sdJwtVcHasher,
-      statusListFetcher: this.getStatusListFetcher(agentContext),
+      statusListFetcher: tokenStatusListService.getStatusListFetcher(agentContext),
       saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
-    }
-  }
-
-  private getStatusListFetcher(agentContext: AgentContext) {
-    return async (uri: string) => {
-      const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
-        headers: {
-          Accept: 'application/statuslist+jwt',
-        },
-      })
-
-      if (!response.ok) {
-        throw new CredoError(
-          `Received invalid response with status ${
-            response.status
-          } when fetching status list from ${uri}. ${await response.text()}`
-        )
-      }
-
-      return await response.text()
     }
   }
 }

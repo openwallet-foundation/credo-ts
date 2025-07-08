@@ -7,7 +7,7 @@ import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const agent = new Agent(
-  getAgentOptions('Cheqd Status List Registry', {}, {}, getCheqdModules(cheqdPayerSeeds[3]))
+  getAgentOptions('Cheqd Token Status List Registry', {}, {}, getCheqdModules(cheqdPayerSeeds[3]))
 )
 
 describe('Cheqd DID Token Status List Registry', () => {

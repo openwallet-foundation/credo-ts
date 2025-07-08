@@ -5,7 +5,6 @@ import {
   PublishTokenStatusListOptions,
   SdJwtVcIssuerDid,
   TokenStatusListRegistry,
-  TokenStatusListResponse,
   TypedArrayEncoder,
   utils,
 } from '@credo-ts/core'
@@ -25,11 +24,27 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
     jwt: string,
     options: PublishTokenStatusListOptions
   ): Promise<string> {
+    const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
+    const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
+
     const parsedDid = parseCheqdDid(issuer.didUrl)
     if (!parsedDid) {
       throw new Error('Invalid did:cheqd')
     }
     const { did } = parsedDid
+
+    if (options.previousStatusListUri && options.previousStatusListUri.method === 'did') {
+      const response = await cheqdDidResolver.resolveResource(agentContext, options.previousStatusListUri.didUrl)
+      if (response.error || !response.resourceMetadata) {
+        throw new CredoError(response.message)
+      }
+
+      options.name = response.resourceMetadata.name
+    }
+
+    if (!options.name) {
+      throw new CredoError('Status List Name is Required')
+    }
 
     // Parse the JWT
     let parsedJwt: Jwt
@@ -54,8 +69,6 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
     if (!method) throw new CredoError(`No verification method found for issuer ${issuer.didUrl}`)
 
     // Upload to Cheqd
-    const cheqdDidRegistrar = agentContext.dependencyManager.resolve(CheqdDidRegistrar)
-
     const resourcePayload: CheqdCreateResourceOptions = {
       collectionId: did.split(':')[3],
       id: utils.uuid(),
@@ -77,7 +90,7 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  async retrieve(agentContext: AgentContext, statusListUri: SdJwtVcIssuerDid): Promise<TokenStatusListResponse> {
+  async retrieve(agentContext: AgentContext, statusListUri: SdJwtVcIssuerDid): Promise<string> {
     const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
 
     const response = await cheqdDidResolver.resolveResource(agentContext, statusListUri.didUrl)
@@ -85,10 +98,6 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
       throw new CredoError(response.message)
     }
 
-    return {
-      jwt: TypedArrayEncoder.fromBase64(response.resource).toString(),
-      name: response.resourceMetadata?.name,
-      version: response.resourceMetadata?.version,
-    }
+    return TypedArrayEncoder.fromBase64(response.resource).toString()
   }
 }
