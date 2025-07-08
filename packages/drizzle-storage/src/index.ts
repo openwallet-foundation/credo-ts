@@ -1,3 +1,11 @@
+// Adapter
+export {
+  BaseDrizzleRecordAdapter,
+  AnyDrizzleAdapter,
+  DrizzleAdapterRecordValues,
+  DrizzleAdapterValues,
+} from './adapter'
+
 // Storage
 export { DrizzleStorageService } from './storage'
 
