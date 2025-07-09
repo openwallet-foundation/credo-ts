@@ -731,18 +731,18 @@ importers:
         specifier: ^3.24.2
         version: 3.25.56
     devDependencies:
-      '@electric-sql/pglite':
-        specifier: ^0.3.1
-        version: 0.3.3
       '@libsql/client':
         specifier: ^0.15.6
         version: 0.15.9
+      '@types/pg':
+        specifier: ^8.15.4
+        version: 8.15.4
       '@types/yargs':
         specifier: ^17.0.33
         version: 17.0.33
       drizzle-orm:
         specifier: ^0.44.2
-        version: 0.44.2(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(pg@8.16.3)
+        version: 0.44.2(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3)
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -3053,7 +3053,6 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
-    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -3239,6 +3238,9 @@ packages:
 
   '@types/oidc-provider@8.8.1':
     resolution: {integrity: sha512-Yi/OJ7s0CFJ1AWAQrY2EO/zkV9uppLtiGAzrA07lBDveUOvxtYh7GflnHFXcgufVaPxVAjdykizjTYTMNVhdJw==}
+
+  '@types/pg@8.15.4':
+    resolution: {integrity: sha512-I6UNVBAoYbvuWkkU3oosC8yxqH21f4/Jc4DK71JLG3dT2mdlGe1z+ep/LQGXaKaOgcvUrsQoPRqfgtMcvZiJhg==}
 
   '@types/qs@6.14.0':
     resolution: {integrity: sha512-eOunJqu0K1923aExK6y8p6fsihYEn/BYuQ4g0CxAAgFc4b/ZLN4CrsRZ55srTdqoiLzU2B2evC+apEIxprEzkQ==}
@@ -6763,6 +6765,7 @@ packages:
   supertest@7.1.1:
     resolution: {integrity: sha512-aI59HBTlG9e2wTjxGJV+DygfNLgnWbGdZxiA/sgrnNNikIW8lbDvCtF6RnhZoJ82nU7qv7ZLjrvWqCEm52fAmw==}
     engines: {node: '>=14.18.0'}
+    deprecated: Please upgrade to supertest v7.1.3+, see release notes at https://github.com/forwardemail/supertest/releases/tag/v7.1.3 - maintenance is supported by Forward Email @ https://forwardemail.net
 
   supports-color@5.5.0:
     resolution: {integrity: sha512-QjVjwdXIt408MIiAqCX4oUKsgU2EqAGzs2Ppkm4aQYbjm+ZEWEcW4SfFNTr4uMNZma0ey4f5lgLrkB0aX0QMow==}
@@ -8787,7 +8790,8 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
-  '@electric-sql/pglite@0.3.3': {}
+  '@electric-sql/pglite@0.3.3':
+    optional: true
 
   '@emnapi/core@1.4.3':
     dependencies:
@@ -10314,6 +10318,12 @@ snapshots:
       '@types/koa': 2.15.0
       '@types/node': 22.15.30
 
+  '@types/pg@8.15.4':
+    dependencies:
+      '@types/node': 22.15.30
+      pg-protocol: 1.10.3
+      pg-types: 2.2.0
+
   '@types/qs@6.14.0': {}
 
   '@types/range-parser@1.2.7': {}
@@ -11289,10 +11299,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.2(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(pg@8.16.3):
+  drizzle-orm@0.44.2(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3):
     optionalDependencies:
       '@electric-sql/pglite': 0.3.3
       '@libsql/client': 0.15.9
+      '@types/pg': 8.15.4
       pg: 8.16.3
 
   dunder-proto@1.0.1:
@@ -12621,7 +12632,7 @@ snapshots:
   jest-util@29.7.0:
     dependencies:
       '@jest/types': 29.6.3
-      '@types/node': 20.19.0
+      '@types/node': 22.15.30
       chalk: 4.1.2
       ci-info: 3.9.0
       graceful-fs: 4.2.11

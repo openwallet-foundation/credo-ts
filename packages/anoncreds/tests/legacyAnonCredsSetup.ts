@@ -61,7 +61,11 @@ import {
 } from '../src'
 
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import { pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
+import {
+  createDrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
+} from '../../drizzle-storage/tests/testDatabase'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
 import {
@@ -292,6 +296,8 @@ interface SetupAnonCredsTestsReturn<VerifierName extends string | undefined, Cre
 
   schemaId: string
   credentialDefinitionId: string
+
+  teardown: () => Promise<void>
 }
 
 export async function setupAnonCredsTests<
@@ -318,6 +324,14 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
   useDrizzleStorage?: boolean | 'postgres' | 'sqlite'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
+  const issuerPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const issuerDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? issuerPostgresDrizzle?.drizzle
+      : useDrizzleStorage
+        ? inMemoryDrizzleSqliteDatabase()
+        : undefined
+
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
@@ -331,10 +345,17 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
-      { requireDidcomm: true, useDrizzleStorage }
+      { requireDidcomm: true, drizzle: issuerDrizzle }
     )
   )
 
+  const holderPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const holderDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? holderPostgresDrizzle?.drizzle
+      : useDrizzleStorage
+        ? inMemoryDrizzleSqliteDatabase()
+        : undefined
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
@@ -346,10 +367,18 @@ export async function setupAnonCredsTests<
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
-      { requireDidcomm: true, useDrizzleStorage }
+      { requireDidcomm: true, drizzle: holderDrizzle }
     )
   )
 
+  const verifierPostgresDrizzle =
+    useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const verifierDrizzle =
+    useDrizzleStorage === 'postgres'
+      ? verifierPostgresDrizzle?.drizzle
+      : useDrizzleStorage
+        ? inMemoryDrizzleSqliteDatabase()
+        : undefined
   const verifierAgent = verifierName
     ? new Agent(
         getAgentOptions(
@@ -362,7 +391,7 @@ export async function setupAnonCredsTests<
             autoAcceptCredentials,
             autoAcceptProofs,
           }),
-          { requireDidcomm: true, useDrizzleStorage }
+          { requireDidcomm: true, drizzle: verifierDrizzle }
         )
       )
     : undefined
@@ -438,6 +467,12 @@ export async function setupAnonCredsTests<
     holderIssuerConnectionId: holderIssuerConnection?.id,
     holderVerifierConnectionId: holderVerifierConnection?.id,
     verifierHolderConnectionId: verifierHolderConnection?.id,
+
+    teardown: async () => {
+      await issuerPostgresDrizzle?.teardown()
+      await holderPostgresDrizzle?.teardown()
+      await verifierPostgresDrizzle?.teardown()
+    },
   } as unknown as SetupAnonCredsTestsReturn<VerifierName, CreateConnections>
 }
 

@@ -1,8 +1,6 @@
 import { ConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
 import { pushSchema } from 'drizzle-kit/api'
-import { PgDatabase } from 'drizzle-orm/pg-core'
-import { drizzle } from 'drizzle-orm/pglite'
-import { DrizzlePostgresDatabase } from '../../DrizzleDatabase'
+import { DrizzlePostgresTestDatabase, createDrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
 import * as coreContextSchema from '../../core/context/postgres'
 import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
@@ -10,23 +8,23 @@ import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
 const { didcommConnection } = didcommConnectionSchema
 const { context } = coreContextSchema
 
-const db = drizzle('memory://', {
-  schema: { ...didcommConnectionSchema, ...coreContextSchema },
-}) as unknown as DrizzlePostgresDatabase<typeof didcommConnectionSchema>
-
 describe('queryToDrizzlePostgres', () => {
+  let postgresDatabase: DrizzlePostgresTestDatabase
+
   beforeAll(async () => {
+    postgresDatabase = await createDrizzlePostgresTestDatabase()
+
     const { apply } = await pushSchema(
       { ...didcommConnectionSchema, ...coreContextSchema },
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      db as unknown as PgDatabase<any>
+      // @ts-ignore
+      postgresDatabase.drizzle
     )
     await apply()
 
-    await db.insert(context).values({
+    await postgresDatabase.drizzle.insert(context).values({
       contextCorrelationId: 'b2fc0867-d0d1-4182-ade7-813b695d43c2',
     })
-    await db.insert(didcommConnection).values({
+    await postgresDatabase.drizzle.insert(didcommConnection).values({
       createdAt: new Date(),
       updatedAt: new Date(),
       contextCorrelationId: 'b2fc0867-d0d1-4182-ade7-813b695d43c2',
@@ -42,9 +40,13 @@ describe('queryToDrizzlePostgres', () => {
     })
   })
 
+  afterAll(async () => {
+    await postgresDatabase.teardown()
+  })
+
   test('should correctly query column', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -58,7 +60,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -74,7 +76,7 @@ describe('queryToDrizzlePostgres', () => {
 
   test('should correctly query array value column', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -89,7 +91,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -104,7 +106,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(0)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -121,7 +123,7 @@ describe('queryToDrizzlePostgres', () => {
 
   test('should correctly query custom tag column value', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -136,7 +138,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -153,7 +155,7 @@ describe('queryToDrizzlePostgres', () => {
 
   test('should correctly query custom tag column array value', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -168,7 +170,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -183,7 +185,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(0)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -200,7 +202,7 @@ describe('queryToDrizzlePostgres', () => {
 
   test('should correctly query with and/or', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -227,7 +229,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -259,7 +261,7 @@ describe('queryToDrizzlePostgres', () => {
 
   test('should correctly query with not', async () => {
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(
@@ -291,7 +293,7 @@ describe('queryToDrizzlePostgres', () => {
     ).toHaveLength(1)
 
     expect(
-      await db
+      await postgresDatabase.drizzle
         .select()
         .from(didcommConnection)
         .where(

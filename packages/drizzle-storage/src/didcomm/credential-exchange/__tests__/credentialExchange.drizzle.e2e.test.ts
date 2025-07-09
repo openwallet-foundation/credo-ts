@@ -1,4 +1,4 @@
-import { Agent, JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 import {
   AutoAcceptCredential,
@@ -7,14 +7,18 @@ import {
   CredentialRole,
   CredentialState,
 } from '@credo-ts/didcomm'
-import { setupDrizzleRecordTest } from '../../../../tests/testDatabase'
+import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommCredentialExchangeDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s', (type) => {
-  let agent: Agent
+  let recordTest: DrizzleRecordTest
 
   beforeAll(async () => {
-    agent = await setupDrizzleRecordTest(type, didcommCredentialExchangeDrizzleRecord)
+    recordTest = await setupDrizzleRecordTest(type, didcommCredentialExchangeDrizzleRecord)
+  })
+
+  afterAll(async () => {
+    await recordTest.teardown()
   })
 
   test('create, retrieve, update, query and delete credential exchange record', async () => {
@@ -58,26 +62,29 @@ describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s
       },
       CredentialExchangeRecord
     )
-    const credentialExchangeRepository = agent.context.resolve(CredentialRepository)
+    const credentialExchangeRepository = recordTest.agent.context.resolve(CredentialRepository)
 
-    await credentialExchangeRepository.save(agent.context, credentialExchange)
+    await credentialExchangeRepository.save(recordTest.agent.context, credentialExchange)
 
-    const credentialExchange2 = await credentialExchangeRepository.findById(agent.context, credentialExchange.id)
+    const credentialExchange2 = await credentialExchangeRepository.findById(
+      recordTest.agent.context,
+      credentialExchange.id
+    )
     expect(credentialExchange).toEqual(credentialExchange2)
 
     credentialExchange.setTags({
       myCustomTag: 'hello',
       isMorning: false,
     })
-    await credentialExchangeRepository.update(agent.context, credentialExchange)
+    await credentialExchangeRepository.update(recordTest.agent.context, credentialExchange)
 
-    const [credentialExchange3] = await credentialExchangeRepository.findByQuery(agent.context, {
+    const [credentialExchange3] = await credentialExchangeRepository.findByQuery(recordTest.agent.context, {
       isMorning: false,
       credentialIds: ['8633f56d-abc9-4229-ba09-9ca6611ad8e4'],
     })
     expect(credentialExchange3).toEqual(credentialExchange)
 
-    const [credentialExchange4] = await credentialExchangeRepository.findByQuery(agent.context, {
+    const [credentialExchange4] = await credentialExchangeRepository.findByQuery(recordTest.agent.context, {
       isMorning: false,
       // Id does not exist
       credentialIds: ['a0b7c554-0beb-4a4c-808a-fd4495241770'],
@@ -85,13 +92,13 @@ describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s
     expect(credentialExchange4).toBeUndefined()
 
     expect(
-      await credentialExchangeRepository.findByQuery(agent.context, {
+      await credentialExchangeRepository.findByQuery(recordTest.agent.context, {
         myCustomTag: 'not-hello',
       })
     ).toHaveLength(0)
 
-    await credentialExchangeRepository.deleteById(agent.context, credentialExchange.id)
+    await credentialExchangeRepository.deleteById(recordTest.agent.context, credentialExchange.id)
 
-    expect(await credentialExchangeRepository.findByQuery(agent.context, {})).toHaveLength(0)
+    expect(await credentialExchangeRepository.findByQuery(recordTest.agent.context, {})).toHaveLength(0)
   })
 })

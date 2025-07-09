@@ -1,14 +1,18 @@
-import { Agent, JsonTransformer } from '@credo-ts/core'
+import { JsonTransformer } from '@credo-ts/core'
 
 import { OutOfBandRecord, OutOfBandRepository } from '@credo-ts/didcomm'
-import { setupDrizzleRecordTest } from '../../../../tests/testDatabase'
+import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommOutOfBandDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type) => {
-  let agent: Agent
+  let recordTest: DrizzleRecordTest
 
   beforeAll(async () => {
-    agent = await setupDrizzleRecordTest(type, didcommOutOfBandDrizzleRecord)
+    recordTest = await setupDrizzleRecordTest(type, didcommOutOfBandDrizzleRecord)
+  })
+
+  afterAll(async () => {
+    await recordTest.teardown()
   })
 
   test('create, retrieve, update, query and delete out of band record', async () => {
@@ -43,20 +47,20 @@ describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type)
       },
       OutOfBandRecord
     )
-    const outOfBandRepository = agent.context.resolve(OutOfBandRepository)
+    const outOfBandRepository = recordTest.agent.context.resolve(OutOfBandRepository)
 
-    await outOfBandRepository.save(agent.context, outOfBand)
+    await outOfBandRepository.save(recordTest.agent.context, outOfBand)
 
-    const outOfBand2 = await outOfBandRepository.findById(agent.context, outOfBand.id)
+    const outOfBand2 = await outOfBandRepository.findById(recordTest.agent.context, outOfBand.id)
     expect(outOfBand.toJSON()).toEqual(outOfBand2?.toJSON())
 
     outOfBand.setTags({
       myCustomTag: 'hello',
       isMorning: false,
     })
-    await outOfBandRepository.update(agent.context, outOfBand)
+    await outOfBandRepository.update(recordTest.agent.context, outOfBand)
 
-    const [outOfBand3] = await outOfBandRepository.findByQuery(agent.context, {
+    const [outOfBand3] = await outOfBandRepository.findByQuery(recordTest.agent.context, {
       isMorning: false,
 
       // Tests custom tag mapping (invitationId -> outOfBandInvitation[@id])
@@ -64,7 +68,7 @@ describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type)
     })
     expect(outOfBand3.toJSON()).toEqual(outOfBand.toJSON())
 
-    const [outOfBand4] = await outOfBandRepository.findByQuery(agent.context, {
+    const [outOfBand4] = await outOfBandRepository.findByQuery(recordTest.agent.context, {
       isMorning: false,
       // Id does not exist
       invitationId: 'a0b7c554-0beb-4a4c-808a-fd4495241770',
@@ -72,13 +76,13 @@ describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type)
     expect(outOfBand4).toBeUndefined()
 
     expect(
-      await outOfBandRepository.findByQuery(agent.context, {
+      await outOfBandRepository.findByQuery(recordTest.agent.context, {
         myCustomTag: 'not-hello',
       })
     ).toHaveLength(0)
 
-    await outOfBandRepository.deleteById(agent.context, outOfBand.id)
+    await outOfBandRepository.deleteById(recordTest.agent.context, outOfBand.id)
 
-    expect(await outOfBandRepository.findByQuery(agent.context, {})).toHaveLength(0)
+    expect(await outOfBandRepository.findByQuery(recordTest.agent.context, {})).toHaveLength(0)
   })
 })

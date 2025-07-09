@@ -36,6 +36,7 @@ describe('v2 credentials', () => {
   let credentialDefinitionId: string
   let faberConnectionId: string
   let aliceConnectionId: string
+  let teardown: () => Promise<void>
 
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
@@ -58,6 +59,7 @@ describe('v2 credentials', () => {
       credentialDefinitionId,
       issuerHolderConnectionId: faberConnectionId,
       holderIssuerConnectionId: aliceConnectionId,
+      teardown,
     } = await setupAnonCredsTests({
       issuerName: 'Faber Agent Credentials v2',
       holderName: 'Alice Agent Credentials v2',
@@ -78,6 +80,7 @@ describe('v2 credentials', () => {
   afterAll(async () => {
     await faberAgent.shutdown()
     await aliceAgent.shutdown()
+    await teardown()
   })
 
   test('Alice starts with V2 credential proposal to Faber', async () => {

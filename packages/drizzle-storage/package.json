@@ -58,7 +58,7 @@
     "cli:dev:migrate:sqlite": "pnpm cli:dev migrate --dialect sqlite --database-url \"file:local.db\"",
     "cli:dev:studio:postgres": "pnpm cli:dev studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
     "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:local.db\"",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "jest"
   },
   "dependencies": {
     "@credo-ts/action-menu": "workspace:*",
@@ -81,11 +81,11 @@
     "drizzle-orm": "^0.44.2"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.3.1",
     "@libsql/client": "^0.15.6",
+    "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",
-    "pg": "^8.16.3",
     "drizzle-orm": "^0.44.2",
+    "pg": "^8.16.3",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   }

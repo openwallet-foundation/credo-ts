@@ -35,7 +35,11 @@ import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
 import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
 import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
-import { inMemoryDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
+import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
+import {
+  DrizzlePostgresTestDatabase,
+  createDrizzlePostgresTestDatabase,
+} from '../../drizzle-storage/tests/testDatabase'
 import type { OpenId4VciSignMdocCredentials } from '../src'
 import {
   OpenId4VcHolderModule,
@@ -68,6 +72,9 @@ describe('OpenId4Vc', () => {
   let expressApp: Express
   let clearNock: () => void
 
+  let issuerPostgresDatabase: DrizzlePostgresTestDatabase
+  let holderPostgresDatabase: DrizzlePostgresTestDatabase
+
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
     tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
@@ -90,21 +97,27 @@ describe('OpenId4Vc', () => {
 
   let credentialIssuerCertificate: X509Certificate
 
-  const issuerDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDatabase('postgres'),
-    bundles: [openid4vcBundle, tenantsBundle],
-  })
-  const holderDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDatabase('postgres'),
-    bundles: [openid4vcBundle, tenantsBundle],
-  })
+  let issuerDrizzleModule: DrizzleStorageModule
+  let holderDrizzleModule: DrizzleStorageModule
   // Use SQLite for verifier
   const verifierDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDatabase('sqlite'),
+    database: inMemoryDrizzleSqliteDatabase(),
     bundles: [openid4vcBundle, tenantsBundle],
   })
 
   beforeAll(async () => {
+    issuerPostgresDatabase = await createDrizzlePostgresTestDatabase()
+    holderPostgresDatabase = await createDrizzlePostgresTestDatabase()
+
+    issuerDrizzleModule = new DrizzleStorageModule({
+      database: issuerPostgresDatabase.drizzle,
+      bundles: [openid4vcBundle, tenantsBundle],
+    })
+    holderDrizzleModule = new DrizzleStorageModule({
+      database: issuerPostgresDatabase.drizzle,
+      bundles: [openid4vcBundle, tenantsBundle],
+    })
+
     await pushDrizzleSchema(issuerDrizzleModule)
     await pushDrizzleSchema(holderDrizzleModule)
     await pushDrizzleSchema(verifierDrizzleModule)
@@ -232,6 +245,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await issuer.agent.dependencyManager.deleteAgentContext(issuer.agent.context)
     await holder.agent.dependencyManager.deleteAgentContext(holder.agent.context)
     await verifier.agent.dependencyManager.deleteAgentContext(verifier.agent.context)
+  })
+
+  afterAll(async () => {
+    await issuerPostgresDatabase.teardown()
+    await holderPostgresDatabase.teardown()
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = ({ supportsJwk, supportedDidMethods }) => {

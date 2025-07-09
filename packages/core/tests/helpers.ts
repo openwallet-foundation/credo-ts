@@ -56,7 +56,6 @@ import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import { inMemoryDatabase } from '../../drizzle-storage/tests/testDatabase'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -68,6 +67,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { AskarModule } from '../../askar/src/AskarModule'
 import { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
 import { KeyManagementApi, KeyManagementService, PublicJwk } from '../src/modules/kms'
 import testLogger, { TestLogger } from './logger'
 
@@ -112,8 +112,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   {
     requireDidcomm = false,
     inMemory = true,
-    useDrizzleStorage = false,
-  }: { requireDidcomm?: boolean; inMemory?: boolean; useDrizzleStorage?: boolean | 'postgres' | 'sqlite' } = {}
+    drizzle,
+  }: { requireDidcomm?: boolean; inMemory?: boolean; drizzle?: AnyDrizzleDatabase } = {}
 ): {
   config: InitConfig
   modules: AgentModules & DefaultAgentModulesInput & { drizzle?: DrizzleStorageModule }
@@ -132,17 +132,16 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   const m = (inputModules ?? {}) as AgentModulesInput
 
   const kms = requireDidcomm ? 'askar' : 'in-memory'
-  const storage = useDrizzleStorage ? 'drizzle' : kms
+  const storage = drizzle ? 'drizzle' : kms
 
-  const drizzleModules =
-    storage === 'drizzle'
-      ? {
-          drizzle: new DrizzleStorageModule({
-            database: inMemoryDatabase(typeof useDrizzleStorage === 'string' ? useDrizzleStorage : 'sqlite'),
-            bundles: [didcommDrizzleBundle, anoncredsDrizzleBundle],
-          }),
-        }
-      : {}
+  const drizzleModules = drizzle
+    ? {
+        drizzle: new DrizzleStorageModule({
+          database: drizzle,
+          bundles: [didcommDrizzleBundle, anoncredsDrizzleBundle],
+        }),
+      }
+    : {}
 
   const modules = {
     ...(storage === 'drizzle' ? drizzleModules : {}),

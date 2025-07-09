@@ -1,15 +1,50 @@
-import { Agent } from '@credo-ts/core'
+import { Agent, utils } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { PgDatabase } from 'drizzle-orm/pg-core'
+import { Client, Pool } from 'pg'
 import { DrizzleRecord, DrizzleStorageModule } from '../src'
-import { isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
+import { DrizzlePostgresDatabase, isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
 import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
 
-type DatabaseType = 'postgres' | 'sqlite'
+export { Client, Pool }
 
+export type DrizzlePostgresTestDatabase = {
+  pool: Pool
+  drizzle: DrizzlePostgresDatabase
+  teardown: () => Promise<void>
+}
+
+export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgresTestDatabase> {
+  const databaseName = utils.uuid().replace('-', '')
+
+  const pgClient = new Client({
+    connectionString: 'postgresql://postgres:postgres@localhost:5432/postgres',
+  })
+  const drizzleClient = new Pool({
+    connectionString: `postgresql://postgres:postgres@localhost:5432/${databaseName}`,
+  })
+
+  await pgClient.connect()
+  await pgClient.query(`CREATE DATABASE "${databaseName}";`)
+
+  return {
+    pool: drizzleClient,
+    drizzle: require('drizzle-orm/node-postgres').drizzle(drizzleClient),
+    teardown: async () => {
+      await drizzleClient.end()
+      await pgClient.query(`DROP DATABASE "${databaseName}";`)
+      await pgClient.end()
+    },
+  }
+}
+
+export type DrizzleRecordTest = Awaited<ReturnType<typeof setupDrizzleRecordTest>>
 export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite', drizzleRecord: DrizzleRecord) {
+  const postgresDrizzle = databaseType === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
+  const drizzle = postgresDrizzle ? postgresDrizzle.drizzle : inMemoryDrizzleSqliteDatabase()
+
   const drizzleModule = new DrizzleStorageModule({
-    database: inMemoryDatabase(databaseType),
+    database: drizzle,
     bundles: [
       {
         name: 'drizzleRecordTest',
@@ -36,7 +71,14 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
   })
 
   await agent.initialize()
-  return agent
+
+  return {
+    agent,
+    teardown: async () => {
+      await agent.shutdown()
+      await postgresDrizzle?.teardown()
+    },
+  }
 }
 
 export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
@@ -58,10 +100,10 @@ export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
   }
 }
 
-export function inMemoryDatabase(type: DatabaseType): AnyDrizzleDatabase {
-  if (type === 'postgres') {
-    return require('drizzle-orm/pglite').drizzle('memory://')
-  }
-
+export function inMemoryDrizzleSqliteDatabase(): AnyDrizzleDatabase {
   return require('drizzle-orm/libsql').drizzle(':memory:')
+}
+
+export function drizzlePostgresDatabase(client: Client | Pool): AnyDrizzleDatabase {
+  return require('drizzle-orm/node-postgres').drizzle(client)
 }

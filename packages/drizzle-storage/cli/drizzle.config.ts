@@ -48,7 +48,7 @@ if (drizzleDialect === 'sqlite') {
           dbCredentials: { url: drizzleDatabaseUrl },
         }
       : {
-          driver: 'pglite',
+          driver: 'node-postgres',
         }),
   })
 }

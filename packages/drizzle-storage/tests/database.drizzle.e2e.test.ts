@@ -1,21 +1,28 @@
 import { Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
-import { pushSQLiteSchema, pushSchema } from 'drizzle-kit/api'
-import { LibSQLDatabase, drizzle as drizzleSqlite } from 'drizzle-orm/libsql'
-import { PgDatabase } from 'drizzle-orm/pg-core'
-import { drizzle as drizzlePostgres } from 'drizzle-orm/pglite'
 import { DrizzleStorageModule } from '../src'
 import actionMenuDrizzleBundle from '../src/action-menu/bundle'
 import anoncredsDrizzleBundle from '../src/anoncreds/bundle'
 import coreDrizzleBundle from '../src/core/bundle'
 import didcommDrizzleBundle from '../src/didcomm/bundle'
+import {
+  DrizzlePostgresTestDatabase,
+  createDrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
+} from './testDatabase'
 
 describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type) => {
   let agent: Agent
+  let postgresDatabase: DrizzlePostgresTestDatabase | undefined = undefined
 
   beforeAll(async () => {
+    if (type === 'postgres') {
+      postgresDatabase = await createDrizzlePostgresTestDatabase()
+    }
+
     const drizzleModule = new DrizzleStorageModule({
-      database: type === 'postgres' ? drizzlePostgres('memory://') : drizzleSqlite(':memory:'),
+      database: postgresDatabase?.drizzle ?? inMemoryDrizzleSqliteDatabase(),
       bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
     })
 
@@ -29,24 +36,12 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
       },
     })
 
-    // Usually the actual migrations should be applied beforehand, but for tests we just push the current state
-    if (type === 'postgres') {
-      const { apply } = await pushSchema(
-        drizzleModule.config.schemas,
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        drizzleModule.config.database as PgDatabase<any>
-      )
-      await apply()
-    } else {
-      const { apply } = await pushSQLiteSchema(
-        drizzleModule.config.schemas,
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        drizzleModule.config.database as LibSQLDatabase<any>
-      )
-      await apply()
-    }
-
+    await pushDrizzleSchema(drizzleModule)
     await agent.initialize()
+  })
+
+  afterAll(async () => {
+    await postgresDatabase?.teardown()
   })
 
   test('create, retrieve, update, query and delete generic record', async () => {
