@@ -30,11 +30,11 @@ export async function resolveBundle(bundle: string) {
       name: string
       migrations: {
         sqlite: {
-          schemaModule: string
+          schemaSourcePath: string
           migrationsPath: string
         }
         postgres: {
-          schemaModule: string
+          schemaSourcePath: string
           migrationsPath: string
         }
       }
@@ -53,12 +53,8 @@ export async function resolveSchemaFile(schemaModule: string) {
   }
 }
 
-export function getMigrationsDirectory(schemaFile: string, migrationsPath: string) {
-  const schemaDirectory = path.dirname(schemaFile)
-
-  const drizzleMigrationsFolder = path.join(schemaDirectory, migrationsPath)
-  const schemaMigrationsDirectory = path.relative(process.cwd(), drizzleMigrationsFolder)
-
+export function getMigrationsDirectory(migrationsPath: string) {
+  const schemaMigrationsDirectory = path.relative(process.cwd(), migrationsPath)
   return schemaMigrationsDirectory
 }
 

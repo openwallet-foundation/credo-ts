@@ -1,4 +1,5 @@
 import type { DrizzleRecordBundle } from '../DrizzleRecord'
+import { bundleMigrationDefinition } from '../util'
 import { anonCredsCredentialDrizzleRecord } from './credential'
 import { anonCredsCredentialDefinitionDrizzleRecord } from './credential-definition'
 import { anonCredsCredentialDefinitionPrivateDrizzleRecord } from './credential-definition-private'
@@ -21,14 +22,5 @@ export default {
     anonCredsSchemaDrizzleRecord,
   ],
 
-  migrations: {
-    postgres: {
-      schemaModule: '@credo-ts/drizzle-storage/anoncreds/postgres',
-      migrationsPath: '../../migrations/anoncreds/postgres',
-    },
-    sqlite: {
-      schemaModule: '@credo-ts/drizzle-storage/anoncreds/sqlite',
-      migrationsPath: '../../migrations/anoncreds/sqlite',
-    },
-  },
+  migrations: bundleMigrationDefinition('anoncreds'),
 } as const satisfies DrizzleRecordBundle

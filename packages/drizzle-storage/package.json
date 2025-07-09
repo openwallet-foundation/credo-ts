@@ -33,7 +33,9 @@
   "exports": {
     ".": "./src/index.ts",
     "./*/sqlite": "./src/*/sqlite.ts",
+    "./*/sqlite/source": "./src/*/sqlite.ts",
     "./*/postgres": "./src/*/postgres.ts",
+    "./*/postgres/source": "./src/*/postgres.ts",
     "./*": "./src/*/bundle.ts",
     "./*/sqlite/migrations": {
       "default": "./migrations/*/sqlite/migrations.js",

@@ -1,4 +1,5 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { bundleMigrationDefinition } from '../util'
 import { openId4VcIssuanceSessionDrizzleRecord } from './openid4vc-issuance-session'
 import { openid4vcIssuerDrizzleRecord } from './openid4vc-issuer'
 import { openId4VcVerificationSessionDrizzleRecord } from './openid4vc-verification-session'
@@ -13,14 +14,5 @@ export default {
     openId4VcVerificationSessionDrizzleRecord,
   ],
 
-  migrations: {
-    postgres: {
-      schemaModule: '@credo-ts/drizzle-storage/openid4vc/postgres',
-      migrationsPath: '../../migrations/openid4vc/postgres',
-    },
-    sqlite: {
-      schemaModule: '@credo-ts/drizzle-storage/openid4vc/sqlite',
-      migrationsPath: '../../migrations/openid4vc/sqlite',
-    },
-  },
+  migrations: bundleMigrationDefinition('openid4vc'),
 } as const satisfies DrizzleRecordBundle

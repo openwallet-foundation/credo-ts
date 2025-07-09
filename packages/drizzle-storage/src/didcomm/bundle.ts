@@ -1,4 +1,5 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { bundleMigrationDefinition } from '../util'
 import { didcommBasicMessageDrizzleRecord } from './basic-message'
 import { didcommConnectionDrizzleRecord } from './connection'
 import { didcommCredentialExchangeDrizzleRecord } from './credential-exchange'
@@ -21,14 +22,5 @@ export default {
     didcommProofExchangeDrizzleRecord,
   ],
 
-  migrations: {
-    postgres: {
-      schemaModule: '@credo-ts/drizzle-storage/didcomm/postgres',
-      migrationsPath: '../../migrations/didcomm/postgres',
-    },
-    sqlite: {
-      schemaModule: '@credo-ts/drizzle-storage/didcomm/sqlite',
-      migrationsPath: '../../migrations/didcomm/sqlite',
-    },
-  },
+  migrations: bundleMigrationDefinition('didcomm'),
 } as const satisfies DrizzleRecordBundle

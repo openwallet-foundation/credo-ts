@@ -1,18 +1,10 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { bundleMigrationDefinition } from '../util'
 import { didcommDrpcDrizzleRecord } from './drpc'
 
 export default {
   name: 'drpc',
   records: [didcommDrpcDrizzleRecord],
 
-  migrations: {
-    postgres: {
-      schemaModule: '@credo-ts/drizzle-storage/drpc/postgres',
-      migrationsPath: '../../migrations/drpc/postgres',
-    },
-    sqlite: {
-      schemaModule: '@credo-ts/drizzle-storage/drpc/sqlite',
-      migrationsPath: '../../migrations/drpc/sqlite',
-    },
-  },
+  migrations: bundleMigrationDefinition('drpc'),
 } as const satisfies DrizzleRecordBundle

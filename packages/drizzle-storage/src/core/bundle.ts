@@ -1,4 +1,5 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
+import { bundleMigrationDefinition } from '../util'
 import { contextDrizzleRecord } from './context'
 import { didDrizzleRecord } from './did'
 import { genericRecordDrizzleRecord } from './genericRecord'
@@ -20,14 +21,5 @@ export default {
     w3cCredentialDrizzleRecord,
     singleContextLruCacheDrizzleRecord,
   ],
-  migrations: {
-    postgres: {
-      schemaModule: '@credo-ts/drizzle-storage/core/postgres',
-      migrationsPath: '../../migrations/core/postgres',
-    },
-    sqlite: {
-      schemaModule: '@credo-ts/drizzle-storage/core/sqlite',
-      migrationsPath: '../../migrations/core/sqlite',
-    },
-  },
+  migrations: bundleMigrationDefinition('core'),
 } as const satisfies DrizzleRecordBundle

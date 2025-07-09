@@ -28,35 +28,31 @@ export interface DrizzleRecordBundle {
        * file will only be resolved during generation of migrations, and thus it's not needed to publish
        * the source files in your NPM package, as long as the module resolves during migration generation.
        */
-      schemaModule: string
+      schemaSourcePath: string
 
       /**
        * The migrations path where the migrations should be generated and retrieved. Note that the contents
        * of this directory must be published with your NPM package so it can be used to apply migrations.
        *
-       * The path should be relative to the resolved `schemaModule`. Note that if you use `publishConfig` to
-       * have different exports during development, this should still resolve to the generated migration files
-       * in the generated packages, so it's recommended to place your migrations outside of the src folder
+       * The path to the migrations directory MUST be abosulate.
        */
       migrationsPath: string
     }
     postgres: {
       /**
-       * A resolvable module that contains the drizzle SQLite schema definition for the complete bundle.
+       * A resolvable path that contains the drizzle Postgres schema definition for the complete bundle.
        *
        * NOTE: this MUST resolve to the TypeScript schema file, it cannot point to the built files. This
        * file will only be resolved during generation of migrations, and thus it's not needed to publish
        * the source files in your NPM package, as long as the module resolves during migration generation.
        */
-      schemaModule: string
+      schemaSourcePath: string
 
       /**
        * The migrations path where the migrations should be generated and retrieved. Note that the contents
        * of this directory must be published with your NPM package so it can be used to apply migrations.
        *
-       * The path should be relative to the resolved `schemaModule`. Note that if you use `publishConfig` to
-       * have different exports during development, this should still resolve to the generated migration files
-       * in the generated packages, so it's recommended to place your migrations outside of the src folder
+       * The path to the migrations directory MUST be abosulate.
        */
       migrationsPath: string
     }
