@@ -33,8 +33,8 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
     }
     const { did } = parsedDid
 
-    if (options.previousStatusListUri && options.previousStatusListUri.method === 'did') {
-      const response = await cheqdDidResolver.resolveResource(agentContext, options.previousStatusListUri.didUrl)
+    if (options.uri) {
+      const response = await cheqdDidResolver.resolveResource(agentContext, options.uri)
       if (response.error || !response.resourceMetadata) {
         throw new CredoError(response.message)
       }
@@ -90,10 +90,10 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  async retrieve(agentContext: AgentContext, statusListUri: SdJwtVcIssuerDid): Promise<string> {
+  async retrieve(agentContext: AgentContext, uri: string): Promise<string> {
     const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
 
-    const response = await cheqdDidResolver.resolveResource(agentContext, statusListUri.didUrl)
+    const response = await cheqdDidResolver.resolveResource(agentContext, uri)
     if (response.error || !response.resourceMetadata) {
       throw new CredoError(response.message)
     }

@@ -5,7 +5,7 @@ import { SdJwtVcIssuerX5c } from '../../../SdJwtVcOptions'
 import { PublishTokenStatusListOptions, TokenStatusListRegistry } from '../TokenStatusListRegistry'
 
 export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
-  public readonly supportedMethods = ['http', 'key']
+  public readonly supportedMethods = ['http']
   public readonly allowsCaching = true
 
   /**
@@ -23,8 +23,8 @@ export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  async retrieve(agentContext: AgentContext, statusListUri: SdJwtVcIssuerX5c): Promise<string> {
-    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, statusListUri.issuer, {
+  async retrieve(agentContext: AgentContext, uri: string): Promise<string> {
+    const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
       headers: {
         Accept: 'application/statuslist+jwt',
       },
@@ -34,7 +34,7 @@ export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
       throw new CredoError(
         `Received invalid response with status ${
           response.status
-        } when fetching status list from ${statusListUri.issuer}. ${await response.text()}`
+        } when fetching status list from ${uri}. ${await response.text()}`
       )
     }
 

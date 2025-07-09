@@ -55,24 +55,21 @@ describe('Cheqd DID Token Status List Registry', () => {
     expect(result.uri).toBeDefined()
     expect(result.uri).toContain(did)
 
-    const statusListUri: SdJwtVcIssuer = {
-      method: 'did',
-      didUrl: result.uri as string,
-    }
+    const uri = result.uri as string
 
     // fetch token status list
-    const statusList = await tokenStatusListService.getStatusList(agent.context, statusListUri)
+    const statusList = await tokenStatusListService.getStatusList(agent.context, uri)
     expect(statusList).toBeDefined()
 
     // verify token status at index 0
-    const status = await tokenStatusListService.getStatus(agent.context, statusListUri, 0)
+    const status = await tokenStatusListService.getStatus(agent.context, uri, 0)
     expect(status).toBe(0)
 
     // revoke index 0
-    await tokenStatusListService.revokeIndex(agent.context, issuer, statusListUri, { indices: [0], publish: true })
+    await tokenStatusListService.revokeIndex(agent.context, issuer, { indices: [0], publish: true, uri })
 
     // verify token status at index 0
-    const isRevoked = await tokenStatusListService.getStatus(agent.context, statusListUri, 0)
+    const isRevoked = await tokenStatusListService.getStatus(agent.context, uri, 0)
     expect(isRevoked).toBe(1)
   })
 })

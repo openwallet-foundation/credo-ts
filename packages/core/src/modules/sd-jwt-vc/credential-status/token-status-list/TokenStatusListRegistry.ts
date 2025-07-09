@@ -3,7 +3,7 @@ import type { AgentContext } from '../../../../agent'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
 
 export interface PublishTokenStatusListOptions {
-  previousStatusListUri?: SdJwtVcIssuer
+  uri?: string
   name?: string
   version?: string
 
@@ -37,5 +37,5 @@ export interface TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  retrieve(agentContext: AgentContext, statusListUri: SdJwtVcIssuer): Promise<string>
+  retrieve(agentContext: AgentContext, uri: string): Promise<string>
 }
