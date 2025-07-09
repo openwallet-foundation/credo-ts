@@ -19,7 +19,7 @@ interface GenerateMigrationOptions {
 }
 
 export async function generateMigrations({ dialects, bundles, name }: GenerateMigrationOptions): Promise<void> {
-  const tsconfig = path.resolve(__dirname, '..', 'tsconfig.json')
+  const tsconfig = path.resolve(__dirname, '..', 'tsconfig.drizzle.json')
 
   const drizzleKitCliPath = getDrizzleKitCliPath()
   const drizzleConfigPath = getDrizzleConfigPath()
