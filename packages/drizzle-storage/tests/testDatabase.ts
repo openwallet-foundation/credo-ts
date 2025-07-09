@@ -1,20 +1,19 @@
 import { Agent, utils } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
-import { PgDatabase } from 'drizzle-orm/pg-core'
-import { Client, Pool } from 'pg'
+import type { PgDatabase } from 'drizzle-orm/pg-core'
 import { DrizzleRecord, DrizzleStorageModule } from '../src'
 import { DrizzlePostgresDatabase, isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
 import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
-
-export { Client, Pool }
+import type { Client as ClientType, Pool as PoolType } from 'pg'
 
 export type DrizzlePostgresTestDatabase = {
-  pool: Pool
+  pool: PoolType
   drizzle: DrizzlePostgresDatabase
   teardown: () => Promise<void>
 }
 
 export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgresTestDatabase> {
+  const { Pool, Client } = require('pg')
   const databaseName = utils.uuid().replace('-', '')
 
   const pgClient = new Client({
@@ -104,6 +103,6 @@ export function inMemoryDrizzleSqliteDatabase(): AnyDrizzleDatabase {
   return require('drizzle-orm/libsql').drizzle(':memory:')
 }
 
-export function drizzlePostgresDatabase(client: Client | Pool): AnyDrizzleDatabase {
+export function drizzlePostgresDatabase(client: ClientType | PoolType): AnyDrizzleDatabase {
   return require('drizzle-orm/node-postgres').drizzle(client)
 }
