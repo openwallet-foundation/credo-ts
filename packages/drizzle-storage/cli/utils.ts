@@ -2,7 +2,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 
 export async function resolveBundle(bundle: string) {
-  const options = [bundle]
+  const options = [bundle, path.join(process.cwd(), bundle)]
   if (!bundle.startsWith('/')) {
     options.push(`@credo-ts/drizzle-storage/${bundle}`)
   }
