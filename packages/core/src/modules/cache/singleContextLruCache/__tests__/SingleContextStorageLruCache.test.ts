@@ -84,7 +84,7 @@ describe('SingleContextLruCache', () => {
       contextCorrelationId: 'another',
     })
 
-    expect(cache.get(secondAgentContext, 'test')).rejects.toThrowError(
+    expect(cache.get(secondAgentContext, 'test')).rejects.toThrow(
       'SingleContextStorageLruCache can not be used with multiple agent context instances. Register a custom cache implementation in the CacheModule.'
     )
   })
