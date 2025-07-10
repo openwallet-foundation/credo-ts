@@ -1,6 +1,5 @@
 import type { AgentContext } from '../../agent'
 import type { X509CreateCertificateOptions } from './X509ServiceOptions'
-import type { IssuerAlternativeNameExtension } from './extensions'
 
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
@@ -119,7 +118,7 @@ export class X509Certificate {
   }
 
   public get issuerAlternativeNames() {
-    const ian = this.getMatchingExtensions<IssuerAlternativeNameExtension>(id_ce_issuerAltName)
+    const ian = this.getMatchingExtensions<x509.IssuerAlternativeNameExtension>(id_ce_issuerAltName)
     return ian?.flatMap((i) => i.names.items).map((i) => ({ type: i.type, value: i.value })) ?? []
   }
 
