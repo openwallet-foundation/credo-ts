@@ -73,6 +73,7 @@ export class DidCommModule implements Module {
                 connection: e.payload.connection,
                 contextCorrelationId: e.payload.contextCorrelationId,
                 session: e.payload.session,
+                receivedAt: e.payload.receivedAt,
               })
               .catch((error) => {
                 agentContext.config.logger.error('Failed to process message', { error })
