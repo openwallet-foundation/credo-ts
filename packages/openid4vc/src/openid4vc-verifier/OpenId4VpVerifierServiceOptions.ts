@@ -14,9 +14,9 @@ import type {
   VerifierAttestations,
   createOpenid4vpAuthorizationRequest,
 } from '@openid4vc/openid4vp'
+import { NonEmptyArray } from '@openid4vc/utils'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
-import { NonEmptyArray } from '@openid4vc/utils'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
 
