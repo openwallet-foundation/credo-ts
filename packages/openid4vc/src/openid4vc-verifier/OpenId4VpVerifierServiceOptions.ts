@@ -23,14 +23,14 @@ export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_ap
 export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
-   * and to set the client_id and client_id_scheme for registration of client_metadata.
+   * and to set the client_id for registration of client_metadata.
    */
   requestSigner:
     | OpenId4VcJwtIssuerDid
     | Omit<OpenId4VcIssuerX5c, 'issuer'>
     | {
         /**
-         * Do not sign the request. Only available for DC API (responseMode is `dc_api` or `dc_api.jwt`)
+         * Do not sign the request, will use `redirect_uri` client id prefix
          */
         method: 'none'
       }

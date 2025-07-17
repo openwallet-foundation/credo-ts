@@ -811,6 +811,108 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
+  it('e2e flow with unsiged request (redirect_uri)', async () => {
+    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+
+    const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
+      holder: { method: 'did', didUrl: holder.kid },
+      issuer: {
+        method: 'did',
+        didUrl: verifier.kid,
+      },
+      payload: {
+        vct: 'OpenBadgeCredential',
+        university: 'innsbruck',
+        degree: 'bachelor',
+        name: 'John Doe',
+      },
+      headerType: 'vc+sd-jwt',
+      disclosureFrame: {
+        _sd: ['university', 'name'],
+      },
+    })
+
+    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    const dcqlQuery = {
+      credentials: [
+        {
+          id: 'OpenBadgeCredentialDescriptor',
+          format: 'dc+sd-jwt',
+          meta: {
+            vct_values: ['OpenBadgeCredential'],
+          },
+          claims: [
+            {
+              path: ['university'],
+            },
+          ],
+        },
+      ],
+    } satisfies DcqlQuery
+
+    const { authorizationRequest, authorizationRequestObject, verificationSession } =
+      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifier.verifierId,
+        requestSigner: {
+          method: 'none',
+        },
+        responseMode: 'direct_post',
+        dcql: {
+          query: dcqlQuery,
+        },
+        version: 'v1',
+      })
+
+    expect(authorizationRequest).toEqual(
+      `openid4vp://?response_type=vp_token&client_id=redirect_uri%3A${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_uri=${encodeURIComponent(authorizationRequestObject.response_uri as string)}&response_mode=direct_post&nonce=${authorizationRequestObject.nonce}&dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22OpenBadgeCredentialDescriptor%22%2C%22format%22%3A%22dc%2Bsd-jwt%22%2C%22meta%22%3A%7B%22vct_values%22%3A%5B%22OpenBadgeCredential%22%5D%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22university%22%5D%7D%5D%7D%5D%7D&client_metadata=%7B%22vp_formats_supported%22%3A%7B%22dc%2Bsd-jwt%22%3A%7B%22sd-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22ES256K%22%5D%2C%22kb-jwt_alg_values%22%3A%5B%22HS256%22%2C%22HS384%22%2C%22HS512%22%2C%22RS256%22%2C%22RS384%22%2C%22RS512%22%2C%22ES256%22%2C%22ES384%22%2C%22ES512%22%2C%22PS256%22%2C%22PS384%22%2C%22PS512%22%2C%22EdDSA%22%2C%22ES256K%22%5D%7D%7D%2C%22response_types_supported%22%3A%5B%22vp_token%22%5D%7D&state=${authorizationRequestObject.state}`
+    )
+
+    const resolvedAuthorizationRequest =
+      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+
+    expect(resolvedAuthorizationRequest.signedAuthorizationRequest).toBeUndefined()
+    expect(resolvedAuthorizationRequest.verifier).toEqual({
+      clientIdPrefix: 'redirect_uri',
+      effectiveClientId: `redirect_uri:${authorizationRequestObject.response_uri}`,
+    })
+
+    expect(resolvedAuthorizationRequest.dcql?.queryResult.can_be_satisfied).toEqual(true)
+    if (!resolvedAuthorizationRequest.dcql) {
+      throw new Error('dcql not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+      resolvedAuthorizationRequest.dcql.queryResult
+    )
+
+    const { serverResponse, authorizationResponsePayload } =
+      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
+        dcql: {
+          credentials: selectedCredentials,
+        },
+      })
+
+    expect(authorizationResponsePayload).toEqual({
+      state: expect.any(String),
+      vp_token: {
+        OpenBadgeCredentialDescriptor: [expect.any(String)],
+      },
+    })
+    expect(serverResponse).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifier.agent.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession.id,
+    })
+  })
+
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 

@@ -199,12 +199,13 @@ export class OpenId4VpVerifierService {
     let clientId: string | undefined
 
     if (!jwtIssuer) {
-      if (!isDcApiRequest) {
-        throw new Error("requestSigner method 'none' is only supported for response mode 'dc_api' and 'dc_api.jwt'")
+      if (isDcApiRequest) {
+        clientIdPrefix = version === 'v1' ? 'origin' : 'web-origin'
+        clientId = undefined
+      } else {
+        clientIdPrefix = 'redirect_uri'
+        clientId = authorizationResponseUrl
       }
-
-      clientIdPrefix = version === 'v1' ? 'origin' : 'web-origin'
-      clientId = undefined
     } else if (jwtIssuer?.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
@@ -226,14 +227,15 @@ export class OpenId4VpVerifierService {
     }
 
     // We always use shortened URIs currently
-    const hostedAuthorizationRequestUri = !isDcApiRequest
-      ? joinUriParts(this.config.baseUrl, [
-          options.verifier.verifierId,
-          this.config.authorizationRequestEndpoint,
-          authorizationRequestId,
-        ])
-      : // No hosted request needed when using DC API
-        undefined
+    const hostedAuthorizationRequestUri =
+      !isDcApiRequest && jwtIssuer
+        ? joinUriParts(this.config.baseUrl, [
+            options.verifier.verifierId,
+            this.config.authorizationRequestEndpoint,
+            authorizationRequestId,
+          ])
+        : // No hosted request needed when using DC API or using unsigned request
+          undefined
 
     const client_id =
       // For did/https and draft 21 the client id has no special prefix
@@ -284,7 +286,7 @@ export class OpenId4VpVerifierService {
         requestParamsBase.response_mode === 'dc_api.jwt' || requestParamsBase.response_mode === 'dc_api'
           ? {
               ...requestParamsBase,
-              // No client_id for unsigned requests
+              // No client_id for unsigned DC API requests
               client_id: jwtIssuer ? client_id : undefined,
               response_mode: requestParamsBase.response_mode,
               expected_origins: options.expectedOrigins,

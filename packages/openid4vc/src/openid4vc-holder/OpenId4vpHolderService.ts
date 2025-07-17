@@ -139,7 +139,8 @@ export class OpenId4VpHolderService {
       client.prefix !== 'x509_san_dns' &&
       client.prefix !== 'x509_hash' &&
       client.prefix !== 'decentralized_identifier' &&
-      client.prefix !== 'origin'
+      client.prefix !== 'origin' &&
+      client.prefix !== 'redirect_uri'
     ) {
       throw new CredoError(`Client id prefix '${client.prefix}' is not supported`)
     }
