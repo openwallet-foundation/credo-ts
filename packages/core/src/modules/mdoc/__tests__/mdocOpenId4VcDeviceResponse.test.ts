@@ -195,7 +195,7 @@ describe('mdoc device-response openid4vp test', () => {
           mdocs: [mdoc],
           presentationDefinition: PRESENTATION_DEFINITION_1,
           sessionTranscriptOptions: {
-            type: 'openId4Vp',
+            type: 'openId4VpDraft18',
             clientId,
             responseUri,
             verifierGeneratedNonce,
@@ -227,7 +227,7 @@ describe('mdoc device-response openid4vp test', () => {
       const res = await mdocDeviceResponse.verify(agent.context, {
         trustedCertificates: [ISSUER_CERTIFICATE_P256],
         sessionTranscriptOptions: {
-          type: 'openId4Vp',
+          type: 'openId4VpDraft18',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -254,7 +254,7 @@ describe('mdoc device-response openid4vp test', () => {
             await mdocDeviceResponse.verify(agent.context, {
               trustedCertificates: [ISSUER_CERTIFICATE_P256],
               sessionTranscriptOptions: {
-                type: 'openId4Vp',
+                type: 'openId4VpDraft18',
                 clientId: values.clientId,
                 responseUri: values.responseUri,
                 verifierGeneratedNonce: values.verifierGeneratedNonce,
@@ -366,7 +366,7 @@ describe('mdoc device-response openid4vp test', () => {
         mdocs: [mdoc],
         presentationDefinition: PRESENTATION_DEFINITION_1,
         sessionTranscriptOptions: {
-          type: 'openId4Vp',
+          type: 'openId4VpDraft18',
           clientId,
           responseUri,
           verifierGeneratedNonce,
@@ -395,7 +395,7 @@ describe('mdoc device-response openid4vp test', () => {
       await MdocDeviceResponse.fromBase64Url(result.deviceResponseBase64Url).verify(agent.context, {
         trustedCertificates: [issuerCertificate.toString('pem')],
         sessionTranscriptOptions: {
-          type: 'openId4Vp',
+          type: 'openId4VpDraft18',
           clientId,
           responseUri,
           verifierGeneratedNonce,

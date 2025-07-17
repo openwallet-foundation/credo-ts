@@ -41,22 +41,23 @@ export interface DcqlMdocPresentationToCreate {
   disclosedPayload: DcqlMdocCredential.NameSpaces
 }
 
-export type DcqlPresentationToCreate = Record<
-  string,
+type DcqlPresentationToCreate =
   | DcqlSdJwtVcPresentationToCreate
   | DcqlJwtVpPresentationToCreate
   | DcqlLdpVpPresentationToCreate
   | DcqlMdocPresentationToCreate
->
+
+export type DcqlPresentationsToCreate = Record<string, [DcqlPresentationToCreate, ...DcqlPresentationToCreate[]]>
 
 export function dcqlGetPresentationsToCreate(
   credentialsForInputDescriptor: DcqlCredentialsForRequest
-): DcqlPresentationToCreate {
-  const presentationsToCreate: DcqlPresentationToCreate = {}
+): DcqlPresentationsToCreate {
+  const presentationsToCreate: DcqlPresentationsToCreate = {}
 
   for (const [credentialQueryId, match] of Object.entries(credentialsForInputDescriptor)) {
+    let presentationToCreate: DcqlPresentationToCreate
     if (match.claimFormat === ClaimFormat.SdJwtVc) {
-      presentationsToCreate[credentialQueryId] = {
+      presentationToCreate = {
         claimFormat: ClaimFormat.SdJwtVc,
         subjectIds: [],
         credentialRecord: match.credentialRecord,
@@ -64,20 +65,25 @@ export function dcqlGetPresentationsToCreate(
         additionalPayload: match.additionalPayload,
       }
     } else if (match.claimFormat === ClaimFormat.MsoMdoc) {
-      presentationsToCreate[credentialQueryId] = {
+      presentationToCreate = {
         claimFormat: ClaimFormat.MsoMdoc,
         subjectIds: [],
         credentialRecord: match.credentialRecord,
         disclosedPayload: match.disclosedPayload as DcqlMdocCredential.NameSpaces,
       }
     } else {
-      presentationsToCreate[credentialQueryId] = {
-        claimFormat:
-          match.credentialRecord.credential.claimFormat === ClaimFormat.JwtVc ? ClaimFormat.JwtVp : ClaimFormat.LdpVp,
+      presentationToCreate = {
+        claimFormat: match.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp,
         subjectIds: [match.credentialRecord.credential.credentialSubjectIds[0]],
         credentialRecord: match.credentialRecord,
         disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
       }
+    }
+
+    if (!presentationsToCreate[credentialQueryId]) {
+      presentationsToCreate[credentialQueryId] = [presentationToCreate]
+    } else {
+      presentationsToCreate[credentialQueryId].push(presentationToCreate)
     }
   }
 

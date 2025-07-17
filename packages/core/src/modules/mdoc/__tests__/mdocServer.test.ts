@@ -170,7 +170,7 @@ describe('mdoc service test', () => {
           ],
         },
         sessionTranscriptOptions: {
-          type: 'openId4Vp',
+          type: 'openId4VpDraft18',
           mdocGeneratedNonce: 'something',
           verifierGeneratedNonce: 'something-else',
           clientId: 'something',
@@ -183,7 +183,7 @@ describe('mdoc service test', () => {
     expect(
       deviceResponse.verify(agentContext, {
         sessionTranscriptOptions: {
-          type: 'openId4Vp',
+          type: 'openId4VpDraft18',
           mdocGeneratedNonce: 'something',
           verifierGeneratedNonce: 'something-else',
           clientId: 'something',

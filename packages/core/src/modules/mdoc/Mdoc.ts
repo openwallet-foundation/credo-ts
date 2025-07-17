@@ -117,6 +117,10 @@ export class Mdoc {
     return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
   }
 
+  public get signingCertificate() {
+    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificate
+  }
+
   public get issuerSignedNamespaces(): MdocNameSpaces {
     return Object.fromEntries(
       Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
