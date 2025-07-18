@@ -199,7 +199,7 @@ describe('transform', () => {
       // Current status: index 2 is now active (unrevoked), no new revokes
       const revocationStatusList = [0, 0, 0, 0, 0]
       const { issued, revoked } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
-      console.log(issued, revoked)
+
       expect(issued).toStrictEqual([2])
       expect(revoked).toStrictEqual([])
     })
