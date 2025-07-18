@@ -25,18 +25,18 @@
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
-    "class-transformer": "0.5.1",
-    "class-validator": "0.14.1",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
     "luxon": "^3.5.0",
     "query-string": "^7.0.1",
-    "rxjs": "^7.8.0"
+    "rxjs": "catalog:"
   },
   "devDependencies": {
-    "@animo-id/pex": "^6.1.0",
-    "@sphereon/pex-models": "^2.3.2",
+    "@animo-id/pex": "catalog:",
+    "@sphereon/pex-models": "catalog:",
     "@types/luxon": "^3.2.0",
-    "reflect-metadata": "^0.1.13",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "reflect-metadata": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:"
   }
 }

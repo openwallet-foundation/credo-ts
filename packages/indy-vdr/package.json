@@ -28,16 +28,16 @@
     "@credo-ts/core": "workspace:*"
   },
   "devDependencies": {
-    "@hyperledger/indy-vdr-nodejs": "^0.2.2",
-    "@hyperledger/indy-vdr-shared": "^0.2.2",
+    "@hyperledger/indy-vdr-nodejs": "catalog:",
+    "@hyperledger/indy-vdr-shared": "catalog:",
     "@stablelib/ed25519": "^1.0.2",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
-    "rimraf": "^4.4.0",
-    "rxjs": "^7.8.0",
-    "typescript": "~5.5.2"
+    "rimraf": "catalog:",
+    "rxjs": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@hyperledger/indy-vdr-shared": "^0.2.2"
+    "@hyperledger/indy-vdr-shared": "catalog:"
   }
 }
