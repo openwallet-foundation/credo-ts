@@ -152,7 +152,7 @@ jobs:
           path: coverage/e2e.json
           overwrite: true
 
- drizzle-tests:
+  drizzle-tests:
     runs-on: ubuntu-24.04
     name: Drizzle Tests
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
@@ -204,7 +204,6 @@ jobs:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
           overwrite: true
-
 
   # Upload all the coverage reports
   report-coverage:
