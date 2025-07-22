@@ -296,7 +296,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
         }),
       })
 
-      await expect(credentialProtocol.createOffer(agentContext, offerOptions)).rejects.toThrowError(
+      await expect(credentialProtocol.createOffer(agentContext, offerOptions)).rejects.toThrow(
         'Missing required credential preview from indy format service'
       )
     })
