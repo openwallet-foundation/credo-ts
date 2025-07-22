@@ -11,17 +11,17 @@ import type {
 } from './MdocOptions'
 
 import {
+  CoseKey,
   DeviceRequest,
   DeviceResponse,
   DeviceSignedDocument,
-  MDoc,
-  MDocStatus,
+  Document,
+  IssuerSigned,
+  SessionTranscript,
   Verifier,
   cborEncode,
   limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
   defaultCallback as onCheck,
-  parseDeviceResponse,
-  parseIssuerSigned,
 } from '@animo-id/mdoc'
 import { uuid } from '../../utils/uuid'
 import { PublicJwk } from '../kms'
@@ -187,7 +187,7 @@ export class MdocDeviceResponse {
     const { mdoc } = options
 
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
-    const _mdoc = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdoc.base64Url), mdoc.docType)
+    const _mdoc = IssuerSigned.fromEncodedForOid4Vci(mdoc.base64Url)
 
     const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
     const disclosedPayloadAsRecord = Object.fromEntries(
@@ -212,7 +212,7 @@ export class MdocDeviceResponse {
 
     const docTypes = options.mdocs.map((i) => i.docType)
 
-    const combinedDeviceResponseMdoc = new MDoc()
+    const combinedDeviceResponseMdoc = new DeviceResponse({})
 
     for (const document of options.mdocs) {
       const deviceKeyJwk = document.deviceKey
@@ -223,7 +223,7 @@ export class MdocDeviceResponse {
         deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
       }
 
-      const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
+      const _alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
       // We do PEX filtering on a different layer, so we only include the needed input descriptor here
       const presentationDefinitionForDocument = {
@@ -233,20 +233,45 @@ export class MdocDeviceResponse {
         ),
       }
 
-      const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
-      const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
-        .usingPresentationDefinition(presentationDefinitionForDocument)
-        // .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
-        .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
+      const mdocContext = getMdocContext(agentContext)
 
-      for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
-        deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+      const issuerSignedDocument = IssuerSigned.fromEncodedForOid4Vci(document.base64Url)
+      const deviceResponse = await DeviceResponse.createWithPresentationDefinition(
+        {
+          documents: [
+            new Document({
+              issuerSigned: issuerSignedDocument,
+              docType: document.docType,
+
+              // FIXME: we  do'nt have device signed yet?
+              // deviceSigned:
+            }),
+          ],
+          presentationDefinition: presentationDefinitionForDocument,
+
+          // FIXME: no alg?
+          signature: {
+            signingKey: CoseKey.fromJwk(deviceKeyJwk.toJson()),
+          },
+
+          // FIXME: should allow session transcript bytes...
+          sessionTranscript: await MdocDeviceResponse.calculateSessionTranscriptBytes(
+            mdocContext,
+            options.sessionTranscriptOptions
+          ),
+
+          // FIXME: no device name spaces?
+          // for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
+          //   deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
+          // }
+        },
+        mdocContext
+      )
+
+      if (combinedDeviceResponseMdoc.documents) {
+        combinedDeviceResponseMdoc.documents = []
       }
-
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
-
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
-      combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
+      combinedDeviceResponseMdoc.documents.push(deviceResponse.documents?.[0])
     }
 
     return {
@@ -343,7 +368,7 @@ export class MdocDeviceResponse {
 
       await verifier.verifyDeviceSignature(
         {
-          sessionTranscriptBytes: await MdocDeviceResponse.getSessionTranscriptBytesForOptions(
+          sessionTranscriptBytes: await MdocDeviceResponse.calculateSessionTranscriptBytes(
             mdocContext,
             options.sessionTranscriptOptions
           ),
@@ -364,42 +389,42 @@ export class MdocDeviceResponse {
     return this.documents
   }
 
-  private static async getSessionTranscriptBytesForOptions(
-    context: MdocContext,
+  private static async calculateSessionTranscriptBytes(
+    mdocContext: MdocContext,
     options: MdocSessionTranscriptOptions
   ) {
     if (options.type === 'sesionTranscriptBytes') {
       return options.sessionTranscriptBytes
     }
 
-    if (options.type === 'openId4Vp') {
-      return await DeviceResponse.calculateSessionTranscriptBytesForOID4VP({
-        ...options,
-        context,
-      })
-    }
-
-    if (options.type === 'openId4VpDcApi') {
-      return await DeviceResponse.calculateSessionTranscriptBytesForOID4VPDCApi({
-        ...options,
-        context,
-      })
-    }
-
-    throw new MdocError('Unsupported session transcript option')
-  }
-
-  private static usingSessionTranscript(deviceResponse: DeviceResponse, options: MdocSessionTranscriptOptions) {
-    if (options.type === 'sesionTranscriptBytes') {
-      return deviceResponse.usingSessionTranscriptBytes(options.sessionTranscriptBytes)
+    if (options.type === 'openId4VpDraft18') {
+      return SessionTranscript.calculateSessionTranscriptBytesForOid4VpDraft18(options, mdocContext)
     }
 
     if (options.type === 'openId4Vp') {
-      return deviceResponse.usingSessionTranscriptForOID4VP(options)
+      const { encryptionJwk, ...rest } = options
+      return SessionTranscript.calculateSessionTranscriptBytesForOid4Vp(
+        {
+          ...rest,
+          jwkThumbprint: encryptionJwk ? encryptionJwk.getJwkThumbprint() : undefined,
+        },
+        mdocContext
+      )
     }
 
     if (options.type === 'openId4VpDcApi') {
-      return deviceResponse.usingSessionTranscriptForForOID4VPDCApi(options)
+      const { encryptionJwk, ...rest } = options
+      return SessionTranscript.calculateSessionTranscriptBytesForOid4VpDcApi(
+        {
+          ...rest,
+          jwkThumbprint: encryptionJwk ? encryptionJwk.getJwkThumbprint() : undefined,
+        },
+        mdocContext
+      )
+    }
+
+    if (options.type === 'openId4VpDcApiDraft24') {
+      return SessionTranscript.calculateSessionTranscriptBytesForOid4VpDcApiDraft24(options, mdocContext)
     }
 
     throw new MdocError('Unsupported session transcript option')
