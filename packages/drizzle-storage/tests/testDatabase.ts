@@ -49,8 +49,8 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
         name: 'drizzleRecordTest',
         records: [drizzleRecord],
         migrations: {
-          sqlite: { migrationsPath: '', schemaModule: '' },
-          postgres: { migrationsPath: '', schemaModule: '' },
+          sqlite: { migrationsPath: '', schemaSourcePath: '' },
+          postgres: { migrationsPath: '', schemaSourcePath: '' },
         },
       },
     ],
