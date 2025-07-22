@@ -293,7 +293,7 @@ export abstract class BaseDrizzleRecordAdapter<
 
     if (isDrizzleSqliteDatabase(this.database)) {
       const deleted = await this.database
-        .delete(this.table.postgres)
+        .delete(this.table.sqlite)
         .where(
           and(
             eq(this.table.sqlite.id, id),
