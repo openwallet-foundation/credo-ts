@@ -80,13 +80,13 @@
     "zod": "^3.24.2"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.2"
+    "drizzle-orm": "^0.44.3"
   },
   "devDependencies": {
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",
-    "drizzle-orm": "^0.44.2",
+    "drizzle-orm": "^0.44.3",
     "pg": "^8.16.3",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"

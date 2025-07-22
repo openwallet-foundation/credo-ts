@@ -114,7 +114,7 @@ describe('OpenId4Vc', () => {
       bundles: [openid4vcBundle, tenantsBundle],
     })
     holderDrizzleModule = new DrizzleStorageModule({
-      database: issuerPostgresDatabase.drizzle,
+      database: holderPostgresDatabase.drizzle,
       bundles: [openid4vcBundle, tenantsBundle],
     })
 
