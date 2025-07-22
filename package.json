@@ -16,7 +16,7 @@
     "clean": "pnpm -r --parallel run clean",
     "build": "pnpm -r --parallel run build",
     "test:unit": "pnpm test --testPathIgnorePatterns e2e.test.ts",
-    "test:e2e": "pnpm test --testMatch '**/?(*.)e2e.test.ts'",
+    "test:e2e": "pnpm test --testPathIgnorePatterns drizzle --testMatch '**/?(*.)e2e.test.ts'",
     "test:drizzle": "pnpm test --testMatch '**/*drizzle*.test.ts'",
     "test": "jest",
     "validate": "pnpm types:check && pnpm style:check",
