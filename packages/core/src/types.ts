@@ -82,3 +82,5 @@ export const isJsonObject = (value: unknown): value is JsonObject => {
 export type SingleOrArray<T> = T | T[]
 export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
 export type CanBePromise<T> = T | Promise<T>
+
+export type NonEmptyArray<T> = [T, ...T[]]

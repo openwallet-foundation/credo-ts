@@ -54,36 +54,39 @@ export function dcqlGetPresentationsToCreate(
 ): DcqlPresentationsToCreate {
   const presentationsToCreate: DcqlPresentationsToCreate = {}
 
-  for (const [credentialQueryId, match] of Object.entries(credentialsForInputDescriptor)) {
-    let presentationToCreate: DcqlPresentationToCreate
-    if (match.claimFormat === ClaimFormat.SdJwtVc) {
-      presentationToCreate = {
-        claimFormat: ClaimFormat.SdJwtVc,
-        subjectIds: [],
-        credentialRecord: match.credentialRecord,
-        disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
-        additionalPayload: match.additionalPayload,
-      }
-    } else if (match.claimFormat === ClaimFormat.MsoMdoc) {
-      presentationToCreate = {
-        claimFormat: ClaimFormat.MsoMdoc,
-        subjectIds: [],
-        credentialRecord: match.credentialRecord,
-        disclosedPayload: match.disclosedPayload as DcqlMdocCredential.NameSpaces,
-      }
-    } else {
-      presentationToCreate = {
-        claimFormat: match.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp,
-        subjectIds: [match.credentialRecord.credential.credentialSubjectIds[0]],
-        credentialRecord: match.credentialRecord,
-        disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
-      }
-    }
+  for (const [credentialQueryId, matches] of Object.entries(credentialsForInputDescriptor)) {
+    for (const match of matches) {
+      let presentationToCreate: DcqlPresentationToCreate
 
-    if (!presentationsToCreate[credentialQueryId]) {
-      presentationsToCreate[credentialQueryId] = [presentationToCreate]
-    } else {
-      presentationsToCreate[credentialQueryId].push(presentationToCreate)
+      if (match.claimFormat === ClaimFormat.SdJwtVc) {
+        presentationToCreate = {
+          claimFormat: ClaimFormat.SdJwtVc,
+          subjectIds: [],
+          credentialRecord: match.credentialRecord,
+          disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+          additionalPayload: match.additionalPayload,
+        }
+      } else if (match.claimFormat === ClaimFormat.MsoMdoc) {
+        presentationToCreate = {
+          claimFormat: ClaimFormat.MsoMdoc,
+          subjectIds: [],
+          credentialRecord: match.credentialRecord,
+          disclosedPayload: match.disclosedPayload as DcqlMdocCredential.NameSpaces,
+        }
+      } else {
+        presentationToCreate = {
+          claimFormat: match.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp,
+          subjectIds: [match.credentialRecord.credential.credentialSubjectIds[0]],
+          credentialRecord: match.credentialRecord,
+          disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
+        }
+      }
+
+      if (!presentationsToCreate[credentialQueryId]) {
+        presentationsToCreate[credentialQueryId] = [presentationToCreate]
+      } else {
+        presentationsToCreate[credentialQueryId].push(presentationToCreate)
+      }
     }
   }
 

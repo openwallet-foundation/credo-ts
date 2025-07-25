@@ -19,7 +19,9 @@ export type DcqlMdocCredential = _DcqlMdocCredential.Model['Input']
 export type DcqlSdJwtVcCredential = _DcqlSdJwtVcCredential.Model['Input']
 export type DcqlW3cVcCredential = _DcqlW3cVcCredential.Model['Input']
 
-export type DcqlFailedCredential = _DcqlQueryResult['credential_matches'][string]['failed_credentials'][number] & {
+export type DcqlFailedCredential = NonNullable<
+  _DcqlQueryResult['credential_matches'][string]['failed_credentials']
+>[number] & {
   record: MdocRecord | SdJwtVcRecord | W3cCredentialRecord
 }
 
@@ -37,7 +39,7 @@ export type DcqlMatchWithRecord =
     })
   | (Omit<_DcqlQueryResult['credential_matches'][string], 'success'> & {
       success: false
-      failed_credentials: [DcqlFailedCredential, ...DcqlFailedCredential[]]
+      failed_credentials?: [DcqlFailedCredential, ...DcqlFailedCredential[]]
     })
 
 export type DcqlQueryResult = Omit<_DcqlQueryResult.Output, 'credential_matches'> & {

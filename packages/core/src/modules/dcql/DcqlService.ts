@@ -27,6 +27,7 @@ import {
 } from '../vc'
 
 import { JsonObject } from '../../types'
+import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
@@ -37,7 +38,6 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
-import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
 
 @injectable()
 export class DcqlService {
@@ -459,7 +459,7 @@ export class DcqlService {
           }
 
           const credential = credentialMatch.valid_credentials[0]
-          credentials[credentialQueryId] = this.dcqlCredentialForRequestForValidCredential(credential)
+          credentials[credentialQueryId] = [this.dcqlCredentialForRequestForValidCredential(credential)]
         }
       }
     } else {
@@ -470,7 +470,7 @@ export class DcqlService {
         }
 
         const credential = credentialMatch.valid_credentials[0]
-        credentials[credentialQuery.id] = this.dcqlCredentialForRequestForValidCredential(credential)
+        credentials[credentialQuery.id] = [this.dcqlCredentialForRequestForValidCredential(credential)]
       }
     }
 
