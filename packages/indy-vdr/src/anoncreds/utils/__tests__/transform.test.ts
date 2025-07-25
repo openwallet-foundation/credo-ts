@@ -102,7 +102,7 @@ describe('transform', () => {
           delta,
           true
         )
-      ).toThrowError()
+      ).toThrow()
     })
   })
 
@@ -170,7 +170,7 @@ describe('transform', () => {
 
       const { revoked, issued } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
 
-      expect(issued).toStrictEqual([1, 2, 3, 4])
+      expect(issued).toStrictEqual([])
       expect(revoked).toStrictEqual([6, 7, 8, 9])
     })
 
@@ -184,7 +184,67 @@ describe('transform', () => {
 
       const revocationStatusList = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
 
-      expect(() => indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)).toThrowError()
+      expect(() => indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)).toThrow()
+    })
+
+    test('unrevoking a credential adds its index to issued', () => {
+      // Previous delta: index 2 was revoked
+      const delta = {
+        accum,
+        issued: [],
+        revoked: [2],
+        txnTime: 1,
+      }
+
+      // Current status: index 2 is now active (unrevoked), no new revokes
+      const revocationStatusList = [0, 0, 0, 0, 0]
+      const { issued, revoked } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
+
+      expect(issued).toStrictEqual([2])
+      expect(revoked).toStrictEqual([])
+    })
+
+    test('only newly unrevoked indexes are included in issued', () => {
+      // Previous: index 1 and 3 were revoked
+      const delta: RevocationRegistryDelta = {
+        accum,
+        issued: [],
+        revoked: [1, 3],
+        txnTime: 1,
+      }
+      // Now: index 1 is unrevoked (active), 3 is still revoked
+      const revocationStatusList = [0, 0, 0, 1, 0]
+      const { issued, revoked } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
+      expect(issued).toStrictEqual([1])
+      expect(revoked).toStrictEqual([])
+    })
+
+    test('only newly revoked indexes are included in revoked', () => {
+      // Previous: index 1 and 3 were revoked
+      const delta: RevocationRegistryDelta = {
+        accum,
+        issued: [],
+        revoked: [1, 3],
+        txnTime: 1,
+      }
+      // Now: index 2 is newly revoked
+      const revocationStatusList = [0, 1, 1, 1, 0]
+      const { issued, revoked } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
+      expect(issued).toStrictEqual([])
+      expect(revoked).toStrictEqual([2])
+    })
+
+    test('no change results in empty issued and revoked', () => {
+      const delta: RevocationRegistryDelta = {
+        accum,
+        issued: [],
+        revoked: [1, 3],
+        txnTime: 1,
+      }
+      const revocationStatusList = [0, 1, 0, 1, 0]
+      const { issued, revoked } = indyVdrCreateLatestRevocationDelta(accum, revocationStatusList, delta)
+      expect(issued).toStrictEqual([])
+      expect(revoked).toStrictEqual([])
     })
   })
 })
