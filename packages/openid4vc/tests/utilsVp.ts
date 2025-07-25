@@ -1,4 +1,4 @@
-import type { DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
+import type { DcqlQuery, DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
 
 export const universityDegreePresentationDefinition: DifPresentationExchangeDefinitionV2 = {
   id: 'UniversityDegreeCredential',
@@ -15,6 +15,18 @@ export const universityDegreePresentationDefinition: DifPresentationExchangeDefi
   ],
 }
 
+export const universityDegreeDcqlQuery: DcqlQuery = {
+  credentials: [
+    {
+      format: 'jwt_vc_json',
+      meta: {
+        type_values: [['UniversityDegreeCredential']],
+      },
+      id: 'UniversityDegree',
+    },
+  ],
+}
+
 export const openBadgePresentationDefinition: DifPresentationExchangeDefinitionV2 = {
   id: 'OpenBadgeCredential',
   input_descriptors: [
@@ -26,6 +38,18 @@ export const openBadgePresentationDefinition: DifPresentationExchangeDefinitionV
       constraints: {
         fields: [{ path: ['$.vc.type.*'], filter: { type: 'string', pattern: 'OpenBadgeCredential' } }],
       },
+    },
+  ],
+}
+
+export const openBadgeDcqlQuery: DcqlQuery = {
+  credentials: [
+    {
+      format: 'jwt_vc_json',
+      meta: {
+        type_values: [['OpenBadgeCredential']],
+      },
+      id: 'OpenBadgeCredentialDescriptor',
     },
   ],
 }

@@ -2448,8 +2448,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 },
                 claims: {
                   success: true,
-                  failed_claim_sets: [],
-                  failed_claims: [],
+                  failed_claim_sets: undefined,
+                  failed_claims: undefined,
                   valid_claims: expect.any(Array),
                   valid_claim_sets: [
                     {
@@ -2490,8 +2490,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 },
                 claims: {
                   success: true,
-                  failed_claim_sets: [],
-                  failed_claims: [],
+                  failed_claim_sets: undefined,
+                  failed_claims: undefined,
                   valid_claims: [
                     {
                       output: {

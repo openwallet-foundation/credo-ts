@@ -17,10 +17,13 @@ import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import {
   ClaimFormat,
+  SignatureSuiteRegistry,
   W3cCredentialRecord,
   W3cCredentialRepository,
+  W3cCredentialService,
   W3cJsonLdCredentialService,
   W3cJsonLdVerifiableCredential,
+  W3cPresentation,
 } from '../vc'
 
 import { JsonObject } from '../../types'
@@ -34,6 +37,7 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
+import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
 
 @injectable()
 export class DcqlService {
@@ -45,8 +49,6 @@ export class DcqlService {
     agentContext: AgentContext,
     dcqlQuery: DcqlQuery.Input
   ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
-    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
-
     const formats = new Set(dcqlQuery.credentials.map((c) => c.format))
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
@@ -87,6 +89,7 @@ export class DcqlService {
       allRecords.push(...sdJwtVcRecords)
     }
 
+    const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
     if (formats.has('jwt_vc_json')) {
       const w3cRecords = await w3cCredentialRepository.findByQuery(agentContext, {
         claimFormat: ClaimFormat.JwtVc,
@@ -188,16 +191,21 @@ export class DcqlService {
         credentialRecordsWithFormatDuplicates.push(record)
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
 
-        const akiHex = X509Certificate.fromRawCertificate(mdoc.signingCertificate).authorityKeyIdentifier
-        const aki = akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+        const akiValues = mdoc.issuerSignedCertificateChain
+          .map((c) => {
+            const akiHex = X509Certificate.fromRawCertificate(c).authorityKeyIdentifier
+            return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          })
+          .filter((aki) => aki !== undefined)
 
         return {
-          authority: aki
-            ? {
-                type: 'aki',
-                value: aki,
-              }
-            : undefined,
+          authority:
+            akiValues.length > 0
+              ? {
+                  type: 'aki',
+                  values: akiValues,
+                }
+              : undefined,
           credential_format: 'mso_mdoc',
           doctype: record.getTags().docType,
           namespaces: mdoc.issuerSignedNamespaces,
@@ -209,15 +217,17 @@ export class DcqlService {
         const sdJwtVc = this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
 
-        // FIXME: we should pass AKI from all certs: https://github.com/openwallet-foundation-labs/dcql-ts/issues/65
-        const signingCertificate = (sdJwtVc.header.x5c as string[] | undefined)?.[0]
-        const akiHex = signingCertificate
-          ? X509Certificate.fromEncodedCertificate(signingCertificate).authorityKeyIdentifier
-          : undefined
-        const authority = akiHex
+        const akiValues = (sdJwtVc.header.x5c as string[] | undefined)
+          ?.map((c) => {
+            const akiHex = X509Certificate.fromEncodedCertificate(c).authorityKeyIdentifier
+            return akiHex ? TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)) : undefined
+          })
+          .filter((aki) => aki !== undefined)
+
+        const authority = akiValues
           ? {
               type: 'aki',
-              value: TypedArrayEncoder.toBase64URL(TypedArrayEncoder.fromHex(akiHex)),
+              values: akiValues,
             }
           : undefined
 
@@ -358,26 +368,29 @@ export class DcqlService {
           .flatMap(([queryId, match]) =>
             match.success
               ? undefined
-              : match.failed_credentials.map(
-                  (failedCredential) =>
-                    `Presentation at index ${failedCredential.input_credential_index} does not match query credential '${queryId}'. ${JSON.stringify(
-                      {
-                        ...(failedCredential.claims.success
-                          ? {}
-                          : { claims: failedCredential.claims.failed_claim_sets.map((cs) => cs.issues) }),
-                        ...(failedCredential.trusted_authorities.success
-                          ? {}
-                          : {
-                              trusted_authorities: failedCredential.trusted_authorities.failed_trusted_authorities.map(
-                                (ta) => ta.issues
-                              ),
-                            }),
-                        ...(failedCredential.meta.success ? {} : { meta: failedCredential.meta.issues }),
-                      },
-                      null,
-                      2
-                    )}`
-                )
+              : !match.failed_credentials
+                ? `Unable to match query credential '${queryId}'. No prsentations provided`
+                : match.failed_credentials.map(
+                    (failedCredential) =>
+                      `Presentation at index ${failedCredential.input_credential_index} does not match query credential '${queryId}'. ${JSON.stringify(
+                        {
+                          ...(failedCredential.claims.success
+                            ? {}
+                            : { claims: failedCredential.claims.failed_claim_sets.map((cs) => cs.issues) }),
+                          ...(failedCredential.trusted_authorities.success
+                            ? {}
+                            : {
+                                trusted_authorities:
+                                  failedCredential.trusted_authorities.failed_trusted_authorities.map(
+                                    (ta) => ta.issues
+                                  ),
+                              }),
+                          ...(failedCredential.meta.success ? {} : { meta: failedCredential.meta.issues }),
+                        },
+                        null,
+                        2
+                      )}`
+                  )
           )
           .filter((message) => message !== undefined),
       })
@@ -537,8 +550,69 @@ export class DcqlService {
 
           encodedCreatedPresentation = presentation
           createdPresentation = sdJwtVcApi.fromCompact(presentation)
+        } else if (presentationToCreate.claimFormat === ClaimFormat.JwtVp) {
+          if (!presentationToCreate.subjectIds) {
+            throw new DcqlError('Cannot create presentation for credentials without subject id')
+          }
+
+          // Determine a suitable verification method for the presentation
+          const verificationMethod = await this.getVerificationMethodForSubjectId(
+            agentContext,
+            presentationToCreate.subjectIds[0]
+          )
+
+          const w3cCredentialService = agentContext.resolve(W3cCredentialService)
+          const w3cPresentation = new W3cPresentation({
+            verifiableCredential: [presentationToCreate.credentialRecord.credential],
+            holder: verificationMethod.controller,
+          })
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+          const signedPresentation = await w3cCredentialService.signPresentation<ClaimFormat.JwtVp>(agentContext, {
+            format: ClaimFormat.JwtVp,
+            alg: publicJwk.signatureAlgorithm,
+            verificationMethod: verificationMethod.id,
+            presentation: w3cPresentation,
+            challenge,
+            domain,
+          })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
+        } else if (presentationToCreate.claimFormat === ClaimFormat.LdpVp) {
+          if (!presentationToCreate.subjectIds) {
+            throw new DcqlError('Cannot create presentation for credentials without subject id')
+          }
+          // Determine a suitable verification method for the presentation
+          const verificationMethod = await this.getVerificationMethodForSubjectId(
+            agentContext,
+            presentationToCreate.subjectIds[0]
+          )
+
+          const w3cCredentialService = agentContext.resolve(W3cCredentialService)
+          const w3cPresentation = new W3cPresentation({
+            verifiableCredential: [presentationToCreate.credentialRecord.credential],
+            holder: verificationMethod.controller,
+          })
+
+          const signedPresentation = await w3cCredentialService.signPresentation(agentContext, {
+            format: ClaimFormat.LdpVp,
+            // TODO: we should move the check for which proof to use for a presentation to earlier
+            // as then we know when determining which VPs to submit already if the proof types are supported
+            // by the verifier, and we can then just add this to the vpToCreate interface
+            proofType: this.getProofTypeForLdpVc(agentContext, verificationMethod),
+            proofPurpose: 'authentication',
+            verificationMethod: verificationMethod.id,
+            presentation: w3cPresentation,
+            challenge,
+            domain,
+          })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
         } else {
-          throw new DcqlError('W3c Presentation are not yet supported in combination with DCQL.')
+          throw new DcqlError('Unsupported presentation format.')
         }
 
         if (!dcqlPresentation[credentialQueryId]) {
@@ -573,5 +647,44 @@ export class DcqlService {
 
   private getMdocApi(agentContext: AgentContext) {
     return agentContext.dependencyManager.resolve(MdocApi)
+  }
+
+  private async getVerificationMethodForSubjectId(agentContext: AgentContext, subjectId: string) {
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+
+    if (!subjectId.startsWith('did:')) {
+      throw new DcqlError(`Only dids are supported as credentialSubject id. ${subjectId} is not a valid did`)
+    }
+
+    const didDocument = await didsApi.resolveDidDocument(subjectId)
+
+    if (!didDocument.authentication || didDocument.authentication.length === 0) {
+      throw new DcqlError(`No authentication verificationMethods found for did ${subjectId} in did document`)
+    }
+
+    // the signature suite to use for the presentation is dependant on the credentials we share.
+    // 1. Get the verification method for this given proof purpose in this DID document
+    let [verificationMethod] = didDocument.authentication
+    if (typeof verificationMethod === 'string') {
+      verificationMethod = didDocument.dereferenceKey(verificationMethod, ['authentication'])
+    }
+
+    return verificationMethod
+  }
+
+  // FIXME: We need to take into account OpenID4VP metadata (probably providing supported/allowed algs to the DCQL create presentation method)
+  private getProofTypeForLdpVc(agentContext: AgentContext, verificationMethod: VerificationMethod) {
+    // For each of the supported algs, find the key types, then find the proof types
+    const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
+
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
+    if (supportedSignatureSuites.length === 0) {
+      throw new DcqlError(
+        `Couldn't find a supported signature suite for the given jwk ${publicJwk.jwkTypehumanDescription}`
+      )
+    }
+
+    return supportedSignatureSuites[0].proofType
   }
 }

@@ -46,11 +46,12 @@ describe('DcqlService', () => {
         additionalMessages: [
           `Presentation at index 0 does not match query credential 'something'. {
   "claims": [
-    "age_over_18": [
-      "Expected claim 'age_over_18' to be defined"
-    ]
+    {
+      "age_over_18": [
+        "Expected claim 'age_over_18' to be defined"
+      ]
+    }
   ]
-
 }`,
         ],
       })

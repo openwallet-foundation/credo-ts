@@ -169,9 +169,10 @@ export class OpenId4VpVerifierService {
         )
       }
 
-      const hasValidCredentialIdsForPex = options?.presentationExchange?.definition.input_descriptors.every(({ id }) =>
-        options.verifierInfo?.every((va) => va.credential_ids?.includes(id))
-      )
+      const hasValidCredentialIdsForPex =
+        options?.presentationExchange?.definition.input_descriptors.every(({ id }) =>
+          options.verifierInfo?.every((va) => va.credential_ids?.includes(id))
+        ) ?? true
 
       if (!hasValidCredentialIdsForPex) {
         throw new CredoError(

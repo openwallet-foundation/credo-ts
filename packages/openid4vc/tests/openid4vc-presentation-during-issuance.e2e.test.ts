@@ -101,6 +101,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             method: 'x5c',
             x5c: [issuer.certificate],
           },
+          version: queryMethod === 'presentationDefinition' ? 'v1.draft24' : 'v1',
           responseMode: 'direct_post.jwt',
           presentationExchange:
             queryMethod === 'presentationDefinition'
