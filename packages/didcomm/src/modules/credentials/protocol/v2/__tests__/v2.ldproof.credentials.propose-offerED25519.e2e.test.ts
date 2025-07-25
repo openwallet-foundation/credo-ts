@@ -11,15 +11,15 @@ import {
   getAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { Agent } from '../../../../../../../core/src/agent/Agent'
-import { KeyType } from '../../../../../../../core/src/crypto'
 import { CacheModule, InMemoryLruCache } from '../../../../../../../core/src/modules/cache'
 import { W3cCredentialsModule } from '../../../../../../../core/src/modules/vc'
 import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   setupEventReplaySubjects,
   setupSubjectTransports,
@@ -37,11 +37,7 @@ import { V2CredentialPreview } from '../messages'
 
 const signCredentialOptions = {
   credential: {
-    '@context': [
-      'https://www.w3.org/2018/credentials/v1',
-      'https://w3id.org/citizenship/v1',
-      'https://w3id.org/security/bbs/v1',
-    ],
+    '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
     id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
     type: ['VerifiableCredential', 'PermanentResidentCard'],
     issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -113,23 +109,25 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
   beforeAll(async () => {
     faberAgent = new Agent(
-      getInMemoryAgentOptions(
+      getAgentOptions(
         'Faber Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:faber'],
         },
         {},
-        getIndyJsonLdModules()
+        getIndyJsonLdModules(),
+        { requireDidcomm: true }
       )
     )
     aliceAgent = new Agent(
-      getInMemoryAgentOptions(
+      getAgentOptions(
         'Alice Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:alice'],
         },
         {},
-        getIndyJsonLdModules()
+        getIndyJsonLdModules(),
+        { requireDidcomm: true }
       )
     )
 
@@ -147,17 +145,30 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     })
     credentialDefinitionId = credentialDefinition.credentialDefinitionId
 
-    await faberAgent.context.wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-      keyType: KeyType.Ed25519,
+    const key = await faberAgent.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        type: {
+          crv: 'Ed25519',
+          kty: 'OKP',
+        },
+      }).privateJwk,
+    })
+
+    await faberAgent.dids.import({
+      did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          kmsKeyId: key.keyId,
+        },
+      ],
     })
   })
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with V2 (ld format, Ed25519 signature) credential proposal to Faber', async () => {
@@ -381,11 +392,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     const credentialOfferJson = offerMessage?.offerAttachments[1].getDataAsJson()
     expect(credentialOfferJson).toMatchObject({
       credential: {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
+        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
         id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
         type: ['VerifiableCredential', 'PermanentResidentCard'],
         issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
@@ -513,11 +520,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     const credentialMessage = await faberAgent.modules.credentials.findCredentialMessage(faberCredentialRecord.id)
     const w3cCredential = credentialMessage?.credentialAttachments[1].getDataAsJson()
     expect(w3cCredential).toMatchObject({
-      '@context': [
-        'https://www.w3.org/2018/credentials/v1',
-        'https://w3id.org/citizenship/v1',
-        'https://w3id.org/security/bbs/v1',
-      ],
+      '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
       id: 'https://issuer.oidp.uscis.gov/credentials/83627465',
       type: ['VerifiableCredential', 'PermanentResidentCard'],
       issuer: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',

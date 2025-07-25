@@ -1,6 +1,6 @@
 import type { AgentMessage } from '../../../AgentMessage'
+import type { QueuedMessage } from '../../../transport/queue'
 import type { ConnectionRecord } from '../../connections/repository'
-import type { QueuedMessage } from '../storage'
 
 export interface PickupMessagesProtocolOptions {
   connectionRecord: ConnectionRecord

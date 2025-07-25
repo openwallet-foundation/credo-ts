@@ -2,14 +2,14 @@ import { parseIndyDid } from '@credo-ts/anoncreds'
 import { Agent, DidsModule, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 
-import { getInMemoryAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
+import { getAgentOptions, importExistingIndyDidFromPrivateKey } from '../../core/tests/helpers'
 import { IndyVdrModule } from '../src'
 import { IndyVdrIndyDidRegistrar, IndyVdrIndyDidResolver, IndyVdrSovDidResolver } from '../src/dids'
 
 import { createDidOnLedger, indyVdrModuleConfig } from './helpers'
 
 const agent = new Agent(
-  getInMemoryAgentOptions(
+  getAgentOptions(
     'Indy VDR Sov DID resolver',
     {},
     {},
@@ -33,7 +33,6 @@ describe('Indy VDR Sov DID Resolver', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('resolve a did:sov did', async () => {
@@ -43,7 +42,7 @@ describe('Indy VDR Sov DID Resolver', () => {
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://w3id.org/did/v1',
+          'https://www.w3.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
         ],
@@ -95,7 +94,7 @@ describe('Indy VDR Sov DID Resolver', () => {
     expect(JsonTransformer.toJSON(didResult)).toMatchObject({
       didDocument: {
         '@context': [
-          'https://w3id.org/did/v1',
+          'https://www.w3.org/ns/did/v1',
           'https://w3id.org/security/suites/ed25519-2018/v1',
           'https://w3id.org/security/suites/x25519-2019/v1',
           'https://didcomm.org/messaging/contexts/v2',

@@ -1,4 +1,5 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
+import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -12,15 +13,18 @@ export interface DidCommModuleConfigOptions {
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
+  queueTransportRepository?: QueueTransportRepository
 }
 
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
+  private _queueTransportRepository: QueueTransportRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
     this._endpoints = options?.endpoints
+    this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -64,5 +68,13 @@ export class DidCommModuleConfig {
    */
   public get useDidKeyInProtocols() {
     return this.options.useDidKeyInProtocols ?? true
+  }
+
+  /**
+   * Allows to specify a custom queue transport queue. It defaults to an in-memory queue
+   *
+   */
+  public get queueTransportRepository() {
+    return this._queueTransportRepository
   }
 }

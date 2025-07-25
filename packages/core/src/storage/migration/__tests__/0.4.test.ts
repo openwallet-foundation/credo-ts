@@ -1,25 +1,18 @@
 import { readFileSync } from 'fs'
 import path from 'path'
-
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
 import { W3cCredentialsModule } from '../../../modules/vc'
 import { customDocumentLoader } from '../../../modules/vc/data-integrity/__tests__/documentLoader'
-import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2024-02-05T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-
-const walletConfig = {
-  id: 'Wallet: 0.5 Update',
-  key: 'Key: 0.5 Update',
-}
 
 describe('UpdateAssistant | v0.4 - v0.5', () => {
   it(`should correctly add 'type' tag to w3c records`, async () => {
@@ -32,28 +25,20 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-        },
-        dependencies: agentDependencies,
-        modules: {
-          w3cCredentials: new W3cCredentialsModule({
-            documentLoader: customDocumentLoader,
-          }),
-        },
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
       },
-      dependencyManager
-    )
+      dependencies: agentDependencies,
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+        w3cCredentials: new W3cCredentialsModule({
+          documentLoader: customDocumentLoader,
+        }),
+      },
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -88,7 +73,6 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -103,25 +87,16 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
     // We need core DIDComm modules for this update to fully work
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-        },
-        modules: getDefaultDidcommModules(),
-        dependencies: agentDependencies,
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
       },
-      dependencyManager
-    )
+      modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
+      dependencies: agentDependencies,
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -156,7 +131,6 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -168,25 +142,16 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
 
     const aliceW3cCredentialRecordsString = readFileSync(path.join(__dirname, '__fixtures__/2-proofs-0.4.json'), 'utf8')
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
     // We need core DIDComm modules for this update to fully work
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-        },
-        modules: getDefaultDidcommModules(),
-        dependencies: agentDependencies,
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
       },
-      dependencyManager
-    )
+      modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
+      dependencies: agentDependencies,
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -221,7 +186,6 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })

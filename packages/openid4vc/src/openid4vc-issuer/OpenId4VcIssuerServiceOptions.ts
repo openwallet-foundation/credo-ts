@@ -1,12 +1,4 @@
-import type {
-  AgentContext,
-  ClaimFormat,
-  JwaSignatureAlgorithm,
-  KeyType,
-  MdocSignOptions,
-  SdJwtVcSignOptions,
-  W3cCredential,
-} from '@credo-ts/core'
+import type { AgentContext, ClaimFormat, Kms, MdocSignOptions, SdJwtVcSignOptions, W3cCredential } from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcVerificationSessionRecord,
@@ -324,13 +316,19 @@ export type OpenId4VciCreateIssuerOptions = {
   /**
    * Key type to use for signing access tokens
    *
-   * @default KeyType.Ed25519
+   * @default
+   * ```json
+   * {
+   *  kty: "OKP",
+   *  crv: "Ed25519"
+   * }
+   * ```
    */
-  accessTokenSignerKeyType?: KeyType
+  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAssymetric
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
-  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
 
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 

@@ -1,4 +1,5 @@
-import { id_ecPublicKey, id_secp256r1, id_secp384r1 } from '@peculiar/asn1-ecc'
+import { id_ecPublicKey, id_secp256r1, id_secp384r1, id_secp521r1 } from '@peculiar/asn1-ecc'
+import { id_rsaEncryption } from '@peculiar/asn1-rsa'
 import { AsnObjectIdentifierConverter } from '@peculiar/asn1-schema'
 import { AlgorithmIdentifier } from '@peculiar/asn1-x509'
 
@@ -22,6 +23,12 @@ export const ecPublicKeyWithP256AlgorithmIdentifier = ecPublicKeyAlgorithmIdenti
 export const ecPublicKeyWithP384AlgorithmIdentifier = ecPublicKeyAlgorithmIdentifier(id_secp384r1)
 /**
  *
+ * https://oid-rep.orange-labs.fr/get/1.3.132.0.35
+ *
+ */
+export const ecPublicKeyWithP521AlgorithmIdentifier = ecPublicKeyAlgorithmIdentifier(id_secp521r1)
+/**
+ *
  * https://oid-rep.orange-labs.fr/get/1.3.132.0.10
  *
  */
@@ -40,3 +47,14 @@ export const ed25519AlgorithmIdentifier = new AlgorithmIdentifier({ algorithm: '
  *
  */
 export const x25519AlgorithmIdentifier = new AlgorithmIdentifier({ algorithm: '1.3.101.110' })
+
+/**
+ *
+ * RSA algorithm identifier
+ * https://oid-rep.orange-labs.fr/get/1.2.840.113549.1.1.1
+ *
+ */
+export const rsaKeyAlgorithmIdentifier = new AlgorithmIdentifier({
+  algorithm: id_rsaEncryption,
+  parameters: null,
+})

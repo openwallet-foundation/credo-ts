@@ -1,12 +1,14 @@
-import type { JsonObject } from '../../../../types'
-import type { DidDocument, VerificationMethod } from '../../domain'
-
-import { Key } from '../../../../crypto/Key'
 import { CredoError } from '../../../../error'
+import type { JsonObject } from '../../../../types'
 import { JsonEncoder, JsonTransformer } from '../../../../utils'
+import { PublicJwk } from '../../../kms'
+import type { DidDocument, VerificationMethod } from '../../domain'
 import { DidDocumentService } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
-import { getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../domain/key-type'
+import {
+  getPublicJwkFromVerificationMethod,
+  getVerificationMethodsForPublicJwk,
+} from '../../domain/key-type/keyDidMapping'
 import { parseDid } from '../../domain/parse'
 
 enum DidPeerPurpose {
@@ -73,9 +75,8 @@ export function didToNumAlgo2DidDocument(did: string) {
     // Otherwise we can be sure it is a key
     else {
       // Decode the fingerprint, and extract the verification method(s)
-      const key = Key.fromFingerprint(entryContent)
-      const { getVerificationMethods } = getKeyDidMappingByKeyType(key.keyType)
-      const verificationMethods = getVerificationMethods(did, key)
+      const publicJwk = PublicJwk.fromFingerprint(entryContent)
+      const verificationMethods = getVerificationMethodsForPublicJwk(publicJwk, did)
 
       // Add all verification methods to the did document
       for (const verificationMethod of verificationMethods) {
@@ -115,7 +116,7 @@ export function didDocumentToNumAlgo2Did(didDocument: DidDocument) {
 
     // Transform all verification methods into a fingerprint (multibase, multicodec)
     for (const entry of dereferenced) {
-      const key = getKeyFromVerificationMethod(entry)
+      const key = getPublicJwkFromVerificationMethod(entry)
 
       // Encode as '.PurposeFingerprint'
       const encoded = `.${purpose}${key.fingerprint}`

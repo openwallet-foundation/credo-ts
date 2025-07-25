@@ -1,14 +1,14 @@
 import type { KeyDidCreateOptions } from '../methods/key/KeyDidRegistrar'
 import type { PeerDidNumAlgo0CreateOptions } from '../methods/peer/PeerDidRegistrar'
 
-import { getInMemoryAgentOptions } from '../../../../tests/helpers'
+import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
+import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
-import { KeyType } from '../../../crypto'
 import { PeerDidNumAlgo } from '../methods/peer/didPeer'
 
 import { JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-const agentOptions = getInMemoryAgentOptions('Faber Dids Registrar')
+const agentOptions = getAgentOptions('Faber Dids Registrar')
 
 describe('dids', () => {
   let agent: Agent
@@ -20,17 +20,25 @@ describe('dids', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   it('should create a did:key did', async () => {
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+    }).privateJwk
+
+    const { keyId } = await agent.kms.importKey({
+      privateJwk,
+    })
+
     const did = await agent.dids.create<KeyDidCreateOptions>({
       method: 'key',
       options: {
-        keyType: KeyType.Ed25519,
-      },
-      secret: {
-        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+        keyId,
       },
     })
 
@@ -43,7 +51,7 @@ describe('dids', () => {
         did: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         didDocument: {
           '@context': [
-            'https://w3id.org/did/v1',
+            'https://www.w3.org/ns/did/v1',
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
@@ -80,22 +88,28 @@ describe('dids', () => {
           ],
           id: 'did:key:z6MkpGR4gs4Rc3Zph4vj8wRnjnAxgAPSxcR8MAVKutWspQzc',
         },
-        secret: { privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e') },
       },
     })
   })
 
   it('should create a did:peer did', async () => {
-    const privateKey = TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb')
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('e008ef10b7c163114b3857542b3736eb'),
+      type: {
+        kty: 'OKP',
+        crv: 'Ed25519',
+      },
+    }).privateJwk
+
+    const { keyId } = await agent.kms.importKey({
+      privateJwk,
+    })
 
     const did = await agent.dids.create<PeerDidNumAlgo0CreateOptions>({
       method: 'peer',
       options: {
-        keyType: KeyType.Ed25519,
+        keyId,
         numAlgo: PeerDidNumAlgo.InceptionKeyWithoutDoc,
-      },
-      secret: {
-        privateKey,
       },
     })
 
@@ -108,7 +122,7 @@ describe('dids', () => {
         did: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         didDocument: {
           '@context': [
-            'https://w3id.org/did/v1',
+            'https://www.w3.org/ns/did/v1',
             'https://w3id.org/security/suites/ed25519-2018/v1',
             'https://w3id.org/security/suites/x25519-2019/v1',
           ],
@@ -145,7 +159,6 @@ describe('dids', () => {
           ],
           id: 'did:peer:0z6Mkuo91yRhTWDrFkdNBcLXAbvtUiq2J9E4QQcfYZt4hevkh',
         },
-        secret: { privateKey },
       },
     })
   })

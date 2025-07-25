@@ -1,8 +1,8 @@
 import type {
   OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
   OriginalVerifiablePresentation as SphereonOriginalVerifiablePresentation,
-  W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
-} from '@sphereon/ssi-types'
+} from '@animo-id/pex/dist/main/lib/types/PexCredentialMapper'
+import type { W3CVerifiablePresentation as SphereonW3CVerifiablePresentation } from '@sphereon/ssi-types'
 import type { AgentContext } from '../../../agent'
 import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'

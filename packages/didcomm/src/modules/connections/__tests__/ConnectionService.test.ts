@@ -1,12 +1,10 @@
 import type { AgentContext } from '@credo-ts/core/src/agent'
-import type { Wallet } from '@credo-ts/core/src/wallet/Wallet'
 import type { Routing } from '../../../models'
 
 import { Subject } from 'rxjs'
 
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
-import { Key, KeyType } from '../../../../../core/src/crypto'
 import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/service/DidCommV1Service'
@@ -68,18 +66,16 @@ const outOfBandService = new OutOfBandServiceMock()
 const didRepository = new DidRepositoryMock()
 
 describe('ConnectionService', () => {
-  let wallet: Wallet
   let connectionRepository: ConnectionRepository
 
   let connectionService: ConnectionService
   let eventEmitter: EventEmitter
   let myRouting: Routing
   let agentContext: AgentContext
+  let kms: Kms.KeyManagementApi
 
   beforeAll(async () => {
-    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
-      wallet,
       agentConfig,
       registerInstances: [
         [OutOfBandRepository, outOfBandRepository],
@@ -88,19 +84,21 @@ describe('ConnectionService', () => {
         [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint], connectionImageUrl })],
       ],
     })
-    await wallet.createAndOpen(agentConfig.walletConfig)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
+    kms = agentContext.resolve(Kms.KeyManagementApi)
   })
 
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
     connectionService = new ConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
+
+    const recipientKey = Kms.PublicJwk.fromFingerprint(
+      'z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'
+    ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    recipientKey.keyId = 'something-random'
+
     myRouting = {
-      recipientKey: Key.fromFingerprint('z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'),
+      recipientKey,
       endpoints: [endpoint],
       routingKeys: [],
       mediatorId: 'fakeMediatorId',
@@ -220,7 +218,11 @@ describe('ConnectionService', () => {
       expect.assertions(5)
 
       const theirDid = 'their-did'
-      const theirKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
+      const theirKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+      })
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
@@ -229,7 +231,7 @@ describe('ConnectionService', () => {
             new Ed25119Sig2018({
               id: `${theirDid}#key-id`,
               controller: theirDid,
-              publicKeyBase58: theirKey.publicKeyBase58,
+              publicKeyBase58: TypedArrayEncoder.toBase58(theirKey.publicKey.publicKey),
             })
           ),
         ],
@@ -252,7 +254,11 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(connectionRequest, {
         agentContext,
         senderKey: theirKey,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
       })
 
       const outOfBand = getMockOutOfBand({
@@ -263,7 +269,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
       expect(processedConnection.imageUrl).toBe(connectionImageUrl)
@@ -279,7 +285,12 @@ describe('ConnectionService', () => {
       })
 
       const theirDid = 'their-did'
-      const theirKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
+      const theirKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+      })
+
       const theirDidDoc = new DidDoc({
         id: theirDid,
         publicKey: [],
@@ -288,7 +299,7 @@ describe('ConnectionService', () => {
             new Ed25119Sig2018({
               id: `${theirDid}#key-id`,
               controller: theirDid,
-              publicKeyBase58: theirKey.publicKeyBase58,
+              publicKeyBase58: TypedArrayEncoder.toBase58(theirKey.publicKey.publicKey),
             })
           ),
         ],
@@ -311,7 +322,11 @@ describe('ConnectionService', () => {
         agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
       })
 
       const outOfBand = getMockOutOfBand({
@@ -322,7 +337,7 @@ describe('ConnectionService', () => {
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
       expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
-      expect(processedConnection.theirDid).toBe('did:peer:1zQmW2esSyEVGzrh3CFt1eQZUHEAb3Li1hyPudPhSoFevrFY')
+      expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
 
@@ -342,8 +357,16 @@ describe('ConnectionService', () => {
 
       const messageContext = new InboundMessageContext(connectionRequest, {
         agentContext,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
-        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
+        senderKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+        }),
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
@@ -358,8 +381,16 @@ describe('ConnectionService', () => {
 
       const inboundMessage = new InboundMessageContext(jest.fn()(), {
         agentContext,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
-        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
+        senderKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+        }),
       })
 
       const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver, state: OutOfBandState.AwaitResponse })
@@ -389,8 +420,9 @@ describe('ConnectionService', () => {
     it('returns a connection response message containing the information from the connection record', async () => {
       expect.assertions(2)
 
-      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+      const did = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey))
 
       // Needed for signing connection~sig
       const mockConnection = getMockConnection({
@@ -401,13 +433,16 @@ describe('ConnectionService', () => {
         },
       })
 
-      const recipientKeys = [new DidKey(key)]
-      const outOfBand = getMockOutOfBand({ recipientKeys: recipientKeys.map((did) => did.did) })
+      const recipientKeys = [new DidKey(publicJwk)]
+      const outOfBand = getMockOutOfBand({
+        recipientKeys: recipientKeys.map((did) => did.did),
+        invitationInlineServiceKeys: [{ kmsKeyId: key.keyId, recipientKeyFingerprint: publicJwk.fingerprint }],
+      })
 
       const publicKey = new Ed25119Sig2018({
         id: `${did}#1`,
         controller: did,
-        publicKeyBase58: key.publicKeyBase58,
+        publicKeyBase58: TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey),
       })
       const mockDidDoc = new DidDoc({
         id: did,
@@ -417,7 +452,11 @@ describe('ConnectionService', () => {
           new IndyAgentService({
             id: `${did}#IndyAgentService-1`,
             serviceEndpoint: 'http://example.com',
-            recipientKeys: recipientKeys.map((did) => did.key.publicKeyBase58),
+            recipientKeys: recipientKeys.map((did) => {
+              const publicKey = did.publicJwk.publicKey
+              if (publicKey.kty !== 'OKP') throw new Error('expected okp')
+              return TypedArrayEncoder.toBase58(publicKey.publicKey)
+            }),
             routingKeys: [],
           }),
         ],
@@ -436,7 +475,7 @@ describe('ConnectionService', () => {
       const plainConnection = JsonTransformer.toJSON(connection)
 
       expect(connectionRecord.state).toBe(DidExchangeState.ResponseSent)
-      expect(await unpackAndVerifySignatureDecorator(message.connectionSig, wallet)).toEqual(plainConnection)
+      expect(await unpackAndVerifySignatureDecorator(agentContext, message.connectionSig)).toEqual(plainConnection)
     })
 
     it(`throws an error when connection role is ${DidExchangeRole.Requester} and not ${DidExchangeRole.Responder}`, async () => {
@@ -480,11 +519,13 @@ describe('ConnectionService', () => {
     it('returns a connection record containing the information from the connection response', async () => {
       expect.assertions(2)
 
-      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+      const did = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey))
 
-      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const theirKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const theirPublicJwk = Kms.PublicJwk.fromPublicJwk(theirKey.publicJwk)
+      const theirDid = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey))
 
       const connectionRecord = getMockConnection({
         did,
@@ -502,7 +543,7 @@ describe('ConnectionService', () => {
               new Ed25119Sig2018({
                 id: `${theirDid}#key-id`,
                 controller: theirDid,
-                publicKeyBase58: theirKey.publicKeyBase58,
+                publicKeyBase58: TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey),
               })
             ),
           ],
@@ -517,7 +558,7 @@ describe('ConnectionService', () => {
       })
 
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
+      const connectionSig = await signData(agentContext, plainConnection, theirPublicJwk)
 
       const connectionResponse = new ConnectionResponseMessage({
         threadId: uuid(),
@@ -525,19 +566,21 @@ describe('ConnectionService', () => {
       })
 
       const outOfBandRecord = getMockOutOfBand({
-        recipientKeys: [new DidKey(theirKey).did],
+        recipientKeys: [new DidKey(theirPublicJwk).did],
       })
       const messageContext = new InboundMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
-        senderKey: theirKey,
-        recipientKey: key,
+        senderKey: theirPublicJwk,
+        recipientKey: publicJwk,
       })
 
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      const peerDid = didDocumentJsonToNumAlgo1Did(convertToNewDidDocument(otherPartyConnection.didDoc!).toJSON())
+      const peerDid = didDocumentJsonToNumAlgo1Did(
+        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        convertToNewDidDocument(otherPartyConnection.didDoc!).didDocument.toJSON()
+      )
 
       expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
       expect(processedConnection.theirDid).toBe(peerDid)
@@ -554,8 +597,16 @@ describe('ConnectionService', () => {
       const messageContext = new InboundMessageContext(jest.fn()(), {
         agentContext,
         connection: connectionRecord,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
-        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
+        senderKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+        }),
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -566,11 +617,13 @@ describe('ConnectionService', () => {
     it('throws an error when the connection sig is not signed with the same key as the recipient key from the invitation', async () => {
       expect.assertions(1)
 
-      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+      const did = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey))
 
-      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const theirKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const theirPublicJwk = Kms.PublicJwk.fromPublicJwk(theirKey.publicJwk)
+      const theirDid = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey))
       const connectionRecord = getMockConnection({
         did,
         role: DidExchangeRole.Requester,
@@ -587,7 +640,7 @@ describe('ConnectionService', () => {
               new Ed25119Sig2018({
                 id: `${theirDid}#key-id`,
                 controller: theirDid,
-                publicKeyBase58: theirKey.publicKeyBase58,
+                publicKeyBase58: TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey),
               })
             ),
           ],
@@ -601,7 +654,7 @@ describe('ConnectionService', () => {
         }),
       })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
+      const connectionSig = await signData(agentContext, plainConnection, theirPublicJwk)
 
       const connectionResponse = new ConnectionResponseMessage({
         threadId: uuid(),
@@ -611,13 +664,13 @@ describe('ConnectionService', () => {
       // Recipient key `verkey` is not the same as theirVerkey which was used to sign message,
       // therefore it should cause a failure.
       const outOfBandRecord = getMockOutOfBand({
-        recipientKeys: [new DidKey(key).did],
+        recipientKeys: [new DidKey(publicJwk).did],
       })
       const messageContext = new InboundMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
-        senderKey: theirKey,
-        recipientKey: key,
+        senderKey: theirPublicJwk,
+        recipientKey: publicJwk,
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -628,11 +681,13 @@ describe('ConnectionService', () => {
     it('throws an error when the message does not contain a DID Document', async () => {
       expect.assertions(1)
 
-      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+      const did = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey))
 
-      const theirKey = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const theirDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const theirKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const theirPublicJwk = Kms.PublicJwk.fromPublicJwk(theirKey.publicJwk)
+      const theirDid = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey))
       const connectionRecord = getMockConnection({
         did,
         state: DidExchangeState.RequestSent,
@@ -641,16 +696,24 @@ describe('ConnectionService', () => {
 
       const otherPartyConnection = new Connection({ did: theirDid })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
-      const connectionSig = await signData(plainConnection, wallet, theirKey.publicKeyBase58)
+      const connectionSig = await signData(agentContext, plainConnection, theirPublicJwk)
 
       const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
-      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirKey).did] })
+      const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirPublicJwk).did] })
       const messageContext = new InboundMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
-        recipientKey: Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519),
-        senderKey: Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+        }),
+        senderKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+        }),
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
@@ -823,26 +886,34 @@ describe('ConnectionService', () => {
     it('should not throw when a fully valid connection-less input is passed', async () => {
       expect.assertions(1)
 
-      const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
-      const senderKey = Key.fromPublicKeyBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ', KeyType.Ed25519)
+      const recipientKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+      })
+      const senderKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
+      })
 
       const lastSentMessage = new AgentMessage()
       lastSentMessage.setService({
-        recipientKeys: [recipientKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const lastReceivedMessage = new AgentMessage()
       lastReceivedMessage.setService({
-        recipientKeys: [senderKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
       const message = new AgentMessage()
       message.setService({
-        recipientKeys: [senderKey.publicKeyBase58],
+        recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
@@ -886,8 +957,16 @@ describe('ConnectionService', () => {
     it('should throw an error when lastSentMessage and recipientKey are present, but recipient key is not present in recipientKeys of previously sent message ~service decorator', async () => {
       expect.assertions(1)
 
-      const recipientKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
-      const senderKey = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+      const recipientKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+      })
+      const senderKey = Kms.PublicJwk.fromPublicKey({
+        kty: 'OKP',
+        crv: 'Ed25519',
+        publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+      })
 
       const lastSentMessage = new AgentMessage()
       lastSentMessage.setService({
@@ -908,7 +987,7 @@ describe('ConnectionService', () => {
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
           lastSentMessage,
         })
-      ).rejects.toThrowError('Recipient key 8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K not found in our service')
+      ).rejects.toThrowError('Recipient key z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th not found in our service')
     })
 
     it('should throw an error when lastReceivedMessage is present, but senderVerkey is not ', async () => {
@@ -955,8 +1034,16 @@ describe('ConnectionService', () => {
       const message = new AgentMessage()
       const messageContext = new InboundMessageContext(message, {
         agentContext,
-        senderKey: Key.fromPublicKeyBase58('randomKey', KeyType.Ed25519),
-        recipientKey: Key.fromPublicKeyBase58(senderKey, KeyType.Ed25519),
+        senderKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58('randomKey'),
+        }),
+        recipientKey: Kms.PublicJwk.fromPublicKey({
+          kty: 'OKP',
+          crv: 'Ed25519',
+          publicKey: TypedArrayEncoder.fromBase58(senderKey),
+        }),
       })
 
       await expect(
@@ -964,7 +1051,7 @@ describe('ConnectionService', () => {
           lastReceivedMessage,
           lastSentMessage,
         })
-      ).rejects.toThrowError('Sender key randomKey not found in their service')
+      ).rejects.toThrow('Sender key z41yMxWDBqGD2Z not found in their service.')
     })
   })
 

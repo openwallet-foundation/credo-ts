@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs'
 
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
@@ -65,7 +66,16 @@ describe('MediatorService - default config', () => {
 
       mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
         new MediatorRoutingRecord({
-          routingKeys: ['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'],
+          routingKeys: [
+            {
+              routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+                kty: 'OKP',
+                crv: 'Ed25519',
+                publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+              }).fingerprint,
+              kmsKeyId: 'some-key-id',
+            },
+          ],
         })
       )
 
@@ -192,7 +202,16 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
       const routingRecord = new MediatorRoutingRecord({
-        routingKeys: ['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'],
+        routingKeys: [
+          {
+            routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
+              kty: 'OKP',
+              crv: 'Ed25519',
+              publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+            }).fingerprint,
+            kmsKeyId: 'some-key-id',
+          },
+        ],
       })
 
       mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(routingRecord)

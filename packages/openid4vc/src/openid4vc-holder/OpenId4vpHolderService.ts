@@ -26,8 +26,8 @@ import {
   DifPresentationExchangeSubmissionLocation,
   Hasher,
   JwsService,
+  Kms,
   TypedArrayEncoder,
-  getJwkFromJson,
   injectable,
 } from '@credo-ts/core'
 import {
@@ -163,7 +163,7 @@ export class OpenId4VpHolderService {
             jws: jwt,
             jwsSigner: {
               method: 'jwk',
-              jwk: getJwkFromJson(jwk),
+              jwk: Kms.PublicJwk.fromUnknown(jwk),
             },
           })
 
@@ -188,6 +188,18 @@ export class OpenId4VpHolderService {
       client.clientMetadata = openidRelyingPartyMetadata
     }
 
+    const returnValue = {
+      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      origin: options?.origin,
+      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
+        ? {
+            signer: verifiedAuthorizationRequest.jar?.signer,
+            payload: verifiedAuthorizationRequest.jar.jwt.payload,
+            header: verifiedAuthorizationRequest.jar.jwt.header,
+          }
+        : undefined,
+    }
+
     const pexResult = pex?.presentation_definition
       ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
       : undefined
@@ -198,7 +210,7 @@ export class OpenId4VpHolderService {
     agentContext.config.logger.debug(`request '${authorizationRequest}'`)
 
     return {
-      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      ...returnValue,
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
       verifier: {
@@ -206,14 +218,6 @@ export class OpenId4VpHolderService {
         clientMetadata: client.clientMetadata,
       },
       dcql: dcqlResult?.dcql,
-      origin: options?.origin,
-      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
-        ? {
-            signer: verifiedAuthorizationRequest.jar?.signer,
-            payload: verifiedAuthorizationRequest.jar.jwt.payload,
-            header: verifiedAuthorizationRequest.jar.jwt.header,
-          }
-        : undefined,
     }
   }
 
@@ -353,10 +357,11 @@ export class OpenId4VpHolderService {
     agentContext: AgentContext,
     options: OpenId4VpAcceptAuthorizationRequestOptions
   ) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
     const parsedClientId = getOpenid4vpClientId({
       responseMode: authorizationRequestPayload.response_mode,
@@ -558,7 +563,7 @@ export class OpenId4VpHolderService {
           jws: jwt,
           jwsSigner: {
             method: 'jwk',
-            jwk: getJwkFromJson(jwk),
+            jwk: Kms.PublicJwk.fromUnknown(jwk),
           },
         })
 
@@ -582,7 +587,7 @@ export class OpenId4VpHolderService {
           jws: jwt,
           jwsSigner: {
             method: 'jwk',
-            jwk: getJwkFromJson(jwk),
+            jwk: Kms.PublicJwk.fromUnknown(jwk),
           },
         })
 
