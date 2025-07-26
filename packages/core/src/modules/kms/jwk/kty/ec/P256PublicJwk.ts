@@ -24,6 +24,14 @@ export class P256PublicJwk implements PublicJwkType<Jwk> {
     }
   }
 
+  public get compressedPublicKey() {
+    return {
+      crv: this.jwk.crv,
+      kty: this.jwk.kty,
+      publicKey: ecPublicJwkToPublicKey(this.jwk, { compressed: true }),
+    }
+  }
+
   public get multicodec() {
     return ecPublicJwkToPublicKey(this.jwk, { compressed: true })
   }
