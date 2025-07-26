@@ -2791,7 +2791,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -2803,7 +2803,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 

@@ -6,7 +6,7 @@ import {
   ClaimFormat,
   DidsApi,
   DifPresentationExchangeService,
-  JwaSignatureAlgorithm,
+  Kms,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
@@ -14,8 +14,6 @@ import {
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import {
   OpenId4VcHolderModule,
@@ -24,6 +22,7 @@ import {
   OpenId4VcVerifierModule,
 } from '../src'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 
@@ -99,19 +98,19 @@ describe('OpenId4Vc-federation', () => {
             throw new Error('Invalid request')
           },
         }),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
+
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598g'
     )) as unknown as typeof issuer
-    // issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
-    // issuer2 = await createTenantForAgent(issuer.agent, 'iTenant2')
 
     holder = (await createAgentFromModules(
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
+
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e'
@@ -138,7 +137,7 @@ describe('OpenId4Vc-federation', () => {
             },
           },
         }),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f'
@@ -157,13 +156,8 @@ describe('OpenId4Vc-federation', () => {
     expressServer?.close()
 
     await issuer.agent.shutdown()
-    await issuer.agent.wallet.delete()
-
     await holder.agent.shutdown()
-    await holder.agent.wallet.delete()
-
     await verifier.agent.shutdown()
-    await verifier.agent.wallet.delete()
 
     federationConfig = undefined
   })
@@ -184,7 +178,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -196,7 +190,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -204,15 +198,19 @@ describe('OpenId4Vc-federation', () => {
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
-        verifierId: openIdVerifierTenant1.verifierId,
-        requestSigner: {
-          method: 'federation',
-        },
-        presentationExchange: {
-          definition: openBadgePresentationDefinition,
-        },
-      })
+      await verifierTenant1.modules.openId4VcVerifier
+        .createAuthorizationRequest({
+          verifierId: openIdVerifierTenant1.verifierId,
+          requestSigner: {
+            method: 'federation',
+          },
+          presentationExchange: {
+            definition: openBadgePresentationDefinition,
+          },
+        })
+        .catch((error) => {
+          throw error
+        })
 
     expect(authorizationRequestUri1).toEqual(
       `openid4vp://?client_id=${encodeURIComponent(
@@ -428,7 +426,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -440,7 +438,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -686,7 +684,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 
@@ -698,7 +696,7 @@ describe('OpenId4Vc-federation', () => {
         credentialSubject: new W3cCredentialSubject({ id: holder1.did }),
         issuanceDate: w3cDate(Date.now()),
       }),
-      alg: JwaSignatureAlgorithm.EdDSA,
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
       verificationMethod: issuer.verificationMethod.id,
     })
 

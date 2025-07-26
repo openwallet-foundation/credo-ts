@@ -1,9 +1,15 @@
-import type { Buffer, Key } from '@credo-ts/core'
+import type { Buffer } from '@credo-ts/core'
 import type { Response, Router } from 'express'
 import type { OpenId4VcVerificationRequest } from './requestContext'
 
-import { JwsService, KeyType, getJwkFromJson, getJwkFromKey } from '@credo-ts/core'
-import { createEntityConfiguration, createEntityStatement, fetchEntityConfiguration } from '@openid-federation/core'
+import { JwsService, Kms } from '@credo-ts/core'
+import {
+  EntityConfigurationClaimsOptions,
+  JsonWebKey,
+  createEntityConfiguration,
+  createEntityStatement,
+  fetchEntityConfiguration,
+} from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { addSecondsToDate } from '../../shared/utils'
@@ -17,8 +23,8 @@ export function configureFederationEndpoint(
   // TODO: this whole result needs to be cached and the ttl should be the expires of this node
 
   // TODO: This will not work for multiple instances so we have to save it in the database.
-  const federationKeyMapping = new Map<string, Key>()
-  const rpSigningKeyMapping = new Map<string, Key>()
+  const federationKeyMapping = new Map<string, Kms.PublicJwk>()
+  const rpSigningKeyMapping = new Map<string, Kms.PublicJwk>()
 
   router.get(
     '/.well-known/openid-federation',
@@ -30,22 +36,37 @@ export function configureFederationEndpoint(
       try {
         let federationKey = federationKeyMapping.get(verifier.verifierId)
         if (!federationKey) {
-          federationKey = await agentContext.wallet.createKey({
-            keyType: KeyType.Ed25519,
-          })
+          const kms = agentContext.resolve(Kms.KeyManagementApi)
+          federationKey = Kms.PublicJwk.fromPublicJwk(
+            (
+              await kms.createKey({
+                type: {
+                  kty: 'OKP',
+                  crv: 'Ed25519',
+                },
+              })
+            ).publicJwk
+          )
           federationKeyMapping.set(verifier.verifierId, federationKey)
         }
 
         let rpSigningKey = rpSigningKeyMapping.get(verifier.verifierId)
         if (!rpSigningKey) {
-          rpSigningKey = await agentContext.wallet.createKey({
-            keyType: KeyType.Ed25519,
-          })
+          const kms = agentContext.resolve(Kms.KeyManagementApi)
+          rpSigningKey = Kms.PublicJwk.fromPublicJwk(
+            (
+              await kms.createKey({
+                type: {
+                  kty: 'OKP',
+                  crv: 'Ed25519',
+                },
+              })
+            ).publicJwk
+          )
           rpSigningKeyMapping.set(verifier.verifierId, rpSigningKey)
         }
 
         const verifierEntityId = `${verifierConfig.baseUrl}/${verifier.verifierId}`
-
         const clientMetadata = await verifierService.getClientMetadata(agentContext, {
           responseMode: 'direct_post.jwt',
           verifier,
@@ -57,9 +78,8 @@ export function configureFederationEndpoint(
         // TODO: We also need to check if the x509 certificate is still valid until this expires
         const expires = addSecondsToDate(now, 60 * 60 * 24) // 1 day
 
-        const jwk = getJwkFromKey(federationKey)
-        const alg = jwk.supportedSignatureAlgorithms[0]
-        const kid = federationKey.fingerprint
+        const alg = federationKey.signatureAlgorithm
+        const kid = federationKey.keyId
 
         const authorityHints = await federationConfig.getAuthorityHints?.(agentContext, {
           verifierId: verifier.verifierId,
@@ -79,7 +99,12 @@ export function configureFederationEndpoint(
             iat: now,
             exp: expires,
             jwks: {
-              keys: [{ kid, alg, ...jwk.toJson() }],
+              keys: [
+                {
+                  alg,
+                  ...federationKey.toJson(),
+                } as EntityConfigurationClaimsOptions['jwks']['keys'][number],
+              ],
             },
             authority_hints: authorityHints,
             metadata: {
@@ -93,24 +118,28 @@ export function configureFederationEndpoint(
                 jwks: {
                   keys: [
                     {
-                      ...getJwkFromKey(rpSigningKey).toJson(),
-                      kid: rpSigningKey.fingerprint,
+                      ...rpSigningKey.toJson(),
+                      kid: rpSigningKey.keyId,
                       alg,
                       use: 'sig',
                     },
-                    // @ts-expect-error federation library expects kid to be defined, but this is optional
                     ...clientMetadataKeys,
-                  ],
+                  ] as EntityConfigurationClaimsOptions['jwks']['keys'],
                 },
                 client_registration_types: ['automatic'], // TODO: Not really sure why we need to provide this manually
               },
             },
           },
-          signJwtCallback: ({ toBeSigned }) =>
-            agentContext.wallet.sign({
+          signJwtCallback: async ({ toBeSigned }) => {
+            const kms = agentContext.resolve(Kms.KeyManagementApi)
+            const signed = await kms.sign({
               data: toBeSigned as Buffer,
-              key: federationKey,
-            }),
+              algorithm: federationKey.signatureAlgorithm,
+              keyId: federationKey.keyId,
+            })
+
+            return signed.signature
+          },
         })
 
         response.writeHead(200, { 'Content-Type': 'application/entity-statement+jwt' }).end(entityConfiguration)
@@ -178,7 +207,7 @@ export function configureFederationEndpoint(
           jws: jwt,
           jwsSigner: {
             method: 'jwk',
-            jwk: getJwkFromJson(jwk),
+            jwk: Kms.PublicJwk.fromUnknown(jwk),
           },
         })
 
@@ -188,15 +217,22 @@ export function configureFederationEndpoint(
 
     let federationKey = federationKeyMapping.get(verifier.verifierId)
     if (!federationKey) {
-      federationKey = await agentContext.wallet.createKey({
-        keyType: KeyType.Ed25519,
-      })
+      const kms = agentContext.resolve(Kms.KeyManagementApi)
+      federationKey = Kms.PublicJwk.fromPublicJwk(
+        (
+          await kms.createKey({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          })
+        ).publicJwk
+      )
       federationKeyMapping.set(verifier.verifierId, federationKey)
     }
 
-    const jwk = getJwkFromKey(federationKey)
-    const alg = jwk.supportedSignatureAlgorithms[0]
-    const kid = federationKey.fingerprint
+    const alg = federationKey.signatureAlgorithm
+    const kid = federationKey.keyId
 
     const entityStatement = await createEntityStatement({
       header: {
@@ -204,10 +240,7 @@ export function configureFederationEndpoint(
         alg,
         typ: 'entity-statement+jwt',
       },
-      jwk: {
-        ...jwk.toJson(),
-        kid,
-      },
+      jwk: federationKey.toJson() as JsonWebKey,
       claims: {
         sub: sub,
         iss: entityId,
@@ -217,11 +250,16 @@ export function configureFederationEndpoint(
           keys: subjectEntityConfiguration.jwks.keys,
         },
       },
-      signJwtCallback: ({ toBeSigned }) =>
-        agentContext.wallet.sign({
+      signJwtCallback: async ({ toBeSigned }) => {
+        const kms = agentContext.resolve(Kms.KeyManagementApi)
+        const signed = await kms.sign({
           data: toBeSigned as Buffer,
-          key: federationKey,
-        }),
+          algorithm: federationKey.signatureAlgorithm,
+          keyId: federationKey.keyId,
+        })
+
+        return signed.signature
+      },
     })
 
     response.writeHead(200, { 'Content-Type': 'application/entity-statement+jwt' }).end(entityStatement)

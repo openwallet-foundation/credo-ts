@@ -1,9 +1,8 @@
-import type { Buffer } from '@credo-ts/core'
+import { type Buffer, Kms } from '@credo-ts/core'
 import type { Response, Router } from 'express'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { Key, KeyType, getJwkFromKey } from '@credo-ts/core'
-import { createEntityConfiguration } from '@openid-federation/core'
+import { EntityConfigurationClaimsOptions, createEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 
@@ -16,24 +15,29 @@ export function configureFederationEndpoint(router: Router) {
     const { agentContext, issuer } = getRequestContext(request)
 
     try {
+      const kms = agentContext.resolve(Kms.KeyManagementApi)
+
       // TODO: Should be only created once per issuer and be used between instances
-      const federationKey = await agentContext.wallet.createKey({
-        keyType: KeyType.Ed25519,
-      })
+      const federationKey = Kms.PublicJwk.fromPublicJwk(
+        (
+          await kms.createKey({
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          })
+        ).publicJwk
+      )
 
       const now = new Date()
       const expires = new Date(now.getTime() + 1000 * 60 * 60 * 24) // 1 day from now
 
       // TODO: We need to generate a key and always use that for the entity configuration
 
-      const jwk = getJwkFromKey(federationKey)
-
-      const kid = federationKey.fingerprint
-      const alg = jwk.supportedSignatureAlgorithms[0]
+      const kid = federationKey.keyId
+      const alg = federationKey.signatureAlgorithm
 
       const issuerDisplay = issuer.display?.[0]
-
-      const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
 
       const entityConfiguration = await createEntityConfiguration({
         claims: {
@@ -42,7 +46,7 @@ export function configureFederationEndpoint(router: Router) {
           iat: now,
           exp: expires,
           jwks: {
-            keys: [{ kid, alg, ...jwk.toJson() }],
+            keys: [{ alg, ...federationKey.toJson() } as EntityConfigurationClaimsOptions['jwks']['keys'][number]],
           },
           metadata: {
             federation_entity: issuerDisplay
@@ -68,11 +72,8 @@ export function configureFederationEndpoint(router: Router) {
               client_registration_types_supported: ['automatic'],
               jwks: {
                 keys: [
-                  {
-                    // TODO: Not 100% sure if this is the right key that we want to expose here or a different one
-                    kid: accessTokenSigningKey.fingerprint,
-                    ...getJwkFromKey(accessTokenSigningKey).toJson(),
-                  },
+                  // TODO: Not 100% sure if this is the right key that we want to expose here or a different one
+                  issuer.resolvedAccessTokenPublicJwk.toJson() as EntityConfigurationClaimsOptions['jwks']['keys'][number],
                 ],
               },
             },
@@ -83,11 +84,16 @@ export function configureFederationEndpoint(router: Router) {
           alg,
           typ: 'entity-statement+jwt',
         },
-        signJwtCallback: ({ toBeSigned }) =>
-          agentContext.wallet.sign({
+        signJwtCallback: async ({ toBeSigned }) => {
+          const kms = agentContext.resolve(Kms.KeyManagementApi)
+          const signed = await kms.sign({
             data: toBeSigned as Buffer,
-            key: federationKey,
-          }),
+            algorithm: federationKey.signatureAlgorithm,
+            keyId: federationKey.keyId,
+          })
+
+          return signed.signature
+        },
       })
 
       response.writeHead(200, { 'Content-Type': 'application/entity-statement+jwt' }).end(entityConfiguration)
@@ -95,7 +101,14 @@ export function configureFederationEndpoint(router: Router) {
       agentContext.config.logger.error('Failed to create entity configuration', {
         error,
       })
-      sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+      sendErrorResponse(
+        response,
+        next,
+        agentContext.config.logger,
+        500,
+        'invalid_request',
+        'Failed to create entity configuration'
+      )
       return
     }
 
