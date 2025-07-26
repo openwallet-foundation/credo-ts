@@ -26,6 +26,13 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
     }
   }
 
+  /**
+   * Not supported for Ed25519
+   */
+  public get compressedPublicKey() {
+    return null
+  }
+
   public get multicodec() {
     return okpPublicJwkToPublicKey(this.jwk)
   }
