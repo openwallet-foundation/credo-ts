@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- 6dd77b9: fix: unhandled rejection in the oid4vp verifier service
+- Updated dependencies [a17d8da]
+  - @credo-ts/core@0.5.16
+
 ## 0.5.15
 
 ### Patch Changes

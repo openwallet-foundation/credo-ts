@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.16
+
+### Patch Changes
+
+- 9f54563: fix: correct indyVdrCreateLatestRevocationDelta to allow individual credential revocation/unrevocation
+- a8a7a12: fix: correct revocation registry check edge case
+- Updated dependencies [a17d8da]
+  - @credo-ts/core@0.5.16
+  - @credo-ts/anoncreds@0.5.16
+
 ## 0.5.15
 
 ### Patch Changes
