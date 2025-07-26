@@ -481,7 +481,6 @@ export class OpenId4VpVerifierService {
           },
           {} as Record<string, VerifiablePresentation>
         )
-        const presentationResult = dcql.assertValidDcqlPresentation(presentations, dcqlQuery)
 
         const errorMessages = presentationVerificationResults
           .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
@@ -489,6 +488,8 @@ export class OpenId4VpVerifierService {
         if (errorMessages.length > 0) {
           throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
         }
+
+        const presentationResult = dcql.assertValidDcqlPresentation(presentations, dcqlQuery)
 
         dcqlResponse = {
           presentations,
