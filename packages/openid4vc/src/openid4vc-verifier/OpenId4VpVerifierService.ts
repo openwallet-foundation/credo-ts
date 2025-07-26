@@ -158,25 +158,18 @@ export class OpenId4VpVerifierService {
     }
 
     if (options.verifierInfo) {
-      const hasValidCredentialIdsForDcql =
-        options?.dcql?.query.credentials.every(({ id }) =>
-          options.verifierInfo?.every((va) => va.credential_ids?.includes(id))
-        ) ?? true
+      const queryIds =
+        options?.dcql?.query.credentials.map(({ id }) => id) ??
+        options?.presentationExchange?.definition.input_descriptors.map(({ id }) => id) ??
+        []
 
-      if (!hasValidCredentialIdsForDcql) {
+      const hasValidCredentialIds = options.verifierInfo.every(
+        (vi) => !vi.credential_ids || vi.credential_ids.every((credentialId) => queryIds.includes(credentialId))
+      )
+
+      if (!hasValidCredentialIds) {
         throw new CredoError(
-          'Dcql is used as query language and verifier info (attestations) were provided, but the dcql query used credential ids that are not supported by the verifier info'
-        )
-      }
-
-      const hasValidCredentialIdsForPex =
-        options?.presentationExchange?.definition.input_descriptors.every(({ id }) =>
-          options.verifierInfo?.every((va) => va.credential_ids?.includes(id))
-        ) ?? true
-
-      if (!hasValidCredentialIdsForPex) {
-        throw new CredoError(
-          'Presentation Exchange is used as query language and verifier info (attestations) were provided, but the presentation exchange query used credential ids that are not supported by the verifier info'
+          'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
         )
       }
     }
