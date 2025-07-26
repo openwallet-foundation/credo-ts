@@ -35,6 +35,7 @@ describe('OpenId4VcVerifier', () => {
           presentationExchange: {
             definition: universityDegreePresentationDefinition,
           },
+          version: 'v1.draft24',
         })
 
       expect(

@@ -146,7 +146,7 @@ QucCIHCvouHEm/unjBXMCeUZ7QR/ympjGyHITw25/B9H9QsC
       trustedCertificates: [rootCertificate],
       now: new Date('2025-04-04'),
       sessionTranscriptOptions: {
-        type: 'openId4VpDcApi',
+        type: 'openId4VpDcApiDraft24',
         clientId: 'x509_san_dns:7f95-217-123-18-26.ngrok-free.app',
         origin: 'https://0663-217-123-18-26.ngrok-free.app',
         verifierGeneratedNonce: '121784205639044947422645',

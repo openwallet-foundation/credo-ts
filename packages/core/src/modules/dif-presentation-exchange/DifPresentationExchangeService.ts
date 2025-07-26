@@ -28,13 +28,7 @@ import { injectable } from 'tsyringe'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
-import {
-  Mdoc,
-  MdocApi,
-  MdocOpenId4VpDcApiSessionTranscriptOptions,
-  MdocOpenId4VpSessionTranscriptOptions,
-  MdocRecord,
-} from '../mdoc'
+import { Mdoc, MdocApi, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -162,14 +156,23 @@ export class DifPresentationExchangeService {
        * Defaults to {@link DifPresentationExchangeSubmissionLocation.PRESENTATION}
        */
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
+      /**
+       * Also known as `nonce`
+       */
       challenge: string
+
+      /**
+       * Also known as `audience`
+       */
       domain?: string
-      openid4vp?:
-        | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
-        | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
+
+      /**
+       * Mdoc openid4vp specific options
+       */
+      mdocSessionTranscript?: MdocSessionTranscriptOptions
     }
   ) {
-    const { presentationDefinition, domain, challenge, openid4vp } = options
+    const { presentationDefinition, domain, challenge, mdocSessionTranscript } = options
     const presentationSubmissionLocation =
       options.presentationSubmissionLocation ?? DifPresentationExchangeSubmissionLocation.PRESENTATION
 
@@ -203,23 +206,17 @@ export class DifPresentationExchangeService {
           )
         }
         const mdocRecord = presentationToCreate.verifiableCredentials[0].credential
-        if (!openid4vp) {
-          throw new DifPresentationExchangeError('Missing openid4vp options for creating MDOC presentation.')
-        }
-
-        if (!domain) {
-          throw new DifPresentationExchangeError('Missing domain property for creating MDOC presentation.')
+        if (!mdocSessionTranscript) {
+          throw new DifPresentationExchangeError(
+            'Missing mdoc session transcript options for creating MDOC presentation.'
+          )
         }
 
         const { deviceResponseBase64Url, presentationSubmission } =
           await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
             mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
             presentationDefinition: presentationDefinition,
-            sessionTranscriptOptions: {
-              ...openid4vp,
-              clientId: domain,
-              verifierGeneratedNonce: challenge,
-            },
+            sessionTranscriptOptions: mdocSessionTranscript,
           })
 
         if (presentationSubmissionLocation !== DifPresentationExchangeSubmissionLocation.EXTERNAL) {

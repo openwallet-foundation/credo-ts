@@ -242,7 +242,7 @@ export class HolderInquirer extends BaseInquirer {
     } else if (this.resolvedPresentationRequest.dcql) {
       console.log(greenText('Received DCQL request'))
 
-      if (this.resolvedPresentationRequest.dcql.queryResult.canBeSatisfied) {
+      if (this.resolvedPresentationRequest.dcql.queryResult.can_be_satisfied) {
         const selectedCredentials = Object.values(
           this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
             this.resolvedPresentationRequest.dcql.queryResult
