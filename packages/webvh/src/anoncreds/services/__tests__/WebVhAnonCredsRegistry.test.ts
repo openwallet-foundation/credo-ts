@@ -95,7 +95,7 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(result).toEqual({
         schemaId: invalidSchemaId,
         resolutionMetadata: {
-          error: 'invalidDid',
+          error: 'invalid',
           message: expect.stringContaining(`Invalid schema ID: ${invalidSchemaId}`),
         },
         schemaMetadata: {},
@@ -117,7 +117,7 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(result).toEqual({
         schemaId,
         resolutionMetadata: {
-          error: 'notFound',
+          error: 'invalid',
           message: expect.stringContaining(
             `Resource ${schemaId} could not be resolved or is missing data. Error: notFound - ${errorMessage}`
           ),
@@ -140,7 +140,7 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(result).toEqual({
         schemaId,
         resolutionMetadata: {
-          error: 'invalidJson',
+          error: 'invalid',
           message: expect.stringContaining('Failed to parse resource data'),
         },
         schemaMetadata: {},
@@ -319,7 +319,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.getCredentialDefinition(agentContext, credDefId)
 
       // Expect the error thrown by the helper function
-      expect(result.resolutionMetadata.error).toBe('invalidDid')
+      expect(result.resolutionMetadata.error).toBe('invalid')
       expect(result.resolutionMetadata.message).toContain(`Invalid credential definition ID: ${credDefId}`)
       expect(mockResolveResource).not.toHaveBeenCalled() // Resolver shouldn't be called if prefix check fails
     })
@@ -338,7 +338,7 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(mockResolveResource).toHaveBeenCalledWith(agentContext, invalidCredDefId)
 
       // Expect the error propagated from the helper/resolver
-      expect(result.resolutionMetadata.error).toBe('notFound')
+      expect(result.resolutionMetadata.error).toBe('invalid')
       expect(result.resolutionMetadata.message).toContain('could not be resolved or is missing data')
     })
   })

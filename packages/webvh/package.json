@@ -1,6 +1,6 @@
 {
   "name": "@credo-ts/webvh",
-  "version": "0.5.13",
+  "version": "0.6.0",
   "description": "Credo WebVH DID method implementation",
   "main": "build/index.js",
   "types": "build/index.d.ts",
@@ -24,8 +24,6 @@
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "@multiformats/base-x": "^4.0.1",
-    "@stablelib/ed25519": "^2.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
     "didwebvh-ts": "^2.3.2",

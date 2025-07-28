@@ -14,7 +14,7 @@ import type { AgentContext } from '@credo-ts/core'
 import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder, MultiBaseEncoder, MultiHashEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidResolver, DIDWebvhCrypto } from '../../dids'
+import { WebvhDidResolver, WebvhDidCrypto } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -191,23 +191,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         schemaId,
       })
 
-      let errorType: GetSchemaReturn['resolutionMetadata']['error'] = 'internalError'
-      if (error instanceof CredoError) {
-        if (error.message.includes('parse resource data')) errorType = 'invalidJson'
-        else if (error.message.includes('resolve') || error.message.includes('missing data')) errorType = 'notFound'
-        else if (error.message.includes('attested')) errorType = 'invalid'
-        else if (error.message.includes('proof')) errorType = 'invalid'
-        else if (error.message.includes('hash mismatch')) errorType = 'invalid'
-        else if (error.message.includes('not a valid schema')) errorType = 'invalid'
-        else if (error.message.includes('Invalid schema ID')) errorType = 'invalidDid'
-        else if (error.message.includes('Issuer ID mismatch')) errorType = 'invalid'
-        else if (error.message.includes('missing a valid issuerId')) errorType = 'invalid'
-      }
-
       return {
         schemaId,
         resolutionMetadata: {
-          error: errorType,
+          error: 'invalid',
           message: `unable to resolve schema: ${error instanceof Error ? error.message : String(error)}`,
         },
         schemaMetadata: {},
@@ -262,23 +249,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         }
       )
 
-      let errorType: GetCredentialDefinitionReturn['resolutionMetadata']['error'] = 'internalError'
-      if (error instanceof CredoError) {
-        if (error.message.includes('parse resource data')) errorType = 'invalidJson'
-        else if (error.message.includes('resolve') || error.message.includes('missing data')) errorType = 'notFound'
-        else if (error.message.includes('attested')) errorType = 'invalid'
-        else if (error.message.includes('proof')) errorType = 'invalid'
-        else if (error.message.includes('hash mismatch')) errorType = 'invalid'
-        else if (error.message.includes('not a valid credential definition')) errorType = 'invalid'
-        else if (error.message.includes('Invalid credential definition ID')) errorType = 'invalidDid'
-        else if (error.message.includes('Issuer ID mismatch')) errorType = 'invalid'
-        else if (error.message.includes('missing a valid issuerId')) errorType = 'invalid'
-      }
-
       return {
         credentialDefinitionId,
         resolutionMetadata: {
-          error: errorType,
+          error: 'invalid',
           message: `unable to resolve credential definition: ${error instanceof Error ? error.message : String(error)}`,
         },
         credentialDefinitionMetadata: {},
@@ -336,23 +310,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         }
       )
 
-      let errorType: GetRevocationRegistryDefinitionReturn['resolutionMetadata']['error'] = 'internalError'
-      if (error instanceof CredoError) {
-        if (error.message.includes('parse resource data')) errorType = 'invalidJson'
-        else if (error.message.includes('resolve') || error.message.includes('missing data')) errorType = 'notFound'
-        else if (error.message.includes('attested')) errorType = 'invalid'
-        else if (error.message.includes('proof')) errorType = 'invalid'
-        else if (error.message.includes('hash mismatch')) errorType = 'invalid'
-        else if (error.message.includes('not a valid revocation registry definition')) errorType = 'invalid'
-        else if (error.message.includes('Invalid revocation registry definition ID')) errorType = 'invalidDid'
-        else if (error.message.includes('Issuer ID mismatch')) errorType = 'invalid'
-        else if (error.message.includes('missing a valid issuerId')) errorType = 'invalid'
-      }
-
       return {
         revocationRegistryDefinitionId,
         resolutionMetadata: {
-          error: errorType,
+          error: 'invalid',
           message: `unable to resolve revocation registry definition: ${
             error instanceof Error ? error.message : String(error)
           }`,
@@ -530,7 +491,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // Decode the signature from the proofValue (should be multibase encoded)
       const signatureBuffer = MultiBaseEncoder.decode(proof.proofValue as string)
 
-      const crypto = new DIDWebvhCrypto(agentContext)
+      const crypto = new WebvhDidCrypto(agentContext)
       const isVerified = await crypto.verify(signatureBuffer.data, documentBytes, publicKeyBytes)
 
       if (!isVerified) {
