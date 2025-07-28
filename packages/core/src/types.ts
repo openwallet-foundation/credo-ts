@@ -84,3 +84,12 @@ export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
 export type CanBePromise<T> = T | Promise<T>
 
 export type NonEmptyArray<T> = [T, ...T[]]
+export function mapNonEmptyArray<U, M extends (item: U, index: number) => unknown>(
+  array: NonEmptyArray<U>,
+  mapFunction: M
+): NonEmptyArray<ReturnType<M>> {
+  return array.map(mapFunction) as NonEmptyArray<ReturnType<M>>
+}
+export function isNonEmptyArray<U>(array: U[]): array is NonEmptyArray<U> {
+  return array.length > 0
+}

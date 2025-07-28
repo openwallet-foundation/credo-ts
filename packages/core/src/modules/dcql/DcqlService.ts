@@ -11,7 +11,7 @@ import {
 } from 'dcql'
 import { injectable } from 'tsyringe'
 
-import { TypedArrayEncoder, mapSingleOrArray } from '../../utils'
+import { TypedArrayEncoder } from '../../utils'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
@@ -26,13 +26,14 @@ import {
   W3cPresentation,
 } from '../vc'
 
-import { JsonObject } from '../../types'
+import { isNonEmptyArray, JsonObject, JsonValue, mapNonEmptyArray } from '../../types'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
   DcqlCredentialsForRequest,
   DcqlEncodedPresentations,
+  DcqlFailedCredential,
   DcqlPresentation,
   DcqlQueryResult,
   DcqlValidCredential,
@@ -47,7 +48,7 @@ export class DcqlService {
    */
   private async queryCredentialsForDcqlQuery(
     agentContext: AgentContext,
-    dcqlQuery: DcqlQuery.Input
+    dcqlQuery: DcqlQuery
   ): Promise<Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord>> {
     const formats = new Set(dcqlQuery.credentials.map((c) => c.format))
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
@@ -71,7 +72,7 @@ export class DcqlService {
 
     const sdJwtVctValues = dcqlQuery.credentials
       .filter(
-        (credentialQuery): credentialQuery is DcqlSdJwtVcCredential.Model =>
+        (credentialQuery): credentialQuery is typeof credentialQuery & { format: 'vc+sd-jwt' | 'dc+sd-jwt' } =>
           credentialQuery.format === 'vc+sd-jwt' || credentialQuery.format === 'dc+sd-jwt'
       )
       .flatMap((c) => c.meta?.vct_values)
@@ -125,14 +126,14 @@ export class DcqlService {
     agentContext: AgentContext,
     presentation: VerifiablePresentation,
     queryCredential: DcqlQuery['credentials'][number]
-  ): Promise<DcqlQueryResult['credentials']> {
+  ): Promise<DcqlCredential> {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
     if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
       return {
         cryptographic_holder_binding: true,
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
-        vct: presentation.prettyClaims.vct,
+        vct: presentation.prettyClaims.vct as string,
         claims: presentation.prettyClaims as DcqlSdJwtVcCredential.Claims,
       } satisfies DcqlSdJwtVcCredential
     }
@@ -155,7 +156,7 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: true,
         credential_format: 'jwt_vc_json',
-        claims: vc.jsonCredential,
+        claims: vc.jsonCredential as { [key: string]: JsonValue },
         type: vc.type,
       } satisfies DcqlW3cVcCredential
     }
@@ -171,7 +172,7 @@ export class DcqlService {
       return {
         cryptographic_holder_binding: true,
         credential_format: 'ldp_vc',
-        claims: vc.jsonCredential,
+        claims: vc.jsonCredential as DcqlW3cVcCredential.Claims,
         type: expandedTypes,
       } satisfies DcqlW3cVcCredential
     }
@@ -179,14 +180,11 @@ export class DcqlService {
     throw new DcqlError('Unsupported claim format for presentation')
   }
 
-  public async getCredentialsForRequest(
-    agentContext: AgentContext,
-    dcqlQuery: DcqlQuery.Input
-  ): Promise<DcqlQueryResult> {
+  public async getCredentialsForRequest(agentContext: AgentContext, dcqlQuery: DcqlQuery): Promise<DcqlQueryResult> {
     const credentialRecords = await this.queryCredentialsForDcqlQuery(agentContext, dcqlQuery)
     const credentialRecordsWithFormatDuplicates: typeof credentialRecords = []
 
-    const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record) => {
+    const dcqlCredentials: DcqlCredential[] = credentialRecords.flatMap((record): DcqlCredential | DcqlCredential[] => {
       if (record.type === 'MdocRecord') {
         credentialRecordsWithFormatDuplicates.push(record)
         const mdoc = Mdoc.fromBase64Url(record.base64Url)
@@ -199,18 +197,17 @@ export class DcqlService {
           .filter((aki) => aki !== undefined)
 
         return {
-          authority:
-            akiValues.length > 0
-              ? {
-                  type: 'aki',
-                  values: akiValues,
-                }
-              : undefined,
+          authority: isNonEmptyArray(akiValues)
+            ? {
+                type: 'aki',
+                values: akiValues,
+              }
+            : undefined,
           credential_format: 'mso_mdoc',
           doctype: record.getTags().docType,
           namespaces: mdoc.issuerSignedNamespaces,
           cryptographic_holder_binding: true,
-        } satisfies DcqlMdocCredential
+        } satisfies DcqlCredential
       }
 
       if (record.type === 'SdJwtVcRecord') {
@@ -224,12 +221,13 @@ export class DcqlService {
           })
           .filter((aki) => aki !== undefined)
 
-        const authority = akiValues
-          ? {
-              type: 'aki',
-              values: akiValues,
-            }
-          : undefined
+        const authority =
+          akiValues && isNonEmptyArray(akiValues)
+            ? ({
+                type: 'aki',
+                values: akiValues,
+              } as const)
+            : undefined
 
         // To keep correct mapping of input credential index, we add it twice here (for dc+sd-jwt and vc+sd-jwt)
         credentialRecordsWithFormatDuplicates.push(record, record)
@@ -248,7 +246,7 @@ export class DcqlService {
             claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlSdJwtVcCredential,
-        ]
+        ] satisfies [DcqlSdJwtVcCredential, DcqlSdJwtVcCredential]
       }
 
       if (record.type === 'W3cCredentialRecord') {
@@ -257,7 +255,7 @@ export class DcqlService {
           return {
             credential_format: 'ldp_vc',
             type: record.getTags().expandedTypes ?? [],
-            claims: record.credential.jsonCredential,
+            claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlW3cVcCredential
         }
@@ -265,9 +263,9 @@ export class DcqlService {
         return {
           credential_format: 'jwt_vc_json',
           type: record.credential.type,
-          claims: record.credential.jsonCredential,
+          claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: true,
-        }
+        } satisfies DcqlW3cVcCredential
       }
 
       throw new DcqlError('Unsupported record type')
@@ -277,61 +275,85 @@ export class DcqlService {
 
     const matchesWithRecord = Object.fromEntries(
       Object.entries(queryResult.credential_matches).map(([credential_query_id, result]) => {
-        const updatedResult = {
-          ...result,
-          valid_credentials: result.valid_credentials?.map((credential) => {
-            const record = credentialRecordsWithFormatDuplicates[credential.input_credential_index]
-            return {
-              ...credential,
-              record,
-              claims: {
-                ...credential.claims,
-                valid_claim_sets: credential.claims.valid_claim_sets.map((claimSet) => ({
-                  ...claimSet,
-                  ...(record.type === 'SdJwtVcRecord'
-                    ? {
-                        output: agentContext.dependencyManager
-                          .resolve(SdJwtVcService)
-                          .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
-                          .prettyClaims,
-                      }
-                    : {}),
-                })),
-              },
-            }
-          }),
+        const failedCredentials = result.failed_credentials
+          ? mapNonEmptyArray(result.failed_credentials, (credential) => {
+              const record = credentialRecordsWithFormatDuplicates[credential.input_credential_index]
+              const updatedCredential: DcqlFailedCredential = {
+                ...credential,
+                record,
+                claims: credential.claims.success
+                  ? {
+                      ...credential.claims,
+                      success: true,
+                      valid_claim_sets: mapNonEmptyArray(credential.claims.valid_claim_sets, (claimSet) => ({
+                        ...claimSet,
+                        ...(record.type === 'SdJwtVcRecord'
+                          ? {
+                              // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
+                              // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                              output: agentContext.dependencyManager
+                                .resolve(SdJwtVcService)
+                                .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
+                                .prettyClaims as DcqlSdJwtVcCredential.Claims,
+                            }
+                          : {}),
+                      })),
+                    }
+                  : credential.claims,
+              }
+              return updatedCredential
+            })
+          : undefined
 
-          failed_credentials: result.failed_credentials?.map((credential) => {
-            const record = credentialRecordsWithFormatDuplicates[credential.input_credential_index]
-            return {
-              ...credential,
-              record,
-              claims: {
-                ...credential.claims,
-                valid_claim_sets: credential.claims.valid_claim_sets?.map((claimSet) => ({
-                  ...claimSet,
-                  ...(record.type === 'SdJwtVcRecord'
-                    ? {
-                        output: agentContext.dependencyManager
-                          .resolve(SdJwtVcService)
-                          .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
-                          .prettyClaims,
-                      }
-                    : {}),
-                })),
-              },
-            }
-          }),
+        // If not success, valid_credentials will be undefined, so we only have to map failed_credentials
+        if (!result.success) {
+          return [
+            credential_query_id,
+            {
+              ...result,
+              failed_credentials: failedCredentials,
+            },
+          ]
         }
 
-        return [credential_query_id, updatedResult]
+        return [
+          credential_query_id,
+          {
+            ...result,
+            failed_credentials: failedCredentials,
+            valid_credentials: mapNonEmptyArray(result.valid_credentials, (credential) => {
+              const record = credentialRecordsWithFormatDuplicates[credential.input_credential_index]
+              const updatedCredential: DcqlValidCredential = {
+                ...credential,
+                record,
+                claims: {
+                  ...credential.claims,
+                  valid_claim_sets: mapNonEmptyArray(credential.claims.valid_claim_sets, (claimSet) => ({
+                    ...claimSet,
+                    ...(record.type === 'SdJwtVcRecord'
+                      ? {
+                          // NOTE: we cast from SdJwtVcPayload (which is Record<string, unknown> to { [key: string]: JsonValue })
+                          // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
+                          output: agentContext.dependencyManager
+                            .resolve(SdJwtVcService)
+                            .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
+                            .prettyClaims as { [key: string]: JsonValue },
+                        }
+                      : {}),
+                  })),
+                },
+              }
+              return updatedCredential
+            }),
+          },
+        ]
       })
     )
 
     return {
       ...queryResult,
       credential_matches: matchesWithRecord,
-    } as DcqlQueryResult
+    }
   }
 
   public async assertValidDcqlPresentation(
@@ -477,8 +499,10 @@ export class DcqlService {
     return credentials
   }
 
-  public validateDcqlQuery(dcqlQuery: DcqlQuery | DcqlQuery.Input | unknown) {
-    return DcqlQuery.parse(dcqlQuery as DcqlQuery)
+  public validateDcqlQuery(dcqlQuery: DcqlQuery | DcqlQuery.Input | unknown): DcqlQuery {
+    const parsed = DcqlQuery.parse(dcqlQuery as DcqlQuery)
+    DcqlQuery.validate(parsed)
+    return parsed
   }
 
   public async createPresentation(
@@ -633,12 +657,6 @@ export class DcqlService {
       dcqlPresentation,
       encodedDcqlPresentation,
     }
-  }
-
-  public getEncodedPresentations(dcqlPresentation: DcqlPresentation): DcqlEncodedPresentations {
-    return Object.fromEntries(
-      Object.entries(dcqlPresentation).map(([key, value]) => [key, mapSingleOrArray(value, (v) => v.encoded)])
-    ) as DcqlEncodedPresentations
   }
 
   private getSdJwtVcApi(agentContext: AgentContext) {

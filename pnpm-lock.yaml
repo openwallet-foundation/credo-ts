@@ -531,8 +531,8 @@ importers:
         specifier: 'catalog:'
         version: 0.14.1
       dcql:
-        specifier: ^1.0.0
-        version: 1.0.0(typescript@5.8.3)
+        specifier: ^1.0.1
+        version: 1.0.1(typescript@5.8.3)
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
@@ -3538,8 +3538,8 @@ packages:
     resolution: {integrity: sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==}
     engines: {node: '>= 12'}
 
-  dcql@1.0.0:
-    resolution: {integrity: sha512-TGSYyM0wnbYju13cwTcYrGMNuxfY1SiVNCTDxwcX5z62mi7pS6VxXBaql7JqYyzWV4zQFtWHW1NX3e3mxDro8g==}
+  dcql@1.0.1:
+    resolution: {integrity: sha512-XZ9VJfvHZwPbeg6O+GvyNi7P5n4L+J0ATCFBUvgn2LXzQPoatHnOt9b7uHHtFWZzxyD5ngLpBCEOteEzKgtIAA==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -10056,7 +10056,7 @@ snapshots:
 
   data-uri-to-buffer@4.0.1: {}
 
-  dcql@1.0.0(typescript@5.8.3):
+  dcql@1.0.1(typescript@5.8.3):
     dependencies:
       valibot: 1.0.0-beta.8(typescript@5.8.3)
     transitivePeerDependencies:

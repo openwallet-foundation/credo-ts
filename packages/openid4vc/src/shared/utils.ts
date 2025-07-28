@@ -1,4 +1,4 @@
-import { AgentContext, DidPurpose, Kms } from '@credo-ts/core'
+import { AgentContext, ClaimFormat, DcqlCredential, DidPurpose, Kms } from '@credo-ts/core'
 import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 
@@ -132,3 +132,11 @@ export function parseIfJson<T>(input: T): T | Record<string, unknown> {
 
   return input
 }
+
+export const dcqlFormatToPresentationClaimFormat = {
+  'dc+sd-jwt': ClaimFormat.SdJwtVc,
+  'vc+sd-jwt': ClaimFormat.SdJwtVc,
+  jwt_vc_json: ClaimFormat.JwtVp,
+  ldp_vc: ClaimFormat.LdpVp,
+  mso_mdoc: ClaimFormat.MsoMdoc,
+} satisfies Record<DcqlCredential['credential_format'], ClaimFormat>

@@ -225,12 +225,7 @@ export class OpenId4VpHolderService {
         )
       }
 
-      // NOTE: in the next releaes of DCQL this will also be an array, so this code can soon be simplified
-      const credentialsForId = Array.isArray(selectedCredentials[credentialId])
-        ? selectedCredentials[credentialId]
-        : [selectedCredentials[credentialId]]
-
-      const unsupportedFormats = credentialsForId
+      const unsupportedFormats = selectedCredentials[credentialId]
         .filter((c) => c.claimFormat !== ClaimFormat.SdJwtVc)
         .map((c) => c.claimFormat)
 
@@ -279,11 +274,7 @@ export class OpenId4VpHolderService {
         TypedArrayEncoder.toBase64URL(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
-      const credentialsForId = Array.isArray(updatedCredentials[credentialId])
-        ? updatedCredentials[credentialId]
-        : [updatedCredentials[credentialId]]
-
-      const updatedCredentialsForId = credentialsForId.map((credential) => {
+      updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
         if (credential.claimFormat !== ClaimFormat.SdJwtVc) {
           // We already verified this above
           throw new CredoError(
@@ -300,11 +291,6 @@ export class OpenId4VpHolderService {
           },
         }
       })
-
-      // Will soon be simplified once DCQL also uses array
-      updatedCredentials[credentialId] = Array.isArray(updatedCredentials[credentialId])
-        ? updatedCredentialsForId
-        : updatedCredentialsForId[0]
     }
 
     return updatedCredentials

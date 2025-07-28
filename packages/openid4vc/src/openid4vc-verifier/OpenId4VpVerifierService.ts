@@ -2,7 +2,6 @@ import {
   AgentContext,
   ClaimFormat,
   DcqlEncodedPresentations,
-  DcqlPresentation,
   DcqlQuery,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
@@ -60,7 +59,12 @@ import { getOid4vcCallbacks } from '../shared/callbacks'
 import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
-import { addSecondsToDate, getSupportedJwaSignatureAlgorithms, requestSignerToJwtIssuer } from '../shared/utils'
+import {
+  addSecondsToDate,
+  dcqlFormatToPresentationClaimFormat,
+  getSupportedJwaSignatureAlgorithms,
+  requestSignerToJwtIssuer,
+} from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
@@ -82,6 +86,7 @@ import {
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
+import { mapNonEmptyArray, NonEmptyArray } from '@credo-ts/core'
 
 /**
  * @internal
@@ -338,22 +343,15 @@ export class OpenId4VpVerifierService {
 
         return [
           credentialId,
-          presentations.map((presentation) =>
+          mapNonEmptyArray(presentations, (presentation) =>
             this.decodePresentation(agentContext, {
               presentation,
-              format:
-                queryCredential.format === 'mso_mdoc'
-                  ? ClaimFormat.MsoMdoc
-                  : queryCredential.format === 'dc+sd-jwt' || queryCredential.format === 'vc+sd-jwt'
-                    ? ClaimFormat.SdJwtVc
-                    : queryCredential.format === 'jwt_vc_json'
-                      ? ClaimFormat.JwtVp
-                      : ClaimFormat.LdpVp,
+              format: dcqlFormatToPresentationClaimFormat[queryCredential.format],
             })
           ),
         ]
       })
-    ) as DcqlPresentation
+    )
 
     const dcqlPresentationResult = await dcqlService.assertValidDcqlPresentation(
       agentContext,
@@ -506,16 +504,9 @@ export class OpenId4VpVerifierService {
             }
 
             const verifiedPresentations = await Promise.all(
-              presentations.map((presentation) =>
+              mapNonEmptyArray(presentations, (presentation) =>
                 this.verifyPresentation(agentContext, {
-                  format:
-                    queryCredential.format === 'mso_mdoc'
-                      ? ClaimFormat.MsoMdoc
-                      : queryCredential.format === 'dc+sd-jwt' || queryCredential.format === 'vc+sd-jwt'
-                        ? ClaimFormat.SdJwtVc
-                        : queryCredential.format === 'jwt_vc_json'
-                          ? ClaimFormat.JwtVp
-                          : ClaimFormat.LdpVp,
+                  format: dcqlFormatToPresentationClaimFormat[queryCredential.format],
                   nonce: authorizationRequest.nonce,
                   audience,
                   version: openid4vpVersion,
@@ -533,16 +524,6 @@ export class OpenId4VpVerifierService {
           })
         )
 
-        const presentations = Object.fromEntries(
-          presentationVerificationResults.map(
-            ([credentialId, presentations]) =>
-              [
-                credentialId,
-                presentations.map((p) => (p.verified ? p.presentation : undefined)).filter((p) => p !== undefined),
-              ] as const
-          )
-        ) as DcqlPresentation
-
         const errorMessages = presentationVerificationResults
           .flatMap(([credentialId, presentations], index) =>
             presentations.map((result) =>
@@ -553,6 +534,23 @@ export class OpenId4VpVerifierService {
         if (errorMessages.length > 0) {
           throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
         }
+
+        // We can be certain here that all presentations passed verification
+
+        const presentations = Object.fromEntries(
+          presentationVerificationResults.map(
+            ([credentialId, presentations]) =>
+              [
+                credentialId,
+                presentations
+                  .map((p) => (p.verified ? p.presentation : undefined))
+                  // NOTE: we add NonEmpty cast here since it's needed for DCQL, and because we
+                  // previously ensured all items are valid, we can be sure this arary is non empty
+                  // even after the filter.
+                  .filter((p) => p !== undefined) as NonEmptyArray<VerifiablePresentation>,
+              ] as const
+          )
+        )
 
         const presentationResult = await dcql.assertValidDcqlPresentation(agentContext, presentations, dcqlQuery)
 

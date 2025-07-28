@@ -247,7 +247,7 @@ export class HolderInquirer extends BaseInquirer {
           this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
             this.resolvedPresentationRequest.dcql.queryResult
           )
-        ).flatMap((e) => e.credentialRecord)
+        ).flatMap((e) => e[0].credentialRecord)
         console.log(
           greenText(
             'All requirements for creating the presentation are satisfied. The following credentials will be shared',
