@@ -1074,12 +1074,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@multiformats/base-x':
-        specifier: ^4.0.1
-        version: 4.0.1
-      '@stablelib/ed25519':
-        specifier: ^2.0.2
-        version: 2.0.2
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -1087,8 +1081,8 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.3.2
-        version: 2.3.2
+        specifier: ^2.4.1
+        version: 2.4.1
       json-canonicalize:
         specifier: ^1.0.6
         version: 1.0.6
@@ -5122,8 +5116,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.3.2:
-    resolution: {integrity: sha512-DmD/s8GibOvV6hcfcHLFBbCNcDZlrbutwcb9wA9Qwwag79dco1wKqZBljO0+A/E61QrLbPvSmZeUqGyHGs6GzQ==}
+  didwebvh-ts@2.4.1:
+    resolution: {integrity: sha512-TAEVIXYjTQUmj2AG6tCmsiXsbOTU8lcm12ZJ7mX7ER7k6Cou1HIgv7i2iDsfqQ8FRAE6G5XI+al5rSiVxyZVGw==}
     hasBin: true
 
   diff-sequences@29.6.3:
@@ -17324,7 +17318,7 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.3.2:
+  didwebvh-ts@2.4.1:
     dependencies:
       '@noble/hashes': 1.8.0
       json-canonicalize: 1.0.6
