@@ -3,7 +3,7 @@ import type { AgentContext, DidResolutionResult, DidResolver } from '@credo-ts/c
 import { DidDocument } from '@credo-ts/core'
 import { resolveDID } from 'didwebvh-ts'
 
-import { DIDWebvhCrypto } from './didWebvhUtil'
+import { WebvhDidCrypto } from './WebvhDidCrypto'
 
 export class WebvhDidResolver implements DidResolver {
   public readonly supportedMethods = ['webvh']
@@ -117,7 +117,7 @@ export class WebvhDidResolver implements DidResolver {
   }
 
   private async resolveDidDoc(agentContext: AgentContext, did: string): Promise<DidResolutionResult> {
-    const crypto = new DIDWebvhCrypto(agentContext)
+    const crypto = new WebvhDidCrypto(agentContext)
     const { doc } = await resolveDID(did, { verifier: crypto })
     return {
       didDocument: new DidDocument(doc),

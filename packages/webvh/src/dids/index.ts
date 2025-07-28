@@ -1,2 +1,2 @@
 export { WebvhDidResolver } from './WebvhDidResolver'
-export { DIDWebvhCrypto } from './didWebvhUtil'
+export { WebvhDidCrypto } from './WebvhDidCrypto'

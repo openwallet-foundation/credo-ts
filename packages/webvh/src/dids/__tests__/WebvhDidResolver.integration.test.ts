@@ -1,6 +1,112 @@
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { WebvhDidResolver } from '../WebvhDidResolver'
 
+// Mock the `didwebvh-ts` dependency so that `resolveDID` never performs a network call.
+jest.mock('didwebvh-ts', () => {
+  return {
+    resolveDID: jest.fn(async (did: string) => {
+      return {
+        doc: {
+          '@context': ['https://www.w3.org/ns/did/v1'],
+          id: did,
+          verificationMethod: [],
+        },
+      }
+    }),
+  }
+})
+
+const createStubContent = (url: string) => {
+  const baseContent = {
+    '@context': 'https://w3id.org/attested-resource/v1',
+    type: ['AttestedResource'],
+  }
+
+  if (url.includes('zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo')) {
+    // schema
+    return {
+      ...baseContent,
+      content: {
+        issuerId: 'did:example:issuer',
+        name: 'Test Schema',
+        version: '1.0.0',
+        attrNames: ['name', 'age'],
+      },
+    }
+  }
+  if (url.includes('zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj')) {
+    // credential definition
+    return {
+      ...baseContent,
+      content: {
+        issuerId: 'did:example:issuer',
+        schemaId: 'schema:123',
+        type: 'CL',
+        tag: 'default',
+        value: {},
+      },
+    }
+  }
+  if (url.includes('zQmYvDUi72UH1NW9BrdPhDA8Tfabz1N5wKJbetyRkK9zawb')) {
+    // revocation registry definition
+    return {
+      ...baseContent,
+      content: {
+        issuerId: 'did:example:issuer',
+        credDefId: 'creddef:123',
+        revocDefType: 'CL_ACCUM',
+        tag: 'default',
+        value: {},
+      },
+    }
+  }
+  if (url.includes('zQmSQcPaX1PA37tak2ekRc9Cfe4uvNHZcVq6hRqWbhcP55X')) {
+    // revocation registry entry – structure is flexible, only ensure object presence
+    return {
+      ...baseContent,
+      content: {
+        issuerId: 'did:example:issuer',
+        delta: {},
+      },
+    }
+  }
+
+  // Default fallback – represents a missing resource so that tests exercising invalid
+  // identifiers still receive a predictable error.
+  return null
+}
+
+// Create a stub implementation that mimics the fetch API shape used in the resolver.
+(global as any).fetch = jest.fn(async (input: any) => {
+  const url = typeof input === 'string' ? input : String(input)
+  const stub = createStubContent(url)
+
+  if (!stub) {
+    // Simulate a 404 for unknown resources
+    return {
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+      headers: {
+        get: () => 'application/json',
+      },
+      json: async () => ({ error: 'notFound' }),
+      text: async () => JSON.stringify({ error: 'notFound' }),
+    } as any
+  }
+
+  return {
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: {
+      get: () => 'application/json',
+    },
+    json: async () => stub,
+    text: async () => JSON.stringify(stub),
+  } as any
+})
+
 describe('WebvhDidResolver Integration Tests', () => {
   let resolver: WebvhDidResolver
   let agentContext: any
