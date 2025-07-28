@@ -687,7 +687,7 @@ describe('OpenID4VP Draft 21', () => {
         transactionData: [{ credential_ids: ['one'], type: 'something' }],
       })
     ).rejects.toThrow(
-      `OpenID4VP version 'v1.draft21' cannot be used with transactionData. Use version 'v1.draft24' instead.`
+      `OpenID4VP version 'v1.draft21' cannot be used with transactionData. Use version 'v1' or 'v1.draft24' instead.`
     )
   })
 
@@ -709,7 +709,9 @@ describe('OpenID4VP Draft 21', () => {
         },
         version: 'v1.draft21',
       })
-    ).rejects.toThrow(`OpenID4VP version 'v1.draft21' cannot be used with dcql. Use version 'v1.draft24' instead.`)
+    ).rejects.toThrow(
+      `OpenID4VP version 'v1.draft21' cannot be used with dcql. Use version 'v1' or 'v1.draft24' instead.`
+    )
   })
 
   it('throws error when creating request with dc_api', async () => {
@@ -732,7 +734,7 @@ describe('OpenID4VP Draft 21', () => {
         version: 'v1.draft21',
       })
     ).rejects.toThrow(
-      "OpenID4VP version 'v1.draft21' cannot be used with responseMode 'dc_api.jwt'. Use version 'v1.draft24' instead."
+      "OpenID4VP version 'v1.draft21' cannot be used with responseMode 'dc_api.jwt'. Use version 'v1' or 'v1.draft24' instead."
     )
   })
 })

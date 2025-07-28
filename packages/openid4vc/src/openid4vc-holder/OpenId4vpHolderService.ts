@@ -6,8 +6,7 @@ import type {
   DifPresentationExchangeSubmission,
   EncodedX509Certificate,
   HashName,
-  MdocOpenId4VpDcApiSessionTranscriptOptions,
-  MdocOpenId4VpSessionTranscriptOptions,
+  MdocSessionTranscriptOptions,
 } from '@credo-ts/core'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
@@ -31,12 +30,16 @@ import {
   Openid4vpAuthorizationResponse,
   Openid4vpClient,
   VpToken,
+  extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  parseAuthorizationRequestVersion,
   parseTransactionData,
 } from '@openid4vc/openid4vp'
 
+import { Jwk } from '@openid4vc/oauth2'
+import { OpenId4VpVersion } from '../openid4vc-verifier'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 
 @injectable()
@@ -131,8 +134,15 @@ export class OpenId4VpHolderService {
 
     const { client, pex, transactionData, dcql } = verifiedAuthorizationRequest
 
-    if (client.scheme !== 'x509_san_dns' && client.scheme !== 'did' && client.scheme !== 'web-origin') {
-      throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
+    // Prefix on client is normalized, so also includes did/web-orgin
+    if (
+      client.prefix !== 'x509_san_dns' &&
+      client.prefix !== 'x509_hash' &&
+      client.prefix !== 'decentralized_identifier' &&
+      client.prefix !== 'origin' &&
+      client.prefix !== 'redirect_uri'
+    ) {
+      throw new CredoError(`Client id prefix '${client.prefix}' is not supported`)
     }
 
     const returnValue = {
@@ -158,6 +168,10 @@ export class OpenId4VpHolderService {
 
     return {
       ...returnValue,
+      verifier: {
+        clientIdPrefix: client.prefix,
+        effectiveClientId: client.effective,
+      },
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
       dcql: dcqlResult?.dcql,
@@ -211,12 +225,7 @@ export class OpenId4VpHolderService {
         )
       }
 
-      // NOTE: in the next releaes of DCQL this will also be an array, so this code can soon be simplified
-      const credentialsForId = Array.isArray(selectedCredentials[credentialId])
-        ? selectedCredentials[credentialId]
-        : [selectedCredentials[credentialId]]
-
-      const unsupportedFormats = credentialsForId
+      const unsupportedFormats = selectedCredentials[credentialId]
         .filter((c) => c.claimFormat !== ClaimFormat.SdJwtVc)
         .map((c) => c.claimFormat)
 
@@ -265,11 +274,7 @@ export class OpenId4VpHolderService {
         TypedArrayEncoder.toBase64URL(Hasher.hash(entry.encoded, transactionDataHahsesAlg))
       )
 
-      const credentialsForId = Array.isArray(updatedCredentials[credentialId])
-        ? updatedCredentials[credentialId]
-        : [updatedCredentials[credentialId]]
-
-      const updatedCredentialsForId = credentialsForId.map((credential) => {
+      updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
         if (credential.claimFormat !== ClaimFormat.SdJwtVc) {
           // We already verified this above
           throw new CredoError(
@@ -286,11 +291,6 @@ export class OpenId4VpHolderService {
           },
         }
       })
-
-      // Will soon be simplified once DCQL also uses array
-      updatedCredentials[credentialId] = Array.isArray(updatedCredentials[credentialId])
-        ? updatedCredentialsForId
-        : updatedCredentialsForId[0]
     }
 
     return updatedCredentials
@@ -306,21 +306,90 @@ export class OpenId4VpHolderService {
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
     const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
+
+    let openid4vpVersionNumber = parseAuthorizationRequestVersion(authorizationRequestPayload)
+
+    // It's hard to detect draft 24 for x509_san_dns/unsigned dc-api. In draft 27 a new vp_formats structure was introduced
+    // so if the client id prefix is 'x509_san_dns' or there's no client_id and still uses the old vp_formats structure, we parse it
+    // as draft 24 (to at least ensure compatibility with credo)
+    if (
+      openid4vpVersionNumber >= 24 &&
+      openid4vpVersionNumber < 27 &&
+      (!authorizationRequestPayload.client_id || authorizationRequestPayload.client_id?.startsWith('x509_san_dns:'))
+    ) {
+      openid4vpVersionNumber = 24
+    }
+
+    // We mainly support draft 21/24 and 1.0, but we try to parse in-between versions
+    // as one of the supported versions, to not throw errors even before trying.
+    const openid4vpVersion: OpenId4VpVersion =
+      openid4vpVersionNumber > 24 ? 'v1' : openid4vpVersionNumber <= 21 ? 'v1.draft21' : 'v1.draft24'
+
     const parsedClientId = getOpenid4vpClientId({
       responseMode: authorizationRequestPayload.response_mode,
       clientId: authorizationRequestPayload.client_id,
       legacyClientIdScheme: authorizationRequestPayload.client_id_scheme,
       origin: options.origin,
+      version: openid4vpVersionNumber,
     })
-    // If client_id_scheme was used we need to use the legacy client id.
-    const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
 
-    let openid4vpOptions: MdocOpenId4VpSessionTranscriptOptions | MdocOpenId4VpDcApiSessionTranscriptOptions
+    const clientId = parsedClientId.effectiveClientId
+    const isDcApiRequest = isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)
+
+    const shouldEncryptResponse =
+      authorizationRequestPayload.response_mode && isJarmResponseMode(authorizationRequestPayload.response_mode)
+
+    // TODO: we should return the effectiveAudience in the returned value of openid4vp lib
+    // Since it differs based on the version of openid4vp used
+    // NOTE: in v1 DC API request the audience is always origin: (not the client id)
+    const audience = openid4vpVersion === 'v1' && isDcApiRequest ? `origin:${options.origin}` : clientId
+
+    let encryptionJwk: Jwk | undefined = undefined
+    if (shouldEncryptResponse) {
+      // NOTE: Once we add support for federation we need to require the clientMetadata as input to the accept method.
+      const clientMetadata = authorizationRequestPayload.client_metadata
+
+      if (!clientMetadata) {
+        throw new CredoError(
+          "Authorization request payload does not contain 'client_metadata' needed to extract response encryption JWK."
+        )
+      }
+      if (!clientMetadata.jwks) {
+        throw new CredoError(
+          "Authorization request payload 'client_metadata' does not contain 'jwks' needed to extract response encryption JWK."
+        )
+      }
+
+      encryptionJwk = extractEncryptionJwkFromJwks(clientMetadata.jwks, {
+        supportedAlgValues: ['ECDH-ES'],
+      })
+
+      if (!encryptionJwk) {
+        throw new CredoError("Unable to extract encryption JWK from 'client_metadata' for supported alg 'ECDH-ES'")
+      }
+    }
+
+    let mdocSessionTranscript: MdocSessionTranscriptOptions
     if (isOpenid4vpAuthorizationRequestDcApi(authorizationRequestPayload)) {
       if (!options.origin) {
         throw new CredoError('Missing required parameter `origin` parameter for accepting openid4vp dc api requests.')
       }
-      openid4vpOptions = { type: 'openId4VpDcApi', clientId, origin: options.origin, verifierGeneratedNonce: nonce }
+
+      if (openid4vpVersion === 'v1') {
+        mdocSessionTranscript = {
+          type: 'openId4VpDcApi',
+          origin: options.origin,
+          verifierGeneratedNonce: nonce,
+          encryptionJwk: encryptionJwk ? Kms.PublicJwk.fromUnknown(encryptionJwk) : undefined,
+        }
+      } else {
+        mdocSessionTranscript = {
+          type: 'openId4VpDcApiDraft24',
+          clientId,
+          origin: options.origin,
+          verifierGeneratedNonce: nonce,
+        }
+      }
     } else {
       const responseUri = authorizationRequestPayload.response_uri ?? authorizationRequestPayload.redirect_uri
       if (!responseUri) {
@@ -329,12 +398,22 @@ export class OpenId4VpHolderService {
         )
       }
 
-      openid4vpOptions = {
-        type: 'openId4Vp',
-        mdocGeneratedNonce: authorizationResponseNonce,
-        responseUri,
-        clientId,
-        verifierGeneratedNonce: nonce,
+      if (openid4vpVersion === 'v1') {
+        mdocSessionTranscript = {
+          type: 'openId4Vp',
+          responseUri,
+          clientId,
+          verifierGeneratedNonce: nonce,
+          encryptionJwk: encryptionJwk ? Kms.PublicJwk.fromUnknown(encryptionJwk) : undefined,
+        }
+      } else {
+        mdocSessionTranscript = {
+          type: 'openId4VpDraft18',
+          mdocGeneratedNonce: authorizationResponseNonce,
+          responseUri,
+          clientId,
+          verifierGeneratedNonce: nonce,
+        }
       }
     }
 
@@ -372,9 +451,9 @@ export class OpenId4VpHolderService {
           presentationDefinition:
             authorizationRequestPayload.presentation_definition as unknown as DifPresentationExchangeDefinition,
           challenge: nonce,
-          domain: clientId,
+          domain: audience,
           presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-          openid4vp: openid4vpOptions,
+          mdocSessionTranscript: mdocSessionTranscript,
         })
 
       vpToken =
@@ -401,11 +480,26 @@ export class OpenId4VpHolderService {
       const { encodedDcqlPresentation } = await this.dcqlService.createPresentation(agentContext, {
         credentialQueryToCredential: credentialsWithTransactionData,
         challenge: nonce,
-        domain: clientId,
-        openid4vp: openid4vpOptions,
+        domain: audience,
+        mdocSessionTranscript: mdocSessionTranscript,
       })
 
       vpToken = encodedDcqlPresentation
+
+      // Pre 1.0 the vp_token directly maps from query id to presentation instead of array
+      if (openid4vpVersion !== 'v1') {
+        vpToken = Object.fromEntries(
+          Object.entries(encodedDcqlPresentation).map(([credentialQueryId, presentations]) => {
+            if (presentations.length > 1) {
+              throw new CredoError(
+                `Multiple presentations for a single dcql query credential are not supported when using OpenID4VP version '${openid4vpVersion}'.`
+              )
+            }
+
+            return [credentialQueryId, presentations[0]]
+          })
+        )
+      }
     } else {
       throw new CredoError('Either pex or dcql must be provided')
     }
@@ -417,17 +511,16 @@ export class OpenId4VpHolderService {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,
       },
-      jarm:
-        authorizationRequestPayload.response_mode && isJarmResponseMode(authorizationRequestPayload.response_mode)
-          ? {
-              encryption: { nonce: authorizationResponseNonce },
-              serverMetadata: {
-                authorization_signing_alg_values_supported: [],
-                authorization_encryption_alg_values_supported: ['ECDH-ES'],
-                authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
-              },
-            }
-          : undefined,
+      jarm: encryptionJwk
+        ? {
+            encryption: { nonce: authorizationResponseNonce, jwk: encryptionJwk },
+            serverMetadata: {
+              authorization_signing_alg_values_supported: [],
+              authorization_encryption_alg_values_supported: ['ECDH-ES'],
+              authorization_encryption_enc_values_supported: ['A128GCM', 'A256GCM', 'A128CBC-HS256'],
+            },
+          }
+        : undefined,
     })
 
     const authorizationResponsePayload = response.authorizationResponsePayload as Openid4vpAuthorizationResponse & {

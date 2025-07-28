@@ -490,10 +490,11 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: {
-        type: 'openId4Vp',
+      mdocSessionTranscript: {
+        type: 'openId4VpDraft18',
         clientId: 'hello',
         mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something',
         responseUri: 'https://response.com',
       },
     })
@@ -622,10 +623,11 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: {
-        type: 'openId4Vp',
+      mdocSessionTranscript: {
+        type: 'openId4VpDraft18',
         clientId: 'hello',
         mdocGeneratedNonce: 'something',
+        verifierGeneratedNonce: 'something',
         responseUri: 'https://response.com',
       },
     })
@@ -763,9 +765,10 @@ describe('DifPresentationExchangeService', () => {
       presentationDefinition,
       domain: 'hello',
       presentationSubmissionLocation: DifPresentationExchangeSubmissionLocation.EXTERNAL,
-      openid4vp: {
-        type: 'openId4Vp',
+      mdocSessionTranscript: {
+        type: 'openId4VpDraft18',
         clientId: 'hello',
+        verifierGeneratedNonce: 'something',
         mdocGeneratedNonce: 'something',
         responseUri: 'https://response.com',
       },
