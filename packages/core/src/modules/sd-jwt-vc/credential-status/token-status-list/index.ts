@@ -1,2 +1,2 @@
-export * from './TokenStatusList'
+export * from './TokenStatusListService'
 export * from './TokenStatusListRegistry'

@@ -37,5 +37,5 @@ export interface TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  retrieve(agentContext: AgentContext, uri: string): Promise<string>
+  resolve(agentContext: AgentContext, uri: string): Promise<string>
 }

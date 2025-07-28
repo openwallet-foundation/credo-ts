@@ -15,6 +15,7 @@ import {
   XOR,
   getKmsKeyIdForVerifiacationMethod,
   getPublicJwkFromVerificationMethod,
+  parseDid,
 } from '@credo-ts/core'
 
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
@@ -593,7 +594,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
       }
 
       const resourcePayload = MsgCreateResourcePayload.fromPartial({
-        collectionId: did.split(':')[3],
+        collectionId: parseDid(did).id,
         id: resource.id,
         resourceType: resource.resourceType,
         name: resource.name,

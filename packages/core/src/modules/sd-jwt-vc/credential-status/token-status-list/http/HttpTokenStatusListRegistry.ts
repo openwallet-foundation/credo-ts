@@ -23,7 +23,7 @@ export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  async retrieve(agentContext: AgentContext, uri: string): Promise<string> {
+  async resolve(agentContext: AgentContext, uri: string): Promise<string> {
     const response = await fetchWithTimeout(agentContext.config.agentDependencies.fetch, uri, {
       headers: {
         Accept: 'application/statuslist+jwt',

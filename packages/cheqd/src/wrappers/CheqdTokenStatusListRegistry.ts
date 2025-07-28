@@ -6,6 +6,7 @@ import {
   SdJwtVcIssuerDid,
   TokenStatusListRegistry,
   TypedArrayEncoder,
+  parseDid,
   utils,
 } from '@credo-ts/core'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
@@ -70,7 +71,7 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
 
     // Upload to Cheqd
     const resourcePayload: CheqdCreateResourceOptions = {
-      collectionId: did.split(':')[3],
+      collectionId: parseDid(did).id,
       id: utils.uuid(),
       name: options.name,
       resourceType: 'TokenStatusList',
@@ -90,7 +91,7 @@ export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
   /**
    * Retrieve a token status list JWT from the registry
    */
-  async retrieve(agentContext: AgentContext, uri: string): Promise<string> {
+  async resolve(agentContext: AgentContext, uri: string): Promise<string> {
     const cheqdDidResolver = agentContext.dependencyManager.resolve(CheqdDidResolver)
 
     const response = await cheqdDidResolver.resolveResource(agentContext, uri)

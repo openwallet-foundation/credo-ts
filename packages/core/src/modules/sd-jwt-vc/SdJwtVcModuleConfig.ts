@@ -7,12 +7,11 @@ import { HttpTokenStatusListRegistry } from './credential-status/token-status-li
  */
 export interface SdJwtVcModuleConfigOptions {
   /**
-   * List of token status list registries that should be used by the dids module. The registrar must
+   * List of token status list registries that should be used by the SdJwtVc module. The registry must
    * be an instance of the {@link TokenStatusListRegistry} interface.
    *
-   * If no registries are provided, the default registries will be used. `PeerTokenStatusListRegistry` and `KeyTokenStatusListRegistry`
-   * will ALWAYS be registered, as they are needed for connections, mediation and out of band modules to function.
-   * Other did methods can be disabled.
+   * If no registries are provided, the default registries will be used. `HTTPTokenStatusListRegistry`
+   * will be registered as a default registry implementation
    *
    */
   registries?: TokenStatusListRegistry[]

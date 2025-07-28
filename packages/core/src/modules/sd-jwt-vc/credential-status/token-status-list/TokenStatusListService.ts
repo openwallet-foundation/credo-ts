@@ -4,11 +4,11 @@ import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
 import { CredoError } from '../../../../error'
-import { isDid } from '../../../../utils'
+import { dateToSeconds, isDid } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
-import { SdJwtVcService } from '../../SdJwtVcService'
+import { extractKeyFromIssuer } from '../../helpers'
 import { TokenStatusListError } from './TokenStatusListError'
 import {
   PublishTokenStatusListOptions,
@@ -49,17 +49,16 @@ export class TokenStatusListService {
     issuer: SdJwtVcIssuer,
     options: CreateTokenStatusListOptions
   ): Promise<CreateTokenStatusListResult> {
-    const sdJwtService = agentContext.dependencyManager.resolve(SdJwtVcService)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const statusList = new StatusList(new Array(options.size).fill(0), 1)
 
-    const issuerKey = await sdJwtService.extractKeyFromIssuer(agentContext, issuer, true)
+    const issuerKey = await extractKeyFromIssuer(agentContext, issuer, true)
 
     // construct jwt payload
     const jwtPayload = new JwtPayload({
       iss: issuerKey.iss,
-      iat: Math.floor(Date.now() / 1000),
+      iat: dateToSeconds(new Date()),
       additionalClaims: {
         status_list: {
           bits: statusList.getBitsPerStatus(),
@@ -92,7 +91,6 @@ export class TokenStatusListService {
     issuer: SdJwtVcIssuer,
     options: RevokeIndicesOptions
   ): Promise<boolean> {
-    const sdJwtService = agentContext.dependencyManager.resolve(SdJwtVcService)
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const { indices, publish, ...publishOptions } = options
@@ -103,10 +101,14 @@ export class TokenStatusListService {
     // extract and validate iss
     const iss = parsedStatusListJwt.payload.iss as string
     if (issuer.method === 'did' && parseDid(issuer.didUrl).did !== iss) {
-      throw new TokenStatusListError('Invalid issuer')
+      throw new TokenStatusListError(
+        `Unable to update status list '${options.uri}'. Expected current 'iss' value to match the did of the issuer ('${parseDid(issuer.didUrl).did}')`
+      )
     }
     if (issuer.method === 'x5c' && issuer.issuer !== iss) {
-      throw new TokenStatusListError('Invalid issuer')
+      throw new TokenStatusListError(
+        `Unable to update status list '${options.uri}'. Expected current 'iss' value to match the did of the issuer ('${issuer.issuer}')`
+      )
     }
 
     const header = parsedStatusListJwt.header
@@ -117,7 +119,7 @@ export class TokenStatusListService {
       statusList.setStatus(revokedIndex, 1)
     }
 
-    const issuerKey = await sdJwtService.extractKeyFromIssuer(agentContext, issuer, true)
+    const issuerKey = await extractKeyFromIssuer(agentContext, issuer, true)
 
     // construct jwt payload
     const jwtPayload = new JwtPayload({
@@ -160,7 +162,7 @@ export class TokenStatusListService {
       throw new TokenStatusListError(`No token status list registry registered for uri ${uri}`)
     }
 
-    return await registry.retrieve(agentContext, uri)
+    return await registry.resolve(agentContext, uri)
   }
 
   getStatusListFetcher(agentContext: AgentContext) {
