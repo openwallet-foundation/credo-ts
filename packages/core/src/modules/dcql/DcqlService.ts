@@ -26,7 +26,7 @@ import {
   W3cPresentation,
 } from '../vc'
 
-import { isNonEmptyArray, JsonObject, JsonValue, mapNonEmptyArray } from '../../types'
+import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'

@@ -42,6 +42,7 @@ import {
   joinUriParts,
   utils,
 } from '@credo-ts/core'
+import { NonEmptyArray, mapNonEmptyArray } from '@credo-ts/core'
 import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
   ClientIdPrefix,
@@ -86,7 +87,6 @@ import {
   OpenId4VcVerifierRecord,
   OpenId4VcVerifierRepository,
 } from './repository'
-import { mapNonEmptyArray, NonEmptyArray } from '@credo-ts/core'
 
 /**
  * @internal
