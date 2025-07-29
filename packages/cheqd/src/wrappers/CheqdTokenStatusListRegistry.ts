@@ -9,12 +9,12 @@ import {
   parseDid,
   utils,
 } from '@credo-ts/core'
-import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+import { cheqdSdkAnonCredsRegistryIdentifierRegex, parseCheqdDid } from '../anoncreds/utils/identifiers'
 import { CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from '../dids'
 
 export class CheqdTokenStatusListRegistry implements TokenStatusListRegistry {
-  public readonly supportedMethods = ['cheqd']
-  public readonly allowsCaching = true
+  methodName = 'cheqd'
+  supportedIdentifier: RegExp = cheqdSdkAnonCredsRegistryIdentifierRegex
 
   /**
    * Publish a verified token status list JWT to the registry

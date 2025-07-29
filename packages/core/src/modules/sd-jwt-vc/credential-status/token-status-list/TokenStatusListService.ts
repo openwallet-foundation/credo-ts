@@ -1,10 +1,9 @@
 import { StatusList, getListFromStatusListJWT } from '@sd-jwt/jwt-status-list'
-import { isURL } from 'class-validator'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../../../agent'
 import { JwsService, Jwt, JwtPayload } from '../../../../crypto'
 import { CredoError } from '../../../../error'
-import { dateToSeconds, isDid } from '../../../../utils'
+import { dateToSeconds } from '../../../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../../../dids'
 import { SdJwtVcModuleConfig } from '../../SdJwtVcModuleConfig'
 import { SdJwtVcIssuer } from '../../SdJwtVcOptions'
@@ -158,10 +157,6 @@ export class TokenStatusListService {
 
   async getStatusList(agentContext: AgentContext, uri: string): Promise<string> {
     const registry = this.findRegistry({ uri })
-    if (!registry) {
-      throw new TokenStatusListError(`No token status list registry registered for uri ${uri}`)
-    }
-
     return await registry.resolve(agentContext, uri)
   }
 
@@ -184,30 +179,24 @@ export class TokenStatusListService {
     }
 
     const registry = this.findRegistry({ uri: options.uri, issuer })
-    if (!registry) {
-      throw new TokenStatusListError(`No token status list registry registered for issuer ${issuer}`)
-    }
     return await registry.publish(agentContext, issuer, jwt, options)
   }
 
-  private findRegistry({ uri, issuer }: { uri?: string; issuer?: SdJwtVcIssuer }): TokenStatusListRegistry | null {
-    let method: string
+  private findRegistry({ uri, issuer }: { uri?: string; issuer?: SdJwtVcIssuer }): TokenStatusListRegistry {
+    if (!uri && issuer && issuer.method === 'did') {
+      uri = parseDid(issuer.didUrl).method
+    }
 
-    if (uri) {
-      if (isDid(uri)) {
-        method = parseDid(uri).method
-      } else if (isURL(uri)) {
-        method = 'http'
-      } else {
-        throw new TokenStatusListError('Status List Uri is not supported')
-      }
-    } else if (issuer && issuer.method === 'did') {
-      method = parseDid(issuer.didUrl).method
-    } else {
+    if (!uri) {
       throw new TokenStatusListError('Status List Uri is not provided')
     }
 
-    return this.sdJwtVcModuleConfig.registries.find((r) => r.supportedMethods.includes(method)) ?? null
+    const registry = this.sdJwtVcModuleConfig.registries.find((registry) => registry.supportedIdentifier.test(uri))
+    if (!registry) {
+      throw new TokenStatusListError(`No token status list registry registered for issuer ${issuer}`)
+    }
+
+    return registry
   }
 
   private async verifyStatusList(agentContext: AgentContext, issuer: SdJwtVcIssuer, jwt: string) {

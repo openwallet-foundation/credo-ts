@@ -22,8 +22,9 @@ export interface TokenStatusListJwtPayload {
 }
 
 export interface TokenStatusListRegistry {
-  readonly supportedMethods: string[]
-  readonly allowsCaching: boolean
+  methodName: string
+  supportedIdentifier: RegExp
+
   /**
    * Publish a verified token status list JWT to the registry
    */

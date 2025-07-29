@@ -5,8 +5,9 @@ import { SdJwtVcIssuerX5c } from '../../../SdJwtVcOptions'
 import { PublishTokenStatusListOptions, TokenStatusListRegistry } from '../TokenStatusListRegistry'
 
 export class HttpTokenStatusListRegistry implements TokenStatusListRegistry {
-  public readonly supportedMethods = ['http']
-  public readonly allowsCaching = true
+  public readonly methodName = 'http'
+  supportedIdentifier: RegExp =
+    /^https?:\/\/(?: www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_,\+.~#?&\/=]*)$/
 
   /**
    * Publish a verified token status list JWT to the registry
