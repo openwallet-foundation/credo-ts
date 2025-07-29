@@ -33,7 +33,7 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
-import { HandshakeProtocol } from './models'
+import { DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
 import { ConnectionProblemReportReason } from './errors'
 
@@ -224,7 +224,8 @@ export class ConnectionsApi {
 
 /**
  * Send a problem report message to decline the incoming connection request.
- * @param connectionId The id of the connection to send the report to.
+ * The connection must be in 'request-received' state, it will be changed to 'abandoned'.
+ * @param connectionId The id of the connection to decline.
  */
 public async declineRequest(
   connectionId: string,
@@ -259,6 +260,7 @@ public async declineRequest(
     connection: connectionRecord,
   })
 
+  await this.connectionService.updateState(this.agentContext, connectionRecord, DidExchangeState.Abandoned)
   await this.messageSender.sendMessage(outboundMessageContext)
 }
   
