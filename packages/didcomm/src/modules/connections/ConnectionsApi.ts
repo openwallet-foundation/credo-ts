@@ -243,7 +243,7 @@ public async declineRequest(
       throw new CredoError(`Connection record ${connectionId} does not have an out-of-band record.`)
     }
 
-    const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, connectionRecord.outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
     if (!outOfBandRecord) {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
