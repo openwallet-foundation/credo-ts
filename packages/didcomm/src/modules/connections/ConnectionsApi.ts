@@ -256,7 +256,7 @@ public async declineRequest(
 
   const outboundMessageContext = new OutboundMessageContext(problemReport, {
     agentContext: this.agentContext,
-    connection: connectionRecord.connection,
+    connection: connectionRecord,
   })
 
   await this.messageSender.sendMessage(outboundMessageContext)
