@@ -36,6 +36,7 @@ import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
 import { DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
 import { ConnectionProblemReportReason } from './errors'
+import { OutOfBandState } from '../oob'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -225,6 +226,7 @@ export class ConnectionsApi {
 /**
  * Send a problem report message to decline the incoming connection request.
  * The connection must be in 'request-received' state, it will be changed to 'abandoned'.
+ * The state of the linked Out of Band record is changed to 'done' if not reusable.
  * @param connectionId The id of the connection to decline.
  */
 public async declineRequest(
@@ -241,7 +243,7 @@ public async declineRequest(
       throw new CredoError(`Connection record ${connectionId} does not have an out-of-band record.`)
     }
 
-    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+    const outOfBandRecord = await this.outOfBandService.getById(this.agentContext, connectionRecord.outOfBandId)
     if (!outOfBandRecord) {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
@@ -261,6 +263,9 @@ public async declineRequest(
   })
 
   await this.connectionService.updateState(this.agentContext, connectionRecord, DidExchangeState.Abandoned)
+  if (!outOfBandRecord.reusable) {
+    await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.Done)
+  }
   await this.messageSender.sendMessage(outboundMessageContext)
 }
   
