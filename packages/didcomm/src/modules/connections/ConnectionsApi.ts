@@ -2,7 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
-import type { ConnectionRecord } from './repository'
+import { ConnectionRecord } from './repository'
 
 import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
 
@@ -13,6 +13,7 @@ import { OutboundMessageContext } from '../../models'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
+import { ConnectionProblemReportMessage } from './messages'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -32,8 +33,10 @@ import {
   TrustPingResponseMessageHandler,
 } from './handlers'
 import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
-import { HandshakeProtocol } from './models'
+import { DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
+import { ConnectionProblemReportReason } from './errors'
+import { OutOfBandState } from '../oob'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -167,7 +170,7 @@ export class ConnectionsApi {
       throw new CredoError(`Connection record ${connectionId} not found.`)
     }
     if (!connectionRecord.outOfBandId) {
-      throw new CredoError(`Connection record ${connectionId} does not have out-of-band record.`)
+      throw new CredoError(`Connection record ${connectionId} does not have an out-of-band record.`)
     }
 
     const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
@@ -220,6 +223,52 @@ export class ConnectionsApi {
     return connectionRecord
   }
 
+/**
+ * Send a problem report message to decline the incoming connection request.
+ * The connection must be in 'request-received' state, it will be changed to 'abandoned'.
+ * The state of the linked Out of Band record is changed to 'done' if not reusable.
+ * @param connectionId The id of the connection to decline.
+ */
+public async declineRequest(
+  connectionId: string,
+): Promise<void> {
+    const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
+    if (!connectionRecord) {
+      throw new CredoError(`Connection record ${connectionId} not found.`)
+    }
+    if (connectionRecord.state !== DidExchangeState.RequestReceived) {
+      throw new CredoError(`Connection record ${connectionId} is in state ${connectionRecord.state} and cannot be declined.`)
+    }
+    if (!connectionRecord.outOfBandId) {
+      throw new CredoError(`Connection record ${connectionId} does not have an out-of-band record.`)
+    }
+
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+    }
+
+  const problemReport = new ConnectionProblemReportMessage({
+    description: {
+      en: 'Connection request declined',
+      code: ConnectionProblemReportReason.RequestNotAccepted,
+    },
+  })
+
+  problemReport.setThread({ threadId: connectionRecord.threadId })
+
+  const outboundMessageContext = new OutboundMessageContext(problemReport, {
+    agentContext: this.agentContext,
+    connection: connectionRecord,
+  })
+
+  await this.connectionService.updateState(this.agentContext, connectionRecord, DidExchangeState.Abandoned)
+  if (!outOfBandRecord.reusable) {
+    await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.Done)
+  }
+  await this.messageSender.sendMessage(outboundMessageContext)
+}
+  
   /**
    * Accept a connection response as invitee (by sending a trust ping message) for the connection with the specified connection id.
    * This is not needed when auto accepting of connection is enabled.
