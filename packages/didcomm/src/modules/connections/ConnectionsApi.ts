@@ -2,7 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
-import type { ConnectionRecord } from './repository'
+import { ConnectionRecord } from './repository'
 
 import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
 
@@ -236,7 +236,7 @@ public async declineRequest(
     if (!connectionRecord) {
       throw new CredoError(`Connection record ${connectionId} not found.`)
     }
-    if (connectionRecord.state !== 'request-received') {
+    if (connectionRecord.state !== DidExchangeState.RequestReceived) {
       throw new CredoError(`Connection record ${connectionId} is in state ${connectionRecord.state} and cannot be declined.`)
     }
     if (!connectionRecord.outOfBandId) {
