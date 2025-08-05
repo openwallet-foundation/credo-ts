@@ -31,6 +31,14 @@ export function equalsIgnoreOrder<Item = string>(a: Array<Item>, b: Array<Item>)
   return a.every((k) => b.includes(k))
 }
 
+/**
+ * @note This will only work for primitive array equality
+ */
+export function equalsWithOrder<Item = string>(lhs: Array<Item>, rhs: Array<Item>): boolean {
+  if (lhs.length !== rhs.length) return false
+  return lhs.every((k, i) => k === rhs[i])
+}
+
 // We take any here as we have to check some properties, they will be undefined if they do not exist
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 function simpleEqual(x: any, y: any) {

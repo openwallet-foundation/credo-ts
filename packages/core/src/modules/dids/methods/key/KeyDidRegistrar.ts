@@ -1,12 +1,17 @@
 import type { AgentContext } from '../../../../agent'
-import type { Key, KeyType } from '../../../../crypto'
-import type { Buffer } from '../../../../utils'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
+import { XOR } from '../../../../types'
+import {
+  KeyManagementApi,
+  KmsCreateKeyOptions,
+  KmsCreateKeyTypeAssymetric,
+  KmsJwkPublicAsymmetric,
+  PublicJwk,
+} from '../../../kms'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
-
 import { DidKey } from './DidKey'
 
 export class KeyDidRegistrar implements DidRegistrar {
@@ -15,49 +20,59 @@ export class KeyDidRegistrar implements DidRegistrar {
   public async create(agentContext: AgentContext, options: KeyDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
 
-    const keyType = options.options.keyType
-    const seed = options.secret?.seed
-    const privateKey = options.secret?.privateKey
-
     try {
-      let key = options.options.key
+      let publicJwk: KmsJwkPublicAsymmetric
+      let keyId: string
+      const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 
-      if (key && (keyType || seed || privateKey)) {
-        return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: 'Key instance cannot be combined with key type, seed or private key',
-          },
-        }
-      }
-
-      if (keyType) {
-        key = await agentContext.wallet.createKey({
-          keyType,
-          seed,
-          privateKey,
+      if (options.options.createKey) {
+        const createKeyResult = await kms.createKey(options.options.createKey)
+        publicJwk = createKeyResult.publicJwk
+        keyId = createKeyResult.keyId
+      } else {
+        const _publicJwk = await kms.getPublicKey({
+          keyId: options.options.keyId,
         })
-      }
-
-      if (!key) {
-        return {
-          didDocumentMetadata: {},
-          didRegistrationMetadata: {},
-          didState: {
-            state: 'failed',
-            reason: 'Missing key type or key instance',
-          },
+        keyId = options.options.keyId
+        if (!_publicJwk) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: `notFound: key with key id '${options.options.keyId}' not found`,
+            },
+          }
         }
+
+        if (_publicJwk.kty === 'oct') {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: `notFound: key with key id '${options.options.keyId}' uses unsupported kty 'oct' for did:key`,
+            },
+          }
+        }
+
+        publicJwk = _publicJwk
       }
 
-      const didKey = new DidKey(key)
+      const jwk = PublicJwk.fromPublicJwk(publicJwk)
+      const didKey = new DidKey(jwk)
 
       // Save the did so we know we created it and can issue with it
       const didRecord = new DidRecord({
         did: didKey.did,
         role: DidDocumentRole.Created,
+
+        keys: [
+          {
+            didDocumentRelativeKeyId: `#${didKey.publicJwk.fingerprint}`,
+            kmsKeyId: keyId,
+          },
+        ],
       })
       await didRepository.save(agentContext, didRecord)
 
@@ -68,15 +83,7 @@ export class KeyDidRegistrar implements DidRegistrar {
           state: 'finished',
           did: didKey.did,
           didDocument: didKey.didDocument,
-          secret: {
-            // FIXME: the uni-registrar creates the seed in the registrar method
-            // if it doesn't exist so the seed can always be returned. Currently
-            // we can only return it if the seed was passed in by the user. Once
-            // we have a secure method for generating seeds we should use the same
-            // approach
-            seed: options.secret?.seed,
-            privateKey: options.secret?.privateKey,
-          },
+          secret: {},
         },
       }
     } catch (error) {
@@ -119,14 +126,13 @@ export interface KeyDidCreateOptions extends DidCreateOptions {
   // For now we don't support creating a did:key with a did or did document
   did?: never
   didDocument?: never
-  options: {
-    keyType?: KeyType
-    key?: Key
-  }
-  secret?: {
-    seed?: Buffer
-    privateKey?: Buffer
-  }
+  secret?: never
+
+  /**
+   * You can create a did:key based on an existing `keyId`, or provide `createKey` options
+   * to create a new key.
+   */
+  options: XOR<{ createKey: KmsCreateKeyOptions<KmsCreateKeyTypeAssymetric> }, { keyId: string }>
 }
 
 // Update and Deactivate not supported for did:key

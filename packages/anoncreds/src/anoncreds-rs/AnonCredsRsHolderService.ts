@@ -44,6 +44,7 @@ import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata
 import {
   CredoError,
   JsonTransformer,
+  Kms,
   TypedArrayEncoder,
   W3cCredentialRecord,
   W3cCredentialRepository,
@@ -96,6 +97,15 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
     }
   }
 
+  /**
+   * generate an 80-bit nonce suitable for AnonCreds proofs
+   */
+  public generateNonce(agentContext: AgentContext): string {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    const bytes = kms.randomBytes({ length: 10 })
+    return bytes.reduce((acc, byte) => (acc << 8n) | BigInt(byte), 0n).toString()
+  }
+
   public async createProof(agentContext: AgentContext, options: CreateProofOptions): Promise<AnonCredsProof> {
     const { credentialDefinitions, proofRequest, selectedCredentials, schemas } = options
 
@@ -143,10 +153,9 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           }
         }
 
-        const { linkSecretId, revocationRegistryId, credentialRevocationId } = getAnoncredsCredentialInfoFromRecord(
-          credentialRecord,
-          proofRequestUsesUnqualifiedIdentifiers(proofRequest)
-        )
+        const proofUsesUnqualifiedIdentifiers = proofRequestUsesUnqualifiedIdentifiers(proofRequest)
+        const { linkSecretId, schemaId, credentialDefinitionId, revocationRegistryId, credentialRevocationId } =
+          getAnoncredsCredentialInfoFromRecord(credentialRecord, proofUsesUnqualifiedIdentifiers)
 
         // TODO: Check if credential has a revocation registry id (check response from anoncreds-rs API, as it is
         // sending back a mandatory string in Credential.revocationRegistryId)
@@ -187,6 +196,11 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
                 })
               : (credentialRecord.credential as AnonCredsCredential)
 
+          if (proofUsesUnqualifiedIdentifiers) {
+            credential.schema_id = schemaId
+            credential.cred_def_id = credentialDefinitionId
+            credential.rev_reg_id = revocationRegistryId != null ? revocationRegistryId : undefined
+          }
           return {
             linkSecretId,
             credentialId: attribute.credentialId,

@@ -1,171 +1,225 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { AuthorizationResponsePayload, DecryptCompact } from '@sphereon/did-auth-siop'
-import type { Response, Router } from 'express'
-import type { OpenId4VcVerificationSessionRecord } from '../repository'
+import type { NextFunction, Request, Response, Router } from 'express'
 import type { OpenId4VcVerificationRequest } from './requestContext'
 
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@animo-id/oauth2'
-import { CredoError, Hasher, JsonEncoder, Key, TypedArrayEncoder } from '@credo-ts/core'
-import { AuthorizationRequest, RP } from '@sphereon/did-auth-siop'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError, decodeJwtHeader } from '@openid4vc/oauth2'
 
-import { getRequestContext, sendErrorResponse, sendJsonResponse, sendOauth2ErrorResponse } from '../../shared/router'
-import { OpenId4VcSiopVerifierService } from '../OpenId4VcSiopVerifierService'
+import { AgentContext, TypedArrayEncoder } from '@credo-ts/core'
+// FIXME: export parseOpenid4VpAuthorizationResponsePayload from openid4vp
+import { zOpenid4vpAuthorizationResponse } from '@openid4vc/openid4vp'
+import {
+  getRequestContext,
+  sendErrorResponse,
+  sendJsonResponse,
+  sendOauth2ErrorResponse,
+  sendUnknownServerErrorResponse,
+} from '../../shared/router'
+import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
+import {
+  OpenId4VcVerificationSessionRecord,
+  OpenId4VcVerificationSessionRepository,
+  OpenId4VcVerifierRecord,
+} from '../repository'
 
-export interface OpenId4VcSiopAuthorizationEndpointConfig {
-  /**
-   * The path at which the authorization endpoint should be made available. Note that it will be
-   * hosted at a subpath to take into account multiple tenants and verifiers.
-   *
-   * @default /authorize
-   */
-  endpointPath: string
+import { ValidationError } from '@openid4vc/utils'
+import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+
+export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcVerifierModuleConfig) {
+  router.post(config.authorizationEndpoint, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
+    const { agentContext, verifier } = getRequestContext(request)
+    const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VpVerifierService)
+
+    let authorizationResponseRedirectUri: string | undefined = undefined
+
+    try {
+      const result = await getVerificationSession(agentContext, request, response, next, verifier)
+
+      // Response already handled in the method
+      if (!result.success) return
+
+      authorizationResponseRedirectUri = result.verificationSession.authorizationResponseRedirectUri
+
+      const { verificationSession } = await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
+        authorizationResponse: request.body,
+        verificationSession: result.verificationSession,
+      })
+
+      return sendJsonResponse(response, next, {
+        // Used only for presentation during issuance flow, to prevent session fixation.
+        presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
+
+        redirect_uri: verificationSession.authorizationResponseRedirectUri,
+      })
+    } catch (error) {
+      if (error instanceof Oauth2ServerErrorResponseError) {
+        error.errorResponse.redirect_uri = authorizationResponseRedirectUri
+        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
+      }
+
+      // FIXME: should throw a Oauth2ServerErrorResponseError in the oid4vp library
+      if (error instanceof ValidationError) {
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: error.message,
+              redirect_uri: authorizationResponseRedirectUri,
+            },
+            { cause: error }
+          )
+        )
+      }
+
+      return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error, {
+        redirect_uri: authorizationResponseRedirectUri,
+      })
+    }
+  })
 }
 
 async function getVerificationSession(
   agentContext: AgentContext,
-  options: {
-    verifierId: string
-    state?: string
-    nonce?: string
-  }
-): Promise<OpenId4VcVerificationSessionRecord> {
-  const { verifierId, state, nonce } = options
+  request: Request,
+  response: Response,
+  next: NextFunction,
+  verifier: OpenId4VcVerifierRecord
+): Promise<{ success: true; verificationSession: OpenId4VcVerificationSessionRecord } | { success: false }> {
+  const openId4VcVerificationSessionRepository = agentContext.dependencyManager.resolve(
+    OpenId4VcVerificationSessionRepository
+  )
 
-  const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
-  const session = await openId4VcVerifierService.findVerificationSessionForAuthorizationResponse(agentContext, {
-    authorizationResponseParams: { state, nonce },
-    verifierId,
-  })
-
-  if (!session) {
-    agentContext.config.logger.warn(
-      `No verification session found for incoming authorization response for verifier ${verifierId}`
-    )
-    throw new CredoError(`No state or nonce provided in authorization response for verifier ${verifierId}`)
-  }
-
-  return session
-}
-
-const decryptJarmResponse = (agentContext: AgentContext): DecryptCompact => {
-  return async (input) => {
-    const { jwe: compactJwe, jwk: jwkJson } = input
-    const key = Key.fromFingerprint(jwkJson.kid)
-    if (!agentContext.wallet.directDecryptCompactJweEcdhEs) {
-      throw new CredoError('Cannot decrypt Jarm Response, wallet does not support directDecryptCompactJweEcdhEs')
-    }
-
-    const { data, header } = await agentContext.wallet.directDecryptCompactJweEcdhEs({ compactJwe, recipientKey: key })
-    const decryptedPayload = TypedArrayEncoder.toUtf8String(data)
-
-    return {
-      plaintext: decryptedPayload,
-      protectedHeader: header as Record<string, unknown> & { alg: string; enc: string },
-    }
-  }
-}
-
-export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcSiopAuthorizationEndpointConfig) {
-  router.post(config.endpointPath, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
-    const { agentContext, verifier } = getRequestContext(request)
-
-    let jarmResponseType: string | undefined
-
-    try {
-      const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VcSiopVerifierService)
-
-      let verificationSession: OpenId4VcVerificationSessionRecord | undefined
-      let authorizationResponsePayload: AuthorizationResponsePayload
-      let jarmHeader: { apu?: string; apv?: string } | undefined = undefined
-
-      if (request.body.response) {
-        const res = await RP.processJarmAuthorizationResponse(request.body.response, {
-          getAuthRequestPayload: async (input) => {
-            verificationSession = await getVerificationSession(agentContext, {
-              verifierId: verifier.verifierId,
-              state: input.state,
-              nonce: input.nonce as string,
-            })
-
-            const req = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
-            const requestObjectPayload = await req.requestObject?.getPayload()
-            if (!requestObjectPayload) {
-              throw new CredoError('No request object payload found.')
-            }
-            return { authRequestParams: requestObjectPayload }
-          },
-          decryptCompact: decryptJarmResponse(agentContext),
-          hasher: Hasher.hash,
-        })
-
-        jarmResponseType = res.type
-
-        const [header] = request.body.response.split('.')
-        jarmHeader = JsonEncoder.fromBase64(header)
-        // FIXME: verify the apv matches the nonce of the authorization reuqest
-        authorizationResponsePayload = res.authResponseParams as AuthorizationResponsePayload
-      } else {
-        authorizationResponsePayload = request.body
-        verificationSession = await getVerificationSession(agentContext, {
-          verifierId: verifier.verifierId,
-          state: authorizationResponsePayload.state,
-          nonce: authorizationResponsePayload.nonce,
-        })
-      }
-      if (typeof authorizationResponsePayload.presentation_submission === 'string') {
-        authorizationResponsePayload.presentation_submission = JSON.parse(request.body.presentation_submission)
+  try {
+    if (request.query.session) {
+      if (typeof request.query.session !== 'string') {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Unexpected value for 'session' query param`
+        )
+        return { success: false }
       }
 
-      // This feels hacky, and should probably be moved to OID4VP lib. However the OID4VP spec allows either object, string, or array...
-      if (
-        typeof authorizationResponsePayload.vp_token === 'string' &&
-        (authorizationResponsePayload.vp_token.startsWith('{') || authorizationResponsePayload.vp_token.startsWith('['))
-      ) {
-        authorizationResponsePayload.vp_token = JSON.parse(authorizationResponsePayload.vp_token)
-      }
+      const verificationSession = await openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
+        verifierId: verifier.verifierId,
+        authorizationRequestId: request.query.session,
+      })
 
       if (!verificationSession) {
-        throw new CredoError('Missing verification session, cannot verify authorization response.')
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Invalid 'session' parameter`
+        )
+        return { success: false }
       }
 
-      const authorizationRequest = await AuthorizationRequest.fromUriOrJwt(verificationSession.authorizationRequestJwt)
-      const response_mode = await authorizationRequest.getMergedProperty<string>('response_mode')
-      if (response_mode?.includes('jwt') && !jarmResponseType) {
-        throw new Oauth2ServerErrorResponseError({
-          error: Oauth2ErrorCodes.InvalidRequest,
-          error_description: `JARM response is required for JWT response mode '${response_mode}'.`,
-        })
-      }
-
-      if (!response_mode?.includes('jwt') && jarmResponseType) {
-        throw new Oauth2ServerErrorResponseError({
-          error: Oauth2ErrorCodes.InvalidRequest,
-          error_description: `Recieved JARM response which is incompatible with response mode '${response_mode}'.`,
-        })
-      }
-
-      if (jarmResponseType && jarmResponseType !== 'encrypted') {
-        throw new Oauth2ServerErrorResponseError({
-          error: Oauth2ErrorCodes.InvalidRequest,
-          error_description: `Only encrypted JARM responses are supported, received '${jarmResponseType}'.`,
-        })
-      }
-
-      await openId4VcVerifierService.verifyAuthorizationResponse(agentContext, {
-        authorizationResponse: authorizationResponsePayload,
-        verificationSession,
-        jarmHeader,
-      })
-      return sendJsonResponse(response, next, {
-        // Used only for presentation during issuance flow, to prevent session fixation.
-        presentation_during_issuance_session: verificationSession.presentationDuringIssuanceSession,
-      })
-    } catch (error) {
-      if (error instanceof Oauth2ServerErrorResponseError) {
-        return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
-      }
-
-      return sendErrorResponse(response, next, agentContext.config.logger, 500, 'invalid_request', error)
+      return { success: true, verificationSession }
     }
-  })
+
+    const parsedResponse = zOpenid4vpAuthorizationResponse.safeParse(request.body)
+    if (parsedResponse.success) {
+      if (!parsedResponse.data.state) {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Missing required 'state' parameter in response without response encryption`
+        )
+        return { success: false }
+      }
+
+      const verificationSession = await openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
+        payloadState: parsedResponse.data.state,
+        verifierId: verifier.verifierId,
+      })
+
+      if (!verificationSession) {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Invalid 'state' parameter`
+        )
+        return { success: false }
+      }
+
+      return { success: true, verificationSession }
+    }
+
+    // Try extracting apv (request nonce), which is used in encrypted responses (for ISO 18013-7/before draft 24)
+    if (typeof request.body === 'object' && 'response' in request.body) {
+      const { header } = decodeJwtHeader({
+        jwt: request.body.response,
+      })
+
+      if (!header.apv) {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Missing 'session' query param or 'apv' value in header of encrypted JARM response.`
+        )
+        return { success: false }
+      }
+
+      if (typeof header.apv !== 'string') {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `'apv' value in header of encrypted JARM response is not of type string.`
+        )
+        return { success: false }
+      }
+
+      const nonce = TypedArrayEncoder.toUtf8String(TypedArrayEncoder.fromBase64(header.apv))
+      const verificationSession = await openId4VcVerificationSessionRepository.findSingleByQuery(agentContext, {
+        nonce,
+        verifierId: verifier.verifierId,
+      })
+
+      if (!verificationSession) {
+        sendErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          400,
+          Oauth2ErrorCodes.InvalidRequest,
+          `Invalid 'apv' parameter`
+        )
+        return { success: false }
+      }
+
+      return { success: true, verificationSession }
+    }
+
+    sendErrorResponse(
+      response,
+      next,
+      agentContext.config.logger,
+      400,
+      Oauth2ErrorCodes.InvalidRequest,
+      'Invalid response'
+    )
+    return { success: false }
+  } catch (error) {
+    sendUnknownServerErrorResponse(response, next, agentContext.config.logger, error)
+    return { success: false }
+  }
 }

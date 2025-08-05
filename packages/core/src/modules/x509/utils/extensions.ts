@@ -1,4 +1,4 @@
-import { Hasher, type Key } from '../../../crypto'
+import { Hasher } from '../../../crypto/hashes/Hasher'
 import type { X509CertificateExtensionsOptions } from '../X509ServiceOptions'
 
 import {
@@ -6,21 +6,23 @@ import {
   BasicConstraintsExtension,
   CRLDistributionPointsExtension,
   ExtendedKeyUsageExtension,
+  IssuerAlternativeNameExtension,
   KeyUsagesExtension,
   SubjectAlternativeNameExtension,
   SubjectKeyIdentifierExtension,
 } from '@peculiar/x509'
-
+import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../../utils'
-import { IssuerAlternativeNameExtension } from '../extensions'
+import { PublicJwk } from '../../kms'
 
 export const createSubjectKeyIdentifierExtension = (
   options: X509CertificateExtensionsOptions['subjectKeyIdentifier'],
-  additionalOptions: { key: Key }
+  additionalOptions: { publicJwk: PublicJwk }
 ) => {
   if (!options || !options.include) return
 
-  const hash = Hasher.hash(additionalOptions.key.publicKey, 'SHA-1')
+  const spki = publicJwkToSpki(additionalOptions.publicJwk)
+  const hash = Hasher.hash(new Uint8Array(spki.subjectPublicKey), 'SHA-1')
 
   return new SubjectKeyIdentifierExtension(TypedArrayEncoder.toHex(hash))
 }
@@ -41,11 +43,12 @@ export const createExtendedKeyUsagesExtension = (options: X509CertificateExtensi
 
 export const createAuthorityKeyIdentifierExtension = (
   options: X509CertificateExtensionsOptions['authorityKeyIdentifier'],
-  additionalOptions: { key: Key }
+  additionalOptions: { publicJwk: PublicJwk }
 ) => {
   if (!options) return
 
-  const hash = Hasher.hash(additionalOptions.key.publicKey, 'SHA-1')
+  const spki = publicJwkToSpki(additionalOptions.publicJwk)
+  const hash = Hasher.hash(new Uint8Array(spki.subjectPublicKey), 'SHA-1')
 
   return new AuthorityKeyIdentifierExtension(TypedArrayEncoder.toHex(hash), options.markAsCritical)
 }

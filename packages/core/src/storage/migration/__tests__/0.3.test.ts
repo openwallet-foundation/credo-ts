@@ -2,21 +2,15 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
-import { DependencyManager } from '../../../plugins'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2023-03-18T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)
-
-const walletConfig = {
-  id: 'Wallet: 0.4 Update',
-  key: 'Key: 0.4 Update',
-}
 
 describe('UpdateAssistant | v0.3.1 - v0.4', () => {
   it('should correctly update the did records and remove cache records', async () => {
@@ -29,23 +23,17 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-        },
-        dependencies: agentDependencies,
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
       },
-      dependencyManager
-    )
+      dependencies: agentDependencies,
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+      },
+    })
 
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
         mediationRoleUpdateStrategy: 'doNotChange',
@@ -80,7 +68,6 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })
@@ -95,22 +82,17 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
       'utf8'
     )
 
-    const dependencyManager = new DependencyManager()
-    const storageService = new InMemoryStorageService()
-    dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
-
-    const agent = new Agent(
-      {
-        config: {
-          label: 'Test Agent',
-          walletConfig,
-        },
-        dependencies: agentDependencies,
+    const agent = new Agent({
+      config: {
+        label: 'Test Agent',
       },
-      dependencyManager
-    )
+      dependencies: agentDependencies,
+      modules: {
+        inMemory: new InMemoryWalletModule(),
+      },
+    })
+
+    const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
 
     const updateAssistant = new UpdateAssistant(agent, {
       v0_1ToV0_2: {
@@ -146,7 +128,6 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })

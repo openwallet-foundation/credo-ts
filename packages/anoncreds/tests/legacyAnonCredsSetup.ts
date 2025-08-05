@@ -30,7 +30,7 @@ import {
 import { sleep } from '../../core/src/utils/sleep'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   importExistingIndyDidFromPrivateKey,
   makeConnection,
   publicDidSeed,
@@ -315,7 +315,7 @@ export async function setupAnonCredsTests<
   createConnections?: CreateConnections
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
-    getInMemoryAgentOptions(
+    getAgentOptions(
       issuerName,
       {
         endpoints: ['rxjs:issuer'],
@@ -326,12 +326,13 @@ export async function setupAnonCredsTests<
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
   const holderAgent = new Agent(
-    getInMemoryAgentOptions(
+    getAgentOptions(
       holderName,
       {
         endpoints: ['rxjs:holder'],
@@ -340,13 +341,14 @@ export async function setupAnonCredsTests<
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
-      })
+      }),
+      { requireDidcomm: true }
     )
   )
 
   const verifierAgent = verifierName
     ? new Agent(
-        getInMemoryAgentOptions(
+        getAgentOptions(
           verifierName,
           {
             endpoints: ['rxjs:verifier'],
@@ -355,7 +357,8 @@ export async function setupAnonCredsTests<
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
-          })
+          }),
+          { requireDidcomm: true }
         )
       )
     : undefined

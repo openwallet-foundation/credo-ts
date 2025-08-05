@@ -19,7 +19,7 @@ export async function getAgentContextForActorId(rootAgentContext: AgentContext, 
       const agentContextProvider = rootAgentContext.dependencyManager.resolve<AgentContextProvider>(
         InjectionSymbols.AgentContextProvider
       )
-      return agentContextProvider.getAgentContextForContextCorrelationId(tenant.id)
+      return agentContextProvider.getAgentContextForContextCorrelationId(`tenant-${tenant.id}`)
     }
   }
 
@@ -44,7 +44,7 @@ export async function storeActorIdForContextCorrelationId(agentContext: AgentCon
 
   // We don't want to query the tenant record if the current context is the root context
   if (tenantsApi && tenantsApi.rootAgentContext.contextCorrelationId !== agentContext.contextCorrelationId) {
-    const tenantRecord = await tenantsApi.getTenantById(agentContext.contextCorrelationId)
+    const tenantRecord = await tenantsApi.getTenantById(agentContext.contextCorrelationId.replace('tenant-', ''))
 
     const currentOpenId4VcActorIds = tenantRecord.metadata.get<string[]>(OPENID4VC_ACTOR_IDS_METADATA_KEY) ?? []
     const openId4VcActorIds = [...currentOpenId4VcActorIds, actorId]

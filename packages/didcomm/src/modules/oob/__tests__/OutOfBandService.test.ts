@@ -2,8 +2,8 @@ import type { DidCommDocumentService } from '../../../services'
 
 import { Subject } from 'rxjs'
 
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
-import { Key, KeyType } from '../../../../../core/src/crypto'
 import { CredoError } from '../../../../../core/src/error'
 import {
   agentDependencies,
@@ -25,7 +25,11 @@ import { OutOfBandRepository } from '../repository'
 jest.mock('../repository/OutOfBandRepository')
 const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
 
-const key = Key.fromPublicKeyBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K', KeyType.Ed25519)
+const key = Kms.PublicJwk.fromPublicKey({
+  kty: 'OKP',
+  crv: 'Ed25519',
+  publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
+})
 
 const agentContext = getAgentContext()
 

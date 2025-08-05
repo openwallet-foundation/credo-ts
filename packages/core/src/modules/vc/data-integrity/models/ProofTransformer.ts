@@ -1,9 +1,9 @@
-import type { SingleOrArray } from '../../../../utils'
 import type { DataIntegrityProofOptions } from './DataIntegrityProof'
 import type { LinkedDataProofOptions } from './LinkedDataProof'
 
 import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
 
+import { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import { LinkedDataProof } from './LinkedDataProof'
 

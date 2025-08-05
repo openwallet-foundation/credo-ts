@@ -2,12 +2,13 @@ import type { CheqdDidCreateOptions } from '../src'
 
 import { Agent, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
 
-import { getInMemoryAgentOptions } from '../../core/tests/helpers'
+import { getAgentOptions } from '../../core/tests/helpers'
 import { CheqdAnonCredsRegistry } from '../src/anoncreds'
 
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
 
-const agent = new Agent(getInMemoryAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeeds[2])))
+const agent = new Agent(getAgentOptions('cheqdAnonCredsRegistry', {}, {}, getCheqdModules(cheqdPayerSeeds[2])))
 
 const cheqdAnonCredsRegistry = new CheqdAnonCredsRegistry()
 
@@ -20,7 +21,6 @@ describe('cheqdAnonCredsRegistry', () => {
 
   afterAll(async () => {
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   let credentialDefinitionId: string
@@ -28,17 +28,22 @@ describe('cheqdAnonCredsRegistry', () => {
   // One test as the credential definition depends on the schema
   test('register and resolve a schema and credential definition', async () => {
     const privateKey = TypedArrayEncoder.fromString('000000000000000000000000000cheqd')
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({
+      privateKey,
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    })
+
+    const createdKey = await agent.kms.importKey({
+      privateJwk,
+    })
 
     const did = await agent.dids.create<CheqdDidCreateOptions>({
       method: 'cheqd',
-      secret: {
-        verificationMethod: {
-          id: 'key-10',
-          type: 'Ed25519VerificationKey2020',
-          privateKey,
-        },
-      },
       options: {
+        keyId: createdKey.keyId,
         network: 'testnet',
         methodSpecificIdAlgo: 'uuid',
       },

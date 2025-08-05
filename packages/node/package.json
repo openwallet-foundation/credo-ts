@@ -28,16 +28,16 @@
     "@2060.io/ref-napi": "^3.0.6",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "@types/express": "^4.17.15",
-    "express": "^4.17.1",
-    "rxjs": "^7.8.0",
-    "ws": "^8.13.0"
+    "@types/express": "catalog:",
+    "express": "catalog:",
+    "rxjs": "catalog:",
+    "ws": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^18.18.8",
-    "@types/ws": "^8.5.4",
-    "nock": "^14.0.0-beta.19",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "@types/node": "catalog:",
+    "@types/ws": "catalog:",
+    "nock": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:"
   }
 }

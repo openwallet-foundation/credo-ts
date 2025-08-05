@@ -1,15 +1,20 @@
-import type { OpenId4VcSiopResolvedAuthorizationRequest, OpenId4VciResolvedCredentialOffer } from '@credo-ts/openid4vc'
+import type {
+  OpenId4VciMetadata,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VpResolvedAuthorizationRequest,
+} from '@credo-ts/openid4vc'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
-  DifPresentationExchangeService,
+  JwkDidCreateOptions,
+  KeyDidCreateOptions,
+  Kms,
   Mdoc,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   X509Module,
-  getJwkFromKey,
 } from '@credo-ts/core'
 import {
   OpenId4VcHolderModule,
@@ -19,12 +24,13 @@ import {
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
+import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText } from './OutputClass'
 
-function getOpenIdHolderModules() {
+function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
   return {
-    askar: new AskarModule({ askar }),
+    askar: new AskarModule({ askar, store: askarStorageConfig }),
     openId4VcHolder: new OpenId4VcHolderModule(),
     x509: new X509Module({
       getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
@@ -50,7 +56,14 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public constructor(port: number, name: string) {
-    super({ port, name, modules: getOpenIdHolderModules() })
+    super({
+      port,
+      name,
+      modules: getOpenIdHolderModules({
+        id: name,
+        key: name,
+      }),
+    })
   }
 
   public static async build(): Promise<Holder> {
@@ -64,7 +77,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     return await this.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
   }
 
-  public async resolveIssuerMetadata(credentialIssuer: string) {
+  public async resolveIssuerMetadata(credentialIssuer: string): Promise<OpenId4VciMetadata> {
     return await this.agent.modules.openId4VcHolder.resolveIssuerMetadata(credentialIssuer)
   }
 
@@ -81,16 +94,14 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       } as const
     }
     if (resolvedCredentialOffer.credentialOfferPayload.grants?.[authorizationCodeGrantIdentifier]) {
-      const resolvedAuthorizationRequest = await this.agent.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
-        resolvedCredentialOffer,
-        {
+      const resolvedAuthorizationRequest =
+        await this.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
           clientId: this.client.clientId,
           redirectUri: this.client.redirectUri,
           scope: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
             .map(([id, value]) => (credentialsToRequest.includes(id) ? value.scope : undefined))
             .filter((v): v is string => Boolean(v)),
-        }
-      )
+        })
 
       if (resolvedAuthorizationRequest.authorizationFlow === OpenId4VciAuthorizationFlow.PresentationDuringIssuance) {
         return {
@@ -137,32 +148,45 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       resolvedCredentialOffer,
       clientId: options.clientId,
       credentialConfigurationIds: options.credentialsToRequest,
-      credentialBindingResolver: async ({ keyTypes, supportedDidMethods, supportsAllDidMethods }) => {
-        const key = await this.agent.wallet.createKey({
-          keyType: keyTypes[0],
+      credentialBindingResolver: async ({ supportedDidMethods, supportsAllDidMethods, proofTypes }) => {
+        const key = await this.agent.kms.createKeyForSignatureAlgorithm({
+          algorithm: proofTypes.jwt?.supportedSignatureAlgorithms[0] ?? 'EdDSA',
         })
+        const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
 
         if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
-          const didKey = new DidKey(key)
+          await this.agent.dids.create<KeyDidCreateOptions>({
+            method: 'key',
+            options: {
+              keyId: key.keyId,
+            },
+          })
+          const didKey = new DidKey(publicJwk)
 
           return {
             method: 'did',
-            didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+            didUrls: [`${didKey.did}#${didKey.publicJwk.fingerprint}`],
           }
         }
         if (supportedDidMethods?.includes('did:jwk')) {
-          const didJwk = DidJwk.fromJwk(getJwkFromKey(key))
+          const didJwk = DidJwk.fromPublicJwk(publicJwk)
+          await this.agent.dids.create<JwkDidCreateOptions>({
+            method: 'jwk',
+            options: {
+              keyId: key.keyId,
+            },
+          })
 
           return {
             method: 'did',
-            didUrl: `${didJwk.did}#0`,
+            didUrls: [`${didJwk.did}#0`],
           }
         }
 
         // We fall back on jwk binding
         return {
           method: 'jwk',
-          jwk: getJwkFromKey(key),
+          keys: [publicJwk],
         }
       },
       ...tokenResponse,
@@ -186,27 +210,34 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public async resolveProofRequest(proofRequest: string) {
-    const resolvedProofRequest = await this.agent.modules.openId4VcHolder.resolveSiopAuthorizationRequest(proofRequest)
+    const resolvedProofRequest =
+      await this.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(proofRequest)
 
     return resolvedProofRequest
   }
 
-  public async acceptPresentationRequest(resolvedPresentationRequest: OpenId4VcSiopResolvedAuthorizationRequest) {
-    const presentationExchangeService = this.agent.dependencyManager.resolve(DifPresentationExchangeService)
-
-    if (!resolvedPresentationRequest.presentationExchange) {
-      throw new Error('Missing presentation exchange on resolved authorization request')
+  public async acceptPresentationRequest(resolvedPresentationRequest: OpenId4VpResolvedAuthorizationRequest) {
+    if (!resolvedPresentationRequest.presentationExchange && !resolvedPresentationRequest.dcql) {
+      throw new Error('Missing presentation exchange or dcql on resolved authorization request')
     }
 
-    const submissionResult = await this.agent.modules.openId4VcHolder.acceptSiopAuthorizationRequest({
-      authorizationRequest: resolvedPresentationRequest.authorizationRequest,
-      presentationExchange: {
-        credentials: presentationExchangeService.selectCredentialsForRequest(
-          resolvedPresentationRequest.presentationExchange.credentialsForRequest
-        ),
-      },
+    const submissionResult = await this.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
+      presentationExchange: resolvedPresentationRequest.presentationExchange
+        ? {
+            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+              resolvedPresentationRequest.presentationExchange.credentialsForRequest
+            ),
+          }
+        : undefined,
+      dcql: resolvedPresentationRequest.dcql
+        ? {
+            credentials: this.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+              resolvedPresentationRequest.dcql.queryResult
+            ),
+          }
+        : undefined,
     })
-
     return submissionResult.serverResponse
   }
 

@@ -1,5 +1,6 @@
-import type { HashName, Jwk, JwkJson } from '../../crypto'
-import type { EncodedX509Certificate } from '../x509'
+import type { HashName } from '../../crypto'
+import { PublicJwk } from '../kms'
+import type { EncodedX509Certificate, X509Certificate } from '../x509'
 
 // TODO: extend with required claim names for input (e.g. vct)
 export type SdJwtVcPayload = Record<string, unknown>
@@ -22,24 +23,26 @@ export interface SdJwtVcHolderDidBinding {
 
 export interface SdJwtVcHolderJwkBinding {
   method: 'jwk'
-  jwk: JwkJson | Jwk
+  jwk: PublicJwk
 }
 
 export interface SdJwtVcIssuerDid {
   method: 'did'
+
   // didUrl referencing a specific key in a did document.
   didUrl: string
 }
 
 export interface SdJwtVcIssuerX5c {
   method: 'x5c'
+
   /**
    *
    * Array of base64-encoded certificate strings in the DER-format.
    *
    * The certificate containing the public key corresponding to the key used to digitally sign the JWS MUST be the first certificate.
    */
-  x5c: string[]
+  x5c: X509Certificate[]
 
   /**
    * The issuer of the JWT. Should be a HTTPS URI.
@@ -71,6 +74,15 @@ export interface SdJwtVcSignOptions<Payload extends SdJwtVcPayload = SdJwtVcPayl
    * Default of sha-256 will be used if not provided
    */
   hashingAlgorithm?: HashName
+
+  /**
+   * The header 'typ' to use for the SD-JWT VC. vc+sd-jwt is supported
+   * for backwards compatibility but implementations should update to
+   * dc+sd-jwt
+   *
+   * @default 'dc+sd-jwt'
+   */
+  headerType?: 'dc+sd-jwt' | 'vc+sd-jwt'
 }
 
 // TODO: use the payload type once types are fixed
@@ -93,6 +105,11 @@ export type SdJwtVcPresentOptions<_Payload extends SdJwtVcPayload = SdJwtVcPaylo
     nonce: string
     issuedAt: number
   }
+
+  /**
+   * Additional payload to include in the KB JWT
+   */
+  additionalPayload?: Record<string, unknown>
 }
 
 export type SdJwtVcVerifyOptions = {

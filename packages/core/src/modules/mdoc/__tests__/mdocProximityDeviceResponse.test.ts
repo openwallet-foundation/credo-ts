@@ -1,12 +1,12 @@
 import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
-import { Key as AskarKey, Jwk } from '@openwallet-foundation/askar-nodejs'
 
-import { Agent, KeyType } from '../../..'
-import { getInMemoryAgentOptions } from '../../../../tests'
-import { getJwkFromJson } from '../../../crypto/jose/jwk/transform'
-import { Buffer, TypedArrayEncoder } from '../../../utils'
+import { Agent, X509Certificate } from '../../..'
+import { getAgentOptions } from '../../../../tests'
+import { TypedArrayEncoder } from '../../../utils'
+import { PublicJwk } from '../../kms'
 import { Mdoc } from '../Mdoc'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
+import { namespacesMapToRecord } from '../mdocUtil'
 
 const DEVICE_JWK_PUBLIC = {
   kty: 'EC',
@@ -14,22 +14,21 @@ const DEVICE_JWK_PUBLIC = {
   y: 'oxS1OAORJ7XNUHNfVFGeM8E0RQVFxWA62fJj-sxW03c',
   crv: 'P-256',
   use: undefined,
-}
+} as const
 
 const DEVICE_JWK_PRIVATE = {
   ...DEVICE_JWK_PUBLIC,
   d: 'eRpAZr3eV5xMMnPG3kWjg90Y-bBff9LqmlQuk49HUtA',
-}
+} as const
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export const ISSUER_PRIVATE_KEY_JWK = {
+const ISSUER_PRIVATE_KEY_JWK = {
   kty: 'EC',
   kid: '1234',
   x: 'iTwtg0eQbcbNabf2Nq9L_VM_lhhPCq2s0Qgw2kRx29s',
   y: 'YKwXDRz8U0-uLZ3NSI93R_35eNkl6jHp6Qg8OCup7VM',
   crv: 'P-256',
   d: 'o6PrzBm1dCfSwqJHW6DVqmJOCQSIAosrCPfbFJDMNp4',
-}
+} as const
 
 const ISSUER_CERTIFICATE = `-----BEGIN CERTIFICATE-----
 MIICKjCCAdCgAwIBAgIUV8bM0wi95D7KN0TyqHE42ru4hOgwCgYIKoZIzj0EAwIw
@@ -79,28 +78,27 @@ describe('mdoc device-response proximity test', () => {
   let agent: Agent
 
   beforeEach(async () => {
-    agent = new Agent(getInMemoryAgentOptions('mdoc-test-agent', {}))
+    agent = new Agent(getAgentOptions('mdoc-test-agent', {}))
     await agent.initialize()
 
-    const devicePrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(DEVICE_JWK_PRIVATE) })
-    await agent.context.wallet.createKey({
-      keyType: KeyType.P256,
-      privateKey: Buffer.from(devicePrivateAskar.secretBytes),
+    const importedDeviceKey = await agent.kms.importKey({
+      privateJwk: DEVICE_JWK_PRIVATE,
     })
 
-    const issuerPrivateAskar = AskarKey.fromJwk({ jwk: Jwk.fromJson(ISSUER_PRIVATE_KEY_JWK) })
-    await agent.context.wallet.createKey({
-      keyType: KeyType.P256,
-      privateKey: Buffer.from(issuerPrivateAskar.secretBytes),
+    const importedIssuerKey = await agent.kms.importKey({
+      privateJwk: ISSUER_PRIVATE_KEY_JWK,
     })
+    const issuerCertificate = X509Certificate.fromEncodedCertificate(ISSUER_CERTIFICATE)
+    issuerCertificate.publicJwk.keyId = importedIssuerKey.keyId
+
     mdoc = await Mdoc.sign(agent.context, {
       docType: 'org.iso.18013.5.1.mDL',
       validityInfo: {
         signed: new Date('2023-10-24'),
         validUntil: new Date('2050-10-24'),
       },
-      holderKey: getJwkFromJson(DEVICE_JWK_PUBLIC).key,
-      issuerCertificate: ISSUER_CERTIFICATE,
+      holderKey: PublicJwk.fromPublicJwk(importedDeviceKey.publicJwk),
+      issuerCertificate,
       namespaces: {
         'org.iso.18013.5.1': {
           family_name: 'Jones',
@@ -140,9 +138,17 @@ describe('mdoc device-response proximity test', () => {
     {
       const result = await MdocDeviceResponse.createDeviceResponse(agent.context, {
         mdocs: [mdoc],
-        deviceRequest: DEVICE_REQUEST_1,
-        // TODO: we should also add methods for Credo to create device requests with session transcript bytes.
-        sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+
+        documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
+          return {
+            docType: v.itemsRequest.data.docType,
+            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
+          }
+        }),
+        sessionTranscriptOptions: {
+          type: 'sesionTranscriptBytes',
+          sessionTranscriptBytes: cborEncode(new Uint8Array([1, 2, 3])),
+        },
         deviceNameSpaces: {
           'com.foobar-device': { test: 1234 },
         },

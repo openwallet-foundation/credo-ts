@@ -63,9 +63,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Proof negotiation between Alice and Faber', async () => {

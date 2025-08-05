@@ -1,7 +1,8 @@
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
+import { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
+import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 
 //  - the credentials included in the presentation
@@ -12,6 +13,11 @@ export interface SdJwtVcPresentationToCreate {
     {
       credential: SdJwtVcRecord
       inputDescriptorId: string
+
+      /**
+       * Additional payload to include in the Key Binding JWT
+       */
+      additionalPayload?: JsonObject
     },
   ] // only one credential supported for SD-JWT-VC
 }
@@ -65,13 +71,34 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
     for (const credential of credentials) {
-      if (credential instanceof W3cCredentialRecord) {
-        const subjectId = credential.credential.credentialSubjectIds[0]
+      if (credential.claimFormat === ClaimFormat.SdJwtVc) {
+        // SD-JWT-VC always needs it's own presentation
+        presentationsToCreate.push({
+          claimFormat: ClaimFormat.SdJwtVc,
+          subjectIds: [],
+          verifiableCredentials: [
+            {
+              inputDescriptorId,
+              credential: credential.credentialRecord,
+              additionalPayload: credential.additionalPayload,
+            },
+          ],
+        })
+      } else if (credential.credentialRecord instanceof MdocRecord) {
+        presentationsToCreate.push({
+          claimFormat: ClaimFormat.MsoMdoc,
+          verifiableCredentials: [{ inputDescriptorId, credential: credential.credentialRecord }],
+          subjectIds: [],
+        })
+      } else {
+        const subjectId = credential.credentialRecord.credential.credentialSubjectIds[0]
 
         // NOTE: we only support one subjectId per VP -- once we have proper support
         // for multiple proofs on an LDP-VP we can add multiple subjectIds to a single VP for LDP-vp only
         const expectedClaimFormat =
-          credential.credential.claimFormat === ClaimFormat.LdpVc ? ClaimFormat.LdpVp : ClaimFormat.JwtVp
+          credential.credentialRecord.credential.claimFormat === ClaimFormat.LdpVc
+            ? ClaimFormat.LdpVp
+            : ClaimFormat.JwtVp
 
         const matchingClaimFormatAndSubject = presentationsToCreate.find(
           (p): p is JwtVpPresentationToCreate =>
@@ -79,27 +106,17 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
         )
 
         if (matchingClaimFormatAndSubject) {
-          matchingClaimFormatAndSubject.verifiableCredentials.push({ inputDescriptorId, credential })
+          matchingClaimFormatAndSubject.verifiableCredentials.push({
+            inputDescriptorId,
+            credential: credential.credentialRecord,
+          })
         } else {
           presentationsToCreate.push({
             claimFormat: expectedClaimFormat,
             subjectIds: [subjectId],
-            verifiableCredentials: [{ credential, inputDescriptorId }],
+            verifiableCredentials: [{ credential: credential.credentialRecord, inputDescriptorId }],
           })
         }
-      } else if (credential instanceof MdocRecord) {
-        presentationsToCreate.push({
-          claimFormat: ClaimFormat.MsoMdoc,
-          verifiableCredentials: [{ inputDescriptorId, credential }],
-          subjectIds: [],
-        })
-      } else {
-        // SD-JWT-VC always needs it's own presentation
-        presentationsToCreate.push({
-          claimFormat: ClaimFormat.SdJwtVc,
-          subjectIds: [],
-          verifiableCredentials: [{ inputDescriptorId, credential }],
-        })
       }
     }
   }

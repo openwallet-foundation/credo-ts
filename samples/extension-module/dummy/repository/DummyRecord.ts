@@ -1,7 +1,6 @@
 import type { DummyState } from './DummyState'
 
-import { BaseRecord } from '@credo-ts/core'
-import { v4 as uuid } from 'uuid'
+import { BaseRecord, utils } from '@credo-ts/core'
 
 export interface DummyStorageProps {
   id?: string
@@ -22,7 +21,7 @@ export class DummyRecord extends BaseRecord implements DummyStorageProps {
   public constructor(props: DummyStorageProps) {
     super()
     if (props) {
-      this.id = props.id ?? uuid()
+      this.id = props.id ?? utils.uuid()
       this.createdAt = props.createdAt ?? new Date()
       this.state = props.state
       this.connectionId = props.connectionId

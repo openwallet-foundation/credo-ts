@@ -1,10 +1,15 @@
-import type { KeyType } from '../../crypto'
-import type { Buffer } from '../../utils'
 import type { DidDocument } from './domain'
 
-interface PrivateKey {
-  keyType: KeyType
-  privateKey: Buffer
+export interface DidDocumentKey {
+  /**
+   * The key id of the key in the kms associated with the
+   */
+  kmsKeyId: string
+
+  /**
+   * The key id
+   */
+  didDocumentRelativeKeyId: string
 }
 
 export interface ImportDidOptions {
@@ -19,9 +24,12 @@ export interface ImportDidOptions {
   didDocument?: DidDocument
 
   /**
-   * List of private keys associated with the did document that should be stored in the wallet.
+   * List of keys associated with the did document, that are managed by the kms of this agent.
+   *
+   * NOTE: if no keys are provided, it is not possible to sign or encrypt with keys in the imported
+   * did document.
    */
-  privateKeys?: PrivateKey[]
+  keys?: DidDocumentKey[]
 
   /**
    * Whether to overwrite an existing did record if it exists. If set to false,

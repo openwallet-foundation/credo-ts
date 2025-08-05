@@ -1,12 +1,14 @@
-import type { CredentialOfferObject, IssuerMetadataResult } from '@animo-id/oid4vci'
-import type { AgentContext, JwaSignatureAlgorithm, Jwk, KeyType, VerifiableCredential } from '@credo-ts/core'
+import type { AgentContext, Kms, VerifiableCredential } from '@credo-ts/core'
+import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
   OpenId4VciAccessTokenResponse,
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciMetadata,
 } from '../shared'
 
-import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@animo-id/oid4vci'
+import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
 
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
@@ -16,6 +18,7 @@ export type OpenId4VciSupportedCredentialFormats =
   | OpenId4VciCredentialFormatProfile.JwtVcJson
   | OpenId4VciCredentialFormatProfile.JwtVcJsonLd
   | OpenId4VciCredentialFormatProfile.SdJwtVc
+  | OpenId4VciCredentialFormatProfile.SdJwtDc
   | OpenId4VciCredentialFormatProfile.LdpVc
   | OpenId4VciCredentialFormatProfile.MsoMdoc
 
@@ -23,13 +26,14 @@ export const openId4VciSupportedCredentialFormats: OpenId4VciSupportedCredential
   OpenId4VciCredentialFormatProfile.JwtVcJson,
   OpenId4VciCredentialFormatProfile.JwtVcJsonLd,
   OpenId4VciCredentialFormatProfile.SdJwtVc,
+  OpenId4VciCredentialFormatProfile.SdJwtDc,
   OpenId4VciCredentialFormatProfile.LdpVc,
   OpenId4VciCredentialFormatProfile.MsoMdoc,
 ]
 
 export interface OpenId4VciDpopRequestOptions {
-  jwk: Jwk
-  alg: JwaSignatureAlgorithm
+  jwk: Kms.PublicJwk
+  alg: Kms.KnownJwaSignatureAlgorithm
   nonce?: string
 }
 
@@ -53,6 +57,7 @@ type UnionToArrayUnion<T> = T extends any ? T[] : never
 
 export interface OpenId4VciCredentialResponse {
   credentialConfigurationId: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
   credentials: UnionToArrayUnion<VerifiableCredential>
   notificationId?: string
 }
@@ -69,14 +74,24 @@ export interface OpenId4VciResolvedCredentialOffer {
 
 export type OpenId4VciResolvedAuthorizationRequest =
   | {
-      oid4vpRequestUrl: string
+      openid4vpRequestUrl: string
       authorizationFlow: OpenId4VciAuthorizationFlow.PresentationDuringIssuance
       authSession: string
+
+      /**
+       * DPoP request options if DPoP was used for the authorization challenge request
+       */
+      dpop?: OpenId4VciDpopRequestOptions
     }
   | {
       authorizationRequestUrl: string
       authorizationFlow: OpenId4VciAuthorizationFlow.Oauth2Redirect
       codeVerifier?: string
+
+      /**
+       * DPoP request options if DPoP was used for the pushed authorization reuqest
+       */
+      dpop?: OpenId4VciDpopRequestOptions
     }
 
 export interface OpenId4VciSendNotificationOptions {
@@ -109,13 +124,46 @@ export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
   redirectUri?: string
 
   txCode?: never
+
+  /**
+   * DPoP parameters to use in the request if supported by the authorization server.
+   *
+   * If DPoP was already used in the initiateAuthorization method, it should be provided
+   * here as well and be bound to the same key.
+   */
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations are supported by the issuer, and should be provided
+   * if wallet attestation was provided in the authorization request as well.
+   *
+   * A Proof of Possesion will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
 }
 
+// TODO: support wallet attestation for pre-auth flow
 export interface OpenId4VciPreAuthorizedTokenRequestOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   txCode?: string
 
   code?: undefined
+
+  /**
+   * DPoP parameters to use in the request if supported by the authorization server.
+   */
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations are supported by the issuer.
+   *
+   * A Proof of Possesion will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
 }
 
 export type OpenId4VciTokenRequestOptions =
@@ -125,6 +173,16 @@ export type OpenId4VciTokenRequestOptions =
 export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
   dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations are supported by the issuer, and should be provided
+   * if wallet attestation was provided in the authorization request as well.
+   *
+   * A Proof of Possesion will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
 
   /**
    * auth session returned at an earlier call to the authorization challenge endpoint
@@ -161,19 +219,6 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    */
   credentialConfigurationIds?: string[]
 
-  /**
-   * Whether to request a batch of credentials if supported by the credential issuer.
-   *
-   * You can also provide a number to indicate the batch size. If `true` is provided
-   * the max size from the credential issuer will be used.
-   *
-   * If a number is passed that is higher than the max batch size of the credential issuer,
-   * an error will be thrown.
-   *
-   * @default false
-   */
-  requestBatch?: boolean | number
-
   verifyCredentialStatus?: boolean
 
   /**
@@ -188,7 +233,7 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for signing the credential, but this not a requirement for the spec. E.g. if the
    * pop uses EdDsa, the credential will most commonly also use EdDsa, or Ed25519Signature2018/2020.
    */
-  allowedProofOfPossessionSignatureAlgorithms?: JwaSignatureAlgorithm[]
+  allowedProofOfPossessionSignatureAlgorithms?: Kms.KnownJwaSignatureAlgorithm[]
 
   /**
    * A function that should resolve key material for binding the to-be-issued credential
@@ -208,10 +253,19 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
 
 /**
  * Options that are used for the authorization code flow.
- * Extends the pre-authorized code flow options.
  */
 export interface OpenId4VciAuthCodeFlowOptions {
   clientId: string
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations and PAR are supported by the issuer.
+   *
+   * A Proof of Possesion will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
+
   redirectUri: string
   scope?: string[]
 }
@@ -220,37 +274,41 @@ export interface OpenId4VciCredentialBindingOptions {
   agentContext: AgentContext
 
   /**
+   * The OpenID4VCI metadata, consisting of the draft version used,
+   * the issuer metadatan and the authorization server metadata
+   */
+  metadata: OpenId4VciMetadata
+
+  /**
    * The credential format that will be requested from the issuer.
    * E.g. `jwt_vc` or `ldp_vc`.
    */
   credentialFormat: OpenId4VciSupportedCredentialFormats
 
   /**
-   * The JWA Signature Algorithm(s) that can be used in the proof of possession.
-   * This is based on the `allowedProofOfPossessionSignatureAlgorithms` passed
-   * to the request credential method, and the supported signature algorithms.
+   * The max batch size as configured by the issuer. If the issuer has not indicated support for batch issuance
+   * this will be `1`.
    */
-  signatureAlgorithms: JwaSignatureAlgorithm[]
+  issuerMaxBatchSize: number
 
   /**
-   * This is a list of verification methods types that are supported
-   * for creating the proof of possession signature. The returned
-   * verification method type must be of one of these types.
+   * The proof types supported by the credential issuer that are also supported
+   * by credo. Currently `jwt` and `attestation` are supported.
+   *
+   * Each proof type will list the supported algorithms, key types
+   * and whether key attesations are required
    */
-  supportedVerificationMethods: string[]
+  proofTypes: OpenId4VciProofOfPressionProofTypes
 
   /**
-   * The key type that can be used to create the proof of possession signature.
-   * This is related to the verification method and the signature algorithm, and
-   * is added for convenience.
+   * The id of the credential configuration that will be requested from the issuer.
    */
-  keyTypes: KeyType[]
+  credentialConfigurationId: string
 
   /**
-   * The credential type that will be requested from the issuer. This is
-   * based on the credential types that are included the credential offer.
+   * The credential configuration that will be requested from the issuer.
    */
-  credentialConfigurationId?: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
 
   /**
    * Whether the issuer supports the `did` cryptographic binding method,
@@ -260,6 +318,11 @@ export interface OpenId4VciCredentialBindingOptions {
    *
    * If this value is `false`, the `supportedDidMethods` property will
    * contain a list of supported did methods.
+   *
+   * NOTE: when key attestations are required for a specific proof type, support for did method
+   * binding is not supported at the moment, as there's no way to indicate which did the credential
+   * should be bound to.
+   * https://github.com/openid/OpenID4VCI/issues/475
    */
   supportsAllDidMethods: boolean
 
@@ -271,12 +334,16 @@ export interface OpenId4VciCredentialBindingOptions {
    * The did methods are returned in the format `did:<method>`, e.g. `did:web`.
    *
    * The value is undefined in the case the supported did methods could not be extracted.
-   * This is the case when an inline credential was used, or when the issuer didn't include
-   * the supported did methods in the issuer metadata.
+   * This is the case when the issuer didn't include the supported did methods in the issuer metadata.
    *
    * NOTE: an empty array (no did methods supported) has a different meaning from the value
    * being undefined (the supported did methods could not be extracted). If `supportsAllDidMethods`
    * is true, the value of this property MUST be ignored.
+   *
+   * NOTE: when key attestations are required for a specific proof type, support for did method
+   * binding is not supported at the moment, as there's no way to indicate which did the credential
+   * should be bound to.
+   * https://github.com/openid/OpenID4VCI/issues/475
    */
   supportedDidMethods?: string[]
 
@@ -296,11 +363,44 @@ export type OpenId4VciCredentialBindingResolver = (
   options: OpenId4VciCredentialBindingOptions
 ) => Promise<OpenId4VcCredentialHolderBinding> | OpenId4VcCredentialHolderBinding
 
+export type OpenId4VciProofOfPressionProofTypes = Record<
+  'jwt' | 'attestation',
+  | {
+      /**
+       * The JWA Signature Algorithm(s) that can be used in the proof of possession.
+       * This is based on the `allowedProofOfPossessionSignatureAlgorithms` passed
+       * to the request credential method, and the supported proof type signature
+       * algorithms for the specific credential configuration
+       */
+      supportedSignatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
+
+      /**
+       * Whether key attestations are required and which level needs to be met. If the object
+       * is not defined, it can be interpreted that key attestations are not required.
+       *
+       * OpenID4VCI defined common levels in https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html#appendix-D.2, such as:
+       * - `iso_18045_high`
+       * - `iso_18045_moderate`
+       * - `iso_18045_enhanced-basic`
+       * - `iso_18045_basic`
+       *
+       * Other values may be defined and present as well. When key attestations are required you MUST return a key attestation.
+       * If `userAuthentication` or `keyStorage` are defined you MUST return a key attestation that reaches the level as required
+       *  by the `keyStorage` and `userAuthentication` values.
+       */
+      keyAttestationsRequired?: {
+        keyStorage?: string[]
+        userAuthentication?: string[]
+      }
+    }
+  | undefined
+>
+
 /**
  * @internal
  */
 export interface OpenId4VciProofOfPossessionRequirements {
-  signatureAlgorithms: JwaSignatureAlgorithm[]
+  proofTypes: OpenId4VciProofOfPressionProofTypes
   supportedDidMethods?: string[]
   supportsAllDidMethods: boolean
   supportsJwk: boolean

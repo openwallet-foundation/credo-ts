@@ -1,35 +1,43 @@
-import type { CheqdNetwork, DIDDocument, DidStdFee, TVerificationKey, VerificationMethods } from '@cheqd/sdk'
+import { CheqdNetwork, DIDDocument, DidStdFee, VerificationMethods } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
-import type {
+import {
   AgentContext,
+  DID_V1_CONTEXT_URL,
   DidCreateOptions,
   DidCreateResult,
   DidDeactivateResult,
+  DidDocumentKey,
   DidRegistrar,
   DidUpdateOptions,
   DidUpdateResult,
+  Kms,
+  SECURITY_JWS_CONTEXT_URL,
+  XOR,
+  getKmsKeyIdForVerifiacationMethod,
+  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 
 import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
 import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
-  Buffer,
   DidDocument,
   DidDocumentRole,
   DidRecord,
   DidRepository,
   JsonTransformer,
-  KeyType,
   TypedArrayEncoder,
   VerificationMethod,
-  getKeyFromVerificationMethod,
-  isValidPrivateKey,
   utils,
 } from '@credo-ts/core'
 
-import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+import {
+  ED25519_SUITE_CONTEXT_URL_2018,
+  ED25519_SUITE_CONTEXT_URL_2020,
+  parseCheqdDid,
+} from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
+import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
@@ -39,6 +47,46 @@ import {
 
 export class CheqdDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['cheqd']
+  private contextMapping = {
+    Ed25519VerificationKey2018: ED25519_SUITE_CONTEXT_URL_2018,
+    Ed25519VerificationKey2020: ED25519_SUITE_CONTEXT_URL_2020,
+    JsonWebKey2020: SECURITY_JWS_CONTEXT_URL,
+  }
+
+  private collectAllContexts(didDocument: DidDocument): Set<string> {
+    const contextSet = new Set<string>(
+      typeof didDocument.context === 'string'
+        ? [didDocument.context]
+        : Array.isArray(didDocument.context)
+          ? didDocument.context
+          : []
+    )
+    // List of verification relationships to check for embedded verification methods
+    // Note: these are the relationships defined in the DID Core spec
+    const relationships = [
+      'authentication',
+      'assertionMethod',
+      'capabilityInvocation',
+      'capabilityDelegation',
+      'keyAgreement',
+      'verificationMethod',
+    ] as const
+    // Collect verification methods from relationships
+    for (const rel of relationships) {
+      const entries = didDocument[rel]
+      if (entries) {
+        for (const entry of entries) {
+          if (typeof entry !== 'string' && entry.type) {
+            const contextUrl = this.contextMapping[entry.type as keyof typeof this.contextMapping]
+            if (contextUrl) {
+              contextSet.add(contextUrl)
+            }
+          }
+        }
+      }
+    }
+    return contextSet
+  }
 
   public async create(agentContext: AgentContext, options: CheqdDidCreateOptions): Promise<DidCreateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
@@ -47,11 +95,45 @@ export class CheqdDidRegistrar implements DidRegistrar {
     let didDocument: DidDocument
     const versionId = options.options?.versionId ?? utils.uuid()
 
+    let keys: DidDocumentKey[] = []
+
     try {
-      if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
+      if (options.didDocument) {
+        const isSpecCompliantPayload = validateSpecCompliantPayload(options.didDocument)
+        if (!isSpecCompliantPayload.valid) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: `Invalid did document provided. ${isSpecCompliantPayload.error}`,
+            },
+          }
+        }
+
         didDocument = options.didDocument
+        const authenticationIds = didDocument.authentication?.map((v) => (typeof v === 'string' ? v : v.id)) ?? []
+        const didDocumentRelativeKeyIds = options.options.keys.map((key) => key.didDocumentRelativeKeyId)
+        keys = options.options.keys
+
+        // Ensure all keys are present in the did document
+        for (const didDocumentKeyId of didDocumentRelativeKeyIds) {
+          didDocument.dereferenceKey(didDocumentKeyId)
+        }
+
+        if (!authenticationIds.every((id) => didDocumentRelativeKeyIds.includes(id.replace(didDocument.id, '')))) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: `For all 'authentication' verification methods in the did document a 'key' entry in the options MUST be provided that link the did document key id with the kms key id`,
+            },
+          }
+        }
 
         const cheqdDid = parseCheqdDid(options.didDocument.id)
+
         if (!cheqdDid) {
           return {
             didDocumentMetadata: {},
@@ -62,61 +144,101 @@ export class CheqdDidRegistrar implements DidRegistrar {
             },
           }
         }
-      } else if (options.secret?.verificationMethod) {
-        const withoutDidDocumentOptions = options as CheqdDidCreateWithoutDidDocumentOptions
-        const verificationMethod = withoutDidDocumentOptions.secret.verificationMethod
-        const methodSpecificIdAlgo = withoutDidDocumentOptions.options.methodSpecificIdAlgo
-        const privateKey = verificationMethod.privateKey
-        if (privateKey && !isValidPrivateKey(privateKey, KeyType.Ed25519)) {
-          return {
-            didDocumentMetadata: {},
-            didRegistrationMetadata: {},
-            didState: {
-              state: 'failed',
-              reason: 'Invalid private key provided',
-            },
+      } else if (options.options.createKey || options.options.keyId) {
+        const methodSpecificIdAlgo = options.options.methodSpecificIdAlgo
+        const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
+        let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+        if (options.options.createKey) {
+          const createKeyResult = await kms.createKey(options.options.createKey)
+          publicJwk = createKeyResult.publicJwk
+          keys.push({
+            kmsKeyId: createKeyResult.keyId,
+            didDocumentRelativeKeyId: '#key-1',
+          })
+        } else {
+          const _publicJwk = await kms.getPublicKey({
+            keyId: options.options.keyId,
+          })
+          keys.push({
+            kmsKeyId: options.options.keyId,
+            didDocumentRelativeKeyId: '#key-1',
+          })
+          if (!_publicJwk) {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `notFound: key with key id '${options.options.keyId}' not found`,
+              },
+            }
+          }
+
+          if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
+            return {
+              didDocumentMetadata: {},
+              didRegistrationMetadata: {},
+              didState: {
+                state: 'failed',
+                reason: `key with key id '${options.options.keyId}' uses unsupported ${Kms.getJwkHumanDescription(
+                  _publicJwk
+                )} for did:cheqd`,
+              },
+            }
+          }
+
+          publicJwk = {
+            ..._publicJwk,
+            crv: _publicJwk.crv,
           }
         }
 
-        const key = await agentContext.wallet.createKey({
-          keyType: KeyType.Ed25519,
-          privateKey: privateKey,
-        })
+        // TODO: make this configureable
+        const verificationMethod = VerificationMethods.JWK
+        const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
 
         didDocument = generateDidDoc({
-          verificationMethod: verificationMethod.type as VerificationMethods,
-          verificationMethodId: verificationMethod.id || 'key-1',
+          verificationMethod,
+          verificationMethodId: 'key-1',
           methodSpecificIdAlgo: (methodSpecificIdAlgo as MethodSpecificIdAlgo) || MethodSpecificIdAlgo.Uuid,
-          network: withoutDidDocumentOptions.options.network as CheqdNetwork,
-          publicKey: TypedArrayEncoder.toHex(key.publicKey),
+          network: options.options.network as CheqdNetwork,
+          publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
         })
-
-        const contextMapping = {
-          Ed25519VerificationKey2018: 'https://w3id.org/security/suites/ed25519-2018/v1',
-          Ed25519VerificationKey2020: 'https://w3id.org/security/suites/ed25519-2020/v1',
-          JsonWebKey2020: 'https://w3id.org/security/suites/jws-2020/v1',
-        }
-        const contextUrl = contextMapping[verificationMethod.type]
-
-        // Add the context to the did document
-        // NOTE: cheqd sdk uses https://www.w3.org/ns/did/v1 while Credo did doc uses https://w3id.org/did/v1
-        // We should align these at some point. For now we just return a consistent value.
-        didDocument.context = ['https://www.w3.org/ns/did/v1', contextUrl]
       } else {
         return {
           didDocumentMetadata: {},
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'Provide a didDocument or at least one verificationMethod with seed in secret',
+            reason: 'Provide a didDocument or provide createKey or keyId in options',
           },
         }
       }
 
-      const didDocumentJson = didDocument.toJSON() as DIDDocument
+      // Collect all contexts from the didDic into a set
+      const contextSet = this.collectAllContexts(didDocument)
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
 
+      const didDocumentJson = didDocument.toJSON() as DIDDocument
       const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocumentJson, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+
+      const authentication = didDocument.authentication?.map((authentication) =>
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication, keys)
 
       const response = await cheqdLedgerService.create(didDocumentJson, signInputs, versionId)
       if (response.code !== 0) {
@@ -128,6 +250,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         did: didDocument.id,
         role: DidDocumentRole.Created,
         didDocument,
+        keys,
       })
       await didRepository.save(agentContext, didRecord)
 
@@ -159,12 +282,23 @@ export class CheqdDidRegistrar implements DidRegistrar {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
 
     const versionId = options.options?.versionId || utils.uuid()
-    const verificationMethod = options.secret?.verificationMethod
     let didDocument: DidDocument
     let didRecord: DidRecord | null
 
     try {
-      if (options.didDocument && validateSpecCompliantPayload(options.didDocument)) {
+      if (options.didDocument) {
+        const isSpecCompliantPayload = validateSpecCompliantPayload(options.didDocument)
+        if (!isSpecCompliantPayload.valid) {
+          return {
+            didDocumentMetadata: {},
+            didRegistrationMetadata: {},
+            didState: {
+              state: 'failed',
+              reason: `Invalid did document provided. ${isSpecCompliantPayload.error}`,
+            },
+          }
+        }
+
         didDocument = options.didDocument
         const resolvedDocument = await cheqdLedgerService.resolve(didDocument.id)
         didRecord = await didRepository.findCreatedDid(agentContext, didDocument.id)
@@ -179,34 +313,83 @@ export class CheqdDidRegistrar implements DidRegistrar {
           }
         }
 
-        if (verificationMethod) {
-          const privateKey = verificationMethod.privateKey
-          if (privateKey && !isValidPrivateKey(privateKey, KeyType.Ed25519)) {
+        const keys = didRecord.keys ?? []
+        if (options.options?.createKey || options.options?.keyId) {
+          const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+          let createdKey: DidDocumentKey
+
+          let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+          if (options.options.createKey) {
+            const createKeyResult = await kms.createKey(options.options.createKey)
+            publicJwk = createKeyResult.publicJwk
+
+            createdKey = {
+              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
+              kmsKeyId: createKeyResult.keyId,
+            }
+          } else if (options.options.keyId) {
+            const _publicJwk = await kms.getPublicKey({
+              keyId: options.options.keyId,
+            })
+            createdKey = {
+              didDocumentRelativeKeyId: `#${utils.uuid()}-1`,
+              kmsKeyId: options.options.keyId,
+            }
+            if (!_publicJwk) {
+              return {
+                didDocumentMetadata: {},
+                didRegistrationMetadata: {},
+                didState: {
+                  state: 'failed',
+                  reason: `notFound: key with key id '${options.options.keyId}' not found`,
+                },
+              }
+            }
+
+            if (_publicJwk.kty !== 'OKP' || _publicJwk.crv !== 'Ed25519') {
+              return {
+                didDocumentMetadata: {},
+                didRegistrationMetadata: {},
+                didState: {
+                  state: 'failed',
+                  reason: `key with key id '${options.options.keyId}' uses unsupported ${Kms.getJwkHumanDescription(
+                    _publicJwk
+                  )} for did:cheqd`,
+                },
+              }
+            }
+
+            publicJwk = {
+              ..._publicJwk,
+              crv: _publicJwk.crv,
+            }
+          } else {
+            // This will never happen, but to make TS happy
             return {
               didDocumentMetadata: {},
               didRegistrationMetadata: {},
               didState: {
                 state: 'failed',
-                reason: 'Invalid private key provided',
+                reason: 'Expect options.createKey or options.keyId',
               },
             }
           }
 
-          const key = await agentContext.wallet.createKey({
-            keyType: KeyType.Ed25519,
-            privateKey: privateKey,
-          })
+          // TODO: make this configureable
+          const verificationMethod = VerificationMethods.JWK
+          const jwk = Kms.PublicJwk.fromPublicJwk(publicJwk)
 
+          keys.push(createdKey)
           didDocument.verificationMethod?.concat(
             JsonTransformer.fromJSON(
               createDidVerificationMethod(
-                [verificationMethod.type as VerificationMethods],
+                [verificationMethod],
                 [
                   {
                     methodSpecificId: didDocument.id.split(':')[3],
                     didUrl: didDocument.id,
-                    keyId: `${didDocument.id}#${verificationMethod.id}`,
-                    publicKey: TypedArrayEncoder.toHex(key.publicKey),
+                    keyId: `${didDocument.id}${createdKey.didDocumentRelativeKeyId}` as `${string}#${string}-${number}`,
+                    publicKey: TypedArrayEncoder.toHex(jwk.publicKey.publicKey),
                   },
                 ]
               ),
@@ -225,14 +408,64 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
 
-      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument as DIDDocument, versionId)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocument.verificationMethod)
+      // Filter out all keys that are not present in the did document anymore
+      didRecord.keys = didRecord.keys?.filter(({ didDocumentRelativeKeyId }) => {
+        try {
+          didDocument.dereferenceKey(didDocumentRelativeKeyId)
+          return true
+        } catch (_error) {
+          return false
+        }
+      })
 
-      const response = await cheqdLedgerService.update(didDocument as DIDDocument, signInputs, versionId)
+      // TODO: we don't know which keys are managed by Credo. Should we
+      // create a keys array for all keys within the did document set to the legacy key id
+      // TODO: we need some sort of migration plan, otherwise we will have to support
+      // legacy key ids forever
+      // const authenticationIds = didDocument.authentication?.map(a => typeof a === 'string' ? a : a.id) ?? []
+      // const didDocumentKeyIds = didRecord.keys?.map(({didDocumentRelativeKeyId}) => didDocumentRelativeKeyId)
+      //  if (!authenticationIds.every((id) => didDocumentKeyIds?.includes(id))) {
+      //     return {
+      //       didDocumentMetadata: {},
+      //       didRegistrationMetadata: {},
+      //       didState: {
+      //         state: "failed",
+      //         reason: `For all 'authentication' verification methods in the did document a 'key' entry in the options MUST be provided that link the did document key id with the kms key id`,
+      //       },
+      //     };
+      //   }
+
+      const payloadToSign = await createMsgCreateDidDocPayloadToSign(didDocument.toJSON() as DIDDocument, versionId)
+
+      const authentication = didDocument.authentication?.map((authentication) =>
+        typeof authentication === 'string' ? didDocument.dereferenceVerificationMethod(authentication) : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+      const signInputs = await this.signPayload(
+        agentContext,
+        payloadToSign,
+        // TOOD: we should also sign with the authentication entries that are removed (so we should diff)
+        authentication,
+        didRecord.keys
+      )
+
+      const response = await cheqdLedgerService.update(didDocument.toJSON() as DIDDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
       }
-
+      // Collect all contexts, override existing context if provided
+      const contextSet = this.collectAllContexts(options.didDocument || didDocument)
+      // Add Cheqd default context to the did document
+      didDocument.context = Array.from(contextSet.add(DID_V1_CONTEXT_URL))
       // Save the did so we know we created it and can issue with it
       didRecord.didDocument = didDocument
       await didRepository.update(agentContext, didRecord)
@@ -285,8 +518,24 @@ export class CheqdDidRegistrar implements DidRegistrar {
         }
       }
       const payloadToSign = createMsgDeactivateDidDocPayloadToSign(didDocument, versionId)
-      const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
+      const didDocumentInstance = DidDocument.fromJSON(didDocument)
+
+      const authentication = didDocumentInstance.authentication?.map((authentication) =>
+        typeof authentication === 'string'
+          ? didDocumentInstance.dereferenceVerificationMethod(authentication)
+          : authentication
+      )
+      if (!authentication || authentication.length === 0) {
+        return {
+          didDocumentMetadata: {},
+          didRegistrationMetadata: {},
+          didState: {
+            state: 'failed',
+            reason: "No keys to sign with in 'authentication' of DID document",
+          },
+        }
+      }
+      const signInputs = await this.signPayload(agentContext, payloadToSign, authentication, didRecord.keys)
       const response = await cheqdLedgerService.deactivate(didDocument, signInputs, versionId)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
@@ -300,7 +549,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         didState: {
           state: 'finished',
           did: didDocument.id,
-          didDocument: JsonTransformer.fromJSON(didDocument, DidDocument),
+          didDocument: JsonTransformer.fromJSON(didRecord.didDocument, DidDocument),
           secret: options.secret,
         },
       }
@@ -355,7 +604,12 @@ export class CheqdDidRegistrar implements DidRegistrar {
       const payloadToSign = MsgCreateResourcePayload.encode(resourcePayload).finish()
 
       const didDocumentInstance = JsonTransformer.fromJSON(didDocument, DidDocument)
-      const signInputs = await this.signPayload(agentContext, payloadToSign, didDocumentInstance.verificationMethod)
+      const signInputs = await this.signPayload(
+        agentContext,
+        payloadToSign,
+        didDocumentInstance.verificationMethod,
+        didRecord.keys
+      )
       const response = await cheqdLedgerService.createResource(did, resourcePayload, signInputs)
       if (response.code !== 0) {
         throw new Error(`${response.rawLog}`)
@@ -385,40 +639,65 @@ export class CheqdDidRegistrar implements DidRegistrar {
   private async signPayload(
     agentContext: AgentContext,
     payload: Uint8Array,
-    verificationMethod: VerificationMethod[] = []
+    verificationMethod: VerificationMethod[] = [],
+    keys?: DidDocumentKey[]
   ) {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     return await Promise.all(
       verificationMethod.map(async (method) => {
-        const key = getKeyFromVerificationMethod(method)
+        const publicJwk = getPublicJwkFromVerificationMethod(method)
+        const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
+
+        const { signature } = await kms.sign({
+          data: payload,
+          algorithm: publicJwk.signatureAlgorithm,
+          keyId: kmsKeyId,
+        })
+
+        // EC signatures need to be sent as DER encoded for Cheqd
+        const jwk = publicJwk.toJson()
+        if (jwk.kty === 'EC') {
+          return {
+            verificationMethodId: method.id,
+            signature: Kms.rawEcSignatureToDer(signature, jwk.crv),
+          }
+        }
+
         return {
           verificationMethodId: method.id,
-          signature: await agentContext.wallet.sign({ data: Buffer.from(payload), key }),
+          signature,
         } satisfies SignInfo
       })
     )
   }
 }
 
+type KmsCreateKeyOptionsOkpEd25519 = Kms.KmsCreateKeyOptions<Kms.KmsCreateKeyTypeOkp & { crv: 'Ed25519' }>
+
 export interface CheqdDidCreateWithoutDidDocumentOptions extends DidCreateOptions {
   method: 'cheqd'
-  did?: undefined
-  didDocument?: undefined
+  did?: never
+  didDocument?: never
+  secret?: never
+
   options: {
     network: `${CheqdNetwork}`
     fee?: DidStdFee
     versionId?: string
     methodSpecificIdAlgo?: `${MethodSpecificIdAlgo}`
-  }
-  secret: {
-    verificationMethod: IVerificationMethod
-  }
+  } & XOR<{ createKey: KmsCreateKeyOptionsOkpEd25519 }, { keyId: string }>
 }
 
 export interface CheqdDidCreateFromDidDocumentOptions extends DidCreateOptions {
   method: 'cheqd'
   did?: undefined
   didDocument: DidDocument
-  options?: {
+  options: {
+    /**
+     * The linking between the did document keys and the kms keys. For cheqd dids ALL authentication entries MUST sign the request
+     * and thus it is required to a mapping for all keys.
+     */
+    keys: DidDocumentKey[]
     fee?: DidStdFee
     versionId?: string
   }
@@ -429,13 +708,18 @@ export type CheqdDidCreateOptions = CheqdDidCreateFromDidDocumentOptions | Cheqd
 export interface CheqdDidUpdateOptions extends DidUpdateOptions {
   did: string
   didDocument: DidDocument
-  options: {
+  secret?: never
+
+  options?: {
+    /**
+     * The linking between the did document keys and the kms keys. The existing keys will be filtered based on the keys not present
+     * in the did document anymore, and this new list will be merged into it.
+     */
+    keys?: DidDocumentKey[]
+
     fee?: DidStdFee
     versionId?: string
-  }
-  secret?: {
-    verificationMethod: IVerificationMethod
-  }
+  } & XOR<{ createKey?: KmsCreateKeyOptionsOkpEd25519 }, { keyId?: string }>
 }
 
 export interface CheqdDidDeactivateOptions extends DidCreateOptions {
@@ -452,10 +736,4 @@ export interface CheqdCreateResourceOptions extends Pick<MsgCreateResourcePayloa
   collectionId?: MsgCreateResourcePayload['collectionId']
   version?: MsgCreateResourcePayload['version']
   alsoKnownAs?: MsgCreateResourcePayload['alsoKnownAs']
-}
-
-interface IVerificationMethod {
-  type: `${VerificationMethods}`
-  id: TVerificationKey<string, number>
-  privateKey?: Buffer
 }

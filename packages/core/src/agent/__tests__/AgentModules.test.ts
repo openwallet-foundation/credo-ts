@@ -1,15 +1,16 @@
 import type { Module } from '../../plugins'
 
 import { CacheModule } from '../../modules/cache'
+import { DcqlModule } from '../../modules/dcql'
 import { DidsModule } from '../../modules/dids'
 import { DifPresentationExchangeModule } from '../../modules/dif-presentation-exchange'
 import { GenericRecordsModule } from '../../modules/generic-records'
+import { KeyManagementModule } from '../../modules/kms'
 import { MdocModule } from '../../modules/mdoc'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { X509Module } from '../../modules/x509'
 import { DependencyManager, injectable } from '../../plugins'
-import { WalletModule } from '../../wallet'
 import { extendModulesWithDefaultModules, getAgentApi } from '../AgentModules'
 
 @injectable()
@@ -51,10 +52,11 @@ describe('AgentModules', () => {
       const extendedModules = extendModulesWithDefaultModules()
 
       expect(extendedModules).toEqual({
+        dcql: expect.any(DcqlModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
-        wallet: expect.any(WalletModule),
+        kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         sdJwtVc: expect.any(SdJwtVcModule),
         mdoc: expect.any(MdocModule),
@@ -70,10 +72,11 @@ describe('AgentModules', () => {
       })
 
       expect(extendedModules).toEqual({
+        dcql: expect.any(DcqlModule),
         pex: expect.any(DifPresentationExchangeModule),
         genericRecords: expect.any(GenericRecordsModule),
         dids: expect.any(DidsModule),
-        wallet: expect.any(WalletModule),
+        kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),
@@ -94,8 +97,9 @@ describe('AgentModules', () => {
       expect(extendedModules).toEqual({
         genericRecords: genericRecords,
         pex: expect.any(DifPresentationExchangeModule),
+        dcql: expect.any(DcqlModule),
         dids: expect.any(DidsModule),
-        wallet: expect.any(WalletModule),
+        kms: expect.any(KeyManagementModule),
         w3cCredentials: expect.any(W3cCredentialsModule),
         cache: expect.any(CacheModule),
         sdJwtVc: expect.any(SdJwtVcModule),

@@ -3,9 +3,9 @@ import type { GenericRecord } from '../src/modules/generic-records/repository/Ge
 import { Agent } from '../src/agent/Agent'
 import { RecordNotFoundError } from '../src/error'
 
-import { getInMemoryAgentOptions } from './helpers'
+import { getAgentOptions } from './helpers'
 
-const aliceAgentOptions = getInMemoryAgentOptions('Generic Records Alice', {
+const aliceAgentOptions = getAgentOptions('Generic Records Alice', {
   endpoints: ['rxjs:alice'],
 })
 
@@ -20,7 +20,6 @@ describe('genericRecords', () => {
 
   afterAll(async () => {
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('store generic-record record', async () => {

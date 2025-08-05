@@ -1,4 +1,5 @@
-import type { PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import type { Checked, PresentationSignCallBackParams, Validated, VerifiablePresentationResult } from '@animo-id/pex'
+import { PEX, Status } from '@animo-id/pex'
 import type { InputDescriptorV2 } from '@sphereon/pex-models'
 import type {
   SdJwtDecodedVerifiableCredential,
@@ -9,7 +10,7 @@ import type { AgentContext } from '../../agent'
 import type { Query } from '../../storage/StorageService'
 import type { VerificationMethod } from '../dids'
 import type { SdJwtVcRecord } from '../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../vc'
+import type { W3cCredentialRecord, W3cJsonPresentation } from '../vc'
 import type { IAnonCredsDataIntegrityService } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 import type {
   DifPexCredentialsForRequest,
@@ -22,15 +23,18 @@ import type {
 } from './models'
 import type { PresentationToCreate } from './utils'
 
-import { PEVersion, PEX, Status } from '@animo-id/pex'
-import { PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { injectable } from 'tsyringe'
 
-import { Hasher, getJwkFromKey } from '../../crypto'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
-import { DidsApi, getKeyFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocOpenId4VpSessionTranscriptOptions, MdocRecord } from '../mdoc'
+import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
+import {
+  Mdoc,
+  MdocApi,
+  MdocOpenId4VpDcApiSessionTranscriptOptions,
+  MdocOpenId4VpSessionTranscriptOptions,
+  MdocRecord,
+} from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -45,6 +49,8 @@ import {
   AnonCredsDataIntegrityServiceSymbol,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
+import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
+import { getJwkHumanDescription } from '../kms'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
@@ -60,7 +66,7 @@ import {
  */
 @injectable()
 export class DifPresentationExchangeService {
-  private pex = new PEX({ hasher: Hasher.hash })
+  private pex = new PEX()
 
   public constructor(private w3cCredentialService: W3cCredentialService) {}
 
@@ -93,7 +99,7 @@ export class DifPresentationExchangeService {
         }
 
         // We pick the first matching VC if we are auto-selecting
-        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0].credentialRecord)
+        credentials[submission.inputDescriptorId].push(submission.verifiableCredentials[0])
       }
     }
 
@@ -103,6 +109,7 @@ export class DifPresentationExchangeService {
   public validatePresentationDefinition(presentationDefinition: DifPresentationExchangeDefinition) {
     const validation = PEX.validateDefinition(presentationDefinition)
     const errorMessages = this.formatValidated(validation)
+
     if (errorMessages.length > 0) {
       throw new DifPresentationExchangeError('Invalid presentation definition', { additionalMessages: errorMessages })
     }
@@ -118,28 +125,30 @@ export class DifPresentationExchangeService {
 
   public validatePresentation(
     presentationDefinition: DifPresentationExchangeDefinition,
-    presentation: VerifiablePresentation
+    presentations: VerifiablePresentation | VerifiablePresentation[],
+    presentationSubmission?: DifPresentationExchangeSubmission
   ) {
-    const { errors } = this.pex.evaluatePresentation(
+    const result = this.pex.evaluatePresentation(
       presentationDefinition,
-      getSphereonOriginalVerifiablePresentation(presentation),
+      Array.isArray(presentations)
+        ? presentations.map(getSphereonOriginalVerifiablePresentation)
+        : getSphereonOriginalVerifiablePresentation(presentations),
       {
-        limitDisclosureSignatureSuites: ['BbsBlsSignatureProof2020', 'DataIntegrityProof.anoncreds-2023'],
+        limitDisclosureSignatureSuites: ['DataIntegrityProof.anoncreds-2023'],
+        presentationSubmission,
       }
     )
 
-    if (errors) {
-      const errorMessages = this.formatValidated(errors as Validated)
-      if (errorMessages.length > 0) {
-        throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
-      }
+    if (result.areRequiredCredentialsPresent === Status.ERROR) {
+      const errorMessages = this.formatValidated(result.errors)
+      throw new DifPresentationExchangeError('Invalid presentation', { additionalMessages: errorMessages })
     }
   }
 
-  private formatValidated(v: Validated) {
-    const validated = Array.isArray(v) ? v : [v]
+  private formatValidated(v?: Checked[] | Validated) {
+    const validated = Array.isArray(v) ? v : v ? [v] : []
     return validated
-      .filter((r) => r.tag === Status.ERROR)
+      .filter((r) => r.status === Status.ERROR)
       .map((r) => r.message)
       .filter((r): r is string => Boolean(r))
   }
@@ -155,7 +164,9 @@ export class DifPresentationExchangeService {
       presentationSubmissionLocation?: DifPresentationExchangeSubmissionLocation
       challenge: string
       domain?: string
-      openid4vp?: Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce' | 'clientId'>
+      openid4vp?:
+        | Omit<MdocOpenId4VpSessionTranscriptOptions, 'verifierGeneratedNonce'>
+        | Omit<MdocOpenId4VpDcApiSessionTranscriptOptions, 'verifierGeneratedNonce'>
     }
   ) {
     const { presentationDefinition, domain, challenge, openid4vp } = options
@@ -201,7 +212,7 @@ export class DifPresentationExchangeService {
         }
 
         const { deviceResponseBase64Url, presentationSubmission } =
-          await MdocDeviceResponse.createOpenId4VpDeviceResponse(agentContext, {
+          await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
             mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
             presentationDefinition: presentationDefinition,
             sessionTranscriptOptions: {
@@ -293,6 +304,13 @@ export class DifPresentationExchangeService {
           getVerifiablePresentationFromEncoded(agentContext, vp)
         )
       ),
+      encodedVerifiablePresentations: verifiablePresentationResultsWithFormat.flatMap(
+        (resultWithFormat) =>
+          resultWithFormat.verifiablePresentationResult.verifiablePresentations as unknown as (
+            | string
+            | W3cJsonPresentation
+          )[]
+      ),
       presentationSubmission,
       presentationSubmissionLocation:
         verifiablePresentationResultsWithFormat[0].verifiablePresentationResult.presentationSubmissionLocation,
@@ -303,25 +321,26 @@ export class DifPresentationExchangeService {
     verificationMethod: VerificationMethod,
     suitableAlgorithms?: Array<string>
   ) {
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const jwk = getJwkFromKey(key)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
     if (suitableAlgorithms) {
-      const possibleAlgorithms = jwk.supportedSignatureAlgorithms.filter((alg) => suitableAlgorithms?.includes(alg))
+      const possibleAlgorithms = publicJwk.supportedSignatureAlgorithms.filter((alg) =>
+        suitableAlgorithms?.includes(alg)
+      )
       if (!possibleAlgorithms || possibleAlgorithms.length === 0) {
         throw new DifPresentationExchangeError(
           [
             'Found no suitable signing algorithm.',
-            `Algorithms supported by Verification method: ${jwk.supportedSignatureAlgorithms.join(', ')}`,
+            `Algorithms supported by Verification method: ${publicJwk.supportedSignatureAlgorithms.join(', ')}`,
             `Suitable algorithms: ${suitableAlgorithms.join(', ')}`,
           ].join('\n')
         )
       }
+
+      return possibleAlgorithms[0]
     }
 
-    const alg = jwk.supportedSignatureAlgorithms[0]
-    if (!alg) throw new DifPresentationExchangeError(`No supported algs for key type: ${key.keyType}`)
-    return alg
+    return publicJwk.signatureAlgorithm
   }
 
   private getSigningAlgorithmsForPresentationDefinitionAndInputDescriptors(
@@ -402,11 +421,11 @@ export class DifPresentationExchangeService {
     // For each of the supported algs, find the key types, then find the proof types
     const signatureSuiteRegistry = agentContext.dependencyManager.resolve(SignatureSuiteRegistry)
 
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const supportedSignatureSuites = signatureSuiteRegistry.getAllByKeyType(key.keyType)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const supportedSignatureSuites = signatureSuiteRegistry.getAllByPublicJwkType(publicJwk)
     if (supportedSignatureSuites.length === 0) {
       throw new DifPresentationExchangeError(
-        `Couldn't find a supported signature suite for the given key type '${key.keyType}'`
+        `Couldn't find a supported signature suite for the given jwk ${getJwkHumanDescription(publicJwk.toJson())}`
       )
     }
 
@@ -420,7 +439,7 @@ export class DifPresentationExchangeService {
           [
             'No possible signature suite found for the given verification method.',
             `Verification method type: ${verificationMethod.type}`,
-            `Key type: ${key.keyType}`,
+            `jwk type: ${getJwkHumanDescription(publicJwk.toJson())}`,
             `SupportedSignatureSuites: '${supportedSignatureSuites.map((s) => s.proofType).join(', ')}'`,
             `SuitableSignatureSuites: ${suitableSignatureSuites.join(', ')}`,
           ].join('\n')
@@ -569,6 +588,7 @@ export class DifPresentationExchangeService {
             // TODO: we should make this optional
             issuedAt: Math.floor(Date.now() / 1000),
           },
+          additionalPayload: presentationToCreate.verifiableCredentials[0].additionalPayload,
         })
 
         return sdJwtVc

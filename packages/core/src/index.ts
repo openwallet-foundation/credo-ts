@@ -12,16 +12,16 @@ export type { AgentDependencies } from './agent/AgentDependencies'
 
 export type {
   InitConfig,
-  WalletConfig,
   JsonArray,
   JsonObject,
   JsonValue,
   ResolvedDidCommService,
-  WalletConfigRekey,
-  WalletExportImportConfig,
-  WalletStorageConfig,
+  XOR,
+  CanBePromise,
+  SingleOrArray,
+  Optional,
 } from './types'
-export { KeyDerivationMethod, EncryptedMessage, PlaintextMessage } from './types'
+export { isJsonObject } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { Repository } from './storage/Repository'
@@ -33,7 +33,6 @@ export { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/update
 
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
-export * from './wallet'
 export { VersionString } from './utils/version'
 
 export * from './plugins'
@@ -44,10 +43,11 @@ export * from './modules/cache'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/sd-jwt-vc'
 export * from './modules/mdoc'
+export * as Kms from './modules/kms'
+export * from './modules/dcql'
 export {
   JsonEncoder,
   JsonTransformer,
-  isJsonObject,
   TypedArrayEncoder,
   HashlinkEncoder,
   BaseName,
@@ -58,21 +58,21 @@ export {
   IsStringOrInstance,
   asArray,
   equalsIgnoreOrder,
+  equalsWithOrder,
   DateTransformer,
 } from './utils'
 export * from './logger'
 export * from './error'
-export * from './wallet/error'
 export type { Constructor, Constructable } from './utils/mixins'
 export * from './agent/Events'
 export * from './crypto'
 
 // TODO: Clean up these exports used by DIDComm module
 export {
-  didKeyToInstanceOfKey,
+  didKeyToEd25519PublicJwk,
   didKeyToVerkey,
   verkeyToDidKey,
-  verkeyToInstanceOfKey,
+  verkeyToPublicJwk,
   isDidKey,
 } from './modules/dids/helpers'
 export { tryParseDid } from './modules/dids/domain/parse'
@@ -82,10 +82,6 @@ export { didDocumentJsonToNumAlgo1Did } from './modules/dids/methods/peer/peerDi
 export { didDocumentToNumAlgo2Did } from './modules/dids/methods/peer/peerDidNumAlgo2'
 export { didDocumentToNumAlgo4Did } from './modules/dids/methods/peer/peerDidNumAlgo4'
 
-export { SingleOrArray } from './utils'
-
-// TODO: clean up util exports
-export type { Optional } from './utils'
 export { getDomainFromUrl } from './utils/domain'
 export { MessageValidator } from './utils'
 

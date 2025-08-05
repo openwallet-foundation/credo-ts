@@ -5,10 +5,11 @@ import type { SdJwtVcTypeMetadata } from '../typeMetadata'
 
 import { decodeSdJwtSync } from '@sd-jwt/decode'
 
-import { Hasher, type JwaSignatureAlgorithm } from '../../../crypto'
+import { Hasher } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
+import { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
 
 export type DefaultSdJwtVcRecordTags = {
@@ -22,7 +23,7 @@ export type DefaultSdJwtVcRecordTags = {
   /**
    * The alg is the alg used to sign the SD-JWT
    */
-  alg: JwaSignatureAlgorithm
+  alg: KnownJwaSignatureAlgorithm
 }
 
 export type SdJwtVcRecordStorageProps = {
@@ -63,7 +64,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     const sdjwt = decodeSdJwtSync(this.compactSdJwtVc, Hasher.hash)
     const vct = sdjwt.jwt.payload.vct as string
     const sdAlg = sdjwt.jwt.payload._sd_alg as string | undefined
-    const alg = sdjwt.jwt.header.alg as JwaSignatureAlgorithm
+    const alg = sdjwt.jwt.header.alg as KnownJwaSignatureAlgorithm
 
     return {
       ...this._tags,
@@ -75,5 +76,19 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
+  }
+
+  /**
+   * credential is convenience method added to all credential records
+   */
+  public get credential(): SdJwtVc {
+    return decodeSdJwtVc(this.compactSdJwtVc, this.typeMetadata)
+  }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded(): string {
+    return this.compactSdJwtVc
   }
 }

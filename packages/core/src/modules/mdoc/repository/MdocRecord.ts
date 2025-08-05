@@ -1,10 +1,10 @@
 import type { TagsBase } from '../../../storage/BaseRecord'
 import type { Constructable } from '../../../utils/mixins'
 
-import { type JwaSignatureAlgorithm } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
+import { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
 
 export type DefaultMdocRecordTags = {
@@ -14,7 +14,7 @@ export type DefaultMdocRecordTags = {
    *
    * The Jwa Signature Algorithm used to sign the Mdoc.
    */
-  alg: JwaSignatureAlgorithm
+  alg: KnownJwaSignatureAlgorithm
 }
 
 export type MdocRecordStorageProps = {
@@ -54,5 +54,19 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
 
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
+  }
+
+  /**
+   * credential is convenience method added to all credential records
+   */
+  public get credential(): Mdoc {
+    return Mdoc.fromBase64Url(this.base64Url)
+  }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded(): string {
+    return this.base64Url
   }
 }

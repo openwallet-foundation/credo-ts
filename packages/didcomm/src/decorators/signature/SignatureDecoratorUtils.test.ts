@@ -1,8 +1,6 @@
-import type { Wallet } from '../../../../core'
-
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { KeyType, TypedArrayEncoder } from '../../../../core'
-import { getAgentConfig } from '../../../../core/tests/helpers'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { Kms, TypedArrayEncoder } from '../../../../core'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
@@ -14,11 +12,16 @@ jest.mock('../../../../core/src/utils/timestamp', () => {
   }
 })
 
+const agentContext = getAgentContext({
+  agentConfig: getAgentConfig('SignatureDecoratorUtilsTest'),
+})
+const kms = agentContext.resolve(Kms.KeyManagementApi)
+
 describe('Decorators | Signature | SignatureDecoratorUtils', () => {
   const data = {
     did: 'did',
     did_doc: {
-      '@context': 'https://w3id.org/did/v1',
+      '@context': 'https://www.w3.org/ns/did/v1',
       service: [
         {
           id: 'did:example:123456789abcdefghi#did-communication',
@@ -34,36 +37,30 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
   const signedData = new SignatureDecorator({
     signatureType: 'https://didcomm.org/signature/1.0/ed25519Sha512_single',
-    signature: 'zOSmKNCHKqOJGDJ6OlfUXTPJiirEAXrFn1kPiFDZfvG5hNTBKhsSzqAvlg44apgWBu7O57vGWZsXBF2BWZ5JAw',
+    signature: 'TeVQ7m4v7y4Gg80JZWN50H9GjWc3XFDQJ3QpoY2kuAK1ZzX9a_7Tls-X-GI9-JLCysPKzB5EnzAy3EIPi082BA',
     signatureData:
-      'AAAAAAAAAAB7ImRpZCI6ImRpZCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3czaWQub3JnL2RpZC92MSIsInNlcnZpY2UiOlt7ImlkIjoiZGlkOmV4YW1wbGU6MTIzNDU2Nzg5YWJjZGVmZ2hpI2RpZC1jb21tdW5pY2F0aW9uIiwidHlwZSI6ImRpZC1jb21tdW5pY2F0aW9uIiwicHJpb3JpdHkiOjAsInJlY2lwaWVudEtleXMiOlsic29tZVZlcmtleSJdLCJyb3V0aW5nS2V5cyI6W10sInNlcnZpY2VFbmRwb2ludCI6Imh0dHBzOi8vYWdlbnQuZXhhbXBsZS5jb20vIn1dfX0',
+      'AAAAAAAAAAB7ImRpZCI6ImRpZCIsImRpZF9kb2MiOnsiQGNvbnRleHQiOiJodHRwczovL3d3dy53My5vcmcvbnMvZGlkL3YxIiwic2VydmljZSI6W3siaWQiOiJkaWQ6ZXhhbXBsZToxMjM0NTY3ODlhYmNkZWZnaGkjZGlkLWNvbW11bmljYXRpb24iLCJ0eXBlIjoiZGlkLWNvbW11bmljYXRpb24iLCJwcmlvcml0eSI6MCwicmVjaXBpZW50S2V5cyI6WyJzb21lVmVya2V5Il0sInJvdXRpbmdLZXlzIjpbXSwic2VydmljZUVuZHBvaW50IjoiaHR0cHM6Ly9hZ2VudC5leGFtcGxlLmNvbS8ifV19fQ',
     signer: 'GjZWsBLgZCR18aL468JAT7w9CZRiBnpxUPPgyQxh4voa',
   })
 
-  let wallet: Wallet
-
-  beforeAll(async () => {
-    const config = getAgentConfig('SignatureDecoratorUtilsTest')
-    wallet = new InMemoryWallet()
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    await wallet.createAndOpen(config.walletConfig!)
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
-  })
-
   test('signData signs json object and returns SignatureDecorator', async () => {
-    const privateKey = TypedArrayEncoder.fromString('00000000000000000000000000000My1')
-    const key = await wallet.createKey({ privateKey, keyType: KeyType.Ed25519 })
+    const privateJwk = transformPrivateKeyToPrivateJwk({
+      privateKey: TypedArrayEncoder.fromString('00000000000000000000000000000My1'),
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+    }).privateJwk
+    const createdKey = await kms.importKey({ privateJwk })
+    const publicJwk = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
 
-    const result = await signData(data, wallet, key.publicKeyBase58)
+    const result = await signData(agentContext, data, publicJwk)
 
     expect(result).toEqual(signedData)
   })
 
   test('unpackAndVerifySignatureDecorator unpacks signature decorator and verifies signature', async () => {
-    const result = await unpackAndVerifySignatureDecorator(signedData, wallet)
+    const result = await unpackAndVerifySignatureDecorator(agentContext, signedData)
     expect(result).toEqual(data)
   })
 
@@ -77,7 +74,7 @@ describe('Decorators | Signature | SignatureDecoratorUtils', () => {
 
     expect.assertions(1)
     try {
-      await unpackAndVerifySignatureDecorator(wronglySignedData, wallet)
+      await unpackAndVerifySignatureDecorator(agentContext, wronglySignedData)
     } catch (error) {
       expect(error.message).toEqual('Signature is not valid')
     }

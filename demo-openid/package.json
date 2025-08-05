@@ -10,33 +10,33 @@
   "license": "Apache-2.0",
   "scripts": {
     "issuer": "ts-node src/IssuerInquirer.ts",
-    "provider": "tsx src/provider.js",
+    "provider": "tsx src/Provider.js",
     "holder": "ts-node src/HolderInquirer.ts",
     "verifier": "ts-node src/VerifierInquirer.ts",
     "proxies": "ngrok --config ngrok.yml,ngrok.auth.yml start provider issuer verifier"
   },
   "dependencies": {
-    "@hyperledger/anoncreds-nodejs": "^0.3.1",
-    "@hyperledger/indy-vdr-nodejs": "^0.2.2",
+    "@hyperledger/anoncreds-nodejs": "catalog:",
+    "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@koa/bodyparser": "^5.1.1",
-    "@openwallet-foundation/askar-nodejs": "^0.3.1",
-    "express": "^4.18.1",
+    "@openwallet-foundation/askar-nodejs": "catalog:",
+    "express": "catalog:",
     "inquirer": "^8.2.5",
-    "jose": "^5.3.0",
-    "oidc-provider": "^8.4.6"
+    "jose": "^5.10.0",
+    "oidc-provider": "^8.8.1"
   },
   "devDependencies": {
     "@credo-ts/askar": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@credo-ts/openid4vc": "workspace:*",
-    "@types/express": "^4.17.13",
+    "@types/express": "catalog:",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",
-    "@types/oidc-provider": "^8.4.4",
+    "@types/oidc-provider": "^8.8.1",
     "clear": "^0.1.0",
     "figlet": "^1.5.2",
-    "ts-node": "^10.9.2",
-    "tsx": "^4.11.0"
+    "ts-node": "catalog:",
+    "tsx": "^4.19.4"
   }
 }

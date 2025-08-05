@@ -3,8 +3,8 @@ import type { NextFunction, Response } from 'express'
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
 
-import { setGlobalConfig } from '@animo-id/oauth2'
 import { AgentConfig } from '@credo-ts/core'
+import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 

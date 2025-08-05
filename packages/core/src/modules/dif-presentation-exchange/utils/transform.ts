@@ -1,44 +1,31 @@
 import type {
   OriginalVerifiableCredential as SphereonOriginalVerifiableCredential,
   OriginalVerifiablePresentation as SphereonOriginalVerifiablePresentation,
-  W3CVerifiablePresentation as SphereonW3CVerifiablePresentation,
-} from '@sphereon/ssi-types'
+} from '@animo-id/pex/dist/main/lib/types/PexCredentialMapper'
+import type { W3CVerifiablePresentation as SphereonW3CVerifiablePresentation } from '@sphereon/ssi-types'
 import type { AgentContext } from '../../../agent'
+import type { MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
+import type { W3cCredentialRecord } from '../../vc'
 import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
 import type { VerifiablePresentation } from '../models'
 
 import { Jwt } from '../../../crypto'
 import { JsonTransformer } from '../../../utils'
-import { MdocDeviceResponse, MdocRecord } from '../../mdoc'
+import { MdocDeviceResponse } from '../../mdoc'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
-import { W3cCredentialRecord, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
+import { W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 
 export function getSphereonOriginalVerifiableCredential(
   credentialRecord: W3cCredentialRecord | SdJwtVcRecord | MdocRecord
 ): SphereonOriginalVerifiableCredential {
-  if (credentialRecord instanceof W3cCredentialRecord) {
-    return credentialRecord.credential.encoded as SphereonOriginalVerifiableCredential
-  }
-  if (credentialRecord instanceof MdocRecord) {
-    return credentialRecord.base64Url
-  }
-  return credentialRecord.compactSdJwtVc
+  return credentialRecord.encoded as SphereonOriginalVerifiableCredential
 }
 
 export function getSphereonOriginalVerifiablePresentation(
   verifiablePresentation: VerifiablePresentation
 ): SphereonOriginalVerifiablePresentation {
-  if (
-    verifiablePresentation instanceof W3cJwtVerifiablePresentation ||
-    verifiablePresentation instanceof W3cJsonLdVerifiablePresentation
-  ) {
-    return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
-  }
-  if (verifiablePresentation instanceof MdocDeviceResponse) {
-    return verifiablePresentation.base64Url
-  }
-  return verifiablePresentation.compact
+  return verifiablePresentation.encoded as SphereonOriginalVerifiablePresentation
 }
 
 // TODO: we might want to move this to some generic vc transformation util

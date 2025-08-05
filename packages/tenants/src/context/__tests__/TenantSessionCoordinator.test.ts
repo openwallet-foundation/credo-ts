@@ -1,10 +1,10 @@
-import type { DependencyManager } from '@credo-ts/core'
+import type { DependencyManager, Module } from '@credo-ts/core'
 import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 
-import { AgentConfig, AgentContext, WalletApi } from '@credo-ts/core'
+import { AgentConfig, AgentContext } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
-import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecord } from '../../repository'
@@ -20,15 +20,10 @@ type PublicTenantAgentContextMapping = Omit<TenantSessionCoordinator, 'tenantAge
   tenantAgentContextMapping: TenantAgentContextMapping
 }
 
-const wallet = {
-  initialize: jest.fn(),
-} as unknown as WalletApi
-
 const agentContext = getAgentContext({
   agentConfig: getAgentConfig('TenantSessionCoordinator'),
 })
 
-agentContext.dependencyManager.registerInstance(WalletApi, wallet)
 const tenantSessionCoordinator = new TenantSessionCoordinator(
   agentContext,
   testLogger,
@@ -40,6 +35,7 @@ const tenantSessionMutexMock = TenantSessionMutexMock.mock.instances[0]
 describe('TenantSessionCoordinator', () => {
   afterEach(() => {
     tenantSessionCoordinator.tenantAgentContextMapping = {}
+    jest.resetAllMocks()
     jest.clearAllMocks()
   })
 
@@ -53,17 +49,13 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       const tenantRecord = new TenantRecord({
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -75,14 +67,22 @@ describe('TenantSessionCoordinator', () => {
     })
 
     test('creates a new agent context, initializes the wallet and stores it in the tenant agent context mapping', async () => {
+      const agentContext = getAgentContext({
+        agentConfig: getAgentConfig('TenantSessionCoordinator'),
+      })
+
+      const tenantSessionCoordinator = new TenantSessionCoordinator(
+        agentContext,
+        testLogger,
+        new TenantsModuleConfig()
+      ) as unknown as PublicTenantAgentContextMapping
+
+      const tenantSessionMutexMock = TenantSessionMutexMock.mock.instances[0]
+
       const tenantRecord = new TenantRecord({
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
@@ -91,27 +91,20 @@ describe('TenantSessionCoordinator', () => {
 
       const tenantDependencyManager = {
         registerInstance: jest.fn(),
-        resolve: jest.fn(() => wallet),
+        initializeAgentContext: jest.fn(),
       } as unknown as DependencyManager
 
       createChildSpy.mockReturnValue(tenantDependencyManager)
 
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
 
-      expect(wallet.initialize).toHaveBeenCalledWith({
-        ...tenantRecord.config.walletConfig,
-        storage: { config: { inMemory: true }, type: 'sqlite' },
-      })
       expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
-      expect(extendSpy).toHaveBeenCalledWith({
-        ...tenantRecord.config,
-        walletConfig: { ...tenantRecord.config.walletConfig, storage: { config: { inMemory: true }, type: 'sqlite' } },
-      })
+      expect(extendSpy).toHaveBeenCalledWith(tenantRecord.config)
       expect(createChildSpy).toHaveBeenCalledWith()
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))
 
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext,
         mutex: expect.objectContaining({
           acquire: expect.any(Function),
@@ -124,33 +117,9 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       })
 
-      expect(tenantAgentContext.contextCorrelationId).toBe('tenant1')
-    })
-
-    test('rethrows error and releases session if error is throw while getting agent context', async () => {
-      const tenantRecord = new TenantRecord({
-        id: 'tenant1',
-        config: {
-          label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
-        },
-        storageVersion: '0.5',
-      })
-
-      // Throw error during wallet initialization
-      mockFunction(wallet.initialize).mockRejectedValue(new Error('Test error'))
-
-      await expect(tenantSessionCoordinator.getContextForSession(tenantRecord)).rejects.toThrowError('Test error')
-
-      expect(wallet.initialize).toHaveBeenCalledWith({
-        ...tenantRecord.config.walletConfig,
-        storage: { config: { inMemory: true }, type: 'sqlite' },
-      })
-      expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
-      expect(tenantSessionMutexMock.releaseSession).toHaveBeenCalledTimes(1)
+      expect(tenantAgentContext.contextCorrelationId).toBe('tenant-tenant1')
+      createChildSpy.mockClear()
+      createChildSpy.mockReset()
     })
 
     test('locks and waits for lock to release when initialization is already in progress', async () => {
@@ -158,25 +127,32 @@ describe('TenantSessionCoordinator', () => {
         id: 'tenant1',
         config: {
           label: 'Test Tenant',
-          walletConfig: {
-            id: 'test-wallet',
-            key: 'test-wallet-key',
-          },
         },
         storageVersion: '0.5',
       })
 
-      // Add timeout to mock the initialization and we can test that the mutex is used.
-      mockFunction(wallet.initialize).mockReturnValueOnce(new Promise((resolve) => setTimeout(resolve, 100)))
+      let hasBeenCalledTimes = 0
+
+      const { ...originalModules } = agentContext.dependencyManager.registeredModules
+      agentContext.dependencyManager.registerModules({
+        test2: new (class implements Module {
+          async onInitializeContext(_agentContext: AgentContext): Promise<void> {
+            hasBeenCalledTimes++
+            await new Promise((res) => setTimeout(res, 500))
+          }
+
+          register(_dependencyManager: DependencyManager): void {}
+        })(),
+      })
 
       // Start two context session creations (but don't await). It should set the mutex property on the tenant agent context mapping.
       const tenantAgentContext1Promise = tenantSessionCoordinator.getContextForSession(tenantRecord)
       const tenantAgentContext2Promise = tenantSessionCoordinator.getContextForSession(tenantRecord)
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toBeUndefined()
 
       // Await first session promise, should have 1 session
       const tenantAgentContext1 = await tenantAgentContext1Promise
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext1,
         sessionCount: 1,
         mutex: expect.objectContaining({
@@ -191,7 +167,7 @@ describe('TenantSessionCoordinator', () => {
 
       // There should be two sessions active now
       const tenantAgentContext2 = await tenantAgentContext2Promise
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenantAgentContext1,
         sessionCount: 2,
         mutex: expect.objectContaining({
@@ -205,12 +181,10 @@ describe('TenantSessionCoordinator', () => {
       })
 
       // Initialize should only be called once
-      expect(wallet.initialize).toHaveBeenCalledWith({
-        ...tenantRecord.config.walletConfig,
-        storage: { config: { inMemory: true }, type: 'sqlite' },
-      })
-      expect(wallet.initialize).toHaveBeenCalledTimes(1)
+      expect(hasBeenCalledTimes).toEqual(1)
 
+      // @ts-ignore
+      agentContext.dependencyManager.registeredModules = originalModules
       expect(tenantAgentContext1).toBe(tenantAgentContext2)
     })
   })
@@ -220,21 +194,22 @@ describe('TenantSessionCoordinator', () => {
       const rootAgentContextMock = {
         contextCorrelationId: 'mock',
         dependencyManager: { dispose: jest.fn() },
+        isRootAgentContext: true,
       } as unknown as AgentContext
       await tenantSessionCoordinator.endAgentContextSession(rootAgentContextMock)
 
       expect(tenantSessionMutexMock.releaseSession).not.toHaveBeenCalled()
     })
 
-    test('throws an error if not agent context session exists for the tenant', async () => {
-      const tenantAgentContextMock = { contextCorrelationId: 'does-not-exist' } as unknown as AgentContext
-      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrowError(
-        `Unknown agent context with contextCorrelationId 'does-not-exist'. Cannot end session`
+    test('throws an error if no agent context session exists for the tenant', async () => {
+      const tenantAgentContextMock = { contextCorrelationId: 'tenant-does-not-exist' } as unknown as AgentContext
+      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
+        `Unknown agent context with contextCorrelationId 'tenant-does-not-exist'. Cannot end session`
       )
     })
 
     test('decreases the tenant session count and calls release session', async () => {
-      const tenant1AgentContext = { contextCorrelationId: 'tenant1' } as unknown as AgentContext
+      const tenant1AgentContext = { contextCorrelationId: 'tenant-tenant1' } as unknown as AgentContext
 
       const tenant1 = {
         agentContext: tenant1AgentContext,
@@ -242,13 +217,13 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 2,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have reduced session count by one
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toEqual({
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toEqual({
         agentContext: tenant1AgentContext,
         mutex: tenant1.mutex,
         sessionCount: 1,
@@ -258,8 +233,8 @@ describe('TenantSessionCoordinator', () => {
 
     test('closes the agent context and removes the agent context mapping if the number of sessions reaches 0', async () => {
       const tenant1AgentContext = {
-        dependencyManager: { dispose: jest.fn() },
-        contextCorrelationId: 'tenant1',
+        dependencyManager: { closeAgentContext: jest.fn() },
+        contextCorrelationId: 'tenant-tenant1',
       } as unknown as AgentContext
 
       const tenant1 = {
@@ -268,14 +243,14 @@ describe('TenantSessionCoordinator', () => {
         sessionCount: 1,
       }
       tenantSessionCoordinator.tenantAgentContextMapping = {
-        tenant1,
+        'tenant-tenant1': tenant1,
       }
 
       await tenantSessionCoordinator.endAgentContextSession(tenant1AgentContext)
 
       // Should have removed tenant1
-      expect(tenantSessionCoordinator.tenantAgentContextMapping.tenant1).toBeUndefined()
-      expect(tenant1AgentContext.dependencyManager.dispose).toHaveBeenCalledTimes(1)
+      expect(tenantSessionCoordinator.tenantAgentContextMapping['tenant-tenant1']).toBeUndefined()
+      expect(tenant1AgentContext.dependencyManager.closeAgentContext).toHaveBeenCalledTimes(1)
       expect(tenantSessionMutexMock.releaseSession).toHaveBeenCalledTimes(1)
     })
   })

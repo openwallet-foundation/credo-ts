@@ -1,57 +1,63 @@
-import type { Key, SdJwtVc } from '@credo-ts/core'
+import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
 
-import {
-  Agent,
-  DidKey,
-  JwaSignatureAlgorithm,
-  KeyType,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  W3cJwtVerifiableCredential,
-  getJwkFromKey,
-} from '@credo-ts/core'
+import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-
-import { AskarModule } from '../../../../askar/src'
-import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
   config: {
     label: 'OpenId4VcHolder Test28',
-    walletConfig: { id: 'openid4vc-holder-test27', key: 'openid4vc-holder-test27' },
   },
   dependencies: agentDependencies,
   modules: {
     openId4VcHolder: new OpenId4VcHolderModule(),
-    askar: new AskarModule(askarModuleConfig),
+    inMemory: new InMemoryWalletModule(),
   },
 })
 
 describe('OpenId4VcHolder', () => {
-  let holderKey: Key
+  let holderKey: Kms.PublicJwk
   let holderDid: string
   let holderVerificationMethod: string
 
   beforeEach(async () => {
     await holder.initialize()
 
-    holderKey = await holder.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+    const key = await holder.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+        type: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+        },
+      }).privateJwk,
     })
-    const holderDidKey = new DidKey(holderKey)
+    holderKey = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+
+    const {
+      didState: { did },
+    } = await holder.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: {
+        keyId: key.keyId,
+      },
+    })
+
+    if (!did) throw new Error('expected did')
+
+    const holderDidKey = DidKey.fromDid(did)
     holderDid = holderDidKey.did
-    holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.key.fingerprint}`
+    holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`
   })
 
   afterEach(async () => {
     await holder.shutdown()
-    await holder.wallet.delete()
   })
 
   describe('[DRAFT 11]: Pre-authorized flow', () => {
@@ -77,14 +83,14 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/did.json')
         .reply(200, fixture.wellKnownDid)
 
-        .get('/.well-known/openid-configuration')
-        .reply(404)
+        .get('/.well-known/openid-credential-issuer')
+        .reply(200, fixture.getMetadataResponse)
 
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-        .get('/.well-known/openid-credential-issuer')
-        .reply(200, fixture.getMetadataResponse)
+        .get('/.well-known/openid-configuration')
+        .reply(404)
 
         // setup access token response
         .post('/oidc/v1/auth/token')
@@ -93,9 +99,6 @@ describe('OpenId4VcHolder', () => {
         // setup credential request response
         .post('/oidc/v1/auth/credential')
         .reply(200, fixture.credentialResponse)
-
-        .get('/.well-known/did.json')
-        .reply(200, fixture.wellKnownDid)
 
       const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
       const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
@@ -115,11 +118,11 @@ describe('OpenId4VcHolder', () => {
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+        allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+        credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
@@ -165,11 +168,11 @@ describe('OpenId4VcHolder', () => {
           verifyCredentialStatus: false,
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
           credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
             .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
             .map(([id]) => id),
-          credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+          credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
         })
       )
         // FIXME: walt.id issues jwt where nbf and issuanceDate do not match
@@ -178,6 +181,10 @@ describe('OpenId4VcHolder', () => {
 
     it('Should successfully receive credential from animo openid4vc playground using the pre-authorized flow using a jwk EdDSA subject and vc+sd-jwt credential', async () => {
       const fixture = animoOpenIdPlaygroundDraft11SdJwtVc
+
+      nock('https://openid4vc.animo.id')
+        .get('/.well-known/oauth-authorization-server/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
+        .reply(404)
 
       // setup server metadata response
       nock('https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
@@ -215,11 +222,11 @@ describe('OpenId4VcHolder', () => {
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+        allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'jwk', jwk: getJwkFromKey(holderKey) }),
+        credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
@@ -235,7 +242,10 @@ describe('OpenId4VcHolder', () => {
       expect(credentialResponse.credentials).toHaveLength(1)
       const credential = credentialResponse.credentials[0].credentials[0] as SdJwtVc
       expect(credential).toEqual({
+        claimFormat: 'vc+sd-jwt',
         compact:
+          'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
+        encoded:
           'eyJhbGciOiJFZERTQSIsInR5cCI6InZjK3NkLWp3dCIsImtpZCI6IiN6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgifQ.eyJ2Y3QiOiJBbmltb09wZW5JZDRWY1BsYXlncm91bmQiLCJwbGF5Z3JvdW5kIjp7ImZyYW1ld29yayI6IkFyaWVzIEZyYW1ld29yayBKYXZhU2NyaXB0IiwiY3JlYXRlZEJ5IjoiQW5pbW8gU29sdXRpb25zIiwiX3NkIjpbImZZM0ZqUHpZSEZOcHlZZnRnVl9kX25DMlRHSVh4UnZocE00VHdrMk1yMDQiLCJwTnNqdmZJeVBZOEQwTks1c1l0alR2Nkc2R0FNVDNLTjdaZDNVNDAwZ1pZIl19LCJjbmYiOnsiandrIjp7Imt0eSI6Ik9LUCIsImNydiI6IkVkMjU1MTkiLCJ4Ijoia2MydGxwaGNadzFBSUt5a3pNNnBjY2k2UXNLQW9jWXpGTC01RmUzNmg2RSJ9fSwiaXNzIjoiZGlkOmtleTp6Nk1raDVITlBDQ0pXWm42V1JMalJQdHR5dllaQnNrWlVkU0pmVGlad2NVU2llcXgiLCJpYXQiOjE3MDU4NDM1NzQsIl9zZF9hbGciOiJzaGEtMjU2In0.2iAjaCFcuiHXTfQsrxXo6BghtwzqTrfDmhmarAAJAhY8r9yKXY3d10JY1dry2KnaEYWpq2R786thjdA5BXlPAQ~WyI5MzM3MTM0NzU4NDM3MjYyODY3NTE4NzkiLCJsYW5ndWFnZSIsIlR5cGVTY3JpcHQiXQ~WyIxMTQ3MDA5ODk2Nzc2MDYzOTc1MDUwOTMxIiwidmVyc2lvbiIsIjEuMCJd~',
         header: {
           alg: 'EdDSA',
@@ -295,10 +305,10 @@ describe('OpenId4VcHolder', () => {
       nock('https://issuer.portal.walt.id')
         .get('/.well-known/openid-credential-issuer')
         .reply(200, fixture.getMetadataResponse)
-        .get('/.well-known/openid-configuration')
-        .reply(200, fixture.getMetadataResponse)
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
+        .get('/.well-known/openid-configuration')
+        .reply(200, fixture.getMetadataResponse)
         .post('/par')
         .reply(200, fixture.par)
         // setup access token response
@@ -315,7 +325,7 @@ describe('OpenId4VcHolder', () => {
         fixture.credentialOfferAuth
       )
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveIssuanceAuthorizationRequest(
+      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
         resolvedCredentialOffer,
         {
           clientId: 'test-client',
@@ -339,8 +349,8 @@ describe('OpenId4VcHolder', () => {
         holder.modules.openId4VcHolder.requestCredentials({
           resolvedCredentialOffer,
           ...tokenResponse,
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
-          credentialBindingResolver: () => ({ method: 'did', didUrl: holderVerificationMethod }),
+          allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
+          credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
           verifyCredentialStatus: false,
         })
       )

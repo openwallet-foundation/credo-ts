@@ -1,15 +1,15 @@
-import type { HttpMethod, VerifyAccessTokenRequestReturn } from '@animo-id/oauth2'
+import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
   authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
-} from '@animo-id/oauth2'
-import { Key, getJwkFromKey, joinUriParts, utils } from '@credo-ts/core'
+} from '@openid4vc/oauth2'
 
 import {
   getRequestContext,
@@ -35,8 +35,8 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
     const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
     const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
     const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-    const accessTokenSigningKey = Key.fromFingerprint(issuer.accessTokenPublicKeyFingerprint)
-    const oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
+    const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
+    let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
 
     const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
       config.accessTokenEndpointPath,
@@ -47,10 +47,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       url: fullRequestUrl,
     } as const
 
-    const { accessTokenRequest, grant, dpopJwt, pkceCodeVerifier } = oauth2AuthorizationServer.parseAccessTokenRequest({
-      accessTokenRequest: request.body,
-      request: requestLike,
-    })
+    const { accessTokenRequest, grant, dpop, clientAttestation, pkceCodeVerifier } =
+      oauth2AuthorizationServer.parseAccessTokenRequest({
+        accessTokenRequest: request.body,
+        request: requestLike,
+      })
 
     const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, {
       preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
@@ -80,6 +81,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       })
     }
 
+    oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
+      issuanceSessionId: issuanceSession.id,
+    })
     let verificationResult: VerifyAccessTokenRequestReturn
     try {
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
@@ -101,11 +105,19 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedPreAuthorizedCode: issuanceSession.preAuthorizedCode,
           grant,
           request: requestLike,
+          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
+          clientAttestation: {
+            ...clientAttestation,
+            // First session config, fall back to global config
+            required: issuanceSession.walletAttestation?.required ?? config.walletAttestationsRequired,
+
+            // NOTE: we might want to enforce this? Not sure
+            // ensureConfirmationKeyMatchesDpopKey: true
+          },
           dpop: {
-            jwt: dpopJwt,
-            // This will only have effect when DPoP is not present.
-            // If it is present it will always be verified
-            required: config.dpopRequired,
+            ...dpop,
+            // First session config, fall back to global config
+            required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt: addSecondsToDate(
@@ -131,12 +143,30 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedCode: issuanceSession.authorization.code,
           codeExpiresAt: issuanceSession.authorization.codeExpiresAt,
           grant,
+          authorizationServerMetadata: issuerMetadata.authorizationServers[0],
           request: requestLike,
+          clientAttestation: {
+            ...clientAttestation,
+
+            // Ensure it matches the previously provided client id
+            // FIXME: we don't verify that the attestation is issued by the same party
+            expectedClientId: issuanceSession.clientId,
+
+            // NOTE: we don't look at the global config here. As we already checked and
+            // set required to true previously if client attestations were provided or required.
+            required: issuanceSession.walletAttestation?.required,
+
+            // NOTE: we might want to enforce this? Not sure
+            // ensureConfirmationKeyMatchesDpopKey: true
+          },
           dpop: {
-            jwt: dpopJwt,
-            // This will only have effect when DPoP is not present.
-            // If it is present it will always be verified
-            required: config.dpopRequired,
+            ...dpop,
+            // NOTE: we don't look at the global config here. As we already checked and
+            // set required to true previously if client attestations were provided or required.
+            required: issuanceSession.dpop?.required,
+
+            // Ensure it matches previously provided jwk thumbprint
+            expectedJwkThumbprint: issuanceSession.dpop?.dpopJkt,
           },
           pkce: issuanceSession.pkce
             ? {
@@ -166,7 +196,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         grant.grantType === authorizationCodeGrantIdentifier ? issuanceSession.authorization?.scopes : undefined
       const subject = `credo:${utils.uuid()}`
 
-      const signerJwk = getJwkFromKey(accessTokenSigningKey)
+      const signerJwk = accessTokenSigningKey
       const accessTokenResponse = await oauth2AuthorizationServer.createAccessTokenResponse({
         audience: issuerMetadata.credentialIssuer.credential_issuer,
         authorizationServer: issuerMetadata.credentialIssuer.credential_issuer,
@@ -174,9 +204,13 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         signer: {
           method: 'jwk',
           alg: signerJwk.supportedSignatureAlgorithms[0],
-          publicJwk: signerJwk.toJson(),
+          publicJwk: signerJwk.toJson() as Jwk,
         },
-        dpopJwk: verificationResult.dpopJwk,
+        dpop: verificationResult.dpop
+          ? {
+              jwk: verificationResult.dpop?.jwk,
+            }
+          : undefined,
         scope: scopes?.join(' '),
         clientId: issuanceSession.clientId,
 

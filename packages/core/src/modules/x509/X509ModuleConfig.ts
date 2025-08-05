@@ -6,7 +6,7 @@ import type { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from '.
 
 import { X509Certificate } from './X509Certificate'
 
-type X509VerificationTypeCredential = {
+export type X509VerificationTypeCredential = {
   type: 'credential'
   credential: SdJwtVc | Mdoc | W3cJwtVerifiableCredential | W3cJwtVerifiablePresentation
 
@@ -21,9 +21,46 @@ type X509VerificationTypeCredential = {
   openId4VcVerificationSessionId?: string
 }
 
-type X509VerificationTypeOauth2SecuredAuthorizationRequest = {
+// NOTE: we should probably move these to the OpenID4VC module
+// but have to think about the typing. Probably the base interface should just contain
+// the `verification` with a `type`. And extension modules can extend the verification
+export type X509VerificationTypeOauth2SecuredAuthorizationRequest = {
   type: 'oauth2SecuredAuthorizationRequest'
   authorizationRequest: {
+    jwt: string
+    payload: JwtPayload
+  }
+}
+
+export type X509VerificationTypeOpenId4VciKeyAttestation = {
+  type: 'openId4VciKeyAttestation'
+
+  /**
+   * The `id` of the `OpenId4VcIssuanceSessionRecord` that this key
+   * attestation verification is bound to.
+   */
+  // TODO: should be the record, but we don't have access to the record type here.
+  openId4VcIssuanceSessionId: string
+
+  // NOTE: it would be more helpful to have the typed JWT payload from openid4vc here?
+  keyAttestation: {
+    jwt: string
+    payload: JwtPayload
+  }
+}
+
+export type X509VerificationTypeOauth2ClientAttestation = {
+  type: 'oauth2ClientAttestation'
+
+  /**
+   * The `id` of the `OpenId4VcIssuanceSessionRecord` that this client
+   * attestation verification is bound to.
+   */
+  // TODO: should be the record, but we don't have access to the record type here.
+  openId4VcIssuanceSessionId: string
+
+  // NOTE: it would be more helpful to have the typed JWT payload from openid4vc here?
+  clientAttestation: {
     jwt: string
     payload: JwtPayload
   }
@@ -39,7 +76,11 @@ export interface X509VerificationContext {
    */
   certificateChain: X509Certificate[]
 
-  verification: X509VerificationTypeCredential | X509VerificationTypeOauth2SecuredAuthorizationRequest
+  verification:
+    | X509VerificationTypeCredential
+    | X509VerificationTypeOauth2SecuredAuthorizationRequest
+    | X509VerificationTypeOauth2ClientAttestation
+    | X509VerificationTypeOpenId4VciKeyAttestation
 }
 
 export interface X509ModuleConfigOptions {
@@ -47,7 +88,7 @@ export interface X509ModuleConfigOptions {
    *
    * Array of trusted base64-encoded certificate strings in the DER-format.
    */
-  trustedCertificates?: [string, ...string[]]
+  trustedCertificates?: Array<string | X509Certificate>
 
   /**
    * Optional callback method that will be called to dynamically get trusted certificates for a verification.
@@ -90,17 +131,25 @@ export class X509ModuleConfig {
     this.#getTrustedCertificatesForVerification = fn
   }
 
-  public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
-    this.#trustedCertificates = trustedCertificates
-      ? trustedCertificates.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
-      : undefined
+  public setTrustedCertificates(trustedCertificates?: Array<string | X509Certificate>) {
+    const certificateInstances = trustedCertificates?.map((trustedCertificate) =>
+      typeof trustedCertificate === 'string'
+        ? X509Certificate.fromEncodedCertificate(trustedCertificate)
+        : trustedCertificate
+    )
+    this.#trustedCertificates = trustedCertificates?.length ? certificateInstances : undefined
   }
 
-  public addTrustedCertificate(trustedCertificate: string) {
+  public addTrustedCertificate(trustedCertificate: string | X509Certificate) {
+    const certificateInstance =
+      typeof trustedCertificate === 'string'
+        ? X509Certificate.fromEncodedCertificate(trustedCertificate)
+        : trustedCertificate
+
     if (!this.#trustedCertificates) {
-      this.#trustedCertificates = [X509Certificate.fromEncodedCertificate(trustedCertificate)]
-      return
+      this.#trustedCertificates = []
     }
-    this.#trustedCertificates.push(X509Certificate.fromEncodedCertificate(trustedCertificate))
+
+    this.#trustedCertificates.push(certificateInstance)
   }
 }

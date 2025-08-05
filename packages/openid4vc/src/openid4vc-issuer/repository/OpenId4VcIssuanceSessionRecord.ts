@@ -1,20 +1,42 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
-import { PkceCodeChallengeMethod } from '@animo-id/oauth2'
 import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
+import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
+export interface OpenId4VcIssuanceSessionDpop {
+  /**
+   * Whether dpop is required. Can be set to false to override the
+   * global config
+   */
+  required: boolean
+
+  /**
+   * JWK thumbprint of the dpop key. This is mosty used when a dpop key is bound
+   * to the issuance session before the access token is created (which contains the dpop key)
+   */
+  dpopJkt?: string
+}
+
+export interface OpenId4VcIssuanceSessionWalletAttestation {
+  /**
+   * Wheter presentation of a wallet attestation is required.
+   * Can be set to false to override the global config
+   */
+  required: boolean
+}
+
 export interface OpenId4VcIssuanceSessionAuthorization {
   code?: string
 
   /**
    * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
-   * You now the code was created by you because you can decrypt it, and you don't have to store
+   * You know the code was created by you because you can decrypt it, and you don't have to store
    * additional metadata on your server. It's similar to the signed / encrypted nonce
    */
   codeExpiresAt?: Date
@@ -60,6 +82,7 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   cNonce?: string
   state: OpenId4VcIssuanceSessionState
   credentialOfferUri?: string
+  credentialOfferId?: string
 
   // pre-auth flow
   preAuthorizedCode?: string
@@ -87,6 +110,9 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    */
   clientId?: string
 
+  walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
+  dpop?: OpenId4VcIssuanceSessionDpop
+
   // Pre auth flow
   preAuthorizedCode?: string
   userPin?: string
@@ -109,6 +135,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   presentation?: OpenId4VcIssuanceSessionPresentation
 
   credentialOfferUri?: string
+  credentialOfferId: string
 
   credentialOfferPayload: OpenId4VciCredentialOfferPayload
 
@@ -167,6 +194,9 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
     codeChallenge: string
   }
 
+  walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
+  dpop?: OpenId4VcIssuanceSessionDpop
+
   /**
    * Authorization code flow specific metadata values
    */
@@ -218,6 +248,14 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferUri?: string
 
   /**
+   * The public id for the credential offer. This is used in the credential
+   * offer uri.
+   *
+   * @since 0.6
+   */
+  public credentialOfferId?: string
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -237,8 +275,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.pkce = props.pkce
       this.authorization = props.authorization
       this.credentialOfferUri = props.credentialOfferUri
+      this.credentialOfferId = props.credentialOfferId
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
+      this.dpop = props.dpop
+      this.walletAttestation = props.walletAttestation
       this.state = props.state
       this.errorMessage = props.errorMessage
     }
@@ -264,6 +305,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       ...this._tags,
       issuerId: this.issuerId,
       credentialOfferUri: this.credentialOfferUri,
+      credentialOfferId: this.credentialOfferId,
       state: this.state,
 
       // Pre-auth flow

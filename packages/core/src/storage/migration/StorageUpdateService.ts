@@ -13,8 +13,6 @@ import { INITIAL_STORAGE_VERSION } from './updates'
 
 @injectable()
 export class StorageUpdateService {
-  private static STORAGE_VERSION_RECORD_ID = 'STORAGE_VERSION_RECORD_ID'
-
   private logger: Logger
   private storageVersionRepository: StorageVersionRepository
 
@@ -41,7 +39,7 @@ export class StorageUpdateService {
     this.logger.debug(`Setting current agent storage version to ${storageVersion}`)
     const storageVersionRecord = await this.storageVersionRepository.findById(
       agentContext,
-      StorageUpdateService.STORAGE_VERSION_RECORD_ID
+      StorageVersionRecord.storageVersionRecordId
     )
 
     if (!storageVersionRecord) {
@@ -49,7 +47,6 @@ export class StorageUpdateService {
       await this.storageVersionRepository.save(
         agentContext,
         new StorageVersionRecord({
-          id: StorageUpdateService.STORAGE_VERSION_RECORD_ID,
           storageVersion,
         })
       )
@@ -69,12 +66,11 @@ export class StorageUpdateService {
   public async getStorageVersionRecord(agentContext: AgentContext) {
     let storageVersionRecord = await this.storageVersionRepository.findById(
       agentContext,
-      StorageUpdateService.STORAGE_VERSION_RECORD_ID
+      StorageVersionRecord.storageVersionRecordId
     )
 
     if (!storageVersionRecord) {
       storageVersionRecord = new StorageVersionRecord({
-        id: StorageUpdateService.STORAGE_VERSION_RECORD_ID,
         storageVersion: INITIAL_STORAGE_VERSION,
       })
       await this.storageVersionRepository.save(agentContext, storageVersionRecord)

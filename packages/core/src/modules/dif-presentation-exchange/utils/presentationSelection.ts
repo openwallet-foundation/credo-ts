@@ -1,4 +1,3 @@
-import type { SingleOrArray } from '../../../utils'
 import type { W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential } from '../../vc'
 import type {
   DifPresentationExchangeDefinition,
@@ -9,6 +8,7 @@ import type {
 import { JSONPath } from '@astronautlabs/jsonpath'
 
 import { CredoError } from '../../../error'
+import { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
 import { ClaimFormat, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
 
@@ -45,7 +45,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: ClaimFormat.MsoMdoc,
+        claimFormat: ClaimFormat.MsoMdoc,
         descriptor,
         presentation,
         credential: document,
@@ -75,7 +75,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       }
 
       return {
-        format: presentation.claimFormat,
+        claimFormat: presentation.claimFormat,
         descriptor,
         presentation,
         credential: verifiableCredential,
@@ -83,7 +83,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       } as const
     }
     return {
-      format: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtVc,
       descriptor,
       presentation,
       credential: presentation,

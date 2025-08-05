@@ -1,49 +1,13 @@
-import type { Key } from './crypto'
+import { Kms } from '.'
 import type { Logger } from './logger'
-
-export enum KeyDerivationMethod {
-  /** default value in indy-sdk. Will be used when no value is provided */
-  Argon2IMod = 'ARGON2I_MOD',
-  /** less secure, but faster */
-  Argon2IInt = 'ARGON2I_INT',
-  /** raw wallet master key */
-  Raw = 'RAW',
-}
-
-export interface WalletStorageConfig {
-  type: string
-  [key: string]: unknown
-}
-
-export interface WalletConfig {
-  id: string
-  key: string
-  keyDerivationMethod?: KeyDerivationMethod
-  storage?: WalletStorageConfig
-}
-
-export interface WalletConfigRekey {
-  id: string
-  key: string
-  rekey: string
-  keyDerivationMethod?: KeyDerivationMethod
-  rekeyDerivationMethod?: KeyDerivationMethod
-}
-
-export interface WalletExportImportConfig {
-  key: string
-  path: string
-}
 
 export interface InitConfig {
   /**
    * Agent public endpoints, sorted by priority (higher priority first)
    */
   label: string
-  walletConfig?: WalletConfig
   logger?: Logger
   autoUpdateStorageOnStartup?: boolean
-  backupBeforeStorageUpdate?: boolean
 
   /**
    * Allow insecure http urls in places where this is usually required.
@@ -78,6 +42,23 @@ export interface JsonObject {
 export type FlatArray<Arr> = Arr extends ReadonlyArray<infer InnerArr> ? FlatArray<InnerArr> : Arr
 
 /**
+ * Create an exclusive or, setting the other params to 'never' which helps with
+ * type narrowing
+ *
+ * @example
+ * ```
+ * type Options = XOR<{ name: string }, { dateOfBirth: Date }>
+ *
+ * type Options =
+ *  | { name: string; dateOfBirth?: never }
+ *  | { name?: never; dateOfBirth: Date }
+ * ```
+ */
+export type XOR<T, U> =
+  | (T & { [P in keyof Omit<U, keyof T>]?: never })
+  | (U & { [P in keyof Omit<T, keyof U>]?: never })
+
+/**
  * Get the awaited (resolved promise) type of Promise type.
  */
 export type Awaited<T> = T extends Promise<infer U> ? U : never
@@ -87,28 +68,17 @@ export type Awaited<T> = T extends Promise<infer U> ? U : never
  */
 export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : true) : false
 
-// FIXME: the following types are duplicated in DIDComm module. They were placed here to remove dependency
-// to that module
 export interface ResolvedDidCommService {
   id: string
   serviceEndpoint: string
-  recipientKeys: Key[]
-  routingKeys: Key[]
+  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
 }
 
-export interface PlaintextMessage {
-  '@type': string
-  '@id': string
-  '~thread'?: {
-    thid?: string
-    pthid?: string
-  }
-  [key: string]: unknown
+export const isJsonObject = (value: unknown): value is JsonObject => {
+  return value !== undefined && typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-export type EncryptedMessage = {
-  protected: string
-  iv: string
-  ciphertext: string
-  tag: string
-}
+export type SingleOrArray<T> = T | T[]
+export type Optional<T, K extends keyof T> = Pick<Partial<T>, K> & Omit<T, K>
+export type CanBePromise<T> = T | Promise<T>
