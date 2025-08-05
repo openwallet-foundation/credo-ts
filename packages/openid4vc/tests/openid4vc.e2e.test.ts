@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, Mdoc, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
@@ -54,7 +55,6 @@ import {
   universityDegreeCredentialConfigurationSupportedMdoc,
 } from './utilsVci'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
-import { randomUUID } from 'crypto'
 
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
