@@ -73,6 +73,18 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
   responseMode?: ResponseMode
 
   /**
+   * Redirect uri that should be used in the authorization response. This will be included in both error and success
+   * responses. It can prevent session fixation, and allows to continue the flow in the browser after redirect.
+   *
+   * For same-device flows it allows continuing the flow. Based on the redirect uri, you can retrieve the session
+   * and display error or success screens.
+   *
+   * NOTE: the Uri MUST include randomness so the URL cannot be guessed, recommended is to have at least 128 bits of
+   * randomness, which is unique for each request.
+   */
+  authorizationResponseRedirectUri?: string
+
+  /**
    * The expected origins of the authorization response.
    * REQUIRED when signed requests defined in Appendix A.3.2 are used with the Digital Credentials API (DC API). An array of strings, each string representing an Origin of the Verifier that is making the request.
    */
