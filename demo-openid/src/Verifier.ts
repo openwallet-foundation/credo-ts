@@ -15,15 +15,15 @@ const universityDegreeDcql = {
   credential_sets: [
     {
       required: true,
-      options: [['UniversityDegreeCredential-vc+sd-jwt'], ['UniversityDegreeCredential-jwt_vc_json']],
+      options: [['UniversityDegreeCredential-vc-sd-jwt'], ['UniversityDegreeCredential-jwt_vc_json']],
     },
   ],
   credentials: [
     {
-      id: 'UniversityDegreeCredential-vc+sd-jwt',
+      id: 'UniversityDegreeCredential-vc-sd-jwt',
       format: 'vc+sd-jwt',
       meta: {
-        vct_values: ['UniversityDegree'],
+        vct_values: ['UniversityDegreeCredential'],
       },
     },
     {
@@ -36,7 +36,7 @@ const universityDegreeDcql = {
         },
       ],
       meta: {
-        type_values: [['UniversityDegree']],
+        type_values: [['UniversityDegreeCredential']],
       },
     },
   ],
@@ -46,12 +46,12 @@ const openBadgeCredentialDcql = {
   credential_sets: [
     {
       required: true,
-      options: [['OpenBadgeCredential-vc+sd-jwt'], ['OpenBadgeCredential-jwt_vc_json']],
+      options: [['OpenBadgeCredential-vc-sd-jwt'], ['OpenBadgeCredential-jwt_vc_json']],
     },
   ],
   credentials: [
     {
-      id: 'OpenBadgeCredential-vc+sd-jwt',
+      id: 'OpenBadgeCredential-vc-sd-jwt',
       format: 'vc+sd-jwt',
       meta: {
         vct_values: ['OpenBadgeCredential'],
