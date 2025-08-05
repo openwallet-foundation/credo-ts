@@ -238,13 +238,11 @@ describe('mdoc service test', () => {
 
     const RealDate = Date
     const MockDate = class extends RealDate {
-      constructor(...args: any[]) {
-        // Handle new Date() without arguments
+      constructor(...args: (string | number | Date)[]) {
         if (args.length === 0) {
           super('2024-08-12T14:50:42.124Z')
         } else {
-          // Handle new Date(value), new Date(dateString), new Date(year, month, ...)
-          super(...args as [any])
+          super(...(args as [string | number | Date]))
         }
       }
 
@@ -256,10 +254,10 @@ describe('mdoc service test', () => {
     global.Date = MockDate as unknown as typeof Date
 
     try {
-    const { isValid } = await mdoc.verify(agentContext, {
-      trustedCertificates: [sprindFunkeX509TrustedCertificate],
-    })
-    expect(isValid).toBeTruthy()
+      const { isValid } = await mdoc.verify(agentContext, {
+        trustedCertificates: [sprindFunkeX509TrustedCertificate],
+      })
+      expect(isValid).toBeTruthy()
     } finally {
       global.Date = RealDate
     }
