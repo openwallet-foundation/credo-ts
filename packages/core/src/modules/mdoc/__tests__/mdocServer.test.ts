@@ -235,11 +235,33 @@ describe('mdoc service test', () => {
 
   test('can verify sprindFunkeTestVector Issuer Signed', async () => {
     const mdoc = Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url)
-    const now = new Date('2024-08-12T14:50:42.124Z')
+
+    const RealDate = Date
+    const MockDate = class extends RealDate {
+      constructor(...args: any[]) {
+        // Handle new Date() without arguments
+        if (args.length === 0) {
+          super('2024-08-12T14:50:42.124Z')
+        } else {
+          // Handle new Date(value), new Date(dateString), new Date(year, month, ...)
+          super(...args as [any])
+        }
+      }
+
+      static now() {
+        return new RealDate('2024-08-12T14:50:42.124Z').getTime()
+      }
+    }
+
+    global.Date = MockDate as unknown as typeof Date
+
+    try {
     const { isValid } = await mdoc.verify(agentContext, {
       trustedCertificates: [sprindFunkeX509TrustedCertificate],
-      now,
     })
     expect(isValid).toBeTruthy()
+    } finally {
+      global.Date = RealDate
+    }
   })
 })
