@@ -13,6 +13,7 @@ import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
+  OpenId4VciDeferredCredentialRequest,
   OpenId4VciTxCode,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
@@ -167,6 +168,20 @@ export interface OpenId4VciCreateCredentialResponseOptions {
   credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
 }
 
+export interface OpenId4VciCreateDeferredCredentialResponseOptions {
+  deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
+  authorization: OpenId4VciCredentialRequestAuthorization
+
+  /**
+   * You can optionally provide a deferred credential request to credential mapper that will be
+   * dynamically invoked to return credential data based on the credential request.
+   *
+   * If not provided, the `deferredCredentialRequestToCredentialMapper` from the agent config
+   * will be used.
+   */
+  deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
+}
+
 /**
  * Callback that is called when a verification session needs to be created to complete
  * authorization of credential issuance.
@@ -273,9 +288,43 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    */
   credentialConfigurationId: string
 }
+
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
-) => Promise<OpenId4VciSignCredentials> | OpenId4VciSignCredentials
+) =>
+  | Promise<OpenId4VciSignCredentials>
+  | OpenId4VciSignCredentials
+  | Promise<OpenId4VciDeferredCredentials>
+  | OpenId4VciDeferredCredentials
+
+export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
+  agentContext: AgentContext
+
+  /**
+   * Authorization associated with the credential request
+   * TODO: needed?
+   */
+  authorization: OpenId4VciCredentialRequestAuthorization
+
+  /**
+   * The issuance session associated with the credential request. You can extract the
+   * issuance metadata from this record if passed in the offer creation method.
+   */
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The deferred credential request received from the wallet
+   */
+  deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
+}
+
+export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
+  options: OpenId4VciDeferredCredentialRequestToCredentialMapperOptions
+) =>
+  | Promise<OpenId4VciSignCredentials>
+  | OpenId4VciSignCredentials
+  | Promise<OpenId4VciDeferredCredentials>
+  | OpenId4VciDeferredCredentials
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
@@ -298,6 +347,11 @@ export interface OpenId4VciSignW3cCredentials {
     verificationMethod: string
     credential: W3cCredential
   }>
+}
+
+export type OpenId4VciDeferredCredentials = {
+  transactionId: string
+  interval: number
 }
 
 export interface OpenId4VciBatchCredentialIssuanceOptions {
@@ -333,7 +387,7 @@ export type OpenId4VciCreateIssuerOptions = {
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**
-   * Indicate support for batch issuane of credentials
+   * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }

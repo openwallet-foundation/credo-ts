@@ -1,6 +1,7 @@
 import type { Router } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
+  OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -97,6 +98,14 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
 
   /**
+   * A function mapping a deferred credential request to the credential to be issued.
+   *
+   * When multiple credentials are returned it is recommended to use different or approximate issuance and expiration
+   * times to prevent correlation based on the specific time
+   */
+  deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
+
+  /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
    * of a credential issuance session. Once the verification session has been completed the user can
    * retrieve an authorization code and access token and retrieve the credential(s).
@@ -128,6 +137,11 @@ export interface OpenId4VcIssuerModuleConfigOptions {
      * @default /credential
      */
     credential?: string
+
+    /**
+     * @default /deferred-credential
+     */
+    deferredCredential?: string
 
     /**
      * @default /token
@@ -171,6 +185,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get credentialRequestToCredentialMapper() {
     return this.options.credentialRequestToCredentialMapper
+  }
+
+  /**
+   * A function mapping a credential request to the credential to be issued.
+   */
+  public get deferredCredentialRequestToCredentialMapper() {
+    return this.options.deferredCredentialRequestToCredentialMapper
   }
 
   /**
@@ -274,6 +295,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get credentialEndpointPath(): string {
     return this.options.endpoints?.credential ?? '/credential'
+  }
+
+  /**
+   * @default /deferred-credential
+   */
+  public get deferredCredentialEndpointPath(): string {
+    return this.options.endpoints?.deferredCredential ?? '/deferred-credential'
   }
 
   /**
