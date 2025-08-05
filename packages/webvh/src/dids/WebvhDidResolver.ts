@@ -79,8 +79,8 @@ export class WebvhDidResolver implements DidResolver {
       
       agentContext.config.logger.debug(`Fetching resource from: ${httpsUrl}`)
       
-      // Fetch the resource using native fetch
-      const response = await fetch(httpsUrl)
+      // Fetch the resource using agent dependencies fetch
+      const response = await agentContext.config.agentDependencies.fetch(httpsUrl)
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
