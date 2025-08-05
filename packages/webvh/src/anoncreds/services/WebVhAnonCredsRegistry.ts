@@ -1,20 +1,29 @@
 import type {
   AnonCredsRegistry,
+  AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationRegistryDefinitionValue,
   GetCredentialDefinitionReturn,
-  GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
   GetSchemaReturn,
-  RegisterSchemaReturn,
   RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, DataIntegrityProof, VerificationMethod } from '@credo-ts/core'
 
-import { CredoError, JsonTransformer, DidsApi, TypedArrayEncoder, MultiBaseEncoder, MultiHashEncoder } from '@credo-ts/core'
+import {
+  CredoError,
+  DidsApi,
+  JsonTransformer,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidResolver, WebvhDidCrypto } from '../../dids'
+import { WebvhDidCrypto, WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -113,7 +122,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       const contentString = canonicalize(contentObject)
-      const actualHashMultibase = MultiBaseEncoder.encode(MultiHashEncoder.encode(TypedArrayEncoder.fromString(contentString), 'sha-256'), 'base58btc')
+      const actualHashMultibase = MultiBaseEncoder.encode(
+        MultiHashEncoder.encode(TypedArrayEncoder.fromString(contentString), 'sha-256'),
+        'base58btc'
+      )
 
       if (actualHashMultibase !== expectedMultibaseHash) {
         throw new CredoError(
@@ -144,7 +156,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       return { resourceObject, resolutionResult }
     } catch (error) {
-      agentContext.config.logger.error(`Error in did:webvh _resolveAndValidateAttestedResource:`, error)
+      agentContext.config.logger.error('Error in did:webvh _resolveAndValidateAttestedResource:', error)
       throw error
     }
   }
@@ -290,12 +302,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       return {
         revocationRegistryDefinition: {
           issuerId: revRegDefContent.issuerId,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          revocDefType: revRegDefContent.revocDefType as any, // TODO: Map revocDefType string to AnonCreds type
+          revocDefType: revRegDefContent.revocDefType as AnonCredsRevocationRegistryDefinition['revocDefType'], // TODO: Map revocDefType string to AnonCreds type
           credDefId: revRegDefContent.credDefId,
           tag: revRegDefContent.tag,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: revRegDefContent.value as any, // TODO: Map value structure to AnonCreds type
+          value: revRegDefContent.value as AnonCredsRevocationRegistryDefinitionValue, // TODO: Map value structure to AnonCreds type
         },
         revocationRegistryDefinitionId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
@@ -405,7 +415,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   // Proof validation logic for DataIntegrityProof with eddsa-jcs-2022
-  public async verifyProof(agentContext: AgentContext, proof: any, content: any): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, proof: DataIntegrityProof, content: unknown): Promise<boolean> {
     try {
       // Type check the proof object
       if (!proof || typeof proof !== 'object') {
@@ -437,18 +447,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // Resolve the verification method to get the public key
       const didsApi = agentContext.dependencyManager.resolve(DidsApi)
       const didDocument = await didsApi.resolveDidDocument(proof.verificationMethod as string)
-      
+
       if (!didDocument) {
         agentContext.config.logger.error('Could not resolve verification method did:webvh DID document')
         return false
       }
 
       // Extract the verification method from the DID document
-      let verificationMethod
+      let verificationMethod: VerificationMethod | undefined
       if ((proof.verificationMethod as string).includes('#')) {
         const fragment = (proof.verificationMethod as string).split('#')[1]
-        verificationMethod = didDocument.verificationMethod?.find(
-          (vm: any) => vm.id.endsWith(`#${fragment}`)
+        verificationMethod = didDocument.verificationMethod?.find((vm: VerificationMethod) =>
+          vm.id.endsWith(`#${fragment}`)
         )
       }
 
@@ -463,7 +473,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
         publicKeyBytes = publicKeyBuffer.data
       } else {
-        agentContext.config.logger.error('did:webvh resource verification method does not contain a supported public key format')
+        agentContext.config.logger.error(
+          'did:webvh resource verification method does not contain a supported public key format'
+        )
         return false
       }
 
@@ -480,8 +492,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           cryptosuite: proof.cryptosuite,
           verificationMethod: proof.verificationMethod,
           proofPurpose: proof.proofPurpose || 'assertionMethod',
-          created: proof.created || new Date().toISOString()
-        }
+          created: proof.created || new Date().toISOString(),
+        },
       }
 
       // Canonicalize the document using JCS
@@ -501,11 +513,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       agentContext.config.logger.debug('DataIntegrityProof verification successful')
       return true
-
     } catch (error) {
       agentContext.config.logger.error('Error during proof validation of did:webvh resource', {
         error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
       })
       return false
     }

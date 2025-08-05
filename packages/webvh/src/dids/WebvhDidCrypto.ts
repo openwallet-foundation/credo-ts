@@ -22,7 +22,7 @@ export class WebvhDidCrypto implements Verifier {
         key: { publicJwk: publicJwk.toJson() },
         algorithm: 'EdDSA',
         signature: signature,
-        data: message
+        data: message,
       })
 
       return verificationResult.verified

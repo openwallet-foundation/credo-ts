@@ -1,15 +1,15 @@
-import { Type, Expose, Transform } from 'class-transformer'
+import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
+import { Expose, Transform, Type } from 'class-transformer'
 import {
+  ArrayMinSize,
+  IsArray,
+  IsNumber,
+  IsObject,
   IsOptional,
   IsString,
-  IsArray,
-  ArrayMinSize,
-  ValidateNested,
-  IsObject,
   Validate,
-  IsNumber,
+  ValidateNested,
 } from 'class-validator'
-import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
 
 export class WebVhSchemaContent {
   @IsArray()
@@ -103,9 +103,11 @@ export class WebVhResource {
   @Transform(({ value }) => {
     if (value && 'attrNames' in value) {
       return JsonTransformer.fromJSON(value, WebVhSchemaContent)
-    } else if (value && 'schemaId' in value) {
+    }
+    if (value && 'schemaId' in value) {
       return JsonTransformer.fromJSON(value, WebVhCredDefContent)
-    } else if (value && 'revocDefType' in value) {
+    }
+    if (value && 'revocDefType' in value) {
       return JsonTransformer.fromJSON(value, WebVhRevRegDefContent)
     }
     return value

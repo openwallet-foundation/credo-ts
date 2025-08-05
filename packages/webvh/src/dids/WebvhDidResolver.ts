@@ -33,78 +33,78 @@ export class WebvhDidResolver implements DidResolver {
     const slashIndex = id.indexOf('/')
     let didPart = id
     let urlPath = ''
-    
+
     if (slashIndex !== -1) {
       didPart = id.substring(0, slashIndex)
       urlPath = id.substring(slashIndex)
     }
-    
-    const parts = didPart.split(':');
+
+    const parts = didPart.split(':')
     if (!didPart.startsWith('did:webvh:') || parts.length < 4) {
-      throw new Error(`${id} is not a valid did:webvh identifier`);
+      throw new Error(`${id} is not a valid did:webvh identifier`)
     }
-  
+
     // Extract domain and path parts from the DID (after did:webvh:CID)
     const domainAndPathParts = parts.slice(3)
-    const protocol = domainAndPathParts.join(':').includes('localhost') ? 'http' : 'https';
-  
+    const protocol = domainAndPathParts.join(':').includes('localhost') ? 'http' : 'https'
+
     // First part is domain, rest are path components
     const domain = domainAndPathParts[0]
     const pathComponents = domainAndPathParts.slice(1)
-    
+
     // Check if domain has port
     const [host, port] = domain.split(':')
-    const normalizedHost = port ? `${host}:${port}` : host;
-    
+    const normalizedHost = port ? `${host}:${port}` : host
+
     // Build the base URL
     let baseUrl = `${protocol}://${normalizedHost}`
     if (pathComponents.length > 0) {
-      baseUrl += '/' + pathComponents.join('/')
+      baseUrl += `/${pathComponents.join('/')}`
     }
-    
+
     // Append the URL path if present
     if (urlPath) {
       baseUrl += urlPath
     }
-  
-    return baseUrl;
+
+    return baseUrl
   }
 
   public async resolveResource(agentContext: AgentContext, resourceUrl: string) {
     try {
       agentContext.config.logger.debug(`Attempting to resolve resource: ${resourceUrl}`)
-      
+
       // Use the getBaseUrl method to parse the did:webvh resource URL
       const httpsUrl = this.getBaseUrl(resourceUrl)
-      
+
       agentContext.config.logger.debug(`Fetching resource from: ${httpsUrl}`)
-      
+
       // Fetch the resource using agent dependencies fetch
       const response = await agentContext.config.agentDependencies.fetch(httpsUrl)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const contentType = response.headers.get('content-type') || 'application/json'
       let content: Record<string, unknown> | unknown[] | string
-      
+
       if (contentType.includes('application/json')) {
-        content = await response.json() as Record<string, unknown>
+        content = (await response.json()) as Record<string, unknown>
       } else {
         content = await response.text()
       }
-      
+
       agentContext.config.logger.debug(`Successfully fetched resource, content type: ${contentType}`)
-      
+
       return {
         content: content,
         contentMetadata: {
           contentType: contentType,
-          retrieved: new Date().toISOString()
+          retrieved: new Date().toISOString(),
         },
         dereferencingMetadata: {
-          contentType: contentType
+          contentType: contentType,
         },
       }
     } catch (error) {

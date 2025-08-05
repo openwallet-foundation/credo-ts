@@ -1,5 +1,13 @@
-import { DidsApi, JsonTransformer, Kms, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { createHash } from 'crypto'
+import {
+  AgentContext,
+  DidsApi,
+  JsonTransformer,
+  Kms,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -7,7 +15,7 @@ import { WebvhDidResolver } from '../../../dids'
 import { WebVhResource } from '../../utils/transform'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
-import { mockSchemaResource, mockCredDefResource, mockRevRegDefResource } from './mock-resources'
+import { mockCredDefResource, mockRevRegDefResource, mockSchemaResource } from './mock-resources'
 
 // Mock the WebvhDidResolver
 const mockResolveResource = jest.fn()
@@ -32,7 +40,7 @@ const mockKeyManagementApi = {
 }
 
 describe('WebVhAnonCredsRegistry', () => {
-  let agentContext: any
+  let agentContext: AgentContext
   let registry: WebVhAnonCredsRegistry
 
   beforeEach(() => {
@@ -50,10 +58,10 @@ describe('WebVhAnonCredsRegistry', () => {
         [WebvhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
-    
+
     // Default mock for verifyProof to return true (will be overridden in verifyProof tests)
     jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
-    
+
     registry = new WebVhAnonCredsRegistry()
   })
 
@@ -364,7 +372,7 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(verifyProofSpy).toHaveBeenCalled()
       expect(result.resolutionMetadata.error).toBeUndefined()
       expect(result.revocationRegistryDefinition).toBeDefined()
-        expect(result.revocationRegistryDefinition?.issuerId).toBe(mockRevRegDefResource.content.issuerId)
+      expect(result.revocationRegistryDefinition?.issuerId).toBe(mockRevRegDefResource.content.issuerId)
       expect(result.revocationRegistryDefinition?.revocDefType).toBe(mockRevRegDefResource.content.revocDefType)
       expect(result.revocationRegistryDefinition?.credDefId).toBe(mockRevRegDefResource.content.credDefId)
       expect(result.revocationRegistryDefinition?.tag).toBe(mockRevRegDefResource.content.tag)
@@ -426,20 +434,20 @@ describe('WebVhAnonCredsRegistry', () => {
           id: 'did:webvh:example.com#key-1',
           type: 'Ed25519VerificationKey2020',
           controller: 'did:webvh:example.com',
-          publicKeyMultibase: 'z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK'
-        }
-      ]
+          publicKeyMultibase: 'z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
+        },
+      ],
     }
 
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
       jest.restoreAllMocks()
-      
+
       // Re-setup the dependency manager mocks
       const originalResolve = agentContext.dependencyManager.resolve.bind(agentContext.dependencyManager)
       agentContext.dependencyManager.resolve = jest.fn().mockImplementation((token) => {
         const tokenString = token?.name || token?.toString?.() || String(token)
-        
+
         if (tokenString.includes('DidsApi')) {
           return mockDidsApi
         }
@@ -451,7 +459,7 @@ describe('WebVhAnonCredsRegistry', () => {
         }
         return originalResolve(token)
       })
-      
+
       // Mock successful DID resolution
       mockResolveDidDocument.mockResolvedValue(mockDidDocument)
 
@@ -466,26 +474,26 @@ describe('WebVhAnonCredsRegistry', () => {
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
         proofPurpose: 'assertionMethod',
-        created: '2023-01-01T00:00:00Z'
+        created: '2023-01-01T00:00:00Z',
       }
-      
+
       const content = { test: 'data', someField: 'value' }
 
       const result = await registry.verifyProof(agentContext, validProof, content)
-      
+
       expect(result).toBe(true)
       expect(mockResolveDidDocument).toHaveBeenCalledWith('did:webvh:example.com#key-1')
       expect(mockVerify).toHaveBeenCalledWith({
-        key: { 
+        key: {
           publicJwk: expect.objectContaining({
             kty: 'OKP',
             crv: 'Ed25519',
-            x: expect.any(String)
-          })
+            x: expect.any(String),
+          }),
         },
         algorithm: 'EdDSA',
         signature: expect.any(Uint8Array),
-        data: expect.any(Uint8Array)
+        data: expect.any(Uint8Array),
       })
     })
 
@@ -515,9 +523,9 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'WrongProofType',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'validSignature'
+        proofValue: 'validSignature',
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -529,9 +537,9 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'wrong-cryptosuite',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'validSignature'
+        proofValue: 'validSignature',
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -542,9 +550,9 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
-        proofValue: 'validSignature'
+        proofValue: 'validSignature',
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -556,9 +564,9 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 123, // Should be string
-        proofValue: 'validSignature'
+        proofValue: 'validSignature',
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -569,9 +577,9 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1'
+        verificationMethod: 'did:webvh:example.com#key-1',
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -583,9 +591,9 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 123 // Should be string
+        proofValue: 123, // Should be string
       }
-      
+
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -597,14 +605,14 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
+        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
-      
+
       // Mock DID resolution failure
       mockResolveDidDocument.mockResolvedValue({
         didDocument: null,
         didResolutionMetadata: { error: 'notFound' },
-        didDocumentMetadata: {}
+        didDocumentMetadata: {},
       })
 
       const result = await registry.verifyProof(agentContext, validProof, {})
@@ -618,7 +626,7 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#nonexistent-key',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
+        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
 
       const result = await registry.verifyProof(agentContext, validProof, {})
@@ -632,9 +640,9 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
+        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
-      
+
       // Mock signature verification failure
       mockVerify.mockResolvedValue({ verified: false })
 
@@ -649,14 +657,14 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
+        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
         // No proofPurpose or created fields
       }
-      
+
       const content = { test: 'data' }
 
       const result = await registry.verifyProof(agentContext, minimalProof, content)
-      
+
       expect(result).toBe(true)
       expect(mockResolveDidDocument).toHaveBeenCalled()
       expect(mockVerify).toHaveBeenCalled()

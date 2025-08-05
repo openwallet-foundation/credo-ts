@@ -62,7 +62,7 @@ export {
   equalsIgnoreOrder,
   equalsWithOrder,
   DateTransformer,
-  IsStringOrStringArray
+  IsStringOrStringArray,
 } from './utils'
 export * from './logger'
 export * from './error'

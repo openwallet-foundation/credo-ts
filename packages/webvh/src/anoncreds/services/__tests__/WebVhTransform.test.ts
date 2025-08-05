@@ -2,7 +2,7 @@ import { JsonTransformer } from '@credo-ts/core'
 
 import { WebVhResource } from '../../utils/transform'
 
-import { mockSchemaResource, mockCredDefResource } from './mock-resources'
+import { mockCredDefResource, mockSchemaResource } from './mock-resources'
 
 describe('WebVhTransform', () => {
   it('should correctly transform a schema resource', () => {

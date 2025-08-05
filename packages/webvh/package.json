@@ -4,9 +4,7 @@
   "description": "Credo WebVH DID method implementation",
   "main": "build/index.js",
   "types": "build/index.d.ts",
-  "files": [
-    "build"
-  ],
+  "files": ["build"],
   "publishConfig": {
     "main": "build/index",
     "types": "build/index",
