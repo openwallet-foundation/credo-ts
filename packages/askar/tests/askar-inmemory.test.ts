@@ -26,18 +26,16 @@ const bobInMemoryAgentOptions = getAskarSqliteAgentOptions(
 )
 
 describe('Askar In Memory agents', () => {
-  let aliceAgent: Agent
-  let bobAgent: Agent
+  let aliceAgent: Agent<(typeof aliceInMemoryAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof bobInMemoryAgentOptions)['modules']>
 
   afterAll(async () => {
     if (bobAgent) {
       await bobAgent.shutdown()
-      await bobAgent.wallet.delete()
     }
 
     if (aliceAgent) {
       await aliceAgent.shutdown()
-      await aliceAgent.wallet.delete()
     }
   })
 

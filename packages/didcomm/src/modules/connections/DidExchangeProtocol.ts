@@ -1,4 +1,4 @@
-import type { AgentContext, ResolvedDidCommService } from '@credo-ts/core'
+import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import type { Routing } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
@@ -13,20 +13,15 @@ import {
   InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  JwaSignatureAlgorithm,
   JwsService,
-  Key,
-  KeyType,
+  Kms,
   Logger,
   PeerDidNumAlgo,
   TypedArrayEncoder,
   base64ToBase64URL,
-  didKeyToInstanceOfKey,
-  didKeyToVerkey,
   getAlternativeDidsForPeerDid,
-  getJwkFromKey,
-  getKeyFromVerificationMethod,
   getNumAlgoFromPeerDid,
+  getPublicJwkFromVerificationMethod,
   inject,
   injectable,
   isDid,
@@ -42,13 +37,18 @@ import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
+import { DidCommDocumentService } from '../../services'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
 import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
 import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService } from './services'
-import { createPeerDidFromServices, getDidDocumentForCreatedDid, routingToServices } from './services/helpers'
+import {
+  createPeerDidFromServices,
+  getResolvedDidcommServiceWithSigningKeyId,
+  routingToServices,
+} from './services/helpers'
 
 interface DidExchangeRequestParams {
   label?: string
@@ -63,6 +63,7 @@ interface DidExchangeRequestParams {
 @injectable()
 export class DidExchangeProtocol {
   private connectionService: ConnectionService
+  private didcommDocumentService: DidCommDocumentService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
@@ -71,11 +72,13 @@ export class DidExchangeProtocol {
     connectionService: ConnectionService,
     didRepository: DidRepository,
     jwsService: JwsService,
+    didcommDocumentService: DidCommDocumentService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.didRepository = didRepository
     this.jwsService = jwsService
+    this.didcommDocumentService = didcommDocumentService
     this.logger = logger
   }
 
@@ -99,24 +102,29 @@ export class DidExchangeProtocol {
     // Create message
     const label = params.label ?? agentContext.config.label
 
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let didDocument
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-    let mediatorId
+    let didDocument: DidDocument
+    let keys: DidDocumentKey[] | undefined
+    let mediatorId: string | undefined
 
     // If our did is specified, make sure we have all key material for it
     if (did) {
-      didDocument = await getDidDocumentForCreatedDid(agentContext, did)
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(did)
+      didDocument = resolved.didDocument
+      keys = resolved.keys
       mediatorId = (await getMediationRecordForDidDocument(agentContext, didDocument))?.id
-      // Otherwise, create a did:peer based on the provided routing
-    } else {
+    }
+    // Otherwise, create a did:peer based on the provided routing
+    else {
       if (!routing) throw new CredoError(`'routing' must be defined if 'ourDid' is not specified`)
 
-      didDocument = await createPeerDidFromServices(
+      const resolved = await createPeerDidFromServices(
         agentContext,
         routingToServices(routing),
         config.peerNumAlgoForDidExchangeRequests
       )
+      didDocument = resolved.didDocument
+      keys = resolved.keys
       mediatorId = routing.mediatorId
     }
 
@@ -124,13 +132,22 @@ export class DidExchangeProtocol {
 
     const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
+    const signingKeys = didDocument
+      .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      .map(({ publicJwk, verificationMethod }) => {
+        // Bind the kmsKeyIds
+        const kmsKeyId = keys?.find(({ didDocumentRelativeKeyId }) =>
+          verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId
+
+        publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+
+        return publicJwk
+      })
+
     // Create sign attachment containing didDoc
     if (isValidPeerDid(didDocument.id) && getNumAlgoFromPeerDid(didDocument.id) === PeerDidNumAlgo.GenesisDoc) {
-      const didDocAttach = await this.createSignedAttachment(
-        agentContext,
-        didDocument.toJSON(),
-        didDocument.recipientKeys.map((key) => key.publicKeyBase58)
-      )
+      const didDocAttach = await this.createSignedAttachment(agentContext, didDocument.toJSON(), signingKeys)
       message.didDoc = didDocAttach
     }
 
@@ -263,17 +280,17 @@ export class DidExchangeProtocol {
       throw new CredoError('Missing theirDid on connection record.')
     }
 
+    // Extract keys from the out of band record metadata
+    const inlineResolvedServices = outOfBandRecord.outOfBandInvitation
+      .getInlineServices()
+      .map((service) => getResolvedDidcommServiceWithSigningKeyId(service, outOfBandRecord.invitationInlineServiceKeys))
+
     let services: ResolvedDidCommService[] = []
+
     if (routing) {
       services = routingToServices(routing)
-    } else if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
-      const inlineServices = outOfBandRecord.outOfBandInvitation.getInlineServices()
-      services = inlineServices.map((service) => ({
-        id: service.id,
-        serviceEndpoint: service.serviceEndpoint,
-        recipientKeys: service.recipientKeys.map(didKeyToInstanceOfKey),
-        routingKeys: service.routingKeys?.map(didKeyToInstanceOfKey) ?? [],
-      }))
+    } else if (inlineResolvedServices.length > 0) {
+      services = inlineResolvedServices
     } else {
       // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method
       throw new CredoError(
@@ -286,37 +303,35 @@ export class DidExchangeProtocol {
       ? getNumAlgoFromPeerDid(theirDid)
       : config.peerNumAlgoForDidExchangeRequests
 
-    const didDocument = await createPeerDidFromServices(agentContext, services, numAlgo)
+    const { didDocument } = await createPeerDidFromServices(agentContext, services, numAlgo)
     const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
 
     // DID Rotate attachment should be signed with invitation keys
-    const invitationRecipientKeys = outOfBandRecord.outOfBandInvitation
-      .getInlineServices()
-      .map((s) => s.recipientKeys)
-      .reduce((acc, curr) => acc.concat(curr), [])
+    const invitationRecipientKeys = inlineResolvedServices.flatMap((s) => s.recipientKeys)
 
     // Consider also pure-DID services, used when DID Exchange is started with an implicit invitation or a public DID
     for (const did of outOfBandRecord.outOfBandInvitation.getDidServices()) {
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(did).did)
       invitationRecipientKeys.push(
-        ...(await getDidDocumentForCreatedDid(agentContext, parseDid(did).did)).recipientKeys.map(
-          (key) => key.publicKeyBase58
-        )
+        ...resolved.didDocument
+          .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+          .map(({ publicJwk, verificationMethod }) => {
+            const kmsKeyId = resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
+              verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+            )?.kmsKeyId
+
+            publicJwk.keyId = kmsKeyId ?? publicJwk.legacyKeyId
+            return publicJwk
+          })
       )
     }
 
     if (numAlgo === PeerDidNumAlgo.GenesisDoc) {
-      message.didDoc = await this.createSignedAttachment(
-        agentContext,
-        didDocument.toJSON(),
-        Array.from(new Set(invitationRecipientKeys.map(didKeyToVerkey)))
-      )
+      message.didDoc = await this.createSignedAttachment(agentContext, didDocument.toJSON(), invitationRecipientKeys)
     } else {
       // We assume any other case is a resolvable did (e.g. did:peer:2 or did:peer:4)
-      message.didRotate = await this.createSignedAttachment(
-        agentContext,
-        didDocument.id,
-        Array.from(new Set(invitationRecipientKeys.map(didKeyToVerkey)))
-      )
+      message.didRotate = await this.createSignedAttachment(agentContext, didDocument.id, invitationRecipientKeys)
     }
 
     connectionRecord.did = didDocument.id
@@ -355,9 +370,13 @@ export class DidExchangeProtocol {
     const didDocument = await this.resolveDidDocument(
       agentContext,
       message,
-      outOfBandRecord
-        .getTags()
-        .recipientKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint).publicKeyBase58)
+      outOfBandRecord.getTags().recipientKeyFingerprints.map((fingerprint) => {
+        const publicJwk = Kms.PublicJwk.fromFingerprint(fingerprint)
+        if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+          throw new CredoError('Expected fingerprint to be of type Ed25519')
+        }
+        return publicJwk
+      })
     )
 
     if (isValidPeerDid(didDocument.id)) {
@@ -466,9 +485,9 @@ export class DidExchangeProtocol {
   private async createSignedAttachment(
     agentContext: AgentContext,
     data: string | Record<string, unknown>,
-    verkeys: string[]
+    signingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   ) {
-    this.logger.debug(`Creating signed attachment with keys ${JSON.stringify(verkeys)}`)
+    this.logger.debug('Creating signed attachment')
     const signedAttach = new Attachment({
       mimeType: typeof data === 'string' ? undefined : 'application/json',
       data: new AttachmentData({
@@ -478,20 +497,19 @@ export class DidExchangeProtocol {
     })
 
     await Promise.all(
-      verkeys.map(async (verkey) => {
-        const key = Key.fromPublicKeyBase58(verkey, KeyType.Ed25519)
-        const kid = new DidKey(key).did
+      signingKeys.map(async (signingKey) => {
+        const kid = new DidKey(signingKey).did
         const payload = typeof data === 'string' ? TypedArrayEncoder.fromString(data) : JsonEncoder.toBuffer(data)
 
         const jws = await this.jwsService.createJws(agentContext, {
           payload,
-          key,
+          keyId: signingKey.keyId,
           header: {
             kid,
           },
           protectedHeaderOptions: {
-            alg: JwaSignatureAlgorithm.EdDSA,
-            jwk: getJwkFromKey(key),
+            alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+            jwk: signingKey,
           },
         })
         signedAttach.addJws(jws)
@@ -513,12 +531,12 @@ export class DidExchangeProtocol {
   private async resolveDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58: string[] = []
+    invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ) {
     // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
     return isDid(message.did, 'peer') && getNumAlgoFromPeerDid(message.did) === PeerDidNumAlgo.GenesisDoc
-      ? this.extractAttachedDidDocument(agentContext, message, invitationKeysBase58)
-      : this.extractResolvableDidDocument(agentContext, message, invitationKeysBase58)
+      ? this.extractAttachedDidDocument(agentContext, message, invitationKeys)
+      : this.extractResolvableDidDocument(agentContext, message, invitationKeys)
   }
 
   /**
@@ -528,7 +546,7 @@ export class DidExchangeProtocol {
   private async extractResolvableDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58?: string[]
+    invitationKeys?: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   ) {
     // Validate did-rotate attachment in case of DID Exchange response
     if (message instanceof DidExchangeResponseMessage) {
@@ -562,26 +580,41 @@ export class DidExchangeProtocol {
         )
       }
 
-      const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await this.jwsService.verifyJws(agentContext, {
         jws: {
           ...jws,
           payload: base64UrlPayload,
         },
-        jwkResolver: ({ jws: { header } }) => {
+        allowedJwsSignerMethods: ['did'],
+        resolveJwsSigner: ({ jws: { header } }) => {
           if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
             throw new CredoError('JWS header kid must be a did:key DID.')
           }
 
           const didKey = DidKey.fromDid(header.kid)
-          return getJwkFromKey(didKey.key)
+          return {
+            method: 'did',
+            didUrl: `${didKey.did}#${didKey.publicJwk.fingerprint}`,
+            jwk: didKey.publicJwk,
+          }
         },
       })
 
-      if (!isValid || !signerKeys.every((key) => invitationKeysBase58?.includes(key.publicKeyBase58))) {
+      const jwsSignerKeys = jwsSigners.map((signer) => signer.jwk)
+      if (!jwsSignerKeys.every((key) => key.is(Kms.Ed25519PublicJwk))) {
+        throw new DidExchangeProblemReportError('Expected DID Rotate signature to be signed with Ed25519 key.', {
+          problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
+        })
+      }
+
+      if (
+        !isValid ||
+        !jwsSignerKeys.every((key) => invitationKeys?.some((invitationKey) => invitationKey.equals(key)))
+      ) {
         throw new DidExchangeProblemReportError(
           `DID Rotate signature is invalid. isValid: ${isValid} signerKeys: ${JSON.stringify(
-            signerKeys
-          )} invitationKeys:${JSON.stringify(invitationKeysBase58)}`,
+            jwsSignerKeys.map((key) => key.fingerprint)
+          )} invitationKeys:${JSON.stringify(invitationKeys?.map((key) => key.fingerprint))}`,
           {
             problemCode: DidExchangeProblemReportReason.ResponseNotAccepted,
           }
@@ -614,7 +647,7 @@ export class DidExchangeProtocol {
   private async extractAttachedDidDocument(
     agentContext: AgentContext,
     message: DidExchangeRequestMessage | DidExchangeResponseMessage,
-    invitationKeysBase58: string[] = []
+    invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ): Promise<DidDocument> {
     if (!message.didDoc) {
       const problemCode =
@@ -641,37 +674,43 @@ export class DidExchangeProtocol {
     // JWS payload must be base64url encoded
     const base64UrlPayload = base64ToBase64URL(didDocumentAttachment.data.base64)
 
-    const { isValid, signerKeys } = await this.jwsService.verifyJws(agentContext, {
+    const { isValid, jwsSigners } = await this.jwsService.verifyJws(agentContext, {
       jws: {
         ...jws,
         payload: base64UrlPayload,
       },
-      jwkResolver: ({ jws: { header } }) => {
+      allowedJwsSignerMethods: ['did'],
+      resolveJwsSigner: ({ jws: { header } }) => {
         if (typeof header.kid !== 'string' || !isDid(header.kid, 'key')) {
           throw new CredoError('JWS header kid must be a did:key DID.')
         }
 
         const didKey = DidKey.fromDid(header.kid)
-        return getJwkFromKey(didKey.key)
+        return {
+          method: 'did',
+          didUrl: `${didKey.did}#${didKey.publicJwk.fingerprint}`,
+          jwk: didKey.publicJwk,
+        }
       },
     })
 
     const json = JsonEncoder.fromBase64(didDocumentAttachment.data.base64)
     const didDocument = JsonTransformer.fromJSON(json, DidDocument)
-    const didDocumentKeysBase58 = didDocument.authentication
+    const didDocumentKeys = didDocument.authentication
       ?.map((authentication) => {
         const verificationMethod =
           typeof authentication === 'string'
             ? didDocument.dereferenceVerificationMethod(authentication)
             : authentication
-        const key = getKeyFromVerificationMethod(verificationMethod)
-        return key.publicKeyBase58
+
+        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+        return publicJwk
       })
-      .concat(invitationKeysBase58)
+      .concat(invitationKeys)
 
-    this.logger.trace('JWS verification result', { isValid, signerKeys, didDocumentKeysBase58 })
+    this.logger.trace('JWS verification result', { isValid, jwsSigners })
 
-    if (!isValid || !signerKeys.every((key) => didDocumentKeysBase58?.includes(key.publicKeyBase58))) {
+    if (!isValid || !jwsSigners.every((jwsSigner) => didDocumentKeys?.some((key) => key.equals(jwsSigner.jwk)))) {
       const problemCode =
         message instanceof DidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted

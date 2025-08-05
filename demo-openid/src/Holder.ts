@@ -8,11 +8,13 @@ import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
+  JwkDidCreateOptions,
+  KeyDidCreateOptions,
+  Kms,
   Mdoc,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   X509Module,
-  getJwkFromKey,
 } from '@credo-ts/core'
 import {
   OpenId4VcHolderModule,
@@ -22,12 +24,13 @@ import {
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
+import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText } from './OutputClass'
 
-function getOpenIdHolderModules() {
+function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
   return {
-    askar: new AskarModule({ askar }),
+    askar: new AskarModule({ askar, store: askarStorageConfig }),
     openId4VcHolder: new OpenId4VcHolderModule(),
     x509: new X509Module({
       getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
@@ -53,7 +56,14 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
   }
 
   public constructor(port: number, name: string) {
-    super({ port, name, modules: getOpenIdHolderModules() })
+    super({
+      port,
+      name,
+      modules: getOpenIdHolderModules({
+        id: name,
+        key: name,
+      }),
+    })
   }
 
   public static async build(): Promise<Holder> {
@@ -138,32 +148,45 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
       resolvedCredentialOffer,
       clientId: options.clientId,
       credentialConfigurationIds: options.credentialsToRequest,
-      credentialBindingResolver: async ({ keyTypes, supportedDidMethods, supportsAllDidMethods }) => {
-        const key = await this.agent.wallet.createKey({
-          keyType: keyTypes[0],
+      credentialBindingResolver: async ({ supportedDidMethods, supportsAllDidMethods, proofTypes }) => {
+        const key = await this.agent.kms.createKeyForSignatureAlgorithm({
+          algorithm: proofTypes.jwt?.supportedSignatureAlgorithms[0] ?? 'EdDSA',
         })
+        const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
 
         if (supportsAllDidMethods || supportedDidMethods?.includes('did:key')) {
-          const didKey = new DidKey(key)
+          await this.agent.dids.create<KeyDidCreateOptions>({
+            method: 'key',
+            options: {
+              keyId: key.keyId,
+            },
+          })
+          const didKey = new DidKey(publicJwk)
 
           return {
             method: 'did',
-            didUrl: `${didKey.did}#${didKey.key.fingerprint}`,
+            didUrls: [`${didKey.did}#${didKey.publicJwk.fingerprint}`],
           }
         }
         if (supportedDidMethods?.includes('did:jwk')) {
-          const didJwk = DidJwk.fromJwk(getJwkFromKey(key))
+          const didJwk = DidJwk.fromPublicJwk(publicJwk)
+          await this.agent.dids.create<JwkDidCreateOptions>({
+            method: 'jwk',
+            options: {
+              keyId: key.keyId,
+            },
+          })
 
           return {
             method: 'did',
-            didUrl: `${didJwk.did}#0`,
+            didUrls: [`${didJwk.did}#0`],
           }
         }
 
         // We fall back on jwk binding
         return {
           method: 'jwk',
-          jwk: getJwkFromKey(key),
+          keys: [publicJwk],
         }
       },
       ...tokenResponse,

@@ -1,45 +1,78 @@
-import type { Key, Wallet, X509Certificate } from '@credo-ts/core'
+import type { X509Certificate } from '@credo-ts/core'
 import type { AgentContext } from '../../agent'
 
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { getAgentConfig, getAgentContext } from '../../../tests/helpers'
+import { getAgentConfig, getAgentContext, getAskarStoreConfig } from '../../../tests/helpers'
 import { DidKey } from '../../modules/dids'
 import { JsonEncoder, TypedArrayEncoder } from '../../utils'
 import { JwsService } from '../JwsService'
-import { KeyType } from '../KeyType'
-import { JwaSignatureAlgorithm } from '../jose/jwa'
-import { getJwkFromKey } from '../jose/jwk'
 
 import * as didJwsz6Mkf from './__fixtures__/didJwsz6Mkf'
 import * as didJwsz6Mkv from './__fixtures__/didJwsz6Mkv'
 import * as didJwszDnaey from './__fixtures__/didJwszDnaey'
 
-import { X509ModuleConfig, X509Service } from '@credo-ts/core'
+import { CredoError, X509ModuleConfig, X509Service } from '@credo-ts/core'
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { AskarKeyManagementService, AskarModuleConfig, transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { AskarStoreManager } from '../../../../askar/src/AskarStoreManager'
+import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
+import {
+  Ed25519PublicJwk,
+  KeyManagementApi,
+  KnownJwaSignatureAlgorithms,
+  P256PublicJwk,
+  PublicJwk,
+} from '../../modules/kms'
+
+// NOTE: we use askar for the KMS in this test since the signatures with the
+// node KMS are different, but it does correctly verify. It's probably something
+// to do with the encoding of the signature?
 
 describe('JwsService', () => {
-  let wallet: Wallet
   let agentContext: AgentContext
   let jwsService: JwsService
-  let didJwsz6MkfKey: Key
+  let didJwsz6MkfKey: PublicJwk<Ed25519PublicJwk>
   let didJwsz6MkfCertificate: X509Certificate
-  let didJwsz6MkvKey: Key
-  let didJwszDnaeyKey: Key
+  let didJwsz6MkvKey: PublicJwk<Ed25519PublicJwk>
+  let didJwsz6MkvCertificate: X509Certificate
+  let didJwszDnaeyKey: PublicJwk<P256PublicJwk>
 
   beforeAll(async () => {
-    const config = getAgentConfig('JwsService')
-    wallet = new InMemoryWallet()
     agentContext = getAgentContext({
-      wallet,
-      registerInstances: [[X509ModuleConfig, new X509ModuleConfig()]],
+      registerInstances: [
+        [X509ModuleConfig, new X509ModuleConfig()],
+
+        [
+          AskarStoreManager,
+          new AskarStoreManager(
+            new NodeFileSystem(),
+            new AskarModuleConfig({
+              askar,
+              store: getAskarStoreConfig('JwsService'),
+            })
+          ),
+        ],
+      ],
+      kmsBackends: [new AskarKeyManagementService()],
+      agentConfig: getAgentConfig('JwsService'),
     })
-    await wallet.createAndOpen(config.walletConfig)
+    const kms = agentContext.resolve(KeyManagementApi)
 
     jwsService = new JwsService()
 
-    didJwsz6MkfKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
-      keyType: KeyType.Ed25519,
-    })
+    didJwsz6MkfKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwsz6Mkf.SEED),
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
+
     didJwsz6MkfCertificate = await X509Service.createCertificate(agentContext, {
       authorityKey: didJwsz6MkfKey,
       issuer: {
@@ -47,19 +80,40 @@ describe('JwsService', () => {
       },
     })
 
-    didJwsz6MkvKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
-      keyType: KeyType.Ed25519,
+    didJwsz6MkvKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwsz6Mkv.SEED),
+            type: {
+              kty: 'OKP',
+              crv: 'Ed25519',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
+
+    didJwsz6MkvCertificate = await X509Service.createCertificate(agentContext, {
+      authorityKey: didJwsz6MkvKey,
+      issuer: {
+        countryName: 'NL',
+      },
     })
 
-    didJwszDnaeyKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString(didJwszDnaey.SEED),
-      keyType: KeyType.P256,
-    })
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
+    didJwszDnaeyKey = PublicJwk.fromPublicJwk(
+      (
+        await kms.importKey({
+          privateJwk: transformPrivateKeyToPrivateJwk({
+            privateKey: TypedArrayEncoder.fromString(didJwszDnaey.SEED),
+            type: {
+              kty: 'EC',
+              crv: 'P-256',
+            },
+          }).privateJwk,
+        })
+      ).publicJwk
+    )
   })
 
   it('creates a jws for the payload using Ed25519 key', async () => {
@@ -68,11 +122,11 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       header: { kid },
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey.toJson({ includeKid: false }),
       },
     })
 
@@ -85,11 +139,11 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJws(agentContext, {
       payload,
-      key: didJwszDnaeyKey,
+      keyId: didJwszDnaeyKey.keyId,
       header: { kid },
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.ES256,
-        jwk: getJwkFromKey(didJwszDnaeyKey),
+        alg: KnownJwaSignatureAlgorithms.ES256,
+        jwk: didJwszDnaeyKey.toJson({ includeKid: false }),
       },
     })
 
@@ -101,10 +155,10 @@ describe('JwsService', () => {
 
     const jws = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey.toJson({ includeKid: false }),
       },
     })
 
@@ -118,10 +172,10 @@ describe('JwsService', () => {
 
     const signed1 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
-        jwk: getJwkFromKey(didJwsz6MkfKey),
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        jwk: didJwsz6MkfKey,
         kid: 'something',
       },
     })
@@ -132,9 +186,9 @@ describe('JwsService', () => {
 
     const signed2 = await jwsService.createJwsCompact(agentContext, {
       payload,
-      key: didJwsz6MkfKey,
+      keyId: didJwsz6MkfKey.keyId,
       protectedHeaderOptions: {
-        alg: JwaSignatureAlgorithm.EdDSA,
+        alg: KnownJwaSignatureAlgorithms.EdDSA,
         x5c: [didJwsz6MkfCertificate.toString('base64url')],
         kid: 'something',
       },
@@ -147,76 +201,90 @@ describe('JwsService', () => {
     expect(isValid2).toEqual(true)
   })
 
-  it('throws error whens signing jws with more than one of x5c, jwk, kid (with did)', async () => {
-    const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
-          kid: 'did:example:123',
-        },
-      })
-    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          jwk: getJwkFromKey(didJwsz6MkfKey),
-          x5c: [didJwsz6MkfCertificate.toString('base64url')],
-        },
-      })
-    ).rejects.toThrow("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
-
-    await expect(
-      jwsService.createJwsCompact(agentContext, {
-        payload,
-        key: didJwsz6MkfKey,
-        protectedHeaderOptions: {
-          alg: JwaSignatureAlgorithm.EdDSA,
-          kid: 'did:example:123',
-          x5c: [didJwsz6MkfCertificate.toString('base64url')],
-        },
-      })
-    ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
-  })
-
   describe('verifyJws', () => {
     it('returns true if the jws signature matches the payload', async () => {
-      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
         jws: didJwsz6Mkf.JWS_JSON,
+        allowedJwsSignerMethods: ['did'],
+        jwsSigner: {
+          didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+          jwk: didJwsz6MkfKey,
+          method: 'did',
+        },
       })
 
       expect(isValid).toBe(true)
-      expect(signerKeys).toEqual([didJwsz6MkfKey])
+      expect(jwsSigners).toEqual([
+        {
+          method: 'did',
+          didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+          jwk: didJwsz6MkfKey,
+        },
+      ])
     })
 
     it('verifies a compact JWS', async () => {
-      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
         jws: `${didJwsz6Mkf.JWS_JSON.protected}.${didJwsz6Mkf.JWS_JSON.payload}.${didJwsz6Mkf.JWS_JSON.signature}`,
+        jwsSigner: {
+          didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+          jwk: didJwsz6MkfKey,
+          method: 'did',
+        },
       })
 
       expect(isValid).toBe(true)
-      expect(signerKeys).toEqual([didJwsz6MkfKey])
+      expect(jwsSigners).toEqual([
+        {
+          method: 'did',
+          didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+          jwk: didJwsz6MkfKey,
+        },
+      ])
     })
 
     it('returns all keys that signed the jws', async () => {
-      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
         jws: { signatures: [didJwsz6Mkf.JWS_JSON, didJwsz6Mkv.JWS_JSON], payload: didJwsz6Mkf.JWS_JSON.payload },
+        allowedJwsSignerMethods: ['did'],
+        resolveJwsSigner: ({ jws }) => {
+          if (jws.header.kid === `did:key:${didJwsz6MkfKey.fingerprint}`) {
+            return {
+              method: 'did',
+              jwk: didJwsz6MkfKey,
+              didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+            }
+          }
+
+          if (jws.header.kid === `did:key:${didJwsz6MkvKey.fingerprint}`) {
+            return {
+              method: 'did',
+              jwk: didJwsz6MkvKey,
+              didUrl: `did:key:${didJwsz6MkvKey.fingerprint}#${didJwsz6MkvKey.fingerprint}`,
+            }
+          }
+
+          throw new CredoError('unexpected request')
+        },
       })
 
       expect(isValid).toBe(true)
-      expect(signerKeys).toEqual([didJwsz6MkfKey, didJwsz6MkvKey])
+      expect(jwsSigners).toEqual([
+        {
+          method: 'did',
+          didUrl: `did:key:${didJwsz6MkfKey.fingerprint}#${didJwsz6MkfKey.fingerprint}`,
+          jwk: didJwsz6MkfKey,
+        },
+        {
+          method: 'did',
+          didUrl: `did:key:${didJwsz6MkvKey.fingerprint}#${didJwsz6MkvKey.fingerprint}`,
+          jwk: didJwsz6MkvKey,
+        },
+      ])
     })
 
     it('returns false if the jws signature does not match the payload', async () => {
-      const { isValid, signerKeys } = await jwsService.verifyJws(agentContext, {
+      const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
         jws: {
           ...didJwsz6Mkf.JWS_JSON,
           payload: JsonEncoder.toBase64URL({ ...didJwsz6Mkf, did: 'another_did' }),
@@ -224,7 +292,7 @@ describe('JwsService', () => {
       })
 
       expect(isValid).toBe(false)
-      expect(signerKeys).toMatchObject([])
+      expect(jwsSigners).toMatchObject([])
     })
 
     it('throws an error if the jws signatures array does not contain a JWS', async () => {
@@ -235,66 +303,78 @@ describe('JwsService', () => {
       ).rejects.toThrow('Unable to verify JWS, no signatures present in JWS.')
     })
 
-    it('throws error when verifying jws with more than one of x5c, jwk, kid (with did)', async () => {
+    it('throws an error if provided jws signer is of different method than allowed jws signer', async () => {
       await expect(
         jwsService.verifyJws(agentContext, {
-          jws: {
-            header: {},
-            protected: JsonEncoder.toBase64URL({
-              alg: JwaSignatureAlgorithm.EdDSA,
-              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
-              kid: 'did:example:123',
-            }),
-            payload: '',
-            signature: '',
+          allowedJwsSignerMethods: ['x5c'],
+          jws: { signatures: [], payload: '' },
+          jwsSigner: {
+            method: 'jwk',
+            jwk: didJwsz6MkfKey,
           },
         })
-      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      ).rejects.toThrow("jwsSigner provided with method 'jwk', but allowed jws signer methods are x5c.")
+    })
 
-      await expect(
-        jwsService.verifyJws(agentContext, {
-          jws: {
-            header: {},
-            protected: JsonEncoder.toBase64URL({
-              alg: JwaSignatureAlgorithm.EdDSA,
-              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
-              kid: 'did:example:123',
-            }),
-            payload: '',
-            signature: '',
-          },
-        })
-      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+    it('throws an error if provided jws signer does not match the signer of the jws', async () => {
+      const { isValid, jwsSigners } = await jwsService.verifyJws(agentContext, {
+        jws: didJwsz6Mkf.JWS_JSON,
+        jwsSigner: {
+          method: 'jwk',
+          jwk: didJwsz6MkvKey,
+        },
+      })
 
-      await expect(
-        jwsService.verifyJws(agentContext, {
-          jws: {
-            header: {},
-            protected: JsonEncoder.toBase64URL({
-              alg: JwaSignatureAlgorithm.EdDSA,
-              jwk: getJwkFromKey(didJwsz6MkfKey).toJson(),
-              x5c: [didJwsz6MkfCertificate.toString('base64url')],
-            }),
-            payload: '',
-            signature: '',
-          },
-        })
-      ).rejects.toThrow("Header must contain one of 'x5c', 'jwk' or 'kid' with a did value.")
+      expect(isValid).toBe(false)
+      expect(jwsSigners).toEqual([])
+    })
 
+    it('verifies x5c chain for provided jws signer', async () => {
+      const payload = JsonEncoder.toBuffer(didJwsz6Mkf.DATA_JSON)
+
+      const signed = await jwsService.createJwsCompact(agentContext, {
+        payload,
+        keyId: didJwsz6MkfKey.keyId,
+        protectedHeaderOptions: {
+          alg: KnownJwaSignatureAlgorithms.EdDSA,
+          x5c: [didJwsz6MkfCertificate.toString('base64url')],
+        },
+      })
+
+      const { isValid } = await jwsService.verifyJws(agentContext, {
+        jws: signed,
+        allowedJwsSignerMethods: ['x5c'],
+        trustedCertificates: [didJwsz6MkfCertificate.toString('base64url')],
+      })
+      expect(isValid).toEqual(true)
+
+      // Invalid cert
       await expect(
         jwsService.verifyJws(agentContext, {
-          jws: {
-            header: {},
-            protected: JsonEncoder.toBase64URL({
-              alg: JwaSignatureAlgorithm.EdDSA,
-              kid: 'did:example:123',
-              x5c: [didJwsz6MkfCertificate.toString('base64url')],
-            }),
-            payload: '',
-            signature: '',
+          jws: signed,
+          allowedJwsSignerMethods: ['x5c'],
+          jwsSigner: {
+            method: 'x5c',
+            x5c: ['invalid'],
+            jwk: didJwsz6MkfKey,
           },
+          trustedCertificates: [didJwsz6MkfCertificate.toString('base64url')],
         })
-      ).rejects.toThrow("When 'kid' is a did, 'jwk' and 'x5c' cannot be provided.")
+      ).rejects.toThrow('Error during parsing of x509 certificate')
+
+      // No trusted cert
+      await expect(
+        jwsService.verifyJws(agentContext, {
+          jws: signed,
+          allowedJwsSignerMethods: ['x5c'],
+          jwsSigner: {
+            method: 'x5c',
+            x5c: [didJwsz6MkfCertificate.toString('base64url')],
+            jwk: didJwsz6MkfKey,
+          },
+          trustedCertificates: [didJwsz6MkvCertificate.toString('base64url')],
+        })
+      ).rejects.toThrow('No trusted certificate was found while validating the X.509 chain')
     })
   })
 })

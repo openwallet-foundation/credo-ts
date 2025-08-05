@@ -23,6 +23,7 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  Kms,
   TypedArrayEncoder,
   injectable,
 } from '@credo-ts/core'
@@ -95,7 +96,7 @@ export class OpenId4VpHolderService {
     const dcqlQuery = this.dcqlService.validateDcqlQuery(dcql)
     const dcqlQueryResult = await this.dcqlService.getCredentialsForRequest(agentContext, dcqlQuery)
 
-    // for each transaction data entry, get all credentials that can be used to sign the respective transaction
+    // for each transaction data entry, get all credentials that can fore used to sign the respective transaction
     const matchedTransactionData = transactionData?.map((entry) => ({
       entry,
       matchedCredentialIds: entry.transactionData.credential_ids.filter(
@@ -134,6 +135,18 @@ export class OpenId4VpHolderService {
       throw new CredoError(`Client scheme '${client.scheme}' is not supported`)
     }
 
+    const returnValue = {
+      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      origin: options?.origin,
+      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
+        ? {
+            signer: verifiedAuthorizationRequest.jar?.signer,
+            payload: verifiedAuthorizationRequest.jar.jwt.payload,
+            header: verifiedAuthorizationRequest.jar.jwt.header,
+          }
+        : undefined,
+    }
+
     const pexResult = pex?.presentation_definition
       ? await this.handlePresentationExchangeRequest(agentContext, pex.presentation_definition, transactionData)
       : undefined
@@ -144,18 +157,10 @@ export class OpenId4VpHolderService {
     agentContext.config.logger.debug(`request '${authorizationRequest}'`)
 
     return {
-      authorizationRequestPayload: verifiedAuthorizationRequest.authorizationRequestPayload,
+      ...returnValue,
       transactionData: pexResult?.matchedTransactionData ?? dcqlResult?.matchedTransactionData,
       presentationExchange: pexResult?.pex,
       dcql: dcqlResult?.dcql,
-      origin: options?.origin,
-      signedAuthorizationRequest: verifiedAuthorizationRequest.jar
-        ? {
-            signer: verifiedAuthorizationRequest.jar?.signer,
-            payload: verifiedAuthorizationRequest.jar.jwt.payload,
-            header: verifiedAuthorizationRequest.jar.jwt.header,
-          }
-        : undefined,
     }
   }
 
@@ -295,12 +300,18 @@ export class OpenId4VpHolderService {
     agentContext: AgentContext,
     options: OpenId4VpAcceptAuthorizationRequestOptions
   ) {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const { authorizationRequestPayload, presentationExchange, dcql, transactionData } = options
 
     const openid4vpClient = this.getOpenid4vpClient(agentContext)
-    const authorizationResponseNonce = await agentContext.wallet.generateNonce()
+    const authorizationResponseNonce = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
     const { nonce } = authorizationRequestPayload
-    const parsedClientId = getOpenid4vpClientId({ authorizationRequestPayload, origin: options.origin })
+    const parsedClientId = getOpenid4vpClientId({
+      responseMode: authorizationRequestPayload.response_mode,
+      clientId: authorizationRequestPayload.client_id,
+      legacyClientIdScheme: authorizationRequestPayload.client_id_scheme,
+      origin: options.origin,
+    })
     // If client_id_scheme was used we need to use the legacy client id.
     const clientId = parsedClientId.legacyClientId ?? parsedClientId.clientId
 
@@ -401,6 +412,7 @@ export class OpenId4VpHolderService {
 
     const response = await openid4vpClient.createOpenid4vpAuthorizationResponse({
       authorizationRequestPayload,
+      origin: options.origin,
       authorizationResponsePayload: {
         vp_token: vpToken,
         presentation_submission: presentationSubmission,

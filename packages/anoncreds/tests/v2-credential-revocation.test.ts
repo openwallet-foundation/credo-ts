@@ -60,9 +60,7 @@ describe('IC v2 credential revocation', () => {
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with V2 credential proposal to Faber', async () => {

@@ -38,9 +38,7 @@ export class DcqlService {
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
     const w3cCredentialRecords =
-      formats.has('jwt_vc_json') || formats.has('jwt_vc_json-ld')
-        ? await w3cCredentialRepository.getAll(agentContext)
-        : []
+      formats.has('jwt_vc_json') || formats.has('ldp_vc') ? await w3cCredentialRepository.getAll(agentContext) : []
     allRecords.push(...w3cCredentialRecords)
 
     const mdocDoctypes = dcqlQuery.credentials
@@ -225,9 +223,16 @@ export class DcqlService {
     )
     const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
 
-    // TODO: better error handling
     if (!presentationResult.canBeSatisfied) {
-      throw new DcqlError('Invalid presentations. Presentations do not satisfy the credential query.')
+      throw new DcqlError('Presentations do not satisfy the DCQL query.', {
+        additionalMessages: Object.entries(presentationResult.invalid_matches ?? {}).map(
+          ([queryId, match]) =>
+            `query '${queryId}' does not match. ${
+              // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+              JSON.stringify((match as any).flattened?.nested, null, 2)
+            }`
+        ),
+      })
     }
 
     return presentationResult

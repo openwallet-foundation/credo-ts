@@ -6,19 +6,31 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { getInMemoryAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { MessageSendingError } from '../../../errors'
 import { BasicMessage } from '../messages'
 import { BasicMessageRecord } from '../repository'
 
-const faberConfig = getInMemoryAgentOptions('Faber Basic Messages', {
-  endpoints: ['rxjs:faber'],
-})
+const faberConfig = getAgentOptions(
+  'Faber Basic Messages',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
-const aliceConfig = getInMemoryAgentOptions('Alice Basic Messages', {
-  endpoints: ['rxjs:alice'],
-})
+const aliceConfig = getAgentOptions(
+  'Alice Basic Messages',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
 
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent
@@ -48,9 +60,7 @@ describe('Basic Messages E2E', () => {
 
   afterEach(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice and Faber exchange messages', async () => {

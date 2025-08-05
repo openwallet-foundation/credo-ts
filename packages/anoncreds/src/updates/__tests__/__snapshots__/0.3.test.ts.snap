@@ -2,24 +2,6 @@
 
 exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the credential exchange records for holders 1`] = `
 {
-  "1-4e4f-41d9-94c4-f49351b811f1": {
-    "id": "1-4e4f-41d9-94c4-f49351b811f1",
-    "tags": {
-      "isDefault": true,
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder - static",
-    },
-    "type": "AnonCredsLinkSecretRecord",
-    "value": {
-      "_tags": {
-        "isDefault": true,
-      },
-      "id": "1-4e4f-41d9-94c4-f49351b811f1",
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Holder - static",
-      "metadata": {},
-      "updatedAt": "2023-03-19T22:50:20.522Z",
-      "value": undefined,
-    },
-  },
   "2c250bf3-da8b-46ac-999d-509e4e6daafa": {
     "id": "2c250bf3-da8b-46ac-999d-509e4e6daafa",
     "tags": {
@@ -343,24 +325,6 @@ exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the
 
 exports[`UpdateAssistant | AnonCreds | v0.3.1 - v0.4 should correctly update the schema and credential definition, and create link secret records for issuers 1`] = `
 {
-  "1-4e4f-41d9-94c4-f49351b811f1": {
-    "id": "1-4e4f-41d9-94c4-f49351b811f1",
-    "tags": {
-      "isDefault": true,
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer - static",
-    },
-    "type": "AnonCredsLinkSecretRecord",
-    "value": {
-      "_tags": {
-        "isDefault": true,
-      },
-      "id": "1-4e4f-41d9-94c4-f49351b811f1",
-      "linkSecretId": "Wallet: 0.3 Update AnonCreds - Issuer - static",
-      "metadata": {},
-      "updatedAt": "2023-03-19T22:50:20.522Z",
-      "value": undefined,
-    },
-  },
   "1545e17d-fc88-4020-a1f7-e6dbcf1e5266": {
     "id": "1545e17d-fc88-4020-a1f7-e6dbcf1e5266",
     "tags": {

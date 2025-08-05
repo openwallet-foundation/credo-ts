@@ -12,26 +12,8 @@ import { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } fro
 export class X509Api {
   public constructor(
     private agentContext: AgentContext,
-    private x509ModuleConfig: X509ModuleConfig
+    public config: X509ModuleConfig
   ) {}
-
-  /**
-   * Adds a trusted certificate to the X509 Module Config.
-   *
-   * @param certificate
-   */
-  public addTrustedCertificate(certificate: string) {
-    this.x509ModuleConfig.addTrustedCertificate(certificate)
-  }
-
-  /**
-   * Overwrites the trusted certificates in the X509 Module Config.
-   *
-   * @param certificate
-   */
-  public async setTrustedCertificates(certificates?: [string, ...string[]]) {
-    this.x509ModuleConfig.setTrustedCertificates(certificates)
-  }
 
   /**
    * Creates a X.509 certificate.

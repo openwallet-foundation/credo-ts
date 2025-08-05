@@ -1,7 +1,6 @@
 import type {
   AgentContext,
   JsonObject,
-  JwaSignatureAlgorithm,
   JwsDetachedFormat,
   VerificationMethod,
   W3cCredentialRecord,
@@ -48,15 +47,16 @@ import {
   JsonTransformer,
   JwsService,
   JwtPayload,
+  Kms,
   SignatureSuiteRegistry,
+  TypedArrayEncoder,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
   W3cJsonLdVerifiableCredential,
   deepEquality,
-  getJwkClassFromKeyType,
-  getJwkFromKey,
-  getKeyFromVerificationMethod,
+  getPublicJwkFromVerificationMethod,
+  parseDid,
 } from '@credo-ts/core'
 import {
   Attachment,
@@ -235,27 +235,35 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       )
     }
 
-    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(kid)
-    const verificationMethod = didDocument.dereferenceKey(kid)
-    const key = getKeyFromVerificationMethod(verificationMethod)
-    const jwk = getJwkFromKey(key)
+    const parsedDid = parseDid(kid)
 
-    if (alg && !jwk.supportsSignatureAlgorithm(alg)) {
-      throw new CredoError(`key type '${jwk.keyType}', does not support the JWS signature alg '${alg}'`)
+    const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+    const { didDocument, keys } = await didsApi.resolveCreatedDidDocumentWithKeys(parsedDid.did)
+    const verificationMethod = didDocument.dereferenceKey(kid)
+
+    // TODO: we need an util 'getPublicJwkWithSigningKeyIdFromVerificationMethodId'
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    const keyId =
+      keys?.find(({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${parsedDid.fragment}`)?.kmsKeyId ??
+      publicJwk.legacyKeyId
+
+    if (alg && !publicJwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)) {
+      throw new CredoError(`jwk ${publicJwk.jwkTypehumanDescription}, does not support the JWS signature alg '${alg}'`)
     }
 
     const signingAlg = issuerSupportedAlgs.find(
-      (supportedAlg) => jwk.supportsSignatureAlgorithm(supportedAlg) && (alg === undefined || alg === supportedAlg)
+      (supportedAlg) =>
+        publicJwk.supportedSignatureAlgorithms.includes(supportedAlg as Kms.KnownJwaSignatureAlgorithm) &&
+        (alg === undefined || alg === supportedAlg)
     )
     if (!signingAlg) throw new CredoError('No signing algorithm supported by the issuer found')
 
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
     const jws = await jwsService.createJws(agentContext, {
-      key,
+      keyId,
       header: {},
       payload: new JwtPayload({ additionalClaims: { nonce: data.nonce } }),
-      protectedHeaderOptions: { alg: signingAlg, kid },
+      protectedHeaderOptions: { alg: signingAlg as Kms.KnownJwaSignatureAlgorithm, kid },
     })
 
     const signedAttach = new Attachment({
@@ -282,15 +290,22 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
         signature: jws.signature,
         payload: signedAttachment.data.base64,
       },
-      jwkResolver: async ({ protectedHeader: { kid } }) => {
+      allowedJwsSignerMethods: ['did'],
+      resolveJwsSigner: async ({ protectedHeader: { kid, alg } }) => {
         if (!kid || typeof kid !== 'string') throw new CredoError('Missing kid in protected header.')
         if (!kid.startsWith('did:')) throw new CredoError('Only did is supported for kid identifier')
 
         const didsApi = agentContext.dependencyManager.resolve(DidsApi)
         const didDocument = await didsApi.resolveDidDocument(kid)
         const verificationMethod = didDocument.dereferenceKey(kid)
-        const key = getKeyFromVerificationMethod(verificationMethod)
-        return getJwkFromKey(key)
+        const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+        return {
+          alg,
+          method: 'did',
+          didUrl: kid,
+          jwk: publicJwk,
+        }
       },
     })
 
@@ -915,10 +930,8 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext, // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
-  ) {
+  ): Promise<boolean> {
     throw new CredoError('Not implemented')
-    // biome-ignore lint/correctness/noUnreachable: <explanation>
-    return false
   }
 
   public async shouldAutoRespondToOffer(
@@ -1058,12 +1071,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
     let didCommSignedAttachmentBindingMethod: DidCommSignedAttachmentBindingMethod | undefined = undefined
     if (didCommSignedAttachmentBindingMethodOptions) {
+      const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+
       const { didMethodsSupported, algsSupported } = didCommSignedAttachmentBindingMethodOptions
       didCommSignedAttachmentBindingMethod = {
         didMethodsSupported:
           didMethodsSupported ?? agentContext.dependencyManager.resolve(DidsApi).supportedResolverMethods,
         algsSupported: algsSupported ?? this.getSupportedJwaSignatureAlgorithms(agentContext),
-        nonce: await agentContext.wallet.generateNonce(),
+        nonce: TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
       }
 
       if (didCommSignedAttachmentBindingMethod.algsSupported.length === 0) {
@@ -1149,25 +1164,19 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   }
 
   /**
-   * Returns the JWA Signature Algorithms that are supported by the wallet.
-   *
-   * This is an approximation based on the supported key types of the wallet.
-   * This is not 100% correct as a supporting a key type does not mean you support
-   * all the algorithms for that key type. However, this needs refactoring of the wallet
-   * that is planned for the 0.5.0 release.
+   * Returns the JWA Signature Algorithms that are supported by the agent.
    */
-  private getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): JwaSignatureAlgorithm[] {
-    const supportedKeyTypes = agentContext.wallet.supportedKeyTypes
+  private getSupportedJwaSignatureAlgorithms(agentContext: AgentContext): Kms.KnownJwaSignatureAlgorithm[] {
+    const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-    // Extract the supported JWS algs based on the key types the wallet support.
-    const supportedJwaSignatureAlgorithms = supportedKeyTypes
-      // Map the supported key types to the supported JWK class
-      .map(getJwkClassFromKeyType)
-      // Filter out the undefined values
-      .filter((jwkClass): jwkClass is Exclude<typeof jwkClass, undefined> => jwkClass !== undefined)
-      // Extract the supported JWA signature algorithms from the JWK class
-      .flatMap((jwkClass) => jwkClass.supportedSignatureAlgorithms)
+    const supportedSignatureAlgorithms = Object.values(Kms.KnownJwaSignatureAlgorithms).filter(
+      (algorithm) =>
+        kms.supportedBackendsForOperation({
+          operation: 'sign',
+          algorithm,
+        }).length > 0
+    )
 
-    return supportedJwaSignatureAlgorithms
+    return supportedSignatureAlgorithms
   }
 }

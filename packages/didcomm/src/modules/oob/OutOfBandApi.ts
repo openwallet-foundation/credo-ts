@@ -13,7 +13,7 @@ import {
   InjectionSymbols,
   JsonEncoder,
   JsonTransformer,
-  Key,
+  Kms,
   Logger,
   filterContextCorrelationId,
   inject,
@@ -50,7 +50,7 @@ import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAccepted
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
 import { InvitationType, OutOfBandInvitation } from './messages'
 import { OutOfBandRepository } from './repository'
-import { OutOfBandRecord } from './repository/OutOfBandRecord'
+import { OutOfBandInlineServiceKey, OutOfBandRecord } from './repository/OutOfBandRecord'
 import { OutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -201,12 +201,19 @@ export class OutOfBandApi {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
     }
 
+    const invitationInlineServiceKeys: OutOfBandInlineServiceKey[] = []
     if (config.invitationDid) {
       services = [config.invitationDid]
     } else {
       const routing = config.routing ?? (await this.routingService.getRouting(this.agentContext, {}))
       mediatorId = routing?.mediatorId
+
       services = routing.endpoints.map((endpoint, index) => {
+        // Store the key id for the recipient key
+        invitationInlineServiceKeys.push({
+          kmsKeyId: routing.recipientKey.keyId,
+          recipientKeyFingerprint: routing.recipientKey.fingerprint,
+        })
         return new OutOfBandDidCommService({
           id: `#inline-${index}`,
           serviceEndpoint: endpoint,
@@ -246,6 +253,7 @@ export class OutOfBandApi {
       outOfBandInvitation: outOfBandInvitation,
       reusable: multiUseInvitation,
       autoAcceptConnection,
+      invitationInlineServiceKeys,
       tags: {
         recipientKeyFingerprints,
       },
@@ -465,10 +473,12 @@ export class OutOfBandApi {
       this.logger.debug('Storing routing for out of band invitation.')
       outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
+        recipientKeyId: routing.recipientKey.keyId,
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
         endpoints: routing.endpoints,
         mediatorId: routing.mediatorId,
       })
+      outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
     }
 
     // If the invitation was converted from another legacy format, we store this, as its needed for some flows
@@ -542,9 +552,16 @@ export class OutOfBandApi {
     // recipient routing from the receiveInvitation method.
     const recipientRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
     if (!routing && recipientRouting) {
+      const recipientPublicJwk = Kms.PublicJwk.fromFingerprint(
+        recipientRouting.recipientKeyFingerprint
+      ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+      recipientPublicJwk.keyId = recipientRouting.recipientKeyId ?? recipientPublicJwk.legacyKeyId
+
       routing = {
-        recipientKey: Key.fromFingerprint(recipientRouting.recipientKeyFingerprint),
-        routingKeys: recipientRouting.routingKeyFingerprints.map((fingerprint) => Key.fromFingerprint(fingerprint)),
+        recipientKey: recipientPublicJwk,
+        routingKeys: recipientRouting.routingKeyFingerprints.map(
+          (fingerprint) => Kms.PublicJwk.fromFingerprint(fingerprint) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+        ),
         endpoints: recipientRouting.endpoints,
         mediatorId: recipientRouting.mediatorId,
       }
@@ -559,8 +576,7 @@ export class OutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
-      // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
-      let connectionRecord
+      let connectionRecord: ConnectionRecord | undefined = undefined
       if (existingConnection && reuseConnection) {
         this.logger.debug(
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
@@ -705,7 +721,11 @@ export class OutOfBandApi {
       outOfBandRecord.outOfBandInvitation.getDidServices().length === 0 &&
       (relatedConnections.length === 0 || outOfBandRecord.reusable)
     ) {
-      const recipientKeys = outOfBandRecord.getTags().recipientKeyFingerprints.map((item) => Key.fromFingerprint(item))
+      const recipientKeys = outOfBandRecord
+        .getTags()
+        .recipientKeyFingerprints.map(
+          (item) => Kms.PublicJwk.fromFingerprint(item) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+        )
 
       await this.routingService.removeRouting(this.agentContext, {
         recipientKeys,
@@ -965,12 +985,17 @@ export class OutOfBandApi {
         )
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
-            // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
-            .reduce<Key[]>((aggr, { recipientKeys }) => [...aggr, ...recipientKeys], [])
+            .reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
+              // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+              (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
+              []
+            )
             .map((key) => key.fingerprint)
         )
       } else {
-        recipientKeyFingerprints.push(...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).key.fingerprint))
+        recipientKeyFingerprints.push(
+          ...service.recipientKeys.map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
+        )
       }
     }
 

@@ -1,12 +1,10 @@
-import type { VersionString } from '../src/utils/version'
-
-import { askarModule } from '../../askar/tests/helpers'
 import { Agent } from '../src/agent/Agent'
 import { UpdateAssistant } from '../src/storage/migration/UpdateAssistant'
+import type { VersionString } from '../src/utils/version'
 
 import { getAgentOptions } from './helpers'
 
-const agentOptions = getAgentOptions('Migration', {}, {}, { askar: askarModule })
+const agentOptions = getAgentOptions('Migration')
 
 describe('migration', () => {
   test('manually initiating the update assistant to perform an update', async () => {
@@ -22,9 +20,7 @@ describe('migration', () => {
     }
 
     await agent.initialize()
-
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('manually initiating the update, but storing the current framework version outside of the agent storage', async () => {
@@ -48,7 +44,6 @@ describe('migration', () => {
     await agent.initialize()
 
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 
   test('Automatic update on agent startup', async () => {
@@ -56,6 +51,5 @@ describe('migration', () => {
 
     await agent.initialize()
     await agent.shutdown()
-    await agent.wallet.delete()
   })
 })

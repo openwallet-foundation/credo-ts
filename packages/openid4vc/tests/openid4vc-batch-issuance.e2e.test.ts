@@ -1,12 +1,10 @@
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AgentType } from './utils'
 
-import { getJwkFromKey } from '@credo-ts/core'
+import { CredoError, Kms } from '@credo-ts/core'
 import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
@@ -14,24 +12,23 @@ import {
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
 const baseUrl = 'http://localhost:3991'
 const issuerBaseUrl = `${baseUrl}/oid4vci`
 
-describe('OpenId4Vc Presentation During Issuance', () => {
+describe('OpenId4Vc Batch Issuance', () => {
   let expressApp: Express
   let clearNock: () => void
 
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
-    askar: AskarModule
   }>
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
-    askar: AskarModule
   }>
 
   beforeEach(async () => {
@@ -40,21 +37,17 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     issuer = await createAgentFromModules('issuer', {
       openId4VcIssuer: new OpenId4VcIssuerModule({
         baseUrl: issuerBaseUrl,
-        credentialRequestToCredentialMapper: async ({
-          credentialRequestFormat,
-          holderBindings,
-          credentialConfigurationIds,
-        }) => {
-          const credentialConfigurationId = credentialConfigurationIds[0]
-
+        credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
           if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+            if (holderBinding.bindingMethod !== 'jwk') {
+              throw new CredoError('Expected jwk binding method')
+            }
             return {
-              credentialConfigurationId,
               format: OpenId4VciCredentialFormatProfile.MsoMdoc,
-              credentials: holderBindings.map((holderBinding, index) => ({
+              credentials: holderBinding.keys.map((holderBinding, index) => ({
                 docType: credentialRequestFormat.doctype,
-                holderKey: holderBinding.key,
-                issuerCertificate: issuer.certificate.toString('base64'),
+                holderKey: holderBinding.jwk,
+                issuerCertificate: issuer.certificate,
                 namespaces: {
                   [credentialRequestFormat.doctype]: {
                     index,
@@ -71,16 +64,16 @@ describe('OpenId4Vc Presentation During Issuance', () => {
           throw new Error('not supported')
         },
       }),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule(),
     })
 
     holder = await createAgentFromModules('holder', {
       openId4VcHolder: new OpenId4VcHolderModule(),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule(),
     })
 
-    holder.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
-    issuer.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
+    holder.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
+    issuer.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
 
     // We let AFJ create the router, so we have a fresh one each time
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
@@ -90,16 +83,30 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   afterEach(async () => {
     clearNock()
     await issuer.agent.shutdown()
-    await issuer.agent.wallet.delete()
-
     await holder.agent.shutdown()
-    await holder.agent.wallet.delete()
   })
 
-  const credentialBindingResolver: OpenId4VciCredentialBindingResolver = async ({ agentContext, keyTypes }) => ({
-    method: 'jwk',
-    jwk: getJwkFromKey(await agentContext.wallet.createKey({ keyType: keyTypes[0] })),
-  })
+  const credentialBindingResolver: OpenId4VciCredentialBindingResolver = async ({
+    agentContext,
+    proofTypes,
+    issuerMaxBatchSize,
+  }) => {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+    return {
+      method: 'jwk',
+      keys: await Promise.all(
+        new Array(issuerMaxBatchSize).fill(0).map(async () =>
+          Kms.PublicJwk.fromPublicJwk(
+            (
+              await kms.createKeyForSignatureAlgorithm({
+                algorithm: proofTypes.jwt?.supportedSignatureAlgorithms[0] ?? 'EdDSA',
+              })
+            ).publicJwk
+          )
+        )
+      ),
+    }
+  }
 
   it('e2e flow issuing a batch of mdoc', async () => {
     const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
@@ -115,7 +122,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
     })
 
@@ -131,7 +138,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
-      requestBatch: true,
       credentialBindingResolver,
     })
 
@@ -157,7 +163,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
     })
 
@@ -174,9 +180,26 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       holder.agent.modules.openId4VcHolder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
-        requestBatch: 12,
-        credentialBindingResolver,
+        credentialBindingResolver: async ({ agentContext, proofTypes }) => {
+          const kms = agentContext.resolve(Kms.KeyManagementApi)
+          return {
+            method: 'jwk',
+            keys: await Promise.all(
+              new Array(12).fill(0).map(async () =>
+                Kms.PublicJwk.fromPublicJwk(
+                  (
+                    await kms.createKeyForSignatureAlgorithm({
+                      algorithm: proofTypes.jwt?.supportedSignatureAlgorithms[0] ?? 'EdDSA',
+                    })
+                  ).publicJwk
+                )
+              )
+            ),
+          } as const
+        },
       })
-    ).rejects.toThrow(`the max batch size is '10'. A total of '12' proofs were provided.`)
+    ).rejects.toThrow(
+      'Issuer supports issuing a batch of maximum 10 credential(s). Binding resolver returned 12 keys. Make sure the returned value does not exceed the max batch issuance.'
+    )
   })
 })

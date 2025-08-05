@@ -1,6 +1,6 @@
 import type { ValidationOptions } from 'class-validator'
+import type { SingleOrArray } from '../types'
 import type { Constructor } from './mixins'
-import type { SingleOrArray } from './type'
 
 import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
 

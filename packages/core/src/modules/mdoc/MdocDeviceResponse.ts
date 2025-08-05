@@ -24,9 +24,8 @@ import {
   parseIssuerSigned,
 } from '@animo-id/mdoc'
 import { uuid } from '../../utils/uuid'
+import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-
-import { Jwk } from '../../crypto'
 import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
@@ -54,13 +53,29 @@ export class MdocDeviceResponse {
     return this.base64Url
   }
 
-  public static fromBase64Url(base64Url: string) {
-    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
-    if (parsed.status !== MDocStatus.OK) {
-      throw new MdocError('Parsing Mdoc Device Response failed.')
+  /**
+   * To support a single DeviceResponse with multiple documents in OpenID4VP
+   */
+  public splitIntoSingleDocumentResponses(): MdocDeviceResponse[] {
+    const deviceResponses: MdocDeviceResponse[] = []
+
+    if (this.documents.length === 0) {
+      throw new MdocError('mdoc device response does not contain any mdocs')
     }
 
-    const documents = parsed.documents.map((doc) => {
+    for (const document of this.documents) {
+      const deviceResponse = new MDoc()
+
+      deviceResponse.addDocument(document.issuerSignedDocument)
+
+      deviceResponses.push(MdocDeviceResponse.fromDeviceResponse(deviceResponse))
+    }
+
+    return deviceResponses
+  }
+
+  private static fromDeviceResponse(mdoc: MDoc) {
+    const documents = mdoc.documents.map((doc) => {
       const prepared = doc.prepare()
       const docType = prepared.get('docType') as string
       const issuerSigned = cborEncode(prepared.get('issuerSigned'))
@@ -73,7 +88,16 @@ export class MdocDeviceResponse {
       )
     })
 
-    return new MdocDeviceResponse(base64Url, documents)
+    return new MdocDeviceResponse(TypedArrayEncoder.toBase64URL(mdoc.encode()), documents)
+  }
+
+  public static fromBase64Url(base64Url: string) {
+    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
+    if (parsed.status !== MDocStatus.OK) {
+      throw new MdocError('Parsing Mdoc Device Response failed.')
+    }
+
+    return MdocDeviceResponse.fromDeviceResponse(parsed)
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
@@ -191,8 +215,13 @@ export class MdocDeviceResponse {
     const combinedDeviceResponseMdoc = new MDoc()
 
     for (const document of options.mdocs) {
-      const deviceKeyJwk = document.deviceKeyJwk
+      const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
+
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
 
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
@@ -236,10 +265,14 @@ export class MdocDeviceResponse {
     const combinedDeviceResponseMdoc = new MDoc()
 
     for (const document of options.mdocs) {
-      const deviceKeyJwk = document.deviceKeyJwk
-      document.deviceKey
+      const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
+
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
 
       const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
 
@@ -372,12 +405,12 @@ export class MdocDeviceResponse {
     throw new MdocError('Unsupported session transcript option')
   }
 
-  private static getAlgForDeviceKeyJwk(jwk: Jwk) {
+  private static getAlgForDeviceKeyJwk(jwk: PublicJwk) {
     const signatureAlgorithm = jwk.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!signatureAlgorithm) {
       throw new MdocError(
-        `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk with key type ${
-          jwk.keyType
+        `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk  ${
+          jwk.jwkTypehumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`

@@ -1,7 +1,5 @@
 import type { AgentContext } from '../../../agent'
-import type { Wallet } from '../../../wallet'
 
-import { InMemoryWallet } from '../../../../../../tests/InMemoryWallet'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
 import { JwsService } from '../../../crypto'
 import { JsonTransformer, asArray } from '../../../utils'
@@ -40,17 +38,13 @@ const credentialsModuleConfig = new W3cCredentialsModuleConfig({
 })
 
 describe('W3cCredentialsService', () => {
-  let wallet: Wallet
   let agentContext: AgentContext
   let w3cCredentialService: W3cCredentialService
   let w3cCredentialsRepository: W3cCredentialRepository
 
   beforeAll(async () => {
-    wallet = new InMemoryWallet()
-    await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({
       agentConfig,
-      wallet,
     })
     w3cCredentialsRepository = new W3cCredentialsRepositoryMock()
     w3cCredentialService = new W3cCredentialService(
@@ -58,10 +52,6 @@ describe('W3cCredentialsService', () => {
       new W3cJsonLdCredentialService(new SignatureSuiteRegistry([]), credentialsModuleConfig),
       new W3cJwtCredentialService(new JwsService())
     )
-  })
-
-  afterAll(async () => {
-    await wallet.delete()
   })
 
   describe('createPresentation', () => {

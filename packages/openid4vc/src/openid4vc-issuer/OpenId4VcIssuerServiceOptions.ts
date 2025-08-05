@@ -1,12 +1,4 @@
-import type {
-  AgentContext,
-  ClaimFormat,
-  JwaSignatureAlgorithm,
-  KeyType,
-  MdocSignOptions,
-  SdJwtVcSignOptions,
-  W3cCredential,
-} from '@credo-ts/core'
+import type { AgentContext, ClaimFormat, Kms, MdocSignOptions, SdJwtVcSignOptions, W3cCredential } from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcVerificationSessionRecord,
@@ -15,13 +7,14 @@ import type {
   OpenId4VpVerifiedAuthorizationResponsePresentationExchange,
 } from '../openid4vc-verifier'
 import type {
-  OpenId4VcCredentialHolderBindingWithKey,
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciTxCode,
+  VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
@@ -83,10 +76,12 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
 }
 
 interface OpenId4VciCreateCredentialOfferOptionsBase {
-  // NOTE: v11 of OID4VCI supports both inline and referenced (to credentials_supported.id) credential offers.
-  // In draft 12 the inline credential offers have been removed and to make the migration to v12 easier
-  // we only support referenced credentials in an offer
-  offeredCredentials: string[]
+  /**
+   * The credential configurations to offer.
+   *
+   * At least one id must be offered, and all ids must be present in the credential configurations.
+   */
+  credentialConfigurationIds: string[]
 
   /**
    * baseUri for the credential offer uri. By default `openid-credential-offer://` will be used
@@ -95,9 +90,12 @@ interface OpenId4VciCreateCredentialOfferOptionsBase {
   baseUri?: string
 
   /**
-   * @default v1.draft11-13
+   * @default v1.draft11-15
+   *
+   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
+   * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
    */
-  version?: 'v1.draft11-13' | 'v1.draft13'
+  version?: 'v1.draft11-15' | 'v1.draft15'
 }
 
 export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
@@ -105,16 +103,46 @@ export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4
 
   /**
    * For stateless credential offers we need an external authorization server, which also means we need to
-   * support `authorization_servers`, therefore only draft 13 offers are supported
+   * support `authorization_servers`.
    *
-   * @default v1.draft13
+   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
+   * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
+   *
+   * @default v1.draft15
    */
-  version?: 'v1.draft13'
+  version?: 'v1.draft15'
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
   preAuthorizedCodeFlowConfig?: OpenId4VciPreAuthorizedCodeFlowConfig
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
+
+  /**
+   * Options related to authorization, for both the pre-authorized and authorizat_code flows.
+   */
+  authorization?: {
+    /**
+     * Whether wallet attestations are required at the PAR, Authorization Challenge and token endpoints.
+     *
+     * If not provided, the value from the global agent config will be used.
+     *
+     * NOTE: this only has effect if the Credo authorization server is used. If an external authorization
+     * server is used, it's up to the authorization server to require wallet attestations for client authentication.
+     */
+    requireWalletAttestation: boolean
+
+    /**
+     * Whether DPoP is required.
+     *
+     * If not provided, the value from the global agent config will be used.
+     *
+     * NOTE: it's up to the authorization server to enforce DPoP binding. So if an external authorization server
+     * is used, and DPoP is required, you should ensure the authorization server enforces DPoP. If DPoP is required
+     * but not bound to the access token created by an external authorization server, the issuance will fail when the
+     * credential endpoint is called.
+     */
+    requireDpop: boolean
+  }
 
   /**
    * Metadata about the issuance, that will be stored in the issuance session record and
@@ -212,9 +240,8 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
   credentialRequest: OpenId4VciCredentialRequest
 
   /**
-   * Contains format specific credential request data. Currently it will
-   * always be defined, but may be undefined once `credential_identifier`
-   * in the credential request will be supported
+   * Contains format specific credential request data. This will only be
+   * defined if a credential was requested using the `format` syntax
    */
   credentialRequestFormat?: OpenId4VciCredentialRequestFormatSpecific
 
@@ -225,24 +252,26 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
 
   /**
    * Verified key binding material entries that should be included in the credential(s)
-   * A separate credential should be returned for each holder binding.
+   * A separate credential should be returned for each holder binding entry.
    *
-   * Can either be bound to did or a JWK (in case of for ex. SD-JWT).
+   * All keys and dids have a verified proof, or in the case a key attestation is provided
+   * are attested by a key attestation. Ensure the issuer of the key attestation is trusted.
    */
-  holderBindings: OpenId4VcCredentialHolderBindingWithKey[]
+  holderBinding: VerifiedOpenId4VcCredentialHolderBinding
 
   /**
-   * The credential configurations supported entries from the issuer metadata
-   * that were offered and match the incoming request.
+   * The credential configurations supported entry from the issuer metadata
+   * that was offered and matches the incoming request.
+   *
+   * If multiple offered configuration match the request (which is possible pre-draft 15)
+   * the first configuration that has not been issued yet will be passed.
    */
-  credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
 
   /**
-   * v13: The ids of the credential configurations that were offered and match the request
-   *
-   * NOTE: This will probably become a single entry, as it will be matched on id
+   * The ids of the credential configuration that was offered and matches the request.
    */
-  credentialConfigurationIds: [string, ...string[]]
+  credentialConfigurationId: string
 }
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
@@ -254,19 +283,16 @@ export type OpenId4VciSignCredentials =
   | OpenId4VciSignMdocCredentials
 
 export interface OpenId4VciSignSdJwtCredentials {
-  credentialConfigurationId: string
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
   credentials: SdJwtVcSignOptions[]
 }
 
 export interface OpenId4VciSignMdocCredentials {
-  credentialConfigurationId: string
   format: ClaimFormat.MsoMdoc | `${ClaimFormat.MsoMdoc}`
   credentials: MdocSignOptions[]
 }
 
 export interface OpenId4VciSignW3cCredentials {
-  credentialConfigurationId: string
   format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
   credentials: Array<{
     verificationMethod: string
@@ -290,13 +316,20 @@ export type OpenId4VciCreateIssuerOptions = {
   /**
    * Key type to use for signing access tokens
    *
-   * @default KeyType.Ed25519
+   * @default
+   * ```json
+   * {
+   *  kty: "OKP",
+   *  crv: "Ed25519"
+   * }
+   * ```
    */
-  accessTokenSignerKeyType?: KeyType
+  accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAssymetric
 
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
-  dpopSigningAlgValuesSupported?: [JwaSignatureAlgorithm, ...JwaSignatureAlgorithm[]]
+  dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
+
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**

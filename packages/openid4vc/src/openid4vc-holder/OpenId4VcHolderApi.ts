@@ -117,15 +117,13 @@ export class OpenId4VcHolderApi {
    * It will generate an authorization session based on the provided options.
    *
    * There are two possible flows:
-   * - Oauth2Recirect: an authorization request URI is returend which can be used to obtain the authorization code.
+   * - Oauth2Redirect: an authorization request URI is returend which can be used to obtain the authorization code.
    *   This needs to be done manually (e.g. by opening a browser window)
    * - PresentationDuringIssuance: an openid4vp presentation request needs to be handled. A oid4vpRequestUri is returned
    *   which can be parsed using `resolveOpenId4VpAuthorizationRequest`. After the presentation session has been completed,
    *   the resulting `presentationDuringIssuanceSession` can be used to obtain an authorization code
    *
-   * Authorization to request credentials can be requested via authorization_details or scopes.
-   * This function automatically generates the authorization_details for all offered credentials.
-   * If scopes are provided, the provided scopes are sent alongside the authorization_details.
+   * Authorization to request credentials can only be requested through scopes.
    *
    * @param resolvedCredentialOffer Obtained through @see resolveCredentialOffer
    * @param authCodeFlowOptions

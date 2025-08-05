@@ -6,13 +6,11 @@ import type {
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AgentType } from './utils'
 
-import { ClaimFormat, getJwkFromKey } from '@credo-ts/core'
+import { ClaimFormat } from '@credo-ts/core'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import {
   OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
@@ -21,6 +19,7 @@ import {
   getScopesFromCredentialConfigurationsSupported,
 } from '../src'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 
@@ -90,7 +89,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   let issuer: AgentType<{
     openId4VcIssuer: OpenId4VcIssuerModule
     openId4VcVerifier: OpenId4VcVerifierModule
-    askar: AskarModule
   }>
 
   const getVerificationSessionForIssuanceSessionAuthorization =
@@ -101,7 +99,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
           verifierId: issuanceSession.issuerId,
           requestSigner: {
             method: 'x5c',
-            x5c: [issuer.certificate.toString('base64')],
+            x5c: [issuer.certificate],
           },
           responseMode: 'direct_post.jwt',
           presentationExchange:
@@ -129,7 +127,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
   let holder: AgentType<{
     openId4VcHolder: OpenId4VcHolderModule
-    askar: AskarModule
   }>
 
   beforeEach(async () => {
@@ -140,17 +137,11 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization:
           getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-        credentialRequestToCredentialMapper: async ({
-          credentialRequest,
-          holderBindings,
-          credentialConfigurationIds,
-          verification,
-        }) => {
+        credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
           if (!verification) {
             throw new Error('Expected verification in credential request mapper')
           }
 
-          const credentialConfigurationId = credentialConfigurationIds[0]
           let credential: SdJwtVc
 
           if (verification.presentationExchange) {
@@ -177,14 +168,13 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
           if (credentialRequest.format === 'vc+sd-jwt') {
             return {
-              credentialConfigurationId,
               format: credentialRequest.format,
-              credentials: holderBindings.map((holderBinding) => ({
+              credentials: holderBinding.keys.map((holderBinding) => ({
                 payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
                 holder: holderBinding,
                 issuer: {
                   method: 'x5c',
-                  x5c: [issuer.certificate.toString('base64')],
+                  x5c: [issuer.certificate],
                   issuer: baseUrl,
                 },
                 disclosureFrame: {
@@ -199,16 +189,16 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       openId4VcVerifier: new OpenId4VcVerifierModule({
         baseUrl: verifierBaseUrl,
       }),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule(),
     })
 
     holder = await createAgentFromModules('holder', {
       openId4VcHolder: new OpenId4VcHolderModule(),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule(),
     })
 
-    holder.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
-    issuer.agent.x509.addTrustedCertificate(issuer.certificate.toString('base64'))
+    holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
+    issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
 
     // We let AFJ create the router, so we have a fresh one each time
     expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
@@ -221,15 +211,12 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     clearNock()
 
     await issuer.agent.shutdown()
-    await issuer.agent.wallet.delete()
-
     await holder.agent.shutdown()
-    await holder.agent.wallet.delete()
   })
 
   const credentialBindingResolver: OpenId4VciCredentialBindingResolver = () => ({
     method: 'jwk',
-    jwk: getJwkFromKey(holder.key),
+    keys: [holder.jwk],
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with presentation definition', async () => {
@@ -242,7 +229,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     const x5cIssuer = {
       method: 'x5c',
-      x5c: [issuer.certificate.toString('base64')],
+      x5c: [issuer.certificate],
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
@@ -271,7 +258,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -365,7 +352,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     const x5cIssuer = {
       method: 'x5c',
-      x5c: [issuer.certificate.toString('base64')],
+      x5c: [issuer.certificate],
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
@@ -394,7 +381,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -485,7 +472,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     const x5cIssuer = {
       method: 'x5c',
-      x5c: [issuer.certificate.toString('base64')],
+      x5c: [issuer.certificate],
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
@@ -514,7 +501,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },
@@ -562,7 +549,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     // Create offer for university degree
     const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
-      offeredCredentials: ['universityDegree'],
+      credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
         requirePresentationDuringIssuance: true,
       },

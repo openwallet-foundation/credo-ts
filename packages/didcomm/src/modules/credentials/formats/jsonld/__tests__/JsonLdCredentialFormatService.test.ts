@@ -555,11 +555,7 @@ describe('JsonLd CredentialFormatService', () => {
       expect(areCredentialsEqual).toBe(true)
 
       const inputDoc2 = {
-        '@context': [
-          'https://www.w3.org/2018/credentials/v1',
-          'https://w3id.org/citizenship/v1',
-          'https://w3id.org/security/bbs/v1',
-        ],
+        '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
       }
       message2.data = new AttachmentData({
         base64: JsonEncoder.toBase64(inputDoc2),

@@ -1,8 +1,7 @@
-import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import type { AgentContext, DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
 import type { AgentMessage } from '../../../AgentMessage'
 import type { AckMessage } from '../../../messages'
 import type { InboundMessageContext } from '../../../models'
-import type { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
 import type { OutOfBandRecord } from '../../oob/repository'
 import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
 import type { ConnectionProblemReportMessage } from '../messages'
@@ -12,21 +11,22 @@ import type { ConnectionRecordProps } from '../repository'
 import {
   CredoError,
   DidDocumentRole,
-  DidKey,
   DidRecord,
   DidRecordMetadataKeys,
   DidRepository,
+  DidsApi,
   EventEmitter,
   IndyAgentService,
   InjectionSymbols,
   JsonTransformer,
-  Key,
+  Kms,
   Logger,
+  TypedArrayEncoder,
   didDocumentJsonToNumAlgo1Did,
-  didKeyToVerkey,
   filterContextCorrelationId,
   inject,
   injectable,
+  parseDid,
   utils,
 } from '@credo-ts/core'
 import { ReplaySubject, firstValueFrom } from 'rxjs'
@@ -56,7 +56,11 @@ import {
 } from '../models'
 import { ConnectionRecord, ConnectionRepository } from '../repository'
 
-import { assertNoCreatedDidExistsForKeys, convertToNewDidDocument } from './helpers'
+import {
+  assertNoCreatedDidExistsForKeys,
+  convertToNewDidDocument,
+  getResolvedDidcommServiceWithSigningKeyId,
+} from './helpers'
 
 export interface ConnectionRequestParams {
   label?: string
@@ -106,7 +110,7 @@ export class ConnectionService {
     const { outOfBandInvitation } = outOfBandRecord
 
     const { mediatorId } = config.routing
-    const didDoc = this.createDidDoc(config.routing)
+    const { didDoc, keys } = this.createDidDoc(config.routing)
 
     // TODO: We should store only one did that we'll use to send the request message with success.
     // We take just the first one for now.
@@ -115,6 +119,7 @@ export class ConnectionService {
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
+      keys,
     })
 
     const { label, imageUrl } = config
@@ -217,10 +222,15 @@ export class ConnectionService {
     connectionRecord.assertRole(DidExchangeRole.Responder)
 
     let didDoc: DidDoc
+    let keys: DidDocumentKey[]
     if (routing) {
-      didDoc = this.createDidDoc(routing)
+      const result = this.createDidDoc(routing)
+      didDoc = result.didDoc
+      keys = result.keys
     } else if (outOfBandRecord.outOfBandInvitation.getInlineServices().length > 0) {
-      didDoc = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord.outOfBandInvitation.getInlineServices())
+      const result = this.createDidDocFromOutOfBandDidCommServices(outOfBandRecord)
+      didDoc = result.didDoc
+      keys = result.keys
     } else {
       // We don't support using a did from the OOB invitation services currently, in this case we always pass routing to this method
       throw new CredoError(
@@ -231,6 +241,7 @@ export class ConnectionService {
     const { did: peerDid } = await this.createDid(agentContext, {
       role: DidDocumentRole.Created,
       didDoc,
+      keys,
     })
 
     const connection = new Connection({
@@ -244,11 +255,34 @@ export class ConnectionService {
       throw new CredoError(`Connection record with id ${connectionRecord.id} does not have a thread id`)
     }
 
-    const signingKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
+    let signingKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    const firstService = outOfBandRecord.outOfBandInvitation.getServices()[0]
+    if (typeof firstService === 'string') {
+      const dids = agentContext.resolve(DidsApi)
+      const resolved = await dids.resolveCreatedDidDocumentWithKeys(parseDid(firstService).did)
+
+      const recipientKeys = resolved.didDocument.getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
+      if (recipientKeys.length === 0) {
+        throw new CredoError(`Unable to extract signing key for connection response from did '${firstService}'`)
+      }
+
+      signingKey = recipientKeys[0].publicJwk
+      // TOOD: we probably need an util: addKeyIdToVerificationMethodKey
+      signingKey.keyId =
+        resolved.keys?.find(({ didDocumentRelativeKeyId }) =>
+          recipientKeys[0].verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+        )?.kmsKeyId ?? signingKey.legacyKeyId
+    } else {
+      const service = getResolvedDidcommServiceWithSigningKeyId(
+        firstService,
+        outOfBandRecord.invitationInlineServiceKeys
+      )
+      signingKey = service.recipientKeys[0]
+    }
 
     const connectionResponse = new ConnectionResponseMessage({
       threadId: connectionRecord.threadId,
-      connectionSig: await signData(connectionJson, agentContext.wallet, signingKey),
+      connectionSig: await signData(agentContext, connectionJson, signingKey),
     })
 
     connectionRecord.did = peerDid
@@ -295,10 +329,7 @@ export class ConnectionService {
 
     let connectionJson = null
     try {
-      connectionJson = await unpackAndVerifySignatureDecorator(
-        message.connectionSig,
-        messageContext.agentContext.wallet
-      )
+      connectionJson = await unpackAndVerifySignatureDecorator(messageContext.agentContext, message.connectionSig)
     } catch (error) {
       if (error instanceof CredoError) {
         throw new ConnectionProblemReportError(error.message, {
@@ -314,9 +345,17 @@ export class ConnectionService {
     // as the recipient key(s) in the connection invitation message
     const signerVerkey = message.connectionSig.signer
 
-    const invitationKey = Key.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0]).publicKeyBase58
+    const invitationKey = Kms.PublicJwk.fromFingerprint(outOfBandRecord.getTags().recipientKeyFingerprints[0])
+    if (!invitationKey.is(Kms.Ed25519PublicJwk)) {
+      throw new ConnectionProblemReportError(
+        `Expected invitation key to be an Ed25519 key, found ${invitationKey.jwkTypehumanDescription}`,
+        { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
+      )
+    }
 
-    if (signerVerkey !== invitationKey) {
+    const invitationKeyBase58 = TypedArrayEncoder.toBase58(invitationKey.publicKey.publicKey)
+
+    if (signerVerkey !== invitationKeyBase58) {
       throw new ConnectionProblemReportError(
         `Connection object in connection response message is not signed with same key as recipient key in invitation expected='${invitationKey}' received='${signerVerkey}'`,
         { problemCode: ConnectionProblemReportReason.ResponseNotAccepted }
@@ -497,14 +536,17 @@ export class ConnectionService {
         type: message.type,
       })
 
-      const recipientKey = messageContext.recipientKey?.publicKeyBase58
-      const senderKey = messageContext.senderKey?.publicKeyBase58
+      const recipientKey = messageContext.recipientKey
+      const senderKey = messageContext.senderKey
 
       // set theirService to the value of lastReceivedMessage.service
       let theirService =
         messageContext.message?.service?.resolvedDidCommService ?? lastReceivedMessage?.service?.resolvedDidCommService
       let ourService = lastSentMessage?.service?.resolvedDidCommService
 
+      // FIXME: we should remove support for the flow where no out of band record is used.
+      // Users have had enough time to update to the OOB API which supports legacy connectionsless
+      // invitations as well
       // 1. check if there's an oob record associated.
       const outOfBandRepository = messageContext.agentContext.dependencyManager.resolve(OutOfBandRepository)
       const outOfBandService = messageContext.agentContext.dependencyManager.resolve(OutOfBandService)
@@ -516,7 +558,8 @@ export class ConnectionService {
       if (outOfBandRecord?.role === OutOfBandRole.Sender) {
         ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
           messageContext.agentContext,
-          outOfBandRecord.outOfBandInvitation.getServices()
+          outOfBandRecord.outOfBandInvitation.getServices(),
+          outOfBandRecord.invitationInlineServiceKeys
         )
       } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
         theirService = await outOfBandService.getResolvedServiceForOutOfBandServices(
@@ -552,17 +595,17 @@ export class ConnectionService {
 
       // Check if recipientKey is in ourService
       if (recipientKey && ourService) {
-        const recipientKeyFound = ourService.recipientKeys.some((key) => key.publicKeyBase58 === recipientKey)
+        const recipientKeyFound = ourService.recipientKeys.some((key) => recipientKey.equals(key))
         if (!recipientKeyFound) {
-          throw new CredoError(`Recipient key ${recipientKey} not found in our service`)
+          throw new CredoError(`Recipient key ${recipientKey.fingerprint} not found in our service`)
         }
       }
 
       // Check if senderKey is in theirService
       if (senderKey && theirService) {
-        const senderKeyFound = theirService.recipientKeys.some((key) => key.publicKeyBase58 === senderKey)
+        const senderKeyFound = theirService.recipientKeys.some((key) => senderKey.equals(key))
         if (!senderKeyFound) {
-          throw new CredoError(`Sender key ${senderKey} not found in their service.`)
+          throw new CredoError(`Sender key ${senderKey.fingerprint} not found in their service.`)
         }
       }
     }
@@ -756,7 +799,10 @@ export class ConnectionService {
 
   public async findByKeys(
     agentContext: AgentContext,
-    { senderKey, recipientKey }: { senderKey: Key; recipientKey: Key }
+    {
+      senderKey,
+      recipientKey,
+    }: { senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> }
   ) {
     const theirDidRecord = await this.didRepository.findReceivedDidByRecipientKey(agentContext, senderKey)
     if (theirDidRecord) {
@@ -806,9 +852,16 @@ export class ConnectionService {
     return connectionRecord.connectionTypes || []
   }
 
-  private async createDid(agentContext: AgentContext, { role, didDoc }: { role: DidDocumentRole; didDoc: DidDoc }) {
+  private async createDid(
+    agentContext: AgentContext,
+    { role, didDoc, keys }: { role: DidDocumentRole; didDoc: DidDoc; keys?: DidDocumentKey[] }
+  ) {
+    if (keys && role !== DidDocumentRole.Created) {
+      throw new CredoError(`keys can only be provided for did documents when the role is '${DidDocumentRole.Created}'`)
+    }
+
     // Convert the legacy did doc to a new did document
-    const didDocument = convertToNewDidDocument(didDoc)
+    const { didDocument, keys: updatedKeys } = convertToNewDidDocument(didDoc, keys)
 
     // Assert that the keys we are going to use for creating a did document haven't already been used in another did document
     if (role === DidDocumentRole.Created) {
@@ -821,6 +874,7 @@ export class ConnectionService {
       did: peerDid,
       role,
       didDocument,
+      keys: updatedKeys,
     })
 
     // Store the unqualified did with the legacy did document in the metadata
@@ -844,12 +898,20 @@ export class ConnectionService {
   }
 
   private createDidDoc(routing: Routing) {
-    const indyDid = utils.indyDidFromPublicKeyBase58(routing.recipientKey.publicKeyBase58)
+    const recipientKeyBase58 = TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)
+    const indyDid = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
+
+    const keys: DidDocumentKey[] = [
+      {
+        didDocumentRelativeKeyId: '#1',
+        kmsKeyId: routing.recipientKey.keyId,
+      },
+    ]
 
     const publicKey = new Ed25119Sig2018({
       id: `${indyDid}#1`,
       controller: indyDid,
-      publicKeyBase58: routing.recipientKey.publicKeyBase58,
+      publicKeyBase58: recipientKeyBase58,
     })
 
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
@@ -860,31 +922,37 @@ export class ConnectionService {
         new IndyAgentService({
           id: `${indyDid}#IndyAgentService-${index + 1}`,
           serviceEndpoint: endpoint,
-          recipientKeys: [routing.recipientKey.publicKeyBase58],
-          routingKeys: routing.routingKeys.map((key) => key.publicKeyBase58),
+          recipientKeys: [recipientKeyBase58],
+          routingKeys: routing.routingKeys.map((key) => TypedArrayEncoder.toBase58(key.publicKey.publicKey)),
           // Order of endpoint determines priority
           priority: index,
         })
     )
 
-    return new DidDoc({
-      id: indyDid,
-      authentication: [auth],
-      service: services,
-      publicKey: [publicKey],
-    })
+    return {
+      didDoc: new DidDoc({
+        id: indyDid,
+        authentication: [auth],
+        service: services,
+        publicKey: [publicKey],
+      }),
+      keys,
+    }
   }
 
-  private createDidDocFromOutOfBandDidCommServices(services: OutOfBandDidCommService[]) {
-    const [recipientDidKey] = services[0].recipientKeys
+  private createDidDocFromOutOfBandDidCommServices(outOfBandRecord: OutOfBandRecord) {
+    const services = outOfBandRecord.outOfBandInvitation
+      .getInlineServices()
+      .map((service) => getResolvedDidcommServiceWithSigningKeyId(service, outOfBandRecord.invitationInlineServiceKeys))
 
-    const recipientKey = DidKey.fromDid(recipientDidKey).key
-    const did = utils.indyDidFromPublicKeyBase58(recipientKey.publicKeyBase58)
+    const [recipientKey] = services[0].recipientKeys
+    const recipientKeyBase58 = TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)
+    const did = utils.indyDidFromPublicKeyBase58(recipientKeyBase58)
 
     const publicKey = new Ed25119Sig2018({
       id: `${did}#1`,
       controller: did,
-      publicKeyBase58: recipientKey.publicKeyBase58,
+      publicKeyBase58: recipientKeyBase58,
     })
 
     const auth = new ReferencedAuthentication(publicKey, authenticationTypes.Ed25519VerificationKey2018)
@@ -895,18 +963,23 @@ export class ConnectionService {
         new IndyAgentService({
           id: `${did}#IndyAgentService-${index + 1}`,
           serviceEndpoint: service.serviceEndpoint,
-          recipientKeys: [recipientKey.publicKeyBase58],
-          routingKeys: service.routingKeys?.map(didKeyToVerkey),
+          recipientKeys: [recipientKeyBase58],
+          routingKeys: service.routingKeys?.map((publicJwk) =>
+            TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+          ),
           priority: index,
         })
     )
 
-    return new DidDoc({
-      id: did,
-      authentication: [auth],
-      service,
-      publicKey: [publicKey],
-    })
+    return {
+      didDoc: new DidDoc({
+        id: did,
+        authentication: [auth],
+        service,
+        publicKey: [publicKey],
+      }),
+      keys: [{ didDocumentRelativeKeyId: '#1', kmsKeyId: recipientKey.keyId }] satisfies DidDocumentKey[],
+    }
   }
 
   public async returnWhenIsConnected(

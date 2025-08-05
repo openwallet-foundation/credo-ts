@@ -1,21 +1,23 @@
-import type { Key } from '@credo-ts/core'
-
-import { KeyType, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { CredentialDefinitionRequest, GetNymRequest, NymRequest, SchemaRequest } from '@hyperledger/indy-vdr-shared'
 
-import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { genesisTransactions, getAgentConfig, getAgentContext } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { IndyVdrPool } from '../src/pool'
 import { IndyVdrPoolService } from '../src/pool/IndyVdrPoolService'
 import { indyDidFromPublicKeyBase58 } from '../src/utils/did'
 
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
 import { indyVdrModuleConfig } from './helpers'
 
 const indyVdrPoolService = new IndyVdrPoolService(testLogger, indyVdrModuleConfig)
-const wallet = new InMemoryWallet()
 const agentConfig = getAgentConfig('IndyVdrPoolService')
-const agentContext = getAgentContext({ wallet, agentConfig })
+const agentContext = getAgentContext({
+  agentConfig,
+  kmsBackends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
+})
+const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 const config = {
   isProduction: false,
@@ -24,24 +26,27 @@ const config = {
   transactionAuthorAgreement: { version: '1', acceptanceMechanism: 'accept' },
 } as const
 
-let signerKey: Key
+let signerKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
 describe('IndyVdrPoolService', () => {
   beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-
-    signerKey = await wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
-      keyType: KeyType.Ed25519,
+    const createdKey = await kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('000000000000000000000000Trustee9'),
+        type: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+        },
+      }).privateJwk,
     })
+
+    signerKey = Kms.PublicJwk.fromPublicJwk(createdKey.publicJwk)
   })
 
   afterAll(async () => {
     for (const pool of indyVdrPoolService.pools) {
       pool.close()
     }
-
-    await wallet.delete()
   })
 
   describe('DIDs', () => {
@@ -88,13 +93,15 @@ describe('IndyVdrPoolService', () => {
       const pool = indyVdrPoolService.getPoolForNamespace('pool:localtest')
 
       // prepare the DID we are going to write to the ledger
-      const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-      const did = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+      const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+      const publicJwk = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+      const publicKeyBase58 = TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)
+      const did = indyDidFromPublicKeyBase58(publicKeyBase58)
 
       const request = new NymRequest({
         dest: did,
         submitterDid: 'TL1EaPFCZ8Si5aUrqScBDt',
-        verkey: key.publicKeyBase58,
+        verkey: publicKeyBase58,
       })
 
       const writeRequest = await pool.prepareWriteRequest(agentContext, request, signerKey)

@@ -26,12 +26,12 @@
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "async-mutex": "^0.4.0"
+    "async-mutex": "^0.5.0"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
-    "reflect-metadata": "^0.1.13",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "reflect-metadata": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:"
   }
 }

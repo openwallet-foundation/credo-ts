@@ -52,7 +52,7 @@ describe('0.3.1-0.4 | Did', () => {
       expect(didRepository.findByQuery).toHaveBeenCalledTimes(1)
 
       const [, didRecord] = mockFunction(didRepository.update).mock.calls[0]
-      expect(didRecord).toEqual({
+      expect(didRecord).toMatchObject({
         type: 'DidRecord',
         id: expect.any(String),
         did: 'did:indy:local:123',

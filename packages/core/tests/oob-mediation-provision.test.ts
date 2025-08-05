@@ -9,13 +9,19 @@ import {
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
-import { getInMemoryAgentOptions, waitForBasicMessage } from './helpers'
+import { getAgentOptions, waitForBasicMessage } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-const faberAgentOptions = getInMemoryAgentOptions('OOB mediation provision - Faber Agent', {
-  endpoints: ['rxjs:faber'],
-})
-const aliceAgentOptions = getInMemoryAgentOptions(
+const faberAgentOptions = getAgentOptions(
+  'OOB mediation provision - Faber Agent',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  undefined,
+  undefined,
+  { requireDidcomm: true }
+)
+const aliceAgentOptions = getAgentOptions(
   'OOB mediation provision - Alice Recipient Agent',
   {
     endpoints: ['rxjs:alice'],
@@ -25,15 +31,17 @@ const aliceAgentOptions = getInMemoryAgentOptions(
     mediationRecipient: new MediationRecipientModule({
       mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
     }),
-  }
+  },
+  { requireDidcomm: true }
 )
-const mediatorAgentOptions = getInMemoryAgentOptions(
+const mediatorAgentOptions = getAgentOptions(
   'OOB mediation provision - Mediator Agent',
   {
     endpoints: ['rxjs:mediator'],
   },
   {},
-  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) }
+  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) },
+  { requireDidcomm: true }
 )
 
 describe('out of band with mediation set up with provision method', () => {
@@ -45,9 +53,9 @@ describe('out of band with mediation set up with provision method', () => {
     multiUseInvitation: false,
   }
 
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let mediatorAgent: Agent
+  let faberAgent: Agent<(typeof faberAgentOptions)['modules']>
+  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
+  let mediatorAgent: Agent<(typeof mediatorAgentOptions)['modules']>
 
   let mediatorOutOfBandInvitation: OutOfBandInvitation
 
@@ -66,19 +74,16 @@ describe('out of band with mediation set up with provision method', () => {
     mediatorOutOfBandInvitation = mediationOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
-    connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     await aliceAgent.modules.mediationRecipient.provision(connectionRecord!)
-    await aliceAgent.modules.mediationRecipient.initialize()
   })
 
   afterAll(async () => {
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
     await mediatorAgent.shutdown()
-    await mediatorAgent.wallet.delete()
   })
 
   test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
@@ -94,7 +99,8 @@ describe('out of band with mediation set up with provision method', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
 
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)

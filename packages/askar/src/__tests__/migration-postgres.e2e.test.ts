@@ -16,20 +16,19 @@ describe('migration with postgres backend', () => {
     await storageUpdateService.setCurrentStorageVersion(agent.context, '0.1')
     await agent.shutdown()
 
-    // Now start agent with auto update storage
-    agent = new Agent({ ...agentOptions, config: { ...agentOptions.config, autoUpdateStorageOnStartup: true } })
+    // Now start agent without auto update storage
+    agent = new Agent({ ...agentOptions, config: { ...agentOptions.config, autoUpdateStorageOnStartup: false } })
     storageUpdateService = agent.dependencyManager.resolve(StorageUpdateService)
 
-    // Should fail because export is not supported when using postgres
-    await expect(agent.initialize()).rejects.toThrow(/backend does not support export/)
+    await expect(agent.initialize()).rejects.toThrow(/Current agent storage is not up to date/)
 
     expect(await storageUpdateService.getCurrentStorageVersion(agent.context)).toEqual('0.1')
     await agent.shutdown()
 
-    // Now start agent with auto update storage, but this time disable backup
+    // Now start agent with auto update storage, but this time enable auto update
     agent = new Agent({
       ...agentOptions,
-      config: { ...agentOptions.config, autoUpdateStorageOnStartup: true, backupBeforeStorageUpdate: false },
+      config: { ...agentOptions.config, autoUpdateStorageOnStartup: true },
     })
 
     // Should work OK
@@ -39,6 +38,6 @@ describe('migration with postgres backend', () => {
     )
     await agent.shutdown()
 
-    await agent.wallet.delete()
+    await agent.modules.askar.deleteStore()
   })
 })

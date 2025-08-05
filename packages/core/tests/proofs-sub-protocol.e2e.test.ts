@@ -58,9 +58,7 @@ describe('Present Proof Subprotocol', () => {
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice starts with v1 proof proposal to Faber with parentThreadId', async () => {

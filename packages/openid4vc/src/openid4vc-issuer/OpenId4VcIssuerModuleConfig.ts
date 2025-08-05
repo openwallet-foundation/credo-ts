@@ -67,6 +67,16 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   dpopRequired?: boolean
 
   /**
+   * Whether wallet attestations are required for all issuance sessions. This value can be overridden when creating
+   * a credential offer, but will have effect for dynamic issuance sessions. If wallet attestations are not required
+   * but used by a client in the first request to credo,
+   * wallet attestations will be required going forward.
+   *
+   * @default false
+   */
+  walletAttestationsRequired?: boolean
+
+  /**
    * Whether to allow dynamic issuance sessions based on a credential request.
    *
    * This requires an external authorization server which issues access tokens without
@@ -80,6 +90,9 @@ export interface OpenId4VcIssuerModuleConfigOptions {
 
   /**
    * A function mapping a credential request to the credential to be issued.
+   *
+   * When multiple credentials are returned it is recommended to use different or approximate issuance and expiration
+   * times to prevent correlation based on the specific time
    */
   credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
 
@@ -207,6 +220,18 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get dpopRequired(): boolean {
     return this.options.dpopRequired ?? false
+  }
+
+  /**
+   * Whether wallet attestations are required for all issuance sessions. This value can be overridden when creating
+   * a credential offer, but will have effect for dynamic issuance sessions. If wallet attestations are not required
+   * but used by a client in the first request to credo,
+   * wallet attestations will be required going forward.
+   *
+   * @default false
+   */
+  public get walletAttestationsRequired(): boolean {
+    return this.options.walletAttestationsRequired ?? false
   }
 
   /**

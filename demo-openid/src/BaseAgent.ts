@@ -2,10 +2,11 @@ import type { Server } from 'http'
 import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
 import type { Express } from 'express'
 
-import { Agent, ConsoleLogger, DidKey, KeyType, LogLevel, TypedArrayEncoder } from '@credo-ts/core'
+import { Agent, Buffer, ConsoleLogger, DidKey, LogLevel } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import express from 'express'
 
+import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import { greenText } from './OutputClass'
 
 export class BaseAgent<AgentModules extends ModulesMap> {
@@ -20,21 +21,32 @@ export class BaseAgent<AgentModules extends ModulesMap> {
   public kid!: string
   public verificationMethod!: VerificationMethod
 
-  public constructor({ port, name, modules }: { port: number; name: string; modules: AgentModules }) {
+  public constructor({
+    port,
+    name,
+    modules,
+  }: {
+    port: number
+    name: string
+    modules: AgentModules
+  }) {
     this.name = name
     this.port = port
     this.app = express()
 
     const config = {
       label: name,
-      walletConfig: { id: name, key: name },
       allowInsecureHttpUrls: true,
       logger: new ConsoleLogger(LogLevel.off),
     } satisfies InitConfig
 
     this.config = config
 
-    this.agent = new Agent({ config, dependencies: agentDependencies, modules })
+    this.agent = new Agent({
+      config,
+      dependencies: agentDependencies,
+      modules,
+    })
   }
 
   public async initializeAgent(secretPrivateKey: string) {
@@ -42,15 +54,28 @@ export class BaseAgent<AgentModules extends ModulesMap> {
 
     this.server = this.app.listen(this.port)
 
+    const { privateJwk } = transformPrivateKeyToPrivateJwk({
+      type: {
+        crv: 'Ed25519',
+        kty: 'OKP',
+      },
+      privateKey: Buffer.from(secretPrivateKey),
+    })
+
+    const { keyId } = await this.agent.kms.importKey({
+      privateJwk,
+    })
+
     const didCreateResult = await this.agent.dids.create<KeyDidCreateOptions>({
       method: 'key',
-      options: { keyType: KeyType.Ed25519 },
-      secret: { privateKey: TypedArrayEncoder.fromString(secretPrivateKey) },
+      options: {
+        keyId,
+      },
     })
 
     this.did = didCreateResult.didState.did as string
     this.didKey = DidKey.fromDid(this.did)
-    this.kid = `${this.did}#${this.didKey.key.fingerprint}`
+    this.kid = `${this.did}#${this.didKey.publicJwk.fingerprint}`
 
     const verificationMethod = didCreateResult.didState.didDocument?.dereferenceKey(this.kid, ['authentication'])
     if (!verificationMethod) throw new Error('No verification method found')

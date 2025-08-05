@@ -23,7 +23,7 @@ export function anonCredsRevocationStatusListFromIndyVdr(
   // Check whether the highest delta index is supported in the `maxCredNum` field of the
   // revocation registry definition. This will likely also be checked on other levels as well
   // by the ledger or the indy-vdr library itself
-  if (Math.max(...delta.issued, ...delta.revoked) >= revocationRegistryDefinition.value.maxCredNum) {
+  if (Math.max(...delta.issued, ...delta.revoked) > revocationRegistryDefinition.value.maxCredNum) {
     throw new CredoError(
       `Highest delta index '${Math.max(
         ...delta.issued,
@@ -94,8 +94,8 @@ export function indyVdrCreateLatestRevocationDelta(
 
   if (previousDelta) {
     revocationStatusList.forEach((revocationStatus, idx) => {
-      // Check whether the revocationStatusList entry is not included in the previous delta issued indices
-      if (revocationStatus === RevocationState.Active && !previousDelta.issued.includes(idx)) {
+      // If the current status is Active and this index was previously revoked, it means the credential was just unrevoked, so add it to the issued list
+      if (revocationStatus === RevocationState.Active && previousDelta.revoked.includes(idx)) {
         issued.push(idx)
       }
 

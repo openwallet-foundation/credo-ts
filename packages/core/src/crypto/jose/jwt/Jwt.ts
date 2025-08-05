@@ -1,16 +1,16 @@
 import type { Buffer } from '../../../utils'
-import type { JwkJson } from '../jwk'
 
 import { CredoError } from '../../../error'
 import { JsonEncoder, TypedArrayEncoder } from '../../../utils'
 
+import { Jwk } from '../../../modules/kms'
 import { JwtPayload } from './JwtPayload'
 
 // TODO: JWT Header typing
 interface JwtHeader {
   alg: string
   kid?: string
-  jwk?: JwkJson
+  jwk?: Jwk
   x5c?: string[]
   [key: string]: unknown
 }

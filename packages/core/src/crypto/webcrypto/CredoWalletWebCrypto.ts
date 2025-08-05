@@ -1,13 +1,13 @@
 import type { AgentContext } from '../../agent'
-import type { JwkJson } from '../jose'
-import type {
-  JsonWebKey,
-  KeyFormat,
-  KeyGenAlgorithm,
-  KeyImportParams,
-  KeySignParams,
-  KeyUsage,
-  KeyVerifyParams,
+import {
+  type JsonWebKey,
+  type KeyFormat,
+  type KeyGenAlgorithm,
+  type KeyImportParams,
+  type KeySignParams,
+  type KeyUsage,
+  type KeyVerifyParams,
+  keyParamsToJwaAlgorithm,
 } from './types'
 
 import { p384 } from '@noble/curves/p384'
@@ -15,29 +15,33 @@ import { sha256, sha384 } from '@noble/hashes/sha2'
 import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 
-import { Buffer } from '../../utils'
-import { Key } from '../Key'
-import { getJwkFromJson, getJwkFromKey } from '../jose'
-
 import { p256 } from '@noble/curves/p256'
-import { KeyType } from '../KeyType'
+import { KeyManagementApi, PublicJwk } from '../../modules/kms'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import { CredoWebCryptoKey } from './CredoWebCryptoKey'
-import { credoKeyTypeIntoSpkiAlgorithm, cryptoKeyAlgorithmToCredoKeyType, spkiAlgorithmIntoCredoKeyType } from './utils'
+import { cryptoKeyAlgorithmToCreateKeyOptions, publicJwkToSpki, spkiToPublicJwk } from './utils'
 
 export class CredoWalletWebCrypto {
-  public constructor(private agentContext: AgentContext) {}
+  private kms: KeyManagementApi
+
+  public constructor(private agentContext: AgentContext) {
+    this.kms = agentContext.resolve(KeyManagementApi)
+  }
 
   public generateRandomValues<T extends ArrayBufferView | null>(array: T): T {
     if (!array) return array
 
-    return this.agentContext.wallet.getRandomValues(array.byteLength) as unknown as T
+    return this.kms.randomBytes({ length: array.byteLength }) as unknown as T
   }
 
-  public async sign(key: CredoWebCryptoKey, message: Uint8Array, _algorithm: KeySignParams): Promise<Uint8Array> {
-    const signature = await this.agentContext.wallet.sign({
-      key: key.key,
-      data: Buffer.from(message),
+  public async sign(key: CredoWebCryptoKey, message: Uint8Array, algorithm: KeySignParams): Promise<Uint8Array> {
+    const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
+
+    const keyId = key.publicJwk.keyId
+    const { signature } = await this.kms.sign({
+      keyId,
+      data: message,
+      algorithm: jwaAlgorithm,
     })
 
     return signature
@@ -49,40 +53,47 @@ export class CredoWalletWebCrypto {
     message: Uint8Array,
     signature: Uint8Array
   ): Promise<boolean> {
+    const publicKey = key.publicJwk.publicKey
+
+    // TODO: with new KMS api we can now define custom algorithms
+    // such as ES256-SHA384 to support these non-standard JWA combinatiosn
+    // or we can do something like ES256-ph (pre-hashed for more generic)
     if (algorithm.name === 'ECDSA') {
       const hashAlg = typeof algorithm.hash === 'string' ? algorithm.hash : algorithm.hash.name
-      if (key.key.keyType === KeyType.P256 && hashAlg !== 'SHA-256') {
+      if (publicKey.kty === 'EC' && publicKey.crv === 'P-256' && hashAlg !== 'SHA-256') {
         if (hashAlg !== 'SHA-384') {
           throw new CredoWebCryptoError(
-            `Hash Alg: ${hashAlg} is not supported with key type ${key.key.keyType} currently`
+            `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
-        return p256.verify(signature, sha384(message), key.key.publicKey)
+        return p256.verify(signature, sha384(message), publicKey.publicKey)
       }
-      if (key.key.keyType === KeyType.P384 && hashAlg !== 'SHA-384') {
+      if (publicKey.kty === 'EC' && publicKey.crv === 'P-384' && hashAlg !== 'SHA-384') {
         if (hashAlg !== 'SHA-256') {
           throw new CredoWebCryptoError(
-            `Hash Alg: ${hashAlg} is not supported with key type ${key.key.keyType} currently`
+            `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
-        return p384.verify(signature, sha256(message), key.key.publicKey)
+        return p384.verify(signature, sha256(message), publicKey.publicKey)
       }
     }
 
-    const isValidSignature = await this.agentContext.wallet.verify({
-      key: key.key,
-      signature: Buffer.from(signature),
-      data: Buffer.from(message),
+    const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
+    const { verified } = await this.kms.verify({
+      key: {
+        publicJwk: key.publicJwk.toJson(),
+      },
+      algorithm: jwaAlgorithm,
+      signature,
+      data: message,
     })
 
-    return isValidSignature
+    return verified
   }
 
-  public async generate(algorithm: KeyGenAlgorithm): Promise<Key> {
-    const keyType = cryptoKeyAlgorithmToCredoKeyType(algorithm)
-
-    const key = await this.agentContext.wallet.createKey({
-      keyType,
+  public async generate(algorithm: KeyGenAlgorithm) {
+    const key = await this.kms.createKey({
+      type: cryptoKeyAlgorithmToCreateKeyOptions(algorithm),
     })
 
     return key
@@ -105,24 +116,14 @@ export class CredoWalletWebCrypto {
 
     switch (format.toLowerCase()) {
       case 'jwk': {
-        const jwk = getJwkFromJson(keyData as unknown as JwkJson)
-        const publicKey = Key.fromPublicKey(jwk.publicKey, jwk.keyType)
-        return new CredoWebCryptoKey(publicKey, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
+        const publicJwk = PublicJwk.fromUnknown(keyData)
+        return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
       }
       case 'spki': {
         const subjectPublicKey = AsnParser.parse(keyData as Uint8Array, SubjectPublicKeyInfo)
+        const publicJwk = spkiToPublicJwk(subjectPublicKey)
 
-        const key = new Uint8Array(subjectPublicKey.subjectPublicKey)
-
-        const keyType = spkiAlgorithmIntoCredoKeyType(subjectPublicKey.algorithm)
-
-        return new CredoWebCryptoKey(
-          Key.fromPublicKey(key, keyType),
-          algorithm as KeyGenAlgorithm,
-          extractable,
-          'public',
-          keyUsages
-        )
+        return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
       }
       default:
         throw new Error(`Unsupported export format: ${format}`)
@@ -132,16 +133,10 @@ export class CredoWalletWebCrypto {
   public async exportKey(format: KeyFormat, key: CredoWebCryptoKey): Promise<Uint8Array | JsonWebKey> {
     switch (format.toLowerCase()) {
       case 'jwk': {
-        const jwk = getJwkFromKey(key.key)
-        return jwk.toJson() as unknown as JsonWebKey
+        return key.publicJwk.toJson()
       }
       case 'spki': {
-        const algorithm = credoKeyTypeIntoSpkiAlgorithm(key.key.keyType)
-
-        const publicKeyInfo = new SubjectPublicKeyInfo({
-          algorithm,
-          subjectPublicKey: key.key.publicKey.buffer,
-        })
+        const publicKeyInfo = publicJwkToSpki(key.publicJwk)
 
         const derEncoded = AsnConvert.serialize(publicKeyInfo)
         return new Uint8Array(derEncoded)

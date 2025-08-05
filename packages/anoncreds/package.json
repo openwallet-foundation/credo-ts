@@ -24,23 +24,23 @@
     "test": "jest"
   },
   "dependencies": {
-    "@astronautlabs/jsonpath": "^1.1.2",
+    "@astronautlabs/jsonpath": "catalog:",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "@sphereon/pex-models": "^2.3.2",
-    "class-transformer": "0.5.1",
-    "class-validator": "0.14.1",
-    "reflect-metadata": "^0.1.13"
+    "@sphereon/pex-models": "catalog:",
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:",
+    "reflect-metadata": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
-    "@hyperledger/anoncreds-nodejs": "^0.3.1",
-    "@hyperledger/anoncreds-shared": "^0.3.1",
-    "rimraf": "^4.4.0",
-    "rxjs": "^7.8.0",
-    "typescript": "~5.5.2"
+    "@hyperledger/anoncreds-nodejs": "catalog:",
+    "@hyperledger/anoncreds-shared": "catalog:",
+    "rimraf": "catalog:",
+    "rxjs": "catalog:",
+    "typescript": "catalog:"
   },
   "peerDependencies": {
-    "@hyperledger/anoncreds-shared": "^0.3.1"
+    "@hyperledger/anoncreds-shared": "catalog:"
   }
 }

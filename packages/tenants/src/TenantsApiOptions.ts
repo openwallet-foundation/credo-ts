@@ -11,7 +11,7 @@ export type WithTenantAgentCallback<AgentModules extends ModulesMap, Return> = (
 ) => Promise<Return>
 
 export interface CreateTenantOptions {
-  config: Omit<TenantConfig, 'walletConfig'>
+  config: TenantConfig
 }
 
 export interface UpdateTenantStorageOptions {

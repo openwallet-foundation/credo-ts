@@ -47,11 +47,16 @@ export class X509Service {
     if (certificateChain.length === 0) throw new X509Error('Certificate chain is empty')
     const webCrypto = new CredoWebCrypto(agentContext)
 
-    const parsedLeafCertificate = new x509.X509Certificate(certificate)
-
-    const certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
-      (c) => new x509.X509Certificate(c)
-    )
+    let parsedLeafCertificate: x509.X509Certificate
+    let certificatesToBuildChain: x509.X509Certificate[]
+    try {
+      parsedLeafCertificate = new x509.X509Certificate(certificate)
+      certificatesToBuildChain = [...certificateChain, ...(trustedCertificates ?? [])].map(
+        (c) => new x509.X509Certificate(c)
+      )
+    } catch (error) {
+      throw new X509Error('Error during parsing of x509 certificate', { cause: error })
+    }
 
     const certificateChainBuilder = new x509.X509ChainBuilder({
       certificates: certificatesToBuildChain,
@@ -69,7 +74,7 @@ export class X509Service {
       throw new X509Error('Could not parse the full chain. Likely due to incorrect ordering')
     }
 
-    let _previousCertificate: X509Certificate | undefined = undefined
+    let previousCertificate: X509Certificate | undefined = undefined
 
     if (trustedCertificates) {
       const parsedTrustedCertificates = trustedCertificates.map((trustedCertificate) =>
@@ -88,18 +93,17 @@ export class X509Service {
         // When we trust a certificate other than the first certificate in the provided chain we keep a reference to the
         // previous certificate as we need the key of this certificate to verify the first certificate in the chain as
         // it's not self-sigend.
-        _previousCertificate = parsedChain[trustedCertificateIndex - 1]
+        previousCertificate = parsedChain[trustedCertificateIndex - 1]
 
         // Pop everything off before the index of the trusted certificate (those are more root) as it is not relevant for validation
         parsedChain = parsedChain.slice(trustedCertificateIndex)
       }
     }
 
-    let previousCertificate: X509Certificate | undefined = undefined
     // Verify the certificate with the publicKey of the certificate above
     for (let i = 0; i < parsedChain.length; i++) {
       const cert = parsedChain[i]
-      const publicKey = previousCertificate ? previousCertificate.publicKey : undefined
+      const publicJwk = previousCertificate ? previousCertificate.publicJwk : undefined
 
       // The only scenario where this will trigger is if the trusted certificates and the x509 chain both do not contain the
       // intermediate/root certificate needed. E.g. for ISO 18013-5 mDL the root cert MUST NOT be in the chain. If the signer
@@ -110,7 +114,7 @@ export class X509Service {
       // In this case we could skip the signature verification (not other verifications), as we already trust the signer certificate,
       // but i think the purpose of ISO 18013-5 mDL is that you trust the root certificate. If we can't verify the whole chain e.g.
       // when we receive a credential we have the chance it will fail later on.
-      const skipSignatureVerification = i === 0 && trustedCertificates && cert.issuer !== cert.subject && !publicKey
+      const skipSignatureVerification = i === 0 && trustedCertificates && !publicJwk
       // NOTE: at some point we might want to change this to throw an error instead of skipping the signature verification of the trusted
       // but it would basically prevent mDOCs from unknown issuers to be verified in the wallet. Verifiers should only trust the root certificate
       // anyway.
@@ -122,7 +126,7 @@ export class X509Service {
 
       await cert.verify(
         {
-          publicKey,
+          publicJwk,
           verificationDate,
           skipSignatureVerification,
         },

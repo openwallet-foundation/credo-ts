@@ -3,7 +3,8 @@ import type { W3cJsonPresentation } from '../models/presentation/W3cJsonPresenta
 
 import { JwtPayload } from '../../../crypto/jose/jwt'
 import { CredoError } from '../../../error'
-import { JsonTransformer, isJsonObject } from '../../../utils'
+import { isJsonObject } from '../../../types'
+import { JsonTransformer } from '../../../utils'
 import { W3cPresentation } from '../models/presentation/W3cPresentation'
 
 export function getJwtPayloadFromPresentation(presentation: W3cPresentation) {

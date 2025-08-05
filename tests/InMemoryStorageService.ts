@@ -7,9 +7,13 @@ import type {
   StorageService,
 } from '../packages/core/src/storage/StorageService'
 
-import { InMemoryWallet } from './InMemoryWallet'
-
-import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, injectable } from '@credo-ts/core'
+import {
+  JsonTransformer,
+  RecordDuplicateError,
+  RecordNotFoundError,
+  StorageVersionRecord,
+  injectable,
+} from '@credo-ts/core'
 
 interface StorageRecord {
   value: Record<string, unknown>
@@ -44,31 +48,57 @@ export class InMemoryStorageService<T extends BaseRecord<any, any, any> = BaseRe
     return instance
   }
 
+  public deleteRecordsForContext(agentContext: AgentContext) {
+    const contextCorrelationId = agentContext.contextCorrelationId
+
+    // Be strict so that we can catch bugs in how credo handles context lifecycle
+    if (!this.contextCorrelationIdToRecords[contextCorrelationId]) {
+      throw new Error(`Storage for agent context ${contextCorrelationId} does not exist`)
+    }
+
+    delete this.contextCorrelationIdToRecords[contextCorrelationId]
+  }
+
+  public createRecordsForContext(agentContext: AgentContext) {
+    const contextCorrelationId = agentContext.contextCorrelationId
+
+    // Be strict so that we can catch bugs in how credo handles context lifecycle
+    if (this.contextCorrelationIdToRecords[contextCorrelationId]) {
+      throw new Error(`Storage for agent context ${contextCorrelationId} already exists`)
+    }
+
+    this.contextCorrelationIdToRecords[contextCorrelationId] = {
+      records: {},
+      creationDate: new Date(),
+    }
+    this.setCurrentFrameworkStorageVersionForContext(agentContext)
+  }
+
   private getRecordsForContext(agentContext: AgentContext): InMemoryRecords {
     const contextCorrelationId = agentContext.contextCorrelationId
 
+    // Be strict so that we can catch bugs in how credo handles context lifecycle
     if (!this.contextCorrelationIdToRecords[contextCorrelationId]) {
-      this.contextCorrelationIdToRecords[contextCorrelationId] = {
-        records: {},
-        creationDate: new Date(),
-      }
-    } else if (agentContext.wallet instanceof InMemoryWallet && agentContext.wallet.activeWalletId) {
-      const walletCreationDate = agentContext.wallet.inMemoryWallets[agentContext.wallet.activeWalletId].creationDate
-      const storageCreationDate = this.contextCorrelationIdToRecords[contextCorrelationId].creationDate
-
-      // If the storage was created before the wallet, it means the wallet has been deleted in the meantime
-      // and thus we need to recreate the storage as we don't want to serve records from the previous wallet
-      // FIXME: this is a flaw in our wallet/storage model. I think wallet should be for keys, and storage
-      // for records and you can create them separately. But that's a bigger change.
-      if (storageCreationDate < walletCreationDate) {
-        this.contextCorrelationIdToRecords[contextCorrelationId] = {
-          records: {},
-          creationDate: new Date(),
-        }
+      if (agentContext.isRootAgentContext) {
+        this.createRecordsForContext(agentContext)
+      } else {
+        throw new Error(`Storage for agent context ${contextCorrelationId} does not exist`)
       }
     }
 
     return this.contextCorrelationIdToRecords[contextCorrelationId].records
+  }
+
+  /**
+   * When we create storage for a context we need to store the version record
+   */
+  private async setCurrentFrameworkStorageVersionForContext(agentContext: AgentContext) {
+    await this.save(
+      agentContext,
+      new StorageVersionRecord({
+        storageVersion: StorageVersionRecord.frameworkStorageVersion,
+      }) as unknown as T
+    )
   }
 
   /** @inheritDoc */

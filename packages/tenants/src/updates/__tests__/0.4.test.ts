@@ -5,7 +5,6 @@ import { MediatorRoutingRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { TenantsModule } from '../../TenantsModule'
 
 // Backup date / time is the unique identifier for a backup, needs to be unique for every test
@@ -23,17 +22,11 @@ describe('UpdateAssistant | Tenants | v0.4 - v0.5', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
-    // If we register the AskarModule it will register the storage service, but we use in memory storage here
-    dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
       {
         config: {
           label: 'Test Agent',
-          walletConfig: {
-            id: 'Wallet: 0.5 Update Tenants',
-            key: 'Key: 0.5 Update Tenants',
-          },
         },
         dependencies: agentDependencies,
         modules: {
@@ -79,7 +72,6 @@ describe('UpdateAssistant | Tenants | v0.4 - v0.5', () => {
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
-    await agent.wallet.delete()
 
     uuidSpy.mockReset()
   })

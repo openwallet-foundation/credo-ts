@@ -10,15 +10,17 @@ import type {
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 
 import { JwsService } from '../../../crypto'
-import { getJwkClassFromJwaSignatureAlgorithm, getJwkFromKey } from '../../../crypto/jose/jwk'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { MessageValidator, asArray, isDid } from '../../../utils'
-import { DidResolverService, getKeyDidMappingByKeyType, getKeyFromVerificationMethod } from '../../dids'
-import { X509ModuleConfig } from '../../x509'
-import { extractX509CertificatesFromJwt } from '../../x509/extraction'
+import { DidResolverService, DidsApi, parseDid } from '../../dids'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
 
+import {
+  getPublicJwkFromVerificationMethod,
+  getSupportedVerificationMethodTypesForPublicJwk,
+} from '../../dids/domain/key-type/keyDidMapping'
+import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'
@@ -54,14 +56,13 @@ export class W3cJwtCredentialService {
       throw new CredoError('Only did identifiers are supported as verification method')
     }
 
-    const verificationMethod = await this.resolveVerificationMethod(agentContext, options.verificationMethod, [
+    const publicJwk = await this.resolveVerificationMethod(agentContext, options.verificationMethod, [
       'assertionMethod',
     ])
-    const key = getKeyFromVerificationMethod(verificationMethod)
 
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      key,
+      keyId: publicJwk.keyId,
       protectedHeaderOptions: {
         typ: 'JWT',
         alg: options.alg,
@@ -128,8 +129,7 @@ export class W3cJwtCredentialService {
         credential,
         purpose: ['assertionMethod'],
       })
-      const issuerPublicKey = getKeyFromVerificationMethod(issuerVerificationMethod)
-      const issuerPublicJwk = getJwkFromKey(issuerPublicKey)
+      const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
       let signatureResult: VerifyJwsResult | undefined = undefined
       try {
@@ -137,7 +137,11 @@ export class W3cJwtCredentialService {
         signatureResult = await this.jwsService.verifyJws(agentContext, {
           jws: credential.jwt.serializedJwt,
           // We have pre-fetched the key based on the issuer/signer of the credential
-          jwkResolver: () => issuerPublicJwk,
+          jwsSigner: {
+            method: 'did',
+            jwk: issuerPublicKey,
+            didUrl: issuerVerificationMethod.id,
+          },
         })
 
         if (!signatureResult.isValid) {
@@ -173,8 +177,8 @@ export class W3cJwtCredentialService {
       }
 
       // Validate whether the `issuer` of the credential is also the signer
-      const issuerIsSigner = signatureResult?.signerKeys.some(
-        (signerKey) => signerKey.fingerprint === issuerPublicKey.fingerprint
+      const issuerIsSigner = signatureResult?.jwsSigners.some(
+        (jwsSigner) => jwsSigner.jwk.fingerprint === issuerPublicKey.fingerprint
       )
       if (!issuerIsSigner) {
         validationResults.validations.issuerIsSigner = {
@@ -229,13 +233,11 @@ export class W3cJwtCredentialService {
     jwtPayload.additionalClaims.nonce = options.challenge
     jwtPayload.aud = options.domain
 
-    const verificationMethod = await this.resolveVerificationMethod(agentContext, options.verificationMethod, [
-      'authentication',
-    ])
+    const publicJwk = await this.resolveVerificationMethod(agentContext, options.verificationMethod, ['authentication'])
 
     const jwt = await this.jwsService.createJwsCompact(agentContext, {
       payload: jwtPayload,
-      key: getKeyFromVerificationMethod(verificationMethod),
+      keyId: publicJwk.keyId,
       protectedHeaderOptions: {
         typ: 'JWT',
         alg: options.alg,
@@ -307,30 +309,20 @@ export class W3cJwtCredentialService {
         credential: presentation,
         purpose: ['authentication'],
       })
-      const proverPublicKey = getKeyFromVerificationMethod(proverVerificationMethod)
-      const proverPublicJwk = getJwkFromKey(proverPublicKey)
-      const x509Config = agentContext.dependencyManager.resolve(X509ModuleConfig)
-
-      let trustedCertificates = options.trustedCertificates
-      const certificateChain = extractX509CertificatesFromJwt(presentation.jwt)
-      if (certificateChain && !trustedCertificates) {
-        trustedCertificates = await x509Config.getTrustedCertificatesForVerification?.(agentContext, {
-          certificateChain,
-          verification: {
-            type: 'credential',
-            credential: presentation,
-          },
-        })
-      }
+      const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
       let signatureResult: VerifyJwsResult | undefined = undefined
       try {
         // Verify the JWS signature
         signatureResult = await this.jwsService.verifyJws(agentContext, {
           jws: presentation.jwt.serializedJwt,
-          // We have pre-fetched the key based on the singer/holder of the presentation
-          jwkResolver: () => proverPublicJwk,
-          trustedCertificates,
+          allowedJwsSignerMethods: ['did'],
+          jwsSigner: {
+            method: 'did',
+            didUrl: proverVerificationMethod.id,
+            jwk: proverPublicKey,
+          },
+          trustedCertificates: [],
         })
 
         if (!signatureResult.isValid) {
@@ -442,11 +434,19 @@ export class W3cJwtCredentialService {
     agentContext: AgentContext,
     verificationMethod: string,
     allowsPurposes?: DidPurpose[]
-  ): Promise<VerificationMethod> {
-    const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-    const didDocument = await didResolver.resolveDidDocument(agentContext, verificationMethod)
+  ): Promise<PublicJwk> {
+    const dids = agentContext.resolve(DidsApi)
 
-    return didDocument.dereferenceKey(verificationMethod, allowsPurposes)
+    const parsedDid = parseDid(verificationMethod)
+    const { didDocument, keys } = await dids.resolveCreatedDidDocumentWithKeys(parsedDid.did)
+    const verificationMethodObject = didDocument.dereferenceKey(verificationMethod, allowsPurposes)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethodObject)
+
+    publicJwk.keyId =
+      keys?.find(({ didDocumentRelativeKeyId }) => verificationMethodObject.id.endsWith(didDocumentRelativeKeyId))
+        ?.kmsKeyId ?? publicJwk.legacyKeyId
+
+    return publicJwk
   }
 
   /**
@@ -513,10 +513,10 @@ export class W3cJwtCredentialService {
       }
 
       // Find the verificationMethod in the did document based on the alg and proofPurpose
-      const jwkClass = getJwkClassFromJwaSignatureAlgorithm(credential.jwt.header.alg)
-      if (!jwkClass) throw new CredoError(`Unsupported JWT alg '${credential.jwt.header.alg}'`)
-
-      const { supportedVerificationMethodTypes } = getKeyDidMappingByKeyType(jwkClass.keyType)
+      const jwkClass = PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(
+        credential.jwt.header.alg as KnownJwaSignatureAlgorithm
+      )
+      const supportedVerificationMethodTypes = getSupportedVerificationMethodTypesForPublicJwk(jwkClass)
 
       const didDocument = await didResolver.resolveDidDocument(agentContext, signerId)
       const verificationMethods =
@@ -526,12 +526,12 @@ export class W3cJwtCredentialService {
 
       if (verificationMethods.length === 0) {
         throw new CredoError(
-          `No verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
+          `No verification methods found for signer '${signerId}' and key type '${jwkClass.name}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )
       }
       if (verificationMethods.length > 1) {
         throw new CredoError(
-          `Multiple verification methods found for signer '${signerId}' and key type '${jwkClass.keyType}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
+          `Multiple verification methods found for signer '${signerId}' and key type '${jwkClass.name}' for alg '${credential.jwt.header.alg}'. Unable to determine which public key is associated with the credential.`
         )
       }
 

@@ -7,7 +7,13 @@ export class DcqlError extends CredoError {
     message: string,
     { cause, additionalMessages }: { cause?: Error; additionalMessages?: Array<string> } = {}
   ) {
-    super(message, { cause })
+    let fullMessage = message
+
+    if (additionalMessages?.length) {
+      fullMessage += `\n - ${additionalMessages.join('\n - ')}`
+    }
+
+    super(fullMessage, { cause })
     this.additionalMessages = additionalMessages
   }
 }

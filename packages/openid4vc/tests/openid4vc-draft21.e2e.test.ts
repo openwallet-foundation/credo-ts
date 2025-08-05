@@ -1,14 +1,12 @@
 import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import type { AgentType } from './utils'
 
-import { ClaimFormat, KeyType, X509Module, X509Service, parseDid } from '@credo-ts/core'
+import { ClaimFormat, Kms, X509Service, parseDid } from '@credo-ts/core'
 import express, { type Express } from 'express'
-
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
 
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 
@@ -35,8 +33,7 @@ describe('OpenID4VP Draft 21', () => {
       'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
-        askar: new AskarModule(askarModuleConfig),
-        x509: new X509Module(),
+        inMemory: new InMemoryWalletModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e',
       global.fetch
@@ -48,7 +45,7 @@ describe('OpenID4VP Draft 21', () => {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
         }),
-        askar: new AskarModule(askarModuleConfig),
+        inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598f',
@@ -64,10 +61,7 @@ describe('OpenID4VP Draft 21', () => {
     clearNock()
 
     await holder.agent.shutdown()
-    await holder.agent.wallet.delete()
-
     await verifier.agent.shutdown()
-    await verifier.agent.wallet.delete()
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
@@ -92,15 +86,16 @@ describe('OpenID4VP Draft 21', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
-    const rawCertificate = certificate.toString('base64')
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(certificate)
+    verifier.agent.x509.config.addTrustedCertificate(certificate)
 
     const presentationDefinition = {
       id: 'OpenBadgeCredential',
@@ -136,7 +131,7 @@ describe('OpenID4VP Draft 21', () => {
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -271,7 +266,7 @@ describe('OpenID4VP Draft 21', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {
@@ -335,23 +330,27 @@ describe('OpenID4VP Draft 21', () => {
     await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
-      authorityKey: await verifier.agent.context.wallet.createKey({ keyType: KeyType.P256 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+      ),
       issuer: 'C=DE',
     })
 
-    await verifier.agent.x509.setTrustedCertificates([issuerCertificate.toString('pem')])
+    verifier.agent.x509.config.setTrustedCertificates([issuerCertificate])
 
     const parsedDid = parseDid(verifier.kid)
     if (!parsedDid.fragment) {
       throw new Error(`didUrl '${parsedDid.didUrl}' does not contain a '#'. Unable to derive key from did document.`)
     }
 
-    const holderKey = await holder.agent.context.wallet.createKey({ keyType: KeyType.P256 })
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (await holder.agent.kms.createKey({ type: { kty: 'EC', crv: 'P-256' } })).publicJwk
+    )
 
     const signedMdoc = await verifier.agent.mdoc.sign({
       docType: 'org.eu.university',
       holderKey,
-      issuerCertificate: issuerCertificate.toString('pem'),
+      issuerCertificate,
       namespaces: {
         'eu.europa.ec.eudi.pid.1': {
           university: 'innsbruck',
@@ -364,15 +363,17 @@ describe('OpenID4VP Draft 21', () => {
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
-      authorityKey: await verifier.agent.wallet.createKey({ keyType: KeyType.Ed25519 }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })).publicJwk
+      ),
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
     const rawCertificate = certificate.toString('base64')
     await holder.agent.mdoc.store(signedMdoc)
 
-    holder.agent.x509.addTrustedCertificate(rawCertificate)
-    verifier.agent.x509.addTrustedCertificate(rawCertificate)
+    holder.agent.x509.config.addTrustedCertificate(rawCertificate)
+    verifier.agent.x509.config.addTrustedCertificate(rawCertificate)
 
     const presentationDefinition = {
       id: 'mDL-sample-req',
@@ -430,7 +431,7 @@ describe('OpenID4VP Draft 21', () => {
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
-          x5c: [rawCertificate],
+          x5c: [certificate],
         },
         presentationExchange: {
           definition: presentationDefinition,
@@ -623,7 +624,7 @@ describe('OpenID4VP Draft 21', () => {
           header: {
             alg: 'EdDSA',
             kid: '#z6MktiQQEqm2yapXBDt1WEVB3dqgvyzi96FuFANYmrgTrKV9',
-            typ: 'vc+sd-jwt',
+            typ: 'dc+sd-jwt',
           },
           kbJwt: {
             header: {

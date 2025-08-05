@@ -9,12 +9,34 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
+export interface OpenId4VcIssuanceSessionDpop {
+  /**
+   * Whether dpop is required. Can be set to false to override the
+   * global config
+   */
+  required: boolean
+
+  /**
+   * JWK thumbprint of the dpop key. This is mosty used when a dpop key is bound
+   * to the issuance session before the access token is created (which contains the dpop key)
+   */
+  dpopJkt?: string
+}
+
+export interface OpenId4VcIssuanceSessionWalletAttestation {
+  /**
+   * Wheter presentation of a wallet attestation is required.
+   * Can be set to false to override the global config
+   */
+  required: boolean
+}
+
 export interface OpenId4VcIssuanceSessionAuthorization {
   code?: string
 
   /**
    * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
-   * You now the code was created by you because you can decrypt it, and you don't have to store
+   * You know the code was created by you because you can decrypt it, and you don't have to store
    * additional metadata on your server. It's similar to the signed / encrypted nonce
    */
   codeExpiresAt?: Date
@@ -87,6 +109,9 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    * Client id will mostly be used when doing auth flow
    */
   clientId?: string
+
+  walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
+  dpop?: OpenId4VcIssuanceSessionDpop
 
   // Pre auth flow
   preAuthorizedCode?: string
@@ -169,6 +194,9 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
     codeChallenge: string
   }
 
+  walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
+  dpop?: OpenId4VcIssuanceSessionDpop
+
   /**
    * Authorization code flow specific metadata values
    */
@@ -250,6 +278,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.credentialOfferId = props.credentialOfferId
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
+      this.dpop = props.dpop
+      this.walletAttestation = props.walletAttestation
       this.state = props.state
       this.errorMessage = props.errorMessage
     }

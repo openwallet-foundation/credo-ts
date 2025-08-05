@@ -83,6 +83,10 @@ export class DidExchangeRequestHandler implements MessageHandler {
       transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
+    if (!outOfBandRecord.reusable) {
+      await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
+    }
+
     if (connectionRecord.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
       // TODO We should add an option to not pass routing and therefore do not rotate keys and use the keys from the invitation
       // TODO: Allow rotation of keys used in the invitation for new ones not only when out-of-band is reusable
