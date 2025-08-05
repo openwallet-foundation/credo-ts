@@ -49,6 +49,8 @@ export {
   JsonEncoder,
   JsonTransformer,
   TypedArrayEncoder,
+  MultiBaseEncoder,
+  MultiHashEncoder,
   HashlinkEncoder,
   BaseName,
   Buffer,
@@ -60,6 +62,7 @@ export {
   equalsIgnoreOrder,
   equalsWithOrder,
   DateTransformer,
+  IsStringOrStringArray,
 } from './utils'
 export * from './logger'
 export * from './error'
