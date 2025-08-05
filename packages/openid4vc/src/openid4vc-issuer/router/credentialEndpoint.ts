@@ -235,7 +235,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           next,
           agentContext.config.logger,
           new Oauth2ResourceUnauthorizedError(
-            'No credential configurationss match credential request and access token scope',
+            'No credential configurations match credential request and access token scope',
             {
               scheme,
               error: Oauth2ErrorCodes.InsufficientScope,
@@ -297,7 +297,13 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         },
       })
 
-      return sendJsonResponse(response, next, credentialResponse)
+      return sendJsonResponse(
+        response,
+        next,
+        credentialResponse,
+        undefined,
+        credentialResponse.transaction_id ? 202 : 200
+      )
     } catch (error) {
       if (error instanceof Oauth2ServerErrorResponseError) {
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)

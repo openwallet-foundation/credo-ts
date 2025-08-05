@@ -7,11 +7,13 @@ import type {
   OpenId4VciAuthorizationCodeFlowConfig,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
+  OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
   OpenId4VciCredentialRequestAuthorization,
   OpenId4VciCredentialRequestToCredentialMapperOptions,
   OpenId4VciPreAuthorizedCodeFlowConfig,
+  OpenId4VciSignCredentials,
   OpenId4VciSignW3cCredentials,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -51,14 +53,14 @@ import {
   CredentialConfigurationsSupportedWithFormats,
   CredentialIssuerMetadata,
   CredentialRequestFormatSpecific,
+  CredentialResponse,
+  DeferredCredentialResponse,
   Openid4vciDraftVersion,
   Openid4vciIssuer,
   ParseCredentialRequestReturn,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
-
-import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
@@ -71,6 +73,7 @@ import {
   getSupportedJwaSignatureAlgorithms,
 } from '../shared/utils'
 
+import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -324,38 +327,180 @@ export class OpenId4VcIssuerService {
       credentialConfigurationId,
     })
 
-    const signedCredentials = await this.getSignedCredentials(agentContext, {
-      credentialRequest,
+    const mapper =
+      options.credentialRequestToCredentialMapper ?? this.openId4VcIssuerConfig.credentialRequestToCredentialMapper
+
+    let verification: OpenId4VciCredentialRequestToCredentialMapperOptions['verification'] = undefined
+
+    // NOTE: this will throw an error if the verifier module is not registered and there is a
+    // verification session. But you can't get here without the verifier module anyway
+    if (issuanceSession.presentation?.openId4VcVerificationSessionId) {
+      const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
+      const session = await verifierApi.getVerificationSessionById(
+        issuanceSession.presentation.openId4VcVerificationSessionId
+      )
+
+      const response = await verifierApi.getVerifiedAuthorizationResponse(
+        issuanceSession.presentation.openId4VcVerificationSessionId
+      )
+
+      if (response.presentationExchange) {
+        verification = {
+          session,
+          presentationExchange: response.presentationExchange,
+        }
+      } else if (response.dcql) {
+        verification = {
+          session,
+          dcql: response.dcql,
+        }
+      } else {
+        throw new CredoError(
+          `Verified authorization response for verification session with id '${session.id}' does not have presentationExchange or dcql defined.`
+        )
+      }
+    }
+
+    const signOptionsOrDeferral = await mapper({
+      agentContext,
       issuanceSession,
-      issuer,
+      holderBinding: verifiedCredentialRequestProofs,
+      credentialOffer: issuanceSession.credentialOfferPayload,
+
+      verification,
+
+      credentialRequest: options.credentialRequest,
+      credentialRequestFormat: format,
+
+      // Matching credential configuration
       credentialConfiguration,
       credentialConfigurationId,
-      requestFormat: format,
+
+      // Authorization
       authorization: options.authorization,
-      credentialRequestToCredentialMapper: options.credentialRequestToCredentialMapper,
-      credentialRequestProofs: verifiedCredentialRequestProofs,
     })
+
+    let credentialResponse: CredentialResponse
 
     // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
-    const credentialResponse = vcIssuer.createCredentialResponse({
-      credential: credentialRequest.proof ? signedCredentials.credentials[0] : undefined,
-      credentials: credentialRequest.proofs ? signedCredentials.credentials : undefined,
-      cNonce,
-      cNonceExpiresInSeconds,
-      credentialRequest: parsedCredentialRequest,
-    })
 
-    issuanceSession.issuedCredentials.push(credentialConfigurationId)
-    const newState =
-      issuanceSession.issuedCredentials.length >=
-      issuanceSession.credentialOfferPayload.credential_configuration_ids.length
-        ? OpenId4VcIssuanceSessionState.Completed
-        : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
-    await this.updateState(agentContext, issuanceSession, newState)
+    if ('interval' in signOptionsOrDeferral) {
+      credentialResponse = vcIssuer.createCredentialResponse({
+        transactionId: signOptionsOrDeferral.transactionId,
+        interval: signOptionsOrDeferral.interval,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+      })
+
+      // Save transaction id and credential request for deferred issuance
+      issuanceSession.transactionId = signOptionsOrDeferral.transactionId
+      issuanceSession.transactionData = {
+        requestFormat: format,
+        numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
+        credentialConfigurationId,
+        credentialConfiguration,
+      }
+      await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Deferred)
+    } else {
+      const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
+        issuanceSession,
+        credentialConfiguration,
+        expectedLength: verifiedCredentialRequestProofs.keys.length,
+      })
+
+      credentialResponse = vcIssuer.createCredentialResponse({
+        credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
+        credentials: credentialRequest.proofs ? credentials.credentials : undefined,
+        cNonce,
+        cNonceExpiresInSeconds,
+        credentialRequest: parsedCredentialRequest,
+      })
+
+      issuanceSession.issuedCredentials.push(credentialConfigurationId)
+      const newState =
+        issuanceSession.issuedCredentials.length >=
+        issuanceSession.credentialOfferPayload.credential_configuration_ids.length
+          ? OpenId4VcIssuanceSessionState.Completed
+          : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+      await this.updateState(agentContext, issuanceSession, newState)
+    }
 
     return {
       credentialResponse,
+      issuanceSession,
+    }
+  }
+
+  public async createDeferredCredentialResponse(
+    agentContext: AgentContext,
+    options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
+  ) {
+    options.issuanceSession.assertState([OpenId4VcIssuanceSessionState.Deferred])
+    if (!options.issuanceSession.transactionData) {
+      throw new CredoError('OpenId4VcIssuanceSessionRecord is in deferred state, but contains no transactionData.')
+    }
+
+    const { issuanceSession } = options
+    const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+
+    const { credentialConfiguration, credentialConfigurationId } = this.getCredentialConfigurationsForRequest({
+      issuanceSession,
+      issuerMetadata,
+      requestFormat: options.issuanceSession.transactionData.requestFormat,
+      credentialConfigurations:
+        options.issuanceSession.transactionData.credentialConfiguration &&
+        options.issuanceSession.transactionData.credentialConfigurationId
+          ? {
+              [options.issuanceSession.transactionData.credentialConfigurationId]:
+                options.issuanceSession.transactionData.credentialConfiguration,
+            }
+          : undefined,
+      authorization: options.authorization,
+    })
+
+    const mapper =
+      options.deferredCredentialRequestToCredentialMapper ??
+      this.openId4VcIssuerConfig.deferredCredentialRequestToCredentialMapper
+    if (!mapper) {
+      throw new CredoError(
+        'OpenId4VcIssuerService does not have a defined deferredCredentialRequestToCredentialMapper.'
+      )
+    }
+
+    const signOptionsOrDeferral = await mapper({
+      agentContext,
+      issuanceSession,
+      deferredCredentialRequest: options.deferredCredentialRequest,
+      authorization: options.authorization,
+    })
+
+    let deferredCredentialResponse: DeferredCredentialResponse
+    if ('interval' in signOptionsOrDeferral) {
+      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
+        interval: signOptionsOrDeferral.interval,
+      })
+    } else {
+      const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
+        issuanceSession,
+        credentialConfiguration,
+        expectedLength: options.issuanceSession.transactionData.numberOfCredentials,
+      })
+
+      deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
+        credentials: credentials.credentials,
+      })
+
+      issuanceSession.issuedCredentials.push(credentialConfigurationId)
+
+      await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Completed)
+    }
+
+    return {
+      deferredCredentialResponse,
       issuanceSession,
     }
   }
@@ -457,7 +602,7 @@ export class OpenId4VcIssuerService {
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
-            error_description: `Insufficent key_storage for key attestation. Proof type 'attestation' for credential configuration '${credentialConfigurationId}', expects one of key_storage values ${expectedKeyStorage.join(', ')}`,
+            error_description: `Insufficient key_storage for key attestation. Proof type 'attestation' for credential configuration '${credentialConfigurationId}', expects one of key_storage values ${expectedKeyStorage.join(', ')}`,
           })
         }
 
@@ -469,7 +614,7 @@ export class OpenId4VcIssuerService {
         ) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
-            error_description: `Insufficent user_authentication for key attestation. Proof type 'attestation' for credential configuration '${credentialConfigurationId}', expects one of user_authentication values ${expectedUserAuthentication.join(', ')}`,
+            error_description: `Insufficient user_authentication for key attestation. Proof type 'attestation' for credential configuration '${credentialConfigurationId}', expects one of user_authentication values ${expectedUserAuthentication.join(', ')}`,
           })
         }
       }
@@ -796,6 +941,7 @@ export class OpenId4VcIssuerService {
     const credentialIssuerMetadata = {
       credential_issuer: issuerUrl,
       credential_endpoint: joinUriParts(issuerUrl, [config.credentialEndpointPath]),
+      deferred_credential_endpoint: joinUriParts(issuerUrl, [config.deferredCredentialEndpointPath]),
       credential_configurations_supported: issuerRecord.credentialConfigurationsSupported ?? {},
       authorization_servers: authorizationServers,
       display: issuerRecord.display,
@@ -1116,74 +1262,18 @@ export class OpenId4VcIssuerService {
 
   private async getSignedCredentials(
     agentContext: AgentContext,
-    options: OpenId4VciCreateCredentialResponseOptions & {
-      issuer: OpenId4VcIssuerRecord
+    signOptions: OpenId4VciSignCredentials,
+    options: {
       issuanceSession: OpenId4VcIssuanceSessionRecord
       credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
-      credentialConfigurationId: string
-      requestFormat?: CredentialRequestFormatSpecific
-      credentialRequestProofs: VerifiedOpenId4VcCredentialHolderBinding
+      expectedLength: number
     }
   ): Promise<{
     credentials: string[] | Record<string, unknown>[]
     format: `${OpenId4VciCredentialFormatProfile}`
   }> {
-    const { issuanceSession, credentialConfiguration, credentialConfigurationId, credentialRequestProofs } = options
+    const { credentialConfiguration, expectedLength } = options
 
-    const mapper =
-      options.credentialRequestToCredentialMapper ?? this.openId4VcIssuerConfig.credentialRequestToCredentialMapper
-
-    let verification: OpenId4VciCredentialRequestToCredentialMapperOptions['verification'] = undefined
-
-    // NOTE: this will throw an error if the verifier module is not registered and there is a
-    // verification session. But you can't get here without the verifier module anyway
-    if (issuanceSession.presentation?.openId4VcVerificationSessionId) {
-      const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-      const session = await verifierApi.getVerificationSessionById(
-        issuanceSession.presentation.openId4VcVerificationSessionId
-      )
-
-      const response = await verifierApi.getVerifiedAuthorizationResponse(
-        issuanceSession.presentation.openId4VcVerificationSessionId
-      )
-
-      if (response.presentationExchange) {
-        verification = {
-          session,
-          presentationExchange: response.presentationExchange,
-        }
-      } else if (response.dcql) {
-        verification = {
-          session,
-          dcql: response.dcql,
-        }
-      } else {
-        throw new CredoError(
-          `Verified authorization response for verification session with id '${session.id}' does not have presenationExchange or dcql defined.`
-        )
-      }
-    }
-
-    const signOptions = await mapper({
-      agentContext,
-      issuanceSession,
-      holderBinding: credentialRequestProofs,
-      credentialOffer: issuanceSession.credentialOfferPayload,
-
-      verification,
-
-      credentialRequest: options.credentialRequest,
-      credentialRequestFormat: options.requestFormat,
-
-      // Macthing credential configuration
-      credentialConfiguration,
-      credentialConfigurationId,
-
-      // Authorization
-      authorization: options.authorization,
-    })
-
-    const expectedLength = credentialRequestProofs.keys.length
     // NOTE: we may want to allow a mismatch between this (as there is a match batch length), but for now it needs to match
     if (signOptions.credentials.length !== expectedLength) {
       throw new CredoError(

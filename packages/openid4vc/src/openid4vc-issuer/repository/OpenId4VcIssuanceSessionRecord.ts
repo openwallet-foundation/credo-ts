@@ -5,6 +5,7 @@ import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 
+import { CredentialConfigurationSupportedWithFormats, CredentialRequestFormatSpecific } from '@openid4vc/openid4vci'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
@@ -17,7 +18,7 @@ export interface OpenId4VcIssuanceSessionDpop {
   required: boolean
 
   /**
-   * JWK thumbprint of the dpop key. This is mosty used when a dpop key is bound
+   * JWK thumbprint of the dpop key. This is mostly used when a dpop key is bound
    * to the issuance session before the access token is created (which contains the dpop key)
    */
   dpopJkt?: string
@@ -25,7 +26,7 @@ export interface OpenId4VcIssuanceSessionDpop {
 
 export interface OpenId4VcIssuanceSessionWalletAttestation {
   /**
-   * Wheter presentation of a wallet attestation is required.
+   * Whether presentation of a wallet attestation is required.
    * Can be set to false to override the global config
    */
   required: boolean
@@ -97,6 +98,18 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   presentationAuthSession?: string
 }
 
+export interface OpenId4VcIssuanceSessionRecordTransactionData {
+  // The expected number of credentials that will be issued in this transaction
+  numberOfCredentials: number
+
+  // The format of the credential request that was used to create the issuance session
+  requestFormat?: CredentialRequestFormatSpecific
+
+  // The credential configuration and its id
+  credentialConfigurationId?: string
+  credentialConfiguration?: CredentialConfigurationSupportedWithFormats
+}
+
 export interface OpenId4VcIssuanceSessionRecordProps {
   id?: string
   createdAt?: Date
@@ -133,6 +146,16 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    * `OpenId4VcVerificationSessionRecord` and state
    */
   presentation?: OpenId4VcIssuanceSessionPresentation
+
+  /**
+   * When the issuance is deferred, this is the transaction id that is used to
+   * link the deferred credential requests to the issuance session.
+   */
+  // TODO: I'm assuming it is not possible to have multiple deferred credential
+  // requests within the same issuance session. If that is not the case, this needs
+  // to be reworked.
+  transactionId?: string
+  transactionData?: OpenId4VcIssuanceSessionRecordTransactionData
 
   credentialOfferUri?: string
   credentialOfferId: string
@@ -256,6 +279,12 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferId?: string
 
   /**
+   * The transaction id for the deferred credential issuance request.
+   */
+  public transactionId?: string
+  public transactionData?: OpenId4VcIssuanceSessionRecordTransactionData
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -279,6 +308,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
       this.dpop = props.dpop
+      this.transactionId = props.transactionId
+      this.transactionData = props.transactionData
       this.walletAttestation = props.walletAttestation
       this.state = props.state
       this.errorMessage = props.errorMessage
@@ -319,6 +350,9 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
       // Presentation during issuance
       presentationAuthSession: this.presentation?.authSession,
+
+      // Transaction ID for deferred issuance
+      transactionId: this.transactionId,
     }
   }
 }
