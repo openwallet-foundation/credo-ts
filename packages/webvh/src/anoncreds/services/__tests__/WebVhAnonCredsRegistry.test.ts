@@ -498,6 +498,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for null proof', async () => {
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, null, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -505,6 +506,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for undefined proof', async () => {
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, undefined, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -512,6 +514,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for non-object proof', async () => {
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, 'not an object', {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -523,6 +526,7 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'WrongProofType',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
+        proofPurpose: 'test',
         proofValue: 'validSignature',
       }
 
@@ -536,6 +540,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'wrong-cryptosuite',
+        proofPurpose: 'test',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'validSignature',
       }
@@ -550,9 +555,11 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'test',
         proofValue: 'validSignature',
       }
 
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -563,10 +570,12 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'test',
         verificationMethod: 123, // Should be string
         proofValue: 'validSignature',
       }
 
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -577,6 +586,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'test',
         verificationMethod: 'did:webvh:example.com#key-1',
       }
 
@@ -591,9 +601,11 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
+        proofPurpose: 'test',
         proofValue: 123, // Should be string
       }
 
+      // @ts-ignore
       const result = await registry.verifyProof(agentContext, invalidProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -605,6 +617,7 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
+        proofPurpose: 'test',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
 
@@ -626,6 +639,7 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#nonexistent-key',
+        proofPurpose: 'test',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
 
@@ -640,6 +654,7 @@ describe('WebVhAnonCredsRegistry', () => {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
+        proofPurpose: 'test',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
 
@@ -658,7 +673,7 @@ describe('WebVhAnonCredsRegistry', () => {
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-        // No proofPurpose or created fields
+        proofPurpose: 'test',
       }
 
       const content = { test: 'data' }

@@ -486,7 +486,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       // Create the document to be verified (content + proof without proofValue)
       const documentToVerify = {
-        ...content,
+        ...(content as Record<string, unknown>),
         proof: {
           type: proof.type,
           cryptosuite: proof.cryptosuite,

@@ -3,7 +3,6 @@
   "compilerOptions": {
     "types": ["jest"],
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true
+    "resolveJsonModule": true
   }
 }
