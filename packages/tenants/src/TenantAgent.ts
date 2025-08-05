@@ -14,7 +14,6 @@ export class TenantAgent<AgentModules extends ModulesMap = DefaultAgentModules> 
       throw new CredoError("Can't initialize agent after tenant sessions has been ended.")
     }
 
-    await super.initialize()
     this._isInitialized = true
   }
 

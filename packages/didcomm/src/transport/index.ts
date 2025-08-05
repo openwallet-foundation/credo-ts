@@ -1,3 +1,4 @@
+export * from './queue'
 export * from './InboundTransport'
 export * from './OutboundTransport'
 export * from './HttpOutboundTransport'

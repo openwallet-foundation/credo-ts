@@ -38,9 +38,7 @@ export class DcqlService {
     const allRecords: Array<SdJwtVcRecord | W3cCredentialRecord | MdocRecord> = []
 
     const w3cCredentialRecords =
-      formats.has('jwt_vc_json') || formats.has('jwt_vc_json-ld')
-        ? await w3cCredentialRepository.getAll(agentContext)
-        : []
+      formats.has('jwt_vc_json') || formats.has('ldp_vc') ? await w3cCredentialRepository.getAll(agentContext) : []
     allRecords.push(...w3cCredentialRecords)
 
     const mdocDoctypes = dcqlQuery.credentials

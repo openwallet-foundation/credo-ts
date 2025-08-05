@@ -1,8 +1,8 @@
-import type { AgentContext, JwaSignatureAlgorithm } from '@credo-ts/core'
+import { AgentContext, DidsApi } from '@credo-ts/core'
 import {
   CredoError,
   InjectionSymbols,
-  Jwk,
+  Kms,
   Logger,
   Mdoc,
   MdocApi,
@@ -11,14 +11,12 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
-  getJwkClassFromJwaSignatureAlgorithm,
-  getJwkFromJson,
-  getJwkFromKey,
   inject,
   injectable,
   parseDid,
 } from '@credo-ts/core'
 import {
+  Jwk,
   Oauth2Client,
   RequestDpopOptions,
   authorizationCodeGrantIdentifier,
@@ -60,8 +58,9 @@ import type {
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
-import { getKeyFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
+import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
+import { replaceError } from '@credo-ts/core'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
@@ -168,8 +167,8 @@ export class OpenId4VciHolderService {
         // FIXME: return dpop result from this endpoint (dpop nonce)
         dpop: dpop
           ? {
-              alg: dpop.signer.alg as JwaSignatureAlgorithm,
-              jwk: getJwkFromJson(dpop.signer.publicJwk),
+              alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+              jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
             }
           : undefined,
       }
@@ -183,8 +182,8 @@ export class OpenId4VciHolderService {
       // FIXME: return dpop result from this endpoint (dpop nonce)
       dpop: dpop
         ? {
-            alg: dpop.signer.alg as JwaSignatureAlgorithm,
-            jwk: getJwkFromJson(dpop.signer.publicJwk),
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
           }
         : undefined,
     }
@@ -214,18 +213,20 @@ export class OpenId4VciHolderService {
       jwk,
       dpopSigningAlgValuesSupported,
       nonce,
-    }: { dpopSigningAlgValuesSupported: string[]; jwk?: Jwk; nonce?: string }
+    }: { dpopSigningAlgValuesSupported: string[]; jwk?: Kms.PublicJwk; nonce?: string }
   ): Promise<RequestDpopOptions> {
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
+
     if (jwk) {
       const alg = dpopSigningAlgValuesSupported.find((alg) =>
-        jwk.supportedSignatureAlgorithms.includes(alg as JwaSignatureAlgorithm)
+        jwk.supportedSignatureAlgorithms.includes(alg as Kms.KnownJwaSignatureAlgorithm)
       )
 
       if (!alg) {
         throw new CredoError(
           `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
             ', '
-          )}' matching key type ${jwk.keyType}`
+          )}' matching jwk ${jwk.jwkTypehumanDescription}`
         )
       }
 
@@ -233,16 +234,22 @@ export class OpenId4VciHolderService {
         signer: {
           method: 'jwk',
           alg,
-          publicJwk: jwk.toJson(),
+          publicJwk: jwk.toJson() as Jwk,
         },
         nonce,
       }
     }
 
-    const alg = dpopSigningAlgValuesSupported.find((alg) => getJwkClassFromJwaSignatureAlgorithm(alg))
-    const JwkClass = alg ? getJwkClassFromJwaSignatureAlgorithm(alg) : undefined
+    const alg = dpopSigningAlgValuesSupported.find((alg): alg is Kms.KnownJwaSignatureAlgorithm => {
+      try {
+        Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(alg as Kms.KnownJwaSignatureAlgorithm)
+        return true
+      } catch {
+        return false
+      }
+    })
 
-    if (!alg || !JwkClass) {
+    if (!alg) {
       throw new CredoError(
         `No supported dpop signature algorithms found in dpop_signing_alg_values_supported '${dpopSigningAlgValuesSupported.join(
           ', '
@@ -250,12 +257,12 @@ export class OpenId4VciHolderService {
       )
     }
 
-    const key = await agentContext.wallet.createKey({ keyType: JwkClass.keyType })
+    const key = await kms.createKeyForSignatureAlgorithm({ algorithm: alg })
     return {
       signer: {
         method: 'jwk',
         alg,
-        publicJwk: getJwkFromKey(key).toJson(),
+        publicJwk: key.publicJwk as Jwk,
       },
       nonce,
     }
@@ -289,8 +296,8 @@ export class OpenId4VciHolderService {
       dpop: dpop
         ? {
             ...dpopResult,
-            alg: dpop.signer.alg as JwaSignatureAlgorithm,
-            jwk: getJwkFromJson(dpop.signer.publicJwk),
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
           }
         : undefined,
     }
@@ -351,8 +358,8 @@ export class OpenId4VciHolderService {
       dpop: dpop
         ? {
             ...result.dpop,
-            alg: dpop.signer.alg as JwaSignatureAlgorithm,
-            jwk: getJwkFromJson(dpop.signer.publicJwk),
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
           }
         : undefined,
     }
@@ -522,7 +529,7 @@ export class OpenId4VciHolderService {
     options: {
       metadata: OpenId4VciResolvedCredentialOffer['metadata']
       credentialBindingResolver: OpenId4VciCredentialBindingResolver
-      allowedProofOfPossesionAlgorithms: JwaSignatureAlgorithm[]
+      allowedProofOfPossesionAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
       clientId?: string
       cNonce: string
       offeredCredential: {
@@ -531,6 +538,7 @@ export class OpenId4VciHolderService {
       }
     }
   ) {
+    const dids = agentContext.resolve(DidsApi)
     const { allowedProofOfPossesionAlgorithms, offeredCredential } = options
     const { configuration, id: configurationId } = offeredCredential
     const supportedJwaSignatureAlgorithms = getSupportedJwaSignatureAlgorithms(agentContext)
@@ -621,12 +629,13 @@ export class OpenId4VciHolderService {
         )
       }
 
-      const firstKey = await getKeyFromDid(agentContext, firstDid.didUrl)
-      if (!proofTypes.jwt.supportedKeyTypes.includes(firstKey.keyType)) {
+      const { publicJwk: firstKey } = await dids.resolveVerificationMethodFromCreatedDidRecord(firstDid.didUrl)
+      const algorithm = proofTypes.jwt.supportedSignatureAlgorithms.find((algorithm) =>
+        firstKey.supportedSignatureAlgorithms.includes(algorithm)
+      )
+      if (!algorithm) {
         throw new CredoError(
-          `Credential binding returned did url that points to key with type '${
-            firstKey.keyType
-          }', but one of '${proofTypes.jwt.supportedKeyTypes.join(', ')}' was expected`
+          `Credential binding returned did url that points to key '${firstKey.jwkTypehumanDescription}' that supports signature algorithms ${firstKey.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
         )
       }
 
@@ -635,18 +644,12 @@ export class OpenId4VciHolderService {
         credentialBinding.didUrls.map(async (didUrl, index) =>
           index === 0
             ? // We already fetched the first did
-              { key: firstKey, didUrl: firstDid.didUrl }
-            : { key: await getKeyFromDid(agentContext, didUrl), didUrl }
+              { jwk: firstKey, didUrl: firstDid.didUrl }
+            : { jwk: (await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)).publicJwk, didUrl }
         )
       )
-      if (!keys.every((key) => key.key.keyType === firstKey.keyType)) {
+      if (!keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.jwk.toJson(), firstKey.toJson()))) {
         throw new CredoError('Expected all did urls to point to the same key type')
-      }
-
-      const alg = getJwkFromKey(firstKey).supportedSignatureAlgorithms[0]
-      if (!alg) {
-        // Should not happen, to make ts happy
-        throw new CredoError(`Unable to determine alg for key type ${firstKey.keyType}`)
       }
 
       return {
@@ -659,7 +662,8 @@ export class OpenId4VciHolderService {
                 signer: {
                   method: 'did',
                   didUrl: key.didUrl,
-                  alg,
+                  alg: algorithm,
+                  kid: key.jwk.keyId,
                 },
                 nonce: options.cNonce,
                 clientId: options.clientId,
@@ -700,21 +704,18 @@ export class OpenId4VciHolderService {
       }
 
       const firstJwk = credentialBinding.keys[0]
-      if (!credentialBinding.keys.every((key) => key.keyType === firstJwk.keyType)) {
+
+      if (!credentialBinding.keys.every((key) => Kms.assymetricJwkKeyTypeMatches(key.toJson(), firstJwk.toJson()))) {
         throw new CredoError('Expected all keys for binding method jwk to use the same key type')
       }
-      if (!proofTypes.jwt.supportedKeyTypes.includes(firstJwk.keyType)) {
-        throw new CredoError(
-          `Credential binding returned jwk with key with type '${
-            firstJwk.keyType
-          }', but one of '${proofTypes.jwt.supportedKeyTypes.join(', ')}' was expected`
-        )
-      }
 
-      const alg = firstJwk.supportedSignatureAlgorithms[0]
-      if (!alg) {
-        // Should not happen, to make ts happy
-        throw new CredoError(`Unable to determine alg for key type ${firstJwk.keyType}`)
+      const algorithm = proofTypes.jwt.supportedSignatureAlgorithms.find((algorithm) =>
+        firstJwk.supportedSignatureAlgorithms.includes(algorithm)
+      )
+      if (!algorithm) {
+        throw new CredoError(
+          `Credential binding returned jwk that points to key '${firstJwk.jwkTypehumanDescription}' that supports signature algorithms ${firstJwk.supportedSignatureAlgorithms.join(', ')}, but one of '${proofTypes.jwt.supportedSignatureAlgorithms.join(', ')}' was expected`
+        )
       }
 
       return {
@@ -726,8 +727,8 @@ export class OpenId4VciHolderService {
                 issuerMetadata: options.metadata,
                 signer: {
                   method: 'jwk',
-                  publicJwk: jwk.toJson(),
-                  alg,
+                  publicJwk: jwk.toJson() as Jwk,
+                  alg: algorithm,
                 },
                 nonce: options.cNonce,
                 clientId: options.clientId,
@@ -758,7 +759,7 @@ export class OpenId4VciHolderService {
       }
 
       if (proofTypes.jwt) {
-        const jwk = getJwkFromJson(payload.attested_keys[0])
+        const jwk = Kms.PublicJwk.fromUnknown(payload.attested_keys[0])
 
         return {
           jwt: [
@@ -804,7 +805,7 @@ export class OpenId4VciHolderService {
         id: string
         configuration: OpenId4VciCredentialConfigurationSupportedWithFormats
       }
-      possibleProofOfPossessionSignatureAlgorithms: JwaSignatureAlgorithm[]
+      possibleProofOfPossessionSignatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[]
     }
   ): OpenId4VciProofOfPossessionRequirements {
     const { credentialToRequest, possibleProofOfPossessionSignatureAlgorithms, metadata } = options
@@ -848,7 +849,7 @@ export class OpenId4VciHolderService {
     for (const [proofType, proofTypeConfig] of Object.entries(proofTypesSupported)) {
       if (proofType !== 'jwt' && proofType !== 'attestation') continue
 
-      let signatureAlgorithms: JwaSignatureAlgorithm[] = []
+      let signatureAlgorithms: Kms.KnownJwaSignatureAlgorithm[] = []
 
       const proofSigningAlgsSupported = proofTypeConfig?.proof_signing_alg_values_supported
       if (proofSigningAlgsSupported === undefined) {
@@ -866,15 +867,19 @@ export class OpenId4VciHolderService {
               proofSigningAlgsSupported.includes(signatureAlgorithm)
             )
             break
+          // FIXME: this is wrong, as the proof type is separate from the credential signing alg
+          // But there might be some draft 11 logic that depends on this, can be removed soon
           case OpenId4VciCredentialFormatProfile.LdpVc:
             signatureAlgorithms = options.possibleProofOfPossessionSignatureAlgorithms.filter((signatureAlgorithm) => {
-              const JwkClass = getJwkClassFromJwaSignatureAlgorithm(signatureAlgorithm)
-              if (!JwkClass) return false
+              try {
+                const jwkClass = Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(signatureAlgorithm)
+                const matchingSuites = signatureSuiteRegistry.getAllByPublicJwkType(jwkClass)
+                if (matchingSuites.length === 0) return false
 
-              const matchingSuite = signatureSuiteRegistry.getAllByKeyType(JwkClass.keyType)
-              if (matchingSuite.length === 0) return false
-
-              return proofSigningAlgsSupported.includes(matchingSuite[0].proofType)
+                return proofSigningAlgsSupported.includes(matchingSuites[0].proofType)
+              } catch {
+                return false
+              }
             })
             break
           default:
@@ -884,9 +889,6 @@ export class OpenId4VciHolderService {
 
       proofTypes[proofType] = {
         supportedSignatureAlgorithms: signatureAlgorithms,
-        supportedKeyTypes: signatureAlgorithms
-          .map((algorithm) => getJwkClassFromJwaSignatureAlgorithm(algorithm)?.keyType)
-          .filter((keyType) => keyType !== undefined),
         keyAttestationsRequired: proofTypeConfig.key_attestations_required
           ? {
               keyStorage: proofTypeConfig.key_attestations_required.key_storage,
@@ -964,7 +966,7 @@ export class OpenId4VciHolderService {
       if (!verificationResults.every((result) => result.isValid)) {
         agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
         throw new CredoError(
-          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults)}`
+          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
         )
       }
 

@@ -88,7 +88,7 @@ export interface X509ModuleConfigOptions {
    *
    * Array of trusted base64-encoded certificate strings in the DER-format.
    */
-  trustedCertificates?: [string, ...string[]]
+  trustedCertificates?: Array<string | X509Certificate>
 
   /**
    * Optional callback method that will be called to dynamically get trusted certificates for a verification.
@@ -131,17 +131,25 @@ export class X509ModuleConfig {
     this.#getTrustedCertificatesForVerification = fn
   }
 
-  public setTrustedCertificates(trustedCertificates?: [string, ...string[]]) {
-    this.#trustedCertificates = trustedCertificates
-      ? trustedCertificates.map((certificate) => X509Certificate.fromEncodedCertificate(certificate))
-      : undefined
+  public setTrustedCertificates(trustedCertificates?: Array<string | X509Certificate>) {
+    const certificateInstances = trustedCertificates?.map((trustedCertificate) =>
+      typeof trustedCertificate === 'string'
+        ? X509Certificate.fromEncodedCertificate(trustedCertificate)
+        : trustedCertificate
+    )
+    this.#trustedCertificates = trustedCertificates?.length ? certificateInstances : undefined
   }
 
-  public addTrustedCertificate(trustedCertificate: string) {
+  public addTrustedCertificate(trustedCertificate: string | X509Certificate) {
+    const certificateInstance =
+      typeof trustedCertificate === 'string'
+        ? X509Certificate.fromEncodedCertificate(trustedCertificate)
+        : trustedCertificate
+
     if (!this.#trustedCertificates) {
-      this.#trustedCertificates = [X509Certificate.fromEncodedCertificate(trustedCertificate)]
-      return
+      this.#trustedCertificates = []
     }
-    this.#trustedCertificates.push(X509Certificate.fromEncodedCertificate(trustedCertificate))
+
+    this.#trustedCertificates.push(certificateInstance)
   }
 }

@@ -1,13 +1,15 @@
-import { JwaSignatureAlgorithm } from '../../crypto'
+import { KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../kms'
 
 export type MdocSupportedSignatureAlgorithm = (typeof mdocSupporteSignatureAlgorithms)[number]
 export const mdocSupporteSignatureAlgorithms = [
-  JwaSignatureAlgorithm.ES256,
-  JwaSignatureAlgorithm.ES384,
-  JwaSignatureAlgorithm.ES512,
-  JwaSignatureAlgorithm.EdDSA,
-] satisfies JwaSignatureAlgorithm[]
+  KnownJwaSignatureAlgorithms.ES256,
+  KnownJwaSignatureAlgorithms.ES384,
+  KnownJwaSignatureAlgorithms.ES512,
+  KnownJwaSignatureAlgorithms.EdDSA,
+] satisfies KnownJwaSignatureAlgorithm[]
 
-export function isMdocSupportedSignatureAlgorithm(alg: JwaSignatureAlgorithm): alg is MdocSupportedSignatureAlgorithm {
+export function isMdocSupportedSignatureAlgorithm(
+  alg: KnownJwaSignatureAlgorithm
+): alg is MdocSupportedSignatureAlgorithm {
   return mdocSupporteSignatureAlgorithms.includes(alg as MdocSupportedSignatureAlgorithm)
 }

@@ -38,7 +38,9 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   JsonTransformer,
+  Kms,
   MdocDeviceResponse,
+  TypedArrayEncoder,
   W3cCredentialService,
   W3cJsonLdVerifiablePresentation,
   W3cJwtVerifiablePresentation,
@@ -119,12 +121,15 @@ export class DifPresentationExchangeProofFormatService
     const presentationDefinition = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
     ps.validatePresentationDefinition(presentationDefinition)
 
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const attachment = this.getFormatData(
       {
         presentation_definition: presentationDefinition,
         options: {
           // NOTE: we always want to include a challenge to prevent replay attacks
-          challenge: presentationExchangeFormat?.options?.challenge ?? (await agentContext.wallet.generateNonce()),
+          challenge:
+            presentationExchangeFormat?.options?.challenge ??
+            TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
           domain: presentationExchangeFormat?.options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -154,12 +159,13 @@ export class DifPresentationExchangeProofFormatService
       attachmentId,
     })
 
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const attachment = this.getFormatData(
       {
         presentation_definition: presentationDefinition,
         options: {
           // NOTE: we always want to include a challenge to prevent replay attacks
-          challenge: options?.challenge ?? (await agentContext.wallet.generateNonce()),
+          challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
           domain: options?.domain,
         },
       } satisfies DifPresentationExchangeRequest,
@@ -202,10 +208,11 @@ export class DifPresentationExchangeProofFormatService
       credentials = ps.selectCredentialsForRequest(credentialsForRequest)
     }
 
+    const kms = agentContext.resolve(Kms.KeyManagementApi)
     const presentation = await ps.createPresentation(agentContext, {
       presentationDefinition,
       credentialsForInputDescriptor: credentials,
-      challenge: options?.challenge ?? (await agentContext.wallet.generateNonce()),
+      challenge: options?.challenge ?? TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 })),
       domain: options?.domain,
     })
 

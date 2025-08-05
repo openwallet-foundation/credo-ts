@@ -1,4 +1,4 @@
-import { Jwk } from './jose/jwk'
+import { PublicJwk } from '../modules/kms'
 
 export interface JwsSignerDid {
   method: 'did'
@@ -19,8 +19,8 @@ export interface JwsSignerX5c {
 
 export interface JwsSignerJwk {
   method: 'jwk'
-  jwk: Jwk
+  jwk: PublicJwk
 }
 
 export type JwsSigner = JwsSignerDid | JwsSignerX5c | JwsSignerJwk
-export type JwsSignerWithJwk = JwsSigner & { jwk: Jwk }
+export type JwsSignerWithJwk = JwsSigner & { jwk: PublicJwk }

@@ -15,11 +15,7 @@ const universityDegreeDcql = {
   credential_sets: [
     {
       required: true,
-      options: [
-        ['UniversityDegreeCredential-vc+sd-jwt'],
-        ['UniversityDegreeCredential-jwt_vc_json-ld'],
-        ['UniversityDegreeCredential-jwt_vc_json'],
-      ],
+      options: [['UniversityDegreeCredential-vc+sd-jwt'], ['UniversityDegreeCredential-jwt_vc_json']],
     },
   ],
   credentials: [
@@ -31,16 +27,6 @@ const universityDegreeDcql = {
       },
     },
     {
-      id: 'UniversityDegreeCredential-jwt_vc_json-ld',
-      format: 'jwt_vc_json-ld',
-      claims: [
-        {
-          path: ['vc', 'type'],
-          values: ['UniversityDegree'],
-        },
-      ],
-    },
-    {
       id: 'UniversityDegreeCredential-jwt_vc_json',
       format: 'jwt_vc_json',
       claims: [
@@ -49,6 +35,9 @@ const universityDegreeDcql = {
           values: ['UniversityDegree'],
         },
       ],
+      meta: {
+        type_values: [['UniversityDegree']],
+      },
     },
   ],
 } satisfies DcqlQuery
@@ -57,11 +46,7 @@ const openBadgeCredentialDcql = {
   credential_sets: [
     {
       required: true,
-      options: [
-        ['OpenBadgeCredential-vc+sd-jwt'],
-        ['OpenBadgeCredential-jwt_vc_json-ld'],
-        ['OpenBadgeCredential-jwt_vc_json'],
-      ],
+      options: [['OpenBadgeCredential-vc+sd-jwt'], ['OpenBadgeCredential-jwt_vc_json']],
     },
   ],
   credentials: [
@@ -73,24 +58,11 @@ const openBadgeCredentialDcql = {
       },
     },
     {
-      id: 'OpenBadgeCredential-jwt_vc_json-ld',
-      format: 'jwt_vc_json-ld',
-      claims: [
-        {
-          path: ['vc', 'type'],
-          values: ['OpenBadgeCredential'],
-        },
-      ],
-    },
-    {
       id: 'OpenBadgeCredential-jwt_vc_json',
       format: 'jwt_vc_json',
-      claims: [
-        {
-          path: ['vc', 'type'],
-          values: ['OpenBadgeCredential'],
-        },
-      ],
+      meta: {
+        type_values: [['OpenBadgeCredential']],
+      },
     },
   ],
 } satisfies DcqlQuery
@@ -159,7 +131,7 @@ export class Verifier extends BaseAgent<{ askar: AskarModule; openId4VcVerifier:
       port,
       name,
       modules: {
-        askar: new AskarModule({ askar }),
+        askar: new AskarModule({ askar, store: { id: name, key: name } }),
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: `${url}/oid4vp`,
           router: openId4VpRouter,

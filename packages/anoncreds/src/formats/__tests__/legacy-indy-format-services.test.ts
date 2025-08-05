@@ -2,12 +2,15 @@ import type { DidRepository } from '@credo-ts/core'
 import type { AnonCredsCredentialRequest } from '../../models'
 
 import {
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
   EventEmitter,
+  InMemoryLruCache,
   InjectionSymbols,
-  KeyType,
+  Kms,
   SignatureSuiteToken,
+  TypedArrayEncoder,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
@@ -22,7 +25,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { anoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
 import { testLogger } from '../../../../core/tests'
@@ -67,7 +69,6 @@ const agentConfig = getAgentConfig('LegacyIndyFormatServicesTest')
 const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
-const wallet = new InMemoryWallet()
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
@@ -105,29 +106,29 @@ const agentContext = getAgentContext({
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [InjectionSymbols.StorageService, storageService],
     [SignatureSuiteToken, 'default'],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
   ],
   agentConfig,
-  wallet,
 })
 
 const indyCredentialFormatService = new LegacyIndyCredentialFormatService()
 const indyProofFormatService = new LegacyIndyProofFormatService()
+const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 // We can split up these tests when we can use AnonCredsRS as a backend, but currently
 // we need to have the link secrets etc in the wallet which is not so easy to do with Indy
 describe('Legacy indy format services', () => {
-  beforeEach(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-  })
-
-  afterEach(async () => {
-    await wallet.delete()
-  })
-
   test('issuance and verification flow starting from proposal without negotiation and without revocation', async () => {
     // This is just so we don't have to register an actual indy did (as we don't have the indy did registrar configured)
-    const key = await wallet.createKey({ keyType: KeyType.Ed25519 })
-    const unqualifiedIndyDid = indyDidFromPublicKeyBase58(key.publicKeyBase58)
+    const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
+    const unqualifiedIndyDid = indyDidFromPublicKeyBase58(
+      TypedArrayEncoder.toBase58(Kms.PublicJwk.fromPublicJwk(key.publicJwk).publicKey.publicKey)
+    )
     const indyDid = `did:indy:pool1:${unqualifiedIndyDid}`
 
     // Create link secret

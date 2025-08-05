@@ -1,4 +1,4 @@
-import type { AgentContext, Key } from '@credo-ts/core'
+import type { AgentContext, Kms } from '@credo-ts/core'
 import type { AgentMessage } from '../AgentMessage'
 import type { MessageHandler } from '../handlers'
 import type { ConnectionRecord } from '../modules/connections/repository'
@@ -10,8 +10,8 @@ import { CredoError } from '@credo-ts/core'
 export interface MessageContextParams {
   connection?: ConnectionRecord
   sessionId?: string
-  senderKey?: Key
-  recipientKey?: Key
+  senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   agentContext: AgentContext
   receivedAt?: Date
   encryptedMessage?: EncryptedMessage
@@ -20,8 +20,8 @@ export interface MessageContextParams {
 export class InboundMessageContext<T extends AgentMessage = AgentMessage> {
   public connection?: ConnectionRecord
   public sessionId?: string
-  public senderKey?: Key
-  public recipientKey?: Key
+  public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
+  public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   public receivedAt: Date
 
   public readonly agentContext: AgentContext

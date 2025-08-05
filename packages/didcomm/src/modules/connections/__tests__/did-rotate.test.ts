@@ -8,7 +8,7 @@ import { createPeerDidDocumentFromServices } from '../../../../../core/src/modul
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import {
-  getInMemoryAgentOptions,
+  getAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
@@ -30,12 +30,24 @@ describe('Rotation E2E tests', () => {
   let bobAliceConnection: ConnectionRecord | undefined
 
   beforeEach(async () => {
-    const aliceAgentOptions = getInMemoryAgentOptions('DID Rotate Alice', {
-      endpoints: ['rxjs:alice'],
-    })
-    const bobAgentOptions = getInMemoryAgentOptions('DID Rotate Bob', {
-      endpoints: ['rxjs:bob'],
-    })
+    const aliceAgentOptions = getAgentOptions(
+      'DID Rotate Alice',
+      {
+        endpoints: ['rxjs:alice'],
+      },
+      undefined,
+      undefined,
+      { requireDidcomm: true }
+    )
+    const bobAgentOptions = getAgentOptions(
+      'DID Rotate Bob',
+      {
+        endpoints: ['rxjs:bob'],
+      },
+      undefined,
+      undefined,
+      { requireDidcomm: true }
+    )
 
     aliceAgent = new Agent(aliceAgentOptions)
     bobAgent = new Agent(bobAgentOptions)
@@ -48,9 +60,7 @@ describe('Rotation E2E tests', () => {
 
   afterEach(async () => {
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
     await bobAgent.shutdown()
-    await bobAgent.wallet.delete()
   })
 
   describe('Rotation from did:peer:1 to did:peer:4', () => {
@@ -142,19 +152,25 @@ describe('Rotation E2E tests', () => {
 
       const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
-      const didDocument = createPeerDidDocumentFromServices([
-        {
-          id: 'didcomm',
-          recipientKeys: [didRouting.recipientKey],
-          routingKeys: didRouting.routingKeys,
-          serviceEndpoint: didRouting.endpoints[0],
-        },
-      ])
+      const { didDocument, keys } = createPeerDidDocumentFromServices(
+        [
+          {
+            id: 'didcomm',
+            recipientKeys: [didRouting.recipientKey],
+            routingKeys: didRouting.routingKeys,
+            serviceEndpoint: didRouting.endpoints[0],
+          },
+        ],
+        true
+      )
       didDocument.id = did
 
       await aliceAgent.dids.create({
         did,
         didDocument,
+        options: {
+          keys,
+        },
       })
 
       // Do did rotate
@@ -210,19 +226,25 @@ describe('Rotation E2E tests', () => {
 
       const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
-      const didDocument = createPeerDidDocumentFromServices([
-        {
-          id: 'didcomm',
-          recipientKeys: [didRouting.recipientKey],
-          routingKeys: didRouting.routingKeys,
-          serviceEndpoint: didRouting.endpoints[0],
-        },
-      ])
+      const { didDocument, keys } = createPeerDidDocumentFromServices(
+        [
+          {
+            id: 'didcomm',
+            recipientKeys: [didRouting.recipientKey],
+            routingKeys: didRouting.routingKeys,
+            serviceEndpoint: didRouting.endpoints[0],
+          },
+        ],
+        true
+      )
       didDocument.id = did
 
       await aliceAgent.dids.create({
         did,
         didDocument,
+        options: {
+          keys,
+        },
       })
 
       const waitForAllDidRotate = Promise.all([waitForDidRotate(aliceAgent, {}), waitForDidRotate(bobAgent, {})])
@@ -285,19 +307,25 @@ describe('Rotation E2E tests', () => {
 
       const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
       const did = `did:inmemory:${uuid()}`
-      const didDocument = createPeerDidDocumentFromServices([
-        {
-          id: 'didcomm',
-          recipientKeys: [didRouting.recipientKey],
-          routingKeys: didRouting.routingKeys,
-          serviceEndpoint: didRouting.endpoints[0],
-        },
-      ])
+      const { didDocument, keys } = createPeerDidDocumentFromServices(
+        [
+          {
+            id: 'didcomm',
+            recipientKeys: [didRouting.recipientKey],
+            routingKeys: didRouting.routingKeys,
+            serviceEndpoint: didRouting.endpoints[0],
+          },
+        ],
+        true
+      )
       didDocument.id = did
 
       await aliceAgent.dids.create({
         did,
         didDocument,
+        options: {
+          keys,
+        },
       })
 
       // Do did rotate

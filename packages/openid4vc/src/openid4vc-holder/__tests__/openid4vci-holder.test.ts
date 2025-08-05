@@ -1,57 +1,63 @@
-import type { Key, SdJwtVc } from '@credo-ts/core'
+import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
 
-import {
-  Agent,
-  DidKey,
-  JwaSignatureAlgorithm,
-  KeyType,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  W3cJwtVerifiableCredential,
-  getJwkFromKey,
-} from '@credo-ts/core'
+import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-
-import { AskarModule } from '../../../../askar/src'
-import { askarModuleConfig } from '../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 
+import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
+import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
   config: {
     label: 'OpenId4VcHolder Test28',
-    walletConfig: { id: 'openid4vc-holder-test27', key: 'openid4vc-holder-test27' },
   },
   dependencies: agentDependencies,
   modules: {
     openId4VcHolder: new OpenId4VcHolderModule(),
-    askar: new AskarModule(askarModuleConfig),
+    inMemory: new InMemoryWalletModule(),
   },
 })
 
 describe('OpenId4VcHolder', () => {
-  let holderKey: Key
+  let holderKey: Kms.PublicJwk
   let holderDid: string
   let holderVerificationMethod: string
 
   beforeEach(async () => {
     await holder.initialize()
 
-    holderKey = await holder.wallet.createKey({
-      keyType: KeyType.Ed25519,
-      privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+    const key = await holder.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('96213c3d7fc8d4d6754c7a0fd969598e'),
+        type: {
+          kty: 'OKP',
+          crv: 'Ed25519',
+        },
+      }).privateJwk,
     })
-    const holderDidKey = new DidKey(holderKey)
+    holderKey = Kms.PublicJwk.fromPublicJwk(key.publicJwk)
+
+    const {
+      didState: { did },
+    } = await holder.dids.create<KeyDidCreateOptions>({
+      method: 'key',
+      options: {
+        keyId: key.keyId,
+      },
+    })
+
+    if (!did) throw new Error('expected did')
+
+    const holderDidKey = DidKey.fromDid(did)
     holderDid = holderDidKey.did
-    holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.key.fingerprint}`
+    holderVerificationMethod = `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`
   })
 
   afterEach(async () => {
     await holder.shutdown()
-    await holder.wallet.delete()
   })
 
   describe('[DRAFT 11]: Pre-authorized flow', () => {
@@ -112,7 +118,7 @@ describe('OpenId4VcHolder', () => {
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+        allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
           .map(([id]) => id),
@@ -162,7 +168,7 @@ describe('OpenId4VcHolder', () => {
           verifyCredentialStatus: false,
           // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
           // or determine the did dynamically we could use any signature algorithm
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
           credentialConfigurationIds: Object.entries(resolved.offeredCredentialConfigurations)
             .filter(([, configuration]) => configuration.format === 'jwt_vc_json')
             .map(([id]) => id),
@@ -216,11 +222,11 @@ describe('OpenId4VcHolder', () => {
         verifyCredentialStatus: false,
         // We only allow EdDSa, as we've created a did with keyType ed25519. If we create
         // or determine the did dynamically we could use any signature algorithm
-        allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+        allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
         credentialConfigurationIds: Object.entries(resolvedCredentialOffer.offeredCredentialConfigurations)
           .filter(([, configuration]) => configuration.format === 'vc+sd-jwt')
           .map(([id]) => id),
-        credentialBindingResolver: () => ({ method: 'jwk', keys: [getJwkFromKey(holderKey)] }),
+        credentialBindingResolver: () => ({ method: 'jwk', keys: [holderKey] }),
       })
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
@@ -343,7 +349,7 @@ describe('OpenId4VcHolder', () => {
         holder.modules.openId4VcHolder.requestCredentials({
           resolvedCredentialOffer,
           ...tokenResponse,
-          allowedProofOfPossessionSignatureAlgorithms: [JwaSignatureAlgorithm.EdDSA],
+          allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],
           credentialBindingResolver: () => ({ method: 'did', didUrls: [holderVerificationMethod] }),
           verifyCredentialStatus: false,
         })

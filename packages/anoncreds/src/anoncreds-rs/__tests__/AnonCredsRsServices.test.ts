@@ -2,8 +2,10 @@ import type { AnonCredsProofRequest } from '@credo-ts/anoncreds'
 import type { DidRepository } from '@credo-ts/core'
 
 import {
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  InMemoryLruCache,
   InjectionSymbols,
   SignatureSuiteToken,
   W3cCredentialsModuleConfig,
@@ -12,7 +14,6 @@ import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
@@ -47,11 +48,9 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 const storageService = new InMemoryStorageService()
-const wallet = new InMemoryWallet()
 const registry = new InMemoryAnonCredsRegistry()
 
 const agentContext = getAgentContext({
-  wallet,
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
@@ -64,6 +63,12 @@ const agentContext = getAgentContext({
       new AnonCredsModuleConfig({
         registries: [registry],
         anoncreds,
+      }),
+    ],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
       }),
     ],
 

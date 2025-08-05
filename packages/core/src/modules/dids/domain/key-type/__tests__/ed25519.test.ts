@@ -1,51 +1,15 @@
-import { KeyType } from '../../../../../crypto'
-import { Key } from '../../../../../crypto/Key'
-import { Buffer, JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
+import { JsonTransformer, TypedArrayEncoder } from '../../../../../utils'
+import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
 import didKeyEd25519Fixture from '../../../__tests__/__fixtures__//didKeyEd25519.json'
 import { VerificationMethod } from '../../../domain/verificationMethod'
 import { keyDidEd25519 } from '../ed25519'
 
-const TEST_ED25519_BASE58_KEY = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
 const TEST_ED25519_FINGERPRINT = 'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
 const TEST_ED25519_DID = `did:key:${TEST_ED25519_FINGERPRINT}`
-const TEST_ED25519_PREFIX_BYTES = Buffer.concat([
-  new Uint8Array([237, 1]),
-  TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY),
-])
 
 describe('ed25519', () => {
-  it('creates a Key instance from public key bytes and ed25519 key type', async () => {
-    const publicKeyBytes = TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)
-
-    const didKey = Key.fromPublicKey(publicKeyBytes, KeyType.Ed25519)
-
-    expect(didKey.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
-  })
-
-  it('creates a Key instance from a base58 encoded public key and ed25519 key type', async () => {
-    const didKey = Key.fromPublicKeyBase58(TEST_ED25519_BASE58_KEY, KeyType.Ed25519)
-
-    expect(didKey.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
-  })
-
-  it('creates a Key instance from a fingerprint', async () => {
-    const didKey = Key.fromFingerprint(TEST_ED25519_FINGERPRINT)
-
-    expect(didKey.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
-  })
-
-  it('should correctly calculate the getter properties', async () => {
-    const didKey = Key.fromFingerprint(TEST_ED25519_FINGERPRINT)
-
-    expect(didKey.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
-    expect(didKey.publicKeyBase58).toBe(TEST_ED25519_BASE58_KEY)
-    expect(didKey.publicKey).toEqual(Uint8Array.from(TypedArrayEncoder.fromBase58(TEST_ED25519_BASE58_KEY)))
-    expect(didKey.keyType).toBe(KeyType.Ed25519)
-    expect(Buffer.from(didKey.prefixedPublicKey).equals(TEST_ED25519_PREFIX_BYTES)).toBe(true)
-  })
-
   it('should return a valid verification method', async () => {
-    const key = Key.fromFingerprint(TEST_ED25519_FINGERPRINT)
+    const key = PublicJwk.fromFingerprint(TEST_ED25519_FINGERPRINT) as PublicJwk<Ed25519PublicJwk>
     const verificationMethods = keyDidEd25519.getVerificationMethods(TEST_ED25519_DID, key)
 
     expect(JsonTransformer.toJSON(verificationMethods)).toMatchObject([didKeyEd25519Fixture.verificationMethod[0]])
@@ -63,7 +27,7 @@ describe('ed25519', () => {
   it('returns key for Ed25519VerificationKey2018 verification method', () => {
     const verificationMethod = JsonTransformer.fromJSON(didKeyEd25519Fixture.verificationMethod[0], VerificationMethod)
 
-    const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
+    const key = keyDidEd25519.getPublicJwkFromVerificationMethod(verificationMethod)
 
     expect(key.fingerprint).toBe(TEST_ED25519_FINGERPRINT)
   })
@@ -79,9 +43,9 @@ describe('ed25519', () => {
       VerificationMethod
     )
 
-    const key = keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)
+    const key = keyDidEd25519.getPublicJwkFromVerificationMethod(verificationMethod) as PublicJwk<Ed25519PublicJwk>
 
-    expect(key.publicKeyBase58).toBe('6jFdQvXwdR2FicGycegT2F9GYX2djeoGQVoXtPWr6enL')
+    expect(TypedArrayEncoder.toBase58(key.publicKey.publicKey)).toBe('6jFdQvXwdR2FicGycegT2F9GYX2djeoGQVoXtPWr6enL')
   })
 
   it('throws an error if an invalid verification method is passed', () => {
@@ -89,8 +53,8 @@ describe('ed25519', () => {
 
     verificationMethod.type = 'SomeRandomType'
 
-    expect(() => keyDidEd25519.getKeyFromVerificationMethod(verificationMethod)).toThrow(
-      "Verification method with type 'SomeRandomType' not supported for key type 'ed25519'"
+    expect(() => keyDidEd25519.getPublicJwkFromVerificationMethod(verificationMethod)).toThrow(
+      "Verification method with type 'SomeRandomType' not supported for key type Ed25519"
     )
   })
 })

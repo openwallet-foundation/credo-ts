@@ -1,5 +1,5 @@
 import type { GeneralNameType } from '@peculiar/x509'
-import type { Key } from '../../crypto/Key'
+import { PublicJwk } from '../kms'
 import type { X509Certificate, X509ExtendedKeyUsage, X509KeyUsage } from './X509Certificate'
 
 type AddMarkAsCritical<T extends Record<string, Record<string, unknown>>> = T & {
@@ -92,7 +92,7 @@ export interface X509CreateCertificateOptions {
    * The Key that will be used to sign the X.509 Certificate
    *
    */
-  authorityKey: Key
+  authorityKey: PublicJwk
 
   /**
    *
@@ -102,7 +102,7 @@ export interface X509CreateCertificateOptions {
    * This means that the certificate is self-signed
    *
    */
-  subjectPublicKey?: Key
+  subjectPublicKey?: PublicJwk
 
   /**
    *

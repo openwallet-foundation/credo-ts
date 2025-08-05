@@ -32,6 +32,7 @@ import {
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 
+import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
 import { V1PresentationProblemReportError } from './errors'
 import {
   V1PresentationAckHandler,
@@ -257,6 +258,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const indyFormat = proofFormats?.indy
 
+    const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     // Create a proof request from the preview, so we can let the messages
     // be handled using the indy proof format which supports RFC0592
     const requestFromPreview = createRequestFromPreview({
@@ -264,7 +267,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       predicates: proposalMessage.presentationProposal.predicates,
       name: indyFormat?.name ?? 'Proof Request',
       version: indyFormat?.version ?? '1.0',
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: anonCredsHolderService.generateNonce(agentContext),
     })
 
     const proposalAttachment = new Attachment({
@@ -973,10 +976,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const requestAttachment = requestMessage?.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) return false
 
+    const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     const rfc0592Proposal = JsonTransformer.toJSON(
       createRequestFromPreview({
         name: 'Proof Request',
-        nonce: await agentContext.wallet.generateNonce(),
+        nonce: anonCredsHolderService.generateNonce(agentContext),
         version: '1.0',
         attributes: proposalMessage.presentationProposal.attributes,
         predicates: proposalMessage.presentationProposal.predicates,
@@ -1018,9 +1023,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const proposalMessage = await this.findProposalMessage(agentContext, proofRecord.id)
     if (!proposalMessage) return false
 
+    const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     const rfc0592Proposal = createRequestFromPreview({
       name: 'Proof Request',
-      nonce: await agentContext.wallet.generateNonce(),
+      nonce: anonCredsHolderService.generateNonce(agentContext),
       version: '1.0',
       attributes: proposalMessage.presentationProposal.attributes,
       predicates: proposalMessage.presentationProposal.predicates,
@@ -1065,11 +1072,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // We are in the ContentApproved case. We need to make sure we've sent a proposal, and it matches the request
     const proposalMessage = await this.findProposalMessage(agentContext, proofRecord.id)
 
+    const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     const rfc0592Proposal = proposalMessage
       ? JsonTransformer.toJSON(
           createRequestFromPreview({
             name: 'Proof Request',
-            nonce: await agentContext.wallet.generateNonce(),
+            nonce: await anonCredsHolderService.generateNonce(agentContext),
             version: '1.0',
             attributes: proposalMessage.presentationProposal.attributes,
             predicates: proposalMessage.presentationProposal.predicates,
@@ -1126,6 +1135,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     agentContext: AgentContext,
     proofRecordId: string
   ): Promise<GetProofFormatDataReturn<ProofFormat[]>> {
+    const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
+
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
       this.findProposalMessage(agentContext, proofRecordId),
@@ -1149,7 +1160,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       indyProposeProof = createRequestFromPreview({
         name: 'Proof Request',
         version: '1.0',
-        nonce: await agentContext.wallet.generateNonce(),
+        nonce: anonCredsHolderService.generateNonce(agentContext),
         attributes: proposalMessage.presentationProposal.attributes,
         predicates: proposalMessage.presentationProposal.predicates,
       })

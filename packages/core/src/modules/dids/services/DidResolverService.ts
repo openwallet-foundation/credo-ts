@@ -97,6 +97,7 @@ export class DidResolverService {
       }
     }
 
+    // TODO: we should store the document for future reference
     if (resolver.allowsLocalDidRecord && useLocalCreatedDidRecord) {
       // TODO: did should have tag whether a did document is present in the did record
       const [didRecord] = await this.didRepository.getCreatedDids(agentContext, {

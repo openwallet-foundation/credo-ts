@@ -5,14 +5,27 @@ import type { Cache } from './Cache'
  */
 export interface CacheModuleConfigOptions {
   /**
+   *
    * Implementation of the {@link Cache} interface.
-   *
-   * NOTE: Starting from Credo 0.4.0 the default cache implementation will be {@link InMemoryLruCache}
-   * @default SingleContextStorageLruCache - with a limit of 500
-   *
    *
    */
   cache: Cache
+
+  /**
+   *
+   * @default 60
+   *
+   */
+  defaultExpiryInSeconds?: number
+
+  /**
+   *
+   * Uses a caching registry before talking to the storage service when a Record has the `useCache` set to `true`
+   *
+   * @default false
+   *
+   */
+  useCachedStorageService?: boolean
 }
 
 export class CacheModuleConfig {
@@ -25,5 +38,15 @@ export class CacheModuleConfig {
   /** See {@link CacheModuleConfigOptions.cache} */
   public get cache() {
     return this.options.cache
+  }
+
+  /** See {@link CacheModuleConfigOptions.defaultExpiryInSeconds} */
+  public get defaultExpiryInSeconds() {
+    return this.options.defaultExpiryInSeconds ?? 60
+  }
+
+  /** See {@link CacheModuleConfigOptions.useCachedStorageService} */
+  public get useCachedStorageService() {
+    return this.options.useCachedStorageService ?? false
   }
 }

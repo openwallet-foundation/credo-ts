@@ -24,9 +24,8 @@ import {
   parseIssuerSigned,
 } from '@animo-id/mdoc'
 import { uuid } from '../../utils/uuid'
+import { PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc'
-
-import { Jwk } from '../../crypto'
 import { TypedArrayEncoder } from './../../utils'
 import { Mdoc } from './Mdoc'
 import { getMdocContext } from './MdocContext'
@@ -216,8 +215,13 @@ export class MdocDeviceResponse {
     const combinedDeviceResponseMdoc = new MDoc()
 
     for (const document of options.mdocs) {
-      const deviceKeyJwk = document.deviceKeyJwk
+      const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
+
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
 
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
 
@@ -261,9 +265,14 @@ export class MdocDeviceResponse {
     const combinedDeviceResponseMdoc = new MDoc()
 
     for (const document of options.mdocs) {
-      const deviceKeyJwk = document.deviceKeyJwk
+      const deviceKeyJwk = document.deviceKey
       if (!deviceKeyJwk) throw new MdocError(`Device key is missing in mdoc with doctype ${document.docType}`)
       const alg = MdocDeviceResponse.getAlgForDeviceKeyJwk(deviceKeyJwk)
+
+      // Set keyId to legacy key id if it doesn't have a key id set
+      if (!deviceKeyJwk.hasKeyId) {
+        deviceKeyJwk.keyId = deviceKeyJwk.legacyKeyId
+      }
 
       const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
 
@@ -396,12 +405,12 @@ export class MdocDeviceResponse {
     throw new MdocError('Unsupported session transcript option')
   }
 
-  private static getAlgForDeviceKeyJwk(jwk: Jwk) {
+  private static getAlgForDeviceKeyJwk(jwk: PublicJwk) {
     const signatureAlgorithm = jwk.supportedSignatureAlgorithms.find(isMdocSupportedSignatureAlgorithm)
     if (!signatureAlgorithm) {
       throw new MdocError(
-        `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk with key type ${
-          jwk.keyType
+        `Unable to create mdoc device response. No supported signature algorithm found to sign device response for jwk  ${
+          jwk.jwkTypehumanDescription
         }. Key supports algs ${jwk.supportedSignatureAlgorithms.join(
           ', '
         )}. mdoc supports algs ${mdocSupporteSignatureAlgorithms.join(', ')}`

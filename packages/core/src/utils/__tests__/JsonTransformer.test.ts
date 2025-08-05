@@ -72,7 +72,7 @@ describe('JsonTransformer', () => {
 
     it('transforms JSON string to nested class instance', () => {
       const didDocumentString =
-        '{"@context":["https://w3id.org/did/v1"],"id":"did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i","controller": "nowYouAreUnderMyControl", "keyAgreement":[{"id":"#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V", "controller": "#id", "type":"Ed25519VerificationKey2018","publicKeyBase58":"ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7"}],"service":[{"id":"#service-0","type":"did-communication","serviceEndpoint":"https://example.com/endpoint","recipientKeys":["#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"],"routingKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"accept":["didcomm/v2","didcomm/aip2;env=rfc587"]}]}'
+        '{"@context":["https://www.w3.org/ns/did/v1"],"id":"did:peer:1zQmRYBx1pL86DrsxoJ2ZD3w42d7Ng92ErPgFsCSqg8Q1h4i","controller": "nowYouAreUnderMyControl", "keyAgreement":[{"id":"#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V", "controller": "#id", "type":"Ed25519VerificationKey2018","publicKeyBase58":"ByHnpUCFb1vAfh9CFZ8ZkmUZguURW8nSw889hy6rD8L7"}],"service":[{"id":"#service-0","type":"did-communication","serviceEndpoint":"https://example.com/endpoint","recipientKeys":["#6MkqRYqQiSgvZQdnBytw86Qbs2ZWUkGv22od935YF4s8M7V"],"routingKeys":["did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH#z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH"],"accept":["didcomm/v2","didcomm/aip2;env=rfc587"]}]}'
 
       const didDocument = JsonTransformer.deserialize(didDocumentString, DidDocument)
 

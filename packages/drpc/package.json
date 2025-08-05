@@ -26,13 +26,13 @@
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
-    "class-transformer": "^0.5.1",
-    "class-validator": "0.14.1"
+    "class-transformer": "catalog:",
+    "class-validator": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
-    "reflect-metadata": "^0.1.13",
-    "rimraf": "^4.4.0",
-    "typescript": "~5.5.2"
+    "reflect-metadata": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:"
   }
 }

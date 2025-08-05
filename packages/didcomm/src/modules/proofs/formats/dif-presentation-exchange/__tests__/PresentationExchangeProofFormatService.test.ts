@@ -16,7 +16,7 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cJsonLdVerifiablePresentation,
 } from '../../../../../../../core/src/modules/vc'
-import { getInMemoryAgentOptions } from '../../../../../../../core/tests'
+import { getAgentOptions } from '../../../../../../../core/tests'
 import { ProofsModule } from '../../../ProofsModule'
 import { ProofRole, ProofState } from '../../../models'
 import { V2ProofProtocol } from '../../../protocol'
@@ -96,7 +96,7 @@ describe('Presentation Exchange ProofFormatService', () => {
 
   beforeAll(async () => {
     agent = new Agent(
-      getInMemoryAgentOptions(
+      getAgentOptions(
         'PresentationExchangeProofFormatService',
         {},
         {},
@@ -105,7 +105,8 @@ describe('Presentation Exchange ProofFormatService', () => {
           proofs: new ProofsModule({
             proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
           }),
-        }
+        },
+        { requireDidcomm: true }
       )
     )
 

@@ -1,24 +1,28 @@
-import type { AgentContext, Key, ResolvedDidCommService } from '@credo-ts/core'
+import { AgentContext, ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
 
 import {
+  CredoError,
   DidCommV1Service,
+  DidRecord,
+  DidRepository,
   DidResolverService,
   IndyAgentService,
-  KeyType,
-  getKeyFromVerificationMethod,
+  Kms,
+  RecordNotFoundError,
+  getPublicJwkFromVerificationMethod,
   injectable,
   parseDid,
-  verkeyToInstanceOfKey,
+  verkeyToPublicJwk,
 } from '@credo-ts/core'
-
-import { findMatchingEd25519Key } from '../util/matchingEd25519Key'
 
 @injectable()
 export class DidCommDocumentService {
   private didResolverService: DidResolverService
+  private didRepository: DidRepository
 
-  public constructor(didResolverService: DidResolverService) {
+  public constructor(didResolverService: DidResolverService, didRepository: DidRepository) {
     this.didResolverService = didResolverService
+    this.didRepository = didRepository
   }
 
   public async resolveServicesFromDid(agentContext: AgentContext, did: string): Promise<ResolvedDidCommService[]> {
@@ -38,20 +42,25 @@ export class DidCommDocumentService {
         // IndyAgentService (DidComm v0) has keys encoded as raw publicKeyBase58 (verkeys)
         resolvedServices.push({
           id: didCommService.id,
-          recipientKeys: didCommService.recipientKeys.map(verkeyToInstanceOfKey),
-          routingKeys: didCommService.routingKeys?.map(verkeyToInstanceOfKey) || [],
+          recipientKeys: didCommService.recipientKeys.map(verkeyToPublicJwk),
+          routingKeys: didCommService.routingKeys?.map(verkeyToPublicJwk) || [],
           serviceEndpoint: didCommService.serviceEndpoint,
         })
       } else if (didCommService.type === DidCommV1Service.type) {
         // Resolve dids to DIDDocs to retrieve routingKeys
-        const routingKeys: Key[] = []
+        const routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
         for (const routingKey of didCommService.routingKeys ?? []) {
           const routingDidDocument = await this.didResolverService.resolveDidDocument(agentContext, routingKey)
-          routingKeys.push(
-            getKeyFromVerificationMethod(
-              routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
-            )
+          const publicJwk = getPublicJwkFromVerificationMethod(
+            routingDidDocument.dereferenceKey(routingKey, ['authentication', 'keyAgreement'])
           )
+
+          // FIXME: we should handle X25519 here as well
+          if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
+          }
+
+          routingKeys.push(publicJwk)
         }
 
         // DidCommV1Service has keys encoded as key references
@@ -61,18 +70,23 @@ export class DidCommDocumentService {
           // FIXME: we allow authentication keys as historically ed25519 keys have been used in did documents
           // for didcomm. In the future we should update this to only be allowed for IndyAgent and DidCommV1 services
           // as didcomm v2 doesn't have this issue anymore
-          const key = getKeyFromVerificationMethod(
+          const publicJwk = getPublicJwkFromVerificationMethod(
             didDocument.dereferenceKey(recipientKeyReference, ['authentication', 'keyAgreement'])
           )
 
           // try to find a matching Ed25519 key (https://sovrin-foundation.github.io/sovrin/spec/did-method-spec-template.html#did-document-notes)
           // FIXME: Now that indy-sdk is deprecated, we should look into the possiblty of using the X25519 key directly
           // removing the need to also include the Ed25519 key in the did document.
-          if (key.keyType === KeyType.X25519) {
-            const matchingEd25519Key = findMatchingEd25519Key(key, didDocument)
-            if (matchingEd25519Key) return matchingEd25519Key
+          if (publicJwk.is(Kms.X25519PublicJwk)) {
+            const matchingEd25519Key = findMatchingEd25519Key(publicJwk, didDocument)
+            if (matchingEd25519Key) return matchingEd25519Key.publicJwk
           }
-          return key
+
+          if (!publicJwk.is(Kms.Ed25519PublicJwk)) {
+            throw new CredoError(`Expected Ed25519PublicJwk but found ${publicJwk.JwkClass.name}`)
+          }
+
+          return publicJwk
         })
 
         resolvedServices.push({
@@ -85,5 +99,32 @@ export class DidCommDocumentService {
     }
 
     return resolvedServices
+  }
+
+  public async resolveCreatedDidDocumentWithKeysByRecipientKey(agentContext: AgentContext, publicJwk: Kms.PublicJwk) {
+    const didRecord = await this.didRepository.findCreatedDidByRecipientKey(agentContext, publicJwk)
+
+    if (!didRecord) {
+      throw new RecordNotFoundError(`Created did for public jwk ${publicJwk.jwkTypehumanDescription} not found`, {
+        recordType: DidRecord.type,
+      })
+    }
+
+    if (didRecord.didDocument) {
+      return {
+        keys: didRecord.keys,
+        didDocument: didRecord.didDocument,
+      }
+    }
+
+    // TODO: we should somehow store the did document on the record if the did method allows it
+    // E.g. for did:key we don't want to store it, but if we still have a did:indy record we do want to store it
+    // If the did document is not stored on the did record, we resolve it
+    const didDocument = await this.didResolverService.resolveDidDocument(agentContext, didRecord.did)
+
+    return {
+      keys: didRecord.keys,
+      didDocument,
+    }
   }
 }

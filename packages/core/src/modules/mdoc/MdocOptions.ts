@@ -1,7 +1,7 @@
 import type { ValidityInfo } from '@animo-id/mdoc'
-import type { Key } from '../../crypto/Key'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
-import type { EncodedX509Certificate } from '../x509'
+import { PublicJwk } from '../kms'
+import type { EncodedX509Certificate, X509Certificate } from '../x509'
 import { Mdoc } from './Mdoc'
 
 export { DateOnly } from '@animo-id/mdoc'
@@ -74,8 +74,9 @@ export type MdocSignOptions = {
 
   /**
    *
-   * The trusted base64-encoded issuer certificate string in the DER-format.
+   * The X509 certificate to use for signing the mDOC. The certificate MUST have a
+   * publicJwk with key id configured, enabling signing with the KMS
    */
-  issuerCertificate: string
-  holderKey: Key
+  issuerCertificate: X509Certificate
+  holderKey: PublicJwk
 }

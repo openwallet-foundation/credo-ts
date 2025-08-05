@@ -3,8 +3,10 @@ import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
 
 import {
   AgentContext,
+  CacheModuleConfig,
   DidResolverService,
   DidsModuleConfig,
+  InMemoryLruCache,
   InjectionSymbols,
   KeyDidRegistrar,
   KeyDidResolver,
@@ -26,7 +28,6 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { InMemoryWallet } from '../../../tests/InMemoryWallet'
 import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
@@ -81,8 +82,6 @@ const didsModuleConfig = new DidsModuleConfig({
 })
 const fileSystem = new agentDependencies.FileSystem()
 
-const wallet = new InMemoryWallet()
-
 const agentContext = getAgentContext({
   registerInstances: [
     [InjectionSymbols.Stop$, new Subject<boolean>()],
@@ -99,9 +98,14 @@ const agentContext = getAgentContext({
     [AnonCredsModuleConfig, anonCredsModuleConfig],
     [W3cCredentialsModuleConfig, new W3cCredentialsModuleConfig()],
     [SignatureSuiteToken, 'default'],
+    [
+      CacheModuleConfig,
+      new CacheModuleConfig({
+        cache: new InMemoryLruCache({ limit: 500 }),
+      }),
+    ],
   ],
   agentConfig,
-  wallet,
 })
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
@@ -112,10 +116,6 @@ const anoncredsProofFormatService = new AnonCredsProofFormatService()
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
 describe('data integrity format service (anoncreds)', () => {
-  beforeAll(async () => {
-    await wallet.createAndOpen(agentConfig.walletConfig)
-  })
-
   afterEach(async () => {
     inMemoryStorageService.contextCorrelationIdToRecords = {}
   })

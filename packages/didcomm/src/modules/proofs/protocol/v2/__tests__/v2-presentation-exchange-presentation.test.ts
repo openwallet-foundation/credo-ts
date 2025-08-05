@@ -1,7 +1,7 @@
 import type { Agent } from '../../../../../../../core'
 import type { getJsonLdModules } from '../../../../../../../core/tests'
 
-import { CREDENTIALS_CONTEXT_V1_URL, KeyType, TypedArrayEncoder } from '../../../../../../../core'
+import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core'
 import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
@@ -10,6 +10,7 @@ import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
 
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from './fixtures'
 
 const jsonld = {
@@ -56,14 +57,38 @@ describe('Present Proof', () => {
       autoAcceptCredentials: AutoAcceptCredential.Always,
     }))
 
-    await issuerAgent.wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-      keyType: KeyType.Ed25519,
+    const issuerKey = await issuerAgent.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      }).privateJwk,
     })
 
-    await proverAgent.wallet.createKey({
-      privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
-      keyType: KeyType.Ed25519,
+    await issuerAgent.dids.import({
+      did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          kmsKeyId: issuerKey.keyId,
+        },
+      ],
+    })
+
+    const proverKey = await proverAgent.kms.importKey({
+      privateJwk: transformPrivateKeyToPrivateJwk({
+        privateKey: TypedArrayEncoder.fromString('testseed000000000000000000000001'),
+        type: { kty: 'OKP', crv: 'Ed25519' },
+      }).privateJwk,
+    })
+
+    await proverAgent.dids.import({
+      did: 'did:key:z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+      keys: [
+        {
+          didDocumentRelativeKeyId: '#z6Mkgg342Ycpuk263R9d8Aq6MUaxPn1DDeHyGo38EefXmgDL',
+          kmsKeyId: proverKey.keyId,
+        },
+      ],
     })
 
     await issuerAgent.modules.credentials.offerCredential({
@@ -78,9 +103,7 @@ describe('Present Proof', () => {
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
     await proverAgent.shutdown()
-    await proverAgent.wallet.delete()
     await verifierAgent.shutdown()
-    await verifierAgent.wallet.delete()
   })
 
   test('Prover Creates and sends Proof Proposal to a Verifier', async () => {

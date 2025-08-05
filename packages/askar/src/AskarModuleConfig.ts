@@ -1,4 +1,5 @@
-import type { Askar } from '@openwallet-foundation/askar-shared'
+import type { Askar, KdfMethod } from '@openwallet-foundation/askar-shared'
+import type { AskarPostgresStorageConfig, AskarSqliteStorageConfig } from './AskarStorageConfig'
 
 export enum AskarMultiWalletDatabaseScheme {
   /**
@@ -12,7 +13,48 @@ export enum AskarMultiWalletDatabaseScheme {
   ProfilePerWallet = 'ProfilePerWallet',
 }
 
+export interface AskarModuleConfigStoreOptions {
+  /**
+   * The id of the store, and also the default profile that will be used for the root agent instance.
+   *
+   * - When SQLite is used that is not in-memory this will influence the path where the SQLite database is stored.
+   * - When Postgres is used, this determines the database.
+   */
+  id: string
+
+  /**
+   * The key to open the store
+   */
+  key: string
+
+  /**
+   * Key derivation method to use for opening the store.
+   *
+   * - `kdf:argon2i:mod` - most secure
+   * - `kdf:argon2i:int` - faster, less secure
+   * - `raw` - no key derivation. Useful if key is stored in e.g. the keychain on-device backed by biometrics.
+   *
+   * @default 'kdf:argon2i:mod'
+   */
+  keyDerivationMethod?: `${KdfMethod.Argon2IInt}` | `${KdfMethod.Argon2IMod}` | `${KdfMethod.Raw}`
+
+  /**
+   * The backend to use with backend specific configuraiton options.
+   *
+   * If not provided SQLite will be used by default
+   */
+  database?: AskarSqliteStorageConfig | AskarPostgresStorageConfig
+}
+
 export interface AskarModuleConfigOptions {
+  /**
+   * Store configuration used for askar.
+   *
+   * If `multiWalletDatabaseScheme` is set to `AskarMultiWalletDatabaseScheme.DatabasePerWallet` a new store will be created
+   * for each tenant. For performance reasons it is recommended to use `AskarMultiWalletDatabaseScheme.ProfilePerWallet`.
+   */
+  store: AskarModuleConfigStoreOptions
+
   /**
    *
    * ## Node.JS
@@ -58,6 +100,20 @@ export interface AskarModuleConfigOptions {
    * @default {@link AskarMultiWalletDatabaseScheme.DatabasePerWallet} (for backwards compatibility)
    */
   multiWalletDatabaseScheme?: AskarMultiWalletDatabaseScheme
+
+  /**
+   * Whether to enable and register the `AskarKeyManagementService` for key management and cryptographic operations.
+   *
+   * @default true
+   */
+  enableKms?: boolean
+
+  /**
+   * Whether to enable and register the `AskarStorageService` for storage
+   *
+   * @default true
+   */
+  enableStorage?: boolean
 }
 
 /**
@@ -78,5 +134,17 @@ export class AskarModuleConfig {
   /** See {@link AskarModuleConfigOptions.multiWalletDatabaseScheme} */
   public get multiWalletDatabaseScheme() {
     return this.options.multiWalletDatabaseScheme ?? AskarMultiWalletDatabaseScheme.DatabasePerWallet
+  }
+
+  public get store() {
+    return this.options.store
+  }
+
+  public get enableKms() {
+    return this.options.enableKms ?? true
+  }
+
+  public get enableStorage() {
+    return this.options.enableStorage ?? true
   }
 }

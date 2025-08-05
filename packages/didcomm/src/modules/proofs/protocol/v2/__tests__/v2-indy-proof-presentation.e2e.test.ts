@@ -60,9 +60,7 @@ describe('V2 Proofs - Indy', () => {
   afterAll(async () => {
     testLogger.test('Shutting down both agents')
     await faberAgent.shutdown()
-    await faberAgent.wallet.delete()
     await aliceAgent.shutdown()
-    await aliceAgent.wallet.delete()
   })
 
   test('Alice Creates and sends Proof Proposal to Faber', async () => {

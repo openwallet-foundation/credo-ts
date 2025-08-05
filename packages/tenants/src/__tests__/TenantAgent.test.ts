@@ -1,11 +1,11 @@
 import { Agent, AgentContext } from '@credo-ts/core'
 
-import { getAgentConfig, getAgentContext, getInMemoryAgentOptions } from '../../../core/tests/helpers'
+import { getAgentConfig, getAgentContext, getAgentOptions } from '../../../core/tests/helpers'
 import { TenantAgent } from '../TenantAgent'
 
 describe('TenantAgent', () => {
   test('possible to construct a TenantAgent instance', () => {
-    const agent = new Agent(getInMemoryAgentOptions('TenantAgentRoot'))
+    const agent = new Agent(getAgentOptions('TenantAgentRoot'))
 
     const tenantDependencyManager = agent.dependencyManager.createChild()
 

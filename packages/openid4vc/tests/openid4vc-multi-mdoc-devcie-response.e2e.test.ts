@@ -1,11 +1,7 @@
-import { MdocDeviceResponse, TypedArrayEncoder } from '@credo-ts/core'
-import type { AgentType } from './utils'
-
-import { KeyType } from '@credo-ts/core'
-
-import { AskarModule } from '../../askar/src'
-import { askarModuleConfig } from '../../askar/tests/helpers'
+import { Kms, MdocDeviceResponse, TypedArrayEncoder } from '@credo-ts/core'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import type { AgentType } from './utils'
 import { createAgentFromModules } from './utils'
 
 const baseUrl = 'https://credo.com/oid4vp'
@@ -20,22 +16,21 @@ describe('OpenId4Vc', () => {
       openId4VcVerifier: new OpenId4VcVerifierModule({
         baseUrl,
       }),
-      askar: new AskarModule(askarModuleConfig),
+      inMemory: new InMemoryWalletModule(),
     })) as unknown as typeof verifier
   })
 
   afterEach(async () => {
     await verifier.agent.shutdown()
-    await verifier.agent.wallet.delete()
   })
 
   it('can succesfully verify a device response containing multiple mdoc documents', async () => {
     const openid4vcVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
-      authorityKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      ),
       issuer: {
         commonName: 'Credo',
         countryName: 'Country',
@@ -46,14 +41,22 @@ describe('OpenId4Vc', () => {
         },
       },
     })
-    verifier.agent.x509.addTrustedCertificate(certificate.toString('pem'))
+    verifier.agent.x509.config.addTrustedCertificate(certificate.toString('pem'))
 
+    const holderKey = Kms.PublicJwk.fromPublicJwk(
+      (
+        await verifier.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
     const mdocOne = await verifier.agent.mdoc.sign({
       docType: 'one',
-      holderKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
-      issuerCertificate: certificate.toString('pem'),
+      holderKey,
+      issuerCertificate: certificate,
       namespaces: {
         one: {
           name: 'hello',
@@ -61,12 +64,20 @@ describe('OpenId4Vc', () => {
       },
     })
 
+    const holderKey2 = Kms.PublicJwk.fromPublicJwk(
+      (
+        await verifier.agent.kms.createKey({
+          type: {
+            kty: 'EC',
+            crv: 'P-256',
+          },
+        })
+      ).publicJwk
+    )
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
-      holderKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
-      issuerCertificate: certificate.toString('pem'),
+      holderKey: holderKey2,
+      issuerCertificate: certificate,
       namespaces: {
         two: {
           notName: 'notHello',
@@ -78,7 +89,7 @@ describe('OpenId4Vc', () => {
       verifierId: openid4vcVerifier.verifierId,
       requestSigner: {
         method: 'x5c',
-        x5c: [certificate.toString('base64url')],
+        x5c: [certificate],
       },
       expectedOrigins: ['https://credo.com'],
       responseMode: 'dc_api',
@@ -152,9 +163,9 @@ describe('OpenId4Vc', () => {
     const openid4vcVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
-      authorityKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
+      authorityKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      ),
       issuer: {
         commonName: 'Credo',
         countryName: 'Country',
@@ -165,14 +176,14 @@ describe('OpenId4Vc', () => {
         },
       },
     })
-    verifier.agent.x509.addTrustedCertificate(certificate.toString('pem'))
+    verifier.agent.x509.config.addTrustedCertificate(certificate)
 
     const mdocOne = await verifier.agent.mdoc.sign({
       docType: 'one',
-      holderKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
-      issuerCertificate: certificate.toString('pem'),
+      holderKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      ),
+      issuerCertificate: certificate,
       namespaces: {
         one: {
           name: 'hello',
@@ -182,10 +193,10 @@ describe('OpenId4Vc', () => {
 
     const mdocTwo = await verifier.agent.mdoc.sign({
       docType: 'two',
-      holderKey: await verifier.agent.wallet.createKey({
-        keyType: KeyType.P256,
-      }),
-      issuerCertificate: certificate.toString('pem'),
+      holderKey: Kms.PublicJwk.fromPublicJwk(
+        (await verifier.agent.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+      ),
+      issuerCertificate: certificate,
       namespaces: {
         two: {
           notName: 'notHello',
@@ -197,7 +208,7 @@ describe('OpenId4Vc', () => {
       verifierId: openid4vcVerifier.verifierId,
       requestSigner: {
         method: 'x5c',
-        x5c: [certificate.toString('base64url')],
+        x5c: [certificate],
       },
       expectedOrigins: ['https://credo.com'],
       responseMode: 'dc_api',

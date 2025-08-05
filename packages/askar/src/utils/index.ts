@@ -1,3 +1,4 @@
 export * from './askarError'
 export * from './askarKeyTypes'
-export * from './askarWalletConfig'
+export * from './askarStoreConfig'
+export * from './transformPrivateKey'
