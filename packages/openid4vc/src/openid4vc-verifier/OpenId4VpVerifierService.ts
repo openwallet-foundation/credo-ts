@@ -1,6 +1,7 @@
 import {
   AgentContext,
   ClaimFormat,
+  DcqlError,
   DifPresentationExchangeDefinition,
   DifPresentationExchangeSubmission,
   HashName,
@@ -124,6 +125,12 @@ export class OpenId4VpVerifierService {
     }
     if (version === 'v1.draft21' && options.dcql) {
       throw new CredoError(`OpenID4VP version '${version}' cannot be used with dcql. Use version 'v1.draft24' instead.`)
+    }
+
+    if (isDcApiRequest && options.authorizationResponseRedirectUri) {
+      throw new CredoError(
+        "'authorizationResponseRedirectUri' cannot be be used with response mode 'dc_api' and 'dc_api.jwt'."
+      )
     }
 
     // Check to prevent direct_post from being used with mDOC
@@ -271,6 +278,8 @@ export class OpenId4VpVerifierService {
     })
 
     const verificationSession = new OpenId4VcVerificationSessionRecord({
+      authorizationResponseRedirectUri: options.authorizationResponseRedirectUri,
+
       // Only store payload for unsiged requests
       authorizationRequestPayload: authorizationRequest.jar
         ? undefined
@@ -393,12 +402,19 @@ export class OpenId4VpVerifierService {
     const { verificationSession, authorizationResponse, origin } = options
     const authorizationRequest = options.verificationSession.requestPayload
 
-    verificationSession.assertState([
-      OpenId4VcVerificationSessionState.RequestUriRetrieved,
-      OpenId4VcVerificationSessionState.RequestCreated,
-    ])
+    if (
+      verificationSession.state !== OpenId4VcVerificationSessionState.RequestUriRetrieved &&
+      verificationSession.state !== OpenId4VcVerificationSessionState.RequestCreated
+    ) {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: 'Invalid session',
+      })
+    }
 
     if (verificationSession.expiresAt && Date.now() > verificationSession.expiresAt.getTime()) {
+      verificationSession.errorMessage = 'session expired'
+      await this.updateState(agentContext, verificationSession, OpenId4VcVerificationSessionState.Error)
       throw new Oauth2ServerErrorResponseError({
         error: Oauth2ErrorCodes.InvalidRequest,
         error_description: 'session expired',
@@ -438,7 +454,10 @@ export class OpenId4VpVerifierService {
       if (result.type === 'dcql') {
         const dcqlPresentationEntries = Object.entries(result.dcql.presentations)
         if (!authorizationRequest.dcql_query) {
-          throw new CredoError('Missing required dcql query')
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description: 'DCQL response provided but no dcql_query found in the authorization request.',
+          })
         }
 
         const dcql = agentContext.dependencyManager.resolve(DcqlService)
@@ -448,9 +467,10 @@ export class OpenId4VpVerifierService {
           dcqlPresentationEntries.map(async ([credentialId, presentation]) => {
             const queryCredential = dcqlQuery.credentials.find((c) => c.id === credentialId)
             if (!queryCredential) {
-              throw new CredoError(
-                `vp_token contains presentation for credential query id '${credentialId}', but this credential is not present in the dcql query.`
-              )
+              throw new Oauth2ServerErrorResponseError({
+                error: Oauth2ErrorCodes.InvalidRequest,
+                error_description: `vp_token contains presentation for credential query id '${credentialId}', but this credential is not present in the dcql query.`,
+              })
             }
 
             return {
@@ -481,13 +501,35 @@ export class OpenId4VpVerifierService {
           },
           {} as Record<string, VerifiablePresentation>
         )
-        const presentationResult = dcql.assertValidDcqlPresentation(presentations, dcqlQuery)
+
+        let presentationResult: ReturnType<typeof dcql.assertValidDcqlPresentation>
+        try {
+          presentationResult = dcql.assertValidDcqlPresentation(presentations, dcqlQuery)
+        } catch (error) {
+          if (error instanceof DcqlError) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.InvalidRequest,
+                error_description: error.message,
+              },
+              { cause: error }
+            )
+          }
+
+          throw error
+        }
 
         const errorMessages = presentationVerificationResults
           .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
-          throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'One or more presentations failed verification.',
+            },
+            { internalMessage: errorMessages.join('\n') }
+          )
         }
 
         dcqlResponse = {
@@ -505,7 +547,18 @@ export class OpenId4VpVerifierService {
         const definition = result.pex.presentationDefinition as unknown as DifPresentationExchangeDefinition
 
         pex.validatePresentationDefinition(definition)
-        pex.validatePresentationSubmission(submission)
+
+        try {
+          pex.validatePresentationSubmission(submission)
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Invalid presentation submission.',
+            },
+            { cause: error }
+          )
+        }
 
         const presentationsArray = Array.isArray(encodedPresentations) ? encodedPresentations : [encodedPresentations]
         const presentationVerificationResults = await Promise.all(
@@ -527,19 +580,35 @@ export class OpenId4VpVerifierService {
           .map((result, index) => (!result.verified ? `\t- [${index}]: ${result.reason}` : undefined))
           .filter((i) => i !== undefined)
         if (errorMessages.length > 0) {
-          throw new CredoError(`One or more presentations failed verification. \n\t${errorMessages.join('\n')}`)
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'One or more presentations failed verification.',
+            },
+            { internalMessage: errorMessages.join('\n') }
+          )
         }
 
         const verifiablePresentations = presentationVerificationResults
           .map((p) => (p.verified ? p.presentation : undefined))
           .filter((p) => p !== undefined)
 
-        pex.validatePresentation(
-          definition,
-          // vp_token MUST not be an array if only one entry
-          verifiablePresentations.length === 1 ? verifiablePresentations[0] : verifiablePresentations,
-          submission
-        )
+        try {
+          pex.validatePresentation(
+            definition,
+            // vp_token MUST not be an array if only one entry
+            verifiablePresentations.length === 1 ? verifiablePresentations[0] : verifiablePresentations,
+            submission
+          )
+        } catch (error) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: 'Presentation submission does not satisy presentation request.',
+            },
+            { cause: error }
+          )
+        }
 
         const descriptors = extractPresentationsWithDescriptorsFromSubmission(
           // vp_token MUST not be an array if only one entry
