@@ -76,46 +76,15 @@ const createStubContent = (url: string) => {
   return null
 }
 
-// Create a stub implementation that mimics the fetch API shape used in the resolver.
-(global as any).fetch = jest.fn(async (input: any) => {
-  const url = typeof input === 'string' ? input : String(input)
-  const stub = createStubContent(url)
-
-  if (!stub) {
-    // Simulate a 404 for unknown resources
-    return {
-      ok: false,
-      status: 404,
-      statusText: 'Not Found',
-      headers: {
-        get: () => 'application/json',
-      },
-      json: async () => ({ error: 'notFound' }),
-      text: async () => JSON.stringify({ error: 'notFound' }),
-    } as any
-  }
-
-  return {
-    ok: true,
-    status: 200,
-    statusText: 'OK',
-    headers: {
-      get: () => 'application/json',
-    },
-    json: async () => stub,
-    text: async () => JSON.stringify(stub),
-  } as any
-})
-
 describe('WebvhDidResolver Integration Tests', () => {
   let resolver: WebvhDidResolver
-  let agentContext: any
+  let agentContext: ReturnType<typeof getAgentContext>
 
   const realResourceIds = [
     'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo', // Schema
     'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj', // Credential Definition
     'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmYvDUi72UH1NW9BrdPhDA8Tfabz1N5wKJbetyRkK9zawb', // Revocation Registry Definition
-    'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmSQcPaX1PA37tak2ekRc9Cfe4uvNHZcVq6hRqWbhcP55X'  // Revocation Registry Entry
+    'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmSQcPaX1PA37tak2ekRc9Cfe4uvNHZcVq6hRqWbhcP55X', // Revocation Registry Entry
   ]
 
   const resourceTypes = ['schema', 'credentialDefinition', 'revocationRegistryDefinition', 'revocationRegistryEntry']
@@ -123,26 +92,60 @@ describe('WebvhDidResolver Integration Tests', () => {
   beforeEach(() => {
     // Create a real resolver instance (no mocks in this file!)
     resolver = new WebvhDidResolver()
-    
+
     // Create a fresh agent context
     const agentConfig = getAgentConfig('WebvhDidResolverIntegrationTest')
     agentContext = getAgentContext({ agentConfig })
+
+    // Mock the agentContext's fetch method
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    agentContext.config.agentDependencies.fetch = jest.fn(async (input: any) => {
+      const url = typeof input === 'string' ? input : String(input)
+      const stub = createStubContent(url)
+
+      if (!stub) {
+        // Simulate a 404 for unknown resources
+        return {
+          ok: false,
+          status: 404,
+          statusText: 'Not Found',
+          headers: {
+            get: () => 'application/json',
+          },
+          json: async () => ({ error: 'notFound' }),
+          text: async () => JSON.stringify({ error: 'notFound' }),
+        } as any
+      }
+
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        headers: {
+          get: () => 'application/json',
+        },
+        json: async () => stub,
+        text: async () => JSON.stringify(stub),
+      } as any
+    })
   })
 
   describe('getBaseUrl', () => {
     it('should correctly parse DID URL paths', () => {
       const testCases = [
         {
-          input: 'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo',
-          expected: 'https://identifier.me/demo/001/resources/zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo'
+          input:
+            'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo',
+          expected: 'https://identifier.me/demo/001/resources/zQmWsSADenC9oCxEbdKvi9KUJVJTbgZ8X75fZR5bzey1goo',
         },
         {
-          input: 'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj',
-          expected: 'https://identifier.me/demo/001/resources/zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj'
-        }
+          input:
+            'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001/resources/zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj',
+          expected: 'https://identifier.me/demo/001/resources/zQmZ572t4RDpsH6G1kZFwpZQFJ7Wm7AB5X7oAq1BFX45SWj',
+        },
       ]
-      
-      testCases.forEach(({ input, expected }, index) => {
+
+      testCases.forEach(({ input, expected }) => {
         const result = resolver.getBaseUrl(input)
         expect(result).toBe(expected)
       })
@@ -151,7 +154,7 @@ describe('WebvhDidResolver Integration Tests', () => {
     it('should handle DID without URL path', () => {
       const input = 'did:webvh:QmVG236sqSgkoi1iAXVZWGv6G6YgoQu6RujhogD4eeyoiY:identifier.me:demo:001'
       const expected = 'https://identifier.me/demo/001'
-      
+
       const result = resolver.getBaseUrl(input)
       expect(result).toBe(expected)
     })
