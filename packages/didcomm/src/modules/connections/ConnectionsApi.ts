@@ -37,6 +37,7 @@ import { DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
 import { ConnectionProblemReportReason } from './errors'
 import { OutOfBandState } from '../oob'
+import { WhoRetriesStatus } from '../../messages'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -253,9 +254,10 @@ public async declineRequest(
       en: 'Connection request declined',
       code: ConnectionProblemReportReason.RequestNotAccepted,
     },
+    whoRetries: WhoRetriesStatus.None,
   })
 
-  problemReport.setThread({ threadId: connectionRecord.threadId })
+  problemReport.setThread({ parentThreadId: connectionRecord.threadId })
 
   const outboundMessageContext = new OutboundMessageContext(problemReport, {
     agentContext: this.agentContext,
