@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
-    "@credo-ts/askar": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
