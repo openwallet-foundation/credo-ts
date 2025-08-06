@@ -822,9 +822,6 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
-      '@credo-ts/node':
-        specifier: workspace:*
-        version: link:../node
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1

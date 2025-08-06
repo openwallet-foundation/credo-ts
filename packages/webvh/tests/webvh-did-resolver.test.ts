@@ -1,10 +1,9 @@
 import { Agent } from '@credo-ts/core'
 
-import { getAgentOptions } from '../../core/tests/helpers'
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 
-import { validDid } from './utils'
 import { getWebvhModules } from './setupWebvhModule'
+import { validDid } from './utils'
 
 // Simplified mock
 jest.mock('didwebvh-ts', () => ({
@@ -42,8 +41,8 @@ describe('WebVH DID resolver', () => {
   let agent: Agent<ReturnType<typeof getWebvhModules>>
 
   beforeAll(async () => {
-    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
-    agent = new Agent({...agentOptions, modules: { ...getWebvhModules(), inMemory: new InMemoryWalletModule() }})
+    const agentOptions = getInMemoryAgentOptions('WebVH DID Resolver Test', {}, getWebvhModules())
+    agent = new Agent(agentOptions)
 
     await agent.initialize()
   })
@@ -55,9 +54,10 @@ describe('WebVH DID resolver', () => {
   })
 
   it('should resolve a valid WebVH DID', async () => {
-    const didResolutionResult = await agent.dids.resolve(
-      validDid)
+    const didResolutionResult = await agent.dids.resolve(validDid)
     expect(didResolutionResult.didDocument).toBeDefined()
-    expect(didResolutionResult.didDocument?.id).toBe('did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example')
+    expect(didResolutionResult.didDocument?.id).toBe(
+      'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
+    )
   })
 })

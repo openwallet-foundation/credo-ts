@@ -25,7 +25,6 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
     "@credo-ts/core": "workspace:*",
-    "@credo-ts/node": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
     "didwebvh-ts": "^2.4.1",

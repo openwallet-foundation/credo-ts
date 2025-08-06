@@ -1,5 +1,6 @@
 import {
   type AgentContext,
+  type DataIntegrityProof,
   DidsApi,
   JsonTransformer,
   MultiBaseEncoder,
@@ -481,21 +482,21 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for null proof', async () => {
-      const result = await registry.verifyProof(agentContext, null, {})
+      const result = await registry.verifyProof(agentContext, null as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for undefined proof', async () => {
-      const result = await registry.verifyProof(agentContext, undefined, {})
+      const result = await registry.verifyProof(agentContext, undefined as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for non-object proof', async () => {
-      const result = await registry.verifyProof(agentContext, 'not an object', {})
+      const result = await registry.verifyProof(agentContext, 'not an object' as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
@@ -504,6 +505,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for wrong proof type', async () => {
       const invalidProof = {
         type: 'WrongProofType',
+        proofPurpose: 'assertionMethod',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'validSignature',
@@ -519,6 +521,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'wrong-cryptosuite',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'validSignature',
       }
@@ -533,10 +536,11 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         proofValue: 'validSignature',
       }
 
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const result = await registry.verifyProof(agentContext, invalidProof as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
@@ -546,11 +550,12 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 123, // Should be string
         proofValue: 'validSignature',
       }
 
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const result = await registry.verifyProof(agentContext, invalidProof as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
@@ -559,6 +564,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing proofValue', async () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
+        proofPurpose: 'assertionMethod',
         cryptosuite: 'eddsa-jcs-2022',
         verificationMethod: 'did:webvh:example.com#key-1',
       }
@@ -573,11 +579,12 @@ describe('WebVhAnonCredsRegistry', () => {
       const invalidProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 123, // Should be string
       }
 
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const result = await registry.verifyProof(agentContext, invalidProof as unknown as DataIntegrityProof, {})
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
       expect(mockCryptoVerify).not.toHaveBeenCalled()
@@ -587,6 +594,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const validProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
@@ -608,6 +616,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const validProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#nonexistent-key',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
@@ -622,6 +631,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const validProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
       }
@@ -639,6 +649,7 @@ describe('WebVhAnonCredsRegistry', () => {
       const minimalProof = {
         type: 'DataIntegrityProof',
         cryptosuite: 'eddsa-jcs-2022',
+        proofPurpose: 'assertionMethod',
         verificationMethod: 'did:webvh:example.com#key-1',
         proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
         // No proofPurpose or created fields
