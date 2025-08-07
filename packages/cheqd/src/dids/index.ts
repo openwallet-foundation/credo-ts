@@ -5,4 +5,4 @@ export {
   CheqdDidUpdateOptions,
   CheqdCreateResourceOptions,
 } from './CheqdDidRegistrar'
-export { CheqdDidResolver } from './CheqdDidResolver'
+export { CheqdDidResolver, CheqdResourceResolutionResult } from './CheqdDidResolver'
