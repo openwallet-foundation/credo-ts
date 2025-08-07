@@ -1,7 +1,6 @@
 import { DidDocument, DidDocumentService, VerificationMethod } from '@credo-ts/core'
 
-export const validDid =
-  'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
+export const validDid = 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example'
 
 export function validVerificationMethod(did: string) {
   return new VerificationMethod({

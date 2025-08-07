@@ -1,3 +1,4 @@
+import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
 import { Type, Expose, Transform } from 'class-transformer'
 import {
   IsOptional,
@@ -9,7 +10,6 @@ import {
   Validate,
   IsNumber,
 } from 'class-validator'
-import { IsStringOrStringArray, JsonTransformer } from '@credo-ts/core'
 
 export class WebVhSchemaContent {
   @IsArray()
