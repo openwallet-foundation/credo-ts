@@ -17,6 +17,14 @@ import { CheqdLedgerService } from '../ledger'
 
 import { filterResourcesByNameAndType, getClosestResourceVersion, renderResourceData } from './didCheqdUtil'
 
+export interface CheqdResourceResolutionResult {
+  resource?: unknown
+  resourceMetadata?: Metadata
+  resourceResolutionMetadata?: Record<string, unknown>
+  error?: string
+  message?: string
+}
+
 export class CheqdDidResolver implements DidResolver {
   public readonly supportedMethods = ['cheqd']
   public readonly allowsCaching = true
@@ -66,7 +74,7 @@ export class CheqdDidResolver implements DidResolver {
     }
   }
 
-  public async resolveResource(agentContext: AgentContext, did: string) {
+  public async resolveResource(agentContext: AgentContext, did: string): Promise<CheqdResourceResolutionResult> {
     const cheqdLedgerService = agentContext.dependencyManager.resolve(CheqdLedgerService)
     try {
       const parsedDid = parseCheqdDid(did)
