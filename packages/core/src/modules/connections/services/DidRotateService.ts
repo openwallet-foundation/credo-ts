@@ -128,7 +128,7 @@ export class DidRotateService {
       connection.previousTheirDids = [...connection.previousTheirDids, connection.theirDid]
     }
 
-    const previousTheirDid = connection.theirDid    
+    const previousTheirDid = connection.theirDid
     connection.theirDid = undefined
 
     await agentContext.dependencyManager.resolve(ConnectionService).update(agentContext, connection)
