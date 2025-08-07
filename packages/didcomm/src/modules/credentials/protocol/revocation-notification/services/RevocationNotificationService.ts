@@ -4,7 +4,15 @@ import type { RevocationNotificationReceivedEvent } from '../../../CredentialEve
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import {
+  CredoError,
+  EventEmitter,
+  InjectionSymbols,
+  Logger,
+  W3cCredentialRepository,
+  inject,
+  injectable,
+} from '@credo-ts/core'
 
 import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
 import { ConnectionRecord } from '../../../../connections'
@@ -64,25 +72,61 @@ export class RevocationNotificationService {
       ],
     }
 
-    this.logger.trace('Getting record by query for revocation notification:', query)
-    const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
+    this.logger.trace('Getting Credential Exchange record by query for revocation notification:', query)
+    let credentialExchangeRecord = await this.credentialRepository.findSingleByQuery(agentContext, query)
 
-    credentialRecord.revocationNotification = new RevocationNotification(comment)
-    await this.credentialRepository.update(agentContext, credentialRecord)
+    if (!credentialExchangeRecord) {
+      const w3cCredentialQuery = {
+        $or: [
+          {
+            anonCredsRevocationRegistryId,
+            anonCredsCredentialRevocationId,
+          },
+          {
+            anonCredsUnqualifiedRevocationRegistryId: anonCredsRevocationRegistryId,
+            anonCredsCredentialRevocationId,
+          },
+        ],
+      }
+      this.logger.trace(
+        'Credential Exchange Record not found. Getting W3C credential record by query for revocation notification:',
+        w3cCredentialQuery
+      )
+
+      const w3cCredentialRepository = agentContext.dependencyManager.resolve(W3cCredentialRepository)
+      const w3cCredentialRecord = await w3cCredentialRepository.getSingleByQuery(agentContext, w3cCredentialQuery)
+
+      // Find credential exchange record associated with this credential
+      credentialExchangeRecord =
+        (await this.credentialRepository.getAll(agentContext)).find((record) =>
+          record.credentials.find((item) => item.credentialRecordId === w3cCredentialRecord.id)
+        ) ?? null
+
+      // TODO: Add revocation data to W3C Credential Record
+    }
+
+    if (!credentialExchangeRecord) {
+      throw new CredoError(
+        `No associated Credential Exchange record found for revocation id ${anonCredsCredentialRevocationId}`
+      )
+    }
+
+    credentialExchangeRecord.revocationNotification = new RevocationNotification(comment)
+    await this.credentialRepository.update(agentContext, credentialExchangeRecord)
 
     this.logger.trace('Emitting RevocationNotificationReceivedEvent')
     this.eventEmitter.emit<RevocationNotificationReceivedEvent>(agentContext, {
       type: CredentialEventTypes.RevocationNotificationReceived,
       payload: {
         // Clone record to prevent mutations after emitting event.
-        credentialRecord: credentialRecord.clone(),
+        credentialRecord: credentialExchangeRecord.clone(),
       },
     })
   }
 
   /**
    * Process a received {@link V1RevocationNotificationMessage}. This will create a
-   * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
+   * {@link RevocationNotification} and store it in the corresponding {@link CredentialExchangeRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV1
    */
@@ -140,7 +184,7 @@ export class RevocationNotificationService {
 
   /**
    * Process a received {@link V2RevocationNotificationMessage}. This will create a
-   * {@link RevocationNotification} and store it in the corresponding {@link CredentialRecord}
+   * {@link RevocationNotification} and store it in the corresponding {@link CredentialExchangeRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV2
    */
