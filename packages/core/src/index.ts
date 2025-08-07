@@ -71,12 +71,16 @@ export {
   isJsonObject,
   isValidJweStructure,
   TypedArrayEncoder,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  BaseName,
   Buffer,
   deepEquality,
   isDid,
   asArray,
   equalsIgnoreOrder,
   DateTransformer,
+  IsStringOrStringArray,
 } from './utils'
 export * from './logger'
 export * from './error'

@@ -1,6 +1,11 @@
 import type { AbstractCheqdSDKModule, CheqdSDK, DidStdFee, DIDDocument } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
-import type { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
+import type {
+  MsgCreateResourcePayload,
+  ResourceWithMetadata,
+  QueryCollectionResourcesResponse,
+  Metadata,
+} from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
@@ -156,17 +161,20 @@ export class CheqdLedgerService {
     return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
   }
 
-  public async resolveResource(did: string, collectionId: string, resourceId: string) {
+  public async resolveResource(did: string, collectionId: string, resourceId: string): Promise<ResourceWithMetadata> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResource(collectionId, resourceId)
   }
 
-  public async resolveCollectionResources(did: string, collectionId: string) {
+  public async resolveCollectionResources(
+    did: string,
+    collectionId: string
+  ): Promise<QueryCollectionResourcesResponse> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResources(collectionId)
   }
 
-  public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string) {
+  public async resolveResourceMetadata(did: string, collectionId: string, resourceId: string): Promise<Metadata> {
     const sdk = await this.getSdk(did)
     return sdk.queryLinkedResourceMetadata(collectionId, resourceId)
   }

@@ -1,7 +1,7 @@
 import { AgentContext } from '@credo-ts/core'
 import { injectable } from 'tsyringe'
 
-import { CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver } from './dids'
+import { CheqdCreateResourceOptions, CheqdDidRegistrar, CheqdDidResolver, CheqdResourceResolutionResult } from './dids'
 
 @injectable()
 export class CheqdApi {
@@ -16,7 +16,7 @@ export class CheqdApi {
     return await cheqdDidRegistrar.createResource(this.agentContext, did, options)
   }
 
-  public async resolveResource(resourceUrl: string) {
+  public async resolveResource(resourceUrl: string): Promise<CheqdResourceResolutionResult> {
     const cheqdDidResolver = this.agentContext.dependencyManager.resolve(CheqdDidResolver)
     return await cheqdDidResolver.resolveResource(this.agentContext, resourceUrl)
   }

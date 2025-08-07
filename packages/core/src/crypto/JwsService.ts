@@ -6,10 +6,10 @@ import type {
   JwsProtectedHeaderOptions,
 } from './JwsTypes'
 import type { Key } from './Key'
-import type { Jwk } from './jose/jwk'
-import type { JwkJson } from './jose/jwk/Jwk'
 import type { AgentContext } from '../agent'
 import type { Buffer } from '../utils'
+import type { Jwk } from './jose/jwk'
+import type { JwkJson } from './jose/jwk/Jwk'
 
 import { CredoError } from '../error'
 import { X509ModuleConfig } from '../modules/x509'
