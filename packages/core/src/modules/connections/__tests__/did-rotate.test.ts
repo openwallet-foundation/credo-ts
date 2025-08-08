@@ -400,5 +400,19 @@ describe('Rotation E2E tests', () => {
       const aliceBasicMessages = await aliceAgent.basicMessages.findAllByQuery({})
       expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()
     })
+
+    test('Event emitted after processing hangup', async () => {
+      // Send message to initial did
+      await bobAgent.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+
+      await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
+
+      // Call hangup
+      await aliceAgent.connections.hangup({ connectionId: aliceBobConnection!.id })
+
+      // Catch did rotation event message from processHangup()
+      const rotationEvent = await waitForDidRotate(bobAgent, {})
+      expect(rotationEvent.theirDid?.to).toBeUndefined()
+    })
   })
 })
