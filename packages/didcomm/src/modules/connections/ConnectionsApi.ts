@@ -232,7 +232,7 @@ export class ConnectionsApi {
  */
 public async declineRequest(
   connectionId: string,
-): Promise<void> {
+): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
     if (!connectionRecord) {
       throw new CredoError(`Connection record ${connectionId} not found.`)
@@ -269,6 +269,8 @@ public async declineRequest(
     await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.Done)
   }
   await this.messageSender.sendMessage(outboundMessageContext)
+
+  return connectionRecord
 }
   
   /**
