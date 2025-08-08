@@ -1,5 +1,136 @@
 # Changelog
 
+## 0.6.0
+
+### Minor Changes
+
+- e936068: refactor!: remove support for BBS+ signatures.
+
+  The underlying implementation of BBS+ of which Credo is based is outdated, has not been maintained, and not recommended to use.
+
+  A new version is being worked on by standard development organizations, for which support may be added at a later time. If you still require support for the old/legacy BBS+ Signatures, you can look at the latest version of Credo and extract the required code and create a custom BBS+ module.
+
+- 43148b4: Correctly populate DID Document Contexts For JsonLD Issuance
+- 312a7b2: `createDeviceResponse` now returns bytes and not base64 encoded bytes
+- 879ed2c: deprecate node 18
+- 297d209: - Rely on Uint8Array instead of Buffer for internal key bytes representation
+  - Remove dependency on external Big Number libraries
+  - Default to use of uncompressed keys for Secp256k1, Secp256r1, Secp384r1 and Secp521r1
+- bea846b: refactor: split async `getData` method on x509 certificate to sync `.data` getter and async `getThumbprint` method
+- 15acc49: Changed the SubjectKeyIdentifier and the AuthorityKeyIdentifier to a SHA-1 hash of the public key
+- e936068: When signing with dids in Credo, it is now required that all DIDs have an associated `DidRecord` with the created role. With the new KMS API we now need to keep track of key ids for keys within a did document, and these are stored on the did document. You can import a did using `agent.dids.import` and provide the `keys` array to define the mapping between verification method and key id. If a verification method mapping to key id is not provided in the did record, we will assume the legacy key id format is used (the base58 encoded public key)
+- 16f109f: changed the console logger to call `toString()` on an error, due to the error serialization not working great in all environments
+- e936068: the BBS module has been deprecated and removed. It was based on an old implementation and the underlying library was not maintained anymore. If you still need the BBS functionlity you can extract the code from and older commit of the Credo repo and create your own custom module. Contributions for the new BBS specification are welcome
+- e936068: when signing in Credo, it is now required to always reference a key id. For DIDs this is extracted from the DidRecord, and for JWKs (e.g. in holder binding) this is extracted form the `kid` of the JWK. For X509 certificates you need to make sure there is a key id attached to the certificate manually for now, since we don't have a X509 record like we have a DidRecord. For x509 certificates created before 0.6 you can use the legacy key id (`certificate.keyId = certificate.publicJwk.legacyKeyId`), for certificates created after 0.6 you need to manually store the key id and set it on the certificate after decoding.
+
+  For this reason, we now require instances of X509 certificates where we used to require encoded certificates, to allow you to set the keyId on the certificate beforehand.
+
+- dca4fdf: - X.509 self-signed certificate creation is now done via the `agent.x509.createCertificate` API where the `subjectPublicKey` is not supplied or equal to the `authorityKey`
+  - allow to create more complex X.509 certificates
+- 14673b1: Remove dependency on `abort-controller` library. Abort Controller has been supported on all platforms for quite some time already.
+- 5f08bc6: feat: allow dynamicaly providing x509 certificates for all types of verifications
+- e936068: The `Key` and `Jwk` classes have been removed in favour of a new `PublicJwk` class, and all APIs in Credo have been updated to use the new `PublicJwk` class. Leveraging Jwk as the base for all APIs provides more flexility and makes it easier to support key types where it's not always so easy to extract the raw public key bytes. In addition all the previous Jwk relatedfunctionality has been replaced with the new KMS jwk functionalty. For example `JwaSignatureAlgorithm` is now `Kms.KnownJwaSignatureAlgorithms`.
+- 1a4182e: - Included `CRLDistributionPoints` as extension
+  - Access to extensions and adding them made easier
+- e936068: The wallet API has been completely rewritten to be more generic, support multiple backends at the same time, support generic encrypting and decryption, support symmetric keys, and enable backends that use key ids rather than the public key to identify a key. This has resulted in significant breaking changes, and all usages of the wallet api should be updated to use the new `agent.kms` APIs. In addition the wallet is not available anymore on the agentContext. If you used this, instead inject the KMS API using `agentContext.resolve(Kms.KeyManagementApi)`.
+- 290ff19: use dc+sd-jwt as SD-JWT VC typ header by default and verify that SD-JWT VCs have either dc+sd-jwt or vc+sd-jwt as typ header. You can still use vc+sd-jwt as typ header by providing the headerType value when signing an SD-JWT VC. For OID4VCI the typ header is based on the oid4vci credential format used.
+- 8baa7d7: refactor: changed the jws service verify jws service to allow passing the signer beforehand. Also the jwkResolver has been replaced by the resolveJwsSigner method to allow for better control over which signer method is expected. A new allowedJwsSignerMethods parameter is added to allow limiting which signer methods can be extracted from a jws. It is recommended to always pass the jws signer beforehand if you expect a specific signer. If you expect a specific signer method, it is recommended to pass allowedJwsSignerMethods.
+- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.modules.didcomm.registerInboundTransport`).
+
+  **Example of DIDComm Agent**
+
+  Previously:
+
+  ```ts
+       const config = {
+        label: name,
+        endpoints: ['https://myendpoint'],
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+      this.agent.registerOutboundTransport(new HttpOutboundTransport())
+
+  ```
+
+  Now:
+
+  ```ts
+       const config = {
+        label: name,
+        walletConfig: {
+          id: name,
+          key: name,
+        },
+      } satisfies InitConfig
+
+      const agent = new Agent({
+        config,
+        dependencies: agentDependencies,
+        modules: {
+          ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
+          connections: new ConnectionsModule({
+             autoAcceptConnections: true,
+          })
+        })
+      agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
+      agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+  ```
+
+- 9ef54ba: `MessagePickupRepository` has been refactored to `QueueTransportRepository`, and now belongs to DIDComm module configuration. As a result, MessagePickupRepository injection symbol has been dropped. If you want to retrieve current QueueTransportRepository instance, resolve DidCommModuleConfig and get `queueTransportRepository`.
+
+  All methods in QueueTransportRepository now include `AgentContext` as their first argument.
+
+- e936068: the automatic backup functionality has been removed from Credo. With the generalization of the KMS API, and with moving away from assuming Askar is used for storage, providing a generic backup API is not feasible, especially for large deployments. From now on, you are expected to create a backup yourself before performing any updates. For askar you can export a store on the Askar api, or you can directly create a backup of your Postgres database.
+- 9f78a6e: fixed an issue where expectedUpdate in an mdoc would be set to undefined. This is a breaking change as previously issued mDOCs containing expectedUpdate values of undefined are not valid anymore, and will cause issues during verification
+- e936068: The wallet config has been removed from the main agent config, to allow for more flexibility. Instead, each module can now define their own config for the storage and kms. For askar there is a new `store` property which must be provided on the askar module config where you can set the wallet id and key. It is also possible to disable the kms or storage for askar using `enableKms` and `enableStorage`.
+- 9f78a6e: refactor: changed the DIF Presentation Exchnage returned credential entry `type` to `claimFormat` to better align with the DC API. In addition the selected credentials type for DIF PEX was changes from an array of credential records, to an object containig the record, claimFormat and disclosed payload
+- 8baa7d7: add support for OID4VCI draft 15, including wallet and key attestations. With this we have made changes to several APIs to better align with key attestations, and how credential binding resolving works. Instead of calling the holder binding resolver for each credential that will be requested once, it will in total be called once and you can return multiple keys, or a single key attestation. APIs have been simplified to better align with changes in the OID4VCI protocols, but OID4VCI draft 11 and 13 are still fully supported. Support for dc+sd-jwt format has also been added. Note that there have been incompatible metadata display/claim changes in the metadata structure between draft 14 and 15 and thus if you want to support both draft 15 and older drafts you have to make sure you're handling this correctly (e.g. by creating separate configurations to be used with draft 13 or 15), and make sure you're using dc+sd-jwt with draft and vc+sd-jwt with draft 13.
+- decbcac: The mdoc device response now verifies each document separately based on the trusted certificates callback. This ensures only the trusted certificates for that specific document are used. In addition, only ONE document per device response is supported for openid4vp verifications from now on, this is expected behaviour according to ISO 18013-7
+- 27f971d: feat: support ISO 18013-7 Draft 2024-03-12.
+
+  This mostly changes the structure of the calculated session transcript bytes for usage with OpenID4VP. This is a breaking change and incompatible with older versions.
+
+### Patch Changes
+
+- 2d10ec3: fix: presentation exchange handling when multiple mdocs in presentation definition
+- 6d83136: fix: support verification of certificate chain where the root certificate is not included in the certificate chain but present in the trusted certificates
+- 11827cc: allow kid (when not a did) to be combined with x5c/jwk header params in JWT/JWS. This is a pattern commonly used and breaks interop with Credo.
+- 9f78a6e: fix: support the case where non-self-signed x509 certificate is in the list of trusted certificates. It also fixes a bug where it would take the incorrect certificates for validation
+- 297d209: - Remove usage of Big Number libraries and rely on native implementations
+  - By default rely on uncompressed keys instead of compressed (for P256, P384, P521 and K256)
+  - Utilze Uint8Array more instead of Buffer (i.e. for internally representing a key)
+- 13cd8cb: feat: support node 22
+- df7580c: Uses the Issuer Alternative Names extension from @peculiar/x509.
+- 617b523: - Added a new package to use `redis` for caching in Node.js
+  - Add a new option `allowCache` to a record, which allows to CRUD the cache before calling the storage service
+    - This is only set to `true` on the `connectionRecord` and mediation records for now, improving the performance of the mediation flow
+- 90caf61: fix: allow purpose to be an empty string in presentation exchange definition
+- 607659a: feat: fetch sd-jwt type metadata
+- 44b1866: feat: support verification of x.509 certificate with different hash length than key size (e.g. P384 with SHA256).
+- 27f971d: feat: support EdDSA, P384 and P512 for mdoc holder binding
+- 2d10ec3: fix: issue where all available credentials were selected for queried DIF PEX definition. Now it only selects `needsCount` credentials, so it won't disclose more credentials than neccesary.
+- 90caf61: feat: support mdoc device response containing multiple documents for OpenID4VP presentation
+- 9f78a6e: allow A128GCM as allowed value for ECDH encryption
+- decbcac: feat: allow extracting the deviceKeyJwk from an mdoc
+- 9df09fa: - messagehandler should return undefined if it doesn't want to response with a message
+- a53fc54: feat: support A128CBC-HS256 encryption algorithm for JWE
+- edd2edc: feat(mdoc): support creating device response with multiple mdocs for usage in proximity flow
+- e80794b: fix: error during shutdown of agent in React Native due to usage of unavailable event method on socket `.once`
+- 9f78a6e: feat: add `claimFormat` to `Mdoc`, `MdocDeviceResponse` and `SdJwtVc` to allow for easier type narrowing
+
 ## 0.5.13
 
 ### Patch Changes
@@ -350,7 +481,7 @@ const agent = new Agent({
     actionMenu: new ActionMenuModule(),
     /* other custom modules */
   },
-})
+});
 ```
 
 Then, module API can be accessed in `agent.modules.actionMenu`.
@@ -367,7 +498,7 @@ const agent = new Agent({
     questionAnswer: new QuestionAnswerModule(),
     /* other custom modules */
   },
-})
+});
 ```
 
 Then, module API can be accessed in `agent.modules.questionAnswer`.
@@ -380,7 +511,7 @@ const agent = new Agent(
     /* config */
   },
   agentDependencies
-)
+);
 ```
 
 You should now construct it like this:
@@ -391,7 +522,7 @@ const agent = new Agent({
     /* config */
   },
   dependencies: agentDependencies,
-})
+});
 ```
 
 This allows for the new custom modules to be defined in the agent constructor.
@@ -599,9 +730,9 @@ This allows for the new custom modules to be defined in the agent constructor.
 - the credentials associated with a credential exchange record are now deleted by default when deleting a credential exchange record. If you only want to delete the credential exchange record and not the associated credentials, you can pass the deleteAssociatedCredentials to the deleteById method:
 
 ```ts
-await agent.credentials.deleteById('credentialExchangeId', {
+await agent.credentials.deleteById("credentialExchangeId", {
   deleteAssociatedCredentials: false,
-})
+});
 ```
 
 - with the addition of the out of band module `credentials.createOutOfBandOffer` is renamed to `credentials.createOffer` and no longer adds the `~service` decorator to the message. You need to call `oob.createLegacyConnectionlessInvitation` afterwards to use it for AIP-1 style connectionless exchanges. See [Migrating from AFJ 0.1.0 to 0.2.x](https://github.com/hyperledger/aries-framework-javascript/blob/main/docs/migration/0.1-to-0.2.md) for detailed migration instructions.
