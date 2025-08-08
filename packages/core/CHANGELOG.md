@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.17
+
+### Patch Changes
+
+- c55fb1e: feat: emit rotation event on hangup
+
 ## 0.5.16
 
 ### Patch Changes
