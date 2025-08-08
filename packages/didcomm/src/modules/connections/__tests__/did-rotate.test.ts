@@ -436,12 +436,13 @@ describe('Rotation E2E tests', () => {
 
     test('Event emitted after processing hangup', async () => {
       // Send message to initial did
-      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      // Call hangup
-      await aliceAgent.modules.connections.hangup({ connectionId: aliceBobConnection!.id })
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      await aliceAgent.modules.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
       // Catch did rotation event message from processHangup()
       const rotationEvent = await waitForDidRotate(bobAgent, {})
