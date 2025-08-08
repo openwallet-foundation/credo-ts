@@ -434,7 +434,6 @@ describe('Rotation E2E tests', () => {
       expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()
     })
 
-
     test('Event emitted after processing hangup', async () => {
       // Send message to initial did
       await bobAgent.modules.basicMessages.sendMessage(bobAliceConnection!.id, 'Hello initial did')
