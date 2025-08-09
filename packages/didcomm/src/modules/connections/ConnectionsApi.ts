@@ -249,13 +249,13 @@ export class ConnectionsApi {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
-    // For routing the problem-report message
+    // For routing the problem report message
     const routing =
       outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
-    // Trigger creation of dids in the connectionRecord for problem-report routing
+    // Trigger creation of dids in the connectionRecord for sending the problem report
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       await this.didExchangeProtocol.createResponse(
         this.agentContext,
@@ -264,7 +264,7 @@ export class ConnectionsApi {
         routing
       )
     } else {
-      throw new CredoError(`Connection protocol is ${connectionRecord.protocol} not did exchange`)
+      throw new CredoError(`Connection protocol is ${connectionRecord.protocol} not didexchange`)
     }
 
     const problemReport = new ConnectionProblemReportMessage({
@@ -284,7 +284,7 @@ export class ConnectionsApi {
     })
 
     await this.connectionService.updateState(this.agentContext, connectionRecord, DidExchangeState.Abandoned)
-    if (!outOfBandRecord.reusable) {
+    if (!outOfBandRecord?.reusable) {
       await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.Done)
     }
     await this.messageSender.sendMessage(outboundMessageContext)
