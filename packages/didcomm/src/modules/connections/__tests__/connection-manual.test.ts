@@ -9,6 +9,8 @@ import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { ConnectionEventTypes } from '../ConnectionEvents'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { DidExchangeState } from '../models'
+import { ConnectionRecord } from '../repository'
+import { OutOfBandRecord, OutOfBandState } from '../../oob'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
   return firstValueFrom(
@@ -33,6 +35,21 @@ function waitForResponse(agent: Agent, connectionId: string) {
       filter(
         (connectionRecord) =>
           connectionRecord.state === DidExchangeState.ResponseReceived && connectionRecord.id === connectionId
+      ),
+      first(),
+      timeout(5000)
+    )
+  )
+}
+
+function waitForAbandoned(agent: Agent, connectionId: string) {
+  return firstValueFrom(
+    agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged).pipe(
+      // Wait for response received
+      map((event) => event.payload.connectionRecord),
+      filter(
+        (connectionRecord) =>
+          connectionRecord.state === DidExchangeState.Abandoned && connectionRecord.id === connectionId
       ),
       first(),
       timeout(5000)
@@ -162,5 +179,34 @@ describe('Manual Connection Flow', () => {
 
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)
+  })
+
+  it('allows a party to decline an incoming connection request', async () => {
+    const aliceOutOfBandRecord = await aliceAgent.modules.oob.createInvitation({
+      autoAcceptConnection: false,
+    })
+
+    const { bobOutOfBandRecord, bobAliceConnectionRecord } = await bobAgent.modules.oob.receiveInvitation(
+      aliceOutOfBandRecord.outOfBandInvitation,
+      {
+        autoAcceptInvitation: true,
+        autoAcceptConnection: false,
+      }
+    )
+
+    const aliceBobConnectionRecord = await waitForRequest(aliceAgent, 'bob')
+    expect(aliceBobConnectionRecord.state).toBe(DidExchangeState.RequestReceived)
+
+    const aliceConnectionAfterDecline = await aliceAgent.modules.connections.declineRequest(aliceBobConnectionRecord.id)
+    expect(aliceConnectionAfterDecline.state).toBe(DidExchangeState.Abandoned)
+
+    const aliceOobAfterDecline = await aliceAgent.modules.oob.findById(aliceOutOfBandRecord.id)
+    expect(aliceOobAfterDecline.state).toBe(OutOfBandState.Done)
+
+    // const bobConnectionAfterDecline = await bobAgent.modules.connections.getById(bobAliceConnectionRecord.id)
+    // expect(bobConnectionAfterDecline.state).toBe(DidExchangeState.Abandoned)
+
+    // const bobOOB = await bobAgent.modules.oob.findById(bobOutOfBandRecord.id)
+    // expect(bobOOB.state).toBe(OutOfBandState.Done)
   })
 })
