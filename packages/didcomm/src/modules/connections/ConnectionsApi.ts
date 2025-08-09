@@ -14,7 +14,7 @@ import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
-import { WhoRetriesStatus } from '../../messages/problem-reports/ProblemReportMessage'
+import { ImpactStatus, WhoRetriesStatus } from '../../messages/problem-reports/ProblemReportMessage'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
@@ -249,15 +249,32 @@ export class ConnectionsApi {
       throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
     }
 
+    // For routing the problem-report message
+    const routing =
+      outOfBandRecord.reusable || outOfBandRecord.outOfBandInvitation.getInlineServices().length === 0
+        ? await this.routingService.getRouting(this.agentContext)
+        : undefined
+
+    // Trigger creation of dids in the connectionRecord for problem-report routing
+    if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
+      await this.didExchangeProtocol.createResponse(
+        this.agentContext,
+        connectionRecord,
+        outOfBandRecord,
+        routing
+      )
+    }
+
     const problemReport = new ConnectionProblemReportMessage({
       description: {
         en: 'Connection request declined',
         code: ConnectionProblemReportReason.RequestNotAccepted,
       },
       whoRetries: WhoRetriesStatus.None,
+      impact: ImpactStatus.Connection
     })
 
-    problemReport.setThread({ parentThreadId: connectionRecord.threadId })
+    problemReport.setThread({ threadId: connectionRecord.threadId })
 
     const outboundMessageContext = new OutboundMessageContext(problemReport, {
       agentContext: this.agentContext,
