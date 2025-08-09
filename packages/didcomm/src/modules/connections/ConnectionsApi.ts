@@ -14,8 +14,11 @@ import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
+import { WhoRetriesStatus } from '../../messages'
+import { OutOfBandState } from '../oob'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
+import { ConnectionProblemReportReason } from './errors/ConnectionProblemReportReason'
 import {
   AckMessageHandler,
   ConnectionProblemReportHandler,
@@ -31,8 +34,8 @@ import {
   TrustPingMessageHandler,
   TrustPingResponseMessageHandler,
 } from './handlers'
-import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
-import { HandshakeProtocol } from './models'
+import { ConnectionProblemReportMessage, ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
+import { DidExchangeState, HandshakeProtocol } from './models'
 import { ConnectionService, DidRotateService, TrustPingService } from './services'
 
 export interface SendPingOptions {
@@ -217,6 +220,55 @@ export class ConnectionsApi {
     }
 
     await this.messageSender.sendMessage(outboundMessageContext)
+    return connectionRecord
+  }
+
+  /**
+   * Send a problem report message to decline the incoming connection request.
+   * The connection must be in 'request-received' state, it will be changed to 'abandoned'.
+   * The state of the linked Out of Band record is changed to 'done' if not reusable.
+   * @param connectionId The id of the connection to decline.
+   */
+  public async declineRequest(connectionId: string): Promise<ConnectionRecord> {
+    const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
+    if (!connectionRecord) {
+      throw new CredoError(`Connection record ${connectionId} not found.`)
+    }
+    if (connectionRecord.state !== DidExchangeState.RequestReceived) {
+      throw new CredoError(
+        `Connection record ${connectionId} is in state ${connectionRecord.state} and cannot be declined.`
+      )
+    }
+    if (!connectionRecord.outOfBandId) {
+      throw new CredoError(`Connection record ${connectionId} does not have an out-of-band record.`)
+    }
+
+    const outOfBandRecord = await this.outOfBandService.findById(this.agentContext, connectionRecord.outOfBandId)
+    if (!outOfBandRecord) {
+      throw new CredoError(`Out-of-band record ${connectionRecord.outOfBandId} not found.`)
+    }
+
+    const problemReport = new ConnectionProblemReportMessage({
+      description: {
+        en: 'Connection request declined',
+        code: ConnectionProblemReportReason.RequestNotAccepted,
+      },
+      whoRetries: WhoRetriesStatus.None,
+    })
+
+    problemReport.setThread({ parentThreadId: connectionRecord.threadId })
+
+    const outboundMessageContext = new OutboundMessageContext(problemReport, {
+      agentContext: this.agentContext,
+      connection: connectionRecord,
+    })
+
+    await this.connectionService.updateState(this.agentContext, connectionRecord, DidExchangeState.Abandoned)
+    if (!outOfBandRecord.reusable) {
+      await this.outOfBandService.updateState(this.agentContext, outOfBandRecord, OutOfBandState.Done)
+    }
+    await this.messageSender.sendMessage(outboundMessageContext)
+
     return connectionRecord
   }
 
