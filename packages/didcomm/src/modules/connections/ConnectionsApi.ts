@@ -263,6 +263,8 @@ export class ConnectionsApi {
         outOfBandRecord,
         routing
       )
+    } else {
+      throw new CredoError(`Connection protocol is ${connectionRecord.protocol} not did exchange`)
     }
 
     const problemReport = new ConnectionProblemReportMessage({
