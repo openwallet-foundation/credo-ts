@@ -14,8 +14,8 @@ import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
-import { WhoRetriesStatus } from '../../messages'
-import { OutOfBandState } from '../oob'
+import { WhoRetriesStatus } from '../../messages/problem-reports/ProblemReportMessage'
+import { OutOfBandState } from '../oob/domain/OutOfBandState'
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { ConnectionProblemReportReason } from './errors/ConnectionProblemReportReason'
@@ -227,7 +227,8 @@ export class ConnectionsApi {
    * Send a problem report message to decline the incoming connection request.
    * The connection must be in 'request-received' state, it will be changed to 'abandoned'.
    * The state of the linked Out of Band record is changed to 'done' if not reusable.
-   * @param connectionId The id of the connection to decline.
+   * @param connectionId The id of the connection to decline
+   * @returns connection record
    */
   public async declineRequest(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.findById(this.agentContext, connectionId)
