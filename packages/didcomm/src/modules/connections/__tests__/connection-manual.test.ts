@@ -40,63 +40,78 @@ function waitForResponse(agent: Agent, connectionId: string) {
   )
 }
 
-describe('Manual Connection Flow', () => {
-  // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
-  // This was only present in the manual flow, which is almost never used.
-  it('can connect multiple times using the same reusable invitation without manually using the connections api', async () => {
-    const aliceAgentOptions = getAgentOptions(
-      'Manual Connection Flow Alice',
-      {
-        endpoints: ['rxjs:alice'],
-      },
-      {
-        label: 'alice',
-      },
-      {
-        connections: new ConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
-      { requireDidcomm: true }
-    )
-    const bobAgentOptions = getAgentOptions(
-      'Manual Connection Flow Bob',
-      {
-        endpoints: ['rxjs:bob'],
-      },
-      {
-        label: 'bob',
-      },
-      {
-        connections: new ConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
-      { requireDidcomm: true }
-    )
-    const faberAgentOptions = getAgentOptions(
-      'Manual Connection Flow Faber',
-      {
-        endpoints: ['rxjs:faber'],
-      },
-      {},
-      {
-        connections: new ConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
-      { requireDidcomm: true }
-    )
+const aliceAgentOptions = getAgentOptions(
+  'Manual Connection Flow Alice',
+  {
+    endpoints: ['rxjs:alice'],
+  },
+  {
+    label: 'alice',
+  },
+  {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: false,
+    }),
+  },
+  { requireDidcomm: true }
+)
 
-    const aliceAgent = new Agent(aliceAgentOptions)
-    const bobAgent = new Agent(bobAgentOptions)
-    const faberAgent = new Agent(faberAgentOptions)
+const bobAgentOptions = getAgentOptions(
+  'Manual Connection Flow Bob',
+  {
+    endpoints: ['rxjs:bob'],
+  },
+  {
+    label: 'bob',
+  },
+  {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: false,
+    }),
+  },
+  { requireDidcomm: true }
+)
+
+const faberAgentOptions = getAgentOptions(
+  'Manual Connection Flow Faber',
+  {
+    endpoints: ['rxjs:faber'],
+  },
+  {},
+  {
+    connections: new ConnectionsModule({
+      autoAcceptConnections: false,
+    }),
+  },
+  { requireDidcomm: true }
+)
+
+describe('Manual Connection Flow', () => {
+  let aliceAgent: Agent
+  let bobAgent: Agent
+  let faberAgent: Agent
+
+  beforeEach(async () => {
+    aliceAgent = new Agent(aliceAgentOptions)
+    bobAgent = new Agent(bobAgentOptions)
+    faberAgent = new Agent(faberAgentOptions)
 
     setupSubjectTransports([aliceAgent, bobAgent, faberAgent])
+
     await aliceAgent.initialize()
     await bobAgent.initialize()
     await faberAgent.initialize()
+  })
 
+  afterEach(async () => {
+    await aliceAgent.shutdown()
+    await bobAgent.shutdown()
+    await faberAgent.shutdown()
+  })
+
+  // This test was added to reproduce a bug where all connections based on a reusable invitation would use the same keys
+  // This was only present in the manual flow, which is almost never used.
+  it('can connect multiple times using the same reusable invitation without manually using the connections api', async () => {
     const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
       autoAcceptConnection: false,
       multiUseInvitation: true,
@@ -147,9 +162,5 @@ describe('Manual Connection Flow', () => {
 
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)
-
-    await aliceAgent.shutdown()
-    await bobAgent.shutdown()
-    await faberAgent.shutdown()
   })
 })
