@@ -93,6 +93,7 @@ describe('OpenId4Vc', () => {
       },
       expectedOrigins: ['https://credo.com'],
       responseMode: 'dc_api',
+      version: 'v1.draft24',
       presentationExchange: {
         definition: {
           id: 'random',
@@ -129,7 +130,7 @@ describe('OpenId4Vc', () => {
     const deviceResponse = await MdocDeviceResponse.createDeviceResponse(verifier.agent.context, {
       mdocs: [mdocOne, mdocTwo],
       sessionTranscriptOptions: {
-        type: 'openId4VpDcApi',
+        type: 'openId4VpDcApiDraft24',
         clientId: verificationSession.requestPayload.client_id as string,
         origin: 'https://credo.com',
         verifierGeneratedNonce: verificationSession.requestPayload.nonce,
@@ -212,6 +213,7 @@ describe('OpenId4Vc', () => {
       },
       expectedOrigins: ['https://credo.com'],
       responseMode: 'dc_api',
+      version: 'v1.draft24',
       presentationExchange: {
         definition: {
           id: 'random',
@@ -249,7 +251,7 @@ describe('OpenId4Vc', () => {
     const deviceResponse = await MdocDeviceResponse.createDeviceResponse(verifier.agent.context, {
       mdocs: [mdocOne, mdocTwo],
       sessionTranscriptOptions: {
-        type: 'openId4VpDcApi',
+        type: 'openId4VpDcApiDraft24',
         clientId: verificationSession.requestPayload.client_id as string,
         origin: 'https://credo.com',
         verifierGeneratedNonce: verificationSession.requestPayload.nonce,
