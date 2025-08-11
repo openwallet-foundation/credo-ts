@@ -394,15 +394,20 @@ export class OpenId4VcIssuerService {
         credentialRequest: parsedCredentialRequest,
       })
 
-      // Save transaction id and credential request for deferred issuance
-      issuanceSession.transactionId = signOptionsOrDeferral.transactionId
-      issuanceSession.transactionData = {
+      // Save transaction data for deferred issuance
+      issuanceSession.transactions.push({
+        transactionId: signOptionsOrDeferral.transactionId,
         requestFormat: format,
         numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
         credentialConfigurationId,
         credentialConfiguration,
-      }
-      await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Deferred)
+      })
+
+      const newState =
+        issuanceSession.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+          ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+          : OpenId4VcIssuanceSessionState.CredentialRequestReceived
+      await this.updateState(agentContext, issuanceSession, newState)
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -437,9 +442,19 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
   ) {
-    options.issuanceSession.assertState([OpenId4VcIssuanceSessionState.Deferred])
-    if (!options.issuanceSession.transactionData) {
-      throw new CredoError('OpenId4VcIssuanceSessionRecord is in deferred state, but contains no transactionData.')
+    options.issuanceSession.assertState([
+      // OfferUriRetrieved is valid when doing auth flow (we should add a check)
+      OpenId4VcIssuanceSessionState.OfferUriRetrieved,
+      OpenId4VcIssuanceSessionState.AccessTokenCreated,
+      OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+      // It is possible to issue multiple credentials in one session
+      OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
+    ])
+    const transaction = options.issuanceSession.transactions.find(
+      (tx) => tx.transactionId === options.deferredCredentialRequest.transaction_id
+    )
+    if (!transaction) {
+      throw new CredoError('OpenId4VcIssuanceSessionRecord does not contain transaction with given transaction_id.')
     }
 
     const { issuanceSession } = options
@@ -450,13 +465,11 @@ export class OpenId4VcIssuerService {
     const { credentialConfiguration, credentialConfigurationId } = this.getCredentialConfigurationsForRequest({
       issuanceSession,
       issuerMetadata,
-      requestFormat: options.issuanceSession.transactionData.requestFormat,
+      requestFormat: transaction.requestFormat,
       credentialConfigurations:
-        options.issuanceSession.transactionData.credentialConfiguration &&
-        options.issuanceSession.transactionData.credentialConfigurationId
+        transaction.credentialConfiguration && transaction.credentialConfigurationId
           ? {
-              [options.issuanceSession.transactionData.credentialConfigurationId]:
-                options.issuanceSession.transactionData.credentialConfiguration,
+              [transaction.credentialConfigurationId]: transaction.credentialConfiguration,
             }
           : undefined,
       authorization: options.authorization,
@@ -487,7 +500,7 @@ export class OpenId4VcIssuerService {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
         credentialConfiguration,
-        expectedLength: options.issuanceSession.transactionData.numberOfCredentials,
+        expectedLength: transaction.numberOfCredentials,
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
@@ -496,7 +509,18 @@ export class OpenId4VcIssuerService {
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
 
-      await this.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Completed)
+      // Remove the transaction from the session, as it is now completed
+      issuanceSession.transactions = issuanceSession.transactions?.filter(
+        (tx) => tx.transactionId !== transaction.transactionId
+      )
+
+      const newState =
+        issuanceSession.issuedCredentials.length >=
+        issuanceSession.credentialOfferPayload.credential_configuration_ids.length
+          ? OpenId4VcIssuanceSessionState.Completed
+          : OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
+
+      await this.updateState(agentContext, issuanceSession, newState)
     }
 
     return {

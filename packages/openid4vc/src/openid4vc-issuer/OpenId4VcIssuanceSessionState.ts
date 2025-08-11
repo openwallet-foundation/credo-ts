@@ -12,7 +12,6 @@ export enum OpenId4VcIssuanceSessionState {
 
   CredentialRequestReceived = 'CredentialRequestReceived',
   CredentialsPartiallyIssued = 'CredentialsPartiallyIssued',
-  Deferred = 'Deferred',
   Completed = 'Completed',
   Error = 'Error',
 }

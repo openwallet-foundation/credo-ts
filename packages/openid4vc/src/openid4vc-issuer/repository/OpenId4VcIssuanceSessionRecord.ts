@@ -98,7 +98,9 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   presentationAuthSession?: string
 }
 
-export interface OpenId4VcIssuanceSessionRecordTransactionData {
+export interface OpenId4VcIssuanceSessionRecordTransaction {
+  transactionId: string
+
   // The expected number of credentials that will be issued in this transaction
   numberOfCredentials: number
 
@@ -147,15 +149,8 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    */
   presentation?: OpenId4VcIssuanceSessionPresentation
 
-  /**
-   * When the issuance is deferred, this is the transaction id that is used to
-   * link the deferred credential requests to the issuance session.
-   */
-  // TODO: I'm assuming it is not possible to have multiple deferred credential
-  // requests within the same issuance session. If that is not the case, this needs
-  // to be reworked.
-  transactionId?: string
-  transactionData?: OpenId4VcIssuanceSessionRecordTransactionData
+  // Transaction data for deferred credential issuances
+  transactions?: OpenId4VcIssuanceSessionRecordTransaction[]
 
   credentialOfferUri?: string
   credentialOfferId: string
@@ -192,6 +187,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    * The credentials that were issued during this session.
    */
   public issuedCredentials: string[] = []
+
+  /**
+   * The credential transactions for deferred credentials.
+   */
+  public transactions: OpenId4VcIssuanceSessionRecordTransaction[] = []
 
   /**
    * Pre authorized code used for the issuance session. Only used when a pre-authorized credential
@@ -279,12 +279,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferId?: string
 
   /**
-   * The transaction id for the deferred credential issuance request.
-   */
-  public transactionId?: string
-  public transactionData?: OpenId4VcIssuanceSessionRecordTransactionData
-
-  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -308,8 +302,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.credentialOfferPayload = props.credentialOfferPayload
       this.issuanceMetadata = props.issuanceMetadata
       this.dpop = props.dpop
-      this.transactionId = props.transactionId
-      this.transactionData = props.transactionData
       this.walletAttestation = props.walletAttestation
       this.state = props.state
       this.errorMessage = props.errorMessage
@@ -350,9 +342,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
       // Presentation during issuance
       presentationAuthSession: this.presentation?.authSession,
-
-      // Transaction ID for deferred issuance
-      transactionId: this.transactionId,
     }
   }
 }
