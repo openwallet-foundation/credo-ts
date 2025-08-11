@@ -397,10 +397,8 @@ export class OpenId4VcIssuerService {
       // Save transaction data for deferred issuance
       issuanceSession.transactions.push({
         transactionId: signOptionsOrDeferral.transactionId,
-        requestFormat: format,
         numberOfCredentials: verifiedCredentialRequestProofs.keys.length,
         credentialConfigurationId,
-        credentialConfiguration,
       })
 
       const newState =
@@ -460,20 +458,14 @@ export class OpenId4VcIssuerService {
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
-    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
 
-    const { credentialConfiguration, credentialConfigurationId } = this.getCredentialConfigurationsForRequest({
-      issuanceSession,
-      issuerMetadata,
-      requestFormat: transaction.requestFormat,
-      credentialConfigurations:
-        transaction.credentialConfiguration && transaction.credentialConfigurationId
-          ? {
-              [transaction.credentialConfigurationId]: transaction.credentialConfiguration,
-            }
-          : undefined,
-      authorization: options.authorization,
-    })
+    const credentialConfigurationId = transaction.credentialConfigurationId
+    const credentialConfiguration = issuer.credentialConfigurationsSupported[transaction.credentialConfigurationId]
+    if (!credentialConfiguration) {
+      throw new CredoError(
+        'Issuer does not contain credential configuration for the given credential configuration id.'
+      )
+    }
 
     const mapper =
       options.deferredCredentialRequestToCredentialMapper ??

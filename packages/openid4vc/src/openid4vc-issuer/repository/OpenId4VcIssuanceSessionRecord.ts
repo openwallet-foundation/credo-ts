@@ -4,8 +4,6 @@ import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
-
-import { CredentialConfigurationSupportedWithFormats, CredentialRequestFormatSpecific } from '@openid4vc/openid4vci'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
@@ -104,12 +102,8 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
   // The expected number of credentials that will be issued in this transaction
   numberOfCredentials: number
 
-  // The format of the credential request that was used to create the issuance session
-  requestFormat?: CredentialRequestFormatSpecific
-
-  // The credential configuration and its id
-  credentialConfigurationId?: string
-  credentialConfiguration?: CredentialConfigurationSupportedWithFormats
+  // The credential configuration that is used for this transaction.
+  credentialConfigurationId: string
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
