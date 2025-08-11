@@ -1,7 +1,6 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
 import type { Constructable } from '../../../utils/mixins'
 
-import { BaseRecord } from '../../../storage/BaseRecord'
+import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 import { ClaimFormat, W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../models'
@@ -13,7 +12,7 @@ export interface W3cCredentialRecordOptions {
   tags: CustomW3cCredentialTags
 }
 
-export type CustomW3cCredentialTags = TagsBase & {
+export type CustomW3cCredentialTags = {
   /**
    * Expanded types are used for JSON-LD credentials to allow for filtering on the expanded type.
    */
@@ -53,12 +52,12 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     }
   }
 
-  public getTags() {
+  public getTags(): Tags<DefaultW3cCredentialTags, CustomW3cCredentialTags> {
     // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
     // so we filter out the objects before setting the tags.
     const stringContexts = this.credential.contexts.filter((ctx): ctx is string => typeof ctx === 'string')
 
-    const tags: DefaultW3cCredentialTags = {
+    const tags: Tags<DefaultW3cCredentialTags, CustomW3cCredentialTags> = {
       ...this._tags,
       issuerId: this.credential.issuerId,
       subjectIds: this.credential.credentialSubjectIds,

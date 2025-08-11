@@ -53,7 +53,7 @@
     "buffer": "^6.0.3",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "dcql": "^0.3.0",
+    "dcql": "^1.0.1",
     "did-resolver": "^4.1.0",
     "ec-compression": "0.0.1-alpha.12",
     "lru_map": "^0.4.1",
