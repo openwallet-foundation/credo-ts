@@ -359,7 +359,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         version: 'v1',
       })
     ).rejects.toThrow(
-      'Dcql is used as query language and verifier info (attestations) were provided, but the dcql query used credential ids that are not supported by the verifier info'
+      'Verifier info (attestations) were provided, but the verifier info used credential ids that are not present in the query'
     )
   })
 
@@ -2436,7 +2436,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                         'eu.europa.ec.eudi.pid.1': {
                           name: 'John Doe',
                           degree: 'bachelor',
-                          date: new DateOnly('2025-07-25'),
+                          date,
                         },
                       },
                     },
