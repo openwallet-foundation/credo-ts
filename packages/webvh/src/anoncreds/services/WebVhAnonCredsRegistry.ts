@@ -21,7 +21,8 @@ import {
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidResolver, WebvhDidCrypto } from '../../dids'
+import { HashData } from '../../utils'
+import { WebvhDidCrypto, WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -103,11 +104,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(`Resource ${resourceId} attestation found.`)
 
       // 2. Check for valid proof
-      const isProofValid = await this.verifyProof(
-        agentContext,
-        resourceObject.proof,
-        resourceObject.content as unknown as Record<string, unknown>
-      )
+      const unsecuredDocument = (({ proof, ...o }) => o)(resourceObject)
+      const isProofValid = await this.verifyProof(agentContext, resourceObject.proof, unsecuredDocument)
       if (!isProofValid) {
         throw new CredoError('Resolved resource proof is invalid.')
       }
@@ -421,11 +419,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   // Proof validation logic for DataIntegrityProof with eddsa-jcs-2022
-  public async verifyProof(
-    agentContext: AgentContext,
-    proof: DataIntegrityProof,
-    content: Record<string, unknown>
-  ): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, proof: DataIntegrityProof, unsecuredDocument: unknown): Promise<boolean> {
     try {
       // Type check the proof object
       if (!proof || typeof proof !== 'object') {
@@ -434,13 +428,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       // Validate proof structure for DataIntegrityProof
-      if (proof.type !== 'DataIntegrityProof') {
+      if (!proof.type || proof.type !== 'DataIntegrityProof') {
         agentContext.config.logger.error(`Unsupported type: ${proof.type} in did:webvh resource proof`)
         return false
       }
 
-      if (proof.cryptosuite !== 'eddsa-jcs-2022') {
+      if (!proof.cryptosuite || proof.cryptosuite !== 'eddsa-jcs-2022') {
         agentContext.config.logger.error(`Unsupported cryptosuite: ${proof.cryptosuite} in did:webvh resource proof`)
+        return false
+      }
+
+      if (!proof.proofValue || proof.proofPurpose !== 'assertionMethod') {
+        agentContext.config.logger.error('Invalid proofPurpose in did:webvh resource proof')
         return false
       }
 
@@ -464,7 +463,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       }
 
       // Extract the verification method from the DID document
-      let verificationMethod
+      let verificationMethod: VerificationMethod | undefined
       if ((proof.verificationMethod as string).includes('#')) {
         const fragment = (proof.verificationMethod as string).split('#')[1]
         verificationMethod = didDocument.verificationMethod?.find((vm: VerificationMethod) =>
@@ -489,32 +488,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         return false
       }
 
-      // For eddsa-jcs-2022, we need to:
-      // 1. Create a document with the content and proof metadata (without proofValue)
-      // 2. Canonicalize it using JCS (JSON Canonicalization Scheme)
-      // 3. Verify the signature using EdDSA
-
-      // Create the document to be verified (content + proof without proofValue)
-      const documentToVerify = {
-        ...content,
-        proof: {
-          type: proof.type,
-          cryptosuite: proof.cryptosuite,
-          verificationMethod: proof.verificationMethod,
-          proofPurpose: proof.proofPurpose || 'assertionMethod',
-          created: proof.created || new Date().toISOString(),
-        },
-      }
-
-      // Canonicalize the document using JCS
-      const canonicalizedDocument = canonicalize(documentToVerify)
-      const documentBytes = TypedArrayEncoder.fromString(canonicalizedDocument)
+      // For eddsa-jcs-2022 hashing algorithm:
+      // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+      const proofConfig = (({ proofValue, ...o }) => o)(proof)
+      const proofConfigHash = HashData(canonicalize(proofConfig))
+      const transformedDocumentHash = HashData(canonicalize(unsecuredDocument))
+      const hashData = proofConfigHash + transformedDocumentHash
 
       // Decode the signature from the proofValue (should be multibase encoded)
       const signatureBuffer = MultiBaseEncoder.decode(proof.proofValue as string)
 
       const crypto = new WebvhDidCrypto(agentContext)
-      const isVerified = await crypto.verify(signatureBuffer.data, documentBytes, publicKeyBytes)
+      const isVerified = await crypto.verify(signatureBuffer.data, hashData, publicKeyBytes)
 
       if (!isVerified) {
         agentContext.config.logger.error('Signature verification failed for did:webvh resource')
