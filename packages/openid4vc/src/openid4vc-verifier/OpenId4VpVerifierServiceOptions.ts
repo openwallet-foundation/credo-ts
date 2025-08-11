@@ -14,6 +14,7 @@ import type {
   VerifierAttestations,
   createOpenid4vpAuthorizationRequest,
 } from '@openid4vc/openid4vp'
+import { NonEmptyArray } from '@openid4vc/utils'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
@@ -22,14 +23,14 @@ export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_ap
 export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
    * Signing information for the request JWT. This will be used to sign the request JWT
-   * and to set the client_id and client_id_scheme for registration of client_metadata.
+   * and to set the client_id for registration of client_metadata.
    */
   requestSigner:
     | OpenId4VcJwtIssuerDid
     | Omit<OpenId4VcIssuerX5c, 'issuer'>
     | {
         /**
-         * Do not sign the request. Only available for DC API (responseMode is `dc_api` or `dc_api.jwt`)
+         * Do not sign the request, will use `redirect_uri` client id prefix
          */
         method: 'none'
       }
@@ -41,13 +42,17 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
 
   /**
    *
-   * Verifier Attestations allow the Verifier to provide additional context or metadata as part of the Authorization Request attested by a trusted third party. These inputs can support a variety of use cases, such as helping the Wallet apply policy decisions, validating eligibility, or presenting more meaningful information to the End-User during consent.
-   *
+   * Verifier Attestations allow the Verifier to provide additional context or metadata as part of the
+   * Authorization Request attested by a trusted third party. These inputs can support a variety of use cases,
+   * such as helping the Wallet apply policy decisions, validating eligibility, or presenting more meaningful
+   * information to the End-User during consent.
    */
-  verifierAttestations?: VerifierAttestations
+  verifierInfo?: VerifierAttestations
 
   /**
    * A DIF Presentation Definition (v2) can be provided to request a Verifiable Presentation using OpenID4VP.
+   *
+   * NOTE: when using version `v1` it is not allowed to use presentation exchange.
    */
   presentationExchange?: {
     definition: DifPresentationExchangeDefinitionV2
@@ -93,13 +98,19 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
   /**
    * The draft version of OpenID4VP to use for the authorization request.
    *
+   * It is recommended to use `v1`, as previous drafts will be deprecated and
+   * removed in future versions.
+   *
    * - For alignment with ISO 18013-7 (remote mDOC) `v1.draft21` should be used.
    * - When responseMode is `dc_api` or `dc_api.jwt` version `v1.draft21` is not supported.
+   * - When `verifierInfo` is provided, version `v1.draft21` and 'v1.draft24' are not supported.
    *
-   * @default `v1.draft24`
+   * @default `v1`
    */
-  version?: 'v1.draft21' | 'v1.draft24'
+  version?: OpenId4VpVersion
 }
+
+export type OpenId4VpVersion = 'v1' | 'v1.draft21' | 'v1.draft24'
 
 export interface OpenId4VpVerifyAuthorizationResponseOptions {
   /**
@@ -157,19 +168,27 @@ export interface OpenId4VpVerifiedAuthorizationResponseTransactionData {
   credentialId: string
 
   /**
-   * The hash of the transaction data
+   * The transaction data results for the presentations that were submitted in the authorization response.
+   * The order matches the order of the submitted presentations. If one of the presentations for a query id
+   * included a transaction data hash, all presentations must include the transaction data hash (in case 'multiple'
+   * feture of DCQL is used).
    */
-  hash: string
+  presentations: NonEmptyArray<{
+    /**
+     * The hash of the transaction data
+     */
+    hash: string
 
-  /**
-   * The hash algorithm that was used to hash the transaction data
-   */
-  hashAlg: HashName
+    /**
+     * The hash algorithm that was used to hash the transaction data
+     */
+    hashAlg: HashName
 
-  /**
-   * The index of the hash within the credential.
-   */
-  credentialHashIndex: number
+    /**
+     * The index of the hash within the presentation.
+     */
+    presentationHashIndex: number
+  }>
 }
 
 export interface OpenId4VpVerifiedAuthorizationResponseDcql {

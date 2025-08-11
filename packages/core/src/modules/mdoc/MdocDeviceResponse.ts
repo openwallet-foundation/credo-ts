@@ -11,6 +11,7 @@ import type {
 } from './MdocOptions'
 
 import {
+  DataItem,
   DeviceRequest,
   DeviceResponse,
   DeviceSignedDocument,
@@ -233,19 +234,20 @@ export class MdocDeviceResponse {
         ),
       }
 
+      const mdocContext = getMdocContext(agentContext)
       const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(document.base64Url), document.docType)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .usingPresentationDefinition(presentationDefinitionForDocument)
-        // .usingSessionTranscriptForOID4VP(sessionTranscriptOptions)
         .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
+        .usingSessionTranscriptBytes(
+          await MdocDeviceResponse.getSessionTranscriptBytesForOptions(mdocContext, options.sessionTranscriptOptions)
+        )
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
 
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
-
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(mdocContext)
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
@@ -288,17 +290,19 @@ export class MdocDeviceResponse {
           }))
       )
 
+      const mdocContext = getMdocContext(agentContext)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
         .usingDeviceRequest(deviceRequestForDocument)
-
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
+        .usingSessionTranscriptBytes(
+          await MdocDeviceResponse.getSessionTranscriptBytesForOptions(mdocContext, options.sessionTranscriptOptions)
+        )
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
 
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(mdocContext)
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 
@@ -372,34 +376,63 @@ export class MdocDeviceResponse {
       return options.sessionTranscriptBytes
     }
 
+    // NOTE: temporary until we have updated to the new major version of mdoc
+    // Based on https://github.com/animo/mdoc/blob/main/src/mdoc/models/session-transcript.ts#L84
     if (options.type === 'openId4Vp') {
+      return cborEncode(
+        DataItem.fromData([
+          null,
+          null,
+          [
+            'OpenID4VPHandover',
+            await context.crypto.digest({
+              digestAlgorithm: 'SHA-256',
+              bytes: cborEncode([
+                options.clientId,
+                options.verifierGeneratedNonce,
+                options.encryptionJwk?.getJwkThumbprint('sha-256') ?? null,
+                options.responseUri,
+              ]),
+            }),
+          ],
+        ])
+      )
+    }
+
+    if (options.type === 'openId4VpDraft18') {
       return await DeviceResponse.calculateSessionTranscriptBytesForOID4VP({
         ...options,
         context,
       })
     }
 
+    // NOTE: temporary until we have updated to the new major version of mdoc
+    // Based on https://github.com/animo/mdoc/blob/main/src/mdoc/models/session-transcript.ts#L65
     if (options.type === 'openId4VpDcApi') {
+      return cborEncode(
+        DataItem.fromData([
+          null,
+          null,
+          [
+            'OpenID4VPDCAPIHandover',
+            await context.crypto.digest({
+              digestAlgorithm: 'SHA-256',
+              bytes: cborEncode([
+                options.origin,
+                options.verifierGeneratedNonce,
+                options.encryptionJwk?.getJwkThumbprint('sha-256') ?? null,
+              ]),
+            }),
+          ],
+        ])
+      )
+    }
+
+    if (options.type === 'openId4VpDcApiDraft24') {
       return await DeviceResponse.calculateSessionTranscriptBytesForOID4VPDCApi({
         ...options,
         context,
       })
-    }
-
-    throw new MdocError('Unsupported session transcript option')
-  }
-
-  private static usingSessionTranscript(deviceResponse: DeviceResponse, options: MdocSessionTranscriptOptions) {
-    if (options.type === 'sesionTranscriptBytes') {
-      return deviceResponse.usingSessionTranscriptBytes(options.sessionTranscriptBytes)
-    }
-
-    if (options.type === 'openId4Vp') {
-      return deviceResponse.usingSessionTranscriptForOID4VP(options)
-    }
-
-    if (options.type === 'openId4VpDcApi') {
-      return deviceResponse.usingSessionTranscriptForForOID4VPDCApi(options)
     }
 
     throw new MdocError('Unsupported session transcript option')
