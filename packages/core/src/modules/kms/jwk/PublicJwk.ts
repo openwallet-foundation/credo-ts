@@ -155,6 +155,13 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
     return this.jwk.publicKey
   }
 
+  /**
+   * Return the compressed public key. If the key type does not support compressed public keys, it will return null
+   */
+  public get compressedPublicKey(): Jwk['compressedPublicKey'] {
+    return this.jwk.compressedPublicKey
+  }
+
   public get JwkClass() {
     return this.jwk.constructor as SupportedPublicJwkClass
   }
