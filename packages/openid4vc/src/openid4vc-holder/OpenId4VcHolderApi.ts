@@ -1,5 +1,6 @@
 import type {
   OpenId4VciAuthCodeFlowOptions,
+  OpenId4VciDeferredCredentialRequestOptions,
   OpenId4VciCredentialRequestOptions as OpenId4VciRequestCredentialOptions,
   OpenId4VciTokenRequestOptions as OpenId4VciRequestTokenOptions,
   OpenId4VciRequestTokenResponse,
@@ -169,7 +170,7 @@ export class OpenId4VcHolderApi {
   }
 
   /**
-   * Request a set of credentials from the credential isser.
+   * Request a set of credentials from the credential issuer.
    * Can be used with both the pre-authorized code flow and the authorization code flow.
    */
   public async requestCredentials(options: OpenId4VciRequestCredentialOptions) {
@@ -183,6 +184,13 @@ export class OpenId4VcHolderApi {
       dpop,
       clientId,
     })
+  }
+
+  /**
+   * Request a set of deferred credentials from the credential issuer.
+   */
+  public async requestDeferredCredentials(options: OpenId4VciDeferredCredentialRequestOptions) {
+    return this.openId4VciHolderService.retrieveDeferredCredentials(this.agentContext, options)
   }
 
   /**

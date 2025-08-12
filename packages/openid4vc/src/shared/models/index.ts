@@ -9,6 +9,7 @@ import type {
   CredentialRequest,
   CredentialRequestFormatSpecific,
   CredentialRequestWithFormats,
+  DeferredCredentialRequest,
   IssuerMetadataResult,
   ParseCredentialRequestReturn,
 } from '@openid4vc/openid4vci'
@@ -44,6 +45,8 @@ export type OpenId4VciCredentialIssuerMetadataDisplay = CredentialIssuerMetadata
 
 export type OpenId4VciCredentialRequest = CredentialRequest
 export type OpenId4VciCredentialRequestWithFormats = CredentialRequestWithFormats
+
+export type OpenId4VciDeferredCredentialRequest = DeferredCredentialRequest
 
 export type OpenId4VciCredentialOfferPayload = CredentialOfferObject
 

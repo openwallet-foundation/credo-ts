@@ -146,6 +146,10 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         )
       }
 
+      const expiresAt =
+        issuanceSession.expiresAt ??
+        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
         if (issuanceSession.authorization.subject !== tokenPayload.sub) {
@@ -166,10 +170,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
 
       // Stateful session expired
-      else if (
-        Date.now() >
-        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds).getTime()
-      ) {
+      else if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         throw new Oauth2ServerErrorResponseError({
@@ -235,7 +236,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           next,
           agentContext.config.logger,
           new Oauth2ResourceUnauthorizedError(
-            'No credential configurationss match credential request and access token scope',
+            'No credential configurations match credential request and access token scope',
             {
               scheme,
               error: Oauth2ErrorCodes.InsufficientScope,
@@ -246,7 +247,12 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         )
       }
 
+      const createdAt = new Date()
+      const expiresAt = addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
       issuanceSession = new OpenId4VcIssuanceSessionRecord({
+        createdAt,
+        expiresAt,
         credentialOfferPayload: {
           credential_configuration_ids: Object.keys(configurationsForToken),
           credential_issuer: issuerMetadata.credentialIssuer.credential_issuer,
@@ -297,7 +303,13 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         },
       })
 
-      return sendJsonResponse(response, next, credentialResponse)
+      return sendJsonResponse(
+        response,
+        next,
+        credentialResponse,
+        undefined,
+        credentialResponse.transaction_id ? 202 : 200
+      )
     } catch (error) {
       if (error instanceof Oauth2ServerErrorResponseError) {
         return sendOauth2ErrorResponse(response, next, agentContext.config.logger, error)
