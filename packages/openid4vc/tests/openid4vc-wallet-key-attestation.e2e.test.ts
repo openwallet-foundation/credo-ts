@@ -137,6 +137,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
             })
 
             return {
+              type: 'credentials',
               format: OpenId4VciCredentialFormatProfile.MsoMdoc,
               credentials: holderBinding.keys.map((holderBinding, index) => ({
                 docType: credentialConfiguration.doctype,

@@ -385,7 +385,7 @@ export class OpenId4VcIssuerService {
     // NOTE: nonce in credential response is deprecated in newer drafts, but for now we keep it in
     const { cNonce, cNonceExpiresInSeconds } = await this.createNonce(agentContext, issuer)
 
-    if ('interval' in signOptionsOrDeferral) {
+    if (signOptionsOrDeferral.type === 'deferral') {
       credentialResponse = vcIssuer.createCredentialResponse({
         transactionId: signOptionsOrDeferral.transactionId,
         interval: signOptionsOrDeferral.interval,
@@ -484,7 +484,7 @@ export class OpenId4VcIssuerService {
     })
 
     let deferredCredentialResponse: DeferredCredentialResponse
-    if ('interval' in signOptionsOrDeferral) {
+    if (signOptionsOrDeferral.type === 'deferral') {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
       })

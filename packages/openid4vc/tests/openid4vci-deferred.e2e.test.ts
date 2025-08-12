@@ -86,6 +86,7 @@ describe('OpenId4Vci (Deferred)', () => {
             }
 
             return {
+              type: 'deferral',
               transactionId: uuid,
               interval: 2000,
             }
@@ -108,6 +109,7 @@ describe('OpenId4Vci (Deferred)', () => {
 
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
+                type: 'credentials',
                 format: credentialRequest.format,
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
@@ -122,6 +124,7 @@ describe('OpenId4Vci (Deferred)', () => {
             }
             if (credentialRequest.format === 'mso_mdoc') {
               return {
+                type: 'credentials',
                 format: ClaimFormat.MsoMdoc,
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
@@ -332,7 +335,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.Deferred,
+      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       issuanceSessionId: issuanceSession.id,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
@@ -500,7 +503,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.Deferred,
+      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       issuanceSessionId: issuanceSession.id,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })

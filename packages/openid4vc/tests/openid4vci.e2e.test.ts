@@ -81,6 +81,7 @@ describe('OpenId4Vc', () => {
 
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
+                type: 'credentials',
                 format: credentialRequest.format,
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
@@ -95,6 +96,7 @@ describe('OpenId4Vc', () => {
             }
             if (credentialRequest.format === 'mso_mdoc') {
               return {
+                type: 'credentials',
                 format: ClaimFormat.MsoMdoc,
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,

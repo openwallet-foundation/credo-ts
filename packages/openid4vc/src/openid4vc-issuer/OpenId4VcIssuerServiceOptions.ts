@@ -1,4 +1,12 @@
-import type { AgentContext, ClaimFormat, Kms, MdocSignOptions, SdJwtVcSignOptions, W3cCredential } from '@credo-ts/core'
+import type {
+  AgentContext,
+  CanBePromise,
+  ClaimFormat,
+  Kms,
+  MdocSignOptions,
+  SdJwtVcSignOptions,
+  W3cCredential,
+} from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcVerificationSessionRecord,
@@ -291,11 +299,7 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
-) =>
-  | Promise<OpenId4VciSignCredentials>
-  | OpenId4VciSignCredentials
-  | Promise<OpenId4VciDeferredCredentials>
-  | OpenId4VciDeferredCredentials
+) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
 
 export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
@@ -320,11 +324,7 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
   options: OpenId4VciDeferredCredentialRequestToCredentialMapperOptions
-) =>
-  | Promise<OpenId4VciSignCredentials>
-  | OpenId4VciSignCredentials
-  | Promise<OpenId4VciDeferredCredentials>
-  | OpenId4VciDeferredCredentials
+) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
@@ -332,16 +332,19 @@ export type OpenId4VciSignCredentials =
   | OpenId4VciSignMdocCredentials
 
 export interface OpenId4VciSignSdJwtCredentials {
+  type: 'credentials'
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
   credentials: SdJwtVcSignOptions[]
 }
 
 export interface OpenId4VciSignMdocCredentials {
+  type: 'credentials'
   format: ClaimFormat.MsoMdoc | `${ClaimFormat.MsoMdoc}`
   credentials: MdocSignOptions[]
 }
 
 export interface OpenId4VciSignW3cCredentials {
+  type: 'credentials'
   format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
   credentials: Array<{
     verificationMethod: string
@@ -350,6 +353,7 @@ export interface OpenId4VciSignW3cCredentials {
 }
 
 export type OpenId4VciDeferredCredentials = {
+  type: 'deferral'
   transactionId: string
   interval: number
 }
