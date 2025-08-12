@@ -867,7 +867,7 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, query, queryOptions)
   }
 
-  public async findSingleIssuancSessionByQuery(
+  public async findSingleIssuanceSessionByQuery(
     agentContext: AgentContext,
     query: Query<OpenId4VcIssuanceSessionRecord>
   ) {
