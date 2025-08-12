@@ -107,8 +107,10 @@ export interface OpenId4VcIssuanceSessionRecordTransaction {
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
+  createdAt: Date
+  expiresAt: Date
+
   id?: string
-  createdAt?: Date
   tags?: TagsBase
 
   state: OpenId4VcIssuanceSessionState
@@ -158,6 +160,12 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
   public static readonly type = 'OpenId4VcIssuanceSessionRecord'
   public readonly type = OpenId4VcIssuanceSessionRecord.type
+
+  /**
+   * Expiry time for the issuance session. This can change dynamically during
+   * the session lifetime, based on the possible deferrals.
+   */
+  public expiresAt!: Date
 
   /**
    * The id of the issuer that this session is for.
@@ -282,7 +290,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
     if (props) {
       this.id = props.id ?? utils.uuid()
-      this.createdAt = props.createdAt ?? new Date()
+      this.createdAt = props.createdAt
+      this.expiresAt = props.expiresAt
       this._tags = props.tags ?? {}
 
       this.issuerId = props.issuerId

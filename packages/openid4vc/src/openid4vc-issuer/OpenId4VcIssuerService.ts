@@ -214,8 +214,13 @@ export class OpenId4VcIssuerService {
       },
     })
 
+    const createdAt = new Date()
+    const expiresAt = addSecondsToDate(createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+
     const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
+      createdAt,
+      expiresAt,
       credentialOfferPayload: credentialOfferObject,
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferId,
@@ -401,10 +406,16 @@ export class OpenId4VcIssuerService {
         credentialConfigurationId,
       })
 
+      // Determine new state
       const newState =
         issuanceSession.state === OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
           ? OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued
           : OpenId4VcIssuanceSessionState.CredentialRequestReceived
+
+      // Update expiry time to allow for re-check
+      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
+
+      // Update state
       await this.updateState(agentContext, issuanceSession, newState)
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
@@ -488,6 +499,9 @@ export class OpenId4VcIssuerService {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
       })
+
+      // Update expiry time to allow for re-check
+      await this.updateExpiresAt(agentContext, issuanceSession, signOptionsOrDeferral.interval)
     } else {
       const credentials = await this.getSignedCredentials(agentContext, signOptionsOrDeferral, {
         issuanceSession,
@@ -506,6 +520,7 @@ export class OpenId4VcIssuerService {
         (tx) => tx.transactionId !== transaction.transactionId
       )
 
+      // Determine new state
       const newState =
         issuanceSession.issuedCredentials.length >=
         issuanceSession.credentialOfferPayload.credential_configuration_ids.length
@@ -1077,6 +1092,31 @@ export class OpenId4VcIssuerService {
         clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord),
       },
     })
+  }
+
+  /**
+   * Update the expiresAt field of the issuance session to ensure it remains
+   * valid during the deferral process. We set it to the maximum between the
+   * current expiresAt and the current time plus the configured expiration
+   * time or the interval multiplied by 2. This accounts for the chance of multiple
+   * deferrals happening, with longer intervals.
+   */
+  private async updateExpiresAt(
+    agentContext: AgentContext,
+    issuanceSession: OpenId4VcIssuanceSessionRecord,
+    interval: number
+  ) {
+    issuanceSession.expiresAt = new Date(
+      Math.max(
+        issuanceSession.expiresAt.getTime(),
+        addSecondsToDate(
+          new Date(),
+          Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+        ).getTime()
+      )
+    )
+
+    await this.openId4VcIssuanceSessionRepository.update(agentContext, issuanceSession)
   }
 
   /**

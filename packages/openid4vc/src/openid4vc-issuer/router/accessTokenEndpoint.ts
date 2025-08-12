@@ -68,10 +68,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       })
     }
 
-    if (
-      Date.now() >
-      addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds).getTime()
-    ) {
+    if (Date.now() > issuanceSession.expiresAt.getTime()) {
       issuanceSession.errorMessage = 'Credential offer has expired'
       await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
       throw new Oauth2ServerErrorResponseError({

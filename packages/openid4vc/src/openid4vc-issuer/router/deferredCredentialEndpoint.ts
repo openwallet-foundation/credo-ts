@@ -12,6 +12,7 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
@@ -127,38 +128,44 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         )
       }
 
-      if (issuerState) {
-        // Use issuance session dpop config
-        if (issuanceSession.dpop?.required && !resourceRequestResult.dpop) {
-          return sendUnauthorizedError(
-            response,
-            next,
-            agentContext.config.logger,
-            new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
-              scheme,
-              error: Oauth2ErrorCodes.InvalidDpopProof,
-            })
-          )
-        }
+      // Use issuance session dpop config
+      if (issuanceSession.dpop?.required && !resourceRequestResult.dpop) {
+        return sendUnauthorizedError(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ResourceUnauthorizedError('Missing required DPoP proof', {
+            scheme,
+            error: Oauth2ErrorCodes.InvalidDpopProof,
+          })
+        )
+      }
 
-        // Verify the issuance session subject
-        if (issuanceSession.authorization?.subject) {
-          if (issuanceSession.authorization.subject !== tokenPayload.sub) {
-            return sendOauth2ErrorResponse(
-              response,
-              next,
-              agentContext.config.logger,
-              new Oauth2ServerErrorResponseError(
-                {
-                  error: Oauth2ErrorCodes.CredentialRequestDenied,
-                },
-                {
-                  internalMessage: `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
-                }
-              )
-            )
-          }
-        }
+      // Verify the issuance session subject
+      if (issuanceSession.authorization?.subject && issuanceSession.authorization.subject !== tokenPayload.sub) {
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.CredentialRequestDenied,
+            },
+            {
+              internalMessage: `Issuance session authorization subject does not match with the token payload subject for issuance session '${issuanceSession.id}'. Returning error response`,
+            }
+          )
+        )
+      }
+
+      if (Date.now() > issuanceSession.expiresAt.getTime()) {
+        issuanceSession.errorMessage = 'Credential offer has expired'
+        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        throw new Oauth2ServerErrorResponseError({
+          // What is the best error here?
+          error: Oauth2ErrorCodes.CredentialRequestDenied,
+          error_description: 'Session expired',
+        })
       }
 
       try {
