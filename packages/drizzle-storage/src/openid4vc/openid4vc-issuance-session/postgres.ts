@@ -3,11 +3,12 @@ import {
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPkce,
   OpenId4VcIssuanceSessionPresentation,
+  OpenId4VcIssuanceSessionRecordTransaction,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
-import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
+import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { openid4vcIssuer } from '../postgres'
 
@@ -21,6 +22,11 @@ export const openId4VcIssuanceSession = pgTable(
     issuerId: text('issuer_id')
       .notNull()
       .references(() => openid4vcIssuer.issuerId, { onDelete: 'cascade' }),
+
+    expiresAt: timestamp('expires_at', {
+      withTimezone: true,
+      precision: 3,
+    }),
 
     state: openId4VcIssuanceSessionStateEnum().notNull(),
     issuedCredentials: text('issued_credentials').array(),
@@ -42,6 +48,8 @@ export const openId4VcIssuanceSession = pgTable(
 
     // Metadata and error handling
     issuanceMetadata: jsonb('issuance_metadata').$type<Record<string, unknown>>(),
+
+    transactions: jsonb().$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
 
     // Credential offer
     credentialOfferUri: text('credential_offer_uri'),

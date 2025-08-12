@@ -58,6 +58,8 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
       issuerId,
       preAuthorizedCode,
       state,
+      expiresAt: record.expiresAt,
+      transactions: record.transactions,
 
       credentialOfferPayload: record.credentialOfferPayload,
       authorization: record.authorization

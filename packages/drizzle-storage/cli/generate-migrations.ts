@@ -55,7 +55,7 @@ export async function generateMigrations({ dialects, bundles, name }: GenerateMi
         }
       )
 
-      if (migrateResult.status !== 0) {
+      if (migrateResult.status !== 0 || migrateResult.stderr !== '') {
         throw new Error(
           `Error generating migrations for schema ${dialectBundle.schemaSourcePath} with dialect ${dialect}. Error: ${migrateResult.stderr || migrateResult.stdout}`
         )

@@ -3,11 +3,12 @@ import {
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecord,
+  OpenId4VcIssuanceSessionRecordTransaction,
   OpenId4VcIssuanceSessionState,
   OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { openid4vcIssuer } from '../sqlite'
 
@@ -19,6 +20,8 @@ export const openId4VcIssuanceSession = sqliteTable(
     issuerId: text('issuer_id')
       .notNull()
       .references(() => openid4vcIssuer.issuerId, { onDelete: 'cascade' }),
+
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
 
     state: text().$type<OpenId4VcIssuanceSessionState>().notNull(),
     issuedCredentials: text('issued_credentials', { mode: 'json' }).$type<string[]>(),
@@ -40,6 +43,8 @@ export const openId4VcIssuanceSession = sqliteTable(
 
     // Metadata and error handling
     issuanceMetadata: text('issuance_metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
+
+    transactions: text({ mode: 'json' }).$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
 
     // Credential offer
     credentialOfferUri: text('credential_offer_uri'),

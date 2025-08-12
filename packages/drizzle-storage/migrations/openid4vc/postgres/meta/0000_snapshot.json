@@ -1,5 +1,5 @@
 {
-  "id": "46bad1bc-738b-4888-86e3-bae26fc778bd",
+  "id": "837a7f1a-143a-4e54-aec6-38d41c60a8c5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -168,6 +168,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
         "state": {
           "name": "state",
           "type": "OpenId4VcIssuanceSessionState",
@@ -230,6 +236,12 @@
         },
         "issuance_metadata": {
           "name": "issuance_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transactions": {
+          "name": "transactions",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -445,6 +457,12 @@
         },
         "authorization_request_uri": {
           "name": "authorization_request_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_response_redirect_uri": {
+          "name": "authorization_response_redirect_uri",
           "type": "text",
           "primaryKey": false,
           "notNull": false

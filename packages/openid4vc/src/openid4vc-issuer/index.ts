@@ -15,4 +15,5 @@ export {
   OpenId4VcIssuanceSessionAuthorization,
   OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionPkce,
+  OpenId4VcIssuanceSessionRecordTransaction,
 } from './repository'

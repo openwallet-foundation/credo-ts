@@ -19,8 +19,8 @@ export async function resolveBundle(bundle: string) {
 
     try {
       module = require(option)
-    } catch {
-      throw new Error(`Error during require of ${option}`)
+    } catch (e) {
+      throw new Error(`Error during require of ${option}: ${e}`)
     }
 
     if (!module.default) {

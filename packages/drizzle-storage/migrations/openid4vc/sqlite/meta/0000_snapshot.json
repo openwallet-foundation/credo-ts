@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "891937eb-c857-4f77-a684-72fa2b8cf1c1",
+  "id": "11f0be0f-7279-4982-823b-cf51b362b723",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "Openid4vcIssuer": {
@@ -185,6 +185,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "state": {
           "name": "state",
           "type": "text",
@@ -257,6 +264,13 @@
         },
         "issuance_metadata": {
           "name": "issuance_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "transactions": {
+          "name": "transactions",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -490,6 +504,13 @@
         },
         "authorization_request_uri": {
           "name": "authorization_request_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_response_redirect_uri": {
+          "name": "authorization_response_redirect_uri",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
