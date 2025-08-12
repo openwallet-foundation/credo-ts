@@ -1,3 +1,4 @@
+import { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
 import { Constructor } from '../../../utils/mixins'
@@ -7,6 +8,7 @@ import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { assymetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
 import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
+import { calculateJwkThumbprint } from './jwkThumbprint'
 import { KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 
 import {
@@ -162,6 +164,16 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
   public get JwkClass() {
     return this.jwk.constructor as SupportedPublicJwkClass
+  }
+
+  /**
+   * SHA-256 jwk thumbprint
+   */
+  public getJwkThumbprint(hashAlgorithm: HashName = 'sha-256') {
+    return calculateJwkThumbprint({
+      jwk: this.jwk.jwk,
+      hashAlgorithm: hashAlgorithm,
+    })
   }
 
   /**
