@@ -123,6 +123,7 @@ function getCredentialRequestToCredentialMapper({
   return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
+        type: 'credentials',
         format: ClaimFormat.SdJwtVc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
@@ -145,6 +146,7 @@ function getCredentialRequestToCredentialMapper({
       assertDidBasedHolderBinding(holderBinding)
 
       return {
+        type: 'credentials',
         format: ClaimFormat.JwtVc,
         credentials: holderBinding.keys.map((binding) => {
           return {
@@ -170,6 +172,7 @@ function getCredentialRequestToCredentialMapper({
 
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
+        type: 'credentials',
         format: ClaimFormat.SdJwtVc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
@@ -192,6 +195,7 @@ function getCredentialRequestToCredentialMapper({
       assertJwkBasedHolderBinding(holderBinding)
 
       return {
+        type: 'credentials',
         format: ClaimFormat.MsoMdoc,
         credentials: holderBinding.keys.map((binding) => ({
           issuerCertificate,

@@ -43,6 +43,7 @@ describe('OpenId4Vc Batch Issuance', () => {
               throw new CredoError('Expected jwk binding method')
             }
             return {
+              type: 'credentials',
               format: OpenId4VciCredentialFormatProfile.MsoMdoc,
               credentials: holderBinding.keys.map((holderBinding, index) => ({
                 docType: credentialRequestFormat.doctype,

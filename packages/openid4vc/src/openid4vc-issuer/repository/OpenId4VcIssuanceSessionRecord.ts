@@ -4,7 +4,6 @@ import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
-
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
@@ -17,7 +16,7 @@ export interface OpenId4VcIssuanceSessionDpop {
   required: boolean
 
   /**
-   * JWK thumbprint of the dpop key. This is mosty used when a dpop key is bound
+   * JWK thumbprint of the dpop key. This is mostly used when a dpop key is bound
    * to the issuance session before the access token is created (which contains the dpop key)
    */
   dpopJkt?: string
@@ -25,7 +24,7 @@ export interface OpenId4VcIssuanceSessionDpop {
 
 export interface OpenId4VcIssuanceSessionWalletAttestation {
   /**
-   * Wheter presentation of a wallet attestation is required.
+   * Whether presentation of a wallet attestation is required.
    * Can be set to false to override the global config
    */
   required: boolean
@@ -97,9 +96,21 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
   presentationAuthSession?: string
 }
 
+export interface OpenId4VcIssuanceSessionRecordTransaction {
+  transactionId: string
+
+  // The expected number of credentials that will be issued in this transaction
+  numberOfCredentials: number
+
+  // The credential configuration that is used for this transaction.
+  credentialConfigurationId: string
+}
+
 export interface OpenId4VcIssuanceSessionRecordProps {
+  createdAt: Date
+  expiresAt: Date
+
   id?: string
-  createdAt?: Date
   tags?: TagsBase
 
   state: OpenId4VcIssuanceSessionState
@@ -134,6 +145,9 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    */
   presentation?: OpenId4VcIssuanceSessionPresentation
 
+  // Transaction data for deferred credential issuances
+  transactions?: OpenId4VcIssuanceSessionRecordTransaction[]
+
   credentialOfferUri?: string
   credentialOfferId: string
 
@@ -146,6 +160,14 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
   public static readonly type = 'OpenId4VcIssuanceSessionRecord'
   public readonly type = OpenId4VcIssuanceSessionRecord.type
+
+  /**
+   * Expiry time for the issuance session. This can change dynamically during
+   * the session lifetime, based on the possible deferrals.
+   *
+   * @since 0.6
+   */
+  public expiresAt?: Date
 
   /**
    * The id of the issuer that this session is for.
@@ -169,6 +191,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    * The credentials that were issued during this session.
    */
   public issuedCredentials: string[] = []
+
+  /**
+   * The credential transactions for deferred credentials.
+   */
+  public transactions: OpenId4VcIssuanceSessionRecordTransaction[] = []
 
   /**
    * Pre authorized code used for the issuance session. Only used when a pre-authorized credential
@@ -265,7 +292,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
     if (props) {
       this.id = props.id ?? utils.uuid()
-      this.createdAt = props.createdAt ?? new Date()
+      this.createdAt = props.createdAt
+      this.expiresAt = props.expiresAt
       this._tags = props.tags ?? {}
 
       this.issuerId = props.issuerId
