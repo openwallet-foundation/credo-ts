@@ -38,6 +38,7 @@ export class DrizzleOpenId4VcVerificationSessionRecordAdapter extends BaseDrizzl
       authorizationRequestJwt: record.authorizationRequestJwt,
       authorizationRequestPayload: record.authorizationRequestPayload,
       authorizationResponsePayload: record.authorizationResponsePayload,
+      authorizationResponseRedirectUri: record.authorizationResponseRedirectUri,
       errorMessage: record.errorMessage,
       expiresAt: record.expiresAt,
       presentationDuringIssuanceSession: record.presentationDuringIssuanceSession,

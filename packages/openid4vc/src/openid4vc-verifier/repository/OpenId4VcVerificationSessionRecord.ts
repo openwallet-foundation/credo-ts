@@ -2,6 +2,7 @@ import type { OpenId4VpAuthorizationRequestPayload, OpenId4VpAuthorizationRespon
 import type { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 
 import { BaseRecord, CredoError, DateTransformer, Jwt, RecordTags, TagsBase, utils } from '@credo-ts/core'
+import { OpenId4VpVersion } from '../OpenId4VpVerifierServiceOptions'
 
 export type OpenId4VcVerificationSessionRecordTags = RecordTags<OpenId4VcVerificationSessionRecord>
 
@@ -12,6 +13,7 @@ export type DefaultOpenId4VcVerificationSessionRecordTags = {
   payloadState?: string
   authorizationRequestUri?: string
   authorizationRequestId?: string
+  openId4VpVersion?: OpenId4VpVersion
 }
 
 export interface OpenId4VcVerificationSessionRecordProps {
@@ -28,6 +30,8 @@ export interface OpenId4VcVerificationSessionRecordProps {
   authorizationRequestId: string
   authorizationRequestPayload?: OpenId4VpAuthorizationRequestPayload
 
+  authorizationResponseRedirectUri?: string
+
   expiresAt: Date
 
   authorizationResponsePayload?: OpenId4VpAuthorizationResponsePayload
@@ -37,6 +41,11 @@ export interface OpenId4VcVerificationSessionRecordProps {
    * prevent session fixation attacks
    */
   presentationDuringIssuanceSession?: string
+
+  /**
+   * The version of openid4vp used for the request
+   */
+  openId4VpVersion: OpenId4VpVersion
 }
 
 export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId4VcVerificationSessionRecordTags> {
@@ -85,6 +94,20 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
   public authorizationRequestId?: string
 
   /**
+   * The version of OpenID4VP used.
+   *
+   * If `v1` is used this is always defined. Otherwise it could be both
+   * `v1.draft21` or `v1.draft24`.
+   *
+   * You can detect this based on:
+   * - if `client_id_scheme` is defined -> `v1.draft21`
+   * - otherwise `v1.draft24`
+   *
+   * @since 0.6
+   */
+  public openId4VpVersion?: OpenId4VpVersion
+
+  /**
    * The time at which the authorization request expires.
    *
    * @since 0.6
@@ -103,6 +126,14 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
    */
   public presentationDuringIssuanceSession?: string
 
+  /**
+   * Redirect uri that should be used in the authorization response. This will be included in both error and success
+   * responses.
+   *
+   * @since 0.6
+   */
+  public authorizationResponseRedirectUri?: string
+
   public constructor(props: OpenId4VcVerificationSessionRecordProps) {
     super()
 
@@ -118,8 +149,10 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       this.authorizationRequestJwt = props.authorizationRequestJwt
       this.authorizationRequestUri = props.authorizationRequestUri
       this.authorizationRequestId = props.authorizationRequestId
+      this.authorizationResponseRedirectUri = props.authorizationResponseRedirectUri
       this.authorizationResponsePayload = props.authorizationResponsePayload
       this.expiresAt = props.expiresAt
+      this.openId4VpVersion = props.openId4VpVersion
 
       this.presentationDuringIssuanceSession = props.presentationDuringIssuanceSession
     }
@@ -171,6 +204,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
       payloadState,
       authorizationRequestUri: this.authorizationRequestUri,
       authorizationRequestId: this.authorizationRequestId,
+      openId4VpVersion: this.openId4VpVersion,
     }
   }
 }

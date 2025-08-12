@@ -1,0 +1,1 @@
+ALTER TABLE `OpenId4VcVerificationSession` ADD `authorization_response_redirect_uri` text;

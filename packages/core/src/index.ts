@@ -20,7 +20,9 @@ export type {
   CanBePromise,
   SingleOrArray,
   Optional,
+  NonEmptyArray,
 } from './types'
+export { mapNonEmptyArray, isNonEmptyArray } from './types'
 export { isJsonObject } from './types'
 export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
@@ -50,6 +52,8 @@ export {
   JsonEncoder,
   JsonTransformer,
   TypedArrayEncoder,
+  MultiBaseEncoder,
+  MultiHashEncoder,
   HashlinkEncoder,
   BaseName,
   Buffer,
@@ -61,6 +65,7 @@ export {
   equalsIgnoreOrder,
   equalsWithOrder,
   DateTransformer,
+  IsStringOrStringArray,
 } from './utils'
 export * from './logger'
 export * from './error'

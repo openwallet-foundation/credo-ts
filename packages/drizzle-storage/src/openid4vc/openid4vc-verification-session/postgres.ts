@@ -27,6 +27,7 @@ export const openId4VcVerificationSession = pgTable(
     authorizationRequestJwt: text('authorization_request_jwt'),
     authorizationRequestPayload: jsonb('authorization_request_payload').$type<OpenId4VpAuthorizationRequestPayload>(),
     authorizationRequestUri: text('authorization_request_uri'),
+    authorizationResponseRedirectUri: text('authorization_response_redirect_uri'),
     authorizationRequestId: text('authorization_request_id'),
 
     expiresAt: timestamp('expires_at', {

@@ -24,6 +24,7 @@ export const openId4VcVerificationSession = sqliteTable(
       mode: 'json',
     }).$type<OpenId4VpAuthorizationRequestPayload>(),
     authorizationRequestUri: text('authorization_request_uri'),
+    authorizationResponseRedirectUri: text('authorization_response_redirect_uri'),
     authorizationRequestId: text('authorization_request_id'),
 
     expiresAt: integer('expires_at', { mode: 'timestamp_ms' }),
