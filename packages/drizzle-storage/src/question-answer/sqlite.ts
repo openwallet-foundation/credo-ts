@@ -1,1 +1,1 @@
-export * from './question-answer/sqlite'
+export * from './question-answer-record/sqlite'

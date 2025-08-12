@@ -1,13 +1,13 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
-import { contextDrizzleRecord } from './context'
-import { didDrizzleRecord } from './did'
-import { genericRecordDrizzleRecord } from './genericRecord'
-import { mdocDrizzleRecord } from './mdoc'
-import { sdJwtVcDrizzleRecord } from './sdJwtVc'
-import { singleContextLruCacheDrizzleRecord } from './singleContextLruCache'
-import { storageVersionDrizzleRecord } from './storageVersion'
-import { w3cCredentialDrizzleRecord } from './w3cCredential'
+import { contextDrizzleRecord } from './context-record'
+import { didDrizzleRecord } from './did-record'
+import { genericRecordDrizzleRecord } from './generic-record'
+import { mdocDrizzleRecord } from './mdoc-record'
+import { sdJwtVcDrizzleRecord } from './sd-jwt-vc-record'
+import { singleContextLruCacheDrizzleRecord } from './single-context-lru-cache-record'
+import { storageVersionDrizzleRecord } from './storage-version-record'
+import { w3cCredentialDrizzleRecord } from './w3c-credential-record'
 
 export default {
   name: 'core',

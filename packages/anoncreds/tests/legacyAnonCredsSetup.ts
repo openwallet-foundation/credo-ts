@@ -312,7 +312,7 @@ export async function setupAnonCredsTests<
   attributeNames,
   preCreatedDefinition,
   createConnections,
-  useDrizzleStorage = false,
+  useDrizzleStorage,
 }: {
   issuerName: string
   holderName: string
@@ -322,13 +322,13 @@ export async function setupAnonCredsTests<
   attributeNames?: string[]
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
-  useDrizzleStorage?: boolean | 'postgres' | 'sqlite'
+  useDrizzleStorage?: 'postgres' | 'sqlite'
 }): Promise<SetupAnonCredsTestsReturn<VerifierName, CreateConnections>> {
   const issuerPostgresDrizzle = useDrizzleStorage === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
   const issuerDrizzle =
     useDrizzleStorage === 'postgres'
       ? issuerPostgresDrizzle?.drizzle
-      : useDrizzleStorage
+      : useDrizzleStorage === 'sqlite'
         ? inMemoryDrizzleSqliteDatabase()
         : undefined
 
@@ -353,7 +353,7 @@ export async function setupAnonCredsTests<
   const holderDrizzle =
     useDrizzleStorage === 'postgres'
       ? holderPostgresDrizzle?.drizzle
-      : useDrizzleStorage
+      : useDrizzleStorage === 'sqlite'
         ? inMemoryDrizzleSqliteDatabase()
         : undefined
   const holderAgent = new Agent(
@@ -376,7 +376,7 @@ export async function setupAnonCredsTests<
   const verifierDrizzle =
     useDrizzleStorage === 'postgres'
       ? verifierPostgresDrizzle?.drizzle
-      : useDrizzleStorage
+      : useDrizzleStorage === 'sqlite'
         ? inMemoryDrizzleSqliteDatabase()
         : undefined
   const verifierAgent = verifierName

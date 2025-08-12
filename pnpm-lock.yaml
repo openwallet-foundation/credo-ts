@@ -381,6 +381,9 @@ importers:
         specifier: 'catalog:'
         version: 0.2.2
     devDependencies:
+      '@credo-ts/drizzle-storage':
+        specifier: workspace:*
+        version: link:../drizzle-storage
       '@credo-ts/node':
         specifier: workspace:*
         version: link:../node

@@ -1,13 +1,13 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
-import { didcommBasicMessageDrizzleRecord } from './basic-message'
-import { didcommConnectionDrizzleRecord } from './connection'
-import { didcommCredentialExchangeDrizzleRecord } from './credential-exchange'
-import { didcommMessageDrizzleRecord } from './didcomm-message'
-import { didcommMediationDrizzleRecord } from './mediation'
-import { didcommMediatorRoutingDrizzleRecord } from './mediator-routing'
-import { didcommOutOfBandDrizzleRecord } from './out-of-band'
-import { didcommProofExchangeDrizzleRecord } from './proof-exchange'
+import { didcommBasicMessageDrizzleRecord } from './basic-message-record'
+import { didcommConnectionDrizzleRecord } from './connection-record'
+import { didcommCredentialExchangeDrizzleRecord } from './credential-exchange-record'
+import { didcommMessageDrizzleRecord } from './didcomm-message-record'
+import { didcommMediationDrizzleRecord } from './mediation-record'
+import { didcommMediatorRoutingDrizzleRecord } from './mediator-routing-record'
+import { didcommOutOfBandDrizzleRecord } from './out-of-band-record'
+import { didcommProofExchangeDrizzleRecord } from './proof-exchange-record'
 
 export default {
   name: 'didcomm',

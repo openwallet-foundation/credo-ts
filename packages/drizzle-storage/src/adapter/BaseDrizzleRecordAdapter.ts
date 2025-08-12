@@ -1,7 +1,3 @@
-/**
- * Adapter between a specific Record class and the record Type
- */
-
 import { AgentContext, BaseRecord, CredoError, Query, QueryOptions, RecordNotFoundError } from '@credo-ts/core'
 import { Simplify, and, eq } from 'drizzle-orm'
 import { PgTable, pgTable } from 'drizzle-orm/pg-core'
@@ -27,6 +23,9 @@ export type DrizzleAdapterRecordValues<Table extends _SQLiteTable> = Simplify<
   Omit<{ [Key in keyof Table['$inferInsert']]: Table['$inferInsert'][Key] }, 'contextCorrelationId'>
 >
 
+/**
+ * Adapter between a specific Record class and the record Type
+ */
 export abstract class BaseDrizzleRecordAdapter<
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   CredoRecord extends BaseRecord<any, any, any>,

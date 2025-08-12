@@ -1,1 +1,1 @@
-export * from './drpc/sqlite'
+export * from './drpc-record/sqlite'

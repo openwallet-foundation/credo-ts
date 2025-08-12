@@ -1,1 +1,1 @@
-export * from './action-menu/postgres'
+export * from './action-menu-record/postgres'

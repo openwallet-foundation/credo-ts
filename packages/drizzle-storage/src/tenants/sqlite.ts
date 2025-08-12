@@ -1,2 +1,2 @@
-export * from './tenant/sqlite'
-export * from './tenant-routing/sqlite'
+export * from './tenant-record/sqlite'
+export * from './tenant-routing-record/sqlite'

@@ -1,2 +1,2 @@
-export * from './tenant/postgres'
-export * from './tenant-routing/postgres'
+export * from './tenant-record/postgres'
+export * from './tenant-routing-record/postgres'

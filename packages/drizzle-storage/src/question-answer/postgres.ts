@@ -1,1 +1,1 @@
-export * from './question-answer/postgres'
+export * from './question-answer-record/postgres'

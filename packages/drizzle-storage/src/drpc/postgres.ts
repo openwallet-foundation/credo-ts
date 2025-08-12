@@ -1,1 +1,1 @@
-export * from './drpc/postgres'
+export * from './drpc-record/postgres'

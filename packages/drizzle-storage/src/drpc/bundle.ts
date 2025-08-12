@@ -1,6 +1,6 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
-import { didcommDrpcDrizzleRecord } from './drpc'
+import { didcommDrpcDrizzleRecord } from './drpc-record'
 
 export default {
   name: 'drpc',

@@ -1,6 +1,6 @@
 import { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
-import { didcommQuestionAnswerDrizzleRecord } from './question-answer'
+import { didcommQuestionAnswerDrizzleRecord } from './question-answer-record'
 
 export default {
   name: 'question-answer',
