@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialExchangeRecord,
+  DidCommCredentialExchangeRecord,
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
   CredentialFormatAcceptRequestOptions,
@@ -16,7 +16,7 @@ import type {
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
   CredentialFormatService,
-  CredentialPreviewAttributeOptions,
+  DidCommCredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
@@ -25,7 +25,7 @@ import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } 
 import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
-import { Attachment, CredentialFormatSpec, CredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
+import { Attachment, DidCommCredentialFormatSpec, DidCommCredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
@@ -68,7 +68,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     _agentContext: AgentContext,
     { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       format: INDY_CRED_FILTER,
     })
 
@@ -195,7 +195,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
 
     if (!isUnqualifiedSchemaId(credOffer.schema_id) || !isUnqualifiedCredentialDefinitionId(credOffer.cred_def_id)) {
       throw new ProblemReportError('Invalid credential offer', {
-        problemCode: CredentialProblemReportReason.IssuanceAbandoned,
+        problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       })
     }
   }
@@ -241,7 +241,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       schemaId: credentialOffer.schema_id,
     })
 
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: INDY_CRED_REQUEST,
     })
@@ -296,7 +296,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialValues: convertAttributesToCredentialValues(credentialAttributes),
     })
 
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: INDY_CRED,
     })
@@ -403,7 +403,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: CredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
+  public getAttachment(formats: DidCommCredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
@@ -481,9 +481,9 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       linkedAttachments,
     }: {
       credentialDefinitionId: string
-      credentialRecord: CredentialExchangeRecord
+      credentialRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
-      attributes: CredentialPreviewAttributeOptions[]
+      attributes: DidCommCredentialPreviewAttributeOptions[]
       linkedAttachments?: LinkedAttachment[]
     }
   ): Promise<CredentialFormatCreateOfferReturn> {
@@ -491,7 +491,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
 
     // if the proposal has an attachment Id use that, otherwise the generated id of the formats object
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId: attachmentId,
       format: INDY_CRED_ABSTRACT,
     })
@@ -520,7 +520,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   private async assertPreviewAttributesMatchSchemaAttributes(
     agentContext: AgentContext,
     offer: AnonCredsCredentialOffer,
-    attributes: CredentialPreviewAttributeOptions[]
+    attributes: DidCommCredentialPreviewAttributeOptions[]
   ): Promise<void> {
     const { schema } = await fetchSchema(agentContext, offer.schema_id)
     assertAttributesMatch(schema, attributes)
@@ -534,11 +534,11 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * @return array of linked attachments or undefined if none present
    */
   private getCredentialLinkedAttachments(
-    attributes?: CredentialPreviewAttributeOptions[],
+    attributes?: DidCommCredentialPreviewAttributeOptions[],
     linkedAttachments?: LinkedAttachment[]
   ): {
     attachments?: Attachment[]
-    previewAttributes?: CredentialPreviewAttributeOptions[]
+    previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
   } {
     if (!linkedAttachments && !attributes) {
       return {}

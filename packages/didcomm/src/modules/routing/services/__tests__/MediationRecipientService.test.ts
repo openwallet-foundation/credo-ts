@@ -8,27 +8,27 @@ import { uuid } from '../../../../../../core/src/utils/uuid'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
 import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
-import { DidExchangeState } from '../../../connections'
-import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
-import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
-import { ConnectionService } from '../../../connections/services/ConnectionService'
-import { RoutingEventTypes } from '../../RoutingEvents'
+import { DidCommDidExchangeState } from '../../../connections'
+import { DidCommConnectionMetadataKeys } from '../../../connections/repository/DidCommConnectionMetadataTypes'
+import { DidCommConnectionRepository } from '../../../connections/repository/DidCommConnectionRepository'
+import { DidCommConnectionService } from '../../../connections/services/DidCommConnectionService'
+import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
 import {
   KeylistUpdateAction,
   KeylistUpdateResponseMessage,
   KeylistUpdateResult,
   MediationGrantMessage,
 } from '../../messages'
-import { MediationRole, MediationState } from '../../models'
-import { MediationRecord } from '../../repository/MediationRecord'
-import { MediationRepository } from '../../repository/MediationRepository'
-import { MediationRecipientService } from '../MediationRecipientService'
+import { DidCommMediationRole, DidCommMediationState } from '../../models'
+import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
+import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
+import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 
-jest.mock('../../repository/MediationRepository')
-const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
+jest.mock('../../repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
 
-jest.mock('../../../connections/repository/ConnectionRepository')
-const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
+jest.mock('../../../connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
 
 jest.mock('../../../../../../core/src/modules/dids/repository/DidRepository')
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
@@ -41,20 +41,20 @@ const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender
 
 const connectionImageUrl = 'https://example.com/image.png'
 
-describe('MediationRecipientService', () => {
+describe('DidCommMediationRecipientService', () => {
   const config = getAgentConfig('MediationRecipientServiceTest', {
     endpoints: ['http://agent.com:8080'],
     connectionImageUrl,
   })
 
-  let mediationRepository: MediationRepository
+  let mediationRepository: DidCommMediationRepository
   let didRepository: DidRepository
   let eventEmitter: EventEmitter
-  let connectionService: ConnectionService
-  let connectionRepository: ConnectionRepository
+  let connectionService: DidCommConnectionService
+  let connectionRepository: DidCommConnectionRepository
   let messageSender: DidCommMessageSender
-  let mediationRecipientService: MediationRecipientService
-  let mediationRecord: MediationRecord
+  let mediationRecipientService: DidCommMediationRecipientService
+  let mediationRecord: DidCommMediationRecord
   let agentContext: AgentContext
 
   beforeAll(async () => {
@@ -67,20 +67,20 @@ describe('MediationRecipientService', () => {
     eventEmitter = new EventEmitterMock()
     connectionRepository = new ConnectionRepositoryMock()
     didRepository = new DidRepositoryMock()
-    connectionService = new ConnectionService(config.logger, connectionRepository, didRepository, eventEmitter)
+    connectionService = new DidCommConnectionService(config.logger, connectionRepository, didRepository, eventEmitter)
     mediationRepository = new MediationRepositoryMock()
     messageSender = new MessageSenderMock()
 
     // Mock default return value
-    mediationRecord = new MediationRecord({
+    mediationRecord = new DidCommMediationRecord({
       connectionId: 'connectionId',
-      role: MediationRole.Recipient,
-      state: MediationState.Granted,
+      role: DidCommMediationRole.Recipient,
+      state: DidCommMediationState.Granted,
       threadId: 'threadId',
     })
     mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
-    mediationRecipientService = new MediationRecipientService(
+    mediationRecipientService = new DidCommMediationRecipientService(
       connectionService,
       messageSender,
       mediationRepository,
@@ -90,7 +90,7 @@ describe('MediationRecipientService', () => {
 
   describe('processMediationGrant', () => {
     test('should process base58 encoded routing keys', async () => {
-      mediationRecord.state = MediationState.Requested
+      mediationRecord.state = DidCommMediationState.Requested
       const mediationGrant = new MediationGrantMessage({
         endpoint: 'http://agent.com:8080',
         routingKeys: ['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'],
@@ -98,21 +98,21 @@ describe('MediationRecipientService', () => {
       })
 
       const connection = getMockConnection({
-        state: DidExchangeState.Completed,
+        state: DidCommDidExchangeState.Completed,
       })
 
       const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
-      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+      expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
         'https://didcomm.org/coordinate-mediation/1.0': false,
       })
       expect(mediationRecord.routingKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
     })
 
     test('should process did:key encoded routing keys', async () => {
-      mediationRecord.state = MediationState.Requested
+      mediationRecord.state = DidCommMediationState.Requested
       const mediationGrant = new MediationGrantMessage({
         endpoint: 'http://agent.com:8080',
         routingKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
@@ -120,14 +120,14 @@ describe('MediationRecipientService', () => {
       })
 
       const connection = getMockConnection({
-        state: DidExchangeState.Completed,
+        state: DidCommDidExchangeState.Completed,
       })
 
       const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
-      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+      expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
         'https://didcomm.org/coordinate-mediation/1.0': true,
       })
       expect(mediationRecord.routingKeys).toEqual(['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'])
@@ -139,7 +139,7 @@ describe('MediationRecipientService', () => {
       const spyAddRecipientKey = jest.spyOn(mediationRecord, 'addRecipientKey')
 
       const connection = getMockConnection({
-        state: DidExchangeState.Completed,
+        state: DidCommDidExchangeState.Completed,
       })
 
       const keylist = [
@@ -157,16 +157,16 @@ describe('MediationRecipientService', () => {
 
       const messageContext = new InboundDidCommMessageContext(keyListUpdateResponse, { connection, agentContext })
 
-      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
+      expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
 
       await mediationRecipientService.processKeylistUpdateResults(messageContext)
 
-      expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
+      expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toEqual({
         'https://didcomm.org/coordinate-mediation/1.0': true,
       })
 
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
-        type: RoutingEventTypes.RecipientKeylistUpdated,
+        type: DidCommRoutingEventTypes.RecipientKeylistUpdated,
         payload: {
           mediationRecord,
           keylist,
@@ -190,10 +190,10 @@ describe('MediationRecipientService', () => {
       endpoints: [],
     }
 
-    const mediationRecord = new MediationRecord({
+    const mediationRecord = new DidCommMediationRecord({
       connectionId: 'connection-id',
-      role: MediationRole.Recipient,
-      state: MediationState.Granted,
+      role: DidCommMediationRole.Recipient,
+      state: DidCommMediationState.Granted,
       threadId: 'thread-id',
       endpoint: 'https://a-mediator-endpoint.com',
       routingKeys: [TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)],

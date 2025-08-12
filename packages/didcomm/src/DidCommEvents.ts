@@ -2,7 +2,7 @@ import type { BaseEvent } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { OutboundDidCommMessageContext, OutboundMessageSendStatus } from './models'
-import type { ConnectionRecord } from './modules/connections/repository'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { EncryptedDidCommMessage } from './types'
 
 export enum DidCommEventTypes {
@@ -15,7 +15,7 @@ export interface DidCommMessageReceivedEvent extends BaseEvent {
   type: typeof DidCommEventTypes.DidCommMessageReceived
   payload: {
     message: unknown
-    connection?: ConnectionRecord
+    connection?: DidCommConnectionRecord
     contextCorrelationId?: string
     receivedAt?: Date
     session?: DidCommTransportSession
@@ -26,7 +26,7 @@ export interface DidCommMessageProcessedEvent extends BaseEvent {
   type: typeof DidCommEventTypes.DidCommMessageProcessed
   payload: {
     message: DidCommMessage
-    connection?: ConnectionRecord
+    connection?: DidCommConnectionRecord
     receivedAt?: Date
     encryptedMessage?: EncryptedDidCommMessage
   }

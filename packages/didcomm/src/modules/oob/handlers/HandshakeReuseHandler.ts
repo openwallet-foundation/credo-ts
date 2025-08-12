@@ -1,15 +1,15 @@
 import type { DidCommMessageHandler } from '../../../handlers'
 import type { InboundDidCommMessageContext } from '../../../models'
-import type { OutOfBandService } from '../OutOfBandService'
+import type { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 
 import { OutboundDidCommMessageContext } from '../../../models'
 import { HandshakeReuseMessage } from '../messages/HandshakeReuseMessage'
 
 export class HandshakeReuseHandler implements DidCommMessageHandler {
   public supportedMessages = [HandshakeReuseMessage]
-  private outOfBandService: OutOfBandService
+  private outOfBandService: DidCommOutOfBandService
 
-  public constructor(outOfBandService: OutOfBandService) {
+  public constructor(outOfBandService: DidCommOutOfBandService) {
     this.outOfBandService = outOfBandService
   }
 

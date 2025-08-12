@@ -1,5 +1,5 @@
 import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
-import type { EncryptedDidCommMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
+import type { EncryptedDidCommMessage, DidCommRoutingCreatedEvent } from '@credo-ts/didcomm'
 import type { TenantRecord } from '../repository'
 
 import {
@@ -15,7 +15,7 @@ import {
   isJsonObject,
   isStorageUpToDate,
 } from '@credo-ts/core'
-import { RoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
+import { DidCommRoutingEventTypes, isValidJweStructure } from '@credo-ts/didcomm'
 
 import { TenantAgent } from '../TenantAgent'
 import { TenantRecordService } from '../services'
@@ -177,7 +177,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
 
   private listenForRoutingKeyCreatedEvents() {
     this.logger.debug('Listening for routing key created events in tenant agent context provider')
-    this.eventEmitter.on<RoutingCreatedEvent>(RoutingEventTypes.RoutingCreatedEvent, async (event) => {
+    this.eventEmitter.on<DidCommRoutingCreatedEvent>(DidCommRoutingEventTypes.RoutingCreatedEvent, async (event) => {
       const contextCorrelationId = event.metadata.contextCorrelationId
       const recipientKey = event.payload.routing.recipientKey
 

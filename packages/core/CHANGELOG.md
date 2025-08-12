@@ -708,6 +708,6 @@ Signed-off-by: Timo Glastra <timo@animo.id>
 
 Signed-off-by: Timo Glastra <timo@animo.id>
 
-- `BasicMessageReceivedEvent` has been replaced by the more general `BasicMessageStateChanged` event which triggers when a basic message is received or sent.
+- `BasicMessageReceivedEvent` has been replaced by the more general `DidCommBasicMessageStateChanged` event which triggers when a basic message is received or sent.
 
 Signed-off-by: NeilSMyers <mmyersneil@gmail.com>

@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import type { DidCommTransportSession } from './DidCommTransportService'
-import type { ConnectionRecord } from './modules/connections/repository'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { InboundDidCommTransport } from './transport'
 import type { EncryptedDidCommMessage, PlaintextDidCommMessage } from './types'
 
@@ -24,7 +24,7 @@ import { DidCommTransportService } from './DidCommTransportService'
 import { ProblemReportError } from './errors'
 import { ProblemReportMessage } from './messages'
 import { InboundDidCommMessageContext, OutboundDidCommMessageContext, ProblemReportReason } from './models'
-import { ConnectionService } from './modules/connections/services'
+import { DidCommConnectionService } from './modules/connections/services'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 
@@ -35,7 +35,7 @@ export class DidCommMessageReceiver {
   private messageSender: DidCommMessageSender
   private dispatcher: DidCommDispatcher
   private logger: Logger
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
   private _inboundTransports: InboundDidCommTransport[] = []
@@ -44,7 +44,7 @@ export class DidCommMessageReceiver {
     envelopeService: DidCommEnvelopeService,
     transportService: DidCommTransportService,
     messageSender: DidCommMessageSender,
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     dispatcher: DidCommDispatcher,
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.AgentContextProvider) agentContextProvider: AgentContextProvider,
@@ -89,7 +89,7 @@ export class DidCommMessageReceiver {
       receivedAt,
     }: {
       session?: DidCommTransportSession
-      connection?: ConnectionRecord
+      connection?: DidCommConnectionRecord
       contextCorrelationId?: string
       receivedAt?: Date
     } = {}
@@ -118,7 +118,7 @@ export class DidCommMessageReceiver {
   private async receivePlaintextMessage(
     agentContext: AgentContext,
     plaintextMessage: PlaintextDidCommMessage,
-    connection?: ConnectionRecord,
+    connection?: DidCommConnectionRecord,
     receivedAt?: Date
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
@@ -219,7 +219,7 @@ export class DidCommMessageReceiver {
   private async transformAndValidate(
     agentContext: AgentContext,
     plaintextMessage: PlaintextDidCommMessage,
-    connection?: ConnectionRecord | null
+    connection?: DidCommConnectionRecord | null
   ): Promise<DidCommMessage> {
     let message: DidCommMessage
     try {
@@ -234,7 +234,7 @@ export class DidCommMessageReceiver {
   private async findConnectionByMessageKeys(
     agentContext: AgentContext,
     { recipientKey, senderKey }: DecryptedDidCommMessageContext
-  ): Promise<ConnectionRecord | null> {
+  ): Promise<DidCommConnectionRecord | null> {
     // We only fetch connections that are sent in AuthCrypt mode
     if (!recipientKey || !senderKey) return null
 
@@ -282,7 +282,7 @@ export class DidCommMessageReceiver {
   private async sendProblemReportMessage(
     agentContext: AgentContext,
     message: string,
-    connection: ConnectionRecord,
+    connection: DidCommConnectionRecord,
     plaintextMessage: PlaintextDidCommMessage
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])

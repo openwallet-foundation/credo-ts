@@ -1,7 +1,7 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
 import type { DidCommRouting } from '../../models'
-import type { OutOfBandRecord } from '../oob/repository'
-import type { ConnectionRecord } from './repository'
+import type { DidCommOutOfBandRecord } from '../oob/repository'
+import type { DidCommConnectionRecord } from './repository'
 
 import {
   Buffer,
@@ -33,17 +33,17 @@ import {
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
 import { InboundDidCommMessageContext } from '../../models'
 import { ParsedMessageType } from '../../util/messageType'
-import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../oob/domain/OutOfBandState'
+import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { DidCommDocumentService } from '../../services'
-import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
+import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
 import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
-import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
-import { ConnectionService } from './services'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
+import { DidCommConnectionService } from './services'
 import {
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
@@ -62,14 +62,14 @@ interface DidExchangeRequestParams {
 
 @injectable()
 export class DidExchangeProtocol {
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private didcommDocumentService: DidCommDocumentService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
 
   public constructor(
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     didRepository: DidRepository,
     jwsService: JwsService,
     didcommDocumentService: DidCommDocumentService,
@@ -84,14 +84,14 @@ export class DidExchangeProtocol {
 
   public async createRequest(
     agentContext: AgentContext,
-    outOfBandRecord: OutOfBandRecord,
+    outOfBandRecord: DidCommOutOfBandRecord,
     params: DidExchangeRequestParams
-  ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
+  ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: DidCommConnectionRecord }> {
     this.logger.debug(`Create message ${DidExchangeRequestMessage.type.messageTypeUri} start`, {
       outOfBandRecord,
       params,
     })
-    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
+    const config = agentContext.dependencyManager.resolve(DidCommConnectionsModuleConfig)
 
     const { outOfBandInvitation } = outOfBandRecord
     const { alias, goal, goalCode, routing, autoAcceptConnection, ourDid: did } = params
@@ -152,10 +152,10 @@ export class DidExchangeProtocol {
     }
 
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
-      protocol: HandshakeProtocol.DidExchange,
-      role: DidExchangeRole.Requester,
+      protocol: DidCommHandshakeProtocol.DidExchange,
+      role: DidCommDidExchangeRole.Requester,
       alias,
-      state: DidExchangeState.InvitationReceived,
+      state: DidCommDidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -183,14 +183,14 @@ export class DidExchangeProtocol {
 
   public async processRequest(
     messageContext: InboundDidCommMessageContext<DidExchangeRequestMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
     this.logger.debug(`Process message ${messageContext.message.type} start`, {
       message: messageContext.message,
     })
 
-    outOfBandRecord.assertRole(OutOfBandRole.Sender)
-    outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
+    outOfBandRecord.assertRole(DidCommOutOfBandRole.Sender)
+    outOfBandRecord.assertState(DidCommOutOfBandState.AwaitResponse)
 
     // TODO check there is no connection record for particular oob record
 
@@ -242,9 +242,9 @@ export class DidExchangeProtocol {
     })
 
     const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
-      protocol: HandshakeProtocol.DidExchange,
-      role: DidExchangeRole.Responder,
-      state: DidExchangeState.RequestReceived,
+      protocol: DidCommHandshakeProtocol.DidExchange,
+      role: DidCommDidExchangeRole.Responder,
+      state: DidCommDidExchangeState.RequestReceived,
       alias: outOfBandRecord.alias,
       theirDid: message.did,
       theirLabel: message.label,
@@ -261,8 +261,8 @@ export class DidExchangeProtocol {
 
   public async createResponse(
     agentContext: AgentContext,
-    connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord,
+    connectionRecord: DidCommConnectionRecord,
+    outOfBandRecord: DidCommOutOfBandRecord,
     routing?: DidCommRouting
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} start`, connectionRecord)
@@ -270,7 +270,7 @@ export class DidExchangeProtocol {
 
     const { threadId, theirDid } = connectionRecord
 
-    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
+    const config = agentContext.dependencyManager.resolve(DidCommConnectionsModuleConfig)
 
     if (!threadId) {
       throw new CredoError('Missing threadId on connection record.')
@@ -346,8 +346,8 @@ export class DidExchangeProtocol {
 
   public async processResponse(
     messageContext: InboundDidCommMessageContext<DidExchangeResponseMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
@@ -412,8 +412,8 @@ export class DidExchangeProtocol {
 
   public async createComplete(
     agentContext: AgentContext,
-    connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord
+    connectionRecord: DidCommConnectionRecord,
+    outOfBandRecord: DidCommOutOfBandRecord
   ): Promise<DidExchangeCompleteMessage> {
     this.logger.debug(`Create message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
@@ -441,8 +441,8 @@ export class DidExchangeProtocol {
 
   public async processComplete(
     messageContext: InboundDidCommMessageContext<DidExchangeCompleteMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
@@ -475,7 +475,7 @@ export class DidExchangeProtocol {
   private async updateState(
     agentContext: AgentContext,
     messageType: ParsedMessageType,
-    connectionRecord: ConnectionRecord
+    connectionRecord: DidCommConnectionRecord
   ) {
     this.logger.debug('Updating state', { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)

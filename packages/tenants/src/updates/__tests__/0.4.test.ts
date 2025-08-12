@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
-import { MediatorRoutingRecord } from '@credo-ts/didcomm'
+import { DidCommMediatorRoutingRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
@@ -68,7 +68,7 @@ describe('UpdateAssistant | Tenants | v0.4 - v0.5', () => {
     expect(await updateAssistant.isUpToDate('0.5')).toBe(true)
     expect(await updateAssistant.getNeededUpdates('0.5')).toEqual([])
 
-    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
+    await storageService.deleteById(agent.context, DidCommMediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()

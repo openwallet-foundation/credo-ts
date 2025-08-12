@@ -4,7 +4,7 @@ import { MessageValidator } from '../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { Attachment } from '../../../decorators/attachment/Attachment'
-import { HandshakeProtocol } from '../../connections'
+import { DidCommHandshakeProtocol } from '../../connections'
 import { OutOfBandDidCommService } from '../domain'
 import { OutOfBandInvitation } from '../messages/OutOfBandInvitation'
 
@@ -35,7 +35,7 @@ describe('validation', () => {
       id: '69212a3a-d068-4f9d-a2dd-4741bca89af3',
       label: 'Faber College',
       services: ['did:sov:LjgpST2rjsoxYegQDRm7EL'],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
@@ -52,7 +52,7 @@ describe('validation', () => {
           recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
         }),
       ],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()
@@ -70,7 +70,7 @@ describe('validation', () => {
           recipientKeys: ['did:key:z6MkqgkLrRyLg6bqk27djwbbaQWgaSYgFVCKq9YKxZbNkpVv'],
         }),
       ],
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     expect(() => MessageValidator.validateSync(invitation)).not.toThrow()

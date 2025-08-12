@@ -2,7 +2,7 @@ import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } fro
 import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
-import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState } from '@credo-ts/didcomm'
+import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState } from '@credo-ts/didcomm'
 
 import { testLogger, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
@@ -66,7 +66,7 @@ describe('V1 Connectionless Credentials', () => {
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     testLogger.test('Alice sends credential request to Faber')
@@ -78,7 +78,7 @@ describe('V1 Connectionless Credentials', () => {
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
@@ -91,7 +91,7 @@ describe('V1 Connectionless Credentials', () => {
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     testLogger.test('Alice sends credential ack to Faber')
@@ -102,11 +102,11 @@ describe('V1 Connectionless Credentials', () => {
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -123,12 +123,12 @@ describe('V1 Connectionless Credentials', () => {
           credentialRecordId: expect.any(String),
         },
       ],
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -139,7 +139,7 @@ describe('V1 Connectionless Credentials', () => {
           },
         },
       },
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
   })
@@ -154,7 +154,7 @@ describe('V1 Connectionless Credentials', () => {
         },
       },
       protocolVersion: 'v1',
-      autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
@@ -168,26 +168,26 @@ describe('V1 Connectionless Credentials', () => {
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
-      autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })
 
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -204,15 +204,15 @@ describe('V1 Connectionless Credentials', () => {
           credentialRecordId: expect.any(String),
         },
       ],
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
   })

@@ -11,10 +11,10 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
   ProofExchangeRecord,
   ProofRole,
   ProofState,
@@ -265,26 +265,26 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     })
   )
 
-  const holderCredentialRecord = new CredentialExchangeRecord({
+  const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalSent,
+    state: DidCommCredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Holder,
+    role: DidCommCredentialRole.Holder,
   })
 
-  const issuerCredentialRecord = new CredentialExchangeRecord({
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalReceived,
+    state: DidCommCredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Issuer,
+    role: DidCommCredentialRole.Issuer,
   })
 
   const credentialAttributes = [
-    new CredentialPreviewAttribute({
+    new DidCommCredentialPreviewAttribute({
       name: 'name',
       value: 'John',
     }),
-    new CredentialPreviewAttribute({
+    new DidCommCredentialPreviewAttribute({
       name: 'age',
       value: '25',
     }),

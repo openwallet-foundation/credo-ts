@@ -1,15 +1,15 @@
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
-import type { CredentialProtocol } from '../protocol/CredentialProtocol'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../../models'
-import { CredentialsModule } from '../CredentialsModule'
-import { CredentialsModuleConfig } from '../CredentialsModuleConfig'
-import { V2CredentialProtocol } from '../protocol'
-import { RevocationNotificationService } from '../protocol/revocation-notification/services'
-import { CredentialRepository } from '../repository'
+import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
+import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
+import { V2DidCommCredentialProtocol } from '../protocol'
+import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
+import { DidCommCredentialExchangeRepository } from '../repository'
 
 const featureRegistry = {
   register: jest.fn(),
@@ -24,33 +24,33 @@ const dependencyManager = {
 
 describe('CredentialsModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    const credentialsModule = new CredentialsModule({
+    const credentialsModule = new DidCommCredentialsModule({
       credentialProtocols: [],
     })
     credentialsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(CredentialsModuleConfig, credentialsModule.config)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommCredentialsModuleConfig, credentialsModule.config)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
 
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(RevocationNotificationService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(CredentialRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommRevocationNotificationService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommCredentialExchangeRepository)
   })
 
-  test('registers V2CredentialProtocol if no credentialProtocols are configured', () => {
-    const credentialsModule = new CredentialsModule()
+  test('registers V2DidCommCredentialProtocol if no credentialProtocols are configured', () => {
+    const credentialsModule = new DidCommCredentialsModule()
 
-    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2CredentialProtocol)])
+    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2DidCommCredentialProtocol)])
   })
 
   test('calls register on the provided CredentialProtocols', async () => {
     const registerMock = jest.fn()
     const credentialProtocol = {
       register: registerMock,
-    } as unknown as CredentialProtocol
+    } as unknown as DidCommCredentialProtocol
 
-    const credentialsModule = new CredentialsModule({
+    const credentialsModule = new DidCommCredentialsModule({
       credentialProtocols: [credentialProtocol],
     })
 

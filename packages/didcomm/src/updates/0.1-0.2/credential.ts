@@ -1,11 +1,11 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { CredentialExchangeRecord } from '../../modules/credentials'
+import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
 import type { PlaintextDidCommMessage } from '../../types'
 
 import { Metadata } from '@credo-ts/core'
 
-import { CredentialState } from '../../modules/credentials/models/CredentialState'
-import { CredentialRepository } from '../../modules/credentials/repository/CredentialRepository'
+import { DidCommCredentialState } from '../../modules/credentials/models/DidCommCredentialState'
+import { DidCommCredentialExchangeRepository } from '../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 
 /**
@@ -18,7 +18,7 @@ import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } fr
  */
 export async function migrateCredentialRecordToV0_2<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential records to storage version 0.2')
-  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
   agent.config.logger.debug('Fetching all credential records from storage')
   const allCredentials = await credentialRepository.getAll(agent.context)
@@ -45,11 +45,11 @@ export enum V01_02MigrationCredentialRole {
 }
 
 const holderCredentialStates = [
-  CredentialState.Declined,
-  CredentialState.ProposalSent,
-  CredentialState.OfferReceived,
-  CredentialState.RequestSent,
-  CredentialState.CredentialReceived,
+  DidCommCredentialState.Declined,
+  DidCommCredentialState.ProposalSent,
+  DidCommCredentialState.OfferReceived,
+  DidCommCredentialState.RequestSent,
+  DidCommCredentialState.CredentialReceived,
 ]
 
 const didCommMessageRoleMapping = {
@@ -69,13 +69,13 @@ const didCommMessageRoleMapping = {
 
 const credentialRecordMessageKeys = ['proposalMessage', 'offerMessage', 'requestMessage', 'credentialMessage'] as const
 
-export function getCredentialRole(credentialRecord: CredentialExchangeRecord) {
+export function getCredentialRole(credentialRecord: DidCommCredentialExchangeRecord) {
   // Credentials will only have a value when a credential is received, meaning we're the holder
   if (credentialRecord.credentials.length > 0) {
     return V01_02MigrationCredentialRole.Holder
   }
   // If credentialRecord.credentials doesn't have any values, and we're also not in state done it means we're the issuer.
-  if (credentialRecord.state === CredentialState.Done) {
+  if (credentialRecord.state === DidCommCredentialState.Done) {
     return V01_02MigrationCredentialRole.Issuer
   }
   // For these states we know for certain that we're the holder
@@ -117,7 +117,7 @@ export function getCredentialRole(credentialRecord: CredentialExchangeRecord) {
  */
 export async function updateIndyMetadata<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: CredentialExchangeRecord
+  credentialRecord: DidCommCredentialExchangeRecord
 ) {
   agent.config.logger.debug('Updating indy metadata to use the generic metadata api available to records.')
 
@@ -176,7 +176,7 @@ export async function updateIndyMetadata<Agent extends BaseAgent>(
  */
 export async function migrateInternalCredentialRecordProperties<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: CredentialExchangeRecord
+  credentialRecord: DidCommCredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Migrating internal credential record ${credentialRecord.id} properties to storage version 0.2`
@@ -214,7 +214,7 @@ export async function migrateInternalCredentialRecordProperties<Agent extends Ba
  */
 export async function moveDidCommMessages<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: CredentialExchangeRecord
+  credentialRecord: DidCommCredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Moving didcomm messages from credential record with id ${credentialRecord.id} to DidCommMessageRecord`

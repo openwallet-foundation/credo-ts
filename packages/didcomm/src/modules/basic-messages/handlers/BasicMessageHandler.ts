@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { BasicMessageService } from '../services/BasicMessageService'
+import type { DidCommBasicMessageService } from '../services/DidCommBasicMessageService'
 
 import { BasicMessage } from '../messages'
 
 export class BasicMessageHandler implements DidCommMessageHandler {
-  private basicMessageService: BasicMessageService
+  private basicMessageService: DidCommBasicMessageService
   public supportedMessages = [BasicMessage]
 
-  public constructor(basicMessageService: BasicMessageService) {
+  public constructor(basicMessageService: DidCommBasicMessageService) {
     this.basicMessageService = basicMessageService
   }
 

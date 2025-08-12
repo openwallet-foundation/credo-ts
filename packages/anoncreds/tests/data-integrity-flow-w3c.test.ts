@@ -19,10 +19,10 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -130,23 +130,23 @@ describe('data integrity format service (w3c)', () => {
   })
 
   test('issuance and verification flow w3c starting from offer without negotiation and without revocation', async () => {
-    const holderCredentialRecord = new CredentialExchangeRecord({
+    const holderCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v1',
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
+      state: DidCommCredentialState.ProposalSent,
+      role: DidCommCredentialRole.Holder,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
-    const issuerCredentialRecord = new CredentialExchangeRecord({
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v1',
-      state: CredentialState.ProposalReceived,
-      role: CredentialRole.Issuer,
+      state: DidCommCredentialState.ProposalReceived,
+      role: DidCommCredentialRole.Issuer,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
     const credentialAttributes = [
-      new CredentialPreviewAttribute({ name: 'name', value: 'John' }),
-      new CredentialPreviewAttribute({ name: 'age', value: '25' }),
+      new DidCommCredentialPreviewAttribute({ name: 'name', value: 'John' }),
+      new DidCommCredentialPreviewAttribute({ name: 'age', value: '25' }),
     ]
 
     // Set attributes on the credential record, this is normally done by the protocol service

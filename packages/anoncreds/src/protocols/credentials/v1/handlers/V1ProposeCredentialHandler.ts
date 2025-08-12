@@ -1,5 +1,5 @@
-import type { CredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { V1CredentialProtocol } from '../V1CredentialProtocol'
+import type { DidCommCredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { V1CredentialProtocol } from '../V1DidCommCredentialProtocol'
 
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
@@ -30,7 +30,7 @@ export class V1ProposeCredentialHandler implements DidCommMessageHandler {
   }
 
   private async acceptProposal(
-    credentialRecord: CredentialExchangeRecord,
+    credentialRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')

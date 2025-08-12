@@ -1,16 +1,16 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { ConnectionService, DidRotateService } from '../services'
+import type { DidCommConnectionService, DidCommDidRotateService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
 
 import { DidRotateMessage } from '../messages'
 
 export class DidRotateHandler implements DidCommMessageHandler {
-  private didRotateService: DidRotateService
-  private connectionService: ConnectionService
+  private didRotateService: DidCommDidRotateService
+  private connectionService: DidCommConnectionService
   public supportedMessages = [DidRotateMessage]
 
-  public constructor(didRotateService: DidRotateService, connectionService: ConnectionService) {
+  public constructor(didRotateService: DidCommDidRotateService, connectionService: DidCommConnectionService) {
     this.didRotateService = didRotateService
     this.connectionService = connectionService
   }

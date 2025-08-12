@@ -32,7 +32,7 @@ Previously:
       config,
       dependencies: agentDependencies,
       modules: {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })
@@ -57,7 +57,7 @@ Now:
       dependencies: agentDependencies,
       modules: {
         ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })

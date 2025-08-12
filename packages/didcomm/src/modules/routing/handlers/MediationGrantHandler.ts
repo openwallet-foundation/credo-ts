@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { MediationRecipientService } from '../services/MediationRecipientService'
+import type { DidCommMediationRecipientService } from '../services/DidCommMediationRecipientService'
 
 import { MediationGrantMessage } from '../messages'
 
 export class MediationGrantHandler implements DidCommMessageHandler {
-  private mediationRecipientService: MediationRecipientService
+  private mediationRecipientService: DidCommMediationRecipientService
   public supportedMessages = [MediationGrantMessage]
 
-  public constructor(mediationRecipientService: MediationRecipientService) {
+  public constructor(mediationRecipientService: DidCommMediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 

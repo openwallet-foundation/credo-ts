@@ -18,7 +18,7 @@ import {
   Attachment,
   AutoAcceptProof,
   BaseProofProtocol,
-  ConnectionService,
+  DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
   PresentationProblemReportReason,
@@ -164,7 +164,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     agentContext.config.logger.debug(`Processing presentation proposal with message id ${proposalMessage.id}`)
 
@@ -421,7 +421,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     agentContext.config.logger.debug(`Processing presentation request with id ${proofRequestMessage.id}`)
 
@@ -766,7 +766,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: presentationMessage.threadId,
@@ -897,7 +897,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: presentationAckMessage.threadId,

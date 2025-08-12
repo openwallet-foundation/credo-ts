@@ -1,14 +1,14 @@
 import type { AgentContext, Kms } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageHandler } from '../handlers'
-import type { ConnectionRecord } from '../modules/connections/repository'
+import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { EncryptedDidCommMessage } from '../types'
 import type { OutboundDidCommMessageContext } from './OutboundDidCommMessageContext'
 
 import { CredoError } from '@credo-ts/core'
 
 export interface MessageContextParams {
-  connection?: ConnectionRecord
+  connection?: DidCommConnectionRecord
   sessionId?: string
   senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
@@ -18,7 +18,7 @@ export interface MessageContextParams {
 }
 
 export class InboundDidCommMessageContext<T extends DidCommMessage = DidCommMessage> {
-  public connection?: ConnectionRecord
+  public connection?: DidCommConnectionRecord
   public sessionId?: string
   public senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   public recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
@@ -55,7 +55,7 @@ export class InboundDidCommMessageContext<T extends DidCommMessage = DidCommMess
    *
    * @throws {CredoError} if there is no connection or the connection is not ready
    */
-  public assertReadyConnection(): ConnectionRecord {
+  public assertReadyConnection(): DidCommConnectionRecord {
     if (!this.connection) {
       throw new CredoError(`No connection associated with incoming message ${this.message.type}`)
     }

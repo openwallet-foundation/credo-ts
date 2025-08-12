@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { V1MessagePickupProtocol } from '../V1MessagePickupProtocol'
+import type { V1DidCommMessagePickupProtocol } from '../V1DidCommMessagePickupProtocol'
 
 import { V1BatchPickupMessage } from '../messages'
 
 export class V1BatchPickupHandler implements DidCommMessageHandler {
-  private messagePickupService: V1MessagePickupProtocol
+  private messagePickupService: V1DidCommMessagePickupProtocol
   public supportedMessages = [V1BatchPickupMessage]
 
-  public constructor(messagePickupService: V1MessagePickupProtocol) {
+  public constructor(messagePickupService: V1DidCommMessagePickupProtocol) {
     this.messagePickupService = messagePickupService
   }
 

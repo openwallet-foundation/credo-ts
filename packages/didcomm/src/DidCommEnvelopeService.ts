@@ -15,11 +15,11 @@ import { Logger, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
-import { OutOfBandRole } from './modules/oob/domain/OutOfBandRole'
-import { OutOfBandRepository } from './modules/oob/repository/OutOfBandRepository'
-import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
+import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
+import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { ForwardMessage } from './modules/routing/messages/ForwardMessage'
-import { MediatorRoutingRepository } from './modules/routing/repository/MediatorRoutingRepository'
+import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 
 export interface EnvelopeKeys {
@@ -329,7 +329,7 @@ export class DidCommEnvelopeService {
       return publicKey
     } catch (error) {
       // If there is no did record yet, we first look at the mediator routing record
-      const mediatorRoutingRepository = agentContext.dependencyManager.resolve(MediatorRoutingRepository)
+      const mediatorRoutingRepository = agentContext.dependencyManager.resolve(DidCommMediatorRoutingRepository)
       if (error instanceof RecordNotFoundError) {
         const mediatorRoutingRecord = await mediatorRoutingRepository.findSingleByQuery(agentContext, {
           routingKeyFingerprints: [publicKey.fingerprint],
@@ -357,25 +357,25 @@ export class DidCommEnvelopeService {
         }
 
         //  If there is no mediator routing record, we look at the out of band record
-        const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
+        const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
         const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
           $or: [
             // In case we are the creator of the out of band invitation we can query based on
             // out of band invitation recipient key fingerprint
             {
-              role: OutOfBandRole.Sender,
+              role: DidCommOutOfBandRole.Sender,
               recipientKeyFingerprints: [publicKey.fingerprint],
             },
             // In case we are the receiver of the out of band invitation we need to query
             // for the recipient routing fingerprint
             {
-              role: OutOfBandRole.Receiver,
+              role: DidCommOutOfBandRole.Receiver,
               recipientRoutingKeyFingerprint: publicKey.fingerprint,
             },
           ],
         })
 
-        if (outOfBandRecord?.role === OutOfBandRole.Sender) {
+        if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
           agentContext.config.logger.debug(
             `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
           )
@@ -391,13 +391,13 @@ export class DidCommEnvelopeService {
               return _recipientKey
             }
           }
-        } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
+        } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
           agentContext.config.logger.debug(
             `Found out of band record with id '${outOfBandRecord.id}' and role '${outOfBandRecord.role}' for recipient key '${publicKey.fingerprint}' for incoming didcomm message`
           )
 
           // If there is still no key we need to look at the metadata
-          const recipieintRouting = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+          const recipieintRouting = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
           if (recipieintRouting?.recipientKeyFingerprint === publicKey.fingerprint) {
             publicKey.keyId = recipieintRouting.recipientKeyId ?? publicKey.legacyKeyId
             return publicKey

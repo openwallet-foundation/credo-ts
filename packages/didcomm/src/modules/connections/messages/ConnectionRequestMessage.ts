@@ -5,7 +5,7 @@ import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-v
 
 import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
-import { Connection } from '../models'
+import { DidCommConnection } from '../models'
 
 export interface ConnectionRequestMessageOptions {
   id?: string
@@ -35,7 +35,7 @@ export class ConnectionRequestMessage extends DidCommMessage {
       this.label = options.label
       this.imageUrl = options.imageUrl
 
-      this.connection = new Connection({
+      this.connection = new DidCommConnection({
         did: options.did,
         didDoc: options.didDoc,
       })
@@ -49,10 +49,10 @@ export class ConnectionRequestMessage extends DidCommMessage {
   @IsString()
   public label!: string
 
-  @Type(() => Connection)
+  @Type(() => DidCommConnection)
   @ValidateNested()
-  @IsInstance(Connection)
-  public connection!: Connection
+  @IsInstance(DidCommConnection)
+  public connection!: DidCommConnection
 
   @IsOptional()
   @IsUrl()

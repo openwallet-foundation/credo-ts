@@ -1,17 +1,17 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
+import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
 import { DidExchangeCompleteMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { DidCommHandshakeProtocol } from '../models'
 
 export class DidExchangeCompleteHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
+  private outOfBandService: DidCommOutOfBandService
   public supportedMessages = [DidExchangeCompleteMessage]
 
-  public constructor(didExchangeProtocol: DidExchangeProtocol, outOfBandService: OutOfBandService) {
+  public constructor(didExchangeProtocol: DidExchangeProtocol, outOfBandService: DidCommOutOfBandService) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
   }
@@ -24,9 +24,9 @@ export class DidExchangeCompleteHandler implements DidCommMessageHandler {
     }
 
     const { protocol } = connectionRecord
-    if (protocol !== HandshakeProtocol.DidExchange) {
+    if (protocol !== DidCommHandshakeProtocol.DidExchange) {
       throw new CredoError(
-        `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+        `Connection record protocol is ${protocol} but handler supports only ${DidCommHandshakeProtocol.DidExchange}.`
       )
     }
 

@@ -5,7 +5,7 @@ import type { ParsedMessageType } from './util/messageType'
 import { JsonTransformer } from '@credo-ts/core'
 import { Exclude } from 'class-transformer'
 
-import { BaseMessage } from './BaseMessage'
+import { BaseDidCommMessage } from './BaseDidCommMessage'
 import { AckDecorated } from './decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from './decorators/attachment/AttachmentExtension'
 import { L10nDecorated } from './decorators/l10n/L10nDecoratorExtension'
@@ -18,7 +18,7 @@ import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/message
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
 
 const Decorated = ThreadDecorated(
-  L10nDecorated(TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseMessage))))))
+  L10nDecorated(TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseDidCommMessage))))))
 )
 
 export class DidCommMessage extends Decorated {

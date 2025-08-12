@@ -36,7 +36,7 @@ import { CredoError, utils } from '@credo-ts/core'
 import { AckStatus } from '../../../../messages'
 import { DidCommProtocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
-import { ConnectionService } from '../../../connections'
+import { DidCommConnectionService } from '../../../connections'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
 import { AutoAcceptProof, ProofRole, ProofState } from '../../models'
@@ -160,7 +160,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     let proofRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: proposalMessage.threadId,
@@ -412,7 +412,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     agentContext.config.logger.debug(`Processing proof request with id ${requestMessage.id}`)
 
@@ -670,7 +670,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const { message: presentationMessage, connection, agentContext } = messageContext
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     agentContext.config.logger.debug(`Processing presentation with id ${presentationMessage.id}`)
 
@@ -789,7 +789,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     agentContext.config.logger.debug(`Processing proof ack with id ${ackMessage.id}`)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     const proofRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: ackMessage.threadId,

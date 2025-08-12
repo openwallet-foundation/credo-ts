@@ -13,9 +13,9 @@ import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
   DidCommEventTypes,
-  CredentialEventTypes,
-  CredentialState,
-  MediationState,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommMediationState,
   ProofEventTypes,
   ProofState,
   V1BatchMessage,
@@ -37,7 +37,7 @@ export async function e2eTest({
   const [senderReplay, recipientReplay] = setupEventReplaySubjects(
     [senderAgent, recipientAgent, mediatorAgent],
     [
-      CredentialEventTypes.CredentialStateChanged,
+      DidCommCredentialEventTypes.DidCommCredentialStateChanged,
       ProofEventTypes.ProofStateChanged,
       DidCommEventTypes.DidCommMessageProcessed,
       DidCommEventTypes.DidCommMessageSent,
@@ -51,7 +51,7 @@ export async function e2eTest({
   // Request mediation from mediator
   const mediationRecord =
     await recipientAgent.modules.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
-  expect(mediationRecord.state).toBe(MediationState.Granted)
+  expect(mediationRecord.state).toBe(DidCommMediationState.Granted)
 
   // Set mediator as default for recipient, start picking up messages
   await recipientAgent.modules.mediationRecipient.setDefaultMediator(mediationRecord)
@@ -87,8 +87,8 @@ export async function e2eTest({
     },
   })
 
-  expect(holderCredentialExchangeRecord.state).toBe(CredentialState.Done)
-  expect(issuerCredentialExchangeRecord.state).toBe(CredentialState.Done)
+  expect(holderCredentialExchangeRecord.state).toBe(DidCommCredentialState.Done)
+  expect(issuerCredentialExchangeRecord.state).toBe(DidCommCredentialState.Done)
 
   // Present Proof from recipient to sender
   const { holderProofExchangeRecord, verifierProofExchangeRecord } = await presentAnonCredsProof({

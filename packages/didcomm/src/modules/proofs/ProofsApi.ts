@@ -29,7 +29,7 @@ import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
-import { ConnectionService } from '../connections'
+import { DidCommConnectionService } from '../connections'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
 import { ProofState } from './models/ProofState'
@@ -91,14 +91,14 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    */
   public readonly config: ProofsModuleConfig<PPs>
 
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private messageSender: DidCommMessageSender
   private proofRepository: ProofRepository
   private agentContext: AgentContext
 
   public constructor(
     messageSender: DidCommMessageSender,
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     agentContext: AgentContext,
     proofRepository: ProofRepository,
     config: ProofsModuleConfig<PPs>

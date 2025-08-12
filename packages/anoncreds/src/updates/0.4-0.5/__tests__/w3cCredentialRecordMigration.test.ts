@@ -12,7 +12,7 @@ import {
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
-import { CredentialExchangeRecord, CredentialRepository, CredentialRole, CredentialState } from '@credo-ts/didcomm'
+import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository, DidCommCredentialRole, DidCommCredentialState } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
@@ -65,7 +65,7 @@ const agentContext = getAgentContext({
     [CacheModuleConfig, cacheModuleConfig],
     [EventEmitter, eventEmitter],
     [W3cCredentialRepository, w3cRepo],
-    [CredentialRepository, credentialExchangeRepo],
+    [DidCommCredentialExchangeRepository, credentialExchangeRepo],
     [InjectionSymbols.Stop$, new Subject<boolean>()],
     [InjectionSymbols.AgentDependencies, agentDependencies],
     [InjectionSymbols.FileSystem, new agentDependencies.FileSystem()],
@@ -341,10 +341,10 @@ async function testMigration(
 
   mockFunction(anonCredsRepo.getAll).mockResolvedValue(records)
 
-  const initialCredentialExchangeRecord = new CredentialExchangeRecord({
+  const initialCredentialExchangeRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v2',
-    role: CredentialRole.Holder,
-    state: CredentialState.Done,
+    role: DidCommCredentialRole.Holder,
+    state: DidCommCredentialState.Done,
     threadId: 'threadId',
     credentials: [
       {

@@ -5,7 +5,7 @@ import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../..
 import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
-import { AutoAcceptCredential, CredentialState } from '../../../../credentials'
+import { DidCommAutoAcceptCredential, DidCommCredentialState } from '../../../../credentials'
 import { ProofState } from '../../../models/ProofState'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
@@ -54,7 +54,7 @@ describe('Present Proof', () => {
       issuerName: 'presentation exchange issuer agent',
       verifierName: 'presentation exchange verifier agent',
       createConnections: true,
-      autoAcceptCredentials: AutoAcceptCredential.Always,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
     }))
 
     const issuerKey = await issuerAgent.kms.importKey({
@@ -97,7 +97,7 @@ describe('Present Proof', () => {
       credentialFormats: { jsonld },
     })
 
-    await waitForCredentialRecord(proverAgent, { state: CredentialState.Done })
+    await waitForCredentialRecord(proverAgent, { state: DidCommCredentialState.Done })
   })
 
   afterAll(async () => {

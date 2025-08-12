@@ -1,9 +1,9 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { DrpcRequest, DrpcRequestMessage, DrpcResponse, DrpcResponseMessage } from './messages'
 import type { DrpcRecord } from './repository/DrpcRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { ConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, OutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, OutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
 import { DrpcRole } from './models'
@@ -13,14 +13,14 @@ import { DrpcService } from './services'
 export class DrpcApi {
   private drpcMessageService: DrpcService
   private messageSender: DidCommMessageSender
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private agentContext: AgentContext
 
   public constructor(
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
     drpcMessageService: DrpcService,
     messageSender: DidCommMessageSender,
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     agentContext: AgentContext
   ) {
     this.drpcMessageService = drpcMessageService
@@ -160,7 +160,7 @@ export class DrpcApi {
   }
 
   private async sendMessage(
-    connection: ConnectionRecord,
+    connection: DidCommConnectionRecord,
     message: DrpcRequestMessage | DrpcResponseMessage,
     messageRecord: DrpcRecord
   ): Promise<void> {

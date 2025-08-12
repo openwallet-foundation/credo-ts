@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { ConnectionService } from '../services'
+import type { DidCommConnectionService } from '../services'
 
 import { AckDidCommMessage } from '../../../messages'
 
 export class AckMessageHandler implements DidCommMessageHandler {
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   public supportedMessages = [AckDidCommMessage]
 
-  public constructor(connectionService: ConnectionService) {
+  public constructor(connectionService: DidCommConnectionService) {
     this.connectionService = connectionService
   }
 

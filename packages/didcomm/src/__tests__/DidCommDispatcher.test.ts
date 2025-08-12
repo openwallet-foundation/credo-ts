@@ -8,7 +8,7 @@ import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../getOutboundDidCommMessageContext'
 import { InboundDidCommMessageContext } from '../models'
-import { type ConnectionRecord } from '../modules/connections'
+import { type DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
 
 jest.mock('../DidCommMessageSender')
@@ -256,7 +256,7 @@ describe('DidCommDispatcher', () => {
         agentConfig.logger
       )
 
-      const connectionMock = jest.fn() as unknown as ConnectionRecord
+      const connectionMock = jest.fn() as unknown as DidCommConnectionRecord
 
       const customProtocolMessage = new CustomProtocolMessage({
         id: '55170d10-b91f-4df2-9dcd-6deb4e806c1b',

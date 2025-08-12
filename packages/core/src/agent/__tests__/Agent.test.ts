@@ -4,30 +4,30 @@ import { injectable } from 'tsyringe'
 
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import {
-  BasicMessageRepository,
-  BasicMessageService,
-  ConnectionService,
-  DidRotateService,
+  DidCommBasicMessageRepository,
+  DidCommBasicMessageService,
+  DidCommConnectionService,
+  DidCommDidRotateService,
   DidCommDispatcher,
   DidCommEnvelopeService,
   DidCommFeatureRegistry,
   DidCommMessageReceiver,
   DidCommMessageSender,
-  TrustPingService,
+  DidCommTrustPingService,
 } from '../../../../didcomm/src'
-import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/BasicMessagesApi'
-import { ConnectionRepository, ConnectionsApi } from '../../../../didcomm/src/modules/connections'
-import { CredentialRepository } from '../../../../didcomm/src/modules/credentials'
-import { CredentialsApi } from '../../../../didcomm/src/modules/credentials/CredentialsApi'
-import { MessagePickupApi } from '../../../../didcomm/src/modules/message-pickup'
+import { DidCommBasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/DidCommBasicMessagesApi'
+import { DidCommConnectionRepository, DidCommConnectionsApi } from '../../../../didcomm/src/modules/connections'
+import { DidCommCredentialExchangeRepository } from '../../../../didcomm/src/modules/credentials'
+import { DidCommCredentialsApi } from '../../../../didcomm/src/modules/credentials/DidCommCredentialsApi'
+import { DidCommMessagePickupApi } from '../../../../didcomm/src/modules/message-pickup'
 import { ProofRepository, ProofsApi } from '../../../../didcomm/src/modules/proofs'
 import {
-  MediationRecipientApi,
-  MediationRecipientModule,
-  MediationRecipientService,
-  MediationRepository,
-  MediatorApi,
-  MediatorService,
+  DidCommMediationRecipientApi,
+  DidCommMediationRecipientModule,
+  DidCommMediationRecipientService,
+  DidCommMediationRepository,
+  DidCommMediatorApi,
+  DidCommMediatorService,
 } from '../../../../didcomm/src/modules/routing'
 import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
 import { getAgentOptions } from '../../../tests/helpers'
@@ -82,7 +82,7 @@ describe('Agent', () => {
         modules: {
           ...getDefaultDidcommModules(),
           myModule: new MyModule(),
-          mediationRecipient: new MediationRecipientModule({
+          mediationRecipient: new DidCommMediationRecipientModule({
             maximumMessagePickup: 42,
           }),
           inMemory: new InMemoryWalletModule(),
@@ -115,28 +115,28 @@ describe('Agent', () => {
       const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsApi)).toBeInstanceOf(ConnectionsApi)
-      expect(container.resolve(ConnectionService)).toBeInstanceOf(ConnectionService)
-      expect(container.resolve(ConnectionRepository)).toBeInstanceOf(ConnectionRepository)
-      expect(container.resolve(DidRotateService)).toBeInstanceOf(DidRotateService)
-      expect(container.resolve(TrustPingService)).toBeInstanceOf(TrustPingService)
+      expect(container.resolve(DidCommConnectionsApi)).toBeInstanceOf(DidCommConnectionsApi)
+      expect(container.resolve(DidCommConnectionService)).toBeInstanceOf(DidCommConnectionService)
+      expect(container.resolve(DidCommConnectionRepository)).toBeInstanceOf(DidCommConnectionRepository)
+      expect(container.resolve(DidCommDidRotateService)).toBeInstanceOf(DidCommDidRotateService)
+      expect(container.resolve(DidCommTrustPingService)).toBeInstanceOf(DidCommTrustPingService)
 
       expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
       expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
 
-      expect(container.resolve(CredentialsApi)).toBeInstanceOf(CredentialsApi)
-      expect(container.resolve(CredentialRepository)).toBeInstanceOf(CredentialRepository)
+      expect(container.resolve(DidCommCredentialsApi)).toBeInstanceOf(DidCommCredentialsApi)
+      expect(container.resolve(DidCommCredentialExchangeRepository)).toBeInstanceOf(DidCommCredentialExchangeRepository)
 
-      expect(container.resolve(BasicMessagesApi)).toBeInstanceOf(BasicMessagesApi)
-      expect(container.resolve(BasicMessageService)).toBeInstanceOf(BasicMessageService)
-      expect(container.resolve(BasicMessageRepository)).toBeInstanceOf(BasicMessageRepository)
+      expect(container.resolve(DidCommBasicMessagesApi)).toBeInstanceOf(DidCommBasicMessagesApi)
+      expect(container.resolve(DidCommBasicMessageService)).toBeInstanceOf(DidCommBasicMessageService)
+      expect(container.resolve(DidCommBasicMessageRepository)).toBeInstanceOf(DidCommBasicMessageRepository)
 
-      expect(container.resolve(MediatorApi)).toBeInstanceOf(MediatorApi)
-      expect(container.resolve(MediationRecipientApi)).toBeInstanceOf(MediationRecipientApi)
-      expect(container.resolve(MessagePickupApi)).toBeInstanceOf(MessagePickupApi)
-      expect(container.resolve(MediationRepository)).toBeInstanceOf(MediationRepository)
-      expect(container.resolve(MediatorService)).toBeInstanceOf(MediatorService)
-      expect(container.resolve(MediationRecipientService)).toBeInstanceOf(MediationRecipientService)
+      expect(container.resolve(DidCommMediatorApi)).toBeInstanceOf(DidCommMediatorApi)
+      expect(container.resolve(DidCommMediationRecipientApi)).toBeInstanceOf(DidCommMediationRecipientApi)
+      expect(container.resolve(DidCommMessagePickupApi)).toBeInstanceOf(DidCommMessagePickupApi)
+      expect(container.resolve(DidCommMediationRepository)).toBeInstanceOf(DidCommMediationRepository)
+      expect(container.resolve(DidCommMediatorService)).toBeInstanceOf(DidCommMediatorService)
+      expect(container.resolve(DidCommMediationRecipientService)).toBeInstanceOf(DidCommMediationRecipientService)
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
@@ -153,28 +153,28 @@ describe('Agent', () => {
       const container = agent.dependencyManager
 
       // Modules
-      expect(container.resolve(ConnectionsApi)).toBe(container.resolve(ConnectionsApi))
-      expect(container.resolve(ConnectionService)).toBe(container.resolve(ConnectionService))
-      expect(container.resolve(ConnectionRepository)).toBe(container.resolve(ConnectionRepository))
-      expect(container.resolve(TrustPingService)).toBe(container.resolve(TrustPingService))
-      expect(container.resolve(DidRotateService)).toBe(container.resolve(DidRotateService))
+      expect(container.resolve(DidCommConnectionsApi)).toBe(container.resolve(DidCommConnectionsApi))
+      expect(container.resolve(DidCommConnectionService)).toBe(container.resolve(DidCommConnectionService))
+      expect(container.resolve(DidCommConnectionRepository)).toBe(container.resolve(DidCommConnectionRepository))
+      expect(container.resolve(DidCommTrustPingService)).toBe(container.resolve(DidCommTrustPingService))
+      expect(container.resolve(DidCommDidRotateService)).toBe(container.resolve(DidCommDidRotateService))
 
       expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
       expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
 
-      expect(container.resolve(CredentialsApi)).toBe(container.resolve(CredentialsApi))
-      expect(container.resolve(CredentialRepository)).toBe(container.resolve(CredentialRepository))
+      expect(container.resolve(DidCommCredentialsApi)).toBe(container.resolve(DidCommCredentialsApi))
+      expect(container.resolve(DidCommCredentialExchangeRepository)).toBe(container.resolve(DidCommCredentialExchangeRepository))
 
-      expect(container.resolve(BasicMessagesApi)).toBe(container.resolve(BasicMessagesApi))
-      expect(container.resolve(BasicMessageService)).toBe(container.resolve(BasicMessageService))
-      expect(container.resolve(BasicMessageRepository)).toBe(container.resolve(BasicMessageRepository))
+      expect(container.resolve(DidCommBasicMessagesApi)).toBe(container.resolve(DidCommBasicMessagesApi))
+      expect(container.resolve(DidCommBasicMessageService)).toBe(container.resolve(DidCommBasicMessageService))
+      expect(container.resolve(DidCommBasicMessageRepository)).toBe(container.resolve(DidCommBasicMessageRepository))
 
-      expect(container.resolve(MediatorApi)).toBe(container.resolve(MediatorApi))
-      expect(container.resolve(MediationRecipientApi)).toBe(container.resolve(MediationRecipientApi))
-      expect(container.resolve(MessagePickupApi)).toBe(container.resolve(MessagePickupApi))
-      expect(container.resolve(MediationRepository)).toBe(container.resolve(MediationRepository))
-      expect(container.resolve(MediatorService)).toBe(container.resolve(MediatorService))
-      expect(container.resolve(MediationRecipientService)).toBe(container.resolve(MediationRecipientService))
+      expect(container.resolve(DidCommMediatorApi)).toBe(container.resolve(DidCommMediatorApi))
+      expect(container.resolve(DidCommMediationRecipientApi)).toBe(container.resolve(DidCommMediationRecipientApi))
+      expect(container.resolve(DidCommMessagePickupApi)).toBe(container.resolve(DidCommMessagePickupApi))
+      expect(container.resolve(DidCommMediationRepository)).toBe(container.resolve(DidCommMediationRepository))
+      expect(container.resolve(DidCommMediatorService)).toBe(container.resolve(DidCommMediatorService))
+      expect(container.resolve(DidCommMediationRecipientService)).toBe(container.resolve(DidCommMediationRecipientService))
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))

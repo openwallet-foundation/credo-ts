@@ -1,12 +1,12 @@
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
+import type { DidCommAutoAcceptCredential, AutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
 import {
-  CredentialEventTypes,
-  CredentialsModule,
+  DidCommCredentialEventTypes,
+  DidCommCredentialsModule,
   DifPresentationExchangeProofFormatService,
   JsonLdCredentialFormatService,
   ProofEventTypes,
   ProofsModule,
-  V2CredentialProtocol,
+  V2DidCommCredentialProtocol,
   V2ProofProtocol,
 } from '../../didcomm/src'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
@@ -25,11 +25,11 @@ export const getJsonLdModules = (
   {
     autoAcceptCredentials,
     autoAcceptProofs,
-  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
+  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
 ) =>
   ({
-    credentials: new CredentialsModule({
-      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+    credentials: new DidCommCredentialsModule({
+      credentialProtocols: [new V2DidCommCredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
       autoAcceptCredentials,
     }),
     w3cCredentials: new W3cCredentialsModule({
@@ -85,7 +85,7 @@ export async function setupJsonLdTests<
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   createConnections?: CreateConnections
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
@@ -139,17 +139,17 @@ export async function setupJsonLdTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)

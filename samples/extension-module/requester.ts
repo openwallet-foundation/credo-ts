@@ -3,11 +3,11 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
-  ConnectionsModule,
+  DidCommConnectionsModule,
   DidCommModule,
   HttpDidCommOutboundTransport,
   MessagePickupModule,
-  OutOfBandModule,
+  DidCommOutOfBandModule,
   WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
@@ -37,10 +37,10 @@ const run = async () => {
         },
       }),
       didcomm: new DidCommModule(),
-      oob: new OutOfBandModule(),
+      oob: new DidCommOutOfBandModule(),
       messagePickup: new MessagePickupModule(),
       dummy: new DummyModule(),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },

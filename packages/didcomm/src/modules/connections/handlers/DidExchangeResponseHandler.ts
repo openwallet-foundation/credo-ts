@@ -1,31 +1,31 @@
 import type { DidResolverService } from '@credo-ts/core'
-import type { ConnectionsModuleConfig, DidExchangeProtocol } from '..'
+import type { DidCommConnectionsModuleConfig, DidExchangeProtocol } from '..'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { ConnectionService } from '../services'
+import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import type { DidCommConnectionService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { OutboundDidCommMessageContext } from '../../../models'
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
-import { DidExchangeRole, HandshakeProtocol } from '../models'
+import { DidCommDidExchangeRole, DidCommHandshakeProtocol } from '../models'
 
 export class DidExchangeResponseHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
-  private connectionService: ConnectionService
+  private outOfBandService: DidCommOutOfBandService
+  private connectionService: DidCommConnectionService
   private didResolverService: DidResolverService
-  private connectionsModuleConfig: ConnectionsModuleConfig
+  private connectionsModuleConfig: DidCommConnectionsModuleConfig
   public supportedMessages = [DidExchangeResponseMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandService: OutOfBandService,
-    connectionService: ConnectionService,
+    outOfBandService: DidCommOutOfBandService,
+    connectionService: DidCommConnectionService,
     didResolverService: DidResolverService,
-    connectionsModuleConfig: ConnectionsModuleConfig
+    connectionsModuleConfig: DidCommConnectionsModuleConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
@@ -43,7 +43,7 @@ export class DidExchangeResponseHandler implements DidCommMessageHandler {
 
     const connectionRecord = await this.connectionService.getByRoleAndThreadId(
       agentContext,
-      DidExchangeRole.Requester,
+      DidCommDidExchangeRole.Requester,
       message.threadId
     )
     if (!connectionRecord) {
@@ -66,9 +66,9 @@ export class DidExchangeResponseHandler implements DidCommMessageHandler {
     }
 
     const { protocol } = connectionRecord
-    if (protocol !== HandshakeProtocol.DidExchange) {
+    if (protocol !== DidCommHandshakeProtocol.DidExchange) {
       throw new CredoError(
-        `Connection record protocol is ${protocol} but handler supports only ${HandshakeProtocol.DidExchange}.`
+        `Connection record protocol is ${protocol} but handler supports only ${DidCommHandshakeProtocol.DidExchange}.`
       )
     }
 
@@ -96,7 +96,7 @@ export class DidExchangeResponseHandler implements DidCommMessageHandler {
     const connection = await this.didExchangeProtocol.processResponse(messageContext, outOfBandRecord)
 
     if (!outOfBandRecord.reusable) {
-      await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
+      await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
     }
 
     // TODO: should we only send complete message in case of autoAcceptConnection or always?

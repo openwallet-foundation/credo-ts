@@ -9,10 +9,10 @@ import {
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
-import { CredentialRole } from '../../../models'
-import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
-import { CredentialState } from '../../../models/CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { DidCommCredentialRole } from '../../../models'
+import { DidCommAutoAcceptCredential } from '../../../models/DidCommCredentialAutoAcceptType'
+import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { V2ProposeCredentialMessage } from '../messages'
 import { V2CredentialPreview } from '../messages/V2CredentialPreview'
 
@@ -53,7 +53,7 @@ describe('V2 Credentials Auto Accept', () => {
       } = await setupAnonCredsTests({
         issuerName: 'faber agent: always v2',
         holderName: 'alice agent: always v2',
-        autoAcceptCredentials: AutoAcceptCredential.Always,
+        autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
         preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
       }))
     })
@@ -79,18 +79,18 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         threadId: aliceCredentialRecord.threadId,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
       await waitForCredentialRecordSubject(faberReplay, {
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         threadId: aliceCredentialRecord.threadId,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -101,7 +101,7 @@ describe('V2 Credentials Auto Accept', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
     })
 
@@ -121,12 +121,12 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential from Faber')
       const aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.CredentialReceived,
+        state: DidCommCredentialState.CredentialReceived,
         threadId: faberCredentialRecord.threadId,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -144,19 +144,19 @@ describe('V2 Credentials Auto Accept', () => {
             credentialRecordId: expect.any(String),
           },
         ],
-        state: CredentialState.CredentialReceived,
+        state: DidCommCredentialState.CredentialReceived,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
       faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         threadId: faberCredentialRecord.threadId,
       })
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
     })
   })
@@ -176,7 +176,7 @@ describe('V2 Credentials Auto Accept', () => {
       } = await setupAnonCredsTests({
         issuerName: 'Faber Agent: Always V2',
         holderName: 'Alice Agent: Always V2',
-        autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         preCreatedDefinition: anoncredsDefinitionFourAttributesNoRevocation,
       }))
     })
@@ -202,7 +202,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Faber waits for credential proposal from Alice')
       let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
-        state: CredentialState.ProposalReceived,
+        state: DidCommCredentialState.ProposalReceived,
         threadId: aliceCredentialRecord.threadId,
       })
 
@@ -220,17 +220,17 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         threadId: faberCredentialRecord.threadId,
       })
 
       faberCredentialRecord = await waitForCredentialRecord(faberAgent, {
         threadId: faberCredentialRecord.threadId,
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -248,11 +248,11 @@ describe('V2 Credentials Auto Accept', () => {
             credentialRecordId: expect.any(String),
           },
         ],
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
 
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -263,7 +263,7 @@ describe('V2 Credentials Auto Accept', () => {
             },
           },
         },
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
     })
 
@@ -283,7 +283,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential offer from Faber')
       let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.OfferReceived,
+        state: DidCommCredentialState.OfferReceived,
         threadId: faberCredentialRecord.threadId,
       })
 
@@ -293,7 +293,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
-        role: CredentialRole.Holder,
+        role: DidCommCredentialRole.Holder,
         credentialIds: [],
       })
       testLogger.test('Alice received credential offer from Faber')
@@ -305,12 +305,12 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential from Faber')
       aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         threadId: faberCredentialRecord.threadId,
       })
 
       expect(aliceCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
         metadata: {
@@ -328,21 +328,21 @@ describe('V2 Credentials Auto Accept', () => {
             credentialRecordId: expect.any(String),
           },
         ],
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
 
       testLogger.test('Faber waits for credential ack from Alice')
 
       faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
         threadId: faberCredentialRecord.threadId,
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
 
       expect(faberCredentialRecord).toMatchObject({
-        type: CredentialExchangeRecord.type,
+        type: DidCommCredentialExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
     })
 
@@ -359,11 +359,11 @@ describe('V2 Credentials Auto Accept', () => {
         },
         comment: 'v2 propose credential test',
       })
-      expect(aliceCredentialRecord.state).toBe(CredentialState.ProposalSent)
+      expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.ProposalSent)
 
       testLogger.test('Faber waits for credential proposal from Alice')
       let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
-        state: CredentialState.ProposalReceived,
+        state: DidCommCredentialState.ProposalReceived,
         threadId: aliceCredentialRecord.threadId,
       })
 
@@ -380,7 +380,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential offer from Faber')
       aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.OfferReceived,
+        state: DidCommCredentialState.OfferReceived,
         threadId: faberCredentialRecord.threadId,
       })
 
@@ -390,7 +390,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
-        role: CredentialRole.Holder,
+        role: DidCommCredentialRole.Holder,
         credentialIds: [],
       })
     })
@@ -411,7 +411,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice waits for credential offer from Faber')
       const aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
-        state: CredentialState.OfferReceived,
+        state: DidCommCredentialState.OfferReceived,
         threadId: faberCredentialRecord.threadId,
       })
 
@@ -421,7 +421,7 @@ describe('V2 Credentials Auto Accept', () => {
         threadId: aliceCredentialRecord.threadId,
         state: aliceCredentialRecord.state,
         connectionId: aliceConnectionId,
-        role: CredentialRole.Holder,
+        role: DidCommCredentialRole.Holder,
         credentialIds: [],
       })
 
@@ -438,7 +438,7 @@ describe('V2 Credentials Auto Accept', () => {
       })
 
       await waitForCredentialRecordSubject(faberReplay, {
-        state: CredentialState.ProposalReceived,
+        state: DidCommCredentialState.ProposalReceived,
         threadId: aliceCredentialRecord.threadId,
       })
 

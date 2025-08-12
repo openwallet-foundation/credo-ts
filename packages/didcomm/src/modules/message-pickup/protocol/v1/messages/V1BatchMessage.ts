@@ -3,7 +3,7 @@ import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-validator'
 
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { MessageIdRegExp } from '../../../../../BaseMessage'
+import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { EncryptedDidCommMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 

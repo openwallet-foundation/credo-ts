@@ -1,5 +1,5 @@
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { AutoAcceptProof, ConnectionRecord } from '@credo-ts/didcomm'
+import type { AutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
@@ -28,15 +28,15 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
-  AutoAcceptCredential,
-  CredentialEventTypes,
-  CredentialState,
-  CredentialsModule,
+  DidCommAutoAcceptCredential,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommCredentialsModule,
   DifPresentationExchangeProofFormatService,
   ProofEventTypes,
   ProofState,
   ProofsModule,
-  V2CredentialProtocol,
+  V2DidCommCredentialProtocol,
   V2ProofProtocol,
 } from '@credo-ts/didcomm'
 
@@ -70,7 +70,7 @@ export const getAnonCredsModules = ({
   registries,
   cheqd,
 }: {
-  autoAcceptCredentials?: AutoAcceptCredential
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
   cheqd?: {
@@ -97,10 +97,10 @@ export const getAnonCredsModules = ({
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
     ...(cheqdSdk && { cheqdSdk }),
-    credentials: new CredentialsModule({
+    credentials: new DidCommCredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
-        new V2CredentialProtocol({
+        new V2DidCommCredentialProtocol({
           credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
         }),
       ],
@@ -162,28 +162,28 @@ export async function issueAnonCredsCredential({
         revocationRegistryIndex: 1,
       },
     },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   let holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.OfferReceived,
+    state: DidCommCredentialState.OfferReceived,
   })
 
   await holderAgent.modules.credentials.acceptOffer({
     credentialRecordId: holderCredentialExchangeRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
   holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
   issuerCredentialExchangeRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
 
   return {
@@ -325,7 +325,7 @@ export async function setupAnonCredsTests<
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: AutoAcceptProof
   attributeNames: string[]
   createConnections?: CreateConnections
@@ -387,7 +387,7 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
@@ -436,10 +436,10 @@ export async function setupAnonCredsTests<
       supportRevocation,
     })
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)

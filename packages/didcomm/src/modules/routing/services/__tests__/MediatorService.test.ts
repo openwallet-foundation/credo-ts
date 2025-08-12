@@ -6,26 +6,26 @@ import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
-import { ConnectionService, DidExchangeState } from '../../../connections'
-import { MessagePickupApi } from '../../../message-pickup'
+import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
+import { DidCommMessagePickupApi } from '../../../message-pickup'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
-import { MediationRole, MediationState } from '../../models'
-import { MediationRecord, MediatorRoutingRecord } from '../../repository'
-import { MediationRepository } from '../../repository/MediationRepository'
-import { MediatorRoutingRepository } from '../../repository/MediatorRoutingRepository'
-import { MediatorService } from '../MediatorService'
+import { DidCommMediationRole, DidCommMediationState } from '../../models'
+import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
+import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
+import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
+import { DidCommMediatorService } from '../DidCommMediatorService'
 
-jest.mock('../../repository/MediationRepository')
-const MediationRepositoryMock = MediationRepository as jest.Mock<MediationRepository>
+jest.mock('../../repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
 
-jest.mock('../../repository/MediatorRoutingRepository')
-const MediatorRoutingRepositoryMock = MediatorRoutingRepository as jest.Mock<MediatorRoutingRepository>
+jest.mock('../../repository/DidCommMediatorRoutingRepository')
+const MediatorRoutingRepositoryMock = DidCommMediatorRoutingRepository as jest.Mock<DidCommMediatorRoutingRepository>
 
-jest.mock('../../../connections/services/ConnectionService')
-const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+jest.mock('../../../connections/services/DidCommConnectionService')
+const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 
-jest.mock('../../../connections/services/ConnectionService')
-const MessagePickupApiMock = MessagePickupApi as jest.Mock<MessagePickupApi>
+jest.mock('../../../connections/services/DidCommConnectionService')
+const MessagePickupApiMock = DidCommMessagePickupApi as jest.Mock<DidCommMessagePickupApi>
 
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
@@ -33,7 +33,7 @@ const connectionService = new ConnectionServiceMock()
 const mediationPickupApi = new MessagePickupApiMock()
 
 const mockConnection = getMockConnection({
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 describe('MediatorService - default config', () => {
@@ -44,7 +44,7 @@ describe('MediatorService - default config', () => {
     registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig()]],
   })
 
-  const mediatorService = new MediatorService(
+  const mediatorService = new DidCommMediatorService(
     mediationRepository,
     mediatorRoutingRepository,
     mediationPickupApi,
@@ -55,17 +55,17 @@ describe('MediatorService - default config', () => {
 
   describe('createGrantMediationMessage', () => {
     test('sends did:key encoded recipient keys by default', async () => {
-      const mediationRecord = new MediationRecord({
+      const mediationRecord = new DidCommMediationRecord({
         connectionId: 'connectionId',
-        role: MediationRole.Mediator,
-        state: MediationState.Requested,
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Requested,
         threadId: 'threadId',
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
       mockFunction(mediatorRoutingRepository.findById).mockResolvedValue(
-        new MediatorRoutingRecord({
+        new DidCommMediatorRoutingRecord({
           routingKeys: [
             {
               routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({
@@ -88,10 +88,10 @@ describe('MediatorService - default config', () => {
 
   describe('processKeylistUpdateRequest', () => {
     test('processes base58 encoded recipient keys', async () => {
-      const mediationRecord = new MediationRecord({
+      const mediationRecord = new DidCommMediationRecord({
         connectionId: 'connectionId',
-        role: MediationRole.Mediator,
-        state: MediationState.Granted,
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Granted,
         threadId: 'threadId',
         recipientKeys: ['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'],
       })
@@ -131,10 +131,10 @@ describe('MediatorService - default config', () => {
   })
 
   test('processes did:key encoded recipient keys', async () => {
-    const mediationRecord = new MediationRecord({
+    const mediationRecord = new DidCommMediationRecord({
       connectionId: 'connectionId',
-      role: MediationRole.Mediator,
-      state: MediationState.Granted,
+      role: DidCommMediationRole.Mediator,
+      state: DidCommMediationState.Granted,
       threadId: 'threadId',
       recipientKeys: ['8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'],
     })
@@ -181,7 +181,7 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
     registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ useDidKeyInProtocols: false })]],
   })
 
-  const mediatorService = new MediatorService(
+  const mediatorService = new DidCommMediatorService(
     mediationRepository,
     mediatorRoutingRepository,
     mediationPickupApi,
@@ -192,16 +192,16 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
 
   describe('createGrantMediationMessage', () => {
     test('sends base58 encoded recipient keys when config is set', async () => {
-      const mediationRecord = new MediationRecord({
+      const mediationRecord = new DidCommMediationRecord({
         connectionId: 'connectionId',
-        role: MediationRole.Mediator,
-        state: MediationState.Requested,
+        role: DidCommMediationRole.Mediator,
+        state: DidCommMediationState.Requested,
         threadId: 'threadId',
       })
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
-      const routingRecord = new MediatorRoutingRecord({
+      const routingRecord = new DidCommMediatorRoutingRecord({
         routingKeys: [
           {
             routingKeyFingerprint: Kms.PublicJwk.fromPublicKey({

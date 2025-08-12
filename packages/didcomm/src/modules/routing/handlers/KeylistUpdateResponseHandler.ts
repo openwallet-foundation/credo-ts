@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { MediationRecipientService } from '../services'
+import type { DidCommMediationRecipientService } from '../services'
 
 import { KeylistUpdateResponseMessage } from '../messages'
 
 export class KeylistUpdateResponseHandler implements DidCommMessageHandler {
-  public mediationRecipientService: MediationRecipientService
+  public mediationRecipientService: DidCommMediationRecipientService
   public supportedMessages = [KeylistUpdateResponseMessage]
 
-  public constructor(mediationRecipientService: MediationRecipientService) {
+  public constructor(mediationRecipientService: DidCommMediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 

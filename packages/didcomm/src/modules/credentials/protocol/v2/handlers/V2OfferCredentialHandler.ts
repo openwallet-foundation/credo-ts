@@ -1,17 +1,17 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { InboundDidCommMessageContext } from '../../../../../models'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialProtocol } from '../V2CredentialProtocol'
+import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import type { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
 
 import { getOutboundDidCommMessageContext } from '../../../../../getOutboundDidCommMessageContext'
 import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 export class V2OfferCredentialHandler implements DidCommMessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+  private credentialProtocol: V2DidCommCredentialProtocol
 
   public supportedMessages = [V2OfferCredentialMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V2DidCommCredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 
@@ -28,7 +28,7 @@ export class V2OfferCredentialHandler implements DidCommMessageHandler {
   }
 
   private async acceptOffer(
-    credentialRecord: CredentialExchangeRecord,
+    credentialRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V2OfferCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')

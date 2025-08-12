@@ -1,5 +1,5 @@
-import type { CredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { V1CredentialProtocol } from '../V1CredentialProtocol'
+import type { DidCommCredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { V1CredentialProtocol } from '../V1DidCommCredentialProtocol'
 
 import { CredoError } from '@credo-ts/core'
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
@@ -29,7 +29,7 @@ export class V1IssueCredentialHandler implements DidCommMessageHandler {
   }
 
   private async acceptCredential(
-    credentialRecord: CredentialExchangeRecord,
+    credentialRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')

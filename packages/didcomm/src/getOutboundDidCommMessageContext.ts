@@ -1,16 +1,16 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommRouting } from './models'
-import type { ConnectionRecord } from './modules/connections/repository'
-import type { OutOfBandRecord } from './modules/oob'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
+import type { DidCommOutOfBandRecord } from './modules/oob'
 
 import { CredoError, Kms, utils } from '@credo-ts/core'
 
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import { OutboundDidCommMessageContext } from './models'
-import { InvitationType, OutOfBandRepository, OutOfBandRole, OutOfBandService } from './modules/oob'
-import { OutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
-import { RoutingService } from './modules/routing'
+import { InvitationType, DidCommOutOfBandRepository, DidCommOutOfBandRole, DidCommOutOfBandService } from './modules/oob'
+import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
+import { DidCommRoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'
 
 /**
@@ -32,7 +32,7 @@ export async function getOutboundDidCommMessageContext(
     lastReceivedMessage,
     lastSentMessage,
   }: {
-    connectionRecord?: ConnectionRecord
+    connectionRecord?: DidCommConnectionRecord
     associatedRecord?: BaseRecordAny
     message: DidCommMessage
     lastReceivedMessage?: DidCommMessage
@@ -139,7 +139,7 @@ async function getOutOfBandRecordForMessage(agentContext: AgentContext, message:
   agentContext.config.logger.debug(
     `Looking for out-of-band record for message ${message.id} with thread id ${message.threadId} and type ${message.type}`
   )
-  const outOfBandRepository = agentContext.dependencyManager.resolve(OutOfBandRepository)
+  const outOfBandRepository = agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
 
   const outOfBandRecord = await outOfBandRepository.findSingleByQuery(agentContext, {
     invitationRequestsThreadIds: [message.threadId],
@@ -166,16 +166,16 @@ async function getServicesForMessage(
     lastSentMessage?: DidCommMessage
     lastReceivedMessage: DidCommMessage
     message: DidCommMessage
-    outOfBandRecord?: OutOfBandRecord
+    outOfBandRecord?: DidCommOutOfBandRecord
   }
 ) {
   let ourService = lastSentMessage?.service?.resolvedDidCommService
   let recipientService = lastReceivedMessage.service?.resolvedDidCommService
 
-  const outOfBandService = agentContext.dependencyManager.resolve(OutOfBandService)
+  const outOfBandService = agentContext.dependencyManager.resolve(DidCommOutOfBandService)
 
   // Check if valid
-  if (outOfBandRecord?.role === OutOfBandRole.Sender) {
+  if (outOfBandRecord?.role === DidCommOutOfBandRole.Sender) {
     // Extract ourService from the oob record if not on a previous message
     if (!ourService) {
       ourService = await outOfBandService.getResolvedServiceForOutOfBandServices(
@@ -195,7 +195,7 @@ async function getServicesForMessage(
     if (!lastSentMessage) {
       throw new CredoError('Must have lastSentMessage when out of band record has role Sender')
     }
-  } else if (outOfBandRecord?.role === OutOfBandRole.Receiver) {
+  } else if (outOfBandRecord?.role === DidCommOutOfBandRole.Receiver) {
     // Extract recipientService from the oob record if not on a previous message
     if (!recipientService) {
       recipientService = await outOfBandService.getResolvedServiceForOutOfBandServices(
@@ -211,7 +211,7 @@ async function getServicesForMessage(
     }
 
     // We need to extract the kms key id for the connectinless exchange
-    const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+    const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
     if (oobRecordRecipientRouting && ourService) {
       ourService.recipientKeys[0].keyId =
         oobRecordRecipientRouting.recipientKeyId ?? ourService.recipientKeys[0].legacyKeyId
@@ -250,7 +250,7 @@ async function getServicesForMessage(
  */
 async function createOurService(
   agentContext: AgentContext,
-  { outOfBandRecord, message }: { outOfBandRecord?: OutOfBandRecord; message: DidCommMessage }
+  { outOfBandRecord, message }: { outOfBandRecord?: DidCommOutOfBandRecord; message: DidCommMessage }
 ): Promise<ResolvedDidCommService> {
   agentContext.config.logger.debug(
     `No previous sent message in thread for outbound message ${message.id} with type ${message.type}, setting up routing`
@@ -259,7 +259,7 @@ async function createOurService(
   let routing: DidCommRouting | undefined = undefined
 
   // Extract routing from out of band record if possible
-  const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.RecipientRouting)
+  const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)
   if (oobRecordRecipientRouting) {
     const recipientPublicJwk = Kms.PublicJwk.fromFingerprint(
       oobRecordRecipientRouting.recipientKeyFingerprint
@@ -277,7 +277,7 @@ async function createOurService(
   }
 
   if (!routing) {
-    const routingService = agentContext.dependencyManager.resolve(RoutingService)
+    const routingService = agentContext.dependencyManager.resolve(DidCommRoutingService)
     routing = await routingService.getRouting(agentContext, {
       mediatorId: outOfBandRecord?.mediatorId,
     })
@@ -285,7 +285,7 @@ async function createOurService(
     // We need to store the routing so we can reference it in in the future.
     if (outOfBandRecord) {
       agentContext.config.logger.debug('Storing routing for out of band invitation.')
-      outOfBandRecord.metadata.set(OutOfBandRecordMetadataKeys.RecipientRouting, {
+      outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.RecipientRouting, {
         recipientKeyFingerprint: routing.recipientKey.fingerprint,
         recipientKeyId: routing.recipientKey.keyId,
         routingKeyFingerprints: routing.routingKeys.map((key) => key.fingerprint),
@@ -293,7 +293,7 @@ async function createOurService(
         mediatorId: routing.mediatorId,
       })
       outOfBandRecord.setTags({ recipientRoutingKeyFingerprint: routing.recipientKey.fingerprint })
-      const outOfBandRepository = agentContext.resolve(OutOfBandRepository)
+      const outOfBandRepository = agentContext.resolve(DidCommOutOfBandRepository)
       await outOfBandRepository.update(agentContext, outOfBandRecord)
     }
   }
@@ -316,11 +316,11 @@ async function addExchangeDataToMessage(
   }: {
     message: DidCommMessage
     ourService: ResolvedDidCommService
-    outOfBandRecord?: OutOfBandRecord
+    outOfBandRecord?: DidCommOutOfBandRecord
     associatedRecord: BaseRecordAny
   }
 ) {
-  const legacyInvitationMetadata = outOfBandRecord?.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
+  const legacyInvitationMetadata = outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation)
 
   // Set the parentThreadId on the message from the oob invitation
   // If connectionless is used, we should not add the parentThreadId

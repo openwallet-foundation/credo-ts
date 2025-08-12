@@ -30,7 +30,7 @@ import type {
 import { EventEmitter } from '@credo-ts/core'
 
 import { DidCommMessageRepository } from '../../../repository'
-import { ConnectionService } from '../../connections'
+import { DidCommConnectionService } from '../../connections'
 import { ProofEventTypes } from '../ProofEvents'
 import { ProofState } from '../models/ProofState'
 import { ProofRepository } from '../repository'
@@ -113,7 +113,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   ): Promise<ProofExchangeRecord> {
     const { message: proofProblemReportMessage, agentContext, connection } = messageContext
 
-    const connectionService = agentContext.dependencyManager.resolve(ConnectionService)
+    const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     agentContext.config.logger.debug(`Processing problem report with message id ${proofProblemReportMessage.id}`)
 

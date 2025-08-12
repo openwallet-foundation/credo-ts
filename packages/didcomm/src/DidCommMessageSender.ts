@@ -2,8 +2,8 @@ import type { DidCommMessage } from './DidCommMessage'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
 import type { DidCommTransportSession } from './DidCommTransportService'
-import type { ConnectionRecord } from './modules/connections/repository'
-import type { OutOfBandRecord } from './modules/oob/repository'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
+import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import type { OutboundDidCommTransport } from './transport/OutboundDidCommTransport'
 import type { EncryptedDidCommMessage, OutboundDidCommPackage } from './types'
 
@@ -115,7 +115,7 @@ export class DidCommMessageSender {
       recipientKey,
       options,
     }: {
-      connection: ConnectionRecord
+      connection: DidCommConnectionRecord
       recipientKey: string
       encryptedMessage: EncryptedDidCommMessage
       options?: { transportPriority?: TransportPriorityOptions }
@@ -513,9 +513,9 @@ export class DidCommMessageSender {
 
   private async retrieveServicesByConnection(
     agentContext: AgentContext,
-    connection: ConnectionRecord,
+    connection: DidCommConnectionRecord,
     transportPriority?: TransportPriorityOptions,
-    outOfBand?: OutOfBandRecord
+    outOfBand?: DidCommOutOfBandRecord
   ) {
     agentContext.config.logger.debug(
       `Retrieving services for connection '${connection.id}' (${connection.theirLabel})`,

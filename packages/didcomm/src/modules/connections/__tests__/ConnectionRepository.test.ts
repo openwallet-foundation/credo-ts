@@ -7,8 +7,8 @@ import {
   StorageService,
 } from '@credo-ts/core'
 import { getAgentOptions } from '../../../../../core/tests'
-import { DidExchangeRole, DidExchangeState } from '../models'
-import { ConnectionRecord, ConnectionRepository } from '../repository'
+import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
+import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
 
 const cache = new SingleContextStorageLruCache({ limit: 500 })
 const cacheSetSpy = jest.spyOn(cache, 'set')
@@ -37,26 +37,26 @@ describe('ConnectionRepository', () => {
   })
 
   test('check if cache is hit on save', async () => {
-    const connectionRecord = new ConnectionRecord({
-      role: DidExchangeRole.Requester,
-      state: DidExchangeState.Start,
+    const connectionRecord = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Start,
     })
 
-    const connectionRepository = agent.context.resolve(ConnectionRepository)
+    const connectionRepository = agent.context.resolve(DidCommConnectionRepository)
     await connectionRepository.save(agent.context, connectionRecord)
     expect(cacheSetSpy).toHaveBeenCalled()
   })
 
   test('check if cache is hit on get', async () => {
-    const storageService = agent.context.resolve<StorageService<ConnectionRecord>>(InjectionSymbols.StorageService)
+    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(InjectionSymbols.StorageService)
     const storageServiceGetByIdSpy = jest.spyOn(storageService, 'getById')
 
-    const connectionRecord = new ConnectionRecord({
-      role: DidExchangeRole.Requester,
-      state: DidExchangeState.Start,
+    const connectionRecord = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Start,
     })
 
-    const connectionRepository = agent.context.resolve(ConnectionRepository)
+    const connectionRepository = agent.context.resolve(DidCommConnectionRepository)
     await connectionRepository.save(agent.context, connectionRecord)
     await connectionRepository.getById(agent.context, connectionRecord.id)
     expect(cacheGetSpy).toHaveBeenCalled()
@@ -67,22 +67,22 @@ describe('ConnectionRepository', () => {
   test('check if cache is hit on query after two calls', async () => {
     const dids = { theirDid: 'did:theirs', ourDid: 'did:ours' }
 
-    const connectionRecord = new ConnectionRecord({
-      role: DidExchangeRole.Requester,
-      state: DidExchangeState.Start,
+    const connectionRecord = new DidCommConnectionRecord({
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Start,
       theirDid: dids.theirDid,
       did: dids.ourDid,
     })
 
-    const connectionRepository = agent.context.resolve(ConnectionRepository)
+    const connectionRepository = agent.context.resolve(DidCommConnectionRepository)
     await connectionRepository.save(agent.context, connectionRecord)
 
     // Registers the query + result in cache
     const foundConnectionRecord = await connectionRepository.findByDids(agent.context, dids)
-    expect(foundConnectionRecord).toBeInstanceOf(ConnectionRecord)
+    expect(foundConnectionRecord).toBeInstanceOf(DidCommConnectionRecord)
     expect(cacheSetSpy).toHaveBeenCalled()
 
-    const storageService = agent.context.resolve<StorageService<ConnectionRecord>>(InjectionSymbols.StorageService)
+    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(InjectionSymbols.StorageService)
     const storageServiceFindByQuerySpy = jest.spyOn(storageService, 'findByQuery')
 
     const foundConnectionRecord2 = await connectionRepository.findByDids(agent.context, dids)

@@ -1,5 +1,5 @@
 import type { DidCommMessage } from '../../../DidCommMessage'
-import type { ConnectionRecord } from '../../connections'
+import type { DidCommConnectionRecord } from '../../connections'
 import type {
   ExtractProofFormats,
   ProofFormat,
@@ -88,7 +88,7 @@ interface BaseOptions {
 }
 
 export interface CreateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  connectionRecord: ConnectionRecord
+  connectionRecord: DidCommConnectionRecord
   proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
   parentThreadId?: string
 }
@@ -111,7 +111,7 @@ export interface NegotiateProofProposalOptions<PFs extends ProofFormatService[]>
 
 export interface CreateProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
   // Create request can also be used for connection-less, so connection is optional
-  connectionRecord?: ConnectionRecord
+  connectionRecord?: DidCommConnectionRecord
   proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
   parentThreadId?: string
 

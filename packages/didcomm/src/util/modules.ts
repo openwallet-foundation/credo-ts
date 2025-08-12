@@ -3,14 +3,14 @@ import type { DidCommModuleConfigOptions } from '../DidCommModuleConfig'
 
 import { DidCommModule } from '../DidCommModule'
 import {
-  BasicMessagesModule,
-  ConnectionsModule,
-  CredentialsModule,
-  DiscoverFeaturesModule,
-  MediationRecipientModule,
-  MediatorModule,
+  DidCommBasicMessagesModule,
+  DidCommConnectionsModule,
+  DidCommCredentialsModule,
+  DidCommDiscoverFeaturesModule,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
   MessagePickupModule,
-  OutOfBandModule,
+  DidCommOutOfBandModule,
   ProofsModule,
 } from '../modules'
 
@@ -37,7 +37,7 @@ export type AgentModulesInput = Partial<DefaultAgentModulesInput> & ModulesMap
  */
 export type DefaultAgentModulesInput = Omit<DefaultDidCommModules, 'credentials' | 'proofs'> & {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  credentials: CredentialsModule<any>
+  credentials: DidCommCredentialsModule<any>
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   proofs: ProofsModule<any>
 }
@@ -49,14 +49,14 @@ export type DidCommAgent = Agent<DefaultDidCommModules>
 export function getDefaultDidcommModules(didcommModuleConfig?: DidCommModuleConfigOptions) {
   return {
     didcomm: new DidCommModule(didcommModuleConfig),
-    connections: new ConnectionsModule(),
-    credentials: new CredentialsModule(),
+    connections: new DidCommConnectionsModule(),
+    credentials: new DidCommCredentialsModule(),
     proofs: new ProofsModule(),
-    mediator: new MediatorModule(),
-    discovery: new DiscoverFeaturesModule(),
-    mediationRecipient: new MediationRecipientModule(),
+    mediator: new DidCommMediatorModule(),
+    discovery: new DidCommDiscoverFeaturesModule(),
+    mediationRecipient: new DidCommMediationRecipientModule(),
     messagePickup: new MessagePickupModule(),
-    basicMessages: new BasicMessagesModule(),
-    oob: new OutOfBandModule(),
+    basicMessages: new DidCommBasicMessagesModule(),
+    oob: new DidCommOutOfBandModule(),
   } as const
 }

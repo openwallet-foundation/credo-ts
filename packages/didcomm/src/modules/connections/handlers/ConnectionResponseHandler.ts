@@ -1,30 +1,30 @@
 import type { DidResolverService } from '@credo-ts/core'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
-import type { ConnectionService } from '../services'
+import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import type { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
+import type { DidCommConnectionService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
 import { OutboundDidCommMessageContext } from '../../../models'
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { ConnectionResponseMessage } from '../messages'
-import { DidExchangeRole } from '../models'
+import { DidCommDidExchangeRole } from '../models'
 
 export class ConnectionResponseHandler implements DidCommMessageHandler {
-  private connectionService: ConnectionService
-  private outOfBandService: OutOfBandService
+  private connectionService: DidCommConnectionService
+  private outOfBandService: DidCommOutOfBandService
   private didResolverService: DidResolverService
-  private connectionsModuleConfig: ConnectionsModuleConfig
+  private connectionsModuleConfig: DidCommConnectionsModuleConfig
 
   public supportedMessages = [ConnectionResponseMessage]
 
   public constructor(
-    connectionService: ConnectionService,
-    outOfBandService: OutOfBandService,
+    connectionService: DidCommConnectionService,
+    outOfBandService: DidCommOutOfBandService,
     didResolverService: DidResolverService,
-    connectionsModuleConfig: ConnectionsModuleConfig
+    connectionsModuleConfig: DidCommConnectionsModuleConfig
   ) {
     this.connectionService = connectionService
     this.outOfBandService = outOfBandService
@@ -42,7 +42,7 @@ export class ConnectionResponseHandler implements DidCommMessageHandler {
     // Query by both role and thread id to allow connecting to self
     const connectionRecord = await this.connectionService.getByRoleAndThreadId(
       messageContext.agentContext,
-      DidExchangeRole.Requester,
+      DidCommDidExchangeRole.Requester,
       message.threadId
     )
     if (!connectionRecord) {
@@ -79,7 +79,7 @@ export class ConnectionResponseHandler implements DidCommMessageHandler {
     const connection = await this.connectionService.processResponse(messageContext, outOfBandRecord)
 
     if (!outOfBandRecord.reusable) {
-      await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, OutOfBandState.Done)
+      await this.outOfBandService.updateState(messageContext.agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
     }
 
     // TODO: should we only send ping message in case of autoAcceptConnection or always?

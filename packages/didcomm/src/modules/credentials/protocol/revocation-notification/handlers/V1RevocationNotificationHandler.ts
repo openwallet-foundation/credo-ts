@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { RevocationNotificationService } from '../services'
+import type { DidCommRevocationNotificationService } from '../services'
 
 import { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 
 export class V1RevocationNotificationHandler implements DidCommMessageHandler {
-  private revocationService: RevocationNotificationService
+  private revocationService: DidCommRevocationNotificationService
   public supportedMessages = [V1RevocationNotificationMessage]
 
-  public constructor(revocationService: RevocationNotificationService) {
+  public constructor(revocationService: DidCommRevocationNotificationService) {
     this.revocationService = revocationService
   }
 

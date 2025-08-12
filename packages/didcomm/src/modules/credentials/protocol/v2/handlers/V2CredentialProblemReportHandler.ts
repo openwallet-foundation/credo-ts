@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { V2CredentialProtocol } from '../V2CredentialProtocol'
+import type { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
 
 import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'
 
 export class V2CredentialProblemReportHandler implements DidCommMessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+  private credentialProtocol: V2DidCommCredentialProtocol
   public supportedMessages = [V2CredentialProblemReportMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V2DidCommCredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 

@@ -782,6 +782,6 @@ await agent.credentials.deleteById('credentialExchangeId', {
 - a trust ping response will not be requested anymore after completing a connection. This is not required, and also non-standard behaviour. It was also causing some tests to be flaky as response messages were stil being sent after one of the agents had already shut down.
 - The `ProofsModule.getRequestedCredentialsForProofRequest` expected some low level message objects as input. This is not in line with the public API of the rest of the framework and has been simplified to only require a proof record id and optionally a boolean whether the retrieved credentials should be filtered based on the proof proposal (if available).
 - Proof request requestedAttributes and requestedPredicates are now a map instead of record. This is needed to have proper validation using class-validator.
-- `BasicMessageReceivedEvent` has been replaced by the more general `BasicMessageStateChanged` event which triggers when a basic message is received or sent.
+- `BasicMessageReceivedEvent` has been replaced by the more general `DidCommBasicMessageStateChanged` event which triggers when a basic message is received or sent.
 - Tags on a record can now be accessed using the `getTags()` method. Records should be updated with this method and return the properties from the record to include in the tags.
 - extracts outbound transporter from Agent's constructor.

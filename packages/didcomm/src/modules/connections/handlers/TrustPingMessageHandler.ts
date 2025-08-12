@@ -1,17 +1,17 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { ConnectionService, TrustPingService } from '../services'
+import type { DidCommConnectionService, DidCommTrustPingService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
 
 import { TrustPingMessage } from '../messages'
-import { DidExchangeState } from '../models'
+import { DidCommDidExchangeState } from '../models'
 
 export class TrustPingMessageHandler implements DidCommMessageHandler {
-  private trustPingService: TrustPingService
-  private connectionService: ConnectionService
+  private trustPingService: DidCommTrustPingService
+  private connectionService: DidCommConnectionService
   public supportedMessages = [TrustPingMessage]
 
-  public constructor(trustPingService: TrustPingService, connectionService: ConnectionService) {
+  public constructor(trustPingService: DidCommTrustPingService, connectionService: DidCommConnectionService) {
     this.trustPingService = trustPingService
     this.connectionService = connectionService
   }
@@ -24,8 +24,8 @@ export class TrustPingMessageHandler implements DidCommMessageHandler {
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
-    if (connection.state === DidExchangeState.ResponseSent) {
-      await this.connectionService.updateState(messageContext.agentContext, connection, DidExchangeState.Completed)
+    if (connection.state === DidCommDidExchangeState.ResponseSent) {
+      await this.connectionService.updateState(messageContext.agentContext, connection, DidCommDidExchangeState.Completed)
     }
 
     return this.trustPingService.processPing(messageContext, connection)

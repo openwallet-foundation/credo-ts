@@ -25,12 +25,12 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   ConnectionInvitationMessage,
-  ConnectionsModule,
+  DidCommConnectionsModule,
   DidCommModule,
   HttpDidCommOutboundTransport,
-  MediatorModule,
+  DidCommMediatorModule,
   MessagePickupModule,
-  OutOfBandModule,
+  DidCommOutOfBandModule,
   WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
@@ -64,12 +64,12 @@ const agent = new Agent({
       },
     }),
     didcomm: new DidCommModule({ endpoints }),
-    oob: new OutOfBandModule(),
+    oob: new DidCommOutOfBandModule(),
     messagePickup: new MessagePickupModule(),
-    mediator: new MediatorModule({
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
     }),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       autoAcceptConnections: true,
     }),
   },

@@ -11,10 +11,10 @@ import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { InboundDidCommMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
-import { ConnectionService, DidExchangeState, TrustPingMessage } from '../../../../connections'
-import { MessagePickupModuleConfig } from '../../../MessagePickupModuleConfig'
-import { V1MessagePickupProtocol } from '../../v1'
-import { V2MessagePickupProtocol } from '../V2MessagePickupProtocol'
+import { DidCommConnectionService, DidCommDidExchangeState, TrustPingMessage } from '../../../../connections'
+import { DidCommMessagePickupModuleConfig } from '../../../DidCommMessagePickupModuleConfig'
+import { V1DidCommMessagePickupProtocol } from '../../v1'
+import { V2DidCommMessagePickupProtocol } from '../V2DidCommMessagePickupProtocol'
 import {
   V2DeliveryRequestMessage,
   V2MessageDeliveryMessage,
@@ -24,27 +24,27 @@ import {
 } from '../messages'
 
 const mockConnection = getMockConnection({
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 // Mock classes
 jest.mock('../../../../../transport/queue/InMemoryQueueTransportRepository')
 jest.mock('../../../../../../../core/src/agent/EventEmitter')
 jest.mock('../../../../../DidCommMessageSender')
-jest.mock('../../../../connections/services/ConnectionService')
+jest.mock('../../../../connections/services/DidCommConnectionService')
 
 // Mock typed object
 const InMessageRepositoryMock = InMemoryQueueTransportRepository as jest.Mock<InMemoryQueueTransportRepository>
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
-const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 
 const queueTransportRepository = new InMessageRepositoryMock()
 
 const didCommModuleConfig = new DidCommModuleConfig({ queueTransportRepository })
-const messagePickupModuleConfig = new MessagePickupModuleConfig({
+const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   maximumBatchSize: 10,
-  protocols: [new V1MessagePickupProtocol(), new V2MessagePickupProtocol()],
+  protocols: [new V1DidCommMessagePickupProtocol(), new V2DidCommMessagePickupProtocol()],
 })
 const messageSender = new MessageSenderMock()
 const eventEmitter = new EventEmitterMock()
@@ -54,9 +54,9 @@ const agentContext = getAgentContext({
   registerInstances: [
     [EventEmitter, eventEmitter],
     [DidCommMessageSender, messageSender],
-    [ConnectionService, connectionService],
+    [DidCommConnectionService, connectionService],
     [DidCommModuleConfig, didCommModuleConfig],
-    [MessagePickupModuleConfig, messagePickupModuleConfig],
+    [DidCommMessagePickupModuleConfig, messagePickupModuleConfig],
   ],
 })
 
@@ -73,10 +73,10 @@ const queuedMessages = [
 ]
 
 describe('V2MessagePickupProtocol', () => {
-  let pickupProtocol: V2MessagePickupProtocol
+  let pickupProtocol: V2DidCommMessagePickupProtocol
 
   beforeEach(async () => {
-    pickupProtocol = new V2MessagePickupProtocol()
+    pickupProtocol = new V2DidCommMessagePickupProtocol()
   })
 
   describe('processStatusRequest', () => {

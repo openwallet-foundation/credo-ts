@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { ConnectionRecord, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord, InboundDidCommMessageContext } from '@credo-ts/didcomm'
 import type { DummyStateChangedEvent } from './DummyEvents'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
@@ -35,7 +35,7 @@ export class DummyService {
    * @returns Object containing dummy request message and associated dummy record
    *
    */
-  public async createRequest(agentContext: AgentContext, connectionRecord: ConnectionRecord) {
+  public async createRequest(agentContext: AgentContext, connectionRecord: DidCommConnectionRecord) {
     // Create message
     const message = new DummyRequestMessage({})
 

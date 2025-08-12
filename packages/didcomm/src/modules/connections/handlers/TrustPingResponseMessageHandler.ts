@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { TrustPingService } from '../services'
+import type { DidCommTrustPingService } from '../services'
 
 import { TrustPingResponseMessage } from '../messages'
 
 export class TrustPingResponseMessageHandler implements DidCommMessageHandler {
-  private trustPingService: TrustPingService
+  private trustPingService: DidCommTrustPingService
   public supportedMessages = [TrustPingResponseMessage]
 
-  public constructor(trustPingService: TrustPingService) {
+  public constructor(trustPingService: DidCommTrustPingService) {
     this.trustPingService = trustPingService
   }
 

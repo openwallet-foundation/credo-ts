@@ -2,7 +2,7 @@ import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
@@ -27,7 +27,7 @@ describe('QuestionAnswerService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   let agentConfig: AgentConfig

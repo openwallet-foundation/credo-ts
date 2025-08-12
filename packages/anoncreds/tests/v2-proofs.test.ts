@@ -1,5 +1,5 @@
 import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
-import type { CredentialExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
@@ -33,7 +33,7 @@ describe('PP V2 AnonCreds Proofs', () => {
   let faberConnectionId: string
   let faberProofExchangeRecord: ProofExchangeRecord
   let aliceProofExchangeRecord: ProofExchangeRecord
-  let faberCredentialExchangeRecord: CredentialExchangeRecord
+  let faberCredentialExchangeRecord: DidCommCredentialExchangeRecord
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 

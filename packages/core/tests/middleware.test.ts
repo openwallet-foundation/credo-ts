@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord, InboundDidCommMessageContext } from '../../didcomm'
+import type { DidCommConnectionRecord, InboundDidCommMessageContext } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 
@@ -41,8 +41,8 @@ const aliceAgent = new Agent(
 )
 
 describe('Message Handler Middleware E2E', () => {
-  let faberConnection: ConnectionRecord
-  let _aliceConnection: ConnectionRecord
+  let faberConnection: DidCommConnectionRecord
+  let _aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()

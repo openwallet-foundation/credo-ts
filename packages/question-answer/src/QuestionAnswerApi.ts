@@ -2,7 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { QuestionAnswerRecord } from './repository'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { ConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { ValidResponse } from './models'
@@ -12,13 +12,13 @@ import { QuestionAnswerService } from './services'
 export class QuestionAnswerApi {
   private questionAnswerService: QuestionAnswerService
   private messageSender: DidCommMessageSender
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private agentContext: AgentContext
 
   public constructor(
     questionAnswerService: QuestionAnswerService,
     messageSender: DidCommMessageSender,
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     agentContext: AgentContext
   ) {
     this.questionAnswerService = questionAnswerService

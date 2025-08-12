@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidRotateService } from '../services'
+import type { DidCommDidRotateService } from '../services'
 
 import { HangupMessage } from '../messages'
 
 export class HangupHandler implements DidCommMessageHandler {
-  private didRotateService: DidRotateService
+  private didRotateService: DidCommDidRotateService
   public supportedMessages = [HangupMessage]
 
-  public constructor(didRotateService: DidRotateService) {
+  public constructor(didRotateService: DidCommDidRotateService) {
     this.didRotateService = didRotateService
   }
 

@@ -1,8 +1,8 @@
-import type { ConnectionRecord } from '../../connections'
+import type { DidCommConnectionRecord } from '../../connections'
 import type {
-  DiscoverFeaturesDisclosureReceivedEvent,
-  DiscoverFeaturesQueryReceivedEvent,
-} from '../DiscoverFeaturesEvents'
+  DidCommDiscoverFeaturesDisclosureReceivedEvent,
+  DidCommDiscoverFeaturesQueryReceivedEvent,
+} from '../DidCommDiscoverFeaturesEvents'
 
 import { ReplaySubject } from 'rxjs'
 
@@ -10,7 +10,7 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
 import { DidCommFeature, DidCommGoalCode } from '../../../models'
-import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesEventTypes } from '../DidCommDiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
 
@@ -37,8 +37,8 @@ const aliceAgentOptions = getAgentOptions(
 describe('v2 discover features', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let faberConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
+  let faberConnection: DidCommConnectionRecord
 
   beforeAll(async () => {
     faberAgent = new Agent(faberAgentOptions)
@@ -56,15 +56,15 @@ describe('v2 discover features', () => {
   })
 
   test('Faber asks Alice for issue credential protocol support', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
 
     faberAgent.modules.discovery.config.autoAcceptQueries
     faberAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(faberReplay)
     aliceAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(aliceReplay)
 
     await faberAgent.modules.discovery.queryFeatures({
@@ -92,14 +92,14 @@ describe('v2 discover features', () => {
   })
 
   test('Faber defines a supported goal code and Alice queries', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Register some goal codes
@@ -133,14 +133,14 @@ describe('v2 discover features', () => {
   })
 
   test('Faber defines a custom feature and Alice queries', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Define a custom feature type
@@ -186,14 +186,14 @@ describe('v2 discover features', () => {
   })
 
   test('Faber proactively sends a set of features to Alice', async () => {
-    const faberReplay = new ReplaySubject<DiscoverFeaturesQueryReceivedEvent>()
-    const aliceReplay = new ReplaySubject<DiscoverFeaturesDisclosureReceivedEvent>()
+    const faberReplay = new ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>()
+    const aliceReplay = new ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>()
 
     aliceAgent.events
-      .observable<DiscoverFeaturesDisclosureReceivedEvent>(DiscoverFeaturesEventTypes.DisclosureReceived)
+      .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
       .subscribe(aliceReplay)
     faberAgent.events
-      .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
+      .observable<DidCommDiscoverFeaturesQueryReceivedEvent>(DidCommDiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(faberReplay)
 
     // Register a custom feature

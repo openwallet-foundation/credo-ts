@@ -18,7 +18,7 @@ import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../../getOutboundDidCommMessageContext'
 import { BasicMessage } from '../../basic-messages'
 import { DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
-import { ConnectionRecord } from '../repository'
+import { DidCommConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -26,8 +26,8 @@ import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 describe('Rotation E2E tests', () => {
   let aliceAgent: Agent<DefaultAgentModulesInput>
   let bobAgent: Agent<DefaultAgentModulesInput>
-  let aliceBobConnection: ConnectionRecord | undefined
-  let bobAliceConnection: ConnectionRecord | undefined
+  let aliceBobConnection: DidCommConnectionRecord | undefined
+  let bobAliceConnection: DidCommConnectionRecord | undefined
 
   beforeEach(async () => {
     const aliceAgentOptions = getAgentOptions(
@@ -260,7 +260,7 @@ describe('Rotation E2E tests', () => {
 
       const preRotateDid = aliceBobConnection?.did
       expect(firstRotate).toEqual({
-        connectionRecord: expect.any(ConnectionRecord),
+        connectionRecord: expect.any(DidCommConnectionRecord),
         ourDid: {
           from: preRotateDid,
           to: did,
@@ -269,7 +269,7 @@ describe('Rotation E2E tests', () => {
       })
 
       expect(secondRotate).toEqual({
-        connectionRecord: expect.any(ConnectionRecord),
+        connectionRecord: expect.any(DidCommConnectionRecord),
         ourDid: undefined,
         theirDid: {
           from: preRotateDid,

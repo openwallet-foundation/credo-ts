@@ -1,6 +1,6 @@
 import type { DrpcRequestObject } from '../messages'
 
-import { DidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
@@ -25,7 +25,7 @@ describe('DrpcService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   beforeEach(() => {

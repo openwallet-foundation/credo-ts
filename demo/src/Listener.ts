@@ -1,8 +1,8 @@
 import type { Agent } from '@credo-ts/core'
 import type {
-  BasicMessageStateChangedEvent,
-  CredentialExchangeRecord,
-  CredentialStateChangedEvent,
+  DidCommBasicMessageStateChangedEvent,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialStateChangedEvent,
   ProofExchangeRecord,
   ProofStateChangedEvent,
 } from '@credo-ts/didcomm'
@@ -13,10 +13,10 @@ import type { Faber } from './Faber'
 import type { FaberInquirer } from './FaberInquirer'
 
 import {
-  BasicMessageEventTypes,
-  BasicMessageRole,
-  CredentialEventTypes,
-  CredentialState,
+  DidCommBasicMessageEventTypes,
+  DidCommBasicMessageRole,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
   ProofEventTypes,
   ProofState,
 } from '@credo-ts/didcomm'
@@ -41,7 +41,7 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(credentialRecord: CredentialExchangeRecord) {
+  private printCredentialAttributes(credentialRecord: DidCommCredentialExchangeRecord) {
     if (credentialRecord.credentialAttributes) {
       const attribute = credentialRecord.credentialAttributes
       console.log('\n\nCredential preview:')
@@ -51,7 +51,7 @@ export class Listener {
     }
   }
 
-  private async newCredentialPrompt(credentialRecord: CredentialExchangeRecord, aliceInquirer: AliceInquirer) {
+  private async newCredentialPrompt(credentialRecord: DidCommCredentialExchangeRecord, aliceInquirer: AliceInquirer) {
     this.printCredentialAttributes(credentialRecord)
     this.turnListenerOn()
     await aliceInquirer.acceptCredentialOffer(credentialRecord)
@@ -61,18 +61,18 @@ export class Listener {
 
   public credentialOfferListener(alice: Alice, aliceInquirer: AliceInquirer) {
     alice.agent.events.on(
-      CredentialEventTypes.CredentialStateChanged,
-      async ({ payload }: CredentialStateChangedEvent) => {
-        if (payload.credentialRecord.state === CredentialState.OfferReceived) {
-          await this.newCredentialPrompt(payload.credentialRecord, aliceInquirer)
+      DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+      async ({ payload }: DidCommCredentialStateChangedEvent) => {
+        if (payload.credentialExchangeRecord.state === DidCommCredentialState.OfferReceived) {
+          await this.newCredentialPrompt(payload.credentialExchangeRecord, aliceInquirer)
         }
       }
     )
   }
 
   public messageListener(agent: Agent, name: string) {
-    agent.events.on(BasicMessageEventTypes.BasicMessageStateChanged, async (event: BasicMessageStateChangedEvent) => {
-      if (event.payload.basicMessageRecord.role === BasicMessageRole.Receiver) {
+    agent.events.on(DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged, async (event: DidCommBasicMessageStateChangedEvent) => {
+      if (event.payload.basicMessageRecord.role === DidCommBasicMessageRole.Receiver) {
         this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
       }
     })

@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../CredentialsApiOptions'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
+import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../DidCommCredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -15,10 +15,10 @@ import {
 import { Agent } from '../../../../../../../core/src/agent/Agent'
 import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
-import { CredentialEventTypes } from '../../../CredentialEvents'
-import { AutoAcceptCredential } from '../../../models/CredentialAutoAcceptType'
-import { CredentialState } from '../../../models/CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommAutoAcceptCredential } from '../../../models/DidCommCredentialAutoAcceptType'
+import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { V2CredentialPreview } from '../messages'
 
 const faberAgentOptions = getAgentOptions(
@@ -51,8 +51,8 @@ const credentialPreview = V2CredentialPreview.fromRecord({
 describe('V2 Connectionless Credentials', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
-  let faberReplay: ReplaySubject<CredentialStateChangedEvent>
-  let aliceReplay: ReplaySubject<CredentialStateChangedEvent>
+  let faberReplay: ReplaySubject<DidCommCredentialStateChangedEvent>
+  let aliceReplay: ReplaySubject<DidCommCredentialStateChangedEvent>
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -75,14 +75,14 @@ describe('V2 Connectionless Credentials', () => {
     // Make sure the pre-created credential definition is in the wallet
     await storePreCreatedAnonCredsDefinition(faberAgent, anoncredsDefinitionFourAttributesNoRevocation)
 
-    faberReplay = new ReplaySubject<CredentialStateChangedEvent>()
-    aliceReplay = new ReplaySubject<CredentialStateChangedEvent>()
+    faberReplay = new ReplaySubject<DidCommCredentialStateChangedEvent>()
+    aliceReplay = new ReplaySubject<DidCommCredentialStateChangedEvent>()
 
     faberAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+      .observable<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged)
       .subscribe(faberReplay)
     aliceAgent.events
-      .observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+      .observable<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged)
       .subscribe(aliceReplay)
   })
 
@@ -115,7 +115,7 @@ describe('V2 Connectionless Credentials', () => {
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     testLogger.test('Alice sends credential request to Faber')
@@ -127,7 +127,7 @@ describe('V2 Connectionless Credentials', () => {
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
@@ -140,7 +140,7 @@ describe('V2 Connectionless Credentials', () => {
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     testLogger.test('Alice sends credential ack to Faber')
@@ -151,11 +151,11 @@ describe('V2 Connectionless Credentials', () => {
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -171,12 +171,12 @@ describe('V2 Connectionless Credentials', () => {
           credentialRecordId: expect.any(String),
         },
       ],
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -186,7 +186,7 @@ describe('V2 Connectionless Credentials', () => {
           },
         },
       },
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
   })
@@ -201,7 +201,7 @@ describe('V2 Connectionless Credentials', () => {
         },
       },
       protocolVersion: 'v2',
-      autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
@@ -216,26 +216,26 @@ describe('V2 Connectionless Credentials', () => {
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     await aliceAgent.modules.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
-      autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })
 
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       metadata: {
@@ -251,15 +251,15 @@ describe('V2 Connectionless Credentials', () => {
           credentialRecordId: expect.any(String),
         },
       ],
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
   })

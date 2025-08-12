@@ -1,9 +1,9 @@
 import type { DependencyManager } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 
-import { BasicMessagesModule } from '../BasicMessagesModule'
-import { BasicMessageRepository } from '../repository'
-import { BasicMessageService } from '../services'
+import { DidCommBasicMessagesModule } from '../DidCommBasicMessagesModule'
+import { DidCommBasicMessageRepository } from '../repository'
+import { DidCommBasicMessageService } from '../services'
 
 const featureRegistry = {
   register: jest.fn(),
@@ -18,10 +18,10 @@ const dependencyManager = {
 
 describe('BasicMessagesModule', () => {
   test('registers dependencies on the dependency manager', () => {
-    new BasicMessagesModule().register(dependencyManager)
+    new DidCommBasicMessagesModule().register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(BasicMessageRepository)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommBasicMessageRepository)
   })
 })

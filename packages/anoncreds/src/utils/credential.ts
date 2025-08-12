@@ -1,4 +1,4 @@
-import type { CredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
+import type { DidCommCredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
 import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
@@ -108,7 +108,7 @@ export const mapAttributeRawValuesToAnonCredsCredentialValues = (
  * @returns CredValues
  */
 export function convertAttributesToCredentialValues(
-  attributes: CredentialPreviewAttributeOptions[]
+  attributes: DidCommCredentialPreviewAttributeOptions[]
 ): AnonCredsCredentialValues {
   return attributes.reduce<AnonCredsCredentialValues>((credentialValues, attribute) => {
     credentialValues[attribute.name] = {
@@ -191,7 +191,7 @@ export function checkValidCredentialValueEncoding(raw: unknown, encoded: string)
   return encoded === encodeCredentialValue(raw)
 }
 
-export function assertAttributesMatch(schema: AnonCredsSchema, attributes: CredentialPreviewAttributeOptions[]) {
+export function assertAttributesMatch(schema: AnonCredsSchema, attributes: DidCommCredentialPreviewAttributeOptions[]) {
   const schemaAttributes = schema.attrNames
   const credAttributes = attributes.map((a) => a.name)
 
@@ -216,7 +216,7 @@ export function assertAttributesMatch(schema: AnonCredsSchema, attributes: Crede
  * */
 export function createAndLinkAttachmentsToPreview(
   attachments: LinkedAttachment[],
-  previewAttributes: CredentialPreviewAttributeOptions[]
+  previewAttributes: DidCommCredentialPreviewAttributeOptions[]
 ) {
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)
   const newPreviewAttributes = [...previewAttributes]

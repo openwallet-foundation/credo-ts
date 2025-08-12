@@ -3,7 +3,7 @@ import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import type { ActionMenuSelection } from '../../models'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import {
@@ -30,7 +30,7 @@ describe('ActionMenuService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   let actionMenuRepository: Repository<ActionMenuRecord>

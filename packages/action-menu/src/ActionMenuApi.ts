@@ -7,7 +7,7 @@ import type {
 } from './ActionMenuApiOptions'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { ConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { ActionMenuRole } from './ActionMenuRole'
 import {
@@ -23,13 +23,13 @@ import { ActionMenuService } from './services'
  */
 @injectable()
 export class ActionMenuApi {
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private messageSender: DidCommMessageSender
   private actionMenuService: ActionMenuService
   private agentContext: AgentContext
 
   public constructor(
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     messageSender: DidCommMessageSender,
     actionMenuService: ActionMenuService,
     agentContext: AgentContext

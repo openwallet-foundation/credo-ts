@@ -4,14 +4,14 @@ import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { CredentialFormatSpec } from '../../../models'
+import { DidCommCredentialFormatSpec } from '../../../models'
 
 export interface V2IssueCredentialMessageOptions {
   id?: string
   comment?: string
   goalCode?: string
   goal?: string
-  formats: CredentialFormatSpec[]
+  formats: DidCommCredentialFormatSpec[]
   credentialAttachments: Attachment[]
 }
 
@@ -28,11 +28,11 @@ export class V2IssueCredentialMessage extends DidCommMessage {
       this.credentialAttachments = options.credentialAttachments
     }
   }
-  @Type(() => CredentialFormatSpec)
+  @Type(() => DidCommCredentialFormatSpec)
   @ValidateNested()
   @IsArray()
-  @IsInstance(CredentialFormatSpec, { each: true })
-  public formats!: CredentialFormatSpec[]
+  @IsInstance(DidCommCredentialFormatSpec, { each: true })
+  public formats!: DidCommCredentialFormatSpec[]
 
   @IsValidMessageType(V2IssueCredentialMessage.type)
   public readonly type = V2IssueCredentialMessage.type.messageTypeUri

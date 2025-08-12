@@ -3,10 +3,10 @@ import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsS
 import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
-  AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
+  DidCommAutoAcceptCredential,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
   MessageForwardingStrategy,
   WsOutboundDidCommTransport,
 } from '../packages/didcomm/src'
@@ -29,9 +29,9 @@ const mediatorOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediator: new MediatorModule({
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
       messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
@@ -48,7 +48,7 @@ const senderOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
   },
   { requireDidcomm: true }
@@ -79,10 +79,10 @@ describe('E2E WS Pickup V2 tests', () => {
       {},
       {
         ...getAnonCredsModules({
-          autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+          autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
+        mediationRecipient: new DidCommMediationRecipientModule({
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2,
           mediatorPollingInterval: 500,
         }),
       },
@@ -119,10 +119,10 @@ describe('E2E WS Pickup V2 tests', () => {
       {},
       {
         ...getAnonCredsModules({
-          autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+          autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
         }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2LiveMode,
+        mediationRecipient: new DidCommMediationRecipientModule({
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2LiveMode,
         }),
       },
       { requireDidcomm: true }

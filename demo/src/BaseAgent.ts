@@ -21,13 +21,13 @@ import {
 } from '@credo-ts/cheqd'
 import { Agent, DidsModule } from '@credo-ts/core'
 import {
-  AutoAcceptCredential,
+  DidCommAutoAcceptCredential,
   AutoAcceptProof,
-  ConnectionsModule,
-  CredentialsModule,
+  DidCommConnectionsModule,
+  DidCommCredentialsModule,
   HttpDidCommOutboundTransport,
   ProofsModule,
-  V2CredentialProtocol,
+  V2DidCommCredentialProtocol,
   V2ProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
@@ -95,16 +95,16 @@ function getAskarAnonCredsIndyModules(
 
   return {
     ...getDefaultDidcommModules(didcommConfig),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       autoAcceptConnections: true,
     }),
-    credentials: new CredentialsModule({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+    credentials: new DidCommCredentialsModule({
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       credentialProtocols: [
         new V1CredentialProtocol({
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
-        new V2CredentialProtocol({
+        new V2DidCommCredentialProtocol({
           credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],

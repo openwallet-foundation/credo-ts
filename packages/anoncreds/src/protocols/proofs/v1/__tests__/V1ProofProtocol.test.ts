@@ -8,7 +8,7 @@ import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from
 import {
   Attachment,
   AttachmentData,
-  DidExchangeState,
+  DidCommDidExchangeState,
   InboundDidCommMessageContext,
   PresentationProblemReportReason,
   ProofEventTypes,
@@ -16,7 +16,7 @@ import {
   ProofRole,
   ProofState,
 } from '../../../../../../didcomm/src'
-import { ConnectionService } from '../../../../../../didcomm/src/modules/connections/services/ConnectionService'
+import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { ProofRepository } from '../../../../../../didcomm/src/modules/proofs/repository/ProofRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
@@ -28,11 +28,11 @@ import { V1PresentationProblemReportMessage } from '../messages/V1PresentationPr
 jest.mock('../../../../../../didcomm/src/modules/proofs/repository/ProofRepository')
 jest.mock('../../../../formats/LegacyIndyProofFormatService')
 jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
-jest.mock('../../../../../../didcomm/src/modules/connections/services/ConnectionService')
+jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
-const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const indyProofFormatServiceMock = LegacyIndyProofFormatService as jest.Mock<LegacyIndyProofFormatService>
 
@@ -43,7 +43,7 @@ const indyProofFormatService = new indyProofFormatServiceMock()
 
 const connection = getMockConnection({
   id: '123',
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 const requestAttachment = new Attachment({
@@ -107,7 +107,7 @@ describe('V1ProofProtocol', () => {
         [ProofRepository, proofRepository],
         [DidCommMessageRepository, didCommMessageRepository],
         [EventEmitter, eventEmitter],
-        [ConnectionService, connectionService],
+        [DidCommConnectionService, connectionService],
       ],
       agentConfig,
     })

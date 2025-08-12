@@ -2,7 +2,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
-import { AutoAcceptCredential, CredentialExchangeRecord, CredentialState, ProofState } from '@credo-ts/didcomm'
+import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, ProofState } from '@credo-ts/didcomm'
 
 import {
   createDidKidVerificationMethod,
@@ -140,7 +140,7 @@ async function anonCredsFlowTest(options: {
   // issuer offers credential
   let issuerRecord = await issuer.modules.credentials.offerCredential({
     protocolVersion: 'v2',
-    autoAcceptCredential: AutoAcceptCredential.Never,
+    autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     connectionId: issuerHolderConnectionId,
     credentialFormats: {
       dataIntegrity: {
@@ -158,12 +158,12 @@ async function anonCredsFlowTest(options: {
 
   // Holder processes and accepts offer
   let holderRecord = await waitForCredentialRecordSubject(holderReplay, {
-    state: CredentialState.OfferReceived,
+    state: DidCommCredentialState.OfferReceived,
     threadId: issuerRecord.threadId,
   })
   holderRecord = await holder.modules.credentials.acceptOffer({
     credentialRecordId: holderRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.Never,
+    autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {
         anonCredsLinkSecret: {
@@ -175,19 +175,19 @@ async function anonCredsFlowTest(options: {
 
   // issuer receives request and accepts
   issuerRecord = await waitForCredentialRecordSubject(issuerReplay, {
-    state: CredentialState.RequestReceived,
+    state: DidCommCredentialState.RequestReceived,
     threadId: holderRecord.threadId,
   })
   issuerRecord = await issuer.modules.credentials.acceptRequest({
     credentialRecordId: issuerRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.Never,
+    autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {},
     },
   })
 
   holderRecord = await waitForCredentialRecordSubject(holderReplay, {
-    state: CredentialState.CredentialReceived,
+    state: DidCommCredentialState.CredentialReceived,
     threadId: issuerRecord.threadId,
   })
   holderRecord = await holder.modules.credentials.acceptCredential({
@@ -195,12 +195,12 @@ async function anonCredsFlowTest(options: {
   })
 
   issuerRecord = await waitForCredentialRecordSubject(issuerReplay, {
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
     threadId: holderRecord.threadId,
   })
 
   expect(holderRecord).toMatchObject({
-    type: CredentialExchangeRecord.type,
+    type: DidCommCredentialExchangeRecord.type,
     id: expect.any(String),
     createdAt: expect.any(Date),
     metadata: {
@@ -219,7 +219,7 @@ async function anonCredsFlowTest(options: {
         },
       },
     },
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
 
   const tags = holderRecord.getTags()

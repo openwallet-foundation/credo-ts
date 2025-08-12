@@ -4,8 +4,8 @@ import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import type { EventReplaySubject, JsonLdTestsAgent } from '../../../../../../../core/tests'
 import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { CredentialState } from '../../../models'
-import { CredentialExchangeRecord } from '../../../repository'
+import { DidCommCredentialState } from '../../../models'
+import { DidCommCredentialExchangeRecord } from '../../../repository'
 import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
 
 const signCredentialOptions = {
@@ -114,7 +114,7 @@ describe('credentials', () => {
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     testLogger.test('Alice sends credential request to Faber')
@@ -126,7 +126,7 @@ describe('credentials', () => {
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
@@ -138,7 +138,7 @@ describe('credentials', () => {
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     testLogger.test('Alice sends credential ack to Faber')
@@ -149,22 +149,22 @@ describe('credentials', () => {
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
 
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
 
     expect(faberCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
       threadId: expect.any(String),
     })
   })

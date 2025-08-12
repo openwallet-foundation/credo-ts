@@ -1,7 +1,7 @@
 import type { AgentContext, BaseRecord, Kms, ResolvedDidCommService } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
-import type { ConnectionRecord } from '../modules/connections/repository'
-import type { OutOfBandRecord } from '../modules/oob'
+import type { DidCommConnectionRecord } from '../modules/connections/repository'
+import type { DidCommOutOfBandRecord } from '../modules/oob'
 import type { InboundDidCommMessageContext } from './InboundDidCommMessageContext'
 
 import { CredoError } from '@credo-ts/core'
@@ -17,17 +17,17 @@ export interface OutboundDidCommMessageContextParams {
   inboundMessageContext?: InboundDidCommMessageContext
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   associatedRecord?: BaseRecord<any, any, any>
-  connection?: ConnectionRecord
+  connection?: DidCommConnectionRecord
   serviceParams?: ServiceMessageParams
-  outOfBand?: OutOfBandRecord
+  outOfBand?: DidCommOutOfBandRecord
   sessionId?: string
 }
 
 export class OutboundDidCommMessageContext<T extends DidCommMessage = DidCommMessage> {
   public message: T
-  public connection?: ConnectionRecord
+  public connection?: DidCommConnectionRecord
   public serviceParams?: ServiceMessageParams
-  public outOfBand?: OutOfBandRecord
+  public outOfBand?: DidCommOutOfBandRecord
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
@@ -50,7 +50,7 @@ export class OutboundDidCommMessageContext<T extends DidCommMessage = DidCommMes
    *
    * @throws {CredoError} if there is no connection or the connection is not ready
    */
-  public assertReadyConnection(): ConnectionRecord {
+  public assertReadyConnection(): DidCommConnectionRecord {
     if (!this.connection) {
       throw new CredoError(`No connection associated with outgoing message ${this.message.type}`)
     }

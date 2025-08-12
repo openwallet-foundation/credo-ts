@@ -1,16 +1,16 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { MediatorModuleConfig } from '../MediatorModuleConfig'
-import type { MediatorService } from '../services/MediatorService'
+import type { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
+import type { DidCommMediatorService } from '../services/DidCommMediatorService'
 
 import { OutboundDidCommMessageContext } from '../../../models'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
 export class MediationRequestHandler implements DidCommMessageHandler {
-  private mediatorService: MediatorService
-  private mediatorModuleConfig: MediatorModuleConfig
+  private mediatorService: DidCommMediatorService
+  private mediatorModuleConfig: DidCommMediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
 
-  public constructor(mediatorService: MediatorService, mediatorModuleConfig: MediatorModuleConfig) {
+  public constructor(mediatorService: DidCommMediatorService, mediatorModuleConfig: DidCommMediatorModuleConfig) {
     this.mediatorService = mediatorService
     this.mediatorModuleConfig = mediatorModuleConfig
   }

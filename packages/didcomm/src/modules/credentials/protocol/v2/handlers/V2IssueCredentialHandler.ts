@@ -1,7 +1,7 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { InboundDidCommMessageContext } from '../../../../../models'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialProtocol } from '../V2CredentialProtocol'
+import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import type { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -9,10 +9,10 @@ import { getOutboundDidCommMessageContext } from '../../../../../getOutboundDidC
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 
 export class V2IssueCredentialHandler implements DidCommMessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+  private credentialProtocol: V2DidCommCredentialProtocol
   public supportedMessages = [V2IssueCredentialMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V2DidCommCredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 
@@ -30,7 +30,7 @@ export class V2IssueCredentialHandler implements DidCommMessageHandler {
   }
 
   private async acceptCredential(
-    credentialRecord: CredentialExchangeRecord,
+    credentialRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V2IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')

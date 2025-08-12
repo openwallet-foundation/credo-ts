@@ -1,7 +1,7 @@
 import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
-import type { ConnectionRecord } from '../modules'
+import type { DidCommConnectionRecord } from '../modules'
 import { InMemoryQueueTransportRepository, type OutboundDidCommTransport } from '../transport'
 import type { EncryptedDidCommMessage } from '../types'
 
@@ -137,7 +137,7 @@ describe('DidCommMessageSender', () => {
 
   let messageSender: DidCommMessageSender
   let outboundTransport: OutboundDidCommTransport
-  let connection: ConnectionRecord
+  let connection: DidCommConnectionRecord
   let outboundMessageContext: OutboundDidCommMessageContext
   const agentConfig = getAgentConfig('DidCommMessageSender')
   const agentContext = getAgentContext({

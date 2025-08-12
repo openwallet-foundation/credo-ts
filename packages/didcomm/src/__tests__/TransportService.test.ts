@@ -3,7 +3,7 @@ import { Subject } from 'rxjs'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DidCommTransportService } from '../DidCommTransportService'
-import { DidExchangeRole } from '../modules'
+import { DidCommDidExchangeRole } from '../modules'
 
 import { DummyTransportSession } from './stubs'
 
@@ -16,7 +16,7 @@ describe('DidCommTransportService', () => {
     })
 
     test('remove session saved for a given connection', () => {
-      const connection = getMockConnection({ id: 'test-123', role: DidExchangeRole.Responder })
+      const connection = getMockConnection({ id: 'test-123', role: DidCommDidExchangeRole.Responder })
       const session = new DummyTransportSession('dummy-session-123')
       session.connectionId = connection.id
 

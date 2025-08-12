@@ -1,13 +1,13 @@
-import { AutoAcceptCredential, AutoAcceptProof } from '@credo-ts/didcomm'
+import { DidCommAutoAcceptCredential, AutoAcceptProof } from '@credo-ts/didcomm'
 
 /**
  * Returns the credential auto accept config based on priority:
  *	- The record config takes first priority
  *	- Otherwise the agent config
- *	- Otherwise {@link AutoAcceptCredential.Never} is returned
+ *	- Otherwise {@link DidCommAutoAcceptCredential.Never} is returned
  */
-export function composeCredentialAutoAccept(recordConfig?: AutoAcceptCredential, agentConfig?: AutoAcceptCredential) {
-  return recordConfig ?? agentConfig ?? AutoAcceptCredential.Never
+export function composeCredentialAutoAccept(recordConfig?: DidCommAutoAcceptCredential, agentConfig?: DidCommAutoAcceptCredential) {
+  return recordConfig ?? agentConfig ?? DidCommAutoAcceptCredential.Never
 }
 
 /**

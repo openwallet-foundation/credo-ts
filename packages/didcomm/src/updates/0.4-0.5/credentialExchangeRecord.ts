@@ -1,12 +1,12 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { CredentialExchangeRecord } from '../../modules/credentials'
+import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
 
 import { CredoError } from '@credo-ts/core'
 
 import {
-  CredentialRepository,
-  CredentialRole,
-  CredentialState,
+  DidCommCredentialExchangeRepository,
+  DidCommCredentialRole,
+  DidCommCredentialState,
   V2OfferCredentialMessage,
   V2ProposeCredentialMessage,
   V2RequestCredentialMessage,
@@ -15,7 +15,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 import { parseMessageType } from '../../util/messageType'
 
 /**
- * Migrates the {@link CredentialExchangeRecord} to 0.5 compatible format. It fetches all credential exchange records from
+ * Migrates the {@link DidCommCredentialExchangeRecord} to 0.5 compatible format. It fetches all credential exchange records from
  *  storage and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
@@ -24,7 +24,7 @@ import { parseMessageType } from '../../util/messageType'
  */
 export async function migrateCredentialExchangeRecordToV0_5<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.5')
-  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
   agent.config.logger.debug('Fetching all credential records from storage')
   const credentialRecords = await credentialRepository.getAll(agent.context)
@@ -47,36 +47,36 @@ export async function migrateCredentialExchangeRecordToV0_5<Agent extends BaseAg
 }
 
 const holderCredentialStates = [
-  CredentialState.Declined,
-  CredentialState.ProposalSent,
-  CredentialState.OfferReceived,
-  CredentialState.RequestSent,
-  CredentialState.CredentialReceived,
+  DidCommCredentialState.Declined,
+  DidCommCredentialState.ProposalSent,
+  DidCommCredentialState.OfferReceived,
+  DidCommCredentialState.RequestSent,
+  DidCommCredentialState.CredentialReceived,
 ]
 
 const issuerCredentialStates = [
-  CredentialState.ProposalReceived,
-  CredentialState.OfferSent,
-  CredentialState.RequestReceived,
-  CredentialState.CredentialIssued,
+  DidCommCredentialState.ProposalReceived,
+  DidCommCredentialState.OfferSent,
+  DidCommCredentialState.RequestReceived,
+  DidCommCredentialState.CredentialIssued,
 ]
 
-export async function getCredentialRole(agent: BaseAgent, credentialRecord: CredentialExchangeRecord) {
+export async function getCredentialRole(agent: BaseAgent, credentialRecord: DidCommCredentialExchangeRecord) {
   // Credentials will only have a value when a credential is received, meaning we're the holder
   if (credentialRecord.credentials.length > 0) {
-    return CredentialRole.Holder
+    return DidCommCredentialRole.Holder
   }
   // If credentialRecord.credentials doesn't have any values, and we're also not in state done it means we're the issuer.
-  if (credentialRecord.state === CredentialState.Done) {
-    return CredentialRole.Issuer
+  if (credentialRecord.state === DidCommCredentialState.Done) {
+    return DidCommCredentialRole.Issuer
   }
   // For these states we know for certain that we're the holder
   if (holderCredentialStates.includes(credentialRecord.state)) {
-    return CredentialRole.Holder
+    return DidCommCredentialRole.Holder
   }
   // For these states we know for certain that we're the issuer
   if (issuerCredentialStates.includes(credentialRecord.state)) {
-    return CredentialRole.Issuer
+    return DidCommCredentialRole.Issuer
   }
 
   // We now need to determine the role based on the didcomm message. Only the Abandoned state remains
@@ -104,16 +104,16 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: Cred
   // Maps the message name and the didcomm message role to the respective credential role
   const roleStateMapping = {
     [V2OfferCredentialMessage.type.messageName]: {
-      [DidCommMessageRole.Sender]: CredentialRole.Issuer,
-      [DidCommMessageRole.Receiver]: CredentialRole.Holder,
+      [DidCommMessageRole.Sender]: DidCommCredentialRole.Issuer,
+      [DidCommMessageRole.Receiver]: DidCommCredentialRole.Holder,
     },
     [V2ProposeCredentialMessage.type.messageName]: {
-      [DidCommMessageRole.Sender]: CredentialRole.Holder,
-      [DidCommMessageRole.Receiver]: CredentialRole.Issuer,
+      [DidCommMessageRole.Sender]: DidCommCredentialRole.Holder,
+      [DidCommMessageRole.Receiver]: DidCommCredentialRole.Issuer,
     },
     [V2RequestCredentialMessage.type.messageName]: {
-      [DidCommMessageRole.Sender]: CredentialRole.Holder,
-      [DidCommMessageRole.Receiver]: CredentialRole.Issuer,
+      [DidCommMessageRole.Sender]: DidCommCredentialRole.Holder,
+      [DidCommMessageRole.Receiver]: DidCommCredentialRole.Issuer,
     },
   }
 
@@ -126,7 +126,7 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: Cred
 /**
  * Add a role to the credential record.
  */
-export async function migrateRole<Agent extends BaseAgent>(agent: Agent, credentialRecord: CredentialExchangeRecord) {
+export async function migrateRole<Agent extends BaseAgent>(agent: Agent, credentialRecord: DidCommCredentialExchangeRecord) {
   agent.config.logger.debug(`Adding role to record with id ${credentialRecord.id} to for version 0.4`)
 
   credentialRecord.role = await getCredentialRole(agent, credentialRecord)

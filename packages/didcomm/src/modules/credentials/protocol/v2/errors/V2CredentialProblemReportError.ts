@@ -1,11 +1,11 @@
 import type { ProblemReportErrorOptions } from '../../../../../errors'
-import type { CredentialProblemReportReason } from '../../../models/CredentialProblemReportReason'
+import type { DidCommCredentialProblemReportReason } from '../../../models/DidCommCredentialProblemReportReason'
 
 import { ProblemReportError } from '../../../../../errors'
 import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'
 
 export interface V2CredentialProblemReportErrorOptions extends ProblemReportErrorOptions {
-  problemCode: CredentialProblemReportReason
+  problemCode: DidCommCredentialProblemReportReason
 }
 
 export class V2CredentialProblemReportError extends ProblemReportError {

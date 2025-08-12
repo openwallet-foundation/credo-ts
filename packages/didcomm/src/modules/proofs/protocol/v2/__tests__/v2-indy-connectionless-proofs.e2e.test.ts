@@ -26,12 +26,12 @@ import {
   Attachment,
   AttachmentData,
   AutoAcceptProof,
-  CredentialEventTypes,
-  HandshakeProtocol,
+  DidCommCredentialEventTypes,
+  DidCommHandshakeProtocol,
   LinkedAttachment,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
   ProofEventTypes,
   ProofState,
 } from '../../../../../../src'
@@ -279,7 +279,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediator: new MediatorModule({
+        mediator: new DidCommMediatorModule({
           autoAcceptMediationRequests: true,
         }),
       },
@@ -297,12 +297,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const faberMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'faber invitation',
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     const aliceMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'alice invitation',
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     const faberOptions = getAgentOptions(
@@ -313,11 +313,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new MediationRecipientModule({
+        mediationRecipient: new DidCommMediationRecipientModule({
           mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
         }),
       },
       { requireDidcomm: true }
@@ -331,11 +331,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
         }),
-        mediationRecipient: new MediationRecipientModule({
+        mediationRecipient: new DidCommMediationRecipientModule({
           mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
             domain: 'https://example.com',
           }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
         }),
       },
       { requireDidcomm: true }
@@ -351,7 +351,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
-      [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
     )
     agents = [aliceAgent, faberAgent, mediatorAgent]
 

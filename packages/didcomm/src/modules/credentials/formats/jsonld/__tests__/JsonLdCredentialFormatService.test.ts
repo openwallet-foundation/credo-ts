@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
-import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
+import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
+import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { CredentialFormatService } from '../../CredentialFormatService'
 import type { JsonCredential, JsonLdCredentialDetailFormat, JsonLdCredentialFormat } from '../JsonLdCredentialFormat'
 
@@ -18,9 +18,9 @@ import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { CredentialRole, CredentialState } from '../../../models'
+import { DidCommCredentialRole, DidCommCredentialState } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
 
 jest.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
@@ -106,19 +106,19 @@ const mockCredentialRecord = ({
   id,
   credentialAttributes,
 }: {
-  state?: CredentialState
-  role?: CredentialRole
-  tags?: CustomCredentialTags
+  state?: DidCommCredentialState
+  role?: DidCommCredentialRole
+  tags?: CustomDidCommCredentialExchangeTags
   threadId?: string
   connectionId?: string
   id?: string
-  credentialAttributes?: CredentialPreviewAttribute[]
+  credentialAttributes?: DidCommCredentialPreviewAttribute[]
 } = {}) => {
-  const credentialRecord = new CredentialExchangeRecord({
+  const credentialRecord = new DidCommCredentialExchangeRecord({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
-    state: state || CredentialState.OfferSent,
-    role: role || CredentialRole.Issuer,
+    state: state || DidCommCredentialState.OfferSent,
+    role: role || DidCommCredentialRole.Issuer,
     threadId: threadId ?? 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     connectionId: connectionId ?? '123',
     tags,
@@ -260,7 +260,7 @@ describe('JsonLd CredentialFormatService', () => {
         },
         offerAttachment,
         credentialRecord: mockCredentialRecord({
-          state: CredentialState.OfferReceived,
+          state: DidCommCredentialState.OfferReceived,
           threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
           connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
         }),
@@ -319,7 +319,7 @@ describe('JsonLd CredentialFormatService', () => {
       mockFunction(w3cJsonLdCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
 
       const credentialRecord = mockCredentialRecord({
-        state: CredentialState.RequestReceived,
+        state: DidCommCredentialState.RequestReceived,
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
@@ -361,7 +361,7 @@ describe('JsonLd CredentialFormatService', () => {
 
   describe('Process Credential', () => {
     const credentialRecord = mockCredentialRecord({
-      state: CredentialState.RequestSent,
+      state: DidCommCredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
     let signCredentialOptionsWithProperty: JsonLdCredentialDetailFormat

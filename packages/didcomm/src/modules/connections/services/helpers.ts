@@ -16,7 +16,7 @@ import {
   getEd25519VerificationKey2018,
 } from '@credo-ts/core'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
-import { OutOfBandInlineServiceKey } from '../../oob/repository/OutOfBandRecord'
+import { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import { EmbeddedAuthentication } from '../models'
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
@@ -208,7 +208,7 @@ export function getResolvedDidcommServiceWithSigningKeyId(
   /**
    * Optional keys for the inline services
    */
-  inlineServiceKeys?: OutOfBandInlineServiceKey[]
+  inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
 ) {
   const resolvedService = outOfBandDidcommService.resolvedDidCommService
 

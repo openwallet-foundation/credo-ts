@@ -1,15 +1,15 @@
 import type { DidCommMessageHandler } from '../../../../../handlers'
 import type { InboundDidCommMessageContext } from '../../../../../models'
-import type { V2MessagePickupProtocol } from '../V2MessagePickupProtocol'
+import type { V2DidCommMessagePickupProtocol } from '../V2DidCommMessagePickupProtocol'
 
 import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V2MessageDeliveryMessage } from '../messages/V2MessageDeliveryMessage'
 
 export class V2MessageDeliveryHandler implements DidCommMessageHandler {
   public supportedMessages = [V2MessageDeliveryMessage]
-  private messagePickupService: V2MessagePickupProtocol
+  private messagePickupService: V2DidCommMessagePickupProtocol
 
-  public constructor(messagePickupService: V2MessagePickupProtocol) {
+  public constructor(messagePickupService: V2DidCommMessagePickupProtocol) {
     this.messagePickupService = messagePickupService
   }
 

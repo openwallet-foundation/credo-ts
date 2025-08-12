@@ -12,9 +12,9 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Attachment, AttachmentData, DidExchangeState, InboundDidCommMessageContext } from '../../../../../../src'
+import { Attachment, AttachmentData, DidCommDidExchangeState, InboundDidCommMessageContext } from '../../../../../../src'
 import { DidCommMessageRepository } from '../../../../../repository/DidCommMessageRepository'
-import { ConnectionService } from '../../../../connections/services/ConnectionService'
+import { DidCommConnectionService } from '../../../../connections/services/DidCommConnectionService'
 import { ProofEventTypes } from '../../../ProofEvents'
 import { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
 import { ProofRole } from '../../../models'
@@ -27,12 +27,12 @@ import { V2PresentationProblemReportMessage, V2RequestPresentationMessage } from
 
 // Mock classes
 jest.mock('../../../repository/ProofRepository')
-jest.mock('../../../../connections/services/ConnectionService')
+jest.mock('../../../../connections/services/DidCommConnectionService')
 jest.mock('../../../../../repository/DidCommMessageRepository')
 
 // Mock typed object
 const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
-const connectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
+const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 
 const proofRepository = new ProofRepositoryMock()
@@ -50,7 +50,7 @@ const agentContext = getAgentContext({
   registerInstances: [
     [ProofRepository, proofRepository],
     [DidCommMessageRepository, didCommMessageRepository],
-    [ConnectionService, connectionService],
+    [DidCommConnectionService, connectionService],
     [EventEmitter, eventEmitter],
   ],
   agentConfig,
@@ -60,7 +60,7 @@ const proofProtocol = new V2ProofProtocol({ proofFormats: [proofFormatService] }
 
 const connection = getMockConnection({
   id: '123',
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 const requestAttachment = new Attachment({
