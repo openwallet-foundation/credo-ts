@@ -1,8 +1,8 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModuleConfig'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { Protocol } from '../../models'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../models'
 
 import { DiscoverFeaturesApi } from './DiscoverFeaturesApi'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
@@ -31,14 +31,14 @@ export class DiscoverFeaturesModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     // Features
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/discover-features/1.0',
         roles: ['requester', 'responder'],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/discover-features/2.0',
         roles: ['requester', 'responder'],
       })

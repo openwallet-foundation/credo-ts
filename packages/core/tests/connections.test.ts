@@ -1,9 +1,9 @@
-import type { AgentMessageProcessedEvent, KeylistUpdate } from '../../didcomm/src'
+import type { DidCommMessageProcessedEvent, KeylistUpdate } from '../../didcomm/src'
 
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import {
-  AgentEventTypes,
+  DidCommEventTypes,
   DidExchangeState,
   HandshakeProtocol,
   KeylistUpdateAction,
@@ -258,7 +258,7 @@ describe('connections', () => {
 
     // Create observable for event
     const keyAddMessageObservable = mediatorAgent.events
-      .observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+      .observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
       .pipe(
         filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
         map((event) => event.payload.message as KeylistUpdateMessage),
@@ -348,7 +348,7 @@ describe('connections', () => {
 
     for (const connection of [faberAcmeConnection, faberAliceConnection]) {
       const keyRemoveMessagePromise = firstValueFrom(
-        mediatorAgent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+        mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
           filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
           map((event) => event.payload.message as KeylistUpdateMessage),
           timeout(5000)

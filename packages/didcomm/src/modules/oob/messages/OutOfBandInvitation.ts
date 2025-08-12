@@ -1,11 +1,11 @@
-import type { PlaintextMessage } from '../../../types'
+import type { PlaintextDidCommMessage } from '../../../types'
 
 import { CredoError, IsStringOrInstance, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { Attachment, AttachmentData } from '../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
@@ -23,7 +23,7 @@ export interface OutOfBandInvitationOptions {
   appendedAttachments?: Attachment[]
 }
 
-export class OutOfBandInvitation extends AgentMessage {
+export class OutOfBandInvitation extends DidCommMessage {
   public constructor(options: OutOfBandInvitationOptions) {
     super()
 
@@ -47,7 +47,7 @@ export class OutOfBandInvitation extends AgentMessage {
   @Exclude()
   public invitationType?: InvitationType
 
-  public addRequest(message: AgentMessage) {
+  public addRequest(message: DidCommMessage) {
     if (!this.requests) this.requests = []
     const requestAttachment = new Attachment({
       id: this.generateId(),
@@ -59,7 +59,7 @@ export class OutOfBandInvitation extends AgentMessage {
     this.requests.push(requestAttachment)
   }
 
-  public getRequests(): PlaintextMessage[] | undefined {
+  public getRequests(): PlaintextDidCommMessage[] | undefined {
     return this.requests?.map((request) => request.getDataAsJson())
   }
 

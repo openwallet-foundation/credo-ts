@@ -1,10 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../../AgentMessage'
-import type { AgentMessageReceivedEvent } from '../../../../Events'
-import type { FeatureRegistry } from '../../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
-import type { InboundMessageContext } from '../../../../models'
-import type { EncryptedMessage } from '../../../../types'
+import type { DidCommMessage } from '../../../../DidCommMessage'
+import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
+import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import type { InboundDidCommMessageContext } from '../../../../models'
+import type { EncryptedDidCommMessage } from '../../../../types'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
 import type {
   DeliverMessagesProtocolOptions,
@@ -17,10 +17,10 @@ import type {
 
 import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 
-import { AgentEventTypes } from '../../../../Events'
+import { DidCommEventTypes } from '../../../../DidCommEvents'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { ProblemReportError } from '../../../../errors'
-import { OutboundMessageContext, Protocol } from '../../../../models'
+import { OutboundDidCommMessageContext, DidCommProtocol } from '../../../../models'
 import { RoutingProblemReportReason } from '../../../routing/error'
 import { MessagePickupEventTypes } from '../../MessagePickupEvents'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
@@ -56,7 +56,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void {
     messageHandlerRegistry.registerMessageHandlers([
       new V2StatusRequestHandler(this),
       new V2DeliveryRequestHandler(this),
@@ -67,7 +67,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     ])
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/messagepickup/2.0',
         roles: ['mediator', 'recipient'],
       })
@@ -77,7 +77,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createPickupMessage(
     _agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
+  ): Promise<PickupMessagesProtocolReturnType<DidCommMessage>> {
     const { connectionRecord, recipientDid: recipientKey } = options
     connectionRecord.assertReady()
 
@@ -91,7 +91,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined> {
+  ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
     const { connectionRecord, recipientKey, messages } = options
     connectionRecord.assertReady()
 
@@ -132,7 +132,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async setLiveDeliveryMode(
     _agentContext: AgentContext,
     options: SetLiveDeliveryModeProtocolOptions
-  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
+  ): Promise<SetLiveDeliveryModeProtocolReturnType<DidCommMessage>> {
     const { connectionRecord, liveDelivery } = options
     connectionRecord.assertReady()
     return {
@@ -142,7 +142,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     }
   }
 
-  public async processStatusRequest(messageContext: InboundMessageContext<V2StatusRequestMessage>) {
+  public async processStatusRequest(messageContext: InboundDidCommMessageContext<V2StatusRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
     const recipientKey = messageContext.message.recipientKey
@@ -160,13 +160,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       }),
     })
 
-    return new OutboundMessageContext(statusMessage, {
+    return new OutboundDidCommMessageContext(statusMessage, {
       agentContext: messageContext.agentContext,
       connection,
     })
   }
 
-  public async processDeliveryRequest(messageContext: InboundMessageContext<V2DeliveryRequestMessage>) {
+  public async processDeliveryRequest(messageContext: InboundDidCommMessageContext<V2DeliveryRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
     const recipientKey = messageContext.message.recipientKey
@@ -207,13 +207,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
             messageCount: 0,
           })
 
-    return new OutboundMessageContext(outboundMessageContext, {
+    return new OutboundDidCommMessageContext(outboundMessageContext, {
       agentContext: messageContext.agentContext,
       connection,
     })
   }
 
-  public async processMessagesReceived(messageContext: InboundMessageContext<V2MessagesReceivedMessage>) {
+  public async processMessagesReceived(messageContext: InboundDidCommMessageContext<V2MessagesReceivedMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -236,13 +236,13 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       }),
     })
 
-    return new OutboundMessageContext(statusMessage, {
+    return new OutboundDidCommMessageContext(statusMessage, {
       agentContext: messageContext.agentContext,
       connection,
     })
   }
 
-  public async processStatus(messageContext: InboundMessageContext<V2StatusMessage>) {
+  public async processStatus(messageContext: InboundDidCommMessageContext<V2StatusMessage>) {
     const { message: statusMessage } = messageContext
     const { messageCount, recipientKey } = statusMessage
 
@@ -275,7 +275,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     return deliveryRequestMessage
   }
 
-  public async processLiveDeliveryChange(messageContext: InboundMessageContext<V2LiveDeliveryChangeMessage>) {
+  public async processLiveDeliveryChange(messageContext: InboundDidCommMessageContext<V2LiveDeliveryChangeMessage>) {
     const { agentContext, message } = messageContext
 
     const connection = messageContext.assertReadyConnection()
@@ -303,10 +303,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
       }),
     })
 
-    return new OutboundMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
+    return new OutboundDidCommMessageContext(statusMessage, { agentContext: messageContext.agentContext, connection })
   }
 
-  public async processDelivery(messageContext: InboundMessageContext<V2MessageDeliveryMessage>) {
+  public async processDelivery(messageContext: InboundDidCommMessageContext<V2MessageDeliveryMessage>) {
     messageContext.assertReadyConnection()
 
     const { appendedAttachments } = messageContext.message
@@ -322,10 +322,10 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
     for (const attachment of appendedAttachments) {
       ids.push(attachment.id)
 
-      eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
+      eventEmitter.emit<DidCommMessageReceivedEvent>(messageContext.agentContext, {
+        type: DidCommEventTypes.DidCommMessageReceived,
         payload: {
-          message: attachment.getDataAsJson<EncryptedMessage>(),
+          message: attachment.getDataAsJson<EncryptedDidCommMessage>(),
           contextCorrelationId: messageContext.agentContext.contextCorrelationId,
           receivedAt: attachment.lastmodTime,
         },

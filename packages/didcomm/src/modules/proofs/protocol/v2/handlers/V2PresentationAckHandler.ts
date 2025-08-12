@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { ProofProtocol } from '../../ProofProtocol'
 
 import { V2PresentationAckMessage } from '../messages'
 
-export class V2PresentationAckHandler implements MessageHandler {
+export class V2PresentationAckHandler implements DidCommMessageHandler {
   private proofProtocol: ProofProtocol
   public supportedMessages = [V2PresentationAckMessage]
 
@@ -11,7 +11,7 @@ export class V2PresentationAckHandler implements MessageHandler {
     this.proofProtocol = proofProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V2PresentationAckHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V2PresentationAckHandler>) {
     await this.proofProtocol.processAck(messageContext)
 
     return undefined

@@ -3,7 +3,7 @@ import type { DrpcRequest, DrpcRequestMessage, DrpcResponse, DrpcResponseMessage
 import type { DrpcRecord } from './repository/DrpcRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageHandlerRegistry, MessageSender, OutboundMessageContext } from '@credo-ts/didcomm'
+import { ConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, OutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
 import { DrpcRole } from './models'
@@ -12,14 +12,14 @@ import { DrpcService } from './services'
 @injectable()
 export class DrpcApi {
   private drpcMessageService: DrpcService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private connectionService: ConnectionService
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     drpcMessageService: DrpcService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext
   ) {
@@ -164,7 +164,7 @@ export class DrpcApi {
     message: DrpcRequestMessage | DrpcResponseMessage,
     messageRecord: DrpcRecord
   ): Promise<void> {
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection,
       associatedRecord: messageRecord,
@@ -172,7 +172,7 @@ export class DrpcApi {
     await this.messageSender.sendMessage(outboundMessageContext)
   }
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new DrpcRequestHandler(this.drpcMessageService))
     messageHandlerRegistry.registerMessageHandler(new DrpcResponseHandler(this.drpcMessageService))
   }

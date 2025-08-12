@@ -1,5 +1,5 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { PlaintextMessage } from '../../types'
+import type { PlaintextDidCommMessage } from '../../types'
 
 import { type ProofExchangeRecord, ProofRepository, ProofState } from '../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
@@ -129,7 +129,7 @@ export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent,
       `Starting move of ${messageKey} from proof record with id ${proofRecord.id} to DIDCommMessageRecord`
     )
     const proofRecordJson = proofRecord as unknown as JsonObject
-    const message = proofRecordJson[messageKey] as PlaintextMessage | undefined
+    const message = proofRecordJson[messageKey] as PlaintextDidCommMessage | undefined
 
     if (message) {
       const proofRole = getProofRole(proofRecord)

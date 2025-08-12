@@ -4,7 +4,7 @@ import type { DummyStateChangedEvent } from './dummy'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
-import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
@@ -18,8 +18,8 @@ const run = async () => {
   const app = express()
   const socketServer = new Server({ noServer: true })
 
-  const httpInboundTransport = new HttpInboundTransport({ app, port })
-  const wsInboundTransport = new WsInboundTransport({ server: socketServer })
+  const httpInboundTransport = new HttpInboundDidCommTransport({ app, port })
+  const wsInboundTransport = new WsInboundDidCommTransport({ server: socketServer })
 
   // Setup the agent
   const agent = new Agent({

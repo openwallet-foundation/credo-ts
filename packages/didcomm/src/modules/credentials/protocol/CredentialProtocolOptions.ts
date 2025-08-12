@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../AgentMessage'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { ConnectionRecord } from '../../connections'
 import type {
   CredentialFormat,
@@ -166,7 +166,7 @@ export interface CreateCredentialProblemReportOptions {
   description: string
 }
 
-export interface CredentialProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface CredentialProtocolMsgReturnType<MessageType extends DidCommMessage> {
   message: MessageType
   credentialRecord: CredentialExchangeRecord
 }

@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface V2StatusRequestMessageOptions {
@@ -9,7 +9,7 @@ export interface V2StatusRequestMessageOptions {
   recipientKey?: string
 }
 
-export class V2StatusRequestMessage extends AgentMessage {
+export class V2StatusRequestMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: V2StatusRequestMessageOptions) {

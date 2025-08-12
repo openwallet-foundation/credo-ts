@@ -1,15 +1,15 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { Routing } from '../../models'
+import type { DidCommRouting } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository'
 
 import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
 
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { MessageSender } from '../../MessageSender'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
-import { OutboundMessageContext } from '../../models'
+import { OutboundDidCommMessageContext } from '../../models'
 import { OutOfBandService } from '../oob/OutOfBandService'
 import { RoutingService } from '../routing/services/RoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
@@ -51,7 +51,7 @@ export class ConnectionsApi {
   private connectionService: ConnectionService
   private didRotateService: DidRotateService
   private outOfBandService: OutOfBandService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private trustPingService: TrustPingService
   private routingService: RoutingService
   private didRepository: DidRepository
@@ -59,7 +59,7 @@ export class ConnectionsApi {
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     didRotateService: DidRotateService,
@@ -68,7 +68,7 @@ export class ConnectionsApi {
     routingService: RoutingService,
     didRepository: DidRepository,
     didResolverService: DidResolverService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     agentContext: AgentContext,
     connectionsModuleConfig: ConnectionsModuleConfig
   ) {
@@ -95,7 +95,7 @@ export class ConnectionsApi {
       alias?: string
       imageUrl?: string
       protocol: HandshakeProtocol
-      routing?: Routing
+      routing?: DidCommRouting
       ourDid?: string
     }
   ) {
@@ -145,7 +145,7 @@ export class ConnectionsApi {
     }
 
     const { message, connectionRecord } = result
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
       outOfBand: outOfBandRecord,
@@ -183,7 +183,7 @@ export class ConnectionsApi {
         ? await this.routingService.getRouting(this.agentContext)
         : undefined
 
-    let outboundMessageContext: OutboundMessageContext
+    let outboundMessageContext: OutboundDidCommMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       const message = await this.didExchangeProtocol.createResponse(
         this.agentContext,
@@ -191,7 +191,7 @@ export class ConnectionsApi {
         outOfBandRecord,
         routing
       )
-      outboundMessageContext = new OutboundMessageContext(message, {
+      outboundMessageContext = new OutboundDidCommMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       })
@@ -210,7 +210,7 @@ export class ConnectionsApi {
         outOfBandRecord,
         routing
       )
-      outboundMessageContext = new OutboundMessageContext(message, {
+      outboundMessageContext = new OutboundDidCommMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       })
@@ -230,7 +230,7 @@ export class ConnectionsApi {
   public async acceptResponse(connectionId: string): Promise<ConnectionRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, connectionId)
 
-    let outboundMessageContext: OutboundMessageContext
+    let outboundMessageContext: OutboundDidCommMessageContext
     if (connectionRecord.protocol === HandshakeProtocol.DidExchange) {
       if (!connectionRecord.outOfBandId) {
         throw new CredoError(`Connection ${connectionRecord.id} does not have outOfBandId!`)
@@ -249,7 +249,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessageContext = new OutboundMessageContext(message, {
+      outboundMessageContext = new OutboundDidCommMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       })
@@ -260,7 +260,7 @@ export class ConnectionsApi {
       // Disable return routing as we don't want to receive a response for this message over the same channel
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
-      outboundMessageContext = new OutboundMessageContext(message, {
+      outboundMessageContext = new OutboundDidCommMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       })
@@ -299,7 +299,7 @@ export class ConnectionsApi {
     }
 
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection })
+      new OutboundDidCommMessageContext(message, { agentContext: this.agentContext, connection })
     )
 
     return message
@@ -317,7 +317,7 @@ export class ConnectionsApi {
    * @param options connectionId and optional target did and routing configuration
    * @returns object containing the new did
    */
-  public async rotate(options: { connectionId: string; toDid?: string; routing?: Routing }) {
+  public async rotate(options: { connectionId: string; toDid?: string; routing?: DidCommRouting }) {
     const { connectionId, toDid } = options
     const connection = await this.connectionService.getById(this.agentContext, connectionId)
 
@@ -336,7 +336,7 @@ export class ConnectionsApi {
       routing,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection,
     })
@@ -360,7 +360,7 @@ export class ConnectionsApi {
     // Create Hangup message and update did in connection record
     const message = await this.didRotateService.createHangup(this.agentContext, { connection })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionBeforeHangup,
     })
@@ -557,7 +557,7 @@ export class ConnectionsApi {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
   }
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(
       new ConnectionRequestHandler(
         this.connectionService,

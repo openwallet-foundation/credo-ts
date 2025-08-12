@@ -1,8 +1,8 @@
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 
 import { getAgentContext } from '../../../../../core/tests'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { Protocol } from '../../../models'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../../models'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
@@ -34,20 +34,20 @@ describe('ConnectionsModule', () => {
   })
 
   test('registers features on the feature registry', async () => {
-    const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    const featureRegistry = new DidCommFeatureRegistry()
+    const agentContext = getAgentContext({ registerInstances: [[DidCommFeatureRegistry, featureRegistry]] })
     await new ConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/connections/1.0',
         roles: [ConnectionRole.Invitee, ConnectionRole.Inviter],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/didexchange/1.1',
         roles: [DidExchangeRole.Requester, DidExchangeRole.Responder],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/did-rotate/1.0',
         roles: [DidRotateRole.RotatingParty, DidRotateRole.ObservingParty],
       }),

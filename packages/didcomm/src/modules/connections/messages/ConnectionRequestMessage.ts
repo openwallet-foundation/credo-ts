@@ -3,7 +3,7 @@ import type { DidDoc } from '../models'
 import { Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 import { Connection } from '../models'
 
@@ -20,7 +20,7 @@ export interface ConnectionRequestMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#1-connection-request
  */
-export class ConnectionRequestMessage extends AgentMessage {
+export class ConnectionRequestMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**

@@ -1,7 +1,7 @@
 import { Type } from 'class-transformer'
 import { IsArray, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface KeylistMessageOptions {
@@ -13,7 +13,7 @@ export interface KeylistMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist
  */
-export class KeylistMessage extends AgentMessage {
+export class KeylistMessage extends DidCommMessage {
   public constructor(options: KeylistMessageOptions) {
     super()
 

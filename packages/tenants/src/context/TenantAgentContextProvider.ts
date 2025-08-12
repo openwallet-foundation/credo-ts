@@ -1,5 +1,5 @@
 import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
-import type { EncryptedMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
+import type { EncryptedDidCommMessage, RoutingCreatedEvent } from '@credo-ts/didcomm'
 import type { TenantRecord } from '../repository'
 
 import {
@@ -145,7 +145,7 @@ export class TenantAgentContextProvider implements AgentContextProvider {
     await this.tenantSessionCoordinator.deleteAgentContext(agentContext)
   }
 
-  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedMessage): Kms.PublicJwk[] {
+  private getRecipientKeysFromEncryptedMessage(jwe: EncryptedDidCommMessage): Kms.PublicJwk[] {
     const jweProtected = JsonEncoder.fromBase64(jwe.protected)
     if (!Array.isArray(jweProtected.recipients)) return []
 

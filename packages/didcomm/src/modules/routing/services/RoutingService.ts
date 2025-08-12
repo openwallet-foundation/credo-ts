@@ -1,5 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { Routing } from '../../../models'
+import type { DidCommRouting } from '../../../models'
 import type { RoutingCreatedEvent } from '../RoutingEvents'
 
 import { EventEmitter, Kms, injectable } from '@credo-ts/core'
@@ -24,14 +24,14 @@ export class RoutingService {
   public async getRouting(
     agentContext: AgentContext,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
-  ): Promise<Routing> {
+  ): Promise<DidCommRouting> {
     const kms = agentContext.resolve(Kms.KeyManagementApi)
     const didcommConfig = agentContext.resolve(DidCommModuleConfig)
 
     // Create and store new key
     const recipientKey = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
 
-    let routing: Routing = {
+    let routing: DidCommRouting = {
       endpoints: didcommConfig.endpoints,
       routingKeys: [],
       recipientKey: Kms.PublicJwk.fromPublicJwk(recipientKey.publicJwk),

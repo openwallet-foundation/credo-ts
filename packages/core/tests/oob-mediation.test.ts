@@ -1,12 +1,12 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AgentMessageProcessedEvent } from '../../didcomm/src'
+import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
 
 import { Subject, filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-import { AgentEventTypes } from '../../didcomm/src'
+import { DidCommEventTypes } from '../../didcomm/src'
 import { ConnectionType, DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
   KeylistUpdateAction,
@@ -167,7 +167,7 @@ describe('out of band with mediation', () => {
     // Alice creates an invitation: the key is notified to her mediator
 
     const keyAddMessagePromise = firstValueFrom(
-      mediatorAgent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+      mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
         map((event) => event.payload.message as KeylistUpdateMessage),
         timeout(5000)
@@ -191,7 +191,7 @@ describe('out of band with mediation', () => {
     })
 
     const keyRemoveMessagePromise = firstValueFrom(
-      mediatorAgent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+      mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
         map((event) => event.payload.message as KeylistUpdateMessage),
         timeout(5000)

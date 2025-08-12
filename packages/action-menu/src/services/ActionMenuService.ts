@@ -1,5 +1,5 @@
 import type { AgentContext, Logger, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '@credo-ts/didcomm'
+import type { InboundDidCommMessageContext } from '@credo-ts/didcomm'
 import type { ActionMenuStateChangedEvent } from '../ActionMenuEvents'
 import type { ActionMenuProblemReportMessage } from '../messages'
 import type {
@@ -74,7 +74,7 @@ export class ActionMenuService {
     return { message: menuRequestMessage, record: actionMenuRecord }
   }
 
-  public async processRequest(messageContext: InboundMessageContext<MenuRequestMessage>) {
+  public async processRequest(messageContext: InboundDidCommMessageContext<MenuRequestMessage>) {
     const { message: menuRequestMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing menu request with id ${menuRequestMessage.id}`)
@@ -168,7 +168,7 @@ export class ActionMenuService {
     return { message: menuMessage, record: actionMenuRecord }
   }
 
-  public async processMenu(messageContext: InboundMessageContext<MenuMessage>) {
+  public async processMenu(messageContext: InboundDidCommMessageContext<MenuMessage>) {
     const { message: menuMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing action menu with id ${menuMessage.id}`)
@@ -250,7 +250,7 @@ export class ActionMenuService {
     return { message: menuMessage, record }
   }
 
-  public async processPerform(messageContext: InboundMessageContext<PerformMessage>) {
+  public async processPerform(messageContext: InboundDidCommMessageContext<PerformMessage>) {
     const { message: performMessage, agentContext } = messageContext
 
     this.logger.debug(`Processing action menu perform with id ${performMessage.id}`)
@@ -312,7 +312,7 @@ export class ActionMenuService {
   }
 
   public async processProblemReport(
-    messageContext: InboundMessageContext<ActionMenuProblemReportMessage>
+    messageContext: InboundDidCommMessageContext<ActionMenuProblemReportMessage>
   ): Promise<ActionMenuRecord> {
     const { message: actionMenuProblemReportMessage, agentContext } = messageContext
 

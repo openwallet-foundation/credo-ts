@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface HangupMessageOptions {
@@ -11,7 +11,7 @@ export interface HangupMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/tree/main/features/0794-did-rotate#hangup
  */
-export class HangupMessage extends AgentMessage {
+export class HangupMessage extends DidCommMessage {
   /**
    * Create new HangupMessage instance.
    * @param options

@@ -1,12 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  AgentMessage,
+  DidCommMessage,
   CredentialProtocol,
   CredentialProtocolOptions,
   ExtractCredentialFormats,
-  FeatureRegistry,
-  InboundMessageContext,
-  MessageHandlerRegistry,
+  DidCommFeatureRegistry,
+  InboundDidCommMessageContext,
+  DidCommMessageHandlerRegistry,
   ProblemReportMessage,
 } from '@credo-ts/didcomm'
 import type { LegacyIndyCredentialFormatService } from '../../../formats'
@@ -27,7 +27,7 @@ import {
   CredentialsModuleConfig,
   DidCommMessageRepository,
   DidCommMessageRole,
-  Protocol,
+  DidCommProtocol,
   isLinkedAttachment,
 } from '@credo-ts/didcomm'
 
@@ -80,7 +80,7 @@ export class V1CredentialProtocol
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
     // Register message handlers for the Issue Credential V1 Protocol
     messageHandlerRegistry.registerMessageHandlers([
       new V1ProposeCredentialHandler(this),
@@ -93,7 +93,7 @@ export class V1CredentialProtocol
 
     // Register Issue Credential V1 in feature registry, with supported roles
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/issue-credential/1.0',
         roles: ['holder', 'issuer'],
       })
@@ -116,7 +116,7 @@ export class V1CredentialProtocol
       comment,
       autoAcceptCredential,
     }: CredentialProtocolOptions.CreateCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
-  ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(credentialFormats)
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
@@ -188,7 +188,7 @@ export class V1CredentialProtocol
    *
    */
   public async processProposal(
-    messageContext: InboundMessageContext<V1ProposeCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V1ProposeCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
@@ -488,7 +488,7 @@ export class V1CredentialProtocol
    *
    */
   public async processOffer(
-    messageContext: InboundMessageContext<V1OfferCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V1OfferCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: offerMessage, connection, agentContext } = messageContext
 
@@ -658,7 +658,7 @@ export class V1CredentialProtocol
       autoAcceptCredential,
       comment,
     }: CredentialProtocolOptions.NegotiateCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
-  ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     credentialRecord.assertProtocolVersion('v1')
     credentialRecord.assertState(CredentialState.OfferReceived)
@@ -729,7 +729,7 @@ export class V1CredentialProtocol
   }
 
   public async processRequest(
-    messageContext: InboundMessageContext<V1RequestCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V1RequestCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: requestMessage, connection, agentContext } = messageContext
 
@@ -879,7 +879,7 @@ export class V1CredentialProtocol
    *
    */
   public async processCredential(
-    messageContext: InboundMessageContext<V1IssueCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V1IssueCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: issueMessage, connection, agentContext } = messageContext
 
@@ -985,7 +985,7 @@ export class V1CredentialProtocol
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<V1CredentialAckMessage>
+    messageContext: InboundDidCommMessageContext<V1CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: ackMessage, connection, agentContext } = messageContext
 

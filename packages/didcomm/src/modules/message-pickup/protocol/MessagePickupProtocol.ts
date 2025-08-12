@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -17,17 +17,17 @@ export interface MessagePickupProtocol {
   createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>>
+  ): Promise<PickupMessagesProtocolReturnType<DidCommMessage>>
 
   createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined>
+  ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined>
 
   setLiveDeliveryMode(
     agentContext: AgentContext,
     options: SetLiveDeliveryModeProtocolOptions
-  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>>
+  ): Promise<SetLiveDeliveryModeProtocolReturnType<DidCommMessage>>
 
-  register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
+  register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 }

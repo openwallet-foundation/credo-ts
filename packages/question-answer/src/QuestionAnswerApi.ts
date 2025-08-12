@@ -2,7 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { QuestionAnswerRecord } from './repository'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageHandlerRegistry, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
+import { ConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { ValidResponse } from './models'
@@ -11,13 +11,13 @@ import { QuestionAnswerService } from './services'
 @injectable()
 export class QuestionAnswerApi {
   private questionAnswerService: QuestionAnswerService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private connectionService: ConnectionService
   private agentContext: AgentContext
 
   public constructor(
     questionAnswerService: QuestionAnswerService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext
   ) {
@@ -27,7 +27,7 @@ export class QuestionAnswerApi {
     this.agentContext = agentContext
 
     this.agentContext.dependencyManager
-      .resolve(MessageHandlerRegistry)
+      .resolve(DidCommMessageHandlerRegistry)
       .registerMessageHandlers([
         new QuestionMessageHandler(this.questionAnswerService),
         new AnswerMessageHandler(this.questionAnswerService),
@@ -62,7 +62,7 @@ export class QuestionAnswerApi {
         detail: config?.detail,
       }
     )
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: questionMessage,
       associatedRecord: questionAnswerRecord,
       connectionRecord: connection,
@@ -91,7 +91,7 @@ export class QuestionAnswerApi {
 
     const connection = await this.connectionService.getById(this.agentContext, questionRecord.connectionId)
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: answerMessage,
       associatedRecord: questionAnswerRecord,
       connectionRecord: connection,

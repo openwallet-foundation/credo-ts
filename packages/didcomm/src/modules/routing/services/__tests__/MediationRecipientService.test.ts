@@ -1,13 +1,13 @@
 import type { AgentContext } from '../../../../../../core/src/agent'
-import type { Routing } from '../../../../models'
+import type { DidCommRouting } from '../../../../models'
 
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { DidRepository } from '../../../../../../core/src/modules/dids/repository/DidRepository'
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
-import { MessageSender } from '../../../../MessageSender'
-import { InboundMessageContext } from '../../../../models/InboundMessageContext'
+import { DidCommMessageSender } from '../../../../DidCommMessageSender'
+import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
 import { DidExchangeState } from '../../../connections'
 import { ConnectionMetadataKeys } from '../../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionRepository } from '../../../connections/repository/ConnectionRepository'
@@ -36,8 +36,8 @@ const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 jest.mock('../../../../../../core/src/agent/EventEmitter')
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 
-jest.mock('../../../../MessageSender')
-const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
+jest.mock('../../../../DidCommMessageSender')
+const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -52,7 +52,7 @@ describe('MediationRecipientService', () => {
   let eventEmitter: EventEmitter
   let connectionService: ConnectionService
   let connectionRepository: ConnectionRepository
-  let messageSender: MessageSender
+  let messageSender: DidCommMessageSender
   let mediationRecipientService: MediationRecipientService
   let mediationRecord: MediationRecord
   let agentContext: AgentContext
@@ -101,7 +101,7 @@ describe('MediationRecipientService', () => {
         state: DidExchangeState.Completed,
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -123,7 +123,7 @@ describe('MediationRecipientService', () => {
         state: DidExchangeState.Completed,
       })
 
-      const messageContext = new InboundMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -155,7 +155,7 @@ describe('MediationRecipientService', () => {
         keylist,
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdateResponse, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(keyListUpdateResponse, { connection, agentContext })
 
       expect(connection.metadata.get(ConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
 
@@ -184,7 +184,7 @@ describe('MediationRecipientService', () => {
     const recipientKey = Kms.PublicJwk.fromFingerprint(
       'z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'
     ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
-    const routing: Routing = {
+    const routing: DidCommRouting = {
       routingKeys: [routingKey],
       recipientKey,
       endpoints: [],

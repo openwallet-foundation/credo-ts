@@ -3,7 +3,7 @@ import type { AgentDependencies } from '@credo-ts/core'
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../AgentMessage'
+import { DidCommMessage } from '../DidCommMessage'
 import { ConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
@@ -107,7 +107,7 @@ export const oobInvitationFromShortUrl = async (response: Response): Promise<Out
 }
 
 export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(messageJson: Record<string, unknown>) {
-  const agentMessage = JsonTransformer.fromJSON(messageJson, AgentMessage)
+  const agentMessage = JsonTransformer.fromJSON(messageJson, DidCommMessage)
 
   // ~service is required for legacy connectionless invitations
   if (!agentMessage.service) {
@@ -124,7 +124,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
   })
 
   invitation.invitationType = InvitationType.Connectionless
-  invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, AgentMessage))
+  invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, DidCommMessage))
 
   return invitation
 }

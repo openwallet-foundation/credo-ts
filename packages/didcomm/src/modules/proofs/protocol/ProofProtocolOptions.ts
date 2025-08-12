@@ -1,4 +1,4 @@
-import type { AgentMessage } from '../../../AgentMessage'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { ConnectionRecord } from '../../connections'
 import type {
   ExtractProofFormats,
@@ -164,7 +164,7 @@ export interface CreateProofProblemReportOptions {
   description: string
 }
 
-export interface ProofProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface ProofProtocolMsgReturnType<MessageType extends DidCommMessage> {
   message: MessageType
   proofRecord: ProofExchangeRecord
 }

@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsArray, IsNotEmpty, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface MediationGrantMessageOptions {
@@ -17,7 +17,7 @@ export interface MediationGrantMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-grant
  */
-export class MediationGrantMessage extends AgentMessage {
+export class MediationGrantMessage extends DidCommMessage {
   public constructor(options: MediationGrantMessageOptions) {
     super()
 

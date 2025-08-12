@@ -1,6 +1,6 @@
 import type { Attachment } from '@credo-ts/didcomm'
 
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, Matches, ValidateNested } from 'class-validator'
 
@@ -31,7 +31,7 @@ export interface V1ProposeCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#propose-credential
  */
-export class V1ProposeCredentialMessage extends AgentMessage {
+export class V1ProposeCredentialMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   public constructor(options: V1ProposeCredentialMessageOptions) {

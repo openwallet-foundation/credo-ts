@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsInt } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface BatchPickupMessageOptions {
@@ -14,7 +14,7 @@ export interface BatchPickupMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch-pickup
  */
-export class V1BatchPickupMessage extends AgentMessage {
+export class V1BatchPickupMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   /**

@@ -1,6 +1,6 @@
 import { CredoError } from '@credo-ts/core'
 
-import { ProblemReportMessage } from '../../messages/problem-reports/ProblemReportMessage'
+import { ProblemReportMessage } from '../../messages/problem-reports/DidCommProblemReportMessage'
 
 export interface ProblemReportErrorOptions {
   problemCode: string

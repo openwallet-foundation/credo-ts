@@ -1,7 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { Protocol } from '../../models'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../models'
 
 import { OutOfBandApi } from './OutOfBandApi'
 import { OutOfBandService } from './OutOfBandService'
@@ -23,10 +23,10 @@ export class OutOfBandModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     // Features
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/out-of-band/1.1',
         roles: ['sender', 'receiver'],
       })

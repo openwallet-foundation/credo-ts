@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { DidRotateService } from '../services'
 
 import { DidRotateAckMessage } from '../messages'
 
-export class DidRotateAckHandler implements MessageHandler {
+export class DidRotateAckHandler implements DidCommMessageHandler {
   private didRotateService: DidRotateService
   public supportedMessages = [DidRotateAckMessage]
 
@@ -11,7 +11,7 @@ export class DidRotateAckHandler implements MessageHandler {
     this.didRotateService = didRotateService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<DidRotateAckHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<DidRotateAckHandler>) {
     await this.didRotateService.processRotateAck(inboundMessage)
 
     return undefined

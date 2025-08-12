@@ -1,5 +1,5 @@
 import type { DidResolverService } from '@credo-ts/core'
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import type { ConnectionService } from '../services'
@@ -7,12 +7,12 @@ import type { ConnectionService } from '../services'
 import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { ConnectionResponseMessage } from '../messages'
 import { DidExchangeRole } from '../models'
 
-export class ConnectionResponseHandler implements MessageHandler {
+export class ConnectionResponseHandler implements DidCommMessageHandler {
   private connectionService: ConnectionService
   private outOfBandService: OutOfBandService
   private didResolverService: DidResolverService
@@ -32,7 +32,7 @@ export class ConnectionResponseHandler implements MessageHandler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<ConnectionResponseHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<ConnectionResponseHandler>) {
     const { recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -94,7 +94,7 @@ export class ConnectionResponseHandler implements MessageHandler {
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
 
-      return new OutboundMessageContext(message, { agentContext: messageContext.agentContext, connection })
+      return new OutboundDidCommMessageContext(message, { agentContext: messageContext.agentContext, connection })
     }
   }
 }

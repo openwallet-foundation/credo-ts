@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
@@ -6,7 +6,7 @@ import { CredoError, tryParseDid } from '@credo-ts/core'
 import { DidExchangeCompleteMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
-export class DidExchangeCompleteHandler implements MessageHandler {
+export class DidExchangeCompleteHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   public supportedMessages = [DidExchangeCompleteMessage]
@@ -16,7 +16,7 @@ export class DidExchangeCompleteHandler implements MessageHandler {
     this.outOfBandService = outOfBandService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeCompleteHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidExchangeCompleteHandler>) {
     const { connection: connectionRecord } = messageContext
 
     if (!connectionRecord) {

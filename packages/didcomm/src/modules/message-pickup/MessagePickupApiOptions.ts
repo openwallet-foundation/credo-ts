@@ -1,5 +1,5 @@
-import type { EncryptedMessage } from '../../types'
-import type { QueuedMessage } from './../../transport/queue'
+import type { EncryptedDidCommMessage } from '../../types'
+import type { QueuedDidCommMessage } from './../../transport/queue'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 
 /**
@@ -10,7 +10,7 @@ export type MessagePickupProtocolVersionType<MPPs extends MessagePickupProtocol[
 export interface QueueMessageOptions {
   connectionId: string
   recipientDids: string[]
-  message: EncryptedMessage
+  message: EncryptedDidCommMessage
 }
 
 export interface DeliverMessagesFromQueueOptions {
@@ -21,7 +21,7 @@ export interface DeliverMessagesFromQueueOptions {
 
 export interface DeliverMessagesOptions {
   pickupSessionId: string
-  messages: QueuedMessage[]
+  messages: QueuedDidCommMessage[]
 }
 
 export interface PickupMessagesOptions<MPPs extends MessagePickupProtocol[] = MessagePickupProtocol[]> {

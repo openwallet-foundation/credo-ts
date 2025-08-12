@@ -1,4 +1,4 @@
-import type { Feature } from '../../models'
+import type { DidCommFeature } from '../../models'
 import type {
   DiscloseFeaturesOptions,
   DiscoverFeaturesServiceMap,
@@ -11,8 +11,8 @@ import { AgentContext, CredoError, EventEmitter, InjectionSymbols, inject, injec
 import { ReplaySubject, Subject, firstValueFrom, of } from 'rxjs'
 import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
 
-import { MessageSender } from '../../MessageSender'
-import { OutboundMessageContext } from '../../models'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../models'
 import { ConnectionService } from '../connections'
 
 import { DiscoverFeaturesEventTypes } from './DiscoverFeaturesEvents'
@@ -20,7 +20,7 @@ import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService, V2DiscoverFeaturesService } from './protocol'
 
 export interface QueryFeaturesReturnType {
-  features?: Feature[]
+  features?: DidCommFeature[]
 }
 
 export interface DiscoverFeaturesApi<DFSs extends DiscoverFeaturesService[]> {
@@ -39,7 +39,7 @@ export class DiscoverFeaturesApi<
   public readonly config: DiscoverFeaturesModuleConfig
 
   private connectionService: ConnectionService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private eventEmitter: EventEmitter
   private stop$: Subject<boolean>
   private agentContext: AgentContext
@@ -47,7 +47,7 @@ export class DiscoverFeaturesApi<
 
   public constructor(
     connectionService: ConnectionService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     v1Service: V1DiscoverFeaturesService,
     v2Service: V2DiscoverFeaturesService,
     eventEmitter: EventEmitter,
@@ -101,12 +101,12 @@ export class DiscoverFeaturesApi<
       comment: options.comment,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(queryMessage, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(queryMessage, {
       agentContext: this.agentContext,
       connection,
     })
 
-    const replaySubject = new ReplaySubject<Feature[]>(1)
+    const replaySubject = new ReplaySubject<DidCommFeature[]>(1)
     if (options.awaitDisclosures) {
       // Listen for response to our feature query
       this.eventEmitter
@@ -157,7 +157,7 @@ export class DiscoverFeaturesApi<
       threadId: options.threadId,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(disclosuresMessage, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(disclosuresMessage, {
       agentContext: this.agentContext,
       connection,
     })

@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { BasicMessageService } from '../services/BasicMessageService'
 
 import { BasicMessage } from '../messages'
 
-export class BasicMessageHandler implements MessageHandler {
+export class BasicMessageHandler implements DidCommMessageHandler {
   private basicMessageService: BasicMessageService
   public supportedMessages = [BasicMessage]
 
@@ -11,7 +11,7 @@ export class BasicMessageHandler implements MessageHandler {
     this.basicMessageService = basicMessageService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<BasicMessageHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<BasicMessageHandler>) {
     const connection = messageContext.assertReadyConnection()
     await this.basicMessageService.save(messageContext, connection)
 

@@ -14,8 +14,8 @@ import {
   waitForBasicMessage,
   waitForDidRotate,
 } from '../../../../../core/tests/helpers'
-import { MessageSender } from '../../../MessageSender'
-import { getOutboundMessageContext } from '../../../getOutboundMessageContext'
+import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../../getOutboundDidCommMessageContext'
 import { BasicMessage } from '../../basic-messages'
 import { DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
 import { ConnectionRecord } from '../repository'
@@ -108,7 +108,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new BasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -121,7 +121,7 @@ describe('Rotation E2E tests', () => {
       await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -210,7 +210,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new BasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -278,7 +278,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -293,7 +293,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new BasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -338,7 +338,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -366,7 +366,7 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundMessageContext(bobAgent.context, {
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new BasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
@@ -386,7 +386,7 @@ describe('Rotation E2E tests', () => {
       ).rejects.toThrowError()
 
       // If Bob sends a message afterwards, Alice should still be able to receive it
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message before hangup',
@@ -403,7 +403,7 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundMessageContext(bobAgent.context, {
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new BasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
@@ -421,7 +421,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // If Bob sends a message afterwards, Alice should not receive it since the connection has been deleted
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
       // An error is thrown by Alice agent and, after inspecting all basic messages, it cannot be found
       // TODO: Update as soon as agent sends error events upon reception of messages

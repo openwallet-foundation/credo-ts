@@ -1,6 +1,6 @@
 import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { InboundMessageContext, Routing } from '../../../models'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { InboundDidCommMessageContext, DidCommRouting } from '../../../models'
 import type { ConnectionRecord } from '../../connections/repository'
 import type { KeylistUpdatedEvent, MediationStateChangedEvent } from '../RoutingEvents'
 import type { MediationDenyMessage } from '../messages'
@@ -20,8 +20,8 @@ import { ReplaySubject, firstValueFrom } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { MessageSender } from '../../../MessageSender'
-import { OutboundMessageContext } from '../../../models'
+import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { ConnectionType } from '../../connections/models/ConnectionType'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services/ConnectionService'
@@ -42,11 +42,11 @@ export class MediationRecipientService {
   private mediationRepository: MediationRepository
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
 
   public constructor(
     connectionService: ConnectionService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     mediatorRepository: MediationRepository,
     eventEmitter: EventEmitter
   ) {
@@ -77,7 +77,7 @@ export class MediationRecipientService {
     return { mediationRecord, message }
   }
 
-  public async processMediationGrant(messageContext: InboundMessageContext<MediationGrantMessage>) {
+  public async processMediationGrant(messageContext: InboundDidCommMessageContext<MediationGrantMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -106,7 +106,7 @@ export class MediationRecipientService {
     return await this.updateState(messageContext.agentContext, mediationRecord, MediationState.Granted)
   }
 
-  public async processKeylistUpdateResults(messageContext: InboundMessageContext<KeylistUpdateResponseMessage>) {
+  public async processKeylistUpdateResults(messageContext: InboundDidCommMessageContext<KeylistUpdateResponseMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -199,7 +199,7 @@ export class MediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessageContext = new OutboundMessageContext(message, { agentContext, connection })
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, { agentContext, connection })
     await this.messageSender.sendMessage(outboundMessageContext)
 
     const keylistUpdate = await firstValueFrom(subject)
@@ -215,9 +215,9 @@ export class MediationRecipientService {
 
   public async addMediationRouting(
     agentContext: AgentContext,
-    routing: Routing,
+    routing: DidCommRouting,
     { mediatorId, useDefaultMediator = true }: GetRoutingOptions = {}
-  ): Promise<Routing> {
+  ): Promise<DidCommRouting> {
     let mediationRecord: MediationRecord | null = null
 
     if (mediatorId) {
@@ -271,7 +271,7 @@ export class MediationRecipientService {
     )
   }
 
-  public async processMediationDeny(messageContext: InboundMessageContext<MediationDenyMessage>) {
+  public async processMediationDeny(messageContext: InboundDidCommMessageContext<MediationDenyMessage>) {
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record already exists
@@ -402,7 +402,7 @@ export class MediationRecipientService {
   }
 }
 
-export interface MediationProtocolMsgReturnType<MessageType extends AgentMessage> {
+export interface MediationProtocolMsgReturnType<MessageType extends DidCommMessage> {
   message: MessageType
   mediationRecord: MediationRecord
 }

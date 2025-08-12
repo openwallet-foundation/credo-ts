@@ -1,9 +1,9 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { CredentialStateChangedEvent } from '../CredentialEvents'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
@@ -48,56 +48,56 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   public abstract createProposal(
     agentContext: AgentContext,
     options: CreateCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   public abstract processProposal(
-    messageContext: InboundMessageContext<AgentMessage>
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
   ): Promise<CredentialExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   public abstract negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for offer
   public abstract createOffer(
     agentContext: AgentContext,
     options: CreateCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  public abstract processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
+  public abstract processOffer(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   public abstract acceptOffer(
     agentContext: AgentContext,
     options: AcceptCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   public abstract negotiateOffer(
     agentContext: AgentContext,
     options: NegotiateCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for request
   public abstract createRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  public abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
+  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for issue
   public abstract processCredential(
-    messageContext: InboundMessageContext<AgentMessage>
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
   ): Promise<CredentialExchangeRecord>
   public abstract acceptCredential(
     agentContext: AgentContext,
     options: AcceptCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
 
   // methods for problem-report
   public abstract createProblemReport(
@@ -108,25 +108,25 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
   public abstract findProposalMessage(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<AgentMessage | null>
+  ): Promise<DidCommMessage | null>
   public abstract findOfferMessage(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<AgentMessage | null>
+  ): Promise<DidCommMessage | null>
   public abstract findRequestMessage(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<AgentMessage | null>
+  ): Promise<DidCommMessage | null>
   public abstract findCredentialMessage(
     agentContext: AgentContext,
     credentialExchangeId: string
-  ): Promise<AgentMessage | null>
+  ): Promise<DidCommMessage | null>
   public abstract getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
   ): Promise<GetCredentialFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
-  public abstract register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
+  public abstract register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 
   /**
    * Process a received credential {@link ProblemReportMessage}.
@@ -135,7 +135,7 @@ export abstract class BaseCredentialProtocol<CFs extends CredentialFormatService
    * @returns credential record associated with the credential problem report message
    */
   public async processProblemReport(
-    messageContext: InboundMessageContext<ProblemReportMessage>
+    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialProblemReportMessage, agentContext, connection } = messageContext
 

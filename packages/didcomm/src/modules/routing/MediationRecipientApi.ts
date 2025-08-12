@@ -1,4 +1,4 @@
-import type { OutboundWebSocketClosedEvent, OutboundWebSocketOpenedEvent } from '../../transport'
+import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
 import type { ConnectionRecord } from '../connections/repository'
 import type { MediationStateChangedEvent } from './RoutingEvents'
 import type { MediationRecord } from './repository'
@@ -21,10 +21,10 @@ import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from '
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { MessageSender } from '../../MessageSender'
-import { OutboundMessageContext } from '../../models'
-import { TransportEventTypes } from '../../transport'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommTransportEventTypes } from '../../transport'
 import { ConnectionMetadataKeys } from '../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../connections/services'
 import { DiscoverFeaturesApi } from '../discover-features'
@@ -51,7 +51,7 @@ export class MediationRecipientApi {
   private mediationRecipientService: MediationRecipientService
   private connectionService: ConnectionService
   private dids: DidsApi
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private eventEmitter: EventEmitter
   private logger: Logger
   private discoverFeaturesApi: DiscoverFeaturesApi
@@ -65,11 +65,11 @@ export class MediationRecipientApi {
   private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
     dids: DidsApi,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     eventEmitter: EventEmitter,
     discoverFeaturesApi: DiscoverFeaturesApi,
     messagePickupApi: MessagePickupApi,
@@ -96,7 +96,7 @@ export class MediationRecipientApi {
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
-  private async sendMessage(outboundMessageContext: OutboundMessageContext, pickupStrategy?: MediatorPickupStrategy) {
+  private async sendMessage(outboundMessageContext: OutboundDidCommMessageContext, pickupStrategy?: MediatorPickupStrategy) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === MediatorPickupStrategy.Implicit
@@ -138,7 +138,7 @@ export class MediationRecipientApi {
     }
 
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
+      new OutboundDidCommMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
       {
         transportPriority: {
           schemes: websocketSchemes,
@@ -168,7 +168,7 @@ export class MediationRecipientApi {
 
     // Reset back off interval when the websocket is successfully opened again
     this.eventEmitter
-      .observable<OutboundWebSocketOpenedEvent>(TransportEventTypes.OutboundWebSocketOpenedEvent)
+      .observable<DidCommOutboundWebSocketOpenedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketOpenedEvent)
       .pipe(
         // Stop when the agent shuts down or stop message pickup signal is received
         takeUntil(stopConditions$),
@@ -188,7 +188,7 @@ export class MediationRecipientApi {
     // - Agent is not shutdown
     // - Socket was for current mediator connection id
     this.eventEmitter
-      .observable<OutboundWebSocketClosedEvent>(TransportEventTypes.OutboundWebSocketClosedEvent)
+      .observable<DidCommOutboundWebSocketClosedEvent>(DidCommTransportEventTypes.DidCommOutboundWebSocketClosedEvent)
       .pipe(
         // Stop when the agent shuts down or stop message pickup signal is received
         takeUntil(stopConditions$),
@@ -363,7 +363,7 @@ export class MediationRecipientApi {
       this.agentContext,
       connection
     )
-    const outboundMessage = new OutboundMessageContext(message, {
+    const outboundMessage = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connection,
     })
@@ -389,7 +389,7 @@ export class MediationRecipientApi {
       }),
     ])
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection,
     })
@@ -448,7 +448,7 @@ export class MediationRecipientApi {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connection,
       associatedRecord: mediationRecord,
@@ -488,7 +488,7 @@ export class MediationRecipientApi {
   }
 
   // Register handlers for the several messages for the mediator.
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))

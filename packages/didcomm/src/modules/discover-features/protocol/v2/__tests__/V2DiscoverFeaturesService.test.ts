@@ -9,25 +9,25 @@ import { Subject } from 'rxjs'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
-import { FeatureRegistry } from '../../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
-import { GoalCode, InboundMessageContext, Protocol } from '../../../../../models'
+import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
+import { DidCommGoalCode, InboundDidCommMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidExchangeState } from '../../../../connections'
 import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleConfig'
 import { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 import { V2DisclosuresMessage, V2QueriesMessage } from '../messages'
 
-jest.mock('../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
+jest.mock('../../../../../DidCommMessageHandlerRegistry')
+const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
-const featureRegistry = new FeatureRegistry()
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/connections/1.0' }))
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/notification/1.0', roles: ['role-1', 'role-2'] }))
-featureRegistry.register(new Protocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
-featureRegistry.register(new GoalCode({ id: 'aries.vc.1' }))
-featureRegistry.register(new GoalCode({ id: 'aries.vc.2' }))
-featureRegistry.register(new GoalCode({ id: 'caries.vc.3' }))
+const featureRegistry = new DidCommFeatureRegistry()
+featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
+featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/notification/1.0', roles: ['role-1', 'role-2'] }))
+featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.1' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.2' }))
+featureRegistry.register(new DidCommGoalCode({ id: 'caries.vc.3' }))
 
 jest.mock('../../../../../../../core/src/logger')
 const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
@@ -46,8 +46,8 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
     it('should return all items when query is *', async () => {
       const queryMessage = new V2QueriesMessage({
         queries: [
-          { featureType: Protocol.type, match: '*' },
-          { featureType: GoalCode.type, match: '*' },
+          { featureType: DidCommProtocol.type, match: '*' },
+          { featureType: DidCommGoalCode.type, match: '*' },
         ],
       })
 
@@ -168,7 +168,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
       const queryMessage = new V2QueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(queryMessage, {
+      const messageContext = new InboundDidCommMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })
@@ -209,12 +209,12 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
       )
 
       const discloseMessage = new V2DisclosuresMessage({
-        features: [new Protocol({ id: 'prot1', roles: ['role1', 'role2'] }), new Protocol({ id: 'prot2' })],
+        features: [new DidCommProtocol({ id: 'prot1', roles: ['role1', 'role2'] }), new DidCommProtocol({ id: 'prot2' })],
         threadId: '1234',
       })
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(discloseMessage, {
+      const messageContext = new InboundDidCommMessageContext(discloseMessage, {
         agentContext: getAgentContext(),
         connection,
       })
@@ -263,7 +263,7 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
       const queryMessage = new V2QueriesMessage({ queries: [{ featureType: 'protocol', match: '*' }] })
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(queryMessage, {
+      const messageContext = new InboundDidCommMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })

@@ -1,14 +1,14 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
-import type { InboundMessageContext } from '../../../../../models'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { InboundDidCommMessageContext } from '../../../../../models'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { CredoError } from '@credo-ts/core'
 
-import { getOutboundMessageContext } from '../../../../../getOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getOutboundDidCommMessageContext'
 import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
 
-export class V2IssueCredentialHandler implements MessageHandler {
+export class V2IssueCredentialHandler implements DidCommMessageHandler {
   private credentialProtocol: V2CredentialProtocol
   public supportedMessages = [V2IssueCredentialMessage]
 
@@ -16,7 +16,7 @@ export class V2IssueCredentialHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: InboundMessageContext<V2IssueCredentialMessage>) {
+  public async handle(messageContext: InboundDidCommMessageContext<V2IssueCredentialMessage>) {
     const credentialRecord = await this.credentialProtocol.processCredential(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToCredential(messageContext.agentContext, {
@@ -31,7 +31,7 @@ export class V2IssueCredentialHandler implements MessageHandler {
 
   private async acceptCredential(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2IssueCredentialHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V2IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
     const { message } = await this.credentialProtocol.acceptCredential(messageContext.agentContext, {
@@ -46,7 +46,7 @@ export class V2IssueCredentialHandler implements MessageHandler {
       throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
     }
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialRecord,

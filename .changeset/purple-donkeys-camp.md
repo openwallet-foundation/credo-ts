@@ -36,7 +36,7 @@ Previously:
            autoAcceptConnections: true,
         })
       })
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+    this.agent.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
 
 ```
@@ -61,6 +61,6 @@ Now:
            autoAcceptConnections: true,
         })
       })
-    agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-    agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+    agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
+    agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
 ```

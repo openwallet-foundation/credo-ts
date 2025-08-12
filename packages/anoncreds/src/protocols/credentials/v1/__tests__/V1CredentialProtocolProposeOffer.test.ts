@@ -9,7 +9,7 @@ import {
   CredentialFormatSpec,
   CredentialState,
   DidExchangeState,
-  InboundMessageContext,
+  InboundDidCommMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -342,7 +342,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
       credentialPreview: credentialPreview,
       offerAttachments: [offerAttachment],
     })
-    const messageContext = new InboundMessageContext(credentialOfferMessage, {
+    const messageContext = new InboundDidCommMessageContext(credentialOfferMessage, {
       agentContext,
       connection: connectionRecord,
     })

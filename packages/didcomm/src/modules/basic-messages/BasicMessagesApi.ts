@@ -3,9 +3,9 @@ import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
 
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { MessageSender } from '../../MessageSender'
-import { OutboundMessageContext } from '../../models'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../models'
 import { ConnectionService } from '../connections/services'
 
 import { BasicMessageHandler } from './handlers'
@@ -14,14 +14,14 @@ import { BasicMessageService } from './services'
 @injectable()
 export class BasicMessagesApi {
   private basicMessageService: BasicMessageService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private connectionService: ConnectionService
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     basicMessageService: BasicMessageService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext
   ) {
@@ -50,7 +50,7 @@ export class BasicMessagesApi {
       connection,
       parentThreadId
     )
-    const outboundMessageContext = new OutboundMessageContext(basicMessage, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(basicMessage, {
       agentContext: this.agentContext,
       connection,
       associatedRecord: basicMessageRecord,
@@ -105,7 +105,7 @@ export class BasicMessagesApi {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
   }
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }

@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
-import type { AgentMessage } from '../../didcomm/src/AgentMessage'
-import type { AgentMessageReceivedEvent } from '../../didcomm/src/Events'
+import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
+import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
 
 import { Subject } from 'rxjs'
 
@@ -12,7 +12,7 @@ import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
 } from '../../anoncreds/tests/preCreatedAnonCredsDefinition'
-import { AgentEventTypes } from '../../didcomm/src/Events'
+import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
 import { DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
   AutoAcceptCredential,
@@ -168,7 +168,7 @@ describe('out of band', () => {
       await expect(
         faberAgent.modules.oob.createInvitation({
           label: 'test-connection',
-          messages: [{} as AgentMessage],
+          messages: [{} as DidCommMessage],
           multiUseInvitation: true,
         })
       ).rejects.toEqual(new CredoError("Attribute 'multiUseInvitation' can not be 'true' when 'messages' is defined."))
@@ -441,7 +441,7 @@ describe('out of band', () => {
 
     test('do not process requests when a connection is not ready', async () => {
       const eventListener = jest.fn()
-      aliceAgent.events.on<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
+      aliceAgent.events.on<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, eventListener)
 
       const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
       const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
@@ -455,7 +455,7 @@ describe('out of band', () => {
       // Event should not be emitted because an agent must wait until the connection is ready
       expect(eventListener).toHaveBeenCalledTimes(0)
 
-      aliceAgent.events.off<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived, eventListener)
+      aliceAgent.events.off<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, eventListener)
     })
 
     test('make a connection based on OOB invitation and process requests after the acceptation', async () => {

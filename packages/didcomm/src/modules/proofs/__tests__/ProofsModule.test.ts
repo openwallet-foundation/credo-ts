@@ -2,8 +2,8 @@ import type { DependencyManager } from '../../../../../core'
 import type { ProofProtocol } from '../protocol/ProofProtocol'
 
 import { getAgentContext } from '../../../../../core/tests'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { ProofsModule } from '../ProofsModule'
 import { ProofsModuleConfig } from '../ProofsModuleConfig'
 import { V2ProofProtocol } from '../protocol/v2/V2ProofProtocol'
@@ -47,12 +47,12 @@ describe('ProofsModule', () => {
 
     expect(proofsModule.config.proofProtocols).toEqual([proofProtocol])
 
-    const featureRegistry = new FeatureRegistry()
-    const messageHandlerRegistry = new MessageHandlerRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
+    const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
     const agentContext = getAgentContext({
       registerInstances: [
-        [MessageHandlerRegistry, messageHandlerRegistry],
-        [FeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, messageHandlerRegistry],
+        [DidCommFeatureRegistry, featureRegistry],
       ],
     })
     await proofsModule.initialize(agentContext)

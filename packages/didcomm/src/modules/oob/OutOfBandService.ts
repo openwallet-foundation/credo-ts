@@ -1,5 +1,5 @@
 import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '../../models'
+import type { InboundDidCommMessageContext } from '../../models'
 import type { ConnectionRecord, HandshakeProtocol } from '../connections'
 import type { OutOfBandDidCommService } from './domain'
 import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/OutOfBandEvents'
@@ -84,7 +84,7 @@ export class OutOfBandService {
     return outOfBandRecord
   }
 
-  public async processHandshakeReuse(messageContext: InboundMessageContext<HandshakeReuseMessage>) {
+  public async processHandshakeReuse(messageContext: InboundDidCommMessageContext<HandshakeReuseMessage>) {
     const reuseMessage = messageContext.message
     const parentThreadId = reuseMessage.thread?.parentThreadId
 
@@ -129,7 +129,7 @@ export class OutOfBandService {
     return reuseAcceptedMessage
   }
 
-  public async processHandshakeReuseAccepted(messageContext: InboundMessageContext<HandshakeReuseAcceptedMessage>) {
+  public async processHandshakeReuseAccepted(messageContext: InboundDidCommMessageContext<HandshakeReuseAcceptedMessage>) {
     const reuseAcceptedMessage = messageContext.message
     const parentThreadId = reuseAcceptedMessage.thread?.parentThreadId
 

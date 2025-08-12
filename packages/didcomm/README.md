@@ -41,12 +41,12 @@ In order for this module to work, we have to inject it into the agent to access 
 ```ts
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 
-import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
+import { agentDependencies, HttpInboundDidCommTransport } from '@credo-ts/node'
 import {
   ConnectionsModule,
   ProofsModule,
   CredentialsModule,
-  HttpOutboundTransport,
+  HttpDidCommOutboundTransport,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 
@@ -72,8 +72,8 @@ const agent = new Agent({
 })
 
 // Register inbound and outbound transports for DIDComm
-agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
+agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
 
 await agent.initialize()
 

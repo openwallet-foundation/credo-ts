@@ -2,8 +2,8 @@ import { CredoError } from '@credo-ts/core'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { MediationRecipientModuleConfigOptions } from './MediationRecipientModuleConfig'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { Protocol } from '../../models'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../models'
 
 import { ConnectionsApi } from '../connections'
 import { OutOfBandApi } from '../oob'
@@ -37,10 +37,10 @@ export class MediationRecipientModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/coordinate-mediation/1.0',
         roles: [MediationRole.Recipient],
       })

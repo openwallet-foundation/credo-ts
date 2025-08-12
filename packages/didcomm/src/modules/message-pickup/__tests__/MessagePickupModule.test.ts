@@ -2,8 +2,8 @@ import type { DependencyManager } from '../../../../../core/src/plugins'
 import type { MessagePickupProtocol } from '../protocol/MessagePickupProtocol'
 
 import { getAgentContext } from '../../../../../core/tests'
-import { MessageHandlerRegistry } from '../../..//MessageHandlerRegistry'
-import { FeatureRegistry } from '../../../FeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { MessagePickupModule } from '../MessagePickupModule'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
 import { MessagePickupSessionService } from '../services'
@@ -43,14 +43,14 @@ describe('MessagePickupModule', () => {
       start: jest.fn(),
     } as unknown as MessagePickupSessionService
 
-    const messageHandlerRegistry = new MessageHandlerRegistry()
-    const featureRegistry = new FeatureRegistry()
+    const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
 
     const agentContext = getAgentContext({
       registerInstances: [
         [MessagePickupSessionService, messagePickupSessionSessionService],
-        [MessageHandlerRegistry, messageHandlerRegistry],
-        [FeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, messageHandlerRegistry],
+        [DidCommFeatureRegistry, featureRegistry],
       ],
     })
     await messagePickupModule.initialize(agentContext)

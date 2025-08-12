@@ -1,11 +1,11 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { MediatorModuleConfig } from '../MediatorModuleConfig'
 import type { MediatorService } from '../services/MediatorService'
 
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
-export class MediationRequestHandler implements MessageHandler {
+export class MediationRequestHandler implements DidCommMessageHandler {
   private mediatorService: MediatorService
   private mediatorModuleConfig: MediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
@@ -15,7 +15,7 @@ export class MediationRequestHandler implements MessageHandler {
     this.mediatorModuleConfig = mediatorModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<MediationRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<MediationRequestHandler>) {
     const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)
@@ -25,7 +25,7 @@ export class MediationRequestHandler implements MessageHandler {
         messageContext.agentContext,
         mediationRecord
       )
-      return new OutboundMessageContext(message, {
+      return new OutboundDidCommMessageContext(message, {
         agentContext: messageContext.agentContext,
         connection,
         associatedRecord: mediationRecord,

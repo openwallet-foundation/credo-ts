@@ -2,9 +2,9 @@ import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional 
 import type { CredentialsModuleConfigOptions } from './CredentialsModuleConfig'
 import type { CredentialProtocol } from './protocol/CredentialProtocol'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { Protocol } from '../../models'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
@@ -55,15 +55,15 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/revocation_notification/1.0',
         roles: ['holder'],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/revocation_notification/2.0',
         roles: ['holder'],
       })

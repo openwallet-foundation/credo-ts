@@ -1,4 +1,4 @@
-import type { InboundMessageContext } from '../../../../models'
+import type { InboundDidCommMessageContext } from '../../../../models'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
@@ -11,8 +11,8 @@ import type {
 
 import { EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
-import { FeatureRegistry } from '../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
+import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig'
 import { DiscoverFeaturesService } from '../../services'
@@ -23,9 +23,9 @@ import { V2DisclosuresMessage, V2QueriesMessage } from './messages'
 @injectable()
 export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
-    featureRegistry: FeatureRegistry,
+    featureRegistry: DidCommFeatureRegistry,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
   ) {
@@ -38,7 +38,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v2'
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new V2DisclosuresMessageHandler(this))
     messageHandlerRegistry.registerMessageHandler(new V2QueriesMessageHandler(this))
   }
@@ -52,7 +52,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async processQuery(
-    messageContext: InboundMessageContext<V2QueriesMessage>
+    messageContext: InboundDidCommMessageContext<V2QueriesMessage>
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<V2DisclosuresMessage> | undefined> {
     const { queries, threadId } = messageContext.message
 
@@ -92,7 +92,7 @@ export class V2DiscoverFeaturesService extends DiscoverFeaturesService {
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: InboundMessageContext<V2DisclosuresMessage>): Promise<void> {
+  public async processDisclosure(messageContext: InboundDidCommMessageContext<V2DisclosuresMessage>): Promise<void> {
     const { disclosures, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

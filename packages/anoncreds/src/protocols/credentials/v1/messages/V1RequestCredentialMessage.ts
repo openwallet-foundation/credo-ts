@@ -1,6 +1,6 @@
 import type { LegacyIndyCredentialRequest } from '../../../../formats'
 
-import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -13,7 +13,7 @@ export interface V1RequestCredentialMessageOptions {
   attachments?: Attachment[]
 }
 
-export class V1RequestCredentialMessage extends AgentMessage {
+export class V1RequestCredentialMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   public constructor(options: V1RequestCredentialMessageOptions) {

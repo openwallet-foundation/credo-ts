@@ -1,28 +1,28 @@
-import type { MessageHandler, MessageHandlerMiddleware } from './handlers'
-import type { InboundTransport, OutboundTransport } from './transport'
+import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
+import type { InboundDidCommTransport, OutboundDidCommTransport } from './transport'
 
 import { injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { FeatureRegistry } from './FeatureRegistry'
-import { MessageHandlerRegistry } from './MessageHandlerRegistry'
-import { MessageReceiver } from './MessageReceiver'
-import { MessageSender } from './MessageSender'
+import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
+import { DidCommMessageReceiver } from './DidCommMessageReceiver'
+import { DidCommMessageSender } from './DidCommMessageSender'
 
 @injectable()
 export class DidCommApi {
   public config: DidCommModuleConfig
 
-  private featureRegistry: FeatureRegistry
-  private messageSender: MessageSender
-  private messageReceiver: MessageReceiver
-  private messageHandlerRegistry: MessageHandlerRegistry
+  private featureRegistry: DidCommFeatureRegistry
+  private messageSender: DidCommMessageSender
+  private messageReceiver: DidCommMessageReceiver
+  private messageHandlerRegistry: DidCommMessageHandlerRegistry
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
-    messageSender: MessageSender,
-    messageReceiver: MessageReceiver,
-    featureRegistry: FeatureRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    messageSender: DidCommMessageSender,
+    messageReceiver: DidCommMessageReceiver,
+    featureRegistry: DidCommFeatureRegistry,
     config: DidCommModuleConfig
   ) {
     this.messageReceiver = messageReceiver
@@ -32,11 +32,11 @@ export class DidCommApi {
     this.messageHandlerRegistry = messageHandlerRegistry
   }
 
-  public registerInboundTransport(inboundTransport: InboundTransport) {
+  public registerInboundTransport(inboundTransport: InboundDidCommTransport) {
     this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
-  public async unregisterInboundTransport(inboundTransport: InboundTransport) {
+  public async unregisterInboundTransport(inboundTransport: InboundDidCommTransport) {
     await this.messageReceiver.unregisterInboundTransport(inboundTransport)
   }
 
@@ -44,11 +44,11 @@ export class DidCommApi {
     return this.messageReceiver.inboundTransports
   }
 
-  public registerOutboundTransport(outboundTransport: OutboundTransport) {
+  public registerOutboundTransport(outboundTransport: OutboundDidCommTransport) {
     this.messageSender.registerOutboundTransport(outboundTransport)
   }
 
-  public async unregisterOutboundTransport(outboundTransport: OutboundTransport) {
+  public async unregisterOutboundTransport(outboundTransport: OutboundDidCommTransport) {
     await this.messageSender.unregisterOutboundTransport(outboundTransport)
   }
 
@@ -59,13 +59,13 @@ export class DidCommApi {
   /**
    * Agent's feature registry
    */
-  public registerMessageHandlers(messageHandlers: MessageHandler[]) {
+  public registerMessageHandlers(messageHandlers: DidCommMessageHandler[]) {
     for (const messageHandler of messageHandlers) {
       this.messageHandlerRegistry.registerMessageHandler(messageHandler)
     }
   }
 
-  public registerMessageHandlerMiddleware(messageHandlerMiddleware: MessageHandlerMiddleware) {
+  public registerMessageHandlerMiddleware(messageHandlerMiddleware: DidCommMessageHandlerMiddleware) {
     this.messageHandlerRegistry.registerMessageHandlerMiddleware(messageHandlerMiddleware)
   }
 
@@ -81,7 +81,7 @@ export class DidCommApi {
    * Sets the fallback message handler, the message handler that will be called if no handler
    * is registered for an incoming message type.
    */
-  public setFallbackMessageHandler(fallbackMessageHandler: MessageHandler['handle']) {
+  public setFallbackMessageHandler(fallbackMessageHandler: DidCommMessageHandler['handle']) {
     this.messageHandlerRegistry.setFallbackMessageHandler(fallbackMessageHandler)
   }
   public get features() {

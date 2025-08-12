@@ -1,11 +1,11 @@
-import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 
-import { OutboundMessageContext } from '@credo-ts/didcomm'
+import { OutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { V1ProposePresentationMessage } from '../messages'
 
-export class V1ProposePresentationHandler implements MessageHandler {
+export class V1ProposePresentationHandler implements DidCommMessageHandler {
   private proofProtocol: V1ProofProtocol
   public supportedMessages = [V1ProposePresentationMessage]
 
@@ -13,7 +13,7 @@ export class V1ProposePresentationHandler implements MessageHandler {
     this.proofProtocol = proofProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1ProposePresentationHandler>) {
     const proofRecord = await this.proofProtocol.processProposal(messageContext)
 
     const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
@@ -28,7 +28,7 @@ export class V1ProposePresentationHandler implements MessageHandler {
 
   private async acceptProposal(
     proofRecord: ProofExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V1ProposePresentationHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
 
@@ -41,7 +41,7 @@ export class V1ProposePresentationHandler implements MessageHandler {
       proofRecord,
     })
 
-    return new OutboundMessageContext(message, {
+    return new OutboundDidCommMessageContext(message, {
       agentContext: messageContext.agentContext,
       connection: messageContext.connection,
       associatedRecord: proofRecord,

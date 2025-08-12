@@ -1,5 +1,5 @@
 import type { DidRepository } from '@credo-ts/core'
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { RoutingService } from '../../routing/services/RoutingService'
 import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
@@ -7,13 +7,13 @@ import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
 
-import { TransportService } from '../../../TransportService'
-import { OutboundMessageContext } from '../../../models'
+import { DidCommTransportService } from '../../../DidCommTransportService'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
 import { HandshakeProtocol } from '../models'
 
-export class DidExchangeRequestHandler implements MessageHandler {
+export class DidExchangeRequestHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
@@ -35,7 +35,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidExchangeRequestHandler>) {
     const { agentContext, recipientKey, senderKey, message, connection, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -79,7 +79,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
-      const transportService = agentContext.dependencyManager.resolve(TransportService)
+      const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
       transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
@@ -105,7 +105,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
         outOfBandRecord,
         routing
       )
-      return new OutboundMessageContext(message, {
+      return new OutboundDidCommMessageContext(message, {
         agentContext,
         connection: connectionRecord,
         outOfBand: outOfBandRecord,

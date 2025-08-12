@@ -25,9 +25,9 @@ import type { CredentialExchangeRecord } from './repository/CredentialExchangeRe
 
 import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
-import { AgentMessage } from '../../AgentMessage'
-import { MessageSender } from '../../MessageSender'
-import { getOutboundMessageContext } from '../../getOutboundMessageContext'
+import { DidCommMessage } from '../../DidCommMessage'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
 import { DidCommMessageRepository } from '../../repository/DidCommMessageRepository'
 import { ConnectionService } from '../connections'
 import { RoutingService } from '../routing/services/RoutingService'
@@ -64,7 +64,7 @@ export interface CredentialsApi<CPs extends CredentialProtocol[]> {
 
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
-    message: AgentMessage
+    message: DidCommMessage
     credentialRecord: CredentialExchangeRecord
   }>
 
@@ -98,7 +98,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   public readonly config: CredentialsModuleConfig<CPs>
 
   private connectionService: ConnectionService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private credentialRepository: CredentialRepository
   private agentContext: AgentContext
   private didCommMessageRepository: DidCommMessageRepository
@@ -107,7 +107,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
   private logger: Logger
 
   public constructor(
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext,
     @inject(InjectionSymbols.Logger) logger: Logger,
@@ -164,7 +164,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialRecord,
       connectionRecord,
@@ -209,7 +209,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
 
     // send the message
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialRecord,
       connectionRecord,
@@ -249,7 +249,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
 
     const connectionRecord = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialRecord,
       connectionRecord,
@@ -282,7 +282,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialRecord,
       connectionRecord,
@@ -325,7 +325,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialRecord,
@@ -381,7 +381,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialRecord,
       connectionRecord,
@@ -398,7 +398,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
    * @returns The credential record and credential offer message
    */
   public async createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
-    message: AgentMessage
+    message: DidCommMessage
     credentialRecord: CredentialExchangeRecord
   }> {
     const protocol = this.getProtocol(options.protocolVersion)
@@ -455,7 +455,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
     })
     this.logger.debug('We have a credential message (sending outbound): ', message)
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialRecord,
@@ -502,7 +502,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       credentialRecord,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialRecord,
@@ -547,7 +547,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       : undefined
     connectionRecord?.assertReady()
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialRecord,
@@ -587,7 +587,7 @@ export class CredentialsApi<CPs extends CredentialProtocol[]> implements Credent
       }
     }
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
       associatedRecord: credentialRecord,

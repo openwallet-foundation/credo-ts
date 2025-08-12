@@ -2,8 +2,8 @@ import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional 
 import type { MessagePickupModuleConfigOptions } from './MessagePickupModuleConfig'
 import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 
 import { MessagePickupApi } from './MessagePickupApi'
 import { MessagePickupModuleConfig } from './MessagePickupModuleConfig'
@@ -49,8 +49,8 @@ export class MessagePickupModule<MessagePickupProtocols extends MessagePickupPro
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     // Protocol needs to register feature registry items and handlers
-    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     for (const protocol of this.config.protocols) {
       protocol.register(messageHandlerRegistry, featureRegistry)

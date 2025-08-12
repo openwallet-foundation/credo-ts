@@ -1,12 +1,12 @@
-import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { CredoError } from '@credo-ts/core'
-import { getOutboundMessageContext } from '@credo-ts/didcomm'
+import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { V1PresentationMessage } from '../messages'
 
-export class V1PresentationHandler implements MessageHandler {
+export class V1PresentationHandler implements DidCommMessageHandler {
   private proofProtocol: V1ProofProtocol
   public supportedMessages = [V1PresentationMessage]
 
@@ -14,7 +14,7 @@ export class V1PresentationHandler implements MessageHandler {
     this.proofProtocol = proofProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1PresentationHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1PresentationHandler>) {
     const proofRecord = await this.proofProtocol.processPresentation(messageContext)
 
     const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToPresentation(messageContext.agentContext, {
@@ -29,7 +29,7 @@ export class V1PresentationHandler implements MessageHandler {
 
   private async acceptPresentation(
     proofRecord: ProofExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V1PresentationHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V1PresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
 
@@ -42,7 +42,7 @@ export class V1PresentationHandler implements MessageHandler {
       proofRecord,
     })
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       message,
       lastReceivedMessage: messageContext.message,
       lastSentMessage: requestMessage,

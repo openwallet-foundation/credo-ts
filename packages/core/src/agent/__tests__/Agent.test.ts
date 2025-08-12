@@ -8,11 +8,11 @@ import {
   BasicMessageService,
   ConnectionService,
   DidRotateService,
-  Dispatcher,
-  EnvelopeService,
-  FeatureRegistry,
-  MessageReceiver,
-  MessageSender,
+  DidCommDispatcher,
+  DidCommEnvelopeService,
+  DidCommFeatureRegistry,
+  DidCommMessageReceiver,
+  DidCommMessageSender,
   TrustPingService,
 } from '../../../../didcomm/src'
 import { BasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/BasicMessagesApi'
@@ -142,10 +142,10 @@ describe('Agent', () => {
       expect(container.resolve(InjectionSymbols.Logger)).toBe(agentOptions.config.logger)
 
       // Agent
-      expect(container.resolve(MessageSender)).toBeInstanceOf(MessageSender)
-      expect(container.resolve(MessageReceiver)).toBeInstanceOf(MessageReceiver)
-      expect(container.resolve(Dispatcher)).toBeInstanceOf(Dispatcher)
-      expect(container.resolve(EnvelopeService)).toBeInstanceOf(EnvelopeService)
+      expect(container.resolve(DidCommMessageSender)).toBeInstanceOf(DidCommMessageSender)
+      expect(container.resolve(DidCommMessageReceiver)).toBeInstanceOf(DidCommMessageReceiver)
+      expect(container.resolve(DidCommDispatcher)).toBeInstanceOf(DidCommDispatcher)
+      expect(container.resolve(DidCommEnvelopeService)).toBeInstanceOf(DidCommEnvelopeService)
     })
 
     it('should return the same instance for consequent resolves', () => {
@@ -183,18 +183,18 @@ describe('Agent', () => {
       )
 
       // Agent
-      expect(container.resolve(MessageSender)).toBe(container.resolve(MessageSender))
-      expect(container.resolve(MessageReceiver)).toBe(container.resolve(MessageReceiver))
-      expect(container.resolve(Dispatcher)).toBe(container.resolve(Dispatcher))
-      expect(container.resolve(FeatureRegistry)).toBe(container.resolve(FeatureRegistry))
-      expect(container.resolve(EnvelopeService)).toBe(container.resolve(EnvelopeService))
+      expect(container.resolve(DidCommMessageSender)).toBe(container.resolve(DidCommMessageSender))
+      expect(container.resolve(DidCommMessageReceiver)).toBe(container.resolve(DidCommMessageReceiver))
+      expect(container.resolve(DidCommDispatcher)).toBe(container.resolve(DidCommDispatcher))
+      expect(container.resolve(DidCommFeatureRegistry)).toBe(container.resolve(DidCommFeatureRegistry))
+      expect(container.resolve(DidCommEnvelopeService)).toBe(container.resolve(DidCommEnvelopeService))
     })
   })
 
   it('all core features are properly registered', async () => {
     const agent = new Agent(agentOptions)
     await agent.initialize() // Initialization is needed to properly register DIDComm features
-    const registry = agent.dependencyManager.resolve(FeatureRegistry)
+    const registry = agent.dependencyManager.resolve(DidCommFeatureRegistry)
 
     const protocols = registry.query({ featureType: 'protocol', match: '*' }).map((p) => p.id)
 

@@ -1,10 +1,10 @@
-import type { MessageHandler } from '../../../handlers'
-import type { InboundMessageContext } from '../../../models'
+import type { DidCommMessageHandler } from '../../../handlers'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { OutOfBandService } from '../OutOfBandService'
 
 import { HandshakeReuseAcceptedMessage } from '../messages/HandshakeReuseAcceptedMessage'
 
-export class HandshakeReuseAcceptedHandler implements MessageHandler {
+export class HandshakeReuseAcceptedHandler implements DidCommMessageHandler {
   public supportedMessages = [HandshakeReuseAcceptedMessage]
   private outOfBandService: OutOfBandService
 
@@ -12,7 +12,7 @@ export class HandshakeReuseAcceptedHandler implements MessageHandler {
     this.outOfBandService = outOfBandService
   }
 
-  public async handle(messageContext: InboundMessageContext<HandshakeReuseAcceptedMessage>) {
+  public async handle(messageContext: InboundDidCommMessageContext<HandshakeReuseAcceptedMessage>) {
     messageContext.assertReadyConnection()
 
     await this.outOfBandService.processHandshakeReuseAccepted(messageContext)

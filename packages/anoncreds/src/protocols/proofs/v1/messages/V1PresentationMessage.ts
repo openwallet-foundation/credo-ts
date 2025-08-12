@@ -1,6 +1,6 @@
 import type { AnonCredsProof } from '../../../../models'
 
-import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -19,7 +19,7 @@ export interface V1PresentationMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#presentation
  */
-export class V1PresentationMessage extends AgentMessage {
+export class V1PresentationMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
   public constructor(options: V1PresentationMessageOptions) {
     super()

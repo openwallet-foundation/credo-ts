@@ -15,7 +15,7 @@ import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinit
 import { randomUUID } from 'crypto'
 import { Agent, CacheModule, CredoError, DidsModule, InMemoryLruCache, TypedArrayEncoder } from '@credo-ts/core'
 import {
-  AgentEventTypes,
+  DidCommEventTypes,
   AutoAcceptCredential,
   CredentialEventTypes,
   CredentialState,
@@ -369,7 +369,7 @@ export async function setupAnonCredsTests<
     [
       CredentialEventTypes.CredentialStateChanged,
       ProofEventTypes.ProofStateChanged,
-      AgentEventTypes.AgentMessageProcessed,
+      DidCommEventTypes.DidCommMessageProcessed,
     ]
   )
 

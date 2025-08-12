@@ -1,5 +1,5 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
-import type { Routing } from '../../models'
+import type { DidCommRouting } from '../../models'
 import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionRecord } from './repository'
 
@@ -31,7 +31,7 @@ import {
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
-import { InboundMessageContext } from '../../models'
+import { InboundDidCommMessageContext } from '../../models'
 import { ParsedMessageType } from '../../util/messageType'
 import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
 import { OutOfBandState } from '../oob/domain/OutOfBandState'
@@ -55,7 +55,7 @@ interface DidExchangeRequestParams {
   alias?: string
   goal?: string
   goalCode?: string
-  routing?: Routing
+  routing?: DidCommRouting
   autoAcceptConnection?: boolean
   ourDid?: string
 }
@@ -182,7 +182,7 @@ export class DidExchangeProtocol {
   }
 
   public async processRequest(
-    messageContext: InboundMessageContext<DidExchangeRequestMessage>,
+    messageContext: InboundDidCommMessageContext<DidExchangeRequestMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${messageContext.message.type} start`, {
@@ -263,7 +263,7 @@ export class DidExchangeProtocol {
     agentContext: AgentContext,
     connectionRecord: ConnectionRecord,
     outOfBandRecord: OutOfBandRecord,
-    routing?: Routing
+    routing?: DidCommRouting
   ): Promise<DidExchangeResponseMessage> {
     this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} start`, connectionRecord)
     DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
@@ -345,7 +345,7 @@ export class DidExchangeProtocol {
   }
 
   public async processResponse(
-    messageContext: InboundMessageContext<DidExchangeResponseMessage>,
+    messageContext: InboundDidCommMessageContext<DidExchangeResponseMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} start`, {
@@ -440,7 +440,7 @@ export class DidExchangeProtocol {
   }
 
   public async processComplete(
-    messageContext: InboundMessageContext<DidExchangeCompleteMessage>,
+    messageContext: InboundDidCommMessageContext<DidExchangeCompleteMessage>,
     outOfBandRecord: OutOfBandRecord
   ): Promise<ConnectionRecord> {
     this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, {

@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { RevocationNotificationService } from '../services'
 
 import { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 
-export class V1RevocationNotificationHandler implements MessageHandler {
+export class V1RevocationNotificationHandler implements DidCommMessageHandler {
   private revocationService: RevocationNotificationService
   public supportedMessages = [V1RevocationNotificationMessage]
 
@@ -11,7 +11,7 @@ export class V1RevocationNotificationHandler implements MessageHandler {
     this.revocationService = revocationService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1RevocationNotificationHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1RevocationNotificationHandler>) {
     await this.revocationService.v1ProcessRevocationNotification(messageContext)
 
     return undefined

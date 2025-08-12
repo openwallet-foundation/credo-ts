@@ -2,13 +2,13 @@ import { utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { MessageIdRegExp } from '../../../../../BaseMessage'
-import { EncryptedMessage } from '../../../../../types'
+import { EncryptedDidCommMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export class BatchMessageMessage {
-  public constructor(options: { id?: string; message: EncryptedMessage }) {
+  public constructor(options: { id?: string; message: EncryptedDidCommMessage }) {
     if (options) {
       this.id = options.id || utils.uuid()
       this.message = options.message
@@ -19,7 +19,7 @@ export class BatchMessageMessage {
   public id!: string
 
   @IsObject()
-  public message!: EncryptedMessage
+  public message!: EncryptedDidCommMessage
 }
 
 export interface BatchMessageOptions {
@@ -33,7 +33,7 @@ export interface BatchMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0212-pickup/README.md#batch
  */
-export class V1BatchMessage extends AgentMessage {
+export class V1BatchMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: BatchMessageOptions) {

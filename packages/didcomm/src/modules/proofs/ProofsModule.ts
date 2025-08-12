@@ -2,8 +2,8 @@ import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional 
 import type { ProofsModuleConfigOptions } from './ProofsModuleConfig'
 import type { ProofProtocol } from './protocol/ProofProtocol'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 
 import { ProofsApi } from './ProofsApi'
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -47,8 +47,8 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
     for (const proofProtocol of this.config.proofProtocols) {
       proofProtocol.register(messageHandlerRegistry, featureRegistry)
     }

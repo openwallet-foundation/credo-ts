@@ -1,5 +1,5 @@
 import { AgentContext, DidDocumentKey, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
-import type { Routing } from '../../../models'
+import type { DidCommRouting } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
 
 import {
@@ -133,7 +133,7 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   })
 }
 
-export function routingToServices(routing: Routing): ResolvedDidCommService[] {
+export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,

@@ -1,18 +1,18 @@
 import type { DidResolverService } from '@credo-ts/core'
 import type { ConnectionsModuleConfig, DidExchangeProtocol } from '..'
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { OutOfBandService } from '../../oob/OutOfBandService'
 import type { ConnectionService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
 
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { OutOfBandState } from '../../oob/domain/OutOfBandState'
 import { DidExchangeResponseMessage } from '../messages'
 import { DidExchangeRole, HandshakeProtocol } from '../models'
 
-export class DidExchangeResponseHandler implements MessageHandler {
+export class DidExchangeResponseHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
   private outOfBandService: OutOfBandService
   private connectionService: ConnectionService
@@ -34,7 +34,7 @@ export class DidExchangeResponseHandler implements MessageHandler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeResponseHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidExchangeResponseHandler>) {
     const { agentContext, recipientKey, senderKey, message } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -108,7 +108,7 @@ export class DidExchangeResponseHandler implements MessageHandler {
       // This has led to long timeouts as not all clients actually close an http socket if there is no response message
       message.setReturnRouting(ReturnRouteTypes.none)
 
-      return new OutboundMessageContext(message, { agentContext, connection })
+      return new OutboundDidCommMessageContext(message, { agentContext, connection })
     }
   }
 }

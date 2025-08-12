@@ -1,6 +1,6 @@
 import type { Observable } from 'rxjs'
 import type {
-  AgentMessageProcessedEvent,
+  DidCommMessageProcessedEvent,
   BasicMessage,
   BasicMessageStateChangedEvent,
   ConnectionDidRotatedEvent,
@@ -35,7 +35,7 @@ import path from 'path'
 import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import {
-  AgentEventTypes,
+  DidCommEventTypes,
   BasicMessageEventTypes,
   ConnectionEventTypes,
   ConnectionRecord,
@@ -263,8 +263,8 @@ const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
   e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
-const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
-  e.type === AgentEventTypes.AgentMessageProcessed
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is DidCommMessageProcessedEvent =>
+  e.type === DidCommEventTypes.DidCommMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -399,7 +399,7 @@ export async function waitForAgentMessageProcessedEvent(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+  const observable = agent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
 
   return waitForAgentMessageProcessedEventSubject(observable, options)
 }
@@ -425,7 +425,7 @@ export function waitForAgentMessageProcessedEventSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `AgentMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
+          `DidCommMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
   threadId: ${threadId}, messageType: ${messageType}
 }`
         )

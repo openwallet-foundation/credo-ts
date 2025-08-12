@@ -1,8 +1,8 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import type { MediatorModuleConfigOptions } from './MediatorModuleConfig'
 
-import { FeatureRegistry } from '../../FeatureRegistry'
-import { Protocol } from '../../models'
+import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../models'
 
 import { MediatorApi } from './MediatorApi'
 import { MediatorModuleConfig } from './MediatorModuleConfig'
@@ -34,10 +34,10 @@ export class MediatorModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/coordinate-mediation/1.0',
         roles: [MediationRole.Mediator],
       })

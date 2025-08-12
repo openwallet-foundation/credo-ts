@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { BasicMessageStateChangedEvent } from '../BasicMessageEvents'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
@@ -51,7 +51,7 @@ export class BasicMessageService {
   /**
    * @todo use connection from message context
    */
-  public async save({ message, agentContext }: InboundMessageContext<BasicMessage>, connection: ConnectionRecord) {
+  public async save({ message, agentContext }: InboundDidCommMessageContext<BasicMessage>, connection: ConnectionRecord) {
     const basicMessageRecord = new BasicMessageRecord({
       sentTime: message.sentTime.toISOString(),
       content: message.content,

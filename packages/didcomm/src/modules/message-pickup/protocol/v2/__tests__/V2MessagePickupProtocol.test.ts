@@ -1,4 +1,4 @@
-import type { EncryptedMessage } from '../../../../../types'
+import type { EncryptedDidCommMessage } from '../../../../../types'
 
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../../../core/src/error'
@@ -6,10 +6,10 @@ import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpe
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
-import { AgentEventTypes } from '../../../../../Events'
-import { MessageSender } from '../../../../../MessageSender'
+import { DidCommEventTypes } from '../../../../../DidCommEvents'
+import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
-import { InboundMessageContext } from '../../../../../models'
+import { InboundDidCommMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
 import { ConnectionService, DidExchangeState, TrustPingMessage } from '../../../../connections'
 import { MessagePickupModuleConfig } from '../../../MessagePickupModuleConfig'
@@ -30,13 +30,13 @@ const mockConnection = getMockConnection({
 // Mock classes
 jest.mock('../../../../../transport/queue/InMemoryQueueTransportRepository')
 jest.mock('../../../../../../../core/src/agent/EventEmitter')
-jest.mock('../../../../../MessageSender')
+jest.mock('../../../../../DidCommMessageSender')
 jest.mock('../../../../connections/services/ConnectionService')
 
 // Mock typed object
 const InMessageRepositoryMock = InMemoryQueueTransportRepository as jest.Mock<InMemoryQueueTransportRepository>
 const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const MessageSenderMock = MessageSender as jest.Mock<MessageSender>
+const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
 
 const queueTransportRepository = new InMessageRepositoryMock()
@@ -53,14 +53,14 @@ const connectionService = new ConnectionServiceMock()
 const agentContext = getAgentContext({
   registerInstances: [
     [EventEmitter, eventEmitter],
-    [MessageSender, messageSender],
+    [DidCommMessageSender, messageSender],
     [ConnectionService, connectionService],
     [DidCommModuleConfig, didCommModuleConfig],
     [MessagePickupModuleConfig, messagePickupModuleConfig],
   ],
 })
 
-const encryptedMessage: EncryptedMessage = {
+const encryptedMessage: EncryptedDidCommMessage = {
   protected: 'base64url',
   iv: 'base64url',
   ciphertext: 'base64url',
@@ -85,7 +85,7 @@ describe('V2MessagePickupProtocol', () => {
 
       const statusRequest = new V2StatusRequestMessage({})
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processStatusRequest(messageContext)
 
@@ -106,7 +106,7 @@ describe('V2MessagePickupProtocol', () => {
       mockFunction(queueTransportRepository.getAvailableMessageCount).mockResolvedValue(5)
       const statusRequest = new V2StatusRequestMessage({})
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processStatusRequest(messageContext)
 
@@ -130,7 +130,7 @@ describe('V2MessagePickupProtocol', () => {
         recipientKey: '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ',
       })
 
-      const messageContext = new InboundMessageContext(statusRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(statusRequest, { connection: mockConnection, agentContext })
 
       await pickupProtocol.processStatusRequest(messageContext)
       expect(queueTransportRepository.getAvailableMessageCount).toHaveBeenCalledWith(agentContext, {
@@ -145,7 +145,7 @@ describe('V2MessagePickupProtocol', () => {
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 10 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
@@ -168,7 +168,7 @@ describe('V2MessagePickupProtocol', () => {
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 10 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
@@ -199,7 +199,7 @@ describe('V2MessagePickupProtocol', () => {
 
       const deliveryRequest = new V2DeliveryRequestMessage({ limit: 2 })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processDeliveryRequest(messageContext)
 
@@ -233,7 +233,7 @@ describe('V2MessagePickupProtocol', () => {
         recipientKey: 'recipientKey',
       })
 
-      const messageContext = new InboundMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(deliveryRequest, { connection: mockConnection, agentContext })
 
       await pickupProtocol.processDeliveryRequest(messageContext)
 
@@ -254,7 +254,7 @@ describe('V2MessagePickupProtocol', () => {
         messageIdList: ['1', '2'],
       })
 
-      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processMessagesReceived(messageContext)
 
@@ -283,7 +283,7 @@ describe('V2MessagePickupProtocol', () => {
         messageIdList: ['1', '2'],
       })
 
-      const messageContext = new InboundMessageContext(messagesReceived, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(messagesReceived, { connection: mockConnection, agentContext })
 
       const { connection, message } = await pickupProtocol.processMessagesReceived(messageContext)
 
@@ -332,7 +332,7 @@ describe('V2MessagePickupProtocol', () => {
         connectionRecord: mockConnection,
       })
 
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(status, { connection: mockConnection, agentContext })
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage).toBeNull()
     })
@@ -342,7 +342,7 @@ describe('V2MessagePickupProtocol', () => {
         threadId: uuid(),
         messageCount: 1,
       })
-      const messageContext = new InboundMessageContext(status, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(status, { connection: mockConnection, agentContext })
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage)
@@ -352,7 +352,7 @@ describe('V2MessagePickupProtocol', () => {
 
   describe('processDelivery', () => {
     it('if the delivery has no attachments expect an error', async () => {
-      const messageContext = new InboundMessageContext({} as V2MessageDeliveryMessage, {
+      const messageContext = new InboundDidCommMessageContext({} as V2MessageDeliveryMessage, {
         connection: mockConnection,
         agentContext,
       })
@@ -376,7 +376,7 @@ describe('V2MessagePickupProtocol', () => {
           }),
         ],
       })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+      const messageContext = new InboundDidCommMessageContext(messageDeliveryMessage, {
         connection: mockConnection,
         agentContext,
       })
@@ -416,7 +416,7 @@ describe('V2MessagePickupProtocol', () => {
           }),
         ],
       })
-      const messageContext = new InboundMessageContext(messageDeliveryMessage, {
+      const messageContext = new InboundDidCommMessageContext(messageDeliveryMessage, {
         connection: mockConnection,
         agentContext,
       })
@@ -425,14 +425,14 @@ describe('V2MessagePickupProtocol', () => {
 
       expect(eventEmitter.emit).toHaveBeenCalledTimes(2)
       expect(eventEmitter.emit).toHaveBeenNthCalledWith(1, agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
+        type: DidCommEventTypes.DidCommMessageReceived,
         payload: {
           message: { first: 'value' },
           contextCorrelationId: agentContext.contextCorrelationId,
         },
       })
       expect(eventEmitter.emit).toHaveBeenNthCalledWith(2, agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
+        type: DidCommEventTypes.DidCommMessageReceived,
         payload: {
           message: { second: 'value' },
           contextCorrelationId: agentContext.contextCorrelationId,

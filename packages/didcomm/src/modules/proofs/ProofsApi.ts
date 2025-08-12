@@ -26,9 +26,9 @@ import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
-import { AgentMessage } from '../../AgentMessage'
-import { MessageSender } from '../../MessageSender'
-import { getOutboundMessageContext } from '../../getOutboundMessageContext'
+import { DidCommMessage } from '../../DidCommMessage'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
 import { ConnectionService } from '../connections'
 
 import { ProofsModuleConfig } from './ProofsModuleConfig'
@@ -52,7 +52,7 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
 
   // out of band
   createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
-    message: AgentMessage
+    message: DidCommMessage
     proofRecord: ProofExchangeRecord
   }>
 
@@ -92,12 +92,12 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
   public readonly config: ProofsModuleConfig<PPs>
 
   private connectionService: ConnectionService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private proofRepository: ProofRepository
   private agentContext: AgentContext
 
   public constructor(
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     connectionService: ConnectionService,
     agentContext: AgentContext,
     proofRepository: ProofRepository,
@@ -145,7 +145,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       parentThreadId: options.parentThreadId,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -189,7 +189,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     })
 
     // send the message
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -232,7 +232,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -267,7 +267,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -310,7 +310,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -370,7 +370,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       comment: options.comment,
     })
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -388,7 +388,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @returns the message itself and the proof record associated with the sent request message
    */
   public async createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
-    message: AgentMessage
+    message: DidCommMessage
     proofRecord: ProofExchangeRecord
   }> {
     const protocol = this.getProtocol(options.protocolVersion)
@@ -437,7 +437,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     })
 
     // FIXME: returnRoute: false
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -522,7 +522,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       }
     }
 
-    const outboundMessageContext = await getOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
       associatedRecord: proofRecord,

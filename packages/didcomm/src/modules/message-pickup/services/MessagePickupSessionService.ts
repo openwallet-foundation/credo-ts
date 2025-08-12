@@ -6,7 +6,7 @@ import type { MessagePickupSession, MessagePickupSessionRole } from '../MessageP
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
 import { type Subject, takeUntil } from 'rxjs'
 
-import { TransportEventTypes } from '../../../transport'
+import { DidCommTransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'
 
 /**
@@ -30,7 +30,7 @@ export class MessagePickupSessionService {
     this.sessions = []
 
     eventEmitter
-      .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
+      .observable<TransportSessionRemovedEvent>(DidCommTransportEventTypes.DidCommTransportSessionRemoved)
       .pipe(takeUntil(stop$))
       .subscribe({
         next: (e) => {

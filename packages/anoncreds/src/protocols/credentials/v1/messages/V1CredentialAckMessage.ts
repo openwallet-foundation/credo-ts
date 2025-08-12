@@ -1,13 +1,13 @@
 import type { AckMessageOptions } from '@credo-ts/didcomm'
 
-import { AckMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { AckDidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 
 export type V1CredentialAckMessageOptions = AckMessageOptions
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
-export class V1CredentialAckMessage extends AckMessage {
+export class V1CredentialAckMessage extends AckDidCommMessage {
   public readonly allowDidSovPrefix = true
 
   @IsValidMessageType(V1CredentialAckMessage.type)

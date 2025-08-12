@@ -1,8 +1,8 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { AgentMessage } from '../../AgentMessage'
+import type { DidCommMessage } from '../../DidCommMessage'
 import type { Attachment } from '../../decorators/attachment/Attachment'
-import type { Routing } from '../../models'
-import type { PlaintextMessage } from '../../types'
+import type { DidCommRouting } from '../../models'
+import type { PlaintextDidCommMessage } from '../../types'
 import type { HandshakeReusedEvent } from './domain/OutOfBandEvents'
 
 import {
@@ -22,11 +22,11 @@ import {
 import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
-import { AgentEventTypes, type AgentMessageReceivedEvent } from '../../Events'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { MessageSender } from '../../MessageSender'
+import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
-import { OutboundMessageContext } from '../../models'
+import { OutboundDidCommMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import {
   parseDidCommProtocolUri,
@@ -63,10 +63,10 @@ export interface CreateOutOfBandInvitationConfig {
   goal?: string
   handshake?: boolean
   handshakeProtocols?: HandshakeProtocol[]
-  messages?: AgentMessage[]
+  messages?: DidCommMessage[]
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
-  routing?: Routing
+  routing?: DidCommRouting
   appendedAttachments?: Attachment[]
 
   /**
@@ -81,7 +81,7 @@ export interface CreateLegacyInvitationConfig {
   imageUrl?: string
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
-  routing?: Routing
+  routing?: DidCommRouting
 }
 
 interface BaseReceiveOutOfBandInvitationConfig {
@@ -91,7 +91,7 @@ interface BaseReceiveOutOfBandInvitationConfig {
   autoAcceptInvitation?: boolean
   autoAcceptConnection?: boolean
   reuseConnection?: boolean
-  routing?: Routing
+  routing?: DidCommRouting
   acceptInvitationTimeoutMs?: number
   isImplicit?: boolean
   ourDid?: string
@@ -110,20 +110,20 @@ export class OutOfBandApi {
   private outOfBandService: OutOfBandService
   private routingService: RoutingService
   private connectionsApi: ConnectionsApi
-  private messageHandlerRegistry: MessageHandlerRegistry
+  private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private didCommDocumentService: DidCommDocumentService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private eventEmitter: EventEmitter
   private agentContext: AgentContext
   private logger: Logger
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     didCommDocumentService: DidCommDocumentService,
     outOfBandService: OutOfBandService,
     routingService: RoutingService,
     connectionsApi: ConnectionsApi,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
     agentContext: AgentContext
@@ -291,7 +291,7 @@ export class OutOfBandApi {
     return { outOfBandRecord, invitation: convertToOldInvitation(outOfBandRecord.outOfBandInvitation) }
   }
 
-  public async createLegacyConnectionlessInvitation<Message extends AgentMessage>(config: {
+  public async createLegacyConnectionlessInvitation<Message extends DidCommMessage>(config: {
     /**
      * @deprecated this value is not used anymore, as the legacy connection-less exchange is now
      * integrated with the out of band protocol. The value is kept to not break the API, but will
@@ -300,7 +300,7 @@ export class OutOfBandApi {
     recordId?: string
     message: Message
     domain: string
-    routing?: Routing
+    routing?: DidCommRouting
   }): Promise<{ message: Message; invitationUrl: string; outOfBandRecord: OutOfBandRecord }> {
     const outOfBandRecord = await this.createInvitation({
       messages: [config.message],
@@ -534,7 +534,7 @@ export class OutOfBandApi {
        *
        * If a connection is reused, the routing WILL NOT be used.
        */
-      routing?: Routing
+      routing?: DidCommRouting
       timeoutMs?: number
       ourDid?: string
     }
@@ -845,7 +845,7 @@ export class OutOfBandApi {
   private async emitWithConnection(
     outOfBandRecord: OutOfBandRecord,
     connectionRecord: ConnectionRecord,
-    messages: PlaintextMessage[]
+    messages: PlaintextDidCommMessage[]
   ) {
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
@@ -862,8 +862,8 @@ export class OutOfBandApi {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
-    this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
-      type: AgentEventTypes.AgentMessageReceived,
+    this.eventEmitter.emit<DidCommMessageReceivedEvent>(this.agentContext, {
+      type: DidCommEventTypes.DidCommMessageReceived,
       payload: {
         message: plaintextMessage,
         connection: connectionRecord,
@@ -875,7 +875,7 @@ export class OutOfBandApi {
   private async emitWithServices(
     outOfBandRecord: OutOfBandRecord,
     services: Array<OutOfBandDidCommService | string>,
-    messages: PlaintextMessage[]
+    messages: PlaintextDidCommMessage[]
   ) {
     if (!services || services.length === 0) {
       throw new CredoError('There are no services. We can not emit messages')
@@ -896,8 +896,8 @@ export class OutOfBandApi {
 
     this.logger.debug(`Message with type ${plaintextMessage['@type']} can be processed.`)
 
-    this.eventEmitter.emit<AgentMessageReceivedEvent>(this.agentContext, {
-      type: AgentEventTypes.AgentMessageReceived,
+    this.eventEmitter.emit<DidCommMessageReceivedEvent>(this.agentContext, {
+      type: DidCommEventTypes.DidCommMessageReceived,
       payload: {
         message: plaintextMessage,
         contextCorrelationId: this.agentContext.contextCorrelationId,
@@ -905,7 +905,7 @@ export class OutOfBandApi {
     })
   }
 
-  private ensureParentThreadId(outOfBandRecord: OutOfBandRecord, plaintextMessage: PlaintextMessage) {
+  private ensureParentThreadId(outOfBandRecord: OutOfBandRecord, plaintextMessage: PlaintextDidCommMessage) {
     const legacyInvitationMetadata = outOfBandRecord.metadata.get(OutOfBandRecordMetadataKeys.LegacyInvitation)
 
     // We need to set the parent thread id to the invitation id, according to RFC 0434.
@@ -963,7 +963,7 @@ export class OutOfBandApi {
       )
     )
 
-    const outboundMessageContext = new OutboundMessageContext(reuseMessage, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(reuseMessage, {
       agentContext: this.agentContext,
       connection: connectionRecord,
     })
@@ -1003,7 +1003,7 @@ export class OutOfBandApi {
   }
 
   // TODO: we should probably move these to the out of band module and register the handler there
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
     messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
   }

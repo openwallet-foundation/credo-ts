@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { V1CredentialAckMessage } from '../messages'
 
-export class V1CredentialAckHandler implements MessageHandler {
+export class V1CredentialAckHandler implements DidCommMessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1CredentialAckMessage]
 
@@ -11,7 +11,7 @@ export class V1CredentialAckHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1CredentialAckHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1CredentialAckHandler>) {
     await this.credentialProtocol.processAck(messageContext)
 
     return undefined

@@ -1,10 +1,10 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { MediatorService } from '../services/MediatorService'
 
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { KeylistUpdateMessage } from '../messages'
 
-export class KeylistUpdateHandler implements MessageHandler {
+export class KeylistUpdateHandler implements DidCommMessageHandler {
   private mediatorService: MediatorService
   public supportedMessages = [KeylistUpdateMessage]
 
@@ -12,11 +12,11 @@ export class KeylistUpdateHandler implements MessageHandler {
     this.mediatorService = mediatorService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<KeylistUpdateHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<KeylistUpdateHandler>) {
     const connection = messageContext.assertReadyConnection()
 
     const response = await this.mediatorService.processKeylistUpdateRequest(messageContext)
-    return new OutboundMessageContext(response, {
+    return new OutboundDidCommMessageContext(response, {
       agentContext: messageContext.agentContext,
       connection,
     })

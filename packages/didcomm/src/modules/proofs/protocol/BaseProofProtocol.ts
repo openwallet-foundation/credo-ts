@@ -1,9 +1,9 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { ProofStateChangedEvent } from '../ProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
 import type { ProofRole } from '../models'
@@ -40,37 +40,37 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 {
   public abstract readonly version: string
 
-  public abstract register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
+  public abstract register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 
   // methods for proposal
   public abstract createProposal(
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
-  public abstract processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
+  public abstract processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
   public abstract negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateProofProposalOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for request
   public abstract createRequest(
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
-  public abstract processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
+  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
   public abstract negotiateRequest(
     agentContext: AgentContext,
     options: NegotiateProofRequestOptions<PFs>
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // retrieving credentials for request
   public abstract getCredentialsForRequest(
@@ -83,33 +83,33 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  public abstract processPresentation(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
+  public abstract processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
   public abstract acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
-  ): Promise<ProofProtocolMsgReturnType<AgentMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<ProofExchangeRecord>
+  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
   // method for problem report
   public abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
   ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
 
-  public abstract findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<AgentMessage | null>
-  public abstract findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<AgentMessage | null>
+  public abstract findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
+  public abstract findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
   public abstract findPresentationMessage(
     agentContext: AgentContext,
     proofExchangeId: string
-  ): Promise<AgentMessage | null>
+  ): Promise<DidCommMessage | null>
   public abstract getFormatData(
     agentContext: AgentContext,
     proofExchangeId: string
   ): Promise<GetProofFormatDataReturn<ExtractProofFormats<PFs>>>
 
   public async processProblemReport(
-    messageContext: InboundMessageContext<ProblemReportMessage>
+    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: proofProblemReportMessage, agentContext, connection } = messageContext
 

@@ -13,9 +13,9 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Dispatcher } from '../../../../../Dispatcher'
+import { DidCommDispatcher } from '../../../../../DidCommDispatcher'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { InboundMessageContext } from '../../../../../models'
+import { InboundDidCommMessageContext } from '../../../../../models'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { ConnectionService, DidExchangeState } from '../../../../connections'
 import { RoutingService } from '../../../../routing/services/RoutingService'
@@ -86,14 +86,14 @@ jest.mock('../../../repository/CredentialRepository')
 jest.mock('../../../../../repository/DidCommMessageRepository')
 jest.mock('../../../../routing/services/RoutingService')
 jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../Dispatcher')
+jest.mock('../../../../../DidCommDispatcher')
 
 // Mock typed object
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
 const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+const DispatcherMock = DidCommDispatcher as jest.Mock<DidCommDispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
@@ -109,7 +109,7 @@ const agentContext = getAgentContext({
     [CredentialRepository, credentialRepository],
     [DidCommMessageRepository, didCommMessageRepository],
     [RoutingService, routingService],
-    [Dispatcher, dispatcher],
+    [DidCommDispatcher, dispatcher],
     [ConnectionService, connectionService],
     [EventEmitter, eventEmitter],
   ],
@@ -222,7 +222,7 @@ describe('V2CredentialProtocolOffer', () => {
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundMessageContext(credentialOfferMessage, {
+    const messageContext = new InboundDidCommMessageContext(credentialOfferMessage, {
       agentContext,
       connection: connectionRecord,
     })

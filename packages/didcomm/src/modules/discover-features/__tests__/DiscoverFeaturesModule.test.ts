@@ -1,8 +1,8 @@
 import type { DependencyManager } from '../../../../../core'
 
 import { getAgentContext } from '../../../../../core/tests'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { Protocol } from '../../../models'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommProtocol } from '../../../models'
 import { DiscoverFeaturesModule } from '../DiscoverFeaturesModule'
 import { V1DiscoverFeaturesService } from '../protocol/v1'
 import { V2DiscoverFeaturesService } from '../protocol/v2'
@@ -23,16 +23,16 @@ describe('DiscoverFeaturesModule', () => {
   })
 
   test('registers features on the feature registry', async () => {
-    const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    const featureRegistry = new DidCommFeatureRegistry()
+    const agentContext = getAgentContext({ registerInstances: [[DidCommFeatureRegistry, featureRegistry]] })
     await new DiscoverFeaturesModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/discover-features/1.0',
         roles: ['requester', 'responder'],
       }),
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/discover-features/2.0',
         roles: ['requester', 'responder'],
       }),

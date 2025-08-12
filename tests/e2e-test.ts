@@ -1,4 +1,4 @@
-import type { AgentMessageProcessedEvent, AgentMessageSentEvent } from '@credo-ts/didcomm'
+import type { DidCommMessageProcessedEvent, DidCommMessageSentEvent } from '@credo-ts/didcomm'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
 import { filter, firstValueFrom, map } from 'rxjs'
@@ -12,7 +12,7 @@ import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
-  AgentEventTypes,
+  DidCommEventTypes,
   CredentialEventTypes,
   CredentialState,
   MediationState,
@@ -39,8 +39,8 @@ export async function e2eTest({
     [
       CredentialEventTypes.CredentialStateChanged,
       ProofEventTypes.ProofStateChanged,
-      AgentEventTypes.AgentMessageProcessed,
-      AgentEventTypes.AgentMessageSent,
+      DidCommEventTypes.DidCommMessageProcessed,
+      DidCommEventTypes.DidCommMessageSent,
     ]
   )
 
@@ -137,7 +137,7 @@ export async function e2eTest({
   let lastSentPickupMessageThreadId: undefined | string = undefined
   recipientReplay
     .pipe(
-      filter((e): e is AgentMessageSentEvent => e.type === AgentEventTypes.AgentMessageSent),
+      filter((e): e is DidCommMessageSentEvent => e.type === DidCommEventTypes.DidCommMessageSent),
       filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
       map((e) => e.payload.message.message.threadId)
     )
@@ -148,7 +148,7 @@ export async function e2eTest({
   if (lastSentPickupMessageThreadId) {
     await firstValueFrom(
       recipientReplay.pipe(
-        filter((e): e is AgentMessageProcessedEvent => e.type === AgentEventTypes.AgentMessageProcessed),
+        filter((e): e is DidCommMessageProcessedEvent => e.type === DidCommEventTypes.DidCommMessageProcessed),
         filter((e) => deliveryMessages.includes(e.payload.message.type)),
         filter((e) => e.payload.message.threadId === lastSentPickupMessageThreadId)
       )
@@ -158,6 +158,6 @@ export async function e2eTest({
   // FIXME: we should add some fancy logic here that checks whether the last sent message has been received by the other
   // agent and possibly wait for the response. So e.g. if pickup v1 is used, we wait for the delivery message to be returned
   // as that is the final message that will be exchange after we've called stopMessagePickup. We can hook into the
-  // replay subject AgentMessageProcessed and AgentMessageSent events.
+  // replay subject DidCommMessageProcessed and DidCommMessageSent events.
   // await sleep(5000)
 }

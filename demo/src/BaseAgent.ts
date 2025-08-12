@@ -25,14 +25,14 @@ import {
   AutoAcceptProof,
   ConnectionsModule,
   CredentialsModule,
-  HttpOutboundTransport,
+  HttpDidCommOutboundTransport,
   ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
+import { HttpInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -75,8 +75,8 @@ export class BaseAgent {
       dependencies: agentDependencies,
       modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
     })
-    this.agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+    this.agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
+    this.agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
   }
 
   public async initializeAgent() {

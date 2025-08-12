@@ -1,12 +1,12 @@
-import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { CredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
 import { CredoError } from '@credo-ts/core'
-import { getOutboundMessageContext } from '@credo-ts/didcomm'
+import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { V1RequestCredentialMessage } from '../messages'
 
-export class V1RequestCredentialHandler implements MessageHandler {
+export class V1RequestCredentialHandler implements DidCommMessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1RequestCredentialMessage]
 
@@ -14,7 +14,7 @@ export class V1RequestCredentialHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1RequestCredentialHandler>) {
     const credentialRecord = await this.credentialProtocol.processRequest(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
@@ -29,7 +29,7 @@ export class V1RequestCredentialHandler implements MessageHandler {
 
   private async acceptRequest(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V1RequestCredentialHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V1RequestCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending credential with autoAccept')
 
@@ -45,7 +45,7 @@ export class V1RequestCredentialHandler implements MessageHandler {
       credentialRecord,
     })
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialRecord,

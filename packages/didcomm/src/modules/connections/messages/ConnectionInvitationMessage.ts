@@ -5,7 +5,7 @@ import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
 import { parseUrl } from 'query-string'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 
 export interface BaseInvitationOptions {
@@ -33,7 +33,7 @@ export type ConnectionInvitationMessageOptions = BaseInvitationOptions &
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#0-invitation-to-connect
  */
-export class ConnectionInvitationMessage extends AgentMessage {
+export class ConnectionInvitationMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**

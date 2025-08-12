@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { TrustPingService } from '../services'
 
 import { TrustPingResponseMessage } from '../messages'
 
-export class TrustPingResponseMessageHandler implements MessageHandler {
+export class TrustPingResponseMessageHandler implements DidCommMessageHandler {
   private trustPingService: TrustPingService
   public supportedMessages = [TrustPingResponseMessage]
 
@@ -11,7 +11,7 @@ export class TrustPingResponseMessageHandler implements MessageHandler {
     this.trustPingService = trustPingService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<TrustPingResponseMessageHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<TrustPingResponseMessageHandler>) {
     await this.trustPingService.processPingResponse(inboundMessage)
 
     return undefined

@@ -18,8 +18,8 @@ import type { MessagePickupProtocol } from './protocol/MessagePickupProtocol'
 import { AgentContext, CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
 
-import { MessageSender } from '../../MessageSender'
-import { OutboundMessageContext } from '../../models'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../models'
 import { ConnectionService } from '../connections/services'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
@@ -46,7 +46,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
 {
   public config: MessagePickupModuleConfig<MPPs>
 
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private agentContext: AgentContext
   private eventEmitter: EventEmitter
   private connectionService: ConnectionService
@@ -55,7 +55,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
   private stop$: Subject<boolean>
 
   public constructor(
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     agentContext: AgentContext,
     connectionService: ConnectionService,
     eventEmitter: EventEmitter,
@@ -143,7 +143,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
 
     if (createDeliveryReturn) {
       await this.messageSender.sendMessage(
-        new OutboundMessageContext(createDeliveryReturn.message, {
+        new OutboundDidCommMessageContext(createDeliveryReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
         })
@@ -181,7 +181,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
 
     if (deliverMessagesReturn) {
       await this.messageSender.sendMessage(
-        new OutboundMessageContext(deliverMessagesReturn.message, {
+        new OutboundDidCommMessageContext(deliverMessagesReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
         })
@@ -209,7 +209,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
       recipientDid: options.recipientDid,
     })
 
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
     })
@@ -260,7 +260,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
 
     // Live mode requires a long-lived transport session, so we'll require WebSockets to send this message
     await this.messageSender.sendMessage(
-      new OutboundMessageContext(message, {
+      new OutboundDidCommMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       }),

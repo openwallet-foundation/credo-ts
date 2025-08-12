@@ -1,9 +1,9 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../../AgentMessage'
-import type { AgentMessageReceivedEvent } from '../../../../Events'
-import type { FeatureRegistry } from '../../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
-import type { InboundMessageContext } from '../../../../models'
+import type { DidCommMessage } from '../../../../DidCommMessage'
+import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
+import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import type { InboundDidCommMessageContext } from '../../../../models'
 import type { MessagePickupCompletedEvent } from '../../MessagePickupEvents'
 import type {
   DeliverMessagesProtocolOptions,
@@ -15,8 +15,8 @@ import type {
 
 import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
-import { AgentEventTypes } from '../../../../Events'
-import { OutboundMessageContext, Protocol } from '../../../../models'
+import { DidCommEventTypes } from '../../../../DidCommEvents'
+import { OutboundDidCommMessageContext, DidCommProtocol } from '../../../../models'
 import { MessagePickupEventTypes } from '../../MessagePickupEvents'
 import { MessagePickupModuleConfig } from '../../MessagePickupModuleConfig'
 import { BaseMessagePickupProtocol } from '../BaseMessagePickupProtocol'
@@ -35,11 +35,11 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void {
     messageHandlerRegistry.registerMessageHandlers([new V1BatchPickupHandler(this), new V1BatchHandler(this)])
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/messagepickup/1.0',
         roles: ['message_holder', 'recipient', 'batch_sender', 'batch_recipient'],
       })
@@ -49,7 +49,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>> {
+  ): Promise<PickupMessagesProtocolReturnType<DidCommMessage>> {
     const { connectionRecord, batchSize } = options
     connectionRecord.assertReady()
 
@@ -64,7 +64,7 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
   public async createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined> {
+  ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined> {
     const { connectionRecord, batchSize, messages } = options
     connectionRecord.assertReady()
 
@@ -96,11 +96,11 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     }
   }
 
-  public async setLiveDeliveryMode(): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>> {
+  public async setLiveDeliveryMode(): Promise<SetLiveDeliveryModeProtocolReturnType<DidCommMessage>> {
     throw new CredoError('Live Delivery mode not supported in Message Pickup V1 protocol')
   }
 
-  public async processBatchPickup(messageContext: InboundMessageContext<V1BatchPickupMessage>) {
+  public async processBatchPickup(messageContext: InboundDidCommMessageContext<V1BatchPickupMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -128,10 +128,10 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
       threadId: message.threadId,
     })
 
-    return new OutboundMessageContext(batchMessage, { agentContext: messageContext.agentContext, connection })
+    return new OutboundDidCommMessageContext(batchMessage, { agentContext: messageContext.agentContext, connection })
   }
 
-  public async processBatch(messageContext: InboundMessageContext<V1BatchMessage>) {
+  public async processBatch(messageContext: InboundDidCommMessageContext<V1BatchMessage>) {
     const { message: batchMessage, agentContext } = messageContext
     const { messages } = batchMessage
 
@@ -140,8 +140,8 @@ export class V1MessagePickupProtocol extends BaseMessagePickupProtocol {
     const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
 
     for (const message of messages) {
-      eventEmitter.emit<AgentMessageReceivedEvent>(messageContext.agentContext, {
-        type: AgentEventTypes.AgentMessageReceived,
+      eventEmitter.emit<DidCommMessageReceivedEvent>(messageContext.agentContext, {
+        type: DidCommEventTypes.DidCommMessageReceived,
         payload: {
           message: message.message,
           contextCorrelationId: messageContext.agentContext.contextCorrelationId,

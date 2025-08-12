@@ -16,7 +16,7 @@ import {
   DidCommMessageRecord,
   DidCommMessageRole,
   DidExchangeState,
-  InboundMessageContext,
+  InboundDidCommMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -311,7 +311,7 @@ describe('V1CredentialProtocol', () => {
 
   describe('processRequest', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<V1RequestCredentialMessage>
+    let messageContext: InboundDidCommMessageContext<V1RequestCredentialMessage>
     beforeEach(() => {
       credential = mockCredentialRecord({ state: CredentialState.OfferSent })
 
@@ -320,7 +320,7 @@ describe('V1CredentialProtocol', () => {
         requestAttachments: [requestAttachment],
       })
       credentialRequest.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundMessageContext(credentialRequest, {
+      messageContext = new InboundDidCommMessageContext(credentialRequest, {
         agentContext,
         connection,
       })
@@ -498,7 +498,7 @@ describe('V1CredentialProtocol', () => {
         credentialAttachments: [credentialAttachment],
       })
       credentialResponse.setThread({ threadId: 'somethreadid' })
-      const messageContext = new InboundMessageContext(credentialResponse, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(credentialResponse, { agentContext, connection })
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
 
@@ -616,7 +616,7 @@ describe('V1CredentialProtocol', () => {
 
   describe('processAck', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<V1CredentialAckMessage>
+    let messageContext: InboundDidCommMessageContext<V1CredentialAckMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
@@ -627,7 +627,7 @@ describe('V1CredentialProtocol', () => {
         status: AckStatus.OK,
         threadId: 'somethreadid',
       })
-      messageContext = new InboundMessageContext(credentialRequest, { agentContext, connection })
+      messageContext = new InboundDidCommMessageContext(credentialRequest, { agentContext, connection })
     })
 
     test(`updates state to ${CredentialState.Done} and returns credential record`, async () => {
@@ -695,7 +695,7 @@ describe('V1CredentialProtocol', () => {
 
   describe('processProblemReport', () => {
     let credential: CredentialExchangeRecord
-    let messageContext: InboundMessageContext<V1CredentialProblemReportMessage>
+    let messageContext: InboundDidCommMessageContext<V1CredentialProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
@@ -709,7 +709,7 @@ describe('V1CredentialProtocol', () => {
         },
       })
       credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundMessageContext(credentialProblemReportMessage, { agentContext, connection })
+      messageContext = new InboundDidCommMessageContext(credentialProblemReportMessage, { agentContext, connection })
     })
 
     test('updates problem report error message and returns credential record', async () => {

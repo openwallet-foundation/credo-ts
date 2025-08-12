@@ -1,2 +1,2 @@
-export { MessageHandler, MessageHandlerInboundMessage } from './MessageHandler'
-export { MessageHandlerMiddleware, MessageHandlerMiddlewareRunner } from './MessageHandlerMiddleware'
+export { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from './DidCommMessageHandler'
+export { DidCommMessageHandlerMiddleware, DidCommMessageHandlerMiddlewareRunner } from './DidCommMessageHandlerMiddleware'

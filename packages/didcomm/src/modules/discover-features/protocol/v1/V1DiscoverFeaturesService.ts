@@ -1,5 +1,5 @@
-import type { AgentMessage } from '../../../../AgentMessage'
-import type { InboundMessageContext } from '../../../../models'
+import type { DidCommMessage } from '../../../../DidCommMessage'
+import type { InboundDidCommMessageContext } from '../../../../models'
 import type {
   DiscoverFeaturesDisclosureReceivedEvent,
   DiscoverFeaturesQueryReceivedEvent,
@@ -12,9 +12,9 @@ import type {
 
 import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
-import { FeatureRegistry } from '../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
-import { Protocol } from '../../../../models'
+import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../../../models'
 import { DiscoverFeaturesEventTypes } from '../../DiscoverFeaturesEvents'
 import { DiscoverFeaturesModuleConfig } from '../../DiscoverFeaturesModuleConfig'
 import { DiscoverFeaturesService } from '../../services'
@@ -25,9 +25,9 @@ import { DiscloseProtocol, V1DiscloseMessage, V1QueryMessage } from './messages'
 @injectable()
 export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
-    featureRegistry: FeatureRegistry,
+    featureRegistry: DidCommFeatureRegistry,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesConfig: DiscoverFeaturesModuleConfig
   ) {
@@ -41,7 +41,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v1'
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new V1DiscloseMessageHandler(this))
     messageHandlerRegistry.registerMessageHandler(new V1QueryMessageHandler(this))
   }
@@ -66,8 +66,8 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   }
 
   public async processQuery(
-    messageContext: InboundMessageContext<V1QueryMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined> {
+    messageContext: InboundDidCommMessageContext<V1QueryMessage>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage> | undefined> {
     const { query, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
@@ -111,8 +111,8 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
       protocols: matches.map(
         (item) =>
           new DiscloseProtocol({
-            protocolId: (item as Protocol).id,
-            roles: (item as Protocol).roles,
+            protocolId: (item as DidCommProtocol).id,
+            roles: (item as DidCommProtocol).roles,
           })
       ),
     })
@@ -120,7 +120,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: InboundMessageContext<V1DiscloseMessage>): Promise<void> {
+  public async processDisclosure(messageContext: InboundDidCommMessageContext<V1DiscloseMessage>): Promise<void> {
     const { protocols, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()
@@ -130,7 +130,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
       payload: {
         message: messageContext.message,
         connection,
-        disclosures: protocols.map((item) => new Protocol({ id: item.protocolId, roles: item.roles })),
+        disclosures: protocols.map((item) => new DidCommProtocol({ id: item.protocolId, roles: item.roles })),
         protocolVersion: this.version,
         threadId,
       },

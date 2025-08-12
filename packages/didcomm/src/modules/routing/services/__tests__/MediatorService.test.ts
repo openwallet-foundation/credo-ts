@@ -5,7 +5,7 @@ import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
-import { InboundMessageContext } from '../../../../models/InboundMessageContext'
+import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
 import { ConnectionService, DidExchangeState } from '../../../connections'
 import { MessagePickupApi } from '../../../message-pickup'
 import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
@@ -111,7 +111,7 @@ describe('MediatorService - default config', () => {
         ],
       })
 
-      const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
       const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
@@ -154,7 +154,7 @@ describe('MediatorService - default config', () => {
       ],
     })
 
-    const messageContext = new InboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+    const messageContext = new InboundDidCommMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
     const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
     expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])

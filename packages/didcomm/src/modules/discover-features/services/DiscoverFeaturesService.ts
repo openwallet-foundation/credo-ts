@@ -1,7 +1,7 @@
 import type { EventEmitter, Logger } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { InboundMessageContext } from '../../../models'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { DiscoverFeaturesModuleConfig } from '../DiscoverFeaturesModuleConfig'
 import type {
   CreateDisclosureOptions,
@@ -10,13 +10,13 @@ import type {
 } from '../DiscoverFeaturesServiceOptions'
 
 export abstract class DiscoverFeaturesService {
-  protected featureRegistry: FeatureRegistry
+  protected featureRegistry: DidCommFeatureRegistry
   protected eventEmitter: EventEmitter
   protected logger: Logger
   protected discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
 
   public constructor(
-    featureRegistry: FeatureRegistry,
+    featureRegistry: DidCommFeatureRegistry,
     eventEmitter: EventEmitter,
     logger: Logger,
     discoverFeaturesModuleConfig: DiscoverFeaturesModuleConfig
@@ -29,13 +29,13 @@ export abstract class DiscoverFeaturesService {
 
   public abstract readonly version: string
 
-  public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
+  public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage>>
   public abstract processQuery(
-    messageContext: InboundMessageContext<AgentMessage>
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage> | undefined>
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage> | undefined>
 
   public abstract createDisclosure(
     options: CreateDisclosureOptions
-  ): Promise<DiscoverFeaturesProtocolMsgReturnType<AgentMessage>>
-  public abstract processDisclosure(messageContext: InboundMessageContext<AgentMessage>): Promise<void>
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage>>
+  public abstract processDisclosure(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<void>
 }

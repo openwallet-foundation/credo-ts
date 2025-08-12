@@ -1,5 +1,5 @@
-import type { AgentMessage } from '../../../AgentMessage'
-import type { QueuedMessage } from '../../../transport/queue'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { QueuedDidCommMessage } from '../../../transport/queue'
 import type { ConnectionRecord } from '../../connections/repository'
 
 export interface PickupMessagesProtocolOptions {
@@ -10,7 +10,7 @@ export interface PickupMessagesProtocolOptions {
 
 export interface DeliverMessagesProtocolOptions {
   connectionRecord: ConnectionRecord
-  messages?: QueuedMessage[]
+  messages?: QueuedDidCommMessage[]
   recipientKey?: string
   batchSize?: number
 }
@@ -20,14 +20,14 @@ export interface SetLiveDeliveryModeProtocolOptions {
   liveDelivery: boolean
 }
 
-export type PickupMessagesProtocolReturnType<MessageType extends AgentMessage> = {
+export type PickupMessagesProtocolReturnType<MessageType extends DidCommMessage> = {
   message: MessageType
 }
 
-export type DeliverMessagesProtocolReturnType<MessageType extends AgentMessage> = {
+export type DeliverMessagesProtocolReturnType<MessageType extends DidCommMessage> = {
   message: MessageType
 }
 
-export type SetLiveDeliveryModeProtocolReturnType<MessageType extends AgentMessage> = {
+export type SetLiveDeliveryModeProtocolReturnType<MessageType extends DidCommMessage> = {
   message: MessageType
 }

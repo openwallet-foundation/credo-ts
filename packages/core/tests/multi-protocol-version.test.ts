@@ -1,13 +1,13 @@
-import type { AgentMessageProcessedEvent } from '../../didcomm/src'
+import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 
 import { filter, firstValueFrom, timeout } from 'rxjs'
 
 import {
-  AgentEventTypes,
-  AgentMessage,
+  DidCommEventTypes,
+  DidCommMessage,
   IsValidMessageType,
-  MessageSender,
-  OutboundMessageContext,
+  DidCommMessageSender,
+  OutboundDidCommMessageContext,
   parseMessageType,
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
@@ -73,18 +73,18 @@ describe('multi version protocols', () => {
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
 
-    const bobMessageSender = bobAgent.dependencyManager.resolve(MessageSender)
+    const bobMessageSender = bobAgent.dependencyManager.resolve(DidCommMessageSender)
 
     // Start event listener for message processed
     const agentMessageV11ProcessedPromise = firstValueFrom(
-      aliceAgent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+      aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV11.type.messageTypeUri),
         timeout(8000)
       )
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundMessageContext(new TestMessageV11(), { agentContext: bobAgent.context, connection: bobConnection })
+      new OutboundDidCommMessageContext(new TestMessageV11(), { agentContext: bobAgent.context, connection: bobConnection })
     )
 
     // Wait for the agent message processed event to be called
@@ -94,14 +94,14 @@ describe('multi version protocols', () => {
 
     // Start event listener for message processed
     const agentMessageV15ProcessedPromise = firstValueFrom(
-      aliceAgent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed).pipe(
+      aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV15.type.messageTypeUri),
         timeout(8000)
       )
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundMessageContext(new TestMessageV15(), { agentContext: bobAgent.context, connection: bobConnection })
+      new OutboundDidCommMessageContext(new TestMessageV15(), { agentContext: bobAgent.context, connection: bobConnection })
     )
     await agentMessageV15ProcessedPromise
 
@@ -109,7 +109,7 @@ describe('multi version protocols', () => {
   })
 })
 
-class TestMessageV11 extends AgentMessage {
+class TestMessageV11 extends DidCommMessage {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -120,7 +120,7 @@ class TestMessageV11 extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.1/test-message')
 }
 
-class TestMessageV13 extends AgentMessage {
+class TestMessageV13 extends DidCommMessage {
   public constructor() {
     super()
     this.id = this.generateId()
@@ -131,7 +131,7 @@ class TestMessageV13 extends AgentMessage {
   public static readonly type = parseMessageType('https://didcomm.org/custom-protocol/1.3/test-message')
 }
 
-class TestMessageV15 extends AgentMessage {
+class TestMessageV15 extends DidCommMessage {
   public constructor() {
     super()
     this.id = this.generateId()

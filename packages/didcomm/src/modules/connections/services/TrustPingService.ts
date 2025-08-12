@@ -1,11 +1,11 @@
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { TrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../TrustPingEvents'
 import type { TrustPingMessage } from '../messages'
 import type { ConnectionRecord } from '../repository'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
 
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { TrustPingEventTypes } from '../TrustPingEvents'
 import { TrustPingResponseMessage } from '../messages'
 
@@ -17,7 +17,7 @@ export class TrustPingService {
     this.eventEmitter = eventEmitter
   }
 
-  public processPing({ message, agentContext }: InboundMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
+  public processPing({ message, agentContext }: InboundDidCommMessageContext<TrustPingMessage>, connection: ConnectionRecord) {
     this.eventEmitter.emit<TrustPingReceivedEvent>(agentContext, {
       type: TrustPingEventTypes.TrustPingReceivedEvent,
       payload: {
@@ -31,11 +31,11 @@ export class TrustPingService {
         threadId: message.threadId,
       })
 
-      return new OutboundMessageContext(response, { agentContext, connection })
+      return new OutboundDidCommMessageContext(response, { agentContext, connection })
     }
   }
 
-  public processPingResponse(inboundMessage: InboundMessageContext<TrustPingResponseMessage>) {
+  public processPingResponse(inboundMessage: InboundDidCommMessageContext<TrustPingResponseMessage>) {
     const { agentContext, message } = inboundMessage
 
     const connection = inboundMessage.assertReadyConnection()

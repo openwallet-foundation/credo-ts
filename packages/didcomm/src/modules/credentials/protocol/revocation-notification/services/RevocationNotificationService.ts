@@ -1,12 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { InboundMessageContext } from '../../../../../models'
+import type { InboundDidCommMessageContext } from '../../../../../models'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
 import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
 import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
-import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
 import { ConnectionRecord } from '../../../../connections'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
@@ -30,7 +30,7 @@ export class RevocationNotificationService {
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.credentialRepository = credentialRepository
@@ -87,7 +87,7 @@ export class RevocationNotificationService {
    * @param messageContext message context of RevocationNotificationMessageV1
    */
   public async v1ProcessRevocationNotification(
-    messageContext: InboundMessageContext<V1RevocationNotificationMessage>
+    messageContext: InboundDidCommMessageContext<V1RevocationNotificationMessage>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v1', { message: messageContext.message })
 
@@ -145,7 +145,7 @@ export class RevocationNotificationService {
    * @param messageContext message context of RevocationNotificationMessageV2
    */
   public async v2ProcessRevocationNotification(
-    messageContext: InboundMessageContext<V2RevocationNotificationMessage>
+    messageContext: InboundDidCommMessageContext<V2RevocationNotificationMessage>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v2', { message: messageContext.message })
 
@@ -181,7 +181,7 @@ export class RevocationNotificationService {
     }
   }
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new V1RevocationNotificationHandler(this))
     messageHandlerRegistry.registerMessageHandler(new V2RevocationNotificationHandler(this))
   }

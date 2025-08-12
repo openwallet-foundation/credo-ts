@@ -1,6 +1,6 @@
 import type { LegacyIndyProofRequest } from '../../../../formats'
 
-import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -17,7 +17,7 @@ export const INDY_PROOF_REQUEST_ATTACHMENT_ID = 'libindy-request-presentation-0'
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#request-presentation
  */
-export class V1RequestPresentationMessage extends AgentMessage {
+export class V1RequestPresentationMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   public constructor(options: V1RequestPresentationMessageOptions) {

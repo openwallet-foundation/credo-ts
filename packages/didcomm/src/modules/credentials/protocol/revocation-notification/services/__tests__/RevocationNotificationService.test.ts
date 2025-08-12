@@ -11,8 +11,8 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
-import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry'
-import { InboundMessageContext } from '../../../../../../models'
+import { DidCommMessageHandlerRegistry } from '../../../../../../DidCommMessageHandlerRegistry'
+import { InboundDidCommMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
 import { CredentialRole, CredentialState } from '../../../../models'
@@ -25,8 +25,8 @@ jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
+jest.mock('../../../../../../DidCommMessageHandlerRegistry')
+const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
@@ -94,7 +94,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
         connection,
         agentContext,
       })
@@ -141,7 +141,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { connection, agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -161,7 +161,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -204,7 +204,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext, connection })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -249,7 +249,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { connection, agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -270,7 +270,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 

@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import { CredentialFormatSpec } from '../../../models'
@@ -19,7 +19,7 @@ export interface V2OfferCredentialMessageOptions {
   goal?: string
 }
 
-export class V2OfferCredentialMessage extends AgentMessage {
+export class V2OfferCredentialMessage extends DidCommMessage {
   public constructor(options: V2OfferCredentialMessageOptions) {
     super()
     if (options) {

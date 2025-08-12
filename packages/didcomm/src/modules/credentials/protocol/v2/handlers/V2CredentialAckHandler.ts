@@ -1,9 +1,9 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
 import { V2CredentialAckMessage } from '../messages/V2CredentialAckMessage'
 
-export class V2CredentialAckHandler implements MessageHandler {
+export class V2CredentialAckHandler implements DidCommMessageHandler {
   private credentialProtocol: V2CredentialProtocol
   public supportedMessages = [V2CredentialAckMessage]
 
@@ -11,7 +11,7 @@ export class V2CredentialAckHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V2CredentialAckHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V2CredentialAckHandler>) {
     await this.credentialProtocol.processAck(messageContext)
 
     return undefined

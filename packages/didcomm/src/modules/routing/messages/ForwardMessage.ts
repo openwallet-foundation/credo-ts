@@ -1,20 +1,20 @@
 import { Expose } from 'class-transformer'
 import { IsObject, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
-import { EncryptedMessage } from '../../../types'
+import { DidCommMessage } from '../../../DidCommMessage'
+import { EncryptedDidCommMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface ForwardMessageOptions {
   id?: string
   to: string
-  message: EncryptedMessage
+  message: EncryptedDidCommMessage
 }
 
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0094-cross-domain-messaging/README.md#corerouting10forward
  */
-export class ForwardMessage extends AgentMessage {
+export class ForwardMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**
@@ -41,5 +41,5 @@ export class ForwardMessage extends AgentMessage {
 
   @Expose({ name: 'msg' })
   @IsObject()
-  public message!: EncryptedMessage
+  public message!: EncryptedDidCommMessage
 }

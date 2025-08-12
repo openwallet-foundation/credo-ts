@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidRotateMessageOptions {
@@ -14,7 +14,7 @@ export interface DidRotateMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/tree/main/features/0794-did-rotate#rotate
  */
-export class DidRotateMessage extends AgentMessage {
+export class DidRotateMessage extends DidCommMessage {
   /**
    * Create new RotateMessage instance.
    * @param options

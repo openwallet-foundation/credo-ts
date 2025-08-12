@@ -1,5 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 
 import { BasicMessagesModule } from '../BasicMessagesModule'
 import { BasicMessageRepository } from '../repository'
@@ -7,7 +7,7 @@ import { BasicMessageService } from '../services'
 
 const featureRegistry = {
   register: jest.fn(),
-} as unknown as FeatureRegistry
+} as unknown as DidCommFeatureRegistry
 
 const dependencyManager = {
   registerInstance: jest.fn(),

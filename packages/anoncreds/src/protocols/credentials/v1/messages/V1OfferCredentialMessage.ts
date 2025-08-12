@@ -1,6 +1,6 @@
 import type { AnonCredsCredentialOffer } from '../../../../models'
 
-import { AgentMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -21,7 +21,7 @@ export interface V1OfferCredentialMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0036-issue-credential/README.md#offer-credential
  */
-export class V1OfferCredentialMessage extends AgentMessage {
+export class V1OfferCredentialMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   public constructor(options: V1OfferCredentialMessageOptions) {

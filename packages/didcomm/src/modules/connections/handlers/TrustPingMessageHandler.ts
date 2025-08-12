@@ -1,4 +1,4 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { ConnectionService, TrustPingService } from '../services'
 
 import { CredoError } from '@credo-ts/core'
@@ -6,7 +6,7 @@ import { CredoError } from '@credo-ts/core'
 import { TrustPingMessage } from '../messages'
 import { DidExchangeState } from '../models'
 
-export class TrustPingMessageHandler implements MessageHandler {
+export class TrustPingMessageHandler implements DidCommMessageHandler {
   private trustPingService: TrustPingService
   private connectionService: ConnectionService
   public supportedMessages = [TrustPingMessage]
@@ -16,7 +16,7 @@ export class TrustPingMessageHandler implements MessageHandler {
     this.connectionService = connectionService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<TrustPingMessageHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<TrustPingMessageHandler>) {
     const { connection, recipientKey } = messageContext
     if (!connection) {
       throw new CredoError(`Connection for verkey ${recipientKey?.fingerprint} not found!`)

@@ -9,7 +9,7 @@ import { ReplaySubject } from 'rxjs'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
-import { Feature, GoalCode } from '../../../models'
+import { DidCommFeature, DidCommGoalCode } from '../../../models'
 import { DiscoverFeaturesEventTypes } from '../DiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'
@@ -104,8 +104,8 @@ describe('v2 discover features', () => {
 
     // Register some goal codes
     faberAgent.modules.didcomm.features.register(
-      new GoalCode({ id: 'faber.vc.issuance' }),
-      new GoalCode({ id: 'faber.vc.query' })
+      new DidCommGoalCode({ id: 'faber.vc.issuance' }),
+      new DidCommGoalCode({ id: 'faber.vc.query' })
     )
 
     await aliceAgent.modules.discovery.queryFeatures({
@@ -144,7 +144,7 @@ describe('v2 discover features', () => {
       .subscribe(faberReplay)
 
     // Define a custom feature type
-    class GenericFeature extends Feature {
+    class GenericFeature extends DidCommFeature {
       public 'generic-field'!: string
 
       public constructor(options: { id: string; genericField: string }) {
@@ -198,9 +198,9 @@ describe('v2 discover features', () => {
 
     // Register a custom feature
     faberAgent.modules.didcomm.features.register(
-      new Feature({ id: 'AIP2.0', type: 'aip' }),
-      new Feature({ id: 'AIP2.0/INDYCRED', type: 'aip' }),
-      new Feature({ id: 'AIP2.0/MEDIATE', type: 'aip' })
+      new DidCommFeature({ id: 'AIP2.0', type: 'aip' }),
+      new DidCommFeature({ id: 'AIP2.0/INDYCRED', type: 'aip' }),
+      new DidCommFeature({ id: 'AIP2.0/MEDIATE', type: 'aip' })
     )
 
     await faberAgent.modules.discovery.discloseFeatures({

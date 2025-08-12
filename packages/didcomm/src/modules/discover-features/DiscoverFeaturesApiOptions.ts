@@ -1,4 +1,4 @@
-import type { FeatureQueryOptions } from '../../models'
+import type { DidCommFeatureQueryOptions } from '../../models'
 import type { DiscoverFeaturesService } from './services'
 
 /**
@@ -31,7 +31,7 @@ interface BaseOptions {
 export interface QueryFeaturesOptions<DFSs extends DiscoverFeaturesService[] = DiscoverFeaturesService[]>
   extends BaseOptions {
   protocolVersion: DiscoverFeaturesProtocolVersionType<DFSs>
-  queries: FeatureQueryOptions[]
+  queries: DidCommFeatureQueryOptions[]
   awaitDisclosures?: boolean
   awaitDisclosuresTimeoutMs?: number
   comment?: string
@@ -40,6 +40,6 @@ export interface QueryFeaturesOptions<DFSs extends DiscoverFeaturesService[] = D
 export interface DiscloseFeaturesOptions<DFSs extends DiscoverFeaturesService[] = DiscoverFeaturesService[]>
   extends BaseOptions {
   protocolVersion: DiscoverFeaturesProtocolVersionType<DFSs>
-  disclosureQueries: FeatureQueryOptions[]
+  disclosureQueries: DidCommFeatureQueryOptions[]
   threadId?: string
 }

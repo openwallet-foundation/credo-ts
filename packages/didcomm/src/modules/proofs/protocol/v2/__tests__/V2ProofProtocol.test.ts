@@ -12,7 +12,7 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Attachment, AttachmentData, DidExchangeState, InboundMessageContext } from '../../../../../../src'
+import { Attachment, AttachmentData, DidExchangeState, InboundDidCommMessageContext } from '../../../../../../src'
 import { DidCommMessageRepository } from '../../../../../repository/DidCommMessageRepository'
 import { ConnectionService } from '../../../../connections/services/ConnectionService'
 import { ProofEventTypes } from '../../../ProofEvents'
@@ -105,7 +105,7 @@ const mockProofExchangeRecord = ({
 describe('V2ProofProtocol', () => {
   describe('processProofRequest', () => {
     let presentationRequest: V2RequestPresentationMessage
-    let messageContext: InboundMessageContext<V2RequestPresentationMessage>
+    let messageContext: InboundDidCommMessageContext<V2RequestPresentationMessage>
 
     beforeEach(() => {
       presentationRequest = new V2RequestPresentationMessage({
@@ -119,7 +119,7 @@ describe('V2ProofProtocol', () => {
         comment: 'Proof Request',
       })
 
-      messageContext = new InboundMessageContext(presentationRequest, { agentContext, connection })
+      messageContext = new InboundDidCommMessageContext(presentationRequest, { agentContext, connection })
     })
 
     test(`creates and return proof record in ${ProofState.PresentationReceived} state with offer, without thread ID`, async () => {
@@ -204,7 +204,7 @@ describe('V2ProofProtocol', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofExchangeRecord
-    let messageContext: InboundMessageContext<V2PresentationProblemReportMessage>
+    let messageContext: InboundDidCommMessageContext<V2PresentationProblemReportMessage>
     beforeEach(() => {
       proof = mockProofExchangeRecord({
         state: ProofState.RequestReceived,
@@ -217,7 +217,7 @@ describe('V2ProofProtocol', () => {
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundMessageContext(presentationProblemReportMessage, { agentContext, connection })
+      messageContext = new InboundDidCommMessageContext(presentationProblemReportMessage, { agentContext, connection })
     })
 
     test('updates problem report error message and returns proof record', async () => {

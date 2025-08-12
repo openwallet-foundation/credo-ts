@@ -3,7 +3,7 @@ import type { Attachment } from '../../../../../decorators/attachment/Attachment
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
@@ -14,7 +14,7 @@ export interface V2MessageDeliveryMessageOptions {
   attachments: Attachment[]
 }
 
-export class V2MessageDeliveryMessage extends AgentMessage {
+export class V2MessageDeliveryMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: V2MessageDeliveryMessageOptions) {

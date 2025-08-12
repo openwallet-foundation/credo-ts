@@ -1,9 +1,9 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { CredentialRole } from '../models'
 import type { CredentialState } from '../models/CredentialState'
@@ -31,64 +31,64 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
   createProposal(
     agentContext: AgentContext,
     options: CreateCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  processProposal(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
+  processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   negotiateProposal(
     agentContext: AgentContext,
     options: NegotiateCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for offer
   createOffer(
     agentContext: AgentContext,
     options: CreateCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  processOffer(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
+  processOffer(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   acceptOffer(
     agentContext: AgentContext,
     options: AcceptCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   negotiateOffer(
     agentContext: AgentContext,
     options: NegotiateCredentialOfferOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for request
   createRequest(
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
-  processRequest(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
+  processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptCredentialRequestOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for issue
-  processCredential(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  processCredential(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
   acceptCredential(
     agentContext: AgentContext,
     options: AcceptCredentialOptions
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  processAck(messageContext: InboundMessageContext<AgentMessage>): Promise<CredentialExchangeRecord>
+  processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<CredentialExchangeRecord>
 
   // methods for problem-report
   createProblemReport(
     agentContext: AgentContext,
     options: CreateCredentialProblemReportOptions
   ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>>
-  processProblemReport(messageContext: InboundMessageContext<ProblemReportMessage>): Promise<CredentialExchangeRecord>
+  processProblemReport(messageContext: InboundDidCommMessageContext<ProblemReportMessage>): Promise<CredentialExchangeRecord>
 
-  findProposalMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  findRequestMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
-  findCredentialMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<AgentMessage | null>
+  findProposalMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>
+  findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>
+  findRequestMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>
+  findCredentialMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>
   getFormatData(
     agentContext: AgentContext,
     credentialExchangeId: string
@@ -131,5 +131,5 @@ export interface CredentialProtocol<CFs extends CredentialFormatService[] = Cred
   ): Promise<CredentialExchangeRecord | null>
   update(agentContext: AgentContext, credentialRecord: CredentialExchangeRecord): Promise<void>
 
-  register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
+  register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 }

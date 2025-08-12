@@ -1,9 +1,9 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../../AgentMessage'
-import type { FeatureRegistry } from '../../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../../messages'
-import type { InboundMessageContext } from '../../../../models'
+import type { InboundDidCommMessageContext } from '../../../../models'
 import type {
   ExtractProofFormats,
   ProofFormat,
@@ -34,7 +34,7 @@ import type {
 import { CredoError, utils } from '@credo-ts/core'
 
 import { AckStatus } from '../../../../messages'
-import { Protocol } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { ConnectionService } from '../../../connections'
 import { ProofsModuleConfig } from '../../ProofsModuleConfig'
@@ -78,7 +78,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public readonly version = 'v2' as const
 
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
     // Register message handlers for the Present Proof V2 Protocol
     messageHandlerRegistry.registerMessageHandlers([
       new V2ProposePresentationHandler(this),
@@ -90,7 +90,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Register Present Proof V2 in feature registry, with supported roles
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/present-proof/2.0',
         roles: ['prover', 'verifier'],
       })
@@ -108,7 +108,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       goal,
       parentThreadId,
     }: CreateProofProposalOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: AgentMessage }> {
+  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommMessage }> {
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
 
     const formatServices = this.getFormatServices(proofFormats)
@@ -152,7 +152,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    * @returns proof record appropriate for this incoming message (once accepted)
    */
   public async processProposal(
-    messageContext: InboundMessageContext<V2ProposePresentationMessage>
+    messageContext: InboundDidCommMessageContext<V2ProposePresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
@@ -406,7 +406,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    *
    */
   public async processRequest(
-    messageContext: InboundMessageContext<V2RequestPresentationMessage>
+    messageContext: InboundDidCommMessageContext<V2RequestPresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: requestMessage, connection, agentContext } = messageContext
 
@@ -665,7 +665,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   }
 
   public async processPresentation(
-    messageContext: InboundMessageContext<V2PresentationMessage>
+    messageContext: InboundDidCommMessageContext<V2PresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: presentationMessage, connection, agentContext } = messageContext
 
@@ -782,7 +782,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   }
 
   public async processAck(
-    messageContext: InboundMessageContext<V2PresentationAckMessage>
+    messageContext: InboundDidCommMessageContext<V2PresentationAckMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: ackMessage, connection, agentContext } = messageContext
 

@@ -1,10 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../../AgentMessage'
-import type { FeatureRegistry } from '../../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../../MessageHandlerRegistry'
-import type { MessageHandlerInboundMessage } from '../../../../handlers'
+import type { DidCommMessage } from '../../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import type { DidCommMessageHandlerInboundMessage } from '../../../../handlers'
 import type { ProblemReportMessage } from '../../../../messages'
-import type { InboundMessageContext } from '../../../../models'
+import type { InboundDidCommMessageContext } from '../../../../models'
 import type {
   CredentialFormat,
   CredentialFormatPayload,
@@ -32,7 +32,7 @@ import type {
 import { CredoError, utils } from '@credo-ts/core'
 
 import { AckStatus } from '../../../../messages'
-import { Protocol } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { ConnectionService } from '../../../connections'
 import { CredentialsModuleConfig } from '../../CredentialsModuleConfig'
@@ -85,7 +85,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
     // Register message handlers for the Issue Credential V2 Protocol
     messageHandlerRegistry.registerMessageHandlers([
       new V2ProposeCredentialHandler(this),
@@ -98,7 +98,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
 
     // Register Issue Credential V2 in feature registry, with supported roles
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/issue-credential/2.0',
         roles: ['holder', 'issuer'],
       })
@@ -122,7 +122,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
       goalCode,
       autoAcceptCredential,
     }: CreateCredentialProposalOptions<CFs>
-  ): Promise<CredentialProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>> {
     agentContext.config.logger.debug('Get the Format Service and Create Proposal Message')
 
     const credentialRepository = agentContext.dependencyManager.resolve(CredentialRepository)
@@ -164,7 +164,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    * @returns credential record appropriate for this incoming message (once accepted)
    */
   public async processProposal(
-    messageContext: InboundMessageContext<V2ProposeCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V2ProposeCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
@@ -414,7 +414,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    * @returns credential record appropriate for this incoming message (once accepted)
    */
   public async processOffer(
-    messageContext: MessageHandlerInboundMessage<V2OfferCredentialHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V2OfferCredentialHandler>
   ): Promise<CredentialExchangeRecord> {
     const { message: offerMessage, connection, agentContext } = messageContext
 
@@ -656,7 +656,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    *
    */
   public async processRequest(
-    messageContext: InboundMessageContext<V2RequestCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V2RequestCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: requestMessage, connection, agentContext } = messageContext
 
@@ -809,7 +809,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    *
    */
   public async processCredential(
-    messageContext: InboundMessageContext<V2IssueCredentialMessage>
+    messageContext: InboundDidCommMessageContext<V2IssueCredentialMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: credentialMessage, connection, agentContext } = messageContext
 
@@ -896,7 +896,7 @@ export class V2CredentialProtocol<CFs extends CredentialFormatService[] = Creden
    *
    */
   public async processAck(
-    messageContext: InboundMessageContext<V2CredentialAckMessage>
+    messageContext: InboundDidCommMessageContext<V2CredentialAckMessage>
   ): Promise<CredentialExchangeRecord> {
     const { message: ackMessage, connection, agentContext } = messageContext
 

@@ -1,12 +1,12 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
-import type { InboundMessageContext } from '../../../../../models'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { InboundDidCommMessageContext } from '../../../../../models'
 import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
 import type { V2CredentialProtocol } from '../V2CredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../../models'
+import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
-export class V2ProposeCredentialHandler implements MessageHandler {
+export class V2ProposeCredentialHandler implements DidCommMessageHandler {
   private credentialProtocol: V2CredentialProtocol
 
   public supportedMessages = [V2ProposeCredentialMessage]
@@ -15,7 +15,7 @@ export class V2ProposeCredentialHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
+  public async handle(messageContext: InboundDidCommMessageContext<V2ProposeCredentialMessage>) {
     const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
@@ -30,7 +30,7 @@ export class V2ProposeCredentialHandler implements MessageHandler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2ProposeCredentialHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
 
@@ -41,7 +41,7 @@ export class V2ProposeCredentialHandler implements MessageHandler {
 
     const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialRecord })
 
-    return new OutboundMessageContext(message, {
+    return new OutboundDidCommMessageContext(message, {
       agentContext: messageContext.agentContext,
       connection: messageContext.connection,
       associatedRecord: credentialRecord,

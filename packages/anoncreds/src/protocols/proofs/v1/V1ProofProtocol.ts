@@ -1,10 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  AgentMessage,
-  FeatureRegistry,
+  DidCommMessage,
+  DidCommFeatureRegistry,
   GetProofFormatDataReturn,
-  InboundMessageContext,
-  MessageHandlerRegistry,
+  InboundDidCommMessageContext,
+  DidCommMessageHandlerRegistry,
   ProblemReportMessage,
   ProofFormat,
   ProofProtocol,
@@ -27,7 +27,7 @@ import {
   ProofRole,
   ProofState,
   ProofsModuleConfig,
-  Protocol,
+  DidCommProtocol,
 } from '@credo-ts/didcomm'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
@@ -74,7 +74,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
     // Register message handlers for the Issue Credential V1 Protocol
     messageHandlerRegistry.registerMessageHandlers([
       new V1ProposePresentationHandler(this),
@@ -86,7 +86,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Register Present Proof V1 in feature registry, with supported roles
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/present-proof/1.0',
         roles: ['prover', 'verifier'],
       })
@@ -155,7 +155,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processProposal(
-    messageContext: InboundMessageContext<V1ProposePresentationMessage>
+    messageContext: InboundDidCommMessageContext<V1ProposePresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
@@ -314,7 +314,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       autoAcceptProof,
     }: ProofProtocolOptions.NegotiateProofProposalOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.ProposalReceived)
@@ -359,7 +359,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       parentThreadId,
       autoAcceptProof,
     }: ProofProtocolOptions.CreateProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(proofFormats)
 
     const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
@@ -412,7 +412,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processRequest(
-    messageContext: InboundMessageContext<V1RequestPresentationMessage>
+    messageContext: InboundDidCommMessageContext<V1RequestPresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: proofRequestMessage, connection, agentContext } = messageContext
 
@@ -510,7 +510,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       autoAcceptProof,
     }: ProofProtocolOptions.NegotiateProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.RequestReceived)
@@ -563,7 +563,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       autoAcceptProof,
       comment,
     }: ProofProtocolOptions.AcceptProofRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<AgentMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(ProofState.RequestReceived)
@@ -756,7 +756,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processPresentation(
-    messageContext: InboundMessageContext<V1PresentationMessage>
+    messageContext: InboundDidCommMessageContext<V1PresentationMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: presentationMessage, connection, agentContext } = messageContext
 
@@ -887,7 +887,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processAck(
-    messageContext: InboundMessageContext<V1PresentationAckMessage>
+    messageContext: InboundDidCommMessageContext<V1PresentationAckMessage>
   ): Promise<ProofExchangeRecord> {
     const { message: presentationAckMessage, connection, agentContext } = messageContext
 

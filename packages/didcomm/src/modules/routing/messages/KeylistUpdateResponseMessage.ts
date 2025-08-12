@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsEnum, IsInstance, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 import { KeylistUpdateAction } from './KeylistUpdateMessage'
@@ -44,7 +44,7 @@ export interface KeylistUpdateResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#keylist-update-response
  */
-export class KeylistUpdateResponseMessage extends AgentMessage {
+export class KeylistUpdateResponseMessage extends DidCommMessage {
   public constructor(options: KeylistUpdateResponseMessageOptions) {
     super()
 

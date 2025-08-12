@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { SignatureDecorator } from '../../../decorators/signature/SignatureDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
@@ -16,7 +16,7 @@ export interface ConnectionResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0160-connection-protocol/README.md#2-connection-response
  */
-export class ConnectionResponseMessage extends AgentMessage {
+export class ConnectionResponseMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**

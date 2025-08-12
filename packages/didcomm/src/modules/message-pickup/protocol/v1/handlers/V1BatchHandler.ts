@@ -1,10 +1,10 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { V1MessagePickupProtocol } from '../V1MessagePickupProtocol'
 
-import { OutboundMessageContext } from '../../../../../models'
+import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V1BatchMessage } from '../messages'
 
-export class V1BatchHandler implements MessageHandler {
+export class V1BatchHandler implements DidCommMessageHandler {
   public supportedMessages = [V1BatchMessage]
   private messagePickupProtocol: V1MessagePickupProtocol
 
@@ -12,12 +12,12 @@ export class V1BatchHandler implements MessageHandler {
     this.messagePickupProtocol = messagePickupProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1BatchHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1BatchHandler>) {
     const connection = messageContext.assertReadyConnection()
     const batchRequestMessage = await this.messagePickupProtocol.processBatch(messageContext)
 
     if (batchRequestMessage) {
-      return new OutboundMessageContext(batchRequestMessage, {
+      return new OutboundDidCommMessageContext(batchRequestMessage, {
         agentContext: messageContext.agentContext,
         connection,
       })

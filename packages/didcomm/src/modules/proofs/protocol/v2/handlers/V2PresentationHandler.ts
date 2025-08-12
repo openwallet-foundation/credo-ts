@@ -1,12 +1,12 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { ProofExchangeRecord } from '../../../repository'
 import type { V2ProofProtocol } from '../V2ProofProtocol'
 
-import { getOutboundMessageContext } from '../../../../../getOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getOutboundDidCommMessageContext'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
-export class V2PresentationHandler implements MessageHandler {
+export class V2PresentationHandler implements DidCommMessageHandler {
   private proofProtocol: V2ProofProtocol
   public supportedMessages = [V2PresentationMessage]
 
@@ -14,7 +14,7 @@ export class V2PresentationHandler implements MessageHandler {
     this.proofProtocol = proofProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V2PresentationHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V2PresentationHandler>) {
     const proofRecord = await this.proofProtocol.processPresentation(messageContext)
 
     const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToPresentation(messageContext.agentContext, {
@@ -29,7 +29,7 @@ export class V2PresentationHandler implements MessageHandler {
 
   private async acceptPresentation(
     proofRecord: ProofExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2PresentationHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V2PresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
 
@@ -44,7 +44,7 @@ export class V2PresentationHandler implements MessageHandler {
       role: DidCommMessageRole.Sender,
     })
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: proofRecord,

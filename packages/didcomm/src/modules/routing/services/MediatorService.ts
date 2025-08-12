@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '../../../models'
+import type { InboundDidCommMessageContext } from '../../../models'
 import type { ConnectionRecord } from '../../connections/repository'
 import type { MediationStateChangedEvent } from '../RoutingEvents'
 import type { ForwardMessage, MediationRequestMessage } from '../messages'
@@ -21,7 +21,7 @@ import {
 } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { MessageSender } from '../../../MessageSender'
+import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { ConnectionMetadataKeys } from '../../connections/repository/ConnectionMetadataTypes'
 import { ConnectionService } from '../../connections/services'
 import { MessagePickupApi } from '../../message-pickup'
@@ -81,7 +81,7 @@ export class MediatorService {
     throw new CredoError('Mediator has not been initialized yet.')
   }
 
-  public async processForwardMessage(messageContext: InboundMessageContext<ForwardMessage>): Promise<void> {
+  public async processForwardMessage(messageContext: InboundDidCommMessageContext<ForwardMessage>): Promise<void> {
     const { message, agentContext } = messageContext
 
     // TODO: update to class-validator validation
@@ -100,7 +100,7 @@ export class MediatorService {
 
     const messageForwardingStrategy =
       agentContext.dependencyManager.resolve(MediatorModuleConfig).messageForwardingStrategy
-    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+    const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
 
     switch (messageForwardingStrategy) {
       case MessageForwardingStrategy.QueueOnly:
@@ -139,7 +139,7 @@ export class MediatorService {
     }
   }
 
-  public async processKeylistUpdateRequest(messageContext: InboundMessageContext<KeylistUpdateMessage>) {
+  public async processKeylistUpdateRequest(messageContext: InboundDidCommMessageContext<KeylistUpdateMessage>) {
     // Assert Ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -212,7 +212,7 @@ export class MediatorService {
     return { mediationRecord, message }
   }
 
-  public async processMediationRequest(messageContext: InboundMessageContext<MediationRequestMessage>) {
+  public async processMediationRequest(messageContext: InboundDidCommMessageContext<MediationRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 

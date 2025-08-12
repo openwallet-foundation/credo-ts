@@ -1,11 +1,11 @@
-import type { CredentialExchangeRecord, MessageHandler, MessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type { CredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
 import type { V1CredentialProtocol } from '../V1CredentialProtocol'
 
-import { getOutboundMessageContext } from '@credo-ts/didcomm'
+import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { V1ProposeCredentialMessage } from '../messages'
 
-export class V1ProposeCredentialHandler implements MessageHandler {
+export class V1ProposeCredentialHandler implements DidCommMessageHandler {
   private credentialProtocol: V1CredentialProtocol
   public supportedMessages = [V1ProposeCredentialMessage]
 
@@ -13,7 +13,7 @@ export class V1ProposeCredentialHandler implements MessageHandler {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1ProposeCredentialHandler>) {
     const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
 
     const shouldAutoAcceptProposal = await this.credentialProtocol.shouldAutoRespondToProposal(
@@ -31,7 +31,7 @@ export class V1ProposeCredentialHandler implements MessageHandler {
 
   private async acceptProposal(
     credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V1ProposeCredentialHandler>
+    messageContext: DidCommMessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
 
@@ -44,7 +44,7 @@ export class V1ProposeCredentialHandler implements MessageHandler {
       credentialRecord,
     })
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       message,
       connectionRecord: messageContext.connection,
       associatedRecord: credentialRecord,

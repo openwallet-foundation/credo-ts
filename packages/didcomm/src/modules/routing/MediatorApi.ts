@@ -2,9 +2,9 @@ import type { MediationRecord } from './repository'
 
 import { AgentContext, injectable } from '@credo-ts/core'
 
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
-import { MessageSender } from '../../MessageSender'
-import { OutboundMessageContext } from '../../models'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { OutboundDidCommMessageContext } from '../../models'
 import { ConnectionService } from '../connections'
 
 import { MediatorModuleConfig } from './MediatorModuleConfig'
@@ -17,14 +17,14 @@ export class MediatorApi {
   public config: MediatorModuleConfig
 
   private mediatorService: MediatorService
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private agentContext: AgentContext
   private connectionService: ConnectionService
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     mediationService: MediatorService,
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     agentContext: AgentContext,
     connectionService: ConnectionService,
     config: MediatorModuleConfig
@@ -45,7 +45,7 @@ export class MediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessageContext = new OutboundMessageContext(message, {
+    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
       associatedRecord: mediationRecord,
@@ -56,7 +56,7 @@ export class MediatorApi {
     return mediationRecord
   }
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(this.mediatorService))
     messageHandlerRegistry.registerMessageHandler(new ForwardHandler(this.mediatorService))
     messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(this.mediatorService, this.config))

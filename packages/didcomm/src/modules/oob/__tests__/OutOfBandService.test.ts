@@ -12,7 +12,7 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../../core/tests/helpers'
-import { InboundMessageContext } from '../../../models'
+import { InboundDidCommMessageContext } from '../../../models'
 import { DidExchangeState } from '../../connections'
 import { OutOfBandService } from '../OutOfBandService'
 import { OutOfBandEventTypes } from '../domain/OutOfBandEvents'
@@ -56,7 +56,7 @@ describe('OutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -72,7 +72,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -88,7 +88,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -117,7 +117,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -140,7 +140,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -165,7 +165,7 @@ describe('OutOfBandService', () => {
       const reuseListener = jest.fn()
 
       const connection = getMockConnection({ state: DidExchangeState.Completed })
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -200,7 +200,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -231,7 +231,7 @@ describe('OutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -265,7 +265,7 @@ describe('OutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -282,7 +282,7 @@ describe('OutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -299,7 +299,7 @@ describe('OutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -329,7 +329,7 @@ describe('OutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -352,7 +352,7 @@ describe('OutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -380,7 +380,7 @@ describe('OutOfBandService', () => {
       const reuseListener = jest.fn()
 
       const connection = getMockConnection({ state: DidExchangeState.Completed, id: 'connectionId' })
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -417,7 +417,7 @@ describe('OutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundMessageContext(reuseAcceptedMessage, {
+      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,

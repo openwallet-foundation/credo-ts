@@ -1,6 +1,6 @@
 import type { BaseEvent } from '@credo-ts/core'
-import type { AgentMessage } from '../../AgentMessage'
-import type { Feature, FeatureQueryOptions } from '../../models'
+import type { DidCommMessage } from '../../DidCommMessage'
+import type { DidCommFeature, DidCommFeatureQueryOptions } from '../../models'
 import type { ConnectionRecord } from '../connections'
 
 export enum DiscoverFeaturesEventTypes {
@@ -11,8 +11,8 @@ export enum DiscoverFeaturesEventTypes {
 export interface DiscoverFeaturesQueryReceivedEvent extends BaseEvent {
   type: typeof DiscoverFeaturesEventTypes.QueryReceived
   payload: {
-    message: AgentMessage
-    queries: FeatureQueryOptions[]
+    message: DidCommMessage
+    queries: DidCommFeatureQueryOptions[]
     protocolVersion: string
     connection: ConnectionRecord
     threadId: string
@@ -22,8 +22,8 @@ export interface DiscoverFeaturesQueryReceivedEvent extends BaseEvent {
 export interface DiscoverFeaturesDisclosureReceivedEvent extends BaseEvent {
   type: typeof DiscoverFeaturesEventTypes.DisclosureReceived
   payload: {
-    message: AgentMessage
-    disclosures: Feature[]
+    message: DidCommMessage
+    disclosures: DidCommFeature[]
     protocolVersion: string
     connection: ConnectionRecord
     threadId: string

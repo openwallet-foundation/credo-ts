@@ -5,10 +5,10 @@ import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
   ConnectionsModule,
   DidCommModule,
-  HttpOutboundTransport,
+  HttpDidCommOutboundTransport,
   MessagePickupModule,
   OutOfBandModule,
-  WsOutboundTransport,
+  WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -19,8 +19,8 @@ import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
-  const wsOutboundTransport = new WsOutboundTransport()
-  const httpOutboundTransport = new HttpOutboundTransport()
+  const wsOutboundTransport = new WsOutboundDidCommTransport()
+  const httpOutboundTransport = new HttpDidCommOutboundTransport()
 
   // Setup the agent
   const agent = new Agent({

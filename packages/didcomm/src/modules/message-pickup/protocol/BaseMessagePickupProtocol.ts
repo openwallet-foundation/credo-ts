@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage } from '../../../AgentMessage'
-import type { FeatureRegistry } from '../../../FeatureRegistry'
-import type { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { MessagePickupProtocol } from './MessagePickupProtocol'
 import type {
   DeliverMessagesProtocolOptions,
@@ -22,17 +22,17 @@ export abstract class BaseMessagePickupProtocol implements MessagePickupProtocol
   public abstract createPickupMessage(
     agentContext: AgentContext,
     options: PickupMessagesProtocolOptions
-  ): Promise<PickupMessagesProtocolReturnType<AgentMessage>>
+  ): Promise<PickupMessagesProtocolReturnType<DidCommMessage>>
 
   public abstract createDeliveryMessage(
     agentContext: AgentContext,
     options: DeliverMessagesProtocolOptions
-  ): Promise<DeliverMessagesProtocolReturnType<AgentMessage> | undefined>
+  ): Promise<DeliverMessagesProtocolReturnType<DidCommMessage> | undefined>
 
   public abstract setLiveDeliveryMode(
     agentContext: AgentContext,
     options: SetLiveDeliveryModeProtocolOptions
-  ): Promise<SetLiveDeliveryModeProtocolReturnType<AgentMessage>>
+  ): Promise<SetLiveDeliveryModeProtocolReturnType<DidCommMessage>>
 
-  public abstract register(messageHandlerRegistry: MessageHandlerRegistry, featureRegistry: FeatureRegistry): void
+  public abstract register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 }

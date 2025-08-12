@@ -9,7 +9,7 @@ import {
   Attachment,
   AttachmentData,
   DidExchangeState,
-  InboundMessageContext,
+  InboundDidCommMessageContext,
   PresentationProblemReportReason,
   ProofEventTypes,
   ProofExchangeRecord,
@@ -116,14 +116,14 @@ describe('V1ProofProtocol', () => {
 
   describe('processRequest', () => {
     let presentationRequest: V1RequestPresentationMessage
-    let messageContext: InboundMessageContext<V1RequestPresentationMessage>
+    let messageContext: InboundDidCommMessageContext<V1RequestPresentationMessage>
 
     beforeEach(() => {
       presentationRequest = new V1RequestPresentationMessage({
         comment: 'abcd',
         requestAttachments: [requestAttachment],
       })
-      messageContext = new InboundMessageContext(presentationRequest, {
+      messageContext = new InboundDidCommMessageContext(presentationRequest, {
         connection,
         agentContext,
       })
@@ -211,7 +211,7 @@ describe('V1ProofProtocol', () => {
 
   describe('processProblemReport', () => {
     let proof: ProofExchangeRecord
-    let messageContext: InboundMessageContext<V1PresentationProblemReportMessage>
+    let messageContext: InboundDidCommMessageContext<V1PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofExchangeRecord({
@@ -225,7 +225,7 @@ describe('V1ProofProtocol', () => {
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundMessageContext(presentationProblemReportMessage, {
+      messageContext = new InboundDidCommMessageContext(presentationProblemReportMessage, {
         connection,
         agentContext,
       })
