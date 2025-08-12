@@ -164,8 +164,10 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Expiry time for the issuance session. This can change dynamically during
    * the session lifetime, based on the possible deferrals.
+   *
+   * @since 0.6
    */
-  public expiresAt!: Date
+  public expiresAt?: Date
 
   /**
    * The id of the issuer that this session is for.

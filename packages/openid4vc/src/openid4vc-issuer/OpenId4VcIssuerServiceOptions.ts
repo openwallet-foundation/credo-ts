@@ -306,7 +306,6 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
 
   /**
    * Authorization associated with the credential request
-   * TODO: needed?
    */
   authorization: OpenId4VciCredentialRequestAuthorization
 

@@ -1106,9 +1106,13 @@ export class OpenId4VcIssuerService {
     issuanceSession: OpenId4VcIssuanceSessionRecord,
     interval: number
   ) {
+    const expiresAt =
+      issuanceSession.expiresAt ??
+      addSecondsToDate(issuanceSession.createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+
     issuanceSession.expiresAt = new Date(
       Math.max(
-        issuanceSession.expiresAt.getTime(),
+        expiresAt.getTime(),
         addSecondsToDate(
           new Date(),
           Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
