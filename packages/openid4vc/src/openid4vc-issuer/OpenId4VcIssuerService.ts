@@ -1261,10 +1261,11 @@ export class OpenId4VcIssuerService {
       })
     }
 
-    // Limit to not-issued configurations
+    // Limit to not-issued and not-deferred configurations
+    const deferredCredentialConfigurationIds = issuanceSession.transactions.map((tx) => tx.credentialConfigurationId)
     const configurationsMatchingRequestAndOfferNotIssued = getOfferedCredentials(
       issuanceSession.credentialOfferPayload.credential_configuration_ids.filter(
-        (id) => !issuanceSession.issuedCredentials.includes(id)
+        (id) => !issuanceSession.issuedCredentials.includes(id) && !deferredCredentialConfigurationIds.includes(id)
       ),
       configurationsMatchingRequestAndOffer,
       { ignoreNotFoundIds: true }
