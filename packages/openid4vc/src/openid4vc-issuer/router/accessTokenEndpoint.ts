@@ -68,10 +68,11 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
       })
     }
 
-    if (
-      Date.now() >
-      addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds).getTime()
-    ) {
+    const expiresAt =
+      issuanceSession.expiresAt ??
+      addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
+    if (Date.now() > expiresAt.getTime()) {
       issuanceSession.errorMessage = 'Credential offer has expired'
       await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
       throw new Oauth2ServerErrorResponseError({
@@ -120,10 +121,9 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
             required: issuanceSession.dpop?.required ?? config.dpopRequired,
           },
           expectedTxCode: issuanceSession.userPin,
-          preAuthorizedCodeExpiresAt: addSecondsToDate(
-            issuanceSession.createdAt,
-            config.statefulCredentialOfferExpirationInSeconds
-          ),
+          preAuthorizedCodeExpiresAt:
+            issuanceSession.expiresAt ??
+            addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds),
         })
       } else if (grant.grantType === authorizationCodeGrantIdentifier) {
         if (!issuanceSession.authorization?.code || !issuanceSession.authorization?.codeExpiresAt) {

@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import type { Mdoc, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
@@ -18,12 +19,12 @@ import {
   calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, CredentialRequest } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import type { OpenId4VciSignMdocCredentials } from '../src'
+import type { OpenId4VciSignMdocCredentials, VerifiedOpenId4VcCredentialHolderBinding } from '../src'
 import { OpenId4VcHolderModule, OpenId4VcIssuanceSessionState, OpenId4VcIssuerModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -37,9 +38,8 @@ import {
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
-const _verificationBaseUrl = `${baseUrl}/oid4vp`
 
-describe('OpenId4Vc', () => {
+describe('OpenId4Vci (Deferred)', () => {
   let expressApp: Express
   let clearNock: () => void
 
@@ -58,6 +58,14 @@ describe('OpenId4Vc', () => {
 
   let credentialIssuerCertificate: X509Certificate
 
+  const storage: Record<
+    string,
+    {
+      credentialRequest: CredentialRequest
+      holderBinding: VerifiedOpenId4VcCredentialHolderBinding
+    }
+  > = {}
+
   beforeEach(async () => {
     expressApp = express()
 
@@ -69,7 +77,27 @@ describe('OpenId4Vc', () => {
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
 
-          credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
+          credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
+            const uuid = randomUUID()
+
+            storage[uuid] = {
+              credentialRequest,
+              holderBinding,
+            }
+
+            return {
+              type: 'deferral',
+              transactionId: uuid,
+              interval: 2000,
+            }
+          },
+
+          deferredCredentialRequestToCredentialMapper: async ({ agentContext, deferredCredentialRequest }) => {
+            if (!storage[deferredCredentialRequest.transaction_id]) {
+              throw new Error('No credential request found for transaction id')
+            }
+            const { credentialRequest, holderBinding } = storage[deferredCredentialRequest.transaction_id]
+
             // We sign the request with the first did:key did we have
             const didsApi = agentContext.dependencyManager.resolve(DidsApi)
             const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
@@ -307,13 +335,31 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    expect(credentialResponse.deferredCredentials).toHaveLength(1)
+    expect(credentialResponse.credentials).toHaveLength(0)
+    expect(credentialResponse.deferredCredentials[0].interval).toEqual(2000)
+
+    const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
+      ...tokenResponseTenant,
+      ...credentialResponse.deferredCredentials[0],
+      issuerMetadata: resolvedCredentialOffer.metadata,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.Completed,
       issuanceSessionId: issuanceSession.id,
       contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
 
-    expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
+    expect(deferredCredentialResponse.deferredCredentials).toHaveLength(0)
+    expect(deferredCredentialResponse.credentials).toHaveLength(1)
+
+    const compactSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
     const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
@@ -322,23 +368,23 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with tenants, issuer endpoints requesting a mdoc', async () => {
-    const issuerTenant1 = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
+    const issuerTenant = await issuer.agent.modules.tenants.getTenantAgent({ tenantId: issuer1.tenantId })
 
-    const issuerCertificate = await issuerTenant1.x509.createCertificate({
+    const issuerCertificate = await issuerTenant.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(
-        (await issuerTenant1.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
+        (await issuerTenant.kms.createKey({ type: { crv: 'P-256', kty: 'EC' } })).publicJwk
       ),
       issuer: 'C=DE',
     })
     credentialIssuerCertificate = issuerCertificate
 
-    const openIdIssuerTenant1 = await issuerTenant1.modules.openId4VcIssuer.createIssuer({
+    const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
       },
     })
-    const issuer1Record = await issuerTenant1.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant1.issuerId)
+    const issuer1Record = await issuerTenant.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant.issuerId)
     expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['ES256'])
 
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
@@ -355,30 +401,28 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    const { issuanceSession: issuanceSession1, credentialOffer: credentialOffer1 } =
-      await issuerTenant1.modules.openId4VcIssuer.createCredentialOffer({
-        issuerId: openIdIssuerTenant1.issuerId,
-        credentialConfigurationIds: ['universityDegree'],
-        preAuthorizedCodeFlowConfig: {},
-        version: 'v1.draft15',
-      })
+    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
+      issuerId: openIdIssuerTenant.issuerId,
+      credentialConfigurationIds: ['universityDegree'],
+      preAuthorizedCodeFlowConfig: {},
+      version: 'v1.draft15',
+    })
 
-    await issuerTenant1.endSession()
+    await issuerTenant.endSession()
 
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.OfferCreated,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
 
-    const holderTenant1 = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
-    holderTenant1.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    holderTenant.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
-    const resolvedCredentialOffer1 =
-      await holderTenant1.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer1)
+    const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
 
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['ES256'])
-    expect(resolvedCredentialOffer1.offeredCredentialConfigurations).toEqual({
+    expect(resolvedCredentialOffer.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['ES256'])
+    expect(resolvedCredentialOffer.offeredCredentialConfigurations).toEqual({
       universityDegree: {
         doctype: 'UniversityDegreeCredential',
         cryptographic_binding_methods_supported: ['did:key', 'jwk'],
@@ -392,80 +436,102 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    expect(resolvedCredentialOffer1.credentialOfferPayload.credential_issuer).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}`
+    expect(resolvedCredentialOffer.credentialOfferPayload.credential_issuer).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}`
     )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.token_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/token`
+    expect(resolvedCredentialOffer.metadata.credentialIssuer?.token_endpoint).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/token`
     )
-    expect(resolvedCredentialOffer1.metadata.credentialIssuer?.credential_endpoint).toEqual(
-      `${issuanceBaseUrl}/${openIdIssuerTenant1.issuerId}/credential`
+    expect(resolvedCredentialOffer.metadata.credentialIssuer?.credential_endpoint).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/credential`
+    )
+    expect(resolvedCredentialOffer.metadata.credentialIssuer?.deferred_credential_endpoint).toEqual(
+      `${issuanceBaseUrl}/${openIdIssuerTenant.issuerId}/deferred-credential`
     )
 
     // Bind to JWK
-    const tokenResponseTenant1 = await holderTenant1.modules.openId4VcHolder.requestToken({
-      resolvedCredentialOffer: resolvedCredentialOffer1,
+    const tokenResponseTenant = await holderTenant.modules.openId4VcHolder.requestToken({
+      resolvedCredentialOffer: resolvedCredentialOffer,
     })
 
-    expect(tokenResponseTenant1.accessToken).toBeDefined()
-    expect(tokenResponseTenant1.dpop?.jwk).toBeInstanceOf(Kms.PublicJwk)
-    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant1.accessToken)
+    expect(tokenResponseTenant.accessToken).toBeDefined()
+    expect(tokenResponseTenant.dpop?.jwk).toBeInstanceOf(Kms.PublicJwk)
+    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant.accessToken)
 
     expect(payload.toJson()).toEqual({
       cnf: {
         jkt: await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
-          hashCallback: getOid4vcCallbacks(holderTenant1.context).hash,
-          jwk: tokenResponseTenant1.dpop?.jwk.toJson() as Jwk,
+          hashCallback: getOid4vcCallbacks(holderTenant.context).hash,
+          jwk: tokenResponseTenant.dpop?.jwk.toJson() as Jwk,
         }),
       },
       'pre-authorized_code':
-        resolvedCredentialOffer1.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
+        resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
           'pre-authorized_code'
         ],
 
-      aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
+      aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
       exp: expect.any(Number),
       iat: expect.any(Number),
-      iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant1.issuerId}`,
+      iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
       jti: expect.any(String),
       nbf: undefined,
       sub: expect.stringContaining('credo:'),
     })
 
-    const credentialsTenant1 = await holderTenant1.modules.openId4VcHolder.requestCredentials({
-      resolvedCredentialOffer: resolvedCredentialOffer1,
-      ...tokenResponseTenant1,
+    const credentialsTenant1 = await holderTenant.modules.openId4VcHolder.requestCredentials({
+      resolvedCredentialOffer: resolvedCredentialOffer,
+      ...tokenResponseTenant,
       credentialBindingResolver,
     })
 
     // Wait for all events
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.AccessTokenRequested,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.AccessTokenCreated,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
       state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
     await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
-      state: OpenId4VcIssuanceSessionState.Completed,
-      issuanceSessionId: issuanceSession1.id,
-      contextCorrelationId: issuerTenant1.context.contextCorrelationId,
+      state: OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
     })
 
-    expect(credentialsTenant1.credentials).toHaveLength(1)
-    const mdocBase64Url = (credentialsTenant1.credentials[0].credentials[0] as Mdoc).base64Url
-    const mdoc = holderTenant1.mdoc.fromBase64Url(mdocBase64Url)
+    expect(credentialsTenant1.deferredCredentials).toHaveLength(1)
+    expect(credentialsTenant1.credentials).toHaveLength(0)
+    expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(2000)
+
+    const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
+      ...tokenResponseTenant,
+      ...credentialsTenant1.deferredCredentials[0],
+      issuerMetadata: resolvedCredentialOffer.metadata,
+    })
+
+    await waitForCredentialIssuanceSessionRecordSubject(issuer.replaySubject, {
+      state: OpenId4VcIssuanceSessionState.Completed,
+      issuanceSessionId: issuanceSession.id,
+      contextCorrelationId: issuerTenant.context.contextCorrelationId,
+    })
+
+    expect(deferredCredentialResponse.deferredCredentials).toHaveLength(0)
+    expect(deferredCredentialResponse.credentials).toHaveLength(1)
+
+    expect(deferredCredentialResponse.credentials).toHaveLength(1)
+    const mdocBase64Url = (deferredCredentialResponse.credentials[0].credentials[0] as Mdoc).base64Url
+    const mdoc = holderTenant.mdoc.fromBase64Url(mdocBase64Url)
     expect(mdoc.docType).toEqual('UniversityDegreeCredential')
 
-    await holderTenant1.endSession()
+    await holderTenant.endSession()
   })
 })
