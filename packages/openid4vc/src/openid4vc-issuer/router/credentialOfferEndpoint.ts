@@ -3,6 +3,7 @@ import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
+import { addSecondsToDate } from '@openid4vc/utils'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -68,7 +69,11 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Invalid state for credential offer')
         }
 
-        if (Date.now() > openId4VcIssuanceSession.expiresAt.getTime()) {
+        const expiresAt =
+          openId4VcIssuanceSession.expiresAt ??
+          addSecondsToDate(openId4VcIssuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
+        if (Date.now() > expiresAt.getTime()) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')
         }
 

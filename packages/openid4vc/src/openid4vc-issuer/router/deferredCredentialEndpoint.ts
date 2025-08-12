@@ -5,6 +5,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 import { joinUriParts } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { addSecondsToDate } from '@openid4vc/utils'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -158,7 +159,11 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
         )
       }
 
-      if (Date.now() > issuanceSession.expiresAt.getTime()) {
+      const expiresAt =
+        issuanceSession.expiresAt ??
+        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
+      if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
         throw new Oauth2ServerErrorResponseError({
