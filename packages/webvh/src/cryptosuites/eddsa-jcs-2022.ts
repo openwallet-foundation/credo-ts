@@ -13,6 +13,8 @@ import { WebVhResource } from '../anoncreds/utils/transform'
 import { ProofOptions } from './types'
 
 export class EddsaJcs2022Cryptosuite {
+  didApi: DidsApi
+  keyApi: Kms.KeyManagementApi
   agentContext: AgentContext
   proofOptions: object = {
     type: 'DataIntegrityProof',
@@ -20,6 +22,8 @@ export class EddsaJcs2022Cryptosuite {
   }
   constructor(agentContext: AgentContext) {
     this.agentContext = agentContext
+    this.didApi = agentContext.dependencyManager.resolve(DidsApi)
+    this.keyApi = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
   }
 
   public async _logError(error: string) {
@@ -27,9 +31,7 @@ export class EddsaJcs2022Cryptosuite {
   }
 
   public async _publicJwkFromId(verificationMethodId: string): Promise<PublicJwk> {
-    const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
-    let didDocument = await didsApi.resolveDidDocument(verificationMethodId as string)
-    didDocument = new DidDocument(didDocument)
+    const didDocument = new DidDocument(await this.didApi.resolveDidDocument(verificationMethodId))
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return publicJwk
@@ -77,8 +79,7 @@ export class EddsaJcs2022Cryptosuite {
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicJwk = await this._publicJwkFromId(options.verificationMethod)
-    const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const verificationResult = await kms.verify({
+    const verificationResult = await this.keyApi.verify({
       key: { publicJwk: publicJwk.toJson() },
       algorithm: 'EdDSA',
       signature: proofBytes,
