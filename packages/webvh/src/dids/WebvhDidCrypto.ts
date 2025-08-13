@@ -24,7 +24,6 @@ export class WebvhDidCrypto implements Verifier {
         signature: signature,
         data: message,
       })
-      console.log(verificationResult)
 
       return verificationResult.verified
     } catch (error) {

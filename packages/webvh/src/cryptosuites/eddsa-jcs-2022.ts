@@ -1,10 +1,11 @@
-import { type AgentContext, type VerificationMethod, Kms } from '@credo-ts/core'
+import { Buffer } from 'buffer'
+import { createPublicKey, verify } from 'crypto'
+import { type AgentContext, type VerificationMethod } from '@credo-ts/core'
 import { DidsApi, MultiBaseEncoder } from '@credo-ts/core'
 import { sha256 } from '@noble/hashes/sha256'
-import { createPublicKey, verify } from "crypto";
 import { canonicalize } from 'json-canonicalize'
-import { ProofOptions } from './types'
 import { WebVhResource } from '../anoncreds/utils/transform'
+import { ProofOptions } from './types'
 
 export class EddsaJcs2022Cryptosuite {
   agentContext: AgentContext
@@ -40,33 +41,34 @@ export class EddsaJcs2022Cryptosuite {
     if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
       const publicKeyBytes = this._publicKeyBytesFromMultikey(verificationMethod.publicKeyMultibase)
       return publicKeyBytes
-    } else {
-      this._logError('Could not find verification method in did:webvh DID document')
-      return
     }
+    this._logError('Could not find verification method in did:webvh DID document')
+    return
   }
 
   public _publicKeyBytesFromMultikey(multikey: string) {
     const publicMultikeyBytes = MultiBaseEncoder.decode(multikey).data
-    const publicMultikeyHex = Array.from(publicMultikeyBytes).map(n => n.toString(16).padStart(2, "0")).join("");
+    const publicMultikeyHex = Array.from(publicMultikeyBytes)
+      .map((n) => n.toString(16).padStart(2, '0'))
+      .join('')
     const publicKeyHex = publicMultikeyHex.substring(4)
-    const publicKeyLength = publicKeyHex.length / 2;
-    const publicKeyBytes = new Uint8Array(publicKeyLength);
-    for (var i=0; i<publicKeyLength; i++) {
-        publicKeyBytes[i] = parseInt(publicKeyHex.substr(i*2, 2), 16);
+    const publicKeyLength = publicKeyHex.length / 2
+    const publicKeyBytes = new Uint8Array(publicKeyLength)
+    for (let i = 0; i < publicKeyLength; i++) {
+      publicKeyBytes[i] = Number.parseInt(publicKeyHex.substr(i * 2, 2), 16)
     }
-    return publicKeyBytes;
+    return publicKeyBytes
   }
 
   public _keyFromPublicBytes(publicKeyBytes: Uint8Array) {
     const publicKey = createPublicKey({
       key: Buffer.concat([
         Buffer.from([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00]),
-        Buffer.from(publicKeyBytes)
+        Buffer.from(publicKeyBytes),
       ]),
-      format: "der",
-      type: "spki",
-    });
+      format: 'der',
+      type: 'spki',
+    })
     return publicKey
   }
   public transformation(unsecuredDocument: object, options: ProofOptions) {
@@ -103,9 +105,9 @@ export class EddsaJcs2022Cryptosuite {
     const encoder = new TextEncoder()
     const transformedDocumentHash = sha256(encoder.encode(transformedDocument))
     const proofConfigHash = sha256(encoder.encode(canonicalProofConfig))
-    const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length);
-    hashData.set(proofConfigHash, 0);
-    hashData.set(transformedDocumentHash, proofConfigHash.length);
+    const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length)
+    hashData.set(proofConfigHash, 0)
+    hashData.set(transformedDocumentHash, proofConfigHash.length)
     return hashData
   }
 

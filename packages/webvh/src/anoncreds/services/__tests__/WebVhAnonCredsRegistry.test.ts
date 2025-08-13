@@ -419,7 +419,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for null proof', async () => {
-      let testInput = { ...mockSchemaResource}
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
       testInput.proof = null
       const result = await registry.verifyProof(agentContext, testInput)
@@ -429,9 +429,9 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for undefined proof', async () => {
-      let testInput = { ...mockSchemaResource}
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
-      delete testInput.proof
+      testInput.proof = undefined
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
@@ -439,7 +439,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for non-object proof', async () => {
-      let testInput = { ...mockSchemaResource}
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
       testInput.proof = testInput.proof.proofValue
       const result = await registry.verifyProof(agentContext, testInput)
@@ -449,10 +449,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for wrong proof type', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      testProof.type = "Ed25519Signature2020"
+      testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -461,9 +461,9 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for wrong cryptosuite', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
-      testProof.cryptosuite = "eddsa-rdfc-2022"
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      testProof.cryptosuite = 'eddsa-rdfc-2022'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -472,10 +472,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for missing verificationMethod', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      delete testProof.verificationMethod
+      testProof.verificationMethod = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -484,10 +484,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for invalid verificationMethod type', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      testProof.verificationMethod = {"id": testProof.verificationMethod}
+      testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -495,10 +495,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for missing proofValue', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      delete testProof.proofValue
+      testProof.proofValue = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -507,10 +507,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false for invalid proofValue type', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      testProof.proofValue = {"value": testInput.proof.proofValue}
+      testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -519,7 +519,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false when DID resolution fails', async () => {
-      let testInput = { ...mockSchemaResource}
+      const testInput = { ...mockSchemaResource }
 
       // Mock DID resolution failure
       mockResolveDidDocument.mockResolvedValue({
@@ -535,10 +535,10 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false when verification method not found in DID document', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      testProof.verificationMethod = issuerId+"#key-01"
+      testProof.verificationMethod = `${issuerId}#key-01`
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -546,9 +546,9 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return false when signature verification fails', async () => {
-      let testInput = { ...mockSchemaResource}
-      let testProof = { ...mockSchemaResource.proof}
-      testProof.proofValue = "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      testProof.proofValue = 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
       testInput.proof = testProof
 
       const result = await registry.verifyProof(agentContext, testInput)
@@ -558,7 +558,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should handle proof without optional fields', async () => {
-      let testInput = { ...mockSchemaResource}
+      const testInput = { ...mockSchemaResource }
       const result = await registry.verifyProof(agentContext, testInput)
 
       expect(result).toBe(true)
