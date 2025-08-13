@@ -1,9 +1,10 @@
 import type { AgentContext, VerificationMethod } from '@credo-ts/core'
 import { DidsApi, MultiBaseEncoder } from '@credo-ts/core'
 import { sha256 } from '@noble/hashes/sha256'
-import { Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
+import { Key, KeyAlgorithm } from '@openwallet-foundation/askar-nodejs'
 import { canonicalize } from 'json-canonicalize'
 import { ProofOptions, SecuredDocument } from './types'
+import { WebVhResource } from '../anoncreds/utils/transform'
 
 export class EddsaJcs2022Cryptosuite {
   agentContext: AgentContext
@@ -107,7 +108,7 @@ export class EddsaJcs2022Cryptosuite {
     return verificationResult
   }
 
-  public async verifyProof(securedDocument: SecuredDocument) {
+  public async verifyProof(securedDocument: WebVhResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
     const unsecuredDocument = (({ proof, ...unsecuredDocument }) => unsecuredDocument)(securedDocument)
     const proofOptions = (({ proofValue, ...proofOptions }) => proofOptions)(securedDocument.proof)
