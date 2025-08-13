@@ -13,13 +13,7 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
 
-import {
-  CredoError,
-  JsonTransformer,
-  MultiBaseEncoder,
-  MultiHashEncoder,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import { CredoError, JsonTransformer, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 import { EddsaJcs2022Cryptosuite } from '../../cryptosuites/eddsa-jcs-2022'
 import { WebvhDidResolver } from '../../dids'
@@ -55,7 +49,6 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     const digestMultihash = MultiHashEncoder.encode(valueBytes, 'sha-256')
     const digestMultibase = MultiBaseEncoder.encode(digestMultihash, 'base58btc')
     return digestMultibase
-
   }
   private async _resolveAndValidateAttestedResource(
     agentContext: AgentContext,
@@ -95,7 +88,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           stack: parseError instanceof Error ? parseError.stack : undefined,
         })
         throw new CredoError(
-          `Failed to parse resource data for ${resourceId}: ${parseError instanceof Error ? parseError.message : String(parseError)
+          `Failed to parse resource data for ${resourceId}: ${
+            parseError instanceof Error ? parseError.message : String(parseError)
           }`
         )
       }
@@ -132,7 +126,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(`Resource ${resourceId} proof validated.`)
 
       // 3. Resource Digest Multibase Verification
-      if (resourceObject.id != resourceId) {
+      if (resourceObject.id !== resourceId) {
         throw new CredoError(`ID mismatch ${resourceObject.id} != ${resourceId}`)
       }
       const parts = resourceId.split(/[:/]/)
@@ -150,7 +144,6 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       agentContext.config.logger.trace(`Resource ${resourceId} content hash matches filename.`)
 
       return { resourceObject, resolutionResult }
-
     } catch (error) {
       agentContext.config.logger.error('Error in did:webvh _resolveAndValidateAttestedResource:', error)
       throw error
@@ -169,7 +162,12 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       const schemaContent = resourceObject.content
 
       // Type check to ensure we have a schema content object
-      if (!('attrNames' in schemaContent) || !('name' in schemaContent) || !('version' in schemaContent) || !('issuerId' in schemaContent)) {
+      if (
+        !('attrNames' in schemaContent) ||
+        !('name' in schemaContent) ||
+        !('version' in schemaContent) ||
+        !('issuerId' in schemaContent)
+      ) {
         throw new CredoError(`Parsed resource content for ${schemaId} is not a valid schema.`)
       }
 
@@ -178,7 +176,8 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       // For simplicity, extract again.
       const parts = schemaId.split(/[:/]/)
       const expectedMultibaseHash = parts[parts.length - 1]
-      const issuerId = schemaContent.issuerId ||
+      const issuerId =
+        schemaContent.issuerId ||
         schemaId.substring(0, schemaId.lastIndexOf(expectedMultibaseHash)).replace(/[:/]$/, '')
 
       return {
@@ -186,7 +185,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           attrNames: schemaContent.attrNames,
           name: schemaContent.name,
           version: schemaContent.version,
-          issuerId
+          issuerId,
         },
         schemaId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
@@ -319,8 +318,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         revocationRegistryDefinitionId,
         resolutionMetadata: {
           error: 'invalid',
-          message: `unable to resolve revocation registry definition: ${error instanceof Error ? error.message : String(error)
-            }`,
+          message: `unable to resolve revocation registry definition: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
         revocationRegistryDefinitionMetadata: {},
       }
