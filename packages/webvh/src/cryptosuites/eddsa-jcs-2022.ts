@@ -7,7 +7,6 @@ import {
   TypedArrayEncoder,
   getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
-import { PublicJwk } from '@credo-ts/core/src/modules/kms'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
 import { ProofOptions } from './types'
@@ -30,7 +29,7 @@ export class EddsaJcs2022Cryptosuite {
     this.agentContext.config.logger.error(error)
   }
 
-  public async _publicJwkFromId(verificationMethodId: string): Promise<PublicJwk> {
+  public async _publicJwkFromId(verificationMethodId: string): Promise<Kms.PublicJwk> {
     const didDocument = new DidDocument(await this.didApi.resolveDidDocument(verificationMethodId))
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
