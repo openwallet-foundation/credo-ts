@@ -170,7 +170,7 @@ describe('data integrity format service (w3c)', () => {
     })
 
     const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       credentialFormats: {
         dataIntegrity: {
           bindingRequired: true,
@@ -182,12 +182,12 @@ describe('data integrity format service (w3c)', () => {
 
     // Holder processes and accepts offer
     await dataIntegrityCredentialFormatService.processOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: offerAttachment,
     })
     const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
       await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
-        credentialRecord: holderCredentialRecord,
+        credentialExchangeRecord: holderCredentialRecord,
         offerAttachment,
         credentialFormats: {
           dataIntegrity: {
@@ -200,13 +200,13 @@ describe('data integrity format service (w3c)', () => {
 
     // Issuer processes and accepts request
     await dataIntegrityCredentialFormatService.processRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: requestAttachment,
     })
     const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(
       agentContext,
       {
-        credentialRecord: issuerCredentialRecord,
+        credentialExchangeRecord: issuerCredentialRecord,
         requestAttachment,
         offerAttachment,
         requestAppendAttachments,
@@ -222,7 +222,7 @@ describe('data integrity format service (w3c)', () => {
     // Holder processes and accepts credential
     await dataIntegrityCredentialFormatService.processCredential(agentContext, {
       offerAttachment,
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
@@ -242,9 +242,9 @@ describe('data integrity format service (w3c)', () => {
 
     const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+    const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
 
-    expect(credentialRecord.credential).toEqual({
+    expect(credentialExchangeRecord.credential).toEqual({
       ...{
         ...credential,
         credentialSubject: new W3cCredentialSubject({

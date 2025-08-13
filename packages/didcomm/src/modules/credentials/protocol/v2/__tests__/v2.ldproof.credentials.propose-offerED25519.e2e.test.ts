@@ -196,7 +196,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.modules.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
     })
 
@@ -245,7 +245,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     expect(aliceCredentialRecord.type).toBe(DidCommCredentialExchangeRecord.type)
 
     const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         jsonld: {},
       },
@@ -265,7 +265,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     testLogger.test('Faber sends credential to Alice')
 
     await faberAgent.modules.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
 
@@ -276,7 +276,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.modules.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
+    await aliceAgent.modules.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -371,7 +371,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     testLogger.test('Faber sends credential offer to Alice')
 
     await faberAgent.modules.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C & INDY Proposals',
       credentialFormats: {
         indy: {
@@ -473,7 +473,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     expect(aliceCredentialRecord.type).toBe(DidCommCredentialExchangeRecord.type)
 
     const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnectionId)
@@ -490,7 +490,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     testLogger.test('Faber sends credential to Alice')
 
     await faberAgent.modules.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
 
@@ -501,7 +501,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.modules.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
+    await aliceAgent.modules.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {

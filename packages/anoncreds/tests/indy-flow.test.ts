@@ -231,7 +231,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: proposalAttachment } = await legacyIndyCredentialFormatService.createProposal(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       credentialFormats: {
         indy: {
           attributes: credentialAttributes,
@@ -242,23 +242,23 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Issuer processes and accepts proposal
     await legacyIndyCredentialFormatService.processProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: proposalAttachment,
     })
     // Set attributes on the credential record, this is normally done by the protocol service
     issuerCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: offerAttachment } = await legacyIndyCredentialFormatService.acceptProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       proposalAttachment: proposalAttachment,
     })
 
     // Holder processes and accepts offer
     await legacyIndyCredentialFormatService.processOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: offerAttachment,
     })
     const { attachment: requestAttachment } = await legacyIndyCredentialFormatService.acceptOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
         indy: {
@@ -272,11 +272,11 @@ describe('Legacy indy format services using anoncreds-rs', () => {
 
     // Issuer processes and accepts request
     await legacyIndyCredentialFormatService.processRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: requestAttachment,
     })
     const { attachment: credentialAttachment } = await legacyIndyCredentialFormatService.acceptRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       requestAttachment,
       offerAttachment,
     })
@@ -284,7 +284,7 @@ describe('Legacy indy format services using anoncreds-rs', () => {
     // Holder processes and accepts credential
     await legacyIndyCredentialFormatService.processCredential(agentContext, {
       offerAttachment,
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })

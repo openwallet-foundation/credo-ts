@@ -46,7 +46,7 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
   // Offer Credential Methods
   offerCredential(options: OfferCredentialOptions<CPs>): Promise<DidCommCredentialExchangeRecord>
   acceptOffer(options: AcceptCredentialOfferOptions<CPs>): Promise<DidCommCredentialExchangeRecord>
-  declineOffer(credentialRecordId: string, options?: DeclineCredentialOfferOptions): Promise<DidCommCredentialExchangeRecord>
+  declineOffer(options: DeclineCredentialOfferOptions): Promise<DidCommCredentialExchangeRecord>
   negotiateOffer(options: NegotiateCredentialOfferOptions<CPs>): Promise<DidCommCredentialExchangeRecord>
 
   // Request Credential Methods
@@ -65,7 +65,7 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
   // out of band
   createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
     message: DidCommMessage
-    credentialRecord: DidCommCredentialExchangeRecord
+    credentialExchangeRecord: DidCommCredentialExchangeRecord
   }>
 
   sendProblemReport(options: SendCredentialProblemReportOptions): Promise<DidCommCredentialExchangeRecord>
@@ -76,17 +76,17 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
     query: Query<DidCommCredentialExchangeRecord>,
     queryOptions?: QueryOptions
   ): Promise<DidCommCredentialExchangeRecord[]>
-  getById(credentialRecordId: string): Promise<DidCommCredentialExchangeRecord>
-  findById(credentialRecordId: string): Promise<DidCommCredentialExchangeRecord | null>
-  deleteById(credentialRecordId: string, options?: DeleteCredentialOptions): Promise<void>
-  update(credentialRecord: DidCommCredentialExchangeRecord): Promise<void>
-  getFormatData(credentialRecordId: string): Promise<GetCredentialFormatDataReturn<CredentialFormatsFromProtocols<CPs>>>
+  getById(credentialExchangeRecordId: string): Promise<DidCommCredentialExchangeRecord>
+  findById(credentialExchangeRecordId: string): Promise<DidCommCredentialExchangeRecord | null>
+  deleteById(credentialExchangeRecordId: string, options?: DeleteCredentialOptions): Promise<void>
+  update(credentialExchangeRecordId: DidCommCredentialExchangeRecord): Promise<void>
+  getFormatData(credentialExchangeRecordId: string): Promise<GetCredentialFormatDataReturn<CredentialFormatsFromProtocols<CPs>>>
 
   // DidComm Message Records
-  findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>>
-  findOfferMessage(credentialExchangeId: string): Promise<FindCredentialOfferMessageReturn<CPs>>
-  findRequestMessage(credentialExchangeId: string): Promise<FindCredentialRequestMessageReturn<CPs>>
-  findCredentialMessage(credentialExchangeId: string): Promise<FindCredentialMessageReturn<CPs>>
+  findProposalMessage(credentialExchangeRecordId: string): Promise<FindCredentialProposalMessageReturn<CPs>>
+  findOfferMessage(credentialExchangeRecordId: string): Promise<FindCredentialOfferMessageReturn<CPs>>
+  findRequestMessage(credentialExchangeRecordId: string): Promise<FindCredentialRequestMessageReturn<CPs>>
+  findCredentialMessage(credentialExchangeRecordId: string): Promise<FindCredentialMessageReturn<CPs>>
 }
 
 @injectable()
@@ -99,11 +99,9 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
   private connectionService: DidCommConnectionService
   private messageSender: DidCommMessageSender
-  private credentialRepository: DidCommCredentialExchangeRepository
+  private credentialExchangeRepository: DidCommCredentialExchangeRepository
   private agentContext: AgentContext
-  private didCommMessageRepository: DidCommMessageRepository
   private revocationNotificationService: DidCommRevocationNotificationService
-  private routingService: DidCommRoutingService
   private logger: Logger
 
   public constructor(
@@ -111,18 +109,14 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     connectionService: DidCommConnectionService,
     agentContext: AgentContext,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    credentialRepository: DidCommCredentialExchangeRepository,
-    mediationRecipientService: DidCommRoutingService,
-    didCommMessageRepository: DidCommMessageRepository,
+    credentialExchangeRepository: DidCommCredentialExchangeRepository,
     revocationNotificationService: DidCommRevocationNotificationService,
     config: DidCommCredentialsModuleConfig<CPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
-    this.credentialRepository = credentialRepository
-    this.routingService = mediationRecipientService
+    this.credentialExchangeRepository = credentialExchangeRepository
     this.agentContext = agentContext
-    this.didCommMessageRepository = didCommMessageRepository
     this.revocationNotificationService = revocationNotificationService
     this.logger = logger
     this.config = config
@@ -155,7 +149,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     connectionRecord.assertReady()
 
     // will get back a credential record -> map to Credential Exchange Record
-    const { credentialRecord, message } = await protocol.createProposal(this.agentContext, {
+    const { credentialExchangeRecord, message } = await protocol.createProposal(this.agentContext, {
       connectionRecord,
       credentialFormats: options.credentialFormats,
       comment: options.comment,
@@ -166,12 +160,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       connectionRecord,
     })
 
     await this.messageSender.sendMessage(outboundMessageContext)
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -183,24 +177,24 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    *
    */
   public async acceptProposal(options: AcceptCredentialProposalOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
-    if (!credentialRecord.connectionId) {
+    if (!credentialExchangeRecord.connectionId) {
       throw new CredoError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
+        `No connectionId found for credential exchange record '${credentialExchangeRecord.id}'. Connection-less issuance does not support credential proposal or negotiation.`
       )
     }
 
     // with version we can get the protocol
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
 
     // Assert
     connectionRecord.assertReady()
 
     // will get back a credential record -> map to Credential Exchange Record
     const { message } = await protocol.acceptProposal(this.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats: options.credentialFormats,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
@@ -211,12 +205,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     // send the message
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       connectionRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -228,19 +222,19 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    *
    */
   public async negotiateProposal(options: NegotiateCredentialProposalOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
-    if (!credentialRecord.connectionId) {
+    if (!credentialExchangeRecord.connectionId) {
       throw new CredoError(
-        `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
+        `No connection id for credential record ${credentialExchangeRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
 
     // with version we can get the Service
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
     const { message } = await protocol.negotiateProposal(this.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats: options.credentialFormats,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
@@ -248,15 +242,15 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       goal: options.goal,
     })
 
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       connectionRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -272,7 +266,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
     this.logger.debug(`Got a credentialProtocol object for version ${options.protocolVersion}`)
 
-    const { message, credentialRecord } = await protocol.createOffer(this.agentContext, {
+    const { message, credentialExchangeRecord } = await protocol.createOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
       autoAcceptCredential: options.autoAcceptCredential,
       comment: options.comment,
@@ -284,12 +278,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     this.logger.debug('Offer Message successfully created; message= ', message)
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       connectionRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -300,24 +294,24 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns Object containing offer associated credential record
    */
   public async acceptOffer(options: AcceptCredentialOfferOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
     this.logger.debug(`Got a credentialProtocol object for this version; version = ${protocol.version}`)
-    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialExchangeRecord.id)
     if (!offerMessage) {
-      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
     // Use connection if present
-    const connectionRecord = credentialRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = credentialExchangeRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
       : undefined
     connectionRecord?.assertReady()
 
     const { message } = await protocol.acceptOffer(this.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats: options.credentialFormats,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
@@ -328,53 +322,53 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: offerMessage,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   public async declineOffer(
-    credentialRecordId: string,
-    options?: DeclineCredentialOfferOptions
+    options: DeclineCredentialOfferOptions
   ): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(credentialRecordId)
-    credentialRecord.assertState(DidCommCredentialState.OfferReceived)
+
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
+    credentialExchangeRecord.assertState(DidCommCredentialState.OfferReceived)
 
     // with version we can get the Service
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
-    if (options?.sendProblemReport) {
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
+    if (options.sendProblemReport) {
       await this.sendProblemReport({
-        credentialRecordId,
+        credentialExchangeRecordId: options.credentialExchangeRecordId,
         description: options.problemReportDescription ?? 'Offer declined',
       })
     }
 
-    await protocol.updateState(this.agentContext, credentialRecord, DidCommCredentialState.Declined)
+    await protocol.updateState(this.agentContext, credentialExchangeRecord, DidCommCredentialState.Declined)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   public async negotiateOffer(options: NegotiateCredentialOfferOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
-    if (!credentialRecord.connectionId) {
+    if (!credentialExchangeRecord.connectionId) {
       throw new CredoError(
-        `No connection id for credential record ${credentialRecord.id} not found. Connection-less issuance does not support negotiation`
+        `No connection id for credential record ${credentialExchangeRecord.id} not found. Connection-less issuance does not support negotiation`
       )
     }
 
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
 
     // Assert
     connectionRecord.assertReady()
 
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
     const { message } = await protocol.negotiateOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
       goalCode: options.goalCode,
@@ -383,12 +377,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       connectionRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -399,12 +393,12 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    */
   public async createOffer(options: CreateCredentialOfferOptions<CPs>): Promise<{
     message: DidCommMessage
-    credentialRecord: DidCommCredentialExchangeRecord
+    credentialExchangeRecord: DidCommCredentialExchangeRecord
   }> {
     const protocol = this.getProtocol(options.protocolVersion)
 
     this.logger.debug(`Got a credentialProtocol object for version ${options.protocolVersion}`)
-    const { message, credentialRecord } = await protocol.createOffer(this.agentContext, {
+    const { message, credentialExchangeRecord } = await protocol.createOffer(this.agentContext, {
       credentialFormats: options.credentialFormats,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
@@ -414,7 +408,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
     this.logger.debug('Offer Message successfully created', { message })
 
-    return { message, credentialRecord }
+    return { message, credentialExchangeRecord }
   }
 
   /**
@@ -425,30 +419,30 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns DidCommCredentialExchangeRecord updated with information pertaining to this request
    */
   public async acceptRequest(options: AcceptCredentialRequestOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
     // with version we can get the Service
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
-    this.logger.debug(`Got a credentialProtocol object for version ${credentialRecord.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${credentialExchangeRecord.protocolVersion}`)
 
     // Use connection if present
-    const connectionRecord = credentialRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = credentialExchangeRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
       : undefined
     connectionRecord?.assertReady()
 
-    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialExchangeRecord.id)
     if (!requestMessage) {
-      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
-    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialExchangeRecord.id)
     if (!offerMessage) {
-      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
     const { message } = await protocol.acceptRequest(this.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats: options.credentialFormats,
       comment: options.comment,
       autoAcceptCredential: options.autoAcceptCredential,
@@ -458,70 +452,70 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: requestMessage,
       lastSentMessage: offerMessage,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
    * Accept a credential as holder (by sending a credential acknowledgement message) to the connection
    * associated with the credential record.
    *
-   * @param credentialRecordId The id of the credential record for which to accept the credential
+   * @param credentialExchangeRecordId The id of the credential exchange record for which to accept the credential
    * @returns credential exchange record associated with the sent credential acknowledgement message
    *
    */
   public async acceptCredential(options: AcceptCredentialOptions): Promise<DidCommCredentialExchangeRecord> {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
     // with version we can get the Service
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
-    this.logger.debug(`Got a credentialProtocol object for version ${credentialRecord.protocolVersion}`)
+    this.logger.debug(`Got a credentialProtocol object for version ${credentialExchangeRecord.protocolVersion}`)
 
     // Use connection if present
-    const connectionRecord = credentialRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = credentialExchangeRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
       : undefined
     connectionRecord?.assertReady()
 
-    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialExchangeRecord.id)
     if (!requestMessage) {
-      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
-    const credentialMessage = await protocol.findCredentialMessage(this.agentContext, credentialRecord.id)
+    const credentialMessage = await protocol.findCredentialMessage(this.agentContext, credentialExchangeRecord.id)
     if (!credentialMessage) {
-      throw new CredoError(`No credential message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No credential message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
     const { message } = await protocol.acceptCredential(this.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: credentialMessage,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
    * Send a revocation notification for a credential exchange record. Currently Revocation Notification V2 protocol is supported
    *
-   * @param credentialRecordId The id of the credential record for which to send revocation notification
+   * @param credentialExchangeRecordId The id of the credential record for which to send revocation notification
    */
   public async sendRevocationNotification(options: SendRevocationNotificationOptions): Promise<void> {
-    const { credentialRecordId, revocationId, revocationFormat, comment, requestAck } = options
+    const { credentialExchangeRecordId, revocationId, revocationFormat, comment, requestAck } = options
 
-    const credentialRecord = await this.getById(credentialRecordId)
+    const credentialExchangeRecord = await this.getById(credentialExchangeRecordId)
 
     const { message } = await this.revocationNotificationService.v2CreateRevocationNotification({
       credentialId: revocationId,
@@ -529,80 +523,80 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       comment,
       requestAck,
     })
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
-    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialRecord.id)
+    const requestMessage = await protocol.findRequestMessage(this.agentContext, credentialExchangeRecord.id)
     if (!requestMessage) {
-      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
-    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialExchangeRecord.id)
     if (!offerMessage) {
-      throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No offer message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
     // Use connection if present
-    const connectionRecord = credentialRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = credentialExchangeRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
       : undefined
     connectionRecord?.assertReady()
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
   }
 
   /**
    * Send problem report message for a credential record
-   * @param credentialRecordId The id of the credential record for which to send problem report
+   * @param credentialExchangeRecordId The id of the credential exchange record for which to send problem report
    * @returns credential record associated with the credential problem report message
    */
   public async sendProblemReport(options: SendCredentialProblemReportOptions) {
-    const credentialRecord = await this.getById(options.credentialRecordId)
+    const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
-    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialRecord.id)
+    const offerMessage = await protocol.findOfferMessage(this.agentContext, credentialExchangeRecord.id)
 
     const { message: problemReport } = await protocol.createProblemReport(this.agentContext, {
       description: options.description,
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     // Use connection if present
-    const connectionRecord = credentialRecord.connectionId
-      ? await this.connectionService.getById(this.agentContext, credentialRecord.connectionId)
+    const connectionRecord = credentialExchangeRecord.connectionId
+      ? await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
       : undefined
     connectionRecord?.assertReady()
 
     // If there's no connection (so connection-less, we require the state to be offer received)
     if (!connectionRecord) {
-      credentialRecord.assertState(DidCommCredentialState.OfferReceived)
+      credentialExchangeRecord.assertState(DidCommCredentialState.OfferReceived)
 
       if (!offerMessage) {
-        throw new CredoError(`No offer message found for credential record with id '${credentialRecord.id}'`)
+        throw new CredoError(`No offer message found for credential record with id '${credentialExchangeRecord.id}'`)
       }
     }
 
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: offerMessage ?? undefined,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   public async getFormatData(
     credentialRecordId: string
   ): Promise<GetCredentialFormatDataReturn<CredentialFormatsFromProtocols<CPs>>> {
-    const credentialRecord = await this.getById(credentialRecordId)
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
+    const credentialExchangeRecord = await this.getById(credentialRecordId)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
 
     return protocol.getFormatData(this.agentContext, credentialRecordId)
   }
@@ -616,7 +610,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    *
    */
   public getById(credentialRecordId: string): Promise<DidCommCredentialExchangeRecord> {
-    return this.credentialRepository.getById(this.agentContext, credentialRecordId)
+    return this.credentialExchangeRepository.getById(this.agentContext, credentialRecordId)
   }
 
   /**
@@ -625,7 +619,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns List containing all credential records
    */
   public getAll(): Promise<DidCommCredentialExchangeRecord[]> {
-    return this.credentialRepository.getAll(this.agentContext)
+    return this.credentialExchangeRepository.getAll(this.agentContext)
   }
 
   /**
@@ -634,7 +628,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns List containing all credential records matching specified query paramaters
    */
   public findAllByQuery(query: Query<DidCommCredentialExchangeRecord>, queryOptions?: QueryOptions) {
-    return this.credentialRepository.findByQuery(this.agentContext, query, queryOptions)
+    return this.credentialExchangeRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
   /**
@@ -644,7 +638,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns The credential record or null if not found
    */
   public findById(credentialRecordId: string): Promise<DidCommCredentialExchangeRecord | null> {
-    return this.credentialRepository.findById(this.agentContext, credentialRecordId)
+    return this.credentialExchangeRepository.findById(this.agentContext, credentialRecordId)
   }
 
   /**
@@ -654,18 +648,18 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @param options the delete credential options for the delete operation
    */
   public async deleteById(credentialId: string, options?: DeleteCredentialOptions) {
-    const credentialRecord = await this.getById(credentialId)
-    const protocol = this.getProtocol(credentialRecord.protocolVersion)
-    return protocol.delete(this.agentContext, credentialRecord, options)
+    const credentialExchangeRecord = await this.getById(credentialId)
+    const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
+    return protocol.delete(this.agentContext, credentialExchangeRecord, options)
   }
 
   /**
    * Update a credential exchange record
    *
-   * @param credentialRecord the credential exchange record
+   * @param credentialExchangeRecord the credential exchange record
    */
-  public async update(credentialRecord: DidCommCredentialExchangeRecord): Promise<void> {
-    await this.credentialRepository.update(this.agentContext, credentialRecord)
+  public async update(credentialExchangeRecord: DidCommCredentialExchangeRecord): Promise<void> {
+    await this.credentialExchangeRepository.update(this.agentContext, credentialExchangeRecord)
   }
 
   public async findProposalMessage(credentialExchangeId: string): Promise<FindCredentialProposalMessageReturn<CPs>> {

@@ -829,7 +829,7 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       await faberCredentialRecordPromise
@@ -884,7 +884,7 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       await faberCredentialRecordPromise
@@ -919,7 +919,7 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       await faberCredentialRecordPromise
@@ -956,7 +956,7 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       const faberCredentialRecord = await faberCredentialRecordPromise
@@ -971,11 +971,11 @@ describe('out of band', () => {
     })
 
     test('legacy connectionless exchange where response is received to invitation', async () => {
-      const { message, credentialRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
       const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
         domain: 'http://example.com',
         message,
-        recordId: credentialRecord.id,
+        recordId: credentialExchangeRecord.id,
       })
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
@@ -996,18 +996,18 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       await faberCredentialRecordPromise
     })
 
     test('legacy connectionless exchange where response is received to invitation and custom routing is used on recipient', async () => {
-      const { message, credentialRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
       const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
         domain: 'http://example.com',
         message,
-        recordId: credentialRecord.id,
+        recordId: credentialExchangeRecord.id,
       })
 
       const routing = await aliceAgent.modules.mediationRecipient.getRouting({})
@@ -1030,7 +1030,7 @@ describe('out of band', () => {
       })
 
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       const faberCredentialRecord = await faberCredentialRecordPromise
@@ -1045,11 +1045,11 @@ describe('out of band', () => {
     })
 
     test('add ~service decorator to the message and returns invitation url in createLegacyConnectionlessInvitation', async () => {
-      const { message, credentialRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
 
       const { message: offerMessage, invitationUrl } =
         await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
-          recordId: credentialRecord.id,
+          recordId: credentialExchangeRecord.id,
           domain: 'https://test.com',
           message,
         })

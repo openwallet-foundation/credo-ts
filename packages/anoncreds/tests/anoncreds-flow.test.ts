@@ -293,7 +293,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   // Holder creates proposal
   holderCredentialRecord.credentialAttributes = credentialAttributes
   const { attachment: proposalAttachment } = await anoncredsCredentialFormatService.createProposal(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     credentialFormats: {
       anoncreds: {
         attributes: credentialAttributes,
@@ -304,7 +304,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Issuer processes and accepts proposal
   await anoncredsCredentialFormatService.processProposal(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: proposalAttachment,
   })
   // Set attributes on the credential record, this is normally done by the protocol service
@@ -316,18 +316,18 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     : undefined
 
   const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     proposalAttachment: proposalAttachment,
     credentialFormats,
   })
 
   // Holder processes and accepts offer
   await anoncredsCredentialFormatService.processOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: offerAttachment,
   })
   const { attachment: requestAttachment } = await anoncredsCredentialFormatService.acceptOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     offerAttachment,
     credentialFormats: {
       anoncreds: {
@@ -342,11 +342,11 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Issuer processes and accepts request
   await anoncredsCredentialFormatService.processRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
   })
   const { attachment: credentialAttachment } = await anoncredsCredentialFormatService.acceptRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     requestAttachment,
     offerAttachment,
   })
@@ -354,7 +354,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   // Holder processes and accepts credential
   await anoncredsCredentialFormatService.processCredential(agentContext, {
     offerAttachment,
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
   })

@@ -98,7 +98,7 @@ describe('IC v2 credential revocation', () => {
 
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.modules.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Proposal',
       credentialFormats: {
         anoncreds: {
@@ -170,7 +170,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
@@ -188,7 +188,7 @@ describe('IC v2 credential revocation', () => {
 
     testLogger.test('Faber sends credential to Alice')
     await faberAgent.modules.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Credential',
     })
 
@@ -199,7 +199,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     await aliceAgent.modules.credentials.acceptCredential({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     testLogger.test('Faber waits for state done')
@@ -227,7 +227,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     await faberAgent.modules.credentials.sendRevocationNotification({
-      credentialRecordId: doneCredentialRecord.id,
+      credentialExchangeRecordId: doneCredentialRecord.id,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,
     })

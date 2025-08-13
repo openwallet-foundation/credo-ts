@@ -14,23 +14,23 @@ export class V1ProposeCredentialHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1ProposeCredentialHandler>) {
-    const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
+    const credentialExchangeRecord = await this.credentialProtocol.processProposal(messageContext)
 
     const shouldAutoAcceptProposal = await this.credentialProtocol.shouldAutoRespondToProposal(
       messageContext.agentContext,
       {
-        credentialRecord,
+        credentialExchangeRecord,
         proposalMessage: messageContext.message,
       }
     )
 
     if (shouldAutoAcceptProposal) {
-      return await this.acceptProposal(credentialRecord, messageContext)
+      return await this.acceptProposal(credentialExchangeRecord, messageContext)
     }
   }
 
   private async acceptProposal(
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
@@ -41,13 +41,13 @@ export class V1ProposeCredentialHandler implements DidCommMessageHandler {
     }
 
     const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     return getOutboundDidCommMessageContext(messageContext.agentContext, {
       message,
       connectionRecord: messageContext.connection,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
     })
   }
 }

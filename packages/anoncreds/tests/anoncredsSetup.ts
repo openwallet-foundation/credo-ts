@@ -171,7 +171,7 @@ export async function issueAnonCredsCredential({
   })
 
   await holderAgent.modules.credentials.acceptOffer({
-    credentialRecordId: holderCredentialExchangeRecord.id,
+    credentialExchangeRecordId: holderCredentialExchangeRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 

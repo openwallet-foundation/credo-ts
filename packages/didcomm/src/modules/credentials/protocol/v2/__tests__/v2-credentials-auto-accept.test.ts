@@ -208,7 +208,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       await faberAgent.modules.credentials.acceptProposal({
-        credentialRecordId: faberCredentialRecord.id,
+        credentialExchangeRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
           anoncreds: {
@@ -300,7 +300,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('alice sends credential request to faber')
       await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       testLogger.test('Alice waits for credential from Faber')
@@ -369,7 +369,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Faber negotiated proposal, sending credential offer to Alice')
       faberCredentialRecord = await faberAgent.modules.credentials.negotiateProposal({
-        credentialRecordId: faberCredentialRecord.id,
+        credentialExchangeRecordId: faberCredentialRecord.id,
         credentialFormats: {
           anoncreds: {
             credentialDefinitionId: credentialDefinitionId,
@@ -427,7 +427,7 @@ describe('V2 Credentials Auto Accept', () => {
 
       testLogger.test('Alice sends credential request to Faber')
       await aliceAgent.modules.credentials.negotiateOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           anoncreds: {
             attributes: newCredentialPreview.attributes,

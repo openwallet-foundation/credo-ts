@@ -199,7 +199,7 @@ describe('V1 Credentials Auto Accept', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       faberCredentialExchangeRecord = await faberAgent.modules.credentials.acceptProposal({
-        credentialRecordId: faberCredentialExchangeRecord.id,
+        credentialExchangeRecordId: faberCredentialExchangeRecord.id,
         comment: 'V1 Indy Offer',
         credentialFormats: {
           indy: {
@@ -296,7 +296,7 @@ describe('V1 Credentials Auto Accept', () => {
 
       testLogger.test('alice sends credential request to faber')
       faberCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialExchangeRecord.id,
+        credentialExchangeRecordId: aliceCredentialExchangeRecord.id,
       })
 
       testLogger.test('Alice waits for credential from Faber')
@@ -374,7 +374,7 @@ describe('V1 Credentials Auto Accept', () => {
 
       testLogger.test('Alice sends credential request to Faber')
       const aliceExchangeCredentialRecord = await aliceAgent.modules.credentials.negotiateOffer({
-        credentialRecordId: aliceCredentialExchangeRecord.id,
+        credentialExchangeRecordId: aliceCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
             attributes: newCredentialPreview.attributes,
@@ -419,7 +419,7 @@ describe('V1 Credentials Auto Accept', () => {
       })
 
       await faberAgent.modules.credentials.negotiateProposal({
-        credentialRecordId: faberCredentialExchangeRecord.id,
+        credentialExchangeRecordId: faberCredentialExchangeRecord.id,
         credentialFormats: {
           indy: {
             credentialDefinitionId: credentialDefinitionId,

@@ -632,7 +632,7 @@ export function waitForRevocationNotificationSubject(
   }`
         )
       }),
-      map((e) => e.payload.credentialRecord)
+      map((e) => e.payload.credentialExchangeRecord)
     )
   )
 }

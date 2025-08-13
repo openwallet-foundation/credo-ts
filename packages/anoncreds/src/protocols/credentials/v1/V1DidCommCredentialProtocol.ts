@@ -131,7 +131,7 @@ export class V1CredentialProtocol
     const { linkedAttachments } = credentialFormats.indy
 
     // Create record
-    const credentialRecord = new DidCommCredentialExchangeRecord({
+    const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: utils.uuid(),
       state: DidCommCredentialState.ProposalSent,
@@ -144,7 +144,7 @@ export class V1CredentialProtocol
     // call create proposal for validation of the proposal and addition of linked attachments
     const { previewAttributes, attachment } = await this.indyCredentialFormat.createProposal(agentContext, {
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     // Transform the attachment into the attachment payload and use that to construct the v1 message
@@ -159,7 +159,7 @@ export class V1CredentialProtocol
     // Create message
     const message = new V1ProposeCredentialMessage({
       ...indyCredentialProposal,
-      id: credentialRecord.threadId,
+      id: credentialExchangeRecord.threadId,
       credentialPreview: credentialProposal,
       comment,
     })
@@ -167,14 +167,14 @@ export class V1CredentialProtocol
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
-    credentialRecord.credentialAttributes = credentialProposal?.attributes
-    await credentialRepository.save(agentContext, credentialRecord)
-    this.emitStateChangedEvent(agentContext, credentialRecord, null)
+    credentialExchangeRecord.credentialAttributes = credentialProposal?.attributes
+    await credentialRepository.save(agentContext, credentialExchangeRecord)
+    this.emitStateChangedEvent(agentContext, credentialExchangeRecord, null)
 
-    return { credentialRecord, message }
+    return { credentialExchangeRecord, message }
   }
 
   /**
@@ -201,27 +201,27 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential proposal with message id ${proposalMessage.id}`)
 
-    let credentialRecord = await this.findByProperties(messageContext.agentContext, {
+    let credentialExchangeRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: proposalMessage.threadId,
       role: DidCommCredentialRole.Issuer,
       connectionId: connection?.id,
     })
 
     // Credential record already exists, this is a response to an earlier message sent by us
-    if (credentialRecord) {
+    if (credentialExchangeRecord) {
       agentContext.config.logger.debug('Credential record already exists for incoming proposal')
 
       // Assert
-      credentialRecord.assertProtocolVersion('v1')
-      credentialRecord.assertState(DidCommCredentialState.OfferSent)
+      credentialExchangeRecord.assertProtocolVersion('v1')
+      credentialExchangeRecord.assertState(DidCommCredentialState.OfferSent)
 
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
         messageClass: V1ProposeCredentialMessage,
         role: DidCommMessageRole.Receiver,
       })
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
         messageClass: V1OfferCredentialMessage,
         role: DidCommMessageRole.Sender,
       })
@@ -229,11 +229,11 @@ export class V1CredentialProtocol
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         lastReceivedMessage,
         lastSentMessage,
-        expectedConnectionId: credentialRecord.connectionId,
+        expectedConnectionId: credentialExchangeRecord.connectionId,
       })
 
       await this.indyCredentialFormat.processProposal(messageContext.agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         attachment: new Attachment({
           data: new AttachmentData({
             json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
@@ -242,11 +242,11 @@ export class V1CredentialProtocol
       })
 
       // Update record
-      await this.updateState(messageContext.agentContext, credentialRecord, DidCommCredentialState.ProposalReceived)
+      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalReceived)
       await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
       })
     } else {
       agentContext.config.logger.debug('Credential record does not exists yet for incoming proposal')
@@ -254,7 +254,7 @@ export class V1CredentialProtocol
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No credential record exists with thread id
-      credentialRecord = new DidCommCredentialExchangeRecord({
+      credentialExchangeRecord = new DidCommCredentialExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         state: DidCommCredentialState.ProposalReceived,
@@ -263,16 +263,16 @@ export class V1CredentialProtocol
       })
 
       // Save record
-      await credentialRepository.save(messageContext.agentContext, credentialRecord)
-      this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
+      await credentialRepository.save(messageContext.agentContext, credentialExchangeRecord)
+      this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
 
       await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
       })
     }
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -283,21 +283,21 @@ export class V1CredentialProtocol
   public async acceptProposal(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       comment,
       autoAcceptCredential,
     }: CredentialProtocolOptions.AcceptCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.ProposalReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.ProposalReceived)
     if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1ProposeCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -305,12 +305,12 @@ export class V1CredentialProtocol
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     const { attachment, previewAttributes } = await this.indyCredentialFormat.acceptProposal(agentContext, {
       attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
       proposalAttachment: new Attachment({
         data: new AttachmentData({
           json: JsonTransformer.toJSON(this.rfc0592ProposalFromV1ProposeMessage(proposalMessage)),
@@ -328,22 +328,22 @@ export class V1CredentialProtocol
       credentialPreview: new V1CredentialPreview({
         attributes: previewAttributes,
       }),
-      attachments: credentialRecord.linkedAttachments,
+      attachments: credentialExchangeRecord.linkedAttachments,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
-    credentialRecord.credentialAttributes = message.credentialPreview.attributes
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.OfferSent)
+    credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
+    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
-    return { credentialRecord, message }
+    return { credentialExchangeRecord, message }
   }
 
   /**
@@ -358,14 +358,14 @@ export class V1CredentialProtocol
     agentContext: AgentContext,
     {
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
       comment,
       autoAcceptCredential,
     }: CredentialProtocolOptions.NegotiateCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.ProposalReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.ProposalReceived)
     this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -373,7 +373,7 @@ export class V1CredentialProtocol
     const { attachment, previewAttributes } = await this.indyCredentialFormat.createOffer(agentContext, {
       attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     if (!previewAttributes) {
@@ -386,21 +386,21 @@ export class V1CredentialProtocol
       credentialPreview: new V1CredentialPreview({
         attributes: previewAttributes,
       }),
-      attachments: credentialRecord.linkedAttachments,
+      attachments: credentialExchangeRecord.linkedAttachments,
     })
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
-    credentialRecord.credentialAttributes = message.credentialPreview.attributes
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.OfferSent)
+    credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
+    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
-    return { credentialRecord, message }
+    return { credentialExchangeRecord, message }
   }
 
   /**
@@ -431,7 +431,7 @@ export class V1CredentialProtocol
     }
 
     // Create record
-    const credentialRecord = new DidCommCredentialExchangeRecord({
+    const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
       linkedAttachments: credentialFormats.indy.linkedAttachments?.map(
@@ -446,7 +446,7 @@ export class V1CredentialProtocol
     const { attachment, previewAttributes } = await this.indyCredentialFormat.createOffer(agentContext, {
       attachmentId: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     if (!previewAttributes) {
@@ -455,7 +455,7 @@ export class V1CredentialProtocol
 
     // Construct offer message
     const message = new V1OfferCredentialMessage({
-      id: credentialRecord.threadId,
+      id: credentialExchangeRecord.threadId,
       credentialPreview: new V1CredentialPreview({
         attributes: previewAttributes,
       }),
@@ -465,16 +465,16 @@ export class V1CredentialProtocol
     })
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       agentMessage: message,
       role: DidCommMessageRole.Sender,
     })
 
-    credentialRecord.credentialAttributes = message.credentialPreview.attributes
-    await credentialRepository.save(agentContext, credentialRecord)
-    this.emitStateChangedEvent(agentContext, credentialRecord, null)
+    credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
+    await credentialRepository.save(agentContext, credentialExchangeRecord)
+    this.emitStateChangedEvent(agentContext, credentialExchangeRecord, null)
 
-    return { message, credentialRecord }
+    return { message, credentialExchangeRecord }
   }
 
   /**
@@ -501,7 +501,7 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential offer with id ${offerMessage.id}`)
 
-    let credentialRecord = await this.findByProperties(agentContext, {
+    let credentialExchangeRecord = await this.findByProperties(agentContext, {
       threadId: offerMessage.threadId,
       role: DidCommCredentialRole.Holder,
       connectionId: connection?.id,
@@ -512,46 +512,46 @@ export class V1CredentialProtocol
       throw new CredoError(`Indy attachment with id ${INDY_CREDENTIAL_OFFER_ATTACHMENT_ID} not found in offer message`)
     }
 
-    if (credentialRecord) {
+    if (credentialExchangeRecord) {
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
         messageClass: V1ProposeCredentialMessage,
         role: DidCommMessageRole.Sender,
       })
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
         messageClass: V1OfferCredentialMessage,
         role: DidCommMessageRole.Receiver,
       })
 
       // Assert
-      credentialRecord.assertProtocolVersion('v1')
-      credentialRecord.assertState(DidCommCredentialState.ProposalSent)
+      credentialExchangeRecord.assertProtocolVersion('v1')
+      credentialExchangeRecord.assertState(DidCommCredentialState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         lastReceivedMessage,
         lastSentMessage,
-        expectedConnectionId: credentialRecord.connectionId,
+        expectedConnectionId: credentialExchangeRecord.connectionId,
       })
 
       await this.indyCredentialFormat.processOffer(messageContext.agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         attachment: offerAttachment,
       })
 
       await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: offerMessage,
         role: DidCommMessageRole.Receiver,
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
       })
-      await this.updateState(messageContext.agentContext, credentialRecord, DidCommCredentialState.OfferReceived)
+      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.OfferReceived)
 
-      return credentialRecord
+      return credentialExchangeRecord
     }
     // Assert
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
     // No credential record exists with thread id
-    credentialRecord = new DidCommCredentialExchangeRecord({
+    credentialExchangeRecord = new DidCommCredentialExchangeRecord({
       connectionId: connection?.id,
       threadId: offerMessage.threadId,
       parentThreadId: offerMessage.thread?.parentThreadId,
@@ -561,7 +561,7 @@ export class V1CredentialProtocol
     })
 
     await this.indyCredentialFormat.processOffer(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       attachment: offerAttachment,
     })
 
@@ -569,12 +569,12 @@ export class V1CredentialProtocol
     await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
       agentMessage: offerMessage,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
-    await credentialRepository.save(messageContext.agentContext, credentialRecord)
-    this.emitStateChangedEvent(messageContext.agentContext, credentialRecord, null)
+    await credentialRepository.save(messageContext.agentContext, credentialExchangeRecord)
+    this.emitStateChangedEvent(messageContext.agentContext, credentialExchangeRecord, null)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -587,20 +587,20 @@ export class V1CredentialProtocol
   public async acceptOffer(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       comment,
       autoAcceptCredential,
     }: CredentialProtocolOptions.AcceptCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1RequestCredentialMessage>> {
     // Assert credential
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.OfferReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.OfferReceived)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1OfferCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -611,7 +611,7 @@ export class V1CredentialProtocol
     }
 
     const { attachment } = await this.indyCredentialFormat.acceptOffer(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       attachmentId: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
       offerAttachment,
@@ -622,22 +622,22 @@ export class V1CredentialProtocol
       requestAttachments: [attachment],
       attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-    requestMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    requestMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
-    credentialRecord.credentialAttributes = offerMessage.credentialPreview.attributes
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-    credentialRecord.linkedAttachments = offerMessage.appendedAttachments?.filter((attachment) =>
+    credentialExchangeRecord.credentialAttributes = offerMessage.credentialPreview.attributes
+    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.linkedAttachments = offerMessage.appendedAttachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: requestMessage,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       role: DidCommMessageRole.Sender,
     })
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.RequestSent)
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.RequestSent)
 
-    return { message: requestMessage, credentialRecord }
+    return { message: requestMessage, credentialExchangeRecord }
   }
 
   /**
@@ -654,21 +654,21 @@ export class V1CredentialProtocol
     agentContext: AgentContext,
     {
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
       autoAcceptCredential,
       comment,
     }: CredentialProtocolOptions.NegotiateCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommMessage>> {
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.OfferReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.OfferReceived)
     this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    if (!credentialRecord.connectionId) {
+    if (!credentialExchangeRecord.connectionId) {
       throw new CredoError(
-        `No connectionId found for credential record '${credentialRecord.id}'. Connection-less issuance does not support negotiation.`
+        `No connectionId found for credential record '${credentialExchangeRecord.id}'. Connection-less issuance does not support negotiation.`
       )
     }
 
@@ -682,7 +682,7 @@ export class V1CredentialProtocol
     // As the format is different for v1 of the issue credential protocol we won't be using the attachment
     const { previewAttributes, attachment } = await this.indyCredentialFormat.createProposal(agentContext, {
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     // Transform the attachment into the attachment payload and use that to construct the v1 message
@@ -701,21 +701,21 @@ export class V1CredentialProtocol
       comment,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
     // Update record
-    credentialRecord.credentialAttributes = message.credentialPreview?.attributes
-    credentialRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.ProposalSent)
+    credentialExchangeRecord.credentialAttributes = message.credentialPreview?.attributes
+    credentialExchangeRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
+    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalSent)
 
-    return { credentialRecord, message }
+    return { credentialExchangeRecord, message }
   }
 
   /**
@@ -741,39 +741,39 @@ export class V1CredentialProtocol
 
     agentContext.config.logger.debug(`Processing credential request with id ${requestMessage.id}`)
 
-    const credentialRecord = await this.getByProperties(messageContext.agentContext, {
+    const credentialExchangeRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: requestMessage.threadId,
       role: DidCommCredentialRole.Issuer,
     })
 
-    agentContext.config.logger.trace('Credential record found when processing credential request', credentialRecord)
+    agentContext.config.logger.trace('Credential record found when processing credential request', credentialExchangeRecord)
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1ProposeCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
     const offerMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1OfferCredentialMessage,
       role: DidCommMessageRole.Sender,
     })
 
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.OfferSent)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.OfferSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage: proposalMessage ?? undefined,
       lastSentMessage: offerMessage ?? undefined,
-      expectedConnectionId: credentialRecord.connectionId,
+      expectedConnectionId: credentialExchangeRecord.connectionId,
     })
 
     // This makes sure that the sender of the incoming message is authorized to do so.
-    if (!credentialRecord.connectionId) {
+    if (!credentialExchangeRecord.connectionId) {
       await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-        expectedConnectionId: credentialRecord.connectionId,
+        expectedConnectionId: credentialExchangeRecord.connectionId,
       })
-      credentialRecord.connectionId = connection?.id
+      credentialExchangeRecord.connectionId = connection?.id
     }
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID)
@@ -785,19 +785,19 @@ export class V1CredentialProtocol
     }
 
     await this.indyCredentialFormat.processRequest(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       attachment: requestAttachment,
     })
 
     await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
       agentMessage: requestMessage,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
-    await this.updateState(messageContext.agentContext, credentialRecord, DidCommCredentialState.RequestReceived)
+    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.RequestReceived)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -809,26 +809,26 @@ export class V1CredentialProtocol
   public async acceptRequest(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       comment,
       autoAcceptCredential,
     }: CredentialProtocolOptions.AcceptCredentialRequestOptions<[LegacyIndyCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1IssueCredentialMessage>> {
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.RequestReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.RequestReceived)
     if (credentialFormats) this.assertOnlyIndyFormat(credentialFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1OfferCredentialMessage,
       role: DidCommMessageRole.Sender,
     })
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1RequestCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -838,12 +838,12 @@ export class V1CredentialProtocol
 
     if (!offerAttachment || !requestAttachment) {
       throw new CredoError(
-        `Missing data payload in offer or request attachment in credential Record ${credentialRecord.id}`
+        `Missing data payload in offer or request attachment in credential Record ${credentialExchangeRecord.id}`
       )
     }
 
     const { attachment } = await this.indyCredentialFormat.acceptRequest(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       requestAttachment,
       offerAttachment,
       attachmentId: INDY_CREDENTIAL_ATTACHMENT_ID,
@@ -853,22 +853,22 @@ export class V1CredentialProtocol
     const issueMessage = new V1IssueCredentialMessage({
       comment,
       credentialAttachments: [attachment],
-      attachments: credentialRecord.linkedAttachments,
+      attachments: credentialExchangeRecord.linkedAttachments,
     })
 
-    issueMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    issueMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
     issueMessage.setPleaseAck()
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
       agentMessage: issueMessage,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
-    credentialRecord.autoAcceptCredential = autoAcceptCredential ?? credentialRecord.autoAcceptCredential
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.CredentialIssued)
+    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialIssued)
 
-    return { message: issueMessage, credentialRecord }
+    return { message: issueMessage, credentialExchangeRecord }
   }
 
   /**
@@ -891,30 +891,30 @@ export class V1CredentialProtocol
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
-    const credentialRecord = await this.getByProperties(messageContext.agentContext, {
+    const credentialExchangeRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: issueMessage.threadId,
       role: DidCommCredentialRole.Holder,
       connectionId: connection?.id,
     })
 
     const requestCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1RequestCredentialMessage,
       role: DidCommMessageRole.Sender,
     })
     const offerCredentialMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1OfferCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
 
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.RequestSent)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.RequestSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage: offerCredentialMessage,
       lastSentMessage: requestCredentialMessage,
-      expectedConnectionId: credentialRecord.connectionId,
+      expectedConnectionId: credentialExchangeRecord.connectionId,
     })
 
     const issueAttachment = issueMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
@@ -935,46 +935,46 @@ export class V1CredentialProtocol
     await this.indyCredentialFormat.processCredential(messageContext.agentContext, {
       offerAttachment,
       attachment: issueAttachment,
-      credentialRecord,
+      credentialExchangeRecord,
       requestAttachment,
     })
 
     await didCommMessageRepository.saveAgentMessage(messageContext.agentContext, {
       agentMessage: issueMessage,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
-    await this.updateState(messageContext.agentContext, credentialRecord, DidCommCredentialState.CredentialReceived)
+    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialReceived)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
    * Create a {@link CredentialAckMessage} as response to a received credential.
    *
-   * @param credentialRecord The credential record for which to create the credential acknowledgement
+   * @param credentialExchangeRecord The credential record for which to create the credential acknowledgement
    * @returns Object containing credential acknowledgement message and associated credential record
    *
    */
   public async acceptCredential(
     agentContext: AgentContext,
-    { credentialRecord }: CredentialProtocolOptions.AcceptCredentialOptions
+    { credentialExchangeRecord }: CredentialProtocolOptions.AcceptCredentialOptions
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1CredentialAckMessage>> {
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.CredentialReceived)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.CredentialReceived)
 
     // Create message
     const ackMessage = new V1CredentialAckMessage({
       status: AckStatus.OK,
-      threadId: credentialRecord.threadId,
+      threadId: credentialExchangeRecord.threadId,
     })
 
-    ackMessage.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    ackMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.Done)
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.Done)
 
-    return { message: ackMessage, credentialRecord }
+    return { message: ackMessage, credentialExchangeRecord }
   }
 
   /**
@@ -997,7 +997,7 @@ export class V1CredentialProtocol
     // only depends on the public api, rather than the internal API (this helps with breaking changes)
     const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
-    const credentialRecord = await this.getByProperties(messageContext.agentContext, {
+    const credentialExchangeRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: ackMessage.threadId,
 
       role: DidCommCredentialRole.Issuer,
@@ -1005,29 +1005,29 @@ export class V1CredentialProtocol
     })
 
     const requestCredentialMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1RequestCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
     const issueCredentialMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V1IssueCredentialMessage,
       role: DidCommMessageRole.Sender,
     })
 
     // Assert
-    credentialRecord.assertProtocolVersion('v1')
-    credentialRecord.assertState(DidCommCredentialState.CredentialIssued)
+    credentialExchangeRecord.assertProtocolVersion('v1')
+    credentialExchangeRecord.assertState(DidCommCredentialState.CredentialIssued)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage: requestCredentialMessage,
       lastSentMessage: issueCredentialMessage,
-      expectedConnectionId: credentialRecord.connectionId,
+      expectedConnectionId: credentialExchangeRecord.connectionId,
     })
 
     // Update record
-    await this.updateState(messageContext.agentContext, credentialRecord, DidCommCredentialState.Done)
+    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.Done)
 
-    return credentialRecord
+    return credentialExchangeRecord
   }
 
   /**
@@ -1039,7 +1039,7 @@ export class V1CredentialProtocol
    */
   public async createProblemReport(
     _agentContext: AgentContext,
-    { credentialRecord, description }: CredentialProtocolOptions.CreateCredentialProblemReportOptions
+    { credentialExchangeRecord, description }: CredentialProtocolOptions.CreateCredentialProblemReportOptions
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<ProblemReportMessage>> {
     const message = new V1CredentialProblemReportMessage({
       description: {
@@ -1048,23 +1048,23 @@ export class V1CredentialProtocol
       },
     })
 
-    return { message, credentialRecord }
+    return { message, credentialExchangeRecord }
   }
 
   // AUTO RESPOND METHODS
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
     options: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       proposalMessage: V1ProposeCredentialMessage
     }
   ) {
-    const { credentialRecord, proposalMessage } = options
+    const { credentialExchangeRecord, proposalMessage } = options
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(DidCommCredentialsModuleConfig)
 
     const autoAccept = composeCredentialAutoAccept(
-      credentialRecord.autoAcceptCredential,
+      credentialExchangeRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
 
@@ -1072,7 +1072,7 @@ export class V1CredentialProtocol
     if (autoAccept === DidCommAutoAcceptCredential.Always) return true
     if (autoAccept === DidCommAutoAcceptCredential.Never) return false
 
-    const offerMessage = await this.findOfferMessage(agentContext, credentialRecord.id)
+    const offerMessage = await this.findOfferMessage(agentContext, credentialExchangeRecord.id)
 
     // Do not auto accept if missing properties
     if (!offerMessage || !offerMessage.credentialPreview) return false
@@ -1094,16 +1094,16 @@ export class V1CredentialProtocol
   public async shouldAutoRespondToOffer(
     agentContext: AgentContext,
     options: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       offerMessage: V1OfferCredentialMessage
     }
   ) {
-    const { credentialRecord, offerMessage } = options
+    const { credentialExchangeRecord, offerMessage } = options
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(DidCommCredentialsModuleConfig)
 
     const autoAccept = composeCredentialAutoAccept(
-      credentialRecord.autoAcceptCredential,
+      credentialExchangeRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
 
@@ -1111,7 +1111,7 @@ export class V1CredentialProtocol
     if (autoAccept === DidCommAutoAcceptCredential.Always) return true
     if (autoAccept === DidCommAutoAcceptCredential.Never) return false
 
-    const proposalMessage = await this.findProposalMessage(agentContext, credentialRecord.id)
+    const proposalMessage = await this.findProposalMessage(agentContext, credentialExchangeRecord.id)
 
     // Do not auto accept if missing properties
     if (!offerMessage.credentialPreview) return false
@@ -1133,16 +1133,16 @@ export class V1CredentialProtocol
   public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
     options: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       requestMessage: V1RequestCredentialMessage
     }
   ) {
-    const { credentialRecord, requestMessage } = options
+    const { credentialExchangeRecord, requestMessage } = options
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(DidCommCredentialsModuleConfig)
 
     const autoAccept = composeCredentialAutoAccept(
-      credentialRecord.autoAcceptCredential,
+      credentialExchangeRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
 
@@ -1150,7 +1150,7 @@ export class V1CredentialProtocol
     if (autoAccept === DidCommAutoAcceptCredential.Always) return true
     if (autoAccept === DidCommAutoAcceptCredential.Never) return false
 
-    const offerMessage = await this.findOfferMessage(agentContext, credentialRecord.id)
+    const offerMessage = await this.findOfferMessage(agentContext, credentialExchangeRecord.id)
     if (!offerMessage) return false
 
     const offerAttachment = offerMessage.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
@@ -1159,7 +1159,7 @@ export class V1CredentialProtocol
     if (!offerAttachment || !requestAttachment) return false
 
     return this.indyCredentialFormat.shouldAutoRespondToRequest(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       offerAttachment,
       requestAttachment,
     })
@@ -1168,16 +1168,16 @@ export class V1CredentialProtocol
   public async shouldAutoRespondToCredential(
     agentContext: AgentContext,
     options: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       credentialMessage: V1IssueCredentialMessage
     }
   ) {
-    const { credentialRecord, credentialMessage } = options
+    const { credentialExchangeRecord, credentialMessage } = options
 
     const credentialsModuleConfig = agentContext.dependencyManager.resolve(DidCommCredentialsModuleConfig)
 
     const autoAccept = composeCredentialAutoAccept(
-      credentialRecord.autoAcceptCredential,
+      credentialExchangeRecord.autoAcceptCredential,
       credentialsModuleConfig.autoAcceptCredentials
     )
 
@@ -1185,8 +1185,8 @@ export class V1CredentialProtocol
     if (autoAccept === DidCommAutoAcceptCredential.Always) return true
     if (autoAccept === DidCommAutoAcceptCredential.Never) return false
 
-    const requestMessage = await this.findRequestMessage(agentContext, credentialRecord.id)
-    const offerMessage = await this.findOfferMessage(agentContext, credentialRecord.id)
+    const requestMessage = await this.findRequestMessage(agentContext, credentialExchangeRecord.id)
+    const offerMessage = await this.findOfferMessage(agentContext, credentialExchangeRecord.id)
 
     const credentialAttachment = credentialMessage.getCredentialAttachmentById(INDY_CREDENTIAL_ATTACHMENT_ID)
     if (!credentialAttachment) return false
@@ -1197,7 +1197,7 @@ export class V1CredentialProtocol
     const offerAttachment = offerMessage?.getOfferAttachmentById(INDY_CREDENTIAL_OFFER_ATTACHMENT_ID)
 
     return this.indyCredentialFormat.shouldAutoRespondToCredential(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialAttachment,
       requestAttachment,
       offerAttachment,

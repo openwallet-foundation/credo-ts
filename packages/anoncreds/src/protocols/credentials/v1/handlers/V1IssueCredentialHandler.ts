@@ -16,39 +16,39 @@ export class V1IssueCredentialHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1IssueCredentialHandler>) {
-    const credentialRecord = await this.credentialProtocol.processCredential(messageContext)
+    const credentialExchangeRecord = await this.credentialProtocol.processCredential(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToCredential(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialMessage: messageContext.message,
     })
 
     if (shouldAutoRespond) {
-      return await this.acceptCredential(credentialRecord, messageContext)
+      return await this.acceptCredential(credentialExchangeRecord, messageContext)
     }
   }
 
   private async acceptCredential(
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1IssueCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')
     const { message } = await this.credentialProtocol.acceptCredential(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     const requestMessage = await this.credentialProtocol.findRequestMessage(
       messageContext.agentContext,
-      credentialRecord.id
+      credentialExchangeRecord.id
     )
     if (!requestMessage) {
-      throw new CredoError(`No request message found for credential record with id '${credentialRecord.id}'`)
+      throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
     return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: messageContext.message,
       lastSentMessage: requestMessage,
     })

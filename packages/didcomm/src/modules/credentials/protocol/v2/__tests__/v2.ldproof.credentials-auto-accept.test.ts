@@ -207,7 +207,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
 
       testLogger.test('Faber sends credential offer to Alice')
       const faberCredentialExchangeRecord = await faberAgent.modules.credentials.acceptProposal({
-        credentialRecordId: faberCredentialRecord.id,
+        credentialExchangeRecordId: faberCredentialRecord.id,
         comment: 'V2 JsonLd Offer',
       })
 
@@ -276,7 +276,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       // it is either connectionless or included in the offer message
       testLogger.test('Alice sends credential request to faber')
       faberCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       testLogger.test('Alice waits for credential from Faber')
@@ -339,7 +339,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       testLogger.test('Alice sends credential request to Faber')
 
       const aliceExchangeCredentialRecord = await aliceAgent.modules.credentials.negotiateOffer({
-        credentialRecordId: aliceCredentialRecord.id,
+        credentialExchangeRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           // Send a different object
           jsonld: {
@@ -388,7 +388,7 @@ describe('V2 Credentials - JSON-LD - Auto Accept Always', () => {
       })
 
       await faberAgent.modules.credentials.negotiateProposal({
-        credentialRecordId: faberCredentialRecord.id,
+        credentialExchangeRecordId: faberCredentialRecord.id,
         credentialFormats: {
           // Send a different object
           jsonld: {

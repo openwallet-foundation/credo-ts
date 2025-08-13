@@ -200,7 +200,7 @@ const mockCredentialRecord = ({
   id?: string
   credentialAttributes?: DidCommCredentialPreviewAttribute[]
 } = {}) => {
-  const credentialRecord = new DidCommCredentialExchangeRecord({
+  const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
     id,
     credentialAttributes: credentialAttributes,
     state: state || DidCommCredentialState.OfferSent,
@@ -217,7 +217,7 @@ const mockCredentialRecord = ({
     protocolVersion: 'v2',
   })
 
-  return credentialRecord
+  return credentialExchangeRecord
 }
 
 interface TestCredentialFormat extends CredentialFormat {
@@ -274,7 +274,7 @@ describe('credentialProtocol', () => {
 
   describe('acceptOffer', () => {
     test(`updates state to ${DidCommCredentialState.RequestSent}`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -282,7 +282,7 @@ describe('credentialProtocol', () => {
 
       // when
       await credentialProtocol.acceptOffer(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         credentialFormats: {},
       })
 
@@ -300,7 +300,7 @@ describe('credentialProtocol', () => {
       // given
       const comment = 'credential request comment'
 
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.OfferReceived,
         threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -308,7 +308,7 @@ describe('credentialProtocol', () => {
 
       // when
       const { message: credentialRequest } = await credentialProtocol.acceptOffer(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         comment,
       })
 
@@ -317,7 +317,7 @@ describe('credentialProtocol', () => {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/2.0/request-credential',
         '~thread': {
-          thid: credentialRecord.threadId,
+          thid: credentialExchangeRecord.threadId,
         },
         formats: [JsonTransformer.toJSON(requestFormat)],
         comment,
@@ -331,7 +331,7 @@ describe('credentialProtocol', () => {
       await Promise.all(
         invalidCredentialStates.map(async (state) => {
           await expect(
-            credentialProtocol.acceptOffer(agentContext, { credentialRecord: mockCredentialRecord({ state }) })
+            credentialProtocol.acceptOffer(agentContext, { credentialExchangeRecord: mockCredentialRecord({ state }) })
           ).rejects.toThrow(`Credential record is in invalid state ${state}. Valid states are: ${validState}.`)
         })
       )
@@ -340,14 +340,14 @@ describe('credentialProtocol', () => {
 
   describe('processRequest', () => {
     test(`updates state to ${DidCommCredentialState.RequestReceived}, set request and returns credential record`, async () => {
-      const credentialRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
+      const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
       const messageContext = new InboundDidCommMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
       })
 
       // given
-      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
       // when
       const returnedCredentialRecord = await credentialProtocol.processRequest(messageContext)
@@ -362,7 +362,7 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.OfferSent} to ${DidCommCredentialState.RequestReceived}`, async () => {
-      const credentialRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
+      const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
       const messageContext = new InboundDidCommMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
@@ -371,7 +371,7 @@ describe('credentialProtocol', () => {
       const eventListenerMock = jest.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
 
-      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.findSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
       const returnedCredentialRecord = await credentialProtocol.processRequest(messageContext)
 
@@ -407,13 +407,13 @@ describe('credentialProtocol', () => {
 
   describe('acceptRequest', () => {
     test(`updates state to ${DidCommCredentialState.CredentialIssued}`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
       await credentialProtocol.acceptRequest(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         comment: 'credential response comment',
       })
 
@@ -428,7 +428,7 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.RequestReceived} to ${DidCommCredentialState.CredentialIssued}`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
@@ -436,12 +436,12 @@ describe('credentialProtocol', () => {
       const eventListenerMock = jest.fn()
 
       // given
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
       eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
 
       // when
       await credentialProtocol.acceptRequest(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         comment: 'credential response comment',
       })
 
@@ -461,19 +461,19 @@ describe('credentialProtocol', () => {
     })
 
     test('returns credential response message base on credential request message', async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.RequestReceived,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
       // given
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
       const comment = 'credential response comment'
 
       // when
       const { message: credentialResponse } = await credentialProtocol.acceptRequest(agentContext, {
         comment: 'credential response comment',
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       // then
@@ -481,7 +481,7 @@ describe('credentialProtocol', () => {
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/2.0/issue-credential',
         '~thread': {
-          thid: credentialRecord.threadId,
+          thid: credentialExchangeRecord.threadId,
         },
         comment,
         formats: [JsonTransformer.toJSON(credentialFormat)],
@@ -493,7 +493,7 @@ describe('credentialProtocol', () => {
 
   describe('processCredential', () => {
     test('finds credential record by thread ID and saves credential attachment into the wallet', async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.RequestSent,
       })
 
@@ -503,7 +503,7 @@ describe('credentialProtocol', () => {
       })
 
       // given
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
       await credentialProtocol.processCredential(messageContext)
     })
@@ -511,14 +511,14 @@ describe('credentialProtocol', () => {
 
   describe('acceptCredential', () => {
     test(`updates state to ${DidCommCredentialState.Done}`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.CredentialReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
       // when
-      await credentialProtocol.acceptCredential(agentContext, { credentialRecord })
+      await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord })
 
       // then
       expect(credentialRepository.update).toHaveBeenNthCalledWith(
@@ -531,7 +531,7 @@ describe('credentialProtocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.CredentialReceived} to ${DidCommCredentialState.Done}`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.CredentialReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -541,7 +541,7 @@ describe('credentialProtocol', () => {
       eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
 
       // when
-      await credentialProtocol.acceptCredential(agentContext, { credentialRecord })
+      await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord })
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -559,17 +559,17 @@ describe('credentialProtocol', () => {
     })
 
     test('returns ack message base on credential issue message', async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.CredentialReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
       // given
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
       // when
-      const { message: ackMessage } = await credentialProtocol.acceptCredential(agentContext, { credentialRecord })
+      const { message: ackMessage } = await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord })
 
       // then
       expect(ackMessage.toJSON()).toMatchObject({
@@ -588,7 +588,7 @@ describe('credentialProtocol', () => {
         invalidCredentialStates.map(async (state) => {
           await expect(
             credentialProtocol.acceptCredential(agentContext, {
-              credentialRecord: mockCredentialRecord({
+              credentialExchangeRecord: mockCredentialRecord({
                 state,
                 threadId: 'somethreadid',
                 connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
@@ -608,12 +608,12 @@ describe('credentialProtocol', () => {
     const messageContext = new InboundDidCommMessageContext(credentialRequest, { agentContext, connection })
 
     test(`updates state to ${DidCommCredentialState.Done} and returns credential record`, async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.CredentialIssued,
       })
 
       // given
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
       // when
       const returnedCredentialRecord = await credentialProtocol.processAck(messageContext)
@@ -631,18 +631,18 @@ describe('credentialProtocol', () => {
   describe('createProblemReport', () => {
     test('returns problem report message base once get error', async () => {
       // given
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.OfferReceived,
         threadId: 'somethreadid',
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
       const description = 'Indy error'
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
       // when
       const { message } = await credentialProtocol.createProblemReport(agentContext, {
         description,
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       message.setThread({ threadId: 'somethreadid' })
@@ -675,12 +675,12 @@ describe('credentialProtocol', () => {
     })
 
     test('updates problem report error message and returns credential record', async () => {
-      const credentialRecord = mockCredentialRecord({
+      const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.OfferReceived,
       })
 
       // given
-      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialRecord)
+      mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
       // when
       const returnedCredentialRecord = await credentialProtocol.processProblemReport(messageContext)
@@ -760,21 +760,21 @@ describe('credentialProtocol', () => {
 
   describe('deleteCredential', () => {
     it('should call delete from repository', async () => {
-      const credentialRecord = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialRecord))
+      const credentialExchangeRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialExchangeRecord))
 
       const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
-      await credentialProtocol.delete(agentContext, credentialRecord)
-      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialRecord)
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord)
+      expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialExchangeRecord)
     })
 
     it('should call deleteCredentialById in testCredentialFormatService if deleteAssociatedCredential is true', async () => {
       const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
-      const credentialRecord = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      const credentialExchangeRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
-      await credentialProtocol.delete(agentContext, credentialRecord, {
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
         deleteAssociatedCredentials: true,
         deleteAssociatedDidCommMessages: false,
       })
@@ -782,17 +782,17 @@ describe('credentialProtocol', () => {
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId
       )
     })
 
     it('should not call deleteCredentialById in testCredentialFormatService if deleteAssociatedCredential is false', async () => {
       const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
-      const credentialRecord = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      const credentialExchangeRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
-      await credentialProtocol.delete(agentContext, credentialRecord, {
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
         deleteAssociatedCredentials: false,
         deleteAssociatedDidCommMessages: false,
       })
@@ -803,29 +803,29 @@ describe('credentialProtocol', () => {
     it('deleteAssociatedCredentials should default to true', async () => {
       const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
-      const credentialRecord = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      const credentialExchangeRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
-      await credentialProtocol.delete(agentContext, credentialRecord)
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord)
 
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId
       )
     })
     it('deleteAssociatedDidCommMessages should default to true', async () => {
       const deleteCredentialMock = mockFunction(testCredentialFormatService.deleteCredentialById)
 
-      const credentialRecord = mockCredentialRecord()
-      mockFunction(credentialRepository.getById).mockResolvedValue(credentialRecord)
+      const credentialExchangeRecord = mockCredentialRecord()
+      mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
-      await credentialProtocol.delete(agentContext, credentialRecord)
+      await credentialProtocol.delete(agentContext, credentialExchangeRecord)
 
       expect(deleteCredentialMock).toHaveBeenNthCalledWith(
         1,
         agentContext,
-        credentialRecord.credentials[0].credentialRecordId
+        credentialExchangeRecord.credentials[0].credentialRecordId
       )
       expect(didCommMessageRepository.delete).toHaveBeenCalledTimes(3)
     })

@@ -306,11 +306,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
   /**
    * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param options the issue credential message wrapped inside this object
-   * @param credentialRecord the credential exchange record for this credential
+   * @param credentialExchangeRecord the credential exchange record for this credential
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
+    { credentialExchangeRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
@@ -331,7 +331,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       credential,
     })
 
-    credentialRecord.credentials.push({
+    credentialExchangeRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
       credentialRecordId: verifiableCredential.id,
     })

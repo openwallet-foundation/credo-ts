@@ -41,9 +41,9 @@ export class Listener {
     this.on = false
   }
 
-  private printCredentialAttributes(credentialRecord: DidCommCredentialExchangeRecord) {
-    if (credentialRecord.credentialAttributes) {
-      const attribute = credentialRecord.credentialAttributes
+  private printCredentialAttributes(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
+    if (credentialExchangeRecord.credentialAttributes) {
+      const attribute = credentialExchangeRecord.credentialAttributes
       console.log('\n\nCredential preview:')
       for (const element of attribute) {
         console.log(purpleText(`${element.name} ${Color.Reset}${element.value}`))

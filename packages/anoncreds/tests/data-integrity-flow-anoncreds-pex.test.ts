@@ -162,7 +162,7 @@ async function anonCredsFlowTest(options: {
     threadId: issuerRecord.threadId,
   })
   holderRecord = await holder.modules.credentials.acceptOffer({
-    credentialRecordId: holderRecord.id,
+    credentialExchangeRecordId: holderRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {
@@ -179,7 +179,7 @@ async function anonCredsFlowTest(options: {
     threadId: holderRecord.threadId,
   })
   issuerRecord = await issuer.modules.credentials.acceptRequest({
-    credentialRecordId: issuerRecord.id,
+    credentialExchangeRecordId: issuerRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
       dataIntegrity: {},
@@ -191,7 +191,7 @@ async function anonCredsFlowTest(options: {
     threadId: issuerRecord.threadId,
   })
   holderRecord = await holder.modules.credentials.acceptCredential({
-    credentialRecordId: holderRecord.id,
+    credentialExchangeRecordId: holderRecord.id,
   })
 
   issuerRecord = await waitForCredentialRecordSubject(issuerReplay, {

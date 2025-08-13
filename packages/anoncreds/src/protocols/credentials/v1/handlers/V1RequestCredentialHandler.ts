@@ -15,40 +15,40 @@ export class V1RequestCredentialHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1RequestCredentialHandler>) {
-    const credentialRecord = await this.credentialProtocol.processRequest(messageContext)
+    const credentialExchangeRecord = await this.credentialProtocol.processRequest(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       requestMessage: messageContext.message,
     })
 
     if (shouldAutoRespond) {
-      return await this.acceptRequest(credentialRecord, messageContext)
+      return await this.acceptRequest(credentialExchangeRecord, messageContext)
     }
   }
 
   private async acceptRequest(
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1RequestCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending credential with autoAccept')
 
     const offerMessage = await this.credentialProtocol.findOfferMessage(
       messageContext.agentContext,
-      credentialRecord.id
+      credentialExchangeRecord.id
     )
     if (!offerMessage) {
-      throw new CredoError(`Could not find offer message for credential record with id ${credentialRecord.id}`)
+      throw new CredoError(`Could not find offer message for credential record with id ${credentialExchangeRecord.id}`)
     }
 
     const { message } = await this.credentialProtocol.acceptRequest(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
     })
 
     return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
       lastReceivedMessage: messageContext.message,
       lastSentMessage: offerMessage,
     })

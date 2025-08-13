@@ -45,9 +45,9 @@ export class Alice extends BaseAgent {
     this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
   }
 
-  public async acceptCredentialOffer(credentialRecord: DidCommCredentialExchangeRecord) {
+  public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     await this.agent.modules.credentials.acceptOffer({
-      credentialRecordId: credentialRecord.id,
+      credentialExchangeRecordId: credentialExchangeRecord.id,
     })
   }
 

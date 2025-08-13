@@ -97,7 +97,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
   // Repository methods
   updateState(
     agentContext: AgentContext,
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     newState: DidCommCredentialState
   ): Promise<void>
   getById(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommCredentialExchangeRecord>
@@ -110,7 +110,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
   findById(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommCredentialExchangeRecord | null>
   delete(
     agentContext: AgentContext,
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     options?: DeleteCredentialOptions
   ): Promise<void>
   getByProperties(
@@ -129,7 +129,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
       role?: DidCommCredentialRole
     }
   ): Promise<DidCommCredentialExchangeRecord | null>
-  update(agentContext: AgentContext, credentialRecord: DidCommCredentialExchangeRecord): Promise<void>
+  update(agentContext: AgentContext, credentialExchangeRecord: DidCommCredentialExchangeRecord): Promise<void>
 
   register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 }

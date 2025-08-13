@@ -110,12 +110,12 @@ export interface CreateCredentialProposalOptions<CFs extends CredentialFormatSer
 }
 
 export interface AcceptCredentialProposalOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
 }
 
 export interface NegotiateCredentialProposalOptions<CFs extends CredentialFormatService[]> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
   autoAcceptCredential?: DidCommAutoAcceptCredential
   comment?: string
@@ -138,12 +138,12 @@ export interface CreateCredentialOfferOptions<CFs extends CredentialFormatServic
 }
 
 export interface AcceptCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
 }
 
 export interface NegotiateCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
 }
 
@@ -153,22 +153,22 @@ export interface CreateCredentialRequestOptions<CFs extends CredentialFormatServ
 }
 
 export interface AcceptCredentialRequestOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
 }
 
 export interface AcceptCredentialOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
 }
 
 export interface CreateCredentialProblemReportOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   description: string
 }
 
 export interface CredentialProtocolMsgReturnType<MessageType extends DidCommMessage> {
   message: MessageType
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
 }
 
 export interface DeleteCredentialOptions {

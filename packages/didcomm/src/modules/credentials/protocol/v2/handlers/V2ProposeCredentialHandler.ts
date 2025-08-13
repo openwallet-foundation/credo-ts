@@ -16,20 +16,20 @@ export class V2ProposeCredentialHandler implements DidCommMessageHandler {
   }
 
   public async handle(messageContext: InboundDidCommMessageContext<V2ProposeCredentialMessage>) {
-    const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
+    const credentialExchangeRecord = await this.credentialProtocol.processProposal(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       proposalMessage: messageContext.message,
     })
 
     if (shouldAutoRespond) {
-      return await this.acceptProposal(credentialRecord, messageContext)
+      return await this.acceptProposal(credentialExchangeRecord, messageContext)
     }
   }
 
   private async acceptProposal(
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
@@ -39,12 +39,12 @@ export class V2ProposeCredentialHandler implements DidCommMessageHandler {
       return
     }
 
-    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialRecord })
+    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialExchangeRecord })
 
     return new OutboundDidCommMessageContext(message, {
       agentContext: messageContext.agentContext,
       connection: messageContext.connection,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
     })
   }
 }

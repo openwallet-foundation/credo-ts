@@ -65,17 +65,17 @@ export class DidCommRevocationNotificationService {
     }
 
     this.logger.trace('Getting record by query for revocation notification:', query)
-    const credentialRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
+    const credentialExchangeRecord = await this.credentialRepository.getSingleByQuery(agentContext, query)
 
-    credentialRecord.revocationNotification = new DidCommRevocationNotification(comment)
-    await this.credentialRepository.update(agentContext, credentialRecord)
+    credentialExchangeRecord.revocationNotification = new DidCommRevocationNotification(comment)
+    await this.credentialRepository.update(agentContext, credentialExchangeRecord)
 
     this.logger.trace('Emitting DidCommRevocationNotificationReceivedEvent')
     this.eventEmitter.emit<DidCommRevocationNotificationReceivedEvent>(agentContext, {
       type: DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
       payload: {
         // Clone record to prevent mutations after emitting event.
-        credentialExchangeRecord: credentialRecord.clone(),
+        credentialExchangeRecord: credentialExchangeRecord.clone(),
       },
     })
   }

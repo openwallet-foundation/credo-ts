@@ -80,7 +80,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    */
   public async createProposal(
     _agentContext: AgentContext,
-    { credentialFormats, credentialRecord }: CredentialFormatCreateProposalOptions<AnonCredsCredentialFormat>
+    { credentialFormats, credentialExchangeRecord }: CredentialFormatCreateProposalOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new DidCommCredentialFormatSpec({
       format: ANONCREDS_CREDENTIAL_FILTER,
@@ -111,7 +111,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     )
 
     // Set the metadata
-    credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
+    credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: proposal.schemaId,
       credentialDefinitionId: proposal.credentialDefinitionId,
     })
@@ -133,7 +133,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     {
       attachmentId,
       credentialFormats,
-      credentialRecord,
+      credentialExchangeRecord,
       proposalAttachment,
     }: CredentialFormatAcceptProposalOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
@@ -142,7 +142,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
     const credentialDefinitionId = anoncredsFormat?.credentialDefinitionId ?? proposalJson.cred_def_id
 
-    const attributes = anoncredsFormat?.attributes ?? credentialRecord.credentialAttributes
+    const attributes = anoncredsFormat?.attributes ?? credentialExchangeRecord.credentialAttributes
 
     if (!credentialDefinitionId) {
       throw new CredoError('No credential definition id in proposal or provided as input to accept proposal method.')
@@ -153,7 +153,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     }
 
     const { format, attachment, previewAttributes } = await this.createAnonCredsOffer(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       attachmentId,
       attributes,
       credentialDefinitionId,
@@ -174,7 +174,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, credentialRecord, attachmentId }: CredentialFormatCreateOfferOptions<AnonCredsCredentialFormat>
+    { credentialFormats, credentialExchangeRecord, attachmentId }: CredentialFormatCreateOfferOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anoncredsFormat = credentialFormats.anoncreds
 
@@ -183,7 +183,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     }
 
     const { format, attachment, previewAttributes } = await this.createAnonCredsOffer(agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       attachmentId,
       attributes: anoncredsFormat.attributes,
       credentialDefinitionId: anoncredsFormat.credentialDefinitionId,
@@ -197,10 +197,10 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
   public async processOffer(
     agentContext: AgentContext,
-    { attachment, credentialRecord }: CredentialFormatProcessOptions
+    { attachment, credentialExchangeRecord }: CredentialFormatProcessOptions
   ) {
     agentContext.config.logger.debug(
-      `Processing anoncreds credential offer for credential record ${credentialRecord.id}`
+      `Processing anoncreds credential offer for credential record ${credentialExchangeRecord.id}`
     )
 
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -215,7 +215,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   public async acceptOffer(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       attachmentId,
       offerAttachment,
       credentialFormats,
@@ -234,11 +234,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       linkSecretId: credentialFormats?.anoncreds?.linkSecretId,
     })
 
-    credentialRecord.metadata.set<AnonCredsCredentialRequestMetadata>(
+    credentialExchangeRecord.metadata.set<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey,
       credentialRequestMetadata
     )
-    credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
+    credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       credentialDefinitionId: credentialOffer.cred_def_id,
       schemaId: credentialOffer.schema_id,
     })
@@ -269,17 +269,17 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   public async acceptRequest(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       attachmentId,
       offerAttachment,
       requestAttachment,
     }: CredentialFormatAcceptRequestOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     // Assert credential attributes
-    const credentialAttributes = credentialRecord.credentialAttributes
+    const credentialAttributes = credentialExchangeRecord.credentialAttributes
     if (!credentialAttributes) {
       throw new CredoError(
-        `Missing required credential attribute values on credential record with id ${credentialRecord.id}`
+        `Missing required credential attribute values on credential record with id ${credentialExchangeRecord.id}`
       )
     }
 
@@ -306,7 +306,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     if (credentialDefinition.revocation) {
       const credentialMetadata =
-        credentialRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
+        credentialExchangeRecord.metadata.get<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey)
       revocationRegistryDefinitionId = credentialMetadata?.revocationRegistryId
       if (credentialMetadata?.credentialRevocationId) {
         revocationRegistryIndex = Number(credentialMetadata.credentialRevocationId)
@@ -346,11 +346,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     // If the credential is revocable, store the revocation identifiers in the credential record
     if (credential.rev_reg_id) {
-      credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
+      credentialExchangeRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         revocationRegistryId: revocationRegistryDefinitionId ?? undefined,
         credentialRevocationId: credentialRevocationId ?? undefined,
       })
-      credentialRecord.setTags({
+      credentialExchangeRecord.setTags({
         anonCredsRevocationRegistryId: revocationRegistryDefinitionId,
         anonCredsCredentialRevocationId: credentialRevocationId,
       })
@@ -368,13 +368,13 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   /**
    * Processes an incoming credential - retrieve metadata, retrieve payload and store it in wallet
    * @param options the issue credential message wrapped inside this object
-   * @param credentialRecord the credential exchange record for this credential
+   * @param credentialExchangeRecord the credential exchange record for this credential
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment }: CredentialFormatProcessCredentialOptions
+    { credentialExchangeRecord, attachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
-    const credentialRequestMetadata = credentialRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
+    const credentialRequestMetadata = credentialExchangeRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey
     )
 
@@ -383,11 +383,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
     if (!credentialRequestMetadata) {
       throw new CredoError(
-        `Missing required request metadata for credential exchange with thread id with id ${credentialRecord.id}`
+        `Missing required request metadata for credential exchange with thread id with id ${credentialExchangeRecord.id}`
       )
     }
 
-    if (!credentialRecord.credentialAttributes) {
+    if (!credentialExchangeRecord.credentialAttributes) {
       throw new CredoError('Missing credential attributes on credential record. Unable to check credential attributes')
     }
 
@@ -405,7 +405,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       : undefined
 
     // assert the credential values match the offer values
-    const recordCredentialValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
+    const recordCredentialValues = convertAttributesToCredentialValues(credentialExchangeRecord.credentialAttributes)
     assertCredentialValuesMatch(anonCredsCredential.values, recordCredentialValues)
 
     const storeCredentialOptions = getStoreCredentialOptions(
@@ -432,17 +432,17 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     if (anonCredsCredential.rev_reg_id) {
       const credential = await anonCredsHolderService.getCredential(agentContext, { id: credentialId })
 
-      credentialRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
+      credentialExchangeRecord.metadata.add<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
         credentialRevocationId: credential.credentialRevocationId ?? undefined,
         revocationRegistryId: credential.revocationRegistryId ?? undefined,
       })
-      credentialRecord.setTags({
+      credentialExchangeRecord.setTags({
         anonCredsRevocationRegistryId: credential.revocationRegistryId,
         anonCredsCredentialRevocationId: credential.credentialRevocationId,
       })
     }
 
-    credentialRecord.credentials.push({
+    credentialExchangeRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
       credentialRecordId: credentialId,
     })
@@ -519,7 +519,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
 
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
-    { credentialRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
+    { credentialExchangeRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
@@ -528,8 +528,8 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     if (credentialJson.cred_def_id !== credentialRequestJson.cred_def_id) return false
 
     // If we don't have any attributes stored we can't compare so always return false.
-    if (!credentialRecord.credentialAttributes) return false
-    const attributeValues = convertAttributesToCredentialValues(credentialRecord.credentialAttributes)
+    if (!credentialExchangeRecord.credentialAttributes) return false
+    const attributeValues = convertAttributesToCredentialValues(credentialExchangeRecord.credentialAttributes)
 
     // check whether the values match the values in the record
     return checkCredentialValuesMatch(attributeValues, credentialJson.values)
@@ -538,7 +538,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   private async createAnonCredsOffer(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       attachmentId,
       credentialDefinitionId,
       revocationRegistryDefinitionId,
@@ -549,7 +549,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialDefinitionId: string
       revocationRegistryDefinitionId?: string
       revocationRegistryIndex?: number
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
       attributes: DidCommCredentialPreviewAttributeOptions[]
       linkedAttachments?: LinkedAttachment[]
@@ -591,14 +591,14 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       }
 
       // Set revocation tags
-      credentialRecord.setTags({
+      credentialExchangeRecord.setTags({
         anonCredsRevocationRegistryId: revocationRegistryDefinitionId,
         anonCredsCredentialRevocationId: revocationRegistryIndex.toString(),
       })
     }
 
     // Set the metadata
-    credentialRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
+    credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, {
       schemaId: offer.schema_id,
       credentialDefinitionId: offer.cred_def_id,
       credentialRevocationId: revocationRegistryIndex?.toString(),

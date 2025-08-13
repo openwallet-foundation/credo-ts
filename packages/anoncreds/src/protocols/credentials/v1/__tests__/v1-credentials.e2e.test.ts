@@ -80,7 +80,7 @@ describe('V1 Credentials', () => {
 
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.modules.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Proposal',
       credentialFormats: {
         indy: {
@@ -151,7 +151,7 @@ describe('V1 Credentials', () => {
     })
 
     const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     expect(offerCredentialExchangeRecord).toMatchObject({
@@ -169,7 +169,7 @@ describe('V1 Credentials', () => {
 
     testLogger.test('Faber sends credential to Alice')
     await faberAgent.modules.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Credential',
     })
 
@@ -180,7 +180,7 @@ describe('V1 Credentials', () => {
     })
 
     await aliceAgent.modules.credentials.acceptCredential({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     testLogger.test('Faber waits for state done')

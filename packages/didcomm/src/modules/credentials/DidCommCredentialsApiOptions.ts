@@ -60,7 +60,7 @@ export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[
  */
 export interface AcceptCredentialProposalOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptProposal'>
 }
 
@@ -69,7 +69,7 @@ export interface AcceptCredentialProposalOptions<CPs extends DidCommCredentialPr
  */
 export interface NegotiateCredentialProposalOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
 }
 
@@ -98,7 +98,7 @@ export interface OfferCredentialOptions<CPs extends DidCommCredentialProtocol[] 
  */
 export interface AcceptCredentialOfferOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptOffer'>
 }
 
@@ -107,7 +107,7 @@ export interface AcceptCredentialOfferOptions<CPs extends DidCommCredentialProto
  */
 export interface NegotiateCredentialOfferOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
 }
 
@@ -118,7 +118,7 @@ export interface NegotiateCredentialOfferOptions<CPs extends DidCommCredentialPr
  */
 export interface AcceptCredentialRequestOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptRequest'>
   autoAcceptCredential?: DidCommAutoAcceptCredential
   comment?: string
@@ -128,14 +128,14 @@ export interface AcceptCredentialRequestOptions<CPs extends DidCommCredentialPro
  * Interface for CredentialsApi.acceptCredential. Will send an ack message
  */
 export interface AcceptCredentialOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
 }
 
 /**
  * Interface for CredentialsApi.sendRevocationNotification. Will send a revoke message
  */
 export interface SendRevocationNotificationOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   revocationId: string // TODO: Get from record?
   revocationFormat: string // TODO: Get from record?
   comment?: string
@@ -146,7 +146,7 @@ export interface SendRevocationNotificationOptions {
  * Interface for CredentialsApi.sendProblemReport. Will send a problem-report message
  */
 export interface SendCredentialProblemReportOptions {
-  credentialRecordId: string
+  credentialExchangeRecordId: string
   description: string
 }
 
@@ -154,9 +154,7 @@ export interface SendCredentialProblemReportOptions {
  * Interface for CredentialsApi.declineOffer. Decline a received credential offer and optionally send a problem-report message to Issuer.
  */
 export interface DeclineCredentialOfferOptions {
-  // TODO: in next major release, move the id to this object as well
-  // for consistency with the proofs api
-  // credentialRecordId: string
+  credentialExchangeRecordId: string
 
   /**
    * Whether to send a problem-report message to the issuer as part

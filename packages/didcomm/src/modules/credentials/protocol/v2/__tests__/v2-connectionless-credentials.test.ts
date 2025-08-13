@@ -94,7 +94,7 @@ describe('V2 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         anoncreds: {
@@ -120,19 +120,19 @@ describe('V2 Connectionless Credentials', () => {
 
     testLogger.test('Alice sends credential request to Faber')
     const acceptOfferOptions: AcceptCredentialOfferOptions = {
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     }
-    const credentialRecord = await aliceAgent.modules.credentials.acceptOffer(acceptOfferOptions)
+    const credentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
-      threadId: credentialRecord.threadId,
+      threadId: credentialExchangeRecord.threadId,
       state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
     const options: AcceptCredentialRequestOptions = {
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
     faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest(options)
@@ -145,7 +145,7 @@ describe('V2 Connectionless Credentials', () => {
 
     testLogger.test('Alice sends credential ack to Faber')
     aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     testLogger.test('Faber waits for credential ack from Alice')
@@ -192,7 +192,7 @@ describe('V2 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
       comment: 'V2 Out of Band offer',
       credentialFormats: {
         anoncreds: {
@@ -220,7 +220,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     await aliceAgent.modules.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })
 

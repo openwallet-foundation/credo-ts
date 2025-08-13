@@ -29,14 +29,14 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     {
       credentialFormats,
       formatServices,
-      credentialRecord,
+      credentialExchangeRecord,
       comment,
       goalCode,
       goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       comment?: string
       goalCode?: string
       goal?: string
@@ -52,7 +52,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     for (const formatService of formatServices) {
       const { format, attachment, previewAttributes } = await formatService.createProposal(agentContext, {
         credentialFormats,
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       if (previewAttributes) {
@@ -65,10 +65,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formats.push(format)
     }
 
-    credentialRecord.credentialAttributes = credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = credentialPreview?.attributes
 
     const message = new V2ProposeCredentialMessage({
-      id: credentialRecord.threadId,
+      id: credentialExchangeRecord.threadId,
       formats,
       proposalAttachments,
       comment,
@@ -77,12 +77,12 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
     return message
@@ -91,11 +91,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   public async processProposal(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       message,
       formatServices,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       message: V2ProposeCredentialMessage
       formatServices: CredentialFormatService[]
     }
@@ -107,28 +107,28 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       await formatService.processProposal(agentContext, {
         attachment,
-        credentialRecord,
+        credentialExchangeRecord,
       })
     }
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
   }
 
   public async acceptProposal(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       formatServices,
       comment,
       goalCode,
       goal,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
       formatServices: CredentialFormatService[]
       comment?: string
@@ -144,7 +144,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     let credentialPreview: V2CredentialPreview | undefined
 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V2ProposeCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -152,7 +152,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     // NOTE: We set the credential attributes from the proposal on the record as we've 'accepted' them
     // and can now use them to create the offer in the format services. It may be overwritten later on
     // if the user provided other attributes in the credentialFormats array.
-    credentialRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = proposalMessage.credentialPreview?.attributes
 
     for (const formatService of formatServices) {
       const proposalAttachment = this.getAttachmentForService(
@@ -162,7 +162,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       )
 
       const { attachment, format, previewAttributes } = await formatService.acceptProposal(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         credentialFormats,
         proposalAttachment,
       })
@@ -177,7 +177,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formats.push(format)
     }
 
-    credentialRecord.credentialAttributes = credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = credentialPreview?.attributes
 
     if (!credentialPreview) {
       // If no preview attributes were provided, use a blank preview. Not all formats use this object
@@ -196,11 +196,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
@@ -219,14 +219,14 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     {
       credentialFormats,
       formatServices,
-      credentialRecord,
+      credentialExchangeRecord,
       comment,
       goalCode,
       goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       comment?: string
       goalCode?: string
       goal?: string
@@ -242,7 +242,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     for (const formatService of formatServices) {
       const { format, attachment, previewAttributes } = await formatService.createOffer(agentContext, {
         credentialFormats,
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       if (previewAttributes) {
@@ -255,7 +255,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       formats.push(format)
     }
 
-    credentialRecord.credentialAttributes = credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = credentialPreview?.attributes
 
     if (!credentialPreview) {
       // If no preview attributes were provided, use a blank preview. Not all formats use this object
@@ -274,12 +274,12 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialPreview,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
     return message
@@ -288,11 +288,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   public async processOffer(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       message,
       formatServices,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       message: V2OfferCredentialMessage
       formatServices: CredentialFormatService[]
     }
@@ -304,28 +304,28 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       await formatService.processOffer(agentContext, {
         attachment,
-        credentialRecord,
+        credentialExchangeRecord,
       })
     }
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
   }
 
   public async acceptOffer(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       formatServices,
       comment,
       goalCode,
       goal,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
       formatServices: CredentialFormatService[]
       comment?: string
@@ -336,7 +336,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V2OfferCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -355,7 +355,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       const { attachment, format, appendAttachments } = await formatService.acceptOffer(agentContext, {
         offerAttachment,
-        credentialRecord,
+        credentialExchangeRecord,
         credentialFormats,
       })
 
@@ -364,7 +364,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       if (appendAttachments) requestAppendAttachments.push(...appendAttachments)
     }
 
-    credentialRecord.credentialAttributes = offerMessage.credentialPreview?.attributes
+    credentialExchangeRecord.credentialAttributes = offerMessage.credentialPreview?.attributes
 
     const message = new V2RequestCredentialMessage({
       formats,
@@ -375,11 +375,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
@@ -398,14 +398,14 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     {
       credentialFormats,
       formatServices,
-      credentialRecord,
+      credentialExchangeRecord,
       comment,
       goalCode,
       goal,
     }: {
       formatServices: CredentialFormatService[]
       credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createRequest'>
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       comment?: string
       goalCode?: string
       goal?: string
@@ -420,7 +420,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     for (const formatService of formatServices) {
       const { format, attachment } = await formatService.createRequest(agentContext, {
         credentialFormats,
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       requestAttachments.push(attachment)
@@ -435,12 +435,12 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       requestAttachments: requestAttachments,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Sender,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
 
     return message
@@ -449,11 +449,11 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   public async processRequest(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       message,
       formatServices,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       message: V2RequestCredentialMessage
       formatServices: CredentialFormatService[]
     }
@@ -465,28 +465,28 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
 
       await formatService.processRequest(agentContext, {
         attachment,
-        credentialRecord,
+        credentialExchangeRecord,
       })
     }
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
   }
 
   public async acceptRequest(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       credentialFormats,
       formatServices,
       comment,
       goalCode,
       goal,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
       formatServices: CredentialFormatService[]
       comment?: string
@@ -497,13 +497,13 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V2RequestCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
 
     const offerMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V2OfferCredentialMessage,
       role: DidCommMessageRole.Sender,
     })
@@ -526,7 +526,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       const { attachment, format } = await formatService.acceptRequest(agentContext, {
         requestAttachment,
         offerAttachment,
-        credentialRecord,
+        credentialExchangeRecord,
         credentialFormats,
         requestAppendAttachments: requestMessage.appendedAttachments,
       })
@@ -543,12 +543,12 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialRecord.threadId, parentThreadId: credentialRecord.parentThreadId })
+    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
     message.setPleaseAck()
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       role: DidCommMessageRole.Sender,
     })
 
@@ -558,12 +558,12 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
   public async processCredential(
     agentContext: AgentContext,
     {
-      credentialRecord,
+      credentialExchangeRecord,
       message,
       requestMessage,
       formatServices,
     }: {
-      credentialRecord: DidCommCredentialExchangeRecord
+      credentialExchangeRecord: DidCommCredentialExchangeRecord
       message: V2IssueCredentialMessage
       requestMessage: V2RequestCredentialMessage
       formatServices: CredentialFormatService[]
@@ -572,7 +572,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const offerMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
       messageClass: V2OfferCredentialMessage,
       role: DidCommMessageRole.Receiver,
     })
@@ -595,7 +595,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
         attachment,
         offerAttachment,
         requestAttachment,
-        credentialRecord,
+        credentialExchangeRecord,
         requestAppendAttachments: requestMessage.appendedAttachments,
       })
     }
@@ -603,7 +603,7 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
       role: DidCommMessageRole.Receiver,
-      associatedRecordId: credentialRecord.id,
+      associatedRecordId: credentialExchangeRecord.id,
     })
   }
 

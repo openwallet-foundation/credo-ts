@@ -51,7 +51,7 @@ export interface CredentialFormatCreateReturn {
  */
 export interface CredentialFormatProcessOptions {
   attachment: Attachment
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
 }
 
 export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
@@ -61,13 +61,13 @@ export interface CredentialFormatProcessCredentialOptions extends CredentialForm
 }
 
 export interface CredentialFormatCreateProposalOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createProposal'>
   attachmentId?: string
 }
 
 export interface CredentialFormatAcceptProposalOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptProposal'>
   attachmentId?: string
 
@@ -79,13 +79,13 @@ export interface CredentialFormatCreateProposalReturn extends CredentialFormatCr
 }
 
 export interface CredentialFormatCreateOfferOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createOffer'>
   attachmentId?: string
 }
 
 export interface CredentialFormatAcceptOfferOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptOffer'>
   attachmentId?: string
   offerAttachment: Attachment
@@ -96,12 +96,12 @@ export interface CredentialFormatCreateOfferReturn extends CredentialFormatCreat
 }
 
 export interface CredentialFormatCreateRequestOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: CredentialFormatPayload<[CF], 'createRequest'>
 }
 
 export interface CredentialFormatAcceptRequestOptions<CF extends CredentialFormat> {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: CredentialFormatPayload<[CF], 'acceptRequest'>
   attachmentId?: string
   offerAttachment?: Attachment
@@ -111,26 +111,26 @@ export interface CredentialFormatAcceptRequestOptions<CF extends CredentialForma
 
 // Auto accept method interfaces
 export interface CredentialFormatAutoRespondProposalOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment: Attachment
   offerAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondOfferOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment: Attachment
   offerAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondRequestOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment?: Attachment
   offerAttachment: Attachment
   requestAttachment: Attachment
 }
 
 export interface CredentialFormatAutoRespondCredentialOptions {
-  credentialRecord: DidCommCredentialExchangeRecord
+  credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment?: Attachment
   offerAttachment?: Attachment
   requestAttachment: Attachment

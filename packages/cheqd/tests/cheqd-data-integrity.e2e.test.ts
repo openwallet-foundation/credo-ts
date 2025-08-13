@@ -93,7 +93,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       threadId: issuerRecord.threadId,
     })
     holderRecord = await holderAgent.modules.credentials.acceptOffer({
-      credentialRecordId: holderRecord.id,
+      credentialExchangeRecordId: holderRecord.id,
       autoAcceptCredential: DidCommAutoAcceptCredential.Never,
       credentialFormats: {
         dataIntegrity: {
@@ -110,7 +110,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       threadId: holderRecord.threadId,
     })
     issuerRecord = await issuerAgent.modules.credentials.acceptRequest({
-      credentialRecordId: issuerRecord.id,
+      credentialExchangeRecordId: issuerRecord.id,
       autoAcceptCredential: DidCommAutoAcceptCredential.Never,
       credentialFormats: {
         dataIntegrity: {},
@@ -122,7 +122,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
       threadId: issuerRecord.threadId,
     })
     holderRecord = await holderAgent.modules.credentials.acceptCredential({
-      credentialRecordId: holderRecord.id,
+      credentialExchangeRecordId: holderRecord.id,
     })
 
     issuerRecord = await waitForCredentialRecordSubject(issuerReplay, {

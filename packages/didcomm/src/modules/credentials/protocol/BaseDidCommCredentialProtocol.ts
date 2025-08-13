@@ -143,59 +143,59 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
 
     agentContext.config.logger.debug(`Processing problem report with message id ${credentialProblemReportMessage.id}`)
 
-    const credentialRecord = await this.getByProperties(agentContext, {
+    const credentialExchangeRecord = await this.getByProperties(agentContext, {
       threadId: credentialProblemReportMessage.threadId,
     })
 
     // Assert
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
-      expectedConnectionId: credentialRecord.connectionId,
+      expectedConnectionId: credentialExchangeRecord.connectionId,
     })
 
     //  This makes sure that the sender of the incoming message is authorized to do so.
-    if (!credentialRecord?.connectionId) {
+    if (!credentialExchangeRecord?.connectionId) {
       await connectionService.matchIncomingMessageToRequestMessageInOutOfBandExchange(messageContext, {
-        expectedConnectionId: credentialRecord?.connectionId,
+        expectedConnectionId: credentialExchangeRecord?.connectionId,
       })
 
-      credentialRecord.connectionId = connection?.id
+      credentialExchangeRecord.connectionId = connection?.id
     }
 
     // Update record
-    credentialRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
-    await this.updateState(agentContext, credentialRecord, DidCommCredentialState.Abandoned)
-    return credentialRecord
+    credentialExchangeRecord.errorMessage = `${credentialProblemReportMessage.description.code}: ${credentialProblemReportMessage.description.en}`
+    await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.Abandoned)
+    return credentialExchangeRecord
   }
 
   /**
    * Update the record to a new state and emit an state changed event. Also updates the record
    * in storage.
    *
-   * @param credentialRecord The credential record to update the state for
+   * @param credentialExchangeRecord The credential record to update the state for
    * @param newState The state to update to
    *
    */
   public async updateState(
     agentContext: AgentContext,
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     newState: DidCommCredentialState
   ) {
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
     agentContext.config.logger.debug(
-      `Updating credential record ${credentialRecord.id} to state ${newState} (previous=${credentialRecord.state})`
+      `Updating credential record ${credentialExchangeRecord.id} to state ${newState} (previous=${credentialExchangeRecord.state})`
     )
 
-    const previousState = credentialRecord.state
-    credentialRecord.state = newState
-    await credentialRepository.update(agentContext, credentialRecord)
+    const previousState = credentialExchangeRecord.state
+    credentialExchangeRecord.state = newState
+    await credentialRepository.update(agentContext, credentialExchangeRecord)
 
-    this.emitStateChangedEvent(agentContext, credentialRecord, previousState)
+    this.emitStateChangedEvent(agentContext, credentialExchangeRecord, previousState)
   }
 
   protected emitStateChangedEvent(
     agentContext: AgentContext,
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     previousState: DidCommCredentialState | null
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
@@ -203,7 +203,7 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
     eventEmitter.emit<DidCommCredentialStateChangedEvent>(agentContext, {
       type: DidCommCredentialEventTypes.DidCommCredentialStateChanged,
       payload: {
-        credentialExchangeRecord: credentialRecord.clone(),
+        credentialExchangeRecord: credentialExchangeRecord.clone(),
         previousState: previousState,
       },
     })
@@ -258,19 +258,19 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
 
   public async delete(
     agentContext: AgentContext,
-    credentialRecord: DidCommCredentialExchangeRecord,
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
     options?: DeleteCredentialOptions
   ): Promise<void> {
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
-    await credentialRepository.delete(agentContext, credentialRecord)
+    await credentialRepository.delete(agentContext, credentialExchangeRecord)
 
     const deleteAssociatedCredentials = options?.deleteAssociatedCredentials ?? true
     const deleteAssociatedDidCommMessages = options?.deleteAssociatedDidCommMessages ?? true
 
     if (deleteAssociatedCredentials) {
-      for (const credential of credentialRecord.credentials) {
+      for (const credential of credentialExchangeRecord.credentials) {
         const formatService = this.getFormatServiceForRecordType(credential.credentialRecordType)
         await formatService.deleteCredentialById(agentContext, credential.credentialRecordId)
       }
@@ -278,7 +278,7 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
 
     if (deleteAssociatedDidCommMessages) {
       const didCommMessages = await didCommMessageRepository.findByQuery(agentContext, {
-        associatedRecordId: credentialRecord.id,
+        associatedRecordId: credentialExchangeRecord.id,
       })
       for (const didCommMessage of didCommMessages) {
         await didCommMessageRepository.delete(agentContext, didCommMessage)
@@ -340,9 +340,9 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
     })
   }
 
-  public async update(agentContext: AgentContext, credentialRecord: DidCommCredentialExchangeRecord) {
+  public async update(agentContext: AgentContext, credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
-    return await credentialRepository.update(agentContext, credentialRecord)
+    return await credentialRepository.update(agentContext, credentialExchangeRecord)
   }
 }
