@@ -1,5 +1,14 @@
 import { createHash } from 'crypto'
-import { AgentContext, DidDocument, DidsApi, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  AgentContext,
+  DidDocument,
+  DidDocumentService,
+  DidsApi,
+  MultiBaseEncoder,
+  MultiHashEncoder,
+  TypedArrayEncoder,
+  VerificationMethod,
+} from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -23,6 +32,20 @@ jest.mock('../../../dids/WebvhDidResolver', () => {
     }),
   }
 })
+
+interface DidDocumentOptions {
+  context?: string | string[]
+  id: string
+  alsoKnownAs?: string[]
+  controller?: string | string[]
+  verificationMethod?: VerificationMethod[]
+  service?: DidDocumentService[]
+  authentication?: Array<string | VerificationMethod>
+  assertionMethod?: Array<string | VerificationMethod>
+  keyAgreement?: Array<string | VerificationMethod>
+  capabilityInvocation?: Array<string | VerificationMethod>
+  capabilityDelegation?: Array<string | VerificationMethod>
+}
 
 // Mock DidsApi
 const mockResolveDidDocument = jest.fn()
@@ -380,7 +403,9 @@ describe('WebVhAnonCredsRegistry', () => {
       jest.restoreAllMocks()
 
       // Mock successful DID resolution
-      mockResolveDidDocument.mockResolvedValue(new DidDocument(mockResolvedDidDocument as any))
+      mockResolveDidDocument.mockResolvedValue(
+        new DidDocument(mockResolvedDidDocument as unknown as DidDocumentOptions)
+      )
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
