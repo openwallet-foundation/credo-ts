@@ -62,5 +62,5 @@ Now:
         })
       })
     agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
-    agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+    agent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
 ```

@@ -15,9 +15,9 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -333,16 +333,16 @@ describe('Legacy indy format services using anoncreds-rs', () => {
       },
     })
 
-    const holderProofRecord = new ProofExchangeRecord({
+    const holderProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v1',
-      state: ProofState.ProposalSent,
-      role: ProofRole.Prover,
+      state: DidCommProofState.ProposalSent,
+      role: DidCommProofRole.Prover,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
-    const verifierProofRecord = new ProofExchangeRecord({
+    const verifierProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v1',
-      state: ProofState.ProposalReceived,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.ProposalReceived,
+      role: DidCommProofRole.Verifier,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 

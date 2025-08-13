@@ -1,7 +1,7 @@
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
-import { ProofExchangeRecord, ProofRepository, ProofRole, ProofState } from '../../../modules/proofs'
+import { DidCommProofExchangeRecord, DidCommProofExchangeRepository, DidCommProofRole, DidCommProofState } from '../../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../proofExchangeRecord'
@@ -9,8 +9,8 @@ import * as testModule from '../proofExchangeRecord'
 const agentConfig = getAgentConfig('Migration - Proof Exchange Record - 0.4-0.5')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/proofs/repository/ProofRepository')
-const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
+jest.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
+const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
 const proofRepository = new ProofRepositoryMock()
 
 jest.mock('../../../repository/DidCommMessageRepository')
@@ -23,7 +23,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => ({
     context: agentContext,
     dependencyManager: {
       resolve: jest.fn((injectionToken) =>
-        injectionToken === ProofRepository ? proofRepository : didCommMessageRepository
+        injectionToken === DidCommProofExchangeRepository ? proofRepository : didCommMessageRepository
       ),
     },
   })),
@@ -45,7 +45,7 @@ describe('0.4-0.5 | Migration | Proof Exchange Record', () => {
 
   describe('migrateProofExchangeRecordToV0_5()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: ProofExchangeRecord[] = [getProofRecord({})]
+      const records: DidCommProofExchangeRecord[] = [getProofRecord({})]
 
       mockFunction(proofRepository.getAll).mockResolvedValue(records)
 
@@ -64,55 +64,55 @@ describe('0.4-0.5 | Migration | Proof Exchange Record', () => {
    */
   describe('migrateRole()', () => {
     // according to: https://github.com/hyperledger/aries-rfcs/blob/main/features/0037-present-proof/README.md#states
-    genMigrateRoleTests(ProofState.RequestSent, ProofRole.Verifier)
-    genMigrateRoleTests(ProofState.ProposalReceived, ProofRole.Verifier)
-    genMigrateRoleTests(ProofState.PresentationReceived, ProofRole.Verifier)
+    genMigrateRoleTests(DidCommProofState.RequestSent, DidCommProofRole.Verifier)
+    genMigrateRoleTests(DidCommProofState.ProposalReceived, DidCommProofRole.Verifier)
+    genMigrateRoleTests(DidCommProofState.PresentationReceived, DidCommProofRole.Verifier)
 
-    genMigrateRoleTests(ProofState.RequestReceived, ProofRole.Prover)
-    genMigrateRoleTests(ProofState.Declined, ProofRole.Prover)
-    genMigrateRoleTests(ProofState.ProposalSent, ProofRole.Prover)
-    genMigrateRoleTests(ProofState.PresentationSent, ProofRole.Prover)
+    genMigrateRoleTests(DidCommProofState.RequestReceived, DidCommProofRole.Prover)
+    genMigrateRoleTests(DidCommProofState.Declined, DidCommProofRole.Prover)
+    genMigrateRoleTests(DidCommProofState.ProposalSent, DidCommProofRole.Prover)
+    genMigrateRoleTests(DidCommProofState.PresentationSent, DidCommProofRole.Prover)
 
-    genMigrateRoleTests(ProofState.Done, ProofRole.Prover, {
+    genMigrateRoleTests(DidCommProofState.Done, DidCommProofRole.Prover, {
       messageName: 'propose-presentation',
       didCommMessageRole: DidCommMessageRole.Sender,
     })
-    genMigrateRoleTests(ProofState.Abandoned, ProofRole.Prover, {
+    genMigrateRoleTests(DidCommProofState.Abandoned, DidCommProofRole.Prover, {
       messageName: 'propose-presentation',
       didCommMessageRole: DidCommMessageRole.Sender,
     })
 
-    genMigrateRoleTests(ProofState.Done, ProofRole.Verifier, {
-      messageName: 'propose-presentation',
-      didCommMessageRole: DidCommMessageRole.Receiver,
-    })
-    genMigrateRoleTests(ProofState.Abandoned, ProofRole.Verifier, {
+    genMigrateRoleTests(DidCommProofState.Done, DidCommProofRole.Verifier, {
       messageName: 'propose-presentation',
       didCommMessageRole: DidCommMessageRole.Receiver,
     })
+    genMigrateRoleTests(DidCommProofState.Abandoned, DidCommProofRole.Verifier, {
+      messageName: 'propose-presentation',
+      didCommMessageRole: DidCommMessageRole.Receiver,
+    })
 
-    genMigrateRoleTests(ProofState.Done, ProofRole.Verifier, {
+    genMigrateRoleTests(DidCommProofState.Done, DidCommProofRole.Verifier, {
       messageName: 'request-presentation',
       didCommMessageRole: DidCommMessageRole.Sender,
     })
-    genMigrateRoleTests(ProofState.Abandoned, ProofRole.Verifier, {
+    genMigrateRoleTests(DidCommProofState.Abandoned, DidCommProofRole.Verifier, {
       messageName: 'request-presentation',
       didCommMessageRole: DidCommMessageRole.Sender,
     })
 
-    genMigrateRoleTests(ProofState.Done, ProofRole.Prover, {
+    genMigrateRoleTests(DidCommProofState.Done, DidCommProofRole.Prover, {
       messageName: 'request-presentation',
       didCommMessageRole: DidCommMessageRole.Receiver,
     })
-    genMigrateRoleTests(ProofState.Abandoned, ProofRole.Prover, {
+    genMigrateRoleTests(DidCommProofState.Abandoned, DidCommProofRole.Prover, {
       messageName: 'request-presentation',
       didCommMessageRole: DidCommMessageRole.Receiver,
     })
   })
 
   function genMigrateRoleTests(
-    state: ProofState,
-    role: ProofRole,
+    state: DidCommProofState,
+    role: DidCommProofRole,
     didCommMessage?: {
       messageName: 'propose-presentation' | 'request-presentation'
       didCommMessageRole: DidCommMessageRole
@@ -151,12 +151,12 @@ describe('0.4-0.5 | Migration | Proof Exchange Record', () => {
   }
 })
 
-function getProofRecord({ id, state }: { id?: string; state?: ProofState }) {
+function getProofRecord({ id, state }: { id?: string; state?: DidCommProofState }) {
   return JsonTransformer.fromJSON(
     {
       id: id ?? 'proof-id',
-      state: state ?? ProofState.ProposalSent,
+      state: state ?? DidCommProofState.ProposalSent,
     },
-    ProofExchangeRecord
+    DidCommProofExchangeRecord
   )
 }

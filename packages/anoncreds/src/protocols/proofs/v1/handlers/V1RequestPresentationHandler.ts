@@ -1,4 +1,4 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
@@ -27,7 +27,7 @@ export class V1RequestPresentationHandler implements DidCommMessageHandler {
   }
 
   private async acceptRequest(
-    proofRecord: ProofExchangeRecord,
+    proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending presentation with autoAccept on')

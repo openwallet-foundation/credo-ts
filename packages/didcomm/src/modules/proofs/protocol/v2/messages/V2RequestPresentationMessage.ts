@@ -5,7 +5,7 @@ import { IsArray, IsBoolean, IsInstance, IsOptional, IsString, ValidateNested } 
 import { DidCommMessage } from '../../../../../DidCommMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../../models/DidCommProofFormatSpec'
 
 export interface V2RequestPresentationMessageOptions {
   id?: string

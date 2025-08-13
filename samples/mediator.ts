@@ -27,7 +27,7 @@ import {
   ConnectionInvitationMessage,
   DidCommConnectionsModule,
   DidCommModule,
-  HttpDidCommOutboundTransport,
+  HttpOutboundDidCommTransport,
   DidCommMediatorModule,
   MessagePickupModule,
   DidCommOutOfBandModule,
@@ -77,7 +77,7 @@ const agent = new Agent({
 
 // Create all transports
 const httpInboundTransport = new HttpInboundDidCommTransport({ app, port })
-const httpOutboundTransport = new HttpDidCommOutboundTransport()
+const httpOutboundTransport = new HttpOutboundDidCommTransport()
 const wsInboundTransport = new WsInboundDidCommTransport({ server: socketServer })
 const wsOutboundTransport = new WsOutboundDidCommTransport()
 

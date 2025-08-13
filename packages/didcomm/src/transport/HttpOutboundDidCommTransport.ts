@@ -10,7 +10,7 @@ import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { isValidJweStructure } from '../util/JWE'
 
-export class HttpDidCommOutboundTransport implements OutboundDidCommTransport {
+export class HttpOutboundDidCommTransport implements OutboundDidCommTransport {
   private agentContext!: AgentContext
   private logger!: Logger
   private fetch!: typeof fetch
@@ -37,20 +37,20 @@ export class HttpDidCommOutboundTransport implements OutboundDidCommTransport {
 
     if (this.outboundSessionCount === 0) {
       this.agentContext.config.logger.debug(
-        'No open outbound HTTP sessions. Immediately stopping HttpDidCommOutboundTransport'
+        'No open outbound HTTP sessions. Immediately stopping HttpOutboundDidCommTransport'
       )
       return
     }
 
     this.agentContext.config.logger.debug(
-      `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping HttpDidCommOutboundTransport`
+      `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping HttpOutboundDidCommTransport`
     )
     // Track all 'closed' sessions
     // TODO: add timeout? -> we have a timeout on the request
     return new Promise((resolve) =>
       this.outboundSessionsObservable.subscribe(() => {
         this.agentContext.config.logger.debug(
-          `${this.outboundSessionCount} HttpDidCommOutboundTransport sessions still active`
+          `${this.outboundSessionCount} HttpOutboundDidCommTransport sessions still active`
         )
         if (this.outboundSessionCount === 0) resolve()
       })
@@ -109,7 +109,7 @@ export class HttpDidCommOutboundTransport implements OutboundDidCommTransport {
 
         // This should not happen
         if (!this.isActive) {
-          this.logger.error('Received response message over HttpDidCommOutboundTransport while transport was not active.')
+          this.logger.error('Received response message over HttpOutboundDidCommTransport while transport was not active.')
         }
 
         try {

@@ -3,8 +3,8 @@ import type {
   DidCommBasicMessageStateChangedEvent,
   DidCommCredentialExchangeRecord,
   DidCommCredentialStateChangedEvent,
-  ProofExchangeRecord,
-  ProofStateChangedEvent,
+  DidCommProofExchangeRecord,
+  DidCommProofStateChangedEvent,
 } from '@credo-ts/didcomm'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import type { Alice } from './Alice'
@@ -17,8 +17,8 @@ import {
   DidCommBasicMessageRole,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
-  ProofEventTypes,
-  ProofState,
+  DidCommProofEventTypes,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
 
@@ -78,7 +78,7 @@ export class Listener {
     })
   }
 
-  private async newProofRequestPrompt(proofRecord: ProofExchangeRecord, aliceInquirer: AliceInquirer) {
+  private async newProofRequestPrompt(proofRecord: DidCommProofExchangeRecord, aliceInquirer: AliceInquirer) {
     this.turnListenerOn()
     await aliceInquirer.acceptProofRequest(proofRecord)
     this.turnListenerOff()
@@ -86,16 +86,16 @@ export class Listener {
   }
 
   public proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
-    alice.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
-      if (payload.proofRecord.state === ProofState.RequestReceived) {
+    alice.agent.events.on(DidCommProofEventTypes.ProofStateChanged, async ({ payload }: DidCommProofStateChangedEvent) => {
+      if (payload.proofRecord.state === DidCommProofState.RequestReceived) {
         await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
       }
     })
   }
 
   public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
-    faber.agent.events.on(ProofEventTypes.ProofStateChanged, async ({ payload }: ProofStateChangedEvent) => {
-      if (payload.proofRecord.state === ProofState.Done) {
+    faber.agent.events.on(DidCommProofEventTypes.ProofStateChanged, async ({ payload }: DidCommProofStateChangedEvent) => {
+      if (payload.proofRecord.state === DidCommProofState.Done) {
         await faberInquirer.processAnswer()
       }
     })

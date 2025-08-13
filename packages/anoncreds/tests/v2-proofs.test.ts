@@ -7,8 +7,8 @@ import {
   Attachment,
   AttachmentData,
   LinkedAttachment,
-  ProofExchangeRecord,
-  ProofState,
+  DidCommProofExchangeRecord,
+  DidCommProofState,
   V2PresentationMessage,
   V2ProposePresentationMessage,
   V2RequestPresentationMessage,
@@ -31,8 +31,8 @@ describe('PP V2 AnonCreds Proofs', () => {
   let revocationRegistryDefinitionId: string | null
   let aliceConnectionId: string
   let faberConnectionId: string
-  let faberProofExchangeRecord: ProofExchangeRecord
-  let aliceProofExchangeRecord: ProofExchangeRecord
+  let faberProofExchangeRecord: DidCommProofExchangeRecord
+  let aliceProofExchangeRecord: DidCommProofExchangeRecord
   let faberCredentialExchangeRecord: DidCommCredentialExchangeRecord
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry()
@@ -110,7 +110,7 @@ describe('PP V2 AnonCreds Proofs', () => {
     testLogger.test('Alice sends a presentation proposal to Faber')
 
     let faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -166,12 +166,12 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber accepts the presentation proposal from Alice
@@ -217,7 +217,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
@@ -255,13 +255,13 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v2',
     })
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation provided by Alice
@@ -273,22 +273,22 @@ describe('PP V2 AnonCreds Proofs', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     const proposalMessage = await aliceAgent.modules.proofs.findProposalMessage(aliceProofExchangeRecord.id)
@@ -385,7 +385,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
   test('Faber starts with proof request to Alice', async () => {
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -459,7 +459,7 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
@@ -472,7 +472,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
@@ -510,13 +510,13 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v2',
     })
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation
@@ -528,28 +528,28 @@ describe('PP V2 AnonCreds Proofs', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
   test('Alice provides credentials via call to getRequestedCredentials', async () => {
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -673,7 +673,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -748,13 +748,13 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
     })
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.sendProblemReport({
@@ -766,14 +766,14 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
       protocolVersion: 'v2',
     })
   })
 
   test('Credential is revoked after proof request and before presentation', async () => {
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     const nrpRequestedTime = dateToTimestamp(new Date()) + 1
@@ -837,7 +837,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Revoke the credential
@@ -871,7 +871,7 @@ describe('PP V2 AnonCreds Proofs', () => {
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation
@@ -885,12 +885,12 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -916,7 +916,7 @@ describe('PP V2 AnonCreds Proofs', () => {
     const revokedTimestamp = revocationStatusListState.revocationStatusList?.timestamp
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     const nrpRequestedTime = (revokedTimestamp ?? dateToTimestamp(new Date())) + 1
@@ -996,14 +996,14 @@ describe('PP V2 AnonCreds Proofs', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
       isVerified: false,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
     })
 
     // Faber will send a problem report, meaning for Alice that the proof state is abandoned
     // as well
     await waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
     })
   })
 })

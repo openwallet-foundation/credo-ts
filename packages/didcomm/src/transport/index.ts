@@ -1,6 +1,6 @@
 export * from './queue'
 export * from './InboundDidCommTransport'
 export * from './OutboundDidCommTransport'
-export * from './HttpDidCommOutboundTransport'
+export * from './HttpOutboundDidCommTransport'
 export * from './WsOutboundDidCommTransport'
 export * from './DidCommTransportEventTypes'

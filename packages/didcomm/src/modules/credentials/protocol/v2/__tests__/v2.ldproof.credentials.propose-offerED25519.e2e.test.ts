@@ -26,7 +26,7 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
-import { ProofEventTypes, ProofsModule, V2ProofProtocol } from '../../../../proofs'
+import { DidCommProofEventTypes, DidCommProofsModule, V2DidCommProofProtocol } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialsModule } from '../../../DidCommCredentialsModule'
 import { JsonLdCredentialFormatService } from '../../../formats'
@@ -82,10 +82,10 @@ const getIndyJsonLdModules = () =>
         }),
       ],
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       proofProtocols: [
         new V1ProofProtocol({ indyProofFormat }),
-        new V2ProofProtocol({
+        new V2DidCommProofProtocol({
           proofFormats: [indyProofFormat],
         }),
       ],
@@ -134,7 +134,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     setupSubjectTransports([faberAgent, aliceAgent])
     ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
-      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
+      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
     )
     await faberAgent.initialize()
     await aliceAgent.initialize()

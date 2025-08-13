@@ -17,15 +17,15 @@ import {
 import {
   Attachment,
   AttachmentData,
-  AutoAcceptProof,
+  DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   LinkedAttachment,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
-  ProofEventTypes,
-  ProofState,
+  DidCommProofEventTypes,
+  DidCommProofState,
 } from '../../../../../../didcomm/src'
 import {
   getAnonCredsIndyModules,
@@ -56,7 +56,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber v1 connection-less Proofs - Never',
       holderName: 'Alice v1 connection-less Proofs - Never',
-      autoAcceptProofs: AutoAcceptProof.Never,
+      autoAcceptProofs: DidCommAutoAcceptProof.Never,
       attributeNames: ['name', 'age'],
     })
 
@@ -125,7 +125,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
@@ -142,7 +142,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     testLogger.test('Faber waits for presentation from Alice')
     faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     const sentPresentationMessage = aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
@@ -155,7 +155,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     // Alice waits till it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
     return sentPresentationMessage
   }
@@ -175,7 +175,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber v1 connection-less Proofs - Always',
       holderName: 'Alice v1 connection-less Proofs - Always',
-      autoAcceptProofs: AutoAcceptProof.Always,
+      autoAcceptProofs: DidCommAutoAcceptProof.Always,
       attributeNames: ['name', 'age'],
     })
 
@@ -232,7 +232,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
           },
         },
       },
-      autoAcceptProof: AutoAcceptProof.ContentApproved,
+      autoAcceptProof: DidCommAutoAcceptProof.ContentApproved,
     })
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
@@ -244,12 +244,12 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: message.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: message.threadId,
     })
   })
@@ -265,7 +265,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     } = await setupAnonCredsTests({
       issuerName: 'Faber v1 connection-less Proofs - Always',
       holderName: 'Alice v1 connection-less Proofs - Always',
-      autoAcceptProofs: AutoAcceptProof.Always,
+      autoAcceptProofs: DidCommAutoAcceptProof.Always,
       attributeNames: ['name', 'age'],
     })
 
@@ -322,7 +322,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
           },
         },
       },
-      autoAcceptProof: AutoAcceptProof.ContentApproved,
+      autoAcceptProof: DidCommAutoAcceptProof.ContentApproved,
     })
 
     const { invitationUrl, message: requestMessage } =
@@ -338,12 +338,12 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: requestMessage.threadId,
     })
   })
@@ -397,7 +397,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       {},
       {
         ...getAnonCredsIndyModules({
-          autoAcceptProofs: AutoAcceptProof.Always,
+          autoAcceptProofs: DidCommAutoAcceptProof.Always,
         }),
         mediationRecipient: new DidCommMediationRecipientModule({
           mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
@@ -415,7 +415,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       {},
       {
         ...getAnonCredsIndyModules({
-          autoAcceptProofs: AutoAcceptProof.Always,
+          autoAcceptProofs: DidCommAutoAcceptProof.Always,
         }),
         mediationRecipient: new DidCommMediationRecipientModule({
           mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
@@ -437,7 +437,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
 
     const [faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
-      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
+      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
     )
 
     agents = [aliceAgent, faberAgent, mediatorAgent]
@@ -508,7 +508,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
           },
         },
       },
-      autoAcceptProof: AutoAcceptProof.ContentApproved,
+      autoAcceptProof: DidCommAutoAcceptProof.ContentApproved,
     })
 
     const { message: requestMessage, invitationUrl } =
@@ -534,12 +534,12 @@ describe('V1 Proofs - Connectionless - Indy', () => {
     await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: requestMessage.threadId,
     })
 
     await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
       threadId: requestMessage.threadId,
     })
 

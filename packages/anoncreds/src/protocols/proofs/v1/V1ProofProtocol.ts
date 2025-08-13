@@ -16,17 +16,17 @@ import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } fro
 import {
   AckStatus,
   Attachment,
-  AutoAcceptProof,
+  DidCommAutoAcceptProof,
   BaseProofProtocol,
   DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
   PresentationProblemReportReason,
-  ProofExchangeRecord,
-  ProofRepository,
-  ProofRole,
-  ProofState,
-  ProofsModuleConfig,
+  DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofRole,
+  DidCommProofState,
+  DidCommProofsModuleConfig,
   DidCommProtocol,
 } from '@credo-ts/didcomm'
 
@@ -105,7 +105,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<V1ProposePresentationMessage>> {
     this.assertOnlyIndyFormat(proofFormats)
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!proofFormats.indy) {
@@ -132,12 +132,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       })
 
     // Create record
-    const proofRecord = new ProofExchangeRecord({
+    const proofRecord = new DidCommProofExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
-      state: ProofState.ProposalSent,
-      role: ProofRole.Prover,
+      state: DidCommProofState.ProposalSent,
+      role: DidCommProofRole.Prover,
       autoAcceptProof,
       protocolVersion: 'v1',
     })
@@ -156,10 +156,10 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
   public async processProposal(
     messageContext: InboundDidCommMessageContext<V1ProposePresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
@@ -170,7 +170,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     let proofRecord = await this.findByProperties(agentContext, {
       threadId: proposalMessage.threadId,
-      role: ProofRole.Verifier,
+      role: DidCommProofRole.Verifier,
       connectionId: connection?.id,
     })
 
@@ -179,7 +179,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       agentContext.config.logger.debug('Proof record already exists for incoming proposal')
 
       // Assert
-      proofRecord.assertState(ProofState.RequestSent)
+      proofRecord.assertState(DidCommProofState.RequestSent)
       proofRecord.assertProtocolVersion('v1')
 
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
@@ -204,19 +204,19 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
       })
-      await this.updateState(agentContext, proofRecord, ProofState.ProposalReceived)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.ProposalReceived)
     } else {
       agentContext.config.logger.debug('Proof record does not exist yet for incoming proposal')
       // Assert
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No proof record exists with thread id
-      proofRecord = new ProofExchangeRecord({
+      proofRecord = new DidCommProofExchangeRecord({
         connectionId: connection?.id,
         threadId: proposalMessage.threadId,
         parentThreadId: proposalMessage.thread?.parentThreadId,
-        state: ProofState.ProposalReceived,
-        role: ProofRole.Verifier,
+        state: DidCommProofState.ProposalReceived,
+        role: DidCommProofRole.Verifier,
         protocolVersion: 'v1',
       })
 
@@ -245,7 +245,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<V1RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.ProposalReceived)
+    proofRecord.assertState(DidCommProofState.ProposalReceived)
     if (proofFormats) this.assertOnlyIndyFormat(proofFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -301,7 +301,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Update record
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.RequestSent)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -317,7 +317,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.ProposalReceived)
+    proofRecord.assertState(DidCommProofState.ProposalReceived)
     this.assertOnlyIndyFormat(proofFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -345,7 +345,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.RequestSent)
 
     return { message: requestPresentationMessage, proofRecord }
   }
@@ -362,7 +362,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(proofFormats)
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     if (!proofFormats.indy) {
@@ -370,12 +370,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     // Create record
-    const proofRecord = new ProofExchangeRecord({
+    const proofRecord = new DidCommProofExchangeRecord({
       connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
       parentThreadId,
-      state: ProofState.RequestSent,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.RequestSent,
+      role: DidCommProofRole.Verifier,
       autoAcceptProof,
       protocolVersion: 'v1',
     })
@@ -413,10 +413,10 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
   public async processRequest(
     messageContext: InboundDidCommMessageContext<V1RequestPresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: proofRequestMessage, connection, agentContext } = messageContext
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     // TODO: with this method, we should update the credential protocol to use the ConnectionApi, so it
@@ -427,7 +427,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     let proofRecord = await this.findByProperties(agentContext, {
       threadId: proofRequestMessage.threadId,
-      role: ProofRole.Prover,
+      role: DidCommProofRole.Prover,
       connectionId: connection?.id,
     })
 
@@ -451,7 +451,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
       // Assert
       proofRecord.assertProtocolVersion('v1')
-      proofRecord.assertState(ProofState.ProposalSent)
+      proofRecord.assertState(DidCommProofState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         lastReceivedMessage,
         lastSentMessage,
@@ -468,18 +468,18 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
         associatedRecordId: proofRecord.id,
         role: DidCommMessageRole.Receiver,
       })
-      await this.updateState(agentContext, proofRecord, ProofState.RequestReceived)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.RequestReceived)
     } else {
       // Assert
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
       // No proof record exists with thread id
-      proofRecord = new ProofExchangeRecord({
+      proofRecord = new DidCommProofExchangeRecord({
         connectionId: connection?.id,
         threadId: proofRequestMessage.threadId,
         parentThreadId: proofRequestMessage.thread?.parentThreadId,
-        state: ProofState.RequestReceived,
-        role: ProofRole.Prover,
+        state: DidCommProofState.RequestReceived,
+        role: DidCommProofRole.Prover,
         protocolVersion: 'v1',
       })
 
@@ -513,7 +513,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
     this.assertOnlyIndyFormat(proofFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -550,7 +550,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Update record
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.ProposalSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.ProposalSent)
 
     return { proofRecord, message: message }
   }
@@ -566,7 +566,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -629,7 +629,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Update record
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.PresentationSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.PresentationSent)
 
     return { message, proofRecord }
   }
@@ -757,7 +757,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
   public async processPresentation(
     messageContext: InboundDidCommMessageContext<V1PresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: presentationMessage, connection, agentContext } = messageContext
 
     agentContext.config.logger.debug(`Processing presentation with message id ${presentationMessage.id}`)
@@ -770,7 +770,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: presentationMessage.threadId,
-      role: ProofRole.Verifier,
+      role: DidCommProofRole.Verifier,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
@@ -786,7 +786,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
 
     // Assert
-    proofRecord.assertState(ProofState.RequestSent)
+    proofRecord.assertState(DidCommProofState.RequestSent)
     proofRecord.assertProtocolVersion('v1')
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage: proposalMessage,
@@ -806,7 +806,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
     if (!presentationAttachment) {
       proofRecord.errorMessage = 'Missing indy proof attachment'
-      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -815,7 +815,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) {
       proofRecord.errorMessage = 'Missing indy proof request attachment'
-      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -837,7 +837,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     } catch (error) {
       proofRecord.errorMessage = error.message ?? 'Error verifying proof on presentation'
       proofRecord.isVerified = false
-      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V1PresentationProblemReportError('Error verifying proof on presentation', {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -846,7 +846,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     if (!isValid) {
       proofRecord.errorMessage = 'Invalid proof'
       proofRecord.isVerified = false
-      await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V1PresentationProblemReportError('Invalid proof', {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -854,7 +854,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Update record
     proofRecord.isVerified = isValid
-    await this.updateState(agentContext, proofRecord, ProofState.PresentationReceived)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.PresentationReceived)
 
     return proofRecord
   }
@@ -867,7 +867,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.PresentationReceived)
+    proofRecord.assertState(DidCommProofState.PresentationReceived)
 
     // Create message
     const ackMessage = new V1PresentationAckMessage({
@@ -881,14 +881,14 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
 
     // Update record
-    await this.updateState(agentContext, proofRecord, ProofState.Done)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.Done)
 
     return { message: ackMessage, proofRecord }
   }
 
   public async processAck(
     messageContext: InboundDidCommMessageContext<V1PresentationAckMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: presentationAckMessage, connection, agentContext } = messageContext
 
     agentContext.config.logger.debug(`Processing presentation ack with message id ${presentationAckMessage.id}`)
@@ -901,7 +901,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const proofRecord = await this.getByProperties(agentContext, {
       threadId: presentationAckMessage.threadId,
-      role: ProofRole.Prover,
+      role: DidCommProofRole.Prover,
       connectionId: connection?.id,
     })
 
@@ -919,7 +919,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     // Assert
     proofRecord.assertProtocolVersion('v1')
-    proofRecord.assertState(ProofState.PresentationSent)
+    proofRecord.assertState(DidCommProofState.PresentationSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage,
       lastSentMessage,
@@ -927,7 +927,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
 
     // Update record
-    await this.updateState(agentContext, proofRecord, ProofState.Done)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.Done)
 
     return proofRecord
   }
@@ -957,19 +957,19 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proposalMessage: V1ProposePresentationMessage
     }
   ): Promise<boolean> {
     const { proofRecord, proposalMessage } = options
 
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     const autoAccept = composeProofAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     // We are in the ContentApproved case. We need to make sure we've sent a request, and it matches the proposal
     const requestMessage = await this.findRequestMessage(agentContext, proofRecord.id)
@@ -1002,19 +1002,19 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       requestMessage: V1RequestPresentationMessage
     }
   ): Promise<boolean> {
     const { proofRecord, requestMessage } = options
 
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     const autoAccept = composeProofAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     const requestAttachment = requestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
     if (!requestAttachment) return false
@@ -1047,19 +1047,19 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async shouldAutoRespondToPresentation(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       presentationMessage: V1PresentationMessage
     }
   ): Promise<boolean> {
     const { proofRecord, presentationMessage } = options
 
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     const autoAccept = composeProofAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     const presentationAttachment = presentationMessage.getPresentationAttachmentById(INDY_PROOF_ATTACHMENT_ID)
     if (!presentationAttachment) return false

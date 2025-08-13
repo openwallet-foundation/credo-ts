@@ -22,13 +22,13 @@ import {
 import { Agent, DidsModule } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
-  AutoAcceptProof,
+  DidCommAutoAcceptProof,
   DidCommConnectionsModule,
   DidCommCredentialsModule,
-  HttpDidCommOutboundTransport,
-  ProofsModule,
+  HttpOutboundDidCommTransport,
+  DidCommProofsModule,
   V2DidCommCredentialProtocol,
-  V2ProofProtocol,
+  V2DidCommProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
@@ -76,7 +76,7 @@ export class BaseAgent {
       modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
     })
     this.agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+    this.agent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
   }
 
   public async initializeAgent() {
@@ -109,13 +109,13 @@ function getAskarAnonCredsIndyModules(
         }),
       ],
     }),
-    proofs: new ProofsModule({
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
+    proofs: new DidCommProofsModule({
+      autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
       proofProtocols: [
         new V1ProofProtocol({
           indyProofFormat: legacyIndyProofFormatService,
         }),
-        new V2ProofProtocol({
+        new V2DidCommProofProtocol({
           proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],

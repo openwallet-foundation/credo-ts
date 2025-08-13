@@ -2,13 +2,13 @@ import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { IsString } from 'class-validator'
 
-export interface ProofFormatSpecOptions {
+export interface DidCommProofFormatSpecOptions {
   attachmentId?: string
   format: string
 }
 
 export class ProofFormatSpec {
-  public constructor(options: ProofFormatSpecOptions) {
+  public constructor(options: DidCommProofFormatSpecOptions) {
     if (options) {
       this.attachmentId = options.attachmentId ?? utils.uuid()
       this.format = options.format

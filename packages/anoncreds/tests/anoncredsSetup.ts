@@ -1,5 +1,5 @@
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { AutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
@@ -33,11 +33,11 @@ import {
   DidCommCredentialState,
   DidCommCredentialsModule,
   DifPresentationExchangeProofFormatService,
-  ProofEventTypes,
-  ProofState,
-  ProofsModule,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofsModule,
   V2DidCommCredentialProtocol,
-  V2ProofProtocol,
+  V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
@@ -71,7 +71,7 @@ export const getAnonCredsModules = ({
   cheqd,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptProofs?: DidCommAutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
   cheqd?: {
     rpcUrl?: string
@@ -105,10 +105,10 @@ export const getAnonCredsModules = ({
         }),
       ],
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       autoAcceptProofs,
       proofProtocols: [
-        new V2ProofProtocol({
+        new V2DidCommProofProtocol({
           proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
         }),
       ],
@@ -248,7 +248,7 @@ export async function presentAnonCredsProof({
   }
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
+    state: DidCommProofState.RequestReceived,
   })
 
   let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
@@ -272,7 +272,7 @@ export async function presentAnonCredsProof({
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
+    state: DidCommProofState.PresentationReceived,
   })
 
   await holderAgent.modules.proofs.acceptRequest({
@@ -287,7 +287,7 @@ export async function presentAnonCredsProof({
 
   holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
+    state: DidCommProofState.Done,
   })
 
   verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
@@ -326,7 +326,7 @@ export async function setupAnonCredsTests<
   holderName: string
   verifierName?: VerifierName
   autoAcceptCredentials?: DidCommAutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptProofs?: DidCommAutoAcceptProof
   attributeNames: string[]
   createConnections?: CreateConnections
   supportRevocation?: boolean
@@ -387,7 +387,7 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()

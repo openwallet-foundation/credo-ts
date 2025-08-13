@@ -5,9 +5,9 @@ import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandl
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
-import type { ProofRole } from '../models'
-import type { ProofState } from '../models/ProofState'
-import type { ProofExchangeRecord } from '../repository'
+import type { DidCommProofRole } from '../models'
+import type { DidCommProofState } from '../models/DidCommProofState'
+import type { DidCommProofExchangeRecord } from '../repository'
 import type {
   AcceptPresentationOptions,
   AcceptProofProposalOptions,
@@ -24,9 +24,9 @@ import type {
   ProofProtocolMsgReturnType,
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
-} from './ProofProtocolOptions'
+} from './DidCommProofProtocolOptions'
 
-export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]> {
+export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]> {
   readonly version: string
 
   // methods for proposal
@@ -34,7 +34,7 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
@@ -49,7 +49,7 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
@@ -70,21 +70,21 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
 
   // method for problem report
   createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
   ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
-  processProblemReport(messageContext: InboundDidCommMessageContext<ProblemReportMessage>): Promise<ProofExchangeRecord>
+  processProblemReport(messageContext: InboundDidCommMessageContext<ProblemReportMessage>): Promise<DidCommProofExchangeRecord>
 
   findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
   findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
@@ -95,33 +95,33 @@ export interface ProofProtocol<PFs extends ProofFormatService[] = ProofFormatSer
   ): Promise<GetProofFormatDataReturn<ExtractProofFormats<PFs>>>
 
   // repository methods
-  updateState(agentContext: AgentContext, proofRecord: ProofExchangeRecord, newState: ProofState): Promise<void>
-  getById(agentContext: AgentContext, proofExchangeId: string): Promise<ProofExchangeRecord>
-  getAll(agentContext: AgentContext): Promise<ProofExchangeRecord[]>
+  updateState(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, newState: DidCommProofState): Promise<void>
+  getById(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommProofExchangeRecord>
+  getAll(agentContext: AgentContext): Promise<DidCommProofExchangeRecord[]>
   findAllByQuery(
     agentContext: AgentContext,
-    query: Query<ProofExchangeRecord>,
+    query: Query<DidCommProofExchangeRecord>,
     queryOptions?: QueryOptions
-  ): Promise<ProofExchangeRecord[]>
-  findById(agentContext: AgentContext, proofExchangeId: string): Promise<ProofExchangeRecord | null>
-  delete(agentContext: AgentContext, proofRecord: ProofExchangeRecord, options?: DeleteProofOptions): Promise<void>
+  ): Promise<DidCommProofExchangeRecord[]>
+  findById(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommProofExchangeRecord | null>
+  delete(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, options?: DeleteProofOptions): Promise<void>
   getByProperties(
     agentContext: AgentContext,
     properties: {
       threadId: string
       connectionId?: string
-      role?: ProofRole
+      role?: DidCommProofRole
     }
-  ): Promise<ProofExchangeRecord>
+  ): Promise<DidCommProofExchangeRecord>
   findByProperties(
     agentContext: AgentContext,
     properties: {
       threadId: string
       connectionId?: string
-      role?: ProofRole
+      role?: DidCommProofRole
     }
-  ): Promise<ProofExchangeRecord | null>
-  update(agentContext: AgentContext, proofRecord: ProofExchangeRecord): Promise<void>
+  ): Promise<DidCommProofExchangeRecord | null>
+  update(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord): Promise<void>
 
   register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
 }

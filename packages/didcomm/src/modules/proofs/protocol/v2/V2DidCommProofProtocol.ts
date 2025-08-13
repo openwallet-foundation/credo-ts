@@ -11,8 +11,8 @@ import type {
   ProofFormatPayload,
 } from '../../formats'
 import type { ProofFormatService } from '../../formats/ProofFormatService'
-import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
-import type { ProofProtocol } from '../ProofProtocol'
+import type { ProofFormatSpec } from '../../models/DidCommProofFormatSpec'
+import type { DidCommProofProtocol } from '../DidCommProofProtocol'
 import type {
   AcceptPresentationOptions,
   AcceptProofProposalOptions,
@@ -29,7 +29,7 @@ import type {
   ProofProtocolMsgReturnType,
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
-} from '../ProofProtocolOptions'
+} from '../DidCommProofProtocolOptions'
 
 import { CredoError, utils } from '@credo-ts/core'
 
@@ -37,12 +37,12 @@ import { AckStatus } from '../../../../messages'
 import { DidCommProtocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { DidCommConnectionService } from '../../../connections'
-import { ProofsModuleConfig } from '../../ProofsModuleConfig'
+import { DidCommProofsModuleConfig } from '../../DidCommProofsModuleConfig'
 import { PresentationProblemReportReason } from '../../errors/PresentationProblemReportReason'
-import { AutoAcceptProof, ProofRole, ProofState } from '../../models'
-import { ProofExchangeRecord, ProofRepository } from '../../repository'
+import { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '../../models'
+import { DidCommProofExchangeRecord, DidCommProofExchangeRepository } from '../../repository'
 import { composeAutoAccept } from '../../utils'
-import { BaseProofProtocol } from '../BaseProofProtocol'
+import { BaseDidCommProofProtocol } from '../BaseDidCommProofProtocol'
 
 import { ProofFormatCoordinator } from './ProofFormatCoordinator'
 import { V2PresentationProblemReportError } from './errors'
@@ -56,18 +56,18 @@ import { V2PresentationMessage } from './messages/V2PresentationMessage'
 import { V2PresentationProblemReportMessage } from './messages/V2PresentationProblemReportMessage'
 import { V2ProposePresentationMessage } from './messages/V2ProposePresentationMessage'
 
-export interface V2ProofProtocolConfig<ProofFormatServices extends ProofFormatService[]> {
+export interface V2DidCommProofProtocolConfig<ProofFormatServices extends ProofFormatService[]> {
   proofFormats: ProofFormatServices
 }
 
-export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]>
-  extends BaseProofProtocol
-  implements ProofProtocol<PFs>
+export class V2DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]>
+  extends BaseDidCommProofProtocol
+  implements DidCommProofProtocol<PFs>
 {
   private proofFormatCoordinator = new ProofFormatCoordinator<PFs>()
   private proofFormats: PFs
 
-  public constructor({ proofFormats }: V2ProofProtocolConfig<PFs>) {
+  public constructor({ proofFormats }: V2DidCommProofProtocolConfig<PFs>) {
     super()
 
     this.proofFormats = proofFormats
@@ -108,20 +108,20 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       goal,
       parentThreadId,
     }: CreateProofProposalOptions<PFs>
-  ): Promise<{ proofRecord: ProofExchangeRecord; message: DidCommMessage }> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  ): Promise<{ proofRecord: DidCommProofExchangeRecord; message: DidCommMessage }> {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
       throw new CredoError('Unable to create proposal. No supported formats')
     }
 
-    const proofRecord = new ProofExchangeRecord({
+    const proofRecord = new DidCommProofExchangeRecord({
       connectionId: connectionRecord.id,
       threadId: utils.uuid(),
       parentThreadId,
-      state: ProofState.ProposalSent,
-      role: ProofRole.Prover,
+      state: DidCommProofState.ProposalSent,
+      role: DidCommProofRole.Prover,
       protocolVersion: 'v2',
       autoAcceptProof,
     })
@@ -153,18 +153,18 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async processProposal(
     messageContext: InboundDidCommMessageContext<V2ProposePresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
     agentContext.config.logger.debug(`Processing presentation proposal with id ${proposalMessage.id}`)
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
     let proofRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: proposalMessage.threadId,
-      role: ProofRole.Verifier,
+      role: DidCommProofRole.Verifier,
       connectionId: connection?.id,
     })
 
@@ -188,7 +188,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
       // Assert
       proofRecord.assertProtocolVersion('v2')
-      proofRecord.assertState(ProofState.RequestSent)
+      proofRecord.assertState(DidCommProofState.RequestSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         lastReceivedMessage,
         lastSentMessage,
@@ -201,7 +201,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
         message: proposalMessage,
       })
 
-      await this.updateState(messageContext.agentContext, proofRecord, ProofState.ProposalReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.ProposalReceived)
 
       return proofRecord
     }
@@ -209,11 +209,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext)
 
     // No proof record exists with thread id
-    proofRecord = new ProofExchangeRecord({
+    proofRecord = new DidCommProofExchangeRecord({
       connectionId: connection?.id,
       threadId: proposalMessage.threadId,
-      state: ProofState.ProposalReceived,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.ProposalReceived,
+      role: DidCommProofRole.Verifier,
       protocolVersion: 'v2',
       parentThreadId: proposalMessage.thread?.parentThreadId,
     })
@@ -245,7 +245,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.ProposalReceived)
+    proofRecord.assertState(DidCommProofState.ProposalReceived)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -283,7 +283,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.RequestSent)
 
     return { proofRecord, message: requestMessage }
   }
@@ -310,7 +310,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.ProposalReceived)
+    proofRecord.assertState(DidCommProofState.ProposalReceived)
 
     if (!proofRecord.connectionId) {
       throw new CredoError(
@@ -336,7 +336,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.RequestSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.RequestSent)
 
     return { proofRecord, message: requestMessage }
   }
@@ -359,18 +359,18 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       willConfirm,
     }: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<V2RequestPresentationMessage>> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     const formatServices = this.getFormatServices(proofFormats)
     if (formatServices.length === 0) {
       throw new CredoError('Unable to create request. No supported formats')
     }
 
-    const proofRecord = new ProofExchangeRecord({
+    const proofRecord = new DidCommProofExchangeRecord({
       connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
-      state: ProofState.RequestSent,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.RequestSent,
+      role: DidCommProofRole.Verifier,
       autoAcceptProof,
       protocolVersion: 'v2',
       parentThreadId,
@@ -407,10 +407,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
    */
   public async processRequest(
     messageContext: InboundDidCommMessageContext<V2RequestPresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: requestMessage, connection, agentContext } = messageContext
 
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
 
@@ -418,7 +418,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     let proofRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: requestMessage.threadId,
-      role: ProofRole.Prover,
+      role: DidCommProofRole.Prover,
       connectionId: connection?.id,
     })
 
@@ -443,7 +443,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
       // Assert
       proofRecord.assertProtocolVersion('v2')
-      proofRecord.assertState(ProofState.ProposalSent)
+      proofRecord.assertState(DidCommProofState.ProposalSent)
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
         lastReceivedMessage,
         lastSentMessage,
@@ -456,7 +456,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
         message: requestMessage,
       })
 
-      await this.updateState(messageContext.agentContext, proofRecord, ProofState.RequestReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.RequestReceived)
       return proofRecord
     }
     // Assert
@@ -464,11 +464,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // No proof record exists with thread id
     agentContext.config.logger.debug('No proof record found for request, creating a new one')
-    proofRecord = new ProofExchangeRecord({
+    proofRecord = new DidCommProofExchangeRecord({
       connectionId: connection?.id,
       threadId: requestMessage.threadId,
-      state: ProofState.RequestReceived,
-      role: ProofRole.Prover,
+      state: DidCommProofState.RequestReceived,
+      role: DidCommProofRole.Prover,
       protocolVersion: 'v2',
       parentThreadId: requestMessage.thread?.parentThreadId,
     })
@@ -495,7 +495,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     // Use empty proofFormats if not provided to denote all formats should be accepted
     let formatServices = this.getFormatServices(proofFormats ?? {})
@@ -529,7 +529,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.PresentationSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.PresentationSent)
 
     return { proofRecord, message }
   }
@@ -548,7 +548,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   ): Promise<ProofProtocolMsgReturnType<V2ProposePresentationMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     if (!proofRecord.connectionId) {
       throw new CredoError(
@@ -571,7 +571,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     proofRecord.autoAcceptProof = autoAcceptProof ?? proofRecord.autoAcceptProof
-    await this.updateState(agentContext, proofRecord, ProofState.ProposalSent)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.ProposalSent)
 
     return { proofRecord, message: proposalMessage }
   }
@@ -584,7 +584,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     // Use empty proofFormats if not provided to denote all formats should be accepted
     let formatServices = this.getFormatServices(proofFormats ?? {})
@@ -628,7 +628,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     // Use empty proofFormats if not provided to denote all formats should be accepted
     let formatServices = this.getFormatServices(proofFormats ?? {})
@@ -666,7 +666,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async processPresentation(
     messageContext: InboundDidCommMessageContext<V2PresentationMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: presentationMessage, connection, agentContext } = messageContext
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -676,7 +676,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const proofRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: presentationMessage.threadId,
-      role: ProofRole.Verifier,
+      role: DidCommProofRole.Verifier,
     })
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(messageContext.agentContext, {
@@ -693,7 +693,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.RequestSent)
+    proofRecord.assertState(DidCommProofState.RequestSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage,
       lastSentMessage,
@@ -713,7 +713,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     // Abandon if no supported formats
     if (formatServices.length === 0) {
       proofRecord.errorMessage = 'Unable to process presentation. No supported formats'
-      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -728,11 +728,11 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     proofRecord.isVerified = result.isValid
     if (result.isValid) {
-      await this.updateState(messageContext.agentContext, proofRecord, ProofState.PresentationReceived)
+      await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.PresentationReceived)
     } else {
       proofRecord.errorMessage = result.message
       proofRecord.isVerified = false
-      await this.updateState(messageContext.agentContext, proofRecord, ProofState.Abandoned)
+      await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.Abandoned)
       throw new V2PresentationProblemReportError(proofRecord.errorMessage, {
         problemCode: PresentationProblemReportReason.Abandoned,
       })
@@ -746,7 +746,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     { proofRecord }: AcceptPresentationOptions
   ): Promise<ProofProtocolMsgReturnType<V2PresentationAckMessage>> {
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.PresentationReceived)
+    proofRecord.assertState(DidCommProofState.PresentationReceived)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
@@ -773,7 +773,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
       parentThreadId: proofRecord.parentThreadId,
     })
 
-    await this.updateState(agentContext, proofRecord, ProofState.Done)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.Done)
 
     return {
       message,
@@ -783,7 +783,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async processAck(
     messageContext: InboundDidCommMessageContext<V2PresentationAckMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: ackMessage, connection, agentContext } = messageContext
 
     agentContext.config.logger.debug(`Processing proof ack with id ${ackMessage.id}`)
@@ -793,7 +793,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     const proofRecord = await this.getByProperties(messageContext.agentContext, {
       threadId: ackMessage.threadId,
-      role: ProofRole.Prover,
+      role: DidCommProofRole.Prover,
       connectionId: connection?.id,
     })
     proofRecord.connectionId = connection?.id
@@ -812,7 +812,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
     // Assert
     proofRecord.assertProtocolVersion('v2')
-    proofRecord.assertState(ProofState.PresentationSent)
+    proofRecord.assertState(DidCommProofState.PresentationSent)
     await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
       lastReceivedMessage,
       lastSentMessage,
@@ -820,7 +820,7 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     })
 
     // Update record
-    await this.updateState(messageContext.agentContext, proofRecord, ProofState.Done)
+    await this.updateState(messageContext.agentContext, proofRecord, DidCommProofState.Done)
 
     return proofRecord
   }
@@ -850,18 +850,18 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proposalMessage: V2ProposePresentationMessage
     }
   ): Promise<boolean> {
     const { proofRecord, proposalMessage } = options
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     const autoAccept = composeAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     const requestMessage = await this.findRequestMessage(agentContext, proofRecord.id)
     if (!requestMessage) return false
@@ -899,18 +899,18 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
   public async shouldAutoRespondToRequest(
     agentContext: AgentContext,
     options: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       requestMessage: V2RequestPresentationMessage
     }
   ): Promise<boolean> {
     const { proofRecord, requestMessage } = options
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     const autoAccept = composeAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     const proposalMessage = await this.findProposalMessage(agentContext, proofRecord.id)
     if (!proposalMessage) return false
@@ -948,10 +948,10 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
 
   public async shouldAutoRespondToPresentation(
     agentContext: AgentContext,
-    options: { proofRecord: ProofExchangeRecord; presentationMessage: V2PresentationMessage }
+    options: { proofRecord: DidCommProofExchangeRecord; presentationMessage: V2PresentationMessage }
   ): Promise<boolean> {
     const { proofRecord, presentationMessage } = options
-    const proofsModuleConfig = agentContext.dependencyManager.resolve(ProofsModuleConfig)
+    const proofsModuleConfig = agentContext.dependencyManager.resolve(DidCommProofsModuleConfig)
 
     // If this isn't the last presentation yet, we should not auto accept
     if (!presentationMessage.lastPresentation) return false
@@ -959,8 +959,8 @@ export class V2ProofProtocol<PFs extends ProofFormatService[] = ProofFormatServi
     const autoAccept = composeAutoAccept(proofRecord.autoAcceptProof, proofsModuleConfig.autoAcceptProofs)
 
     // Handle always / never cases
-    if (autoAccept === AutoAcceptProof.Always) return true
-    if (autoAccept === AutoAcceptProof.Never) return false
+    if (autoAccept === DidCommAutoAcceptProof.Always) return true
+    if (autoAccept === DidCommAutoAcceptProof.Never) return false
 
     const proposalMessage = await this.findProposalMessage(agentContext, proofRecord.id)
 

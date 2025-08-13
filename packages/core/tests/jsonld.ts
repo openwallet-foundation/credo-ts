@@ -1,13 +1,13 @@
-import type { DidCommAutoAcceptCredential, AutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
+import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialsModule,
   DifPresentationExchangeProofFormatService,
   JsonLdCredentialFormatService,
-  ProofEventTypes,
-  ProofsModule,
+  DidCommProofEventTypes,
+  DidCommProofsModule,
   V2DidCommCredentialProtocol,
-  V2ProofProtocol,
+  V2DidCommProofProtocol,
 } from '../../didcomm/src'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
@@ -25,7 +25,7 @@ export const getJsonLdModules = (
   {
     autoAcceptCredentials,
     autoAcceptProofs,
-  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
+  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}
 ) =>
   ({
     credentials: new DidCommCredentialsModule({
@@ -35,9 +35,9 @@ export const getJsonLdModules = (
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       autoAcceptProofs,
-      proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
+      proofProtocols: [new V2DidCommProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -86,7 +86,7 @@ export async function setupJsonLdTests<
   holderName: string
   verifierName?: VerifierName
   autoAcceptCredentials?: DidCommAutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptProofs?: DidCommAutoAcceptProof
   createConnections?: CreateConnections
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
@@ -139,7 +139,7 @@ export async function setupJsonLdTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()

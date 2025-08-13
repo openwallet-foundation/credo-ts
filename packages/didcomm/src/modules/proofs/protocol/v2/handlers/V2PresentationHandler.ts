@@ -1,16 +1,16 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { ProofExchangeRecord } from '../../../repository'
-import type { V2ProofProtocol } from '../V2ProofProtocol'
+import type { DidCommProofExchangeRecord } from '../../../repository'
+import type { V2DidCommProofProtocol } from '../V2DidCommProofProtocol'
 
 import { getOutboundDidCommMessageContext } from '../../../../../getOutboundDidCommMessageContext'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
 
 export class V2PresentationHandler implements DidCommMessageHandler {
-  private proofProtocol: V2ProofProtocol
+  private proofProtocol: V2DidCommProofProtocol
   public supportedMessages = [V2PresentationMessage]
 
-  public constructor(proofProtocol: V2ProofProtocol) {
+  public constructor(proofProtocol: V2DidCommProofProtocol) {
     this.proofProtocol = proofProtocol
   }
 
@@ -28,7 +28,7 @@ export class V2PresentationHandler implements DidCommMessageHandler {
   }
 
   private async acceptPresentation(
-    proofRecord: ProofExchangeRecord,
+    proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V2PresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending acknowledgement with autoAccept')

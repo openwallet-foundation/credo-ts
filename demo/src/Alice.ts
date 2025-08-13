@@ -1,4 +1,4 @@
-import type { DidCommConnectionRecord, DidCommCredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord, DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText, redText } from './OutputClass'
@@ -51,7 +51,7 @@ export class Alice extends BaseAgent {
     })
   }
 
-  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
+  public async acceptProofRequest(proofRecord: DidCommProofExchangeRecord) {
     const requestedCredentials = await this.agent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: proofRecord.id,
     })

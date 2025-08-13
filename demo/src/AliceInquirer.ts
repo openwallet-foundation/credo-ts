@@ -1,4 +1,4 @@
-import type { DidCommCredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -78,7 +78,7 @@ export class AliceInquirer extends BaseInquirer {
     }
   }
 
-  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
+  public async acceptProofRequest(proofRecord: DidCommProofExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
       await this.alice.agent.modules.proofs.declineRequest({ proofRecordId: proofRecord.id })

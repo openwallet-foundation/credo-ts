@@ -2,7 +2,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
-import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, ProofState } from '@credo-ts/didcomm'
+import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, DidCommProofState } from '@credo-ts/didcomm'
 
 import {
   createDidKidVerificationMethod,
@@ -232,7 +232,7 @@ async function anonCredsFlowTest(options: {
   ).resolves
 
   let issuerProofExchangeRecordPromise = waitForProofExchangeRecord(issuer, {
-    state: ProofState.ProposalReceived,
+    state: DidCommProofState.ProposalReceived,
   })
 
   const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
@@ -256,7 +256,7 @@ async function anonCredsFlowTest(options: {
   let issuerProofExchangeRecord = await issuerProofExchangeRecordPromise
 
   let holderProofExchangeRecordPromise = waitForProofExchangeRecord(holder, {
-    state: ProofState.RequestReceived,
+    state: DidCommProofState.RequestReceived,
   })
 
   issuerProofExchangeRecord = await issuer.modules.proofs.acceptProposal({
@@ -276,7 +276,7 @@ async function anonCredsFlowTest(options: {
 
   issuerProofExchangeRecordPromise = waitForProofExchangeRecord(issuer, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
+    state: DidCommProofState.PresentationReceived,
   })
 
   await holder.modules.proofs.acceptRequest({
@@ -291,7 +291,7 @@ async function anonCredsFlowTest(options: {
 
   holderProofExchangeRecordPromise = waitForProofExchangeRecord(holder, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
+    state: DidCommProofState.Done,
   })
 
   await issuer.modules.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })

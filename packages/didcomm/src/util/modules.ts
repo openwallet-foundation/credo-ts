@@ -11,7 +11,7 @@ import {
   DidCommMediatorModule,
   MessagePickupModule,
   DidCommOutOfBandModule,
-  ProofsModule,
+  DidCommProofsModule,
 } from '../modules'
 
 /**
@@ -39,7 +39,7 @@ export type DefaultAgentModulesInput = Omit<DefaultDidCommModules, 'credentials'
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   credentials: DidCommCredentialsModule<any>
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  proofs: ProofsModule<any>
+  proofs: DidCommProofsModule<any>
 }
 
 export type DidCommAgent = Agent<DefaultDidCommModules>
@@ -51,7 +51,7 @@ export function getDefaultDidcommModules(didcommModuleConfig?: DidCommModuleConf
     didcomm: new DidCommModule(didcommModuleConfig),
     connections: new DidCommConnectionsModule(),
     credentials: new DidCommCredentialsModule(),
-    proofs: new ProofsModule(),
+    proofs: new DidCommProofsModule(),
     mediator: new DidCommMediatorModule(),
     discovery: new DidCommDiscoverFeaturesModule(),
     mediationRecipient: new DidCommMediationRecipientModule(),

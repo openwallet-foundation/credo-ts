@@ -44,9 +44,9 @@ import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import { agentDependencies, HttpInboundDidCommTransport } from '@credo-ts/node'
 import {
   DidCommConnectionsModule,
-  ProofsModule,
-  CredentialsModule,
-  HttpDidCommOutboundTransport,
+  DidCommProofsModule,
+  DidCommCredentialsModule,
+  HttpOutboundDidCommTransport,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 
@@ -60,10 +60,10 @@ const agent = new Agent({
     connections: new DidCommConnectionsModule({
       /* Custom module settings */
     }),
-    credentials: new CredentialsModule({
+    credentials: new DidCommCredentialsModule({
       /* Custom module settings */
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       /* Custom module settings */
     }),
     /* */
@@ -73,7 +73,7 @@ const agent = new Agent({
 
 // Register inbound and outbound transports for DIDComm
 agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
-agent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+agent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
 
 await agent.initialize()
 

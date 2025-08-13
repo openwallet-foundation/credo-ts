@@ -700,7 +700,7 @@ Signed-off-by: Berend Sliedrecht <berend@animo.id>
 
 Signed-off-by: Timo Glastra <timo@animo.id>
 
-- The `ProofsModule.getRequestedCredentialsForProofRequest` expected some low level message objects as input. This is not in line with the public API of the rest of the framework and has been simplified to only require a proof record id and optionally a boolean whether the retrieved credentials should be filtered based on the proof proposal (if available).
+- The `DidCommProofsModule.getRequestedCredentialsForProofRequest` expected some low level message objects as input. This is not in line with the public API of the rest of the framework and has been simplified to only require a proof record id and optionally a boolean whether the retrieved credentials should be filtered based on the proof proposal (if available).
 
 Signed-off-by: Timo Glastra <timo@animo.id>
 

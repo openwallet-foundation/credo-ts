@@ -3,7 +3,7 @@
  *
  * @see https://github.com/hyperledger/aries-rfcs/tree/master/features/0037-present-proof#states
  */
-export enum ProofState {
+export enum DidCommProofState {
   ProposalSent = 'proposal-sent',
   ProposalReceived = 'proposal-received',
   RequestSent = 'request-sent',

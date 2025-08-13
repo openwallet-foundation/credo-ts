@@ -8,7 +8,7 @@ import { e2eTest } from './e2e-test'
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
-  HttpDidCommOutboundTransport,
+  HttpOutboundDidCommTransport,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
@@ -81,17 +81,17 @@ describe('E2E HTTP tests', () => {
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+    recipientAgent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
     mediatorAgent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port: mediatorPort }))
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+    mediatorAgent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
     senderAgent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port: senderPort }))
-    senderAgent.modules.didcomm.registerOutboundTransport(new HttpDidCommOutboundTransport())
+    senderAgent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
     await senderAgent.initialize()
 
     await e2eTest({

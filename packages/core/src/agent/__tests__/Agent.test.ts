@@ -20,7 +20,7 @@ import { DidCommConnectionRepository, DidCommConnectionsApi } from '../../../../
 import { DidCommCredentialExchangeRepository } from '../../../../didcomm/src/modules/credentials'
 import { DidCommCredentialsApi } from '../../../../didcomm/src/modules/credentials/DidCommCredentialsApi'
 import { DidCommMessagePickupApi } from '../../../../didcomm/src/modules/message-pickup'
-import { ProofRepository, ProofsApi } from '../../../../didcomm/src/modules/proofs'
+import { DidCommProofExchangeRepository, DidCommProofsApi } from '../../../../didcomm/src/modules/proofs'
 import {
   DidCommMediationRecipientApi,
   DidCommMediationRecipientModule,
@@ -121,8 +121,8 @@ describe('Agent', () => {
       expect(container.resolve(DidCommDidRotateService)).toBeInstanceOf(DidCommDidRotateService)
       expect(container.resolve(DidCommTrustPingService)).toBeInstanceOf(DidCommTrustPingService)
 
-      expect(container.resolve(ProofsApi)).toBeInstanceOf(ProofsApi)
-      expect(container.resolve(ProofRepository)).toBeInstanceOf(ProofRepository)
+      expect(container.resolve(DidCommProofsApi)).toBeInstanceOf(DidCommProofsApi)
+      expect(container.resolve(DidCommProofExchangeRepository)).toBeInstanceOf(DidCommProofExchangeRepository)
 
       expect(container.resolve(DidCommCredentialsApi)).toBeInstanceOf(DidCommCredentialsApi)
       expect(container.resolve(DidCommCredentialExchangeRepository)).toBeInstanceOf(DidCommCredentialExchangeRepository)
@@ -159,8 +159,8 @@ describe('Agent', () => {
       expect(container.resolve(DidCommTrustPingService)).toBe(container.resolve(DidCommTrustPingService))
       expect(container.resolve(DidCommDidRotateService)).toBe(container.resolve(DidCommDidRotateService))
 
-      expect(container.resolve(ProofsApi)).toBe(container.resolve(ProofsApi))
-      expect(container.resolve(ProofRepository)).toBe(container.resolve(ProofRepository))
+      expect(container.resolve(DidCommProofsApi)).toBe(container.resolve(DidCommProofsApi))
+      expect(container.resolve(DidCommProofExchangeRepository)).toBe(container.resolve(DidCommProofExchangeRepository))
 
       expect(container.resolve(DidCommCredentialsApi)).toBe(container.resolve(DidCommCredentialsApi))
       expect(container.resolve(DidCommCredentialExchangeRepository)).toBe(container.resolve(DidCommCredentialExchangeRepository))

@@ -1,48 +1,48 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { ProofRole, ProofState } from '../models'
-import type { AutoAcceptProof } from '../models/ProofAutoAcceptType'
+import type { DidCommProofRole, DidCommProofState } from '../models'
+import type { DidCommAutoAcceptProof } from '../models/DidCommProofAutoAcceptType'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
-export interface ProofExchangeRecordProps {
+export interface DidCommProofExchangeRecordProps {
   id?: string
   createdAt?: Date
   protocolVersion: string
   isVerified?: boolean
-  state: ProofState
-  role: ProofRole
+  state: DidCommProofState
+  role: DidCommProofRole
   connectionId?: string
   threadId: string
   parentThreadId?: string
-  tags?: CustomProofTags
-  autoAcceptProof?: AutoAcceptProof
+  tags?: CustomDidCommProofExchangeTags
+  autoAcceptProof?: DidCommAutoAcceptProof
   errorMessage?: string
 }
 
-export type CustomProofTags = TagsBase
-export type DefaultProofTags = {
+export type CustomDidCommProofExchangeTags = TagsBase
+export type DefaultDidCommProofExchangeTags = {
   threadId: string
   parentThreadId?: string
   connectionId?: string
-  state: ProofState
-  role: ProofRole
+  state: DidCommProofState
+  role: DidCommProofRole
 }
 
-export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProofTags> {
+export class DidCommProofExchangeRecord extends BaseRecord<DefaultDidCommProofExchangeTags, CustomDidCommProofExchangeTags> {
   public connectionId?: string
   public threadId!: string
   public protocolVersion!: string
   public parentThreadId?: string
   public isVerified?: boolean
-  public state!: ProofState
-  public role!: ProofRole
-  public autoAcceptProof?: AutoAcceptProof
+  public state!: DidCommProofState
+  public role!: DidCommProofRole
+  public autoAcceptProof?: DidCommAutoAcceptProof
   public errorMessage?: string
 
   public static readonly type = 'ProofRecord'
-  public readonly type = ProofExchangeRecord.type
+  public readonly type = DidCommProofExchangeRecord.type
 
-  public constructor(props: ProofExchangeRecordProps) {
+  public constructor(props: DidCommProofExchangeRecordProps) {
     super()
 
     if (props) {
@@ -73,7 +73,7 @@ export class ProofExchangeRecord extends BaseRecord<DefaultProofTags, CustomProo
     }
   }
 
-  public assertState(expectedStates: ProofState | ProofState[]) {
+  public assertState(expectedStates: DidCommProofState | DidCommProofState[]) {
     if (!Array.isArray(expectedStates)) {
       // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]

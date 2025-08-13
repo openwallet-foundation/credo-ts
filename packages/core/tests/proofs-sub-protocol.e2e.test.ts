@@ -2,7 +2,7 @@ import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsS
 import type { EventReplaySubject } from './events'
 
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import { ProofState } from '../../didcomm/src/modules/proofs'
+import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
 
 import { waitForProofExchangeRecord } from './helpers'
@@ -69,7 +69,7 @@ describe('Present Proof Subprotocol', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       parentThreadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -117,7 +117,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -134,7 +134,7 @@ describe('Present Proof Subprotocol', () => {
     faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation provided by Alice
@@ -146,7 +146,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -156,7 +156,7 @@ describe('Present Proof Subprotocol', () => {
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -221,7 +221,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation
@@ -233,7 +233,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -245,7 +245,7 @@ describe('Present Proof Subprotocol', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       parentThreadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -293,7 +293,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Alice retrieves the requested credentials and accepts the presentation request
@@ -310,7 +310,7 @@ describe('Present Proof Subprotocol', () => {
     faberProofExchangeRecord = await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation provided by Alice
@@ -322,7 +322,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -332,7 +332,7 @@ describe('Present Proof Subprotocol', () => {
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       parentThreadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -397,7 +397,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(faberAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber accepts the presentation
@@ -409,7 +409,7 @@ describe('Present Proof Subprotocol', () => {
     await waitForProofExchangeRecord(aliceAgent, {
       threadId,
       parentThreadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 })

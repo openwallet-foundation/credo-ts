@@ -5,7 +5,7 @@ import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionsModule,
   DidCommModule,
-  HttpDidCommOutboundTransport,
+  HttpOutboundDidCommTransport,
   MessagePickupModule,
   DidCommOutOfBandModule,
   WsOutboundDidCommTransport,
@@ -20,7 +20,7 @@ const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const wsOutboundTransport = new WsOutboundDidCommTransport()
-  const httpOutboundTransport = new HttpDidCommOutboundTransport()
+  const httpOutboundTransport = new HttpOutboundDidCommTransport()
 
   // Setup the agent
   const agent = new Agent({

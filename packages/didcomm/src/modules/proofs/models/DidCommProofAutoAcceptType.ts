@@ -1,7 +1,7 @@
 /**
  * Typing of the state for auto acceptance
  */
-export enum AutoAcceptProof {
+export enum DidCommAutoAcceptProof {
   // Always auto accepts the proof no matter if it changed in subsequent steps
   Always = 'always',
 

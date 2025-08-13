@@ -16,8 +16,8 @@ import {
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommMediationState,
-  ProofEventTypes,
-  ProofState,
+  DidCommProofEventTypes,
+  DidCommProofState,
   V1BatchMessage,
   V1BatchPickupMessage,
   V2CredentialPreview,
@@ -38,7 +38,7 @@ export async function e2eTest({
     [senderAgent, recipientAgent, mediatorAgent],
     [
       DidCommCredentialEventTypes.DidCommCredentialStateChanged,
-      ProofEventTypes.ProofStateChanged,
+      DidCommProofEventTypes.ProofStateChanged,
       DidCommEventTypes.DidCommMessageProcessed,
       DidCommEventTypes.DidCommMessageSent,
     ]
@@ -125,8 +125,8 @@ export async function e2eTest({
     },
   })
 
-  expect(holderProofExchangeRecord.state).toBe(ProofState.Done)
-  expect(verifierProofExchangeRecord.state).toBe(ProofState.Done)
+  expect(holderProofExchangeRecord.state).toBe(DidCommProofState.Done)
+  expect(verifierProofExchangeRecord.state).toBe(DidCommProofState.Done)
 
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.modules.mediationRecipient.stopMessagePickup()

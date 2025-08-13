@@ -3,10 +3,10 @@ import type { BaseAgent } from '@credo-ts/core'
 import { CredoError } from '@credo-ts/core'
 
 import {
-  type ProofExchangeRecord,
-  ProofRepository,
-  ProofRole,
-  ProofState,
+  type DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofRole,
+  DidCommProofState,
   V2ProposePresentationMessage,
   V2RequestPresentationMessage,
 } from '../../modules/proofs'
@@ -23,7 +23,7 @@ import { parseMessageType } from '../../util/messageType'
  */
 export async function migrateProofExchangeRecordToV0_5<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating proof exchange records to storage version 0.5')
-  const proofRepository = agent.dependencyManager.resolve(ProofRepository)
+  const proofRepository = agent.dependencyManager.resolve(DidCommProofExchangeRepository)
 
   agent.config.logger.debug('Fetching all proof records from storage')
   const proofRecords = await proofRepository.getAll(agent.context)
@@ -44,21 +44,21 @@ export async function migrateProofExchangeRecordToV0_5<Agent extends BaseAgent>(
 }
 
 const proverProofStates = [
-  ProofState.RequestReceived,
-  ProofState.ProposalSent,
-  ProofState.PresentationSent,
-  ProofState.Declined,
+  DidCommProofState.RequestReceived,
+  DidCommProofState.ProposalSent,
+  DidCommProofState.PresentationSent,
+  DidCommProofState.Declined,
 ]
-const verifierProofStates = [ProofState.RequestSent, ProofState.ProposalReceived, ProofState.PresentationReceived]
+const verifierProofStates = [DidCommProofState.RequestSent, DidCommProofState.ProposalReceived, DidCommProofState.PresentationReceived]
 
-export async function getProofRole(agent: BaseAgent, proofRecord: ProofExchangeRecord) {
+export async function getProofRole(agent: BaseAgent, proofRecord: DidCommProofExchangeRecord) {
   // For these states we know for certain that we're the prover
   if (proverProofStates.includes(proofRecord.state)) {
-    return ProofRole.Prover
+    return DidCommProofRole.Prover
   }
   // For these states we know for certain that we're the verifier
   if (verifierProofStates.includes(proofRecord.state)) {
-    return ProofRole.Verifier
+    return DidCommProofRole.Verifier
   }
 
   // We now need to determine the role based on the didcomm message. Only the Done and Abandoned states
@@ -85,12 +85,12 @@ export async function getProofRole(agent: BaseAgent, proofRecord: ProofExchangeR
   // Maps the message name and the didcomm message role to the respective proof role
   const roleStateMapping = {
     [V2ProposePresentationMessage.type.messageName]: {
-      [DidCommMessageRole.Sender]: ProofRole.Prover,
-      [DidCommMessageRole.Receiver]: ProofRole.Verifier,
+      [DidCommMessageRole.Sender]: DidCommProofRole.Prover,
+      [DidCommMessageRole.Receiver]: DidCommProofRole.Verifier,
     },
     [V2RequestPresentationMessage.type.messageName]: {
-      [DidCommMessageRole.Sender]: ProofRole.Verifier,
-      [DidCommMessageRole.Receiver]: ProofRole.Prover,
+      [DidCommMessageRole.Sender]: DidCommProofRole.Verifier,
+      [DidCommMessageRole.Receiver]: DidCommProofRole.Prover,
     },
   }
 
@@ -103,7 +103,7 @@ export async function getProofRole(agent: BaseAgent, proofRecord: ProofExchangeR
 /**
  * Add a role to the proof record.
  */
-export async function migrateRole<Agent extends BaseAgent>(agent: Agent, proofRecord: ProofExchangeRecord) {
+export async function migrateRole<Agent extends BaseAgent>(agent: Agent, proofRecord: DidCommProofExchangeRecord) {
   agent.config.logger.debug(`Adding role to record with id ${proofRecord.id} to for version 0.5`)
 
   proofRecord.role = await getProofRole(agent, proofRecord)

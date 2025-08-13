@@ -1,4 +1,4 @@
-import type { AutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { DefaultAgentModulesInput } from '../..//didcomm/src/util/modules'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
@@ -20,11 +20,11 @@ import {
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommCredentialsModule,
-  ProofEventTypes,
-  ProofState,
-  ProofsModule,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofsModule,
   V2DidCommCredentialProtocol,
-  V2ProofProtocol,
+  V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -75,7 +75,7 @@ export const getAnonCredsIndyModules = ({
   autoAcceptProofs,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptProofs?: DidCommAutoAcceptProof
 } = {}) => {
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
@@ -103,13 +103,13 @@ export const getAnonCredsIndyModules = ({
         }),
       ],
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       autoAcceptProofs,
       proofProtocols: [
         new V1ProofProtocol({
           indyProofFormat: legacyIndyProofFormatService,
         }),
-        new V2ProofProtocol({
+        new V2DidCommProofProtocol({
           proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],
@@ -155,7 +155,7 @@ export async function presentLegacyAnonCredsProof({
   }
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
+    state: DidCommProofState.RequestReceived,
   })
 
   let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
@@ -179,7 +179,7 @@ export async function presentLegacyAnonCredsProof({
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
+    state: DidCommProofState.PresentationReceived,
   })
 
   await holderAgent.modules.proofs.acceptRequest({
@@ -194,7 +194,7 @@ export async function presentLegacyAnonCredsProof({
 
   holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
+    state: DidCommProofState.Done,
   })
 
   verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
@@ -309,7 +309,7 @@ export async function setupAnonCredsTests<
   holderName: string
   verifierName?: VerifierName
   autoAcceptCredentials?: DidCommAutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptProofs?: DidCommAutoAcceptProof
   attributeNames?: string[]
   preCreatedDefinition?: PreCreatedAnonCredsDefinition
   createConnections?: CreateConnections
@@ -368,7 +368,7 @@ export async function setupAnonCredsTests<
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
     [
       DidCommCredentialEventTypes.DidCommCredentialStateChanged,
-      ProofEventTypes.ProofStateChanged,
+      DidCommProofEventTypes.ProofStateChanged,
       DidCommEventTypes.DidCommMessageProcessed,
     ]
   )

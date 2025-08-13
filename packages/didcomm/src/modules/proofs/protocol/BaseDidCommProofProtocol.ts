@@ -4,11 +4,11 @@ import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
-import type { ProofStateChangedEvent } from '../ProofEvents'
+import type { DidCommProofStateChangedEvent } from '../DidCommProofEvents'
 import type { ExtractProofFormats, ProofFormatService } from '../formats'
-import type { ProofRole } from '../models'
-import type { ProofExchangeRecord } from '../repository'
-import type { ProofProtocol } from './ProofProtocol'
+import type { DidCommProofRole } from '../models'
+import type { DidCommProofExchangeRecord } from '../repository'
+import type { DidCommProofProtocol } from './DidCommProofProtocol'
 import type {
   AcceptPresentationOptions,
   AcceptProofProposalOptions,
@@ -25,18 +25,18 @@ import type {
   ProofProtocolMsgReturnType,
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
-} from './ProofProtocolOptions'
+} from './DidCommProofProtocolOptions'
 
 import { EventEmitter } from '@credo-ts/core'
 
 import { DidCommMessageRepository } from '../../../repository'
 import { DidCommConnectionService } from '../../connections'
-import { ProofEventTypes } from '../ProofEvents'
-import { ProofState } from '../models/ProofState'
-import { ProofRepository } from '../repository'
+import { DidCommProofEventTypes } from '../DidCommProofEvents'
+import { DidCommProofState } from '../models/DidCommProofState'
+import { DidCommProofExchangeRepository } from '../repository'
 
-export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]>
-  implements ProofProtocol<PFs>
+export abstract class BaseDidCommProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]>
+  implements DidCommProofProtocol<PFs>
 {
   public abstract readonly version: string
 
@@ -47,7 +47,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  public abstract processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  public abstract processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
@@ -62,7 +62,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
@@ -83,14 +83,14 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  public abstract processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  public abstract processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   public abstract acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<ProofExchangeRecord>
+  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   // method for problem report
   public abstract createProblemReport(
     agentContext: AgentContext,
@@ -110,7 +110,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
   public async processProblemReport(
     messageContext: InboundDidCommMessageContext<ProblemReportMessage>
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { message: proofProblemReportMessage, agentContext, connection } = messageContext
 
     const connectionService = agentContext.dependencyManager.resolve(DidCommConnectionService)
@@ -137,7 +137,7 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
     // Update record
     proofRecord.errorMessage = `${proofProblemReportMessage.description.code}: ${proofProblemReportMessage.description.en}`
-    await this.updateState(agentContext, proofRecord, ProofState.Abandoned)
+    await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
     return proofRecord
   }
 
@@ -149,8 +149,8 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
    * @param newState The state to update to
    *
    */
-  public async updateState(agentContext: AgentContext, proofRecord: ProofExchangeRecord, newState: ProofState) {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  public async updateState(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, newState: DidCommProofState) {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     agentContext.config.logger.debug(
       `Updating proof record ${proofRecord.id} to state ${newState} (previous=${proofRecord.state})`
@@ -165,13 +165,13 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
 
   protected emitStateChangedEvent(
     agentContext: AgentContext,
-    proofRecord: ProofExchangeRecord,
-    previousState: ProofState | null
+    proofRecord: DidCommProofExchangeRecord,
+    previousState: DidCommProofState | null
   ) {
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
 
-    eventEmitter.emit<ProofStateChangedEvent>(agentContext, {
-      type: ProofEventTypes.ProofStateChanged,
+    eventEmitter.emit<DidCommProofStateChangedEvent>(agentContext, {
+      type: DidCommProofEventTypes.ProofStateChanged,
       payload: {
         proofRecord: proofRecord.clone(),
         previousState: previousState,
@@ -187,8 +187,8 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
    * @return The proof record
    *
    */
-  public getById(agentContext: AgentContext, proofRecordId: string): Promise<ProofExchangeRecord> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  public getById(agentContext: AgentContext, proofRecordId: string): Promise<DidCommProofExchangeRecord> {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.getById(agentContext, proofRecordId)
   }
@@ -198,18 +198,18 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
    *
    * @returns List containing all proof records
    */
-  public getAll(agentContext: AgentContext): Promise<ProofExchangeRecord[]> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  public getAll(agentContext: AgentContext): Promise<DidCommProofExchangeRecord[]> {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.getAll(agentContext)
   }
 
   public async findAllByQuery(
     agentContext: AgentContext,
-    query: Query<ProofExchangeRecord>,
+    query: Query<DidCommProofExchangeRecord>,
     queryOptions?: QueryOptions
-  ): Promise<ProofExchangeRecord[]> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  ): Promise<DidCommProofExchangeRecord[]> {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.findByQuery(agentContext, query, queryOptions)
   }
@@ -220,18 +220,18 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
    * @param proofRecordId the proof record id
    * @returns The proof record or null if not found
    */
-  public findById(agentContext: AgentContext, proofRecordId: string): Promise<ProofExchangeRecord | null> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  public findById(agentContext: AgentContext, proofRecordId: string): Promise<DidCommProofExchangeRecord | null> {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.findById(agentContext, proofRecordId)
   }
 
   public async delete(
     agentContext: AgentContext,
-    proofRecord: ProofExchangeRecord,
+    proofRecord: DidCommProofExchangeRecord,
     options?: DeleteProofOptions
   ): Promise<void> {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     await proofRepository.delete(agentContext, proofRecord)
@@ -262,12 +262,12 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     agentContext: AgentContext,
     properties: {
       threadId: string
-      role?: ProofRole
+      role?: DidCommProofRole
       connectionId?: string
     }
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     const { threadId, connectionId, role } = properties
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.getSingleByQuery(agentContext, {
       connectionId,
@@ -287,12 +287,12 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     agentContext: AgentContext,
     properties: {
       threadId: string
-      role?: ProofRole
+      role?: DidCommProofRole
       connectionId?: string
     }
-  ): Promise<ProofExchangeRecord | null> {
+  ): Promise<DidCommProofExchangeRecord | null> {
     const { role, connectionId, threadId } = properties
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return proofRepository.findSingleByQuery(agentContext, {
       connectionId,
@@ -301,8 +301,8 @@ export abstract class BaseProofProtocol<PFs extends ProofFormatService[] = Proof
     })
   }
 
-  public async update(agentContext: AgentContext, proofRecord: ProofExchangeRecord) {
-    const proofRepository = agentContext.dependencyManager.resolve(ProofRepository)
+  public async update(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord) {
+    const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     return await proofRepository.update(agentContext, proofRecord)
   }

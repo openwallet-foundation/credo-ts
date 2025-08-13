@@ -7,7 +7,7 @@ import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentat
 import { W3cCredential, W3cCredentialSubject } from '../../core'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
-import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, ProofState } from '../../didcomm'
+import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, DidCommProofState } from '../../didcomm'
 
 import { cheqdPayerSeeds } from './setupCheqdModule'
 
@@ -157,7 +157,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     expect(tags.credentialIds).toHaveLength(1)
 
     let issuerProofExchangeRecordPromise = waitForProofExchangeRecord(issuerAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
@@ -182,7 +182,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
     let issuerProofExchangeRecord = await issuerProofExchangeRecordPromise
 
     let holderProofExchangeRecordPromise = waitForProofExchangeRecord(holderAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     issuerProofExchangeRecord = await issuerAgent.modules.proofs.acceptProposal({
@@ -202,7 +202,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
 
     issuerProofExchangeRecordPromise = waitForProofExchangeRecord(issuerAgent, {
       threadId: holderProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     await holderAgent.modules.proofs.acceptRequest({
@@ -217,7 +217,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
 
     holderProofExchangeRecordPromise = waitForProofExchangeRecord(holderAgent, {
       threadId: holderProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     await issuerAgent.modules.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })

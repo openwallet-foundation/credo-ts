@@ -1,13 +1,13 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { ProofProtocol } from '../../ProofProtocol'
+import type { DidCommProofProtocol } from '../../DidCommProofProtocol'
 
 import { V2PresentationAckMessage } from '../messages'
 
 export class V2PresentationAckHandler implements DidCommMessageHandler {
-  private proofProtocol: ProofProtocol
+  private proofProtocol: DidCommProofProtocol
   public supportedMessages = [V2PresentationAckMessage]
 
-  public constructor(proofProtocol: ProofProtocol) {
+  public constructor(proofProtocol: DidCommProofProtocol) {
     this.proofProtocol = proofProtocol
   }
 

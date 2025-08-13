@@ -1,5 +1,5 @@
 import type { AgentConfig, AgentContext } from '../../../../../../core/src'
-import type { CustomProofTags, ProofStateChangedEvent } from '../../../../../../didcomm/src'
+import type { CustomDidCommProofExchangeTags, DidCommProofStateChangedEvent } from '../../../../../../didcomm/src'
 
 import { Subject } from 'rxjs'
 
@@ -11,13 +11,13 @@ import {
   DidCommDidExchangeState,
   InboundDidCommMessageContext,
   PresentationProblemReportReason,
-  ProofEventTypes,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommProofEventTypes,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '../../../../../../didcomm/src'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
-import { ProofRepository } from '../../../../../../didcomm/src/modules/proofs/repository/ProofRepository'
+import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
 import { V1ProofProtocol } from '../V1ProofProtocol'
@@ -25,13 +25,13 @@ import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '
 import { V1PresentationProblemReportMessage } from '../messages/V1PresentationProblemReportMessage'
 
 // Mock classes
-jest.mock('../../../../../../didcomm/src/modules/proofs/repository/ProofRepository')
+jest.mock('../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository')
 jest.mock('../../../../formats/LegacyIndyProofFormatService')
 jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
 jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
 // Mock typed object
-const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
+const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
 const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const indyProofFormatServiceMock = LegacyIndyProofFormatService as jest.Mock<LegacyIndyProofFormatService>
@@ -65,10 +65,10 @@ const mockProofExchangeRecord = ({
   tags,
   id,
 }: {
-  state?: ProofState
-  role?: ProofRole
+  state?: DidCommProofState
+  role?: DidCommProofRole
   requestMessage?: V1RequestPresentationMessage
-  tags?: CustomProofTags
+  tags?: CustomDidCommProofExchangeTags
   threadId?: string
   connectionId?: string
   id?: string
@@ -78,11 +78,11 @@ const mockProofExchangeRecord = ({
     requestAttachments: [requestAttachment],
   })
 
-  const proofRecord = new ProofExchangeRecord({
+  const proofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
     id,
-    state: state || ProofState.RequestSent,
-    role: role || ProofRole.Verifier,
+    state: state || DidCommProofState.RequestSent,
+    role: role || DidCommProofRole.Verifier,
     threadId: threadId ?? requestPresentationMessage.id,
     connectionId: connectionId ?? '123',
     tags,
@@ -104,7 +104,7 @@ describe('V1ProofProtocol', () => {
 
     agentContext = getAgentContext({
       registerInstances: [
-        [ProofRepository, proofRepository],
+        [DidCommProofExchangeRepository, proofRepository],
         [DidCommMessageRepository, didCommMessageRepository],
         [EventEmitter, eventEmitter],
         [DidCommConnectionService, connectionService],
@@ -129,7 +129,7 @@ describe('V1ProofProtocol', () => {
       })
     })
 
-    test(`creates and return proof record in ${ProofState.PresentationReceived} state with offer, without thread ID`, async () => {
+    test(`creates and return proof record in ${DidCommProofState.PresentationReceived} state with offer, without thread ID`, async () => {
       const repositorySaveSpy = jest.spyOn(proofRepository, 'save')
 
       // when
@@ -137,10 +137,10 @@ describe('V1ProofProtocol', () => {
 
       // then
       const expectedProofExchangeRecord = {
-        type: ProofExchangeRecord.type,
+        type: DidCommProofExchangeRecord.type,
         id: expect.any(String),
         createdAt: expect.any(Date),
-        state: ProofState.RequestReceived,
+        state: DidCommProofState.RequestReceived,
         threadId: presentationRequest.id,
         connectionId: connection.id,
       }
@@ -150,23 +150,23 @@ describe('V1ProofProtocol', () => {
       expect(returnedProofExchangeRecord).toMatchObject(expectedProofExchangeRecord)
     })
 
-    test(`emits stateChange event with ${ProofState.RequestReceived}`, async () => {
+    test(`emits stateChange event with ${DidCommProofState.RequestReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged, eventListenerMock)
 
       // when
       await proofProtocol.processRequest(messageContext)
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'ProofStateChanged',
+        type: 'DidCommProofStateChanged',
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
           previousState: null,
           proofRecord: expect.objectContaining({
-            state: ProofState.RequestReceived,
+            state: DidCommProofState.RequestReceived,
           }),
         },
       })
@@ -175,11 +175,11 @@ describe('V1ProofProtocol', () => {
 
   describe('createProblemReport', () => {
     const threadId = 'fd9c5ddb-ec11-4acd-bc32-540736249746'
-    let proof: ProofExchangeRecord
+    let proof: DidCommProofExchangeRecord
 
     beforeEach(() => {
       proof = mockProofExchangeRecord({
-        state: ProofState.RequestReceived,
+        state: DidCommProofState.RequestReceived,
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
@@ -210,12 +210,12 @@ describe('V1ProofProtocol', () => {
   })
 
   describe('processProblemReport', () => {
-    let proof: ProofExchangeRecord
+    let proof: DidCommProofExchangeRecord
     let messageContext: InboundDidCommMessageContext<V1PresentationProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofExchangeRecord({
-        state: ProofState.RequestReceived,
+        state: DidCommProofState.RequestReceived,
       })
 
       const presentationProblemReportMessage = new V1PresentationProblemReportMessage({

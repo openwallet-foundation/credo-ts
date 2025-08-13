@@ -2,15 +2,15 @@ import type { AgentContext } from '@credo-ts/core'
 
 import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
 
-import { ProofExchangeRecord } from './ProofExchangeRecord'
+import { DidCommProofExchangeRecord } from './DidCommProofExchangeRecord'
 
 @injectable()
-export class ProofRepository extends Repository<ProofExchangeRecord> {
+export class DidCommProofExchangeRepository extends Repository<DidCommProofExchangeRecord> {
   public constructor(
-    @inject(InjectionSymbols.StorageService) storageService: StorageService<ProofExchangeRecord>,
+    @inject(InjectionSymbols.StorageService) storageService: StorageService<DidCommProofExchangeRecord>,
     eventEmitter: EventEmitter
   ) {
-    super(ProofExchangeRecord, storageService, eventEmitter)
+    super(DidCommProofExchangeRecord, storageService, eventEmitter)
   }
 
   /**
@@ -26,7 +26,7 @@ export class ProofRepository extends Repository<ProofExchangeRecord> {
     agentContext: AgentContext,
     threadId: string,
     connectionId?: string
-  ): Promise<ProofExchangeRecord> {
+  ): Promise<DidCommProofExchangeRecord> {
     return this.getSingleByQuery(agentContext, { threadId, connectionId })
   }
 
@@ -41,7 +41,7 @@ export class ProofRepository extends Repository<ProofExchangeRecord> {
     agentContext: AgentContext,
     parentThreadId: string,
     connectionId?: string
-  ): Promise<ProofExchangeRecord[]> {
+  ): Promise<DidCommProofExchangeRecord[]> {
     return this.findByQuery(agentContext, { parentThreadId, connectionId })
   }
 }

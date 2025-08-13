@@ -15,9 +15,9 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -408,17 +408,17 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     '_anoncreds/credential': expectedCredentialMetadata,
   })
 
-  const holderProofRecord = new ProofExchangeRecord({
+  const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalSent,
+    state: DidCommProofState.ProposalSent,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
-    role: ProofRole.Prover,
+    role: DidCommProofRole.Prover,
   })
-  const verifierProofRecord = new ProofExchangeRecord({
+  const verifierProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalReceived,
+    state: DidCommProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
-    role: ProofRole.Verifier,
+    role: DidCommProofRole.Verifier,
   })
 
   const nrpRequestedTime = dateToTimestamp(new Date())

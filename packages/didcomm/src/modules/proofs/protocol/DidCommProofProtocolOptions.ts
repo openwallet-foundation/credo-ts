@@ -7,9 +7,9 @@ import type {
   ProofFormatPayload,
   ProofFormatService,
 } from '../formats'
-import type { AutoAcceptProof } from '../models'
-import type { ProofExchangeRecord } from '../repository'
-import type { ProofProtocol } from './ProofProtocol'
+import type { DidCommAutoAcceptProof } from '../models'
+import type { DidCommProofExchangeRecord } from '../repository'
+import type { DidCommProofProtocol } from './DidCommProofProtocol'
 
 /**
  * Get the format data payload for a specific message from a list of ProofFormat interfaces and a message
@@ -41,7 +41,7 @@ export type ProofFormatDataMessagePayload<
 }
 
 /**
- * Infer the {@link ProofFormat} types based on an array of {@link ProofProtocol} types.
+ * Infer the {@link ProofFormat} types based on an array of {@link DidCommProofProtocol} types.
  *
  * It does this by extracting the `ProofFormatServices` generic from the `ProofProtocol`, and
  * then extracting the `ProofFormat` generic from each of the `ProofFormatService` types.
@@ -58,7 +58,7 @@ export type ProofFormatDataMessagePayload<
  * }
  * ```
  */
-export type ProofFormatsFromProtocols<Type extends ProofProtocol[]> = Type[number] extends ProofProtocol<
+export type ProofFormatsFromProtocols<Type extends DidCommProofProtocol[]> = Type[number] extends DidCommProofProtocol<
   infer ProofFormatServices
 >
   ? ProofFormatServices extends ProofFormatService[]
@@ -74,7 +74,7 @@ export type GetProofFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> 
 
 interface BaseOptions {
   comment?: string
-  autoAcceptProof?: AutoAcceptProof
+  autoAcceptProof?: DidCommAutoAcceptProof
 
   /**
    * Will be ignored for v1 protocol as it is not supported
@@ -94,7 +94,7 @@ export interface CreateProofProposalOptions<PFs extends ProofFormatService[]> ex
 }
 
 export interface AcceptProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptProposal'>
 
   /** @default true */
@@ -102,7 +102,7 @@ export interface AcceptProofProposalOptions<PFs extends ProofFormatService[]> ex
 }
 
 export interface NegotiateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
 
   /** @default true */
@@ -120,17 +120,17 @@ export interface CreateProofRequestOptions<PFs extends ProofFormatService[]> ext
 }
 
 export interface AcceptProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
 }
 
 export interface NegotiateProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
 }
 
 export interface GetCredentialsForRequestOptions<PFs extends ProofFormatService[]> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'input'>
 }
 
@@ -139,7 +139,7 @@ export interface GetCredentialsForRequestReturn<PFs extends ProofFormatService[]
 }
 
 export interface SelectCredentialsForRequestOptions<PFs extends ProofFormatService[]> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<
     ExtractProofFormats<PFs>,
     'selectCredentialsForRequest',
@@ -156,17 +156,17 @@ export interface SelectCredentialsForRequestReturn<PFs extends ProofFormatServic
 }
 
 export interface AcceptPresentationOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
 }
 
 export interface CreateProofProblemReportOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   description: string
 }
 
 export interface ProofProtocolMsgReturnType<MessageType extends DidCommMessage> {
   message: MessageType
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
 }
 
 export interface DeleteProofOptions {

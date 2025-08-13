@@ -9,7 +9,7 @@ import type {
   DidCommCredentialState,
   DidCommCredentialStateChangedEvent,
   DidCommOutOfBandInlineServiceKey,
-  ProofStateChangedEvent,
+  DidCommProofStateChangedEvent,
   DidCommRevocationNotificationReceivedEvent,
 } from '../../didcomm/src'
 import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
@@ -17,7 +17,7 @@ import type {
   DidCommTrustPingReceivedEvent,
   TrustPingResponseReceivedEvent,
 } from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
-import type { ProofState } from '../../didcomm/src/modules/proofs'
+import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
   Agent,
@@ -45,7 +45,7 @@ import {
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
   OutOfBandDidCommService,
-  ProofEventTypes,
+  DidCommProofEventTypes,
   DidCommTrustPingEventTypes,
 } from '../../didcomm/src'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
@@ -241,18 +241,18 @@ export async function waitForProofExchangeRecord(
   options: {
     threadId?: string
     parentThreadId?: string
-    state?: ProofState
-    previousState?: ProofState | null
+    state?: DidCommProofState
+    previousState?: DidCommProofState | null
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
+  const observable = agent.events.observable<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged)
 
   return waitForProofExchangeRecordSubject(observable, options)
 }
 
-const isProofStateChangedEvent = (e: BaseEvent): e is ProofStateChangedEvent =>
-  e.type === ProofEventTypes.ProofStateChanged
+const isProofStateChangedEvent = (e: BaseEvent): e is DidCommProofStateChangedEvent =>
+  e.type === DidCommProofEventTypes.ProofStateChanged
 const isCredentialStateChangedEvent = (e: BaseEvent): e is DidCommCredentialStateChangedEvent =>
   e.type === DidCommCredentialEventTypes.DidCommCredentialStateChanged
 const isConnectionStateChangedEvent = (e: BaseEvent): e is DidCommConnectionStateChangedEvent =>
@@ -278,8 +278,8 @@ export function waitForProofExchangeRecordSubject(
   }: {
     threadId?: string
     parentThreadId?: string
-    state?: ProofState
-    previousState?: ProofState | null
+    state?: DidCommProofState
+    previousState?: DidCommProofState | null
     timeoutMs?: number
     count?: number
   }
@@ -295,7 +295,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
+          `DidCommProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
           previousState: ${previousState},
           threadId: ${threadId},
           parentThreadId: ${parentThreadId},

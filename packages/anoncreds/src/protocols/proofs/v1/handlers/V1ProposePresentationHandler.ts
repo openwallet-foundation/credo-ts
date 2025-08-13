@@ -1,4 +1,4 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 
 import { OutboundDidCommMessageContext } from '@credo-ts/didcomm'
@@ -27,7 +27,7 @@ export class V1ProposePresentationHandler implements DidCommMessageHandler {
   }
 
   private async acceptProposal(
-    proofRecord: ProofExchangeRecord,
+    proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V1ProposePresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')

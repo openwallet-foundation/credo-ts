@@ -21,9 +21,9 @@ import {
   DidCommCredentialPreviewAttribute,
   DidCommCredentialRole,
   DidCommCredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -434,16 +434,16 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     '_anoncreds/credential': expectedCredentialMetadata,
   })
 
-  const holderProofRecord = new ProofExchangeRecord({
+  const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalSent,
-    role: ProofRole.Prover,
+    state: DidCommProofState.ProposalSent,
+    role: DidCommProofRole.Prover,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })
-  const verifierProofRecord = new ProofExchangeRecord({
+  const verifierProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    role: ProofRole.Verifier,
-    state: ProofState.ProposalReceived,
+    role: DidCommProofRole.Verifier,
+    state: DidCommProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })
 

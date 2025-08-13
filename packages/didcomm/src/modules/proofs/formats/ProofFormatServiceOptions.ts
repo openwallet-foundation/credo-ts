@@ -1,6 +1,6 @@
 import type { Attachment } from '../../../decorators/attachment/Attachment'
-import type { ProofFormatSpec } from '../models/ProofFormatSpec'
-import type { ProofExchangeRecord } from '../repository/ProofExchangeRecord'
+import type { ProofFormatSpec } from '../models/DidCommProofFormatSpec'
+import type { DidCommProofExchangeRecord } from '../repository/DidCommProofExchangeRecord'
 import type { ProofFormat, ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './ProofFormat'
 import type { ProofFormatService } from './ProofFormatService'
 
@@ -47,7 +47,7 @@ export interface ProofFormatCreateReturn {
  */
 export interface ProofFormatProcessOptions {
   attachment: Attachment
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
 }
 
 export interface ProofFormatProcessPresentationOptions extends ProofFormatProcessOptions {
@@ -55,13 +55,13 @@ export interface ProofFormatProcessPresentationOptions extends ProofFormatProces
 }
 
 export interface ProofFormatCreateProposalOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats: ProofFormatPayload<[PF], 'createProposal'>
   attachmentId?: string
 }
 
 export interface ProofFormatAcceptProposalOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatPayload<[PF], 'acceptProposal'>
   attachmentId?: string
 
@@ -69,13 +69,13 @@ export interface ProofFormatAcceptProposalOptions<PF extends ProofFormat> {
 }
 
 export interface FormatCreateRequestOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats: ProofFormatPayload<[PF], 'createRequest'>
   attachmentId?: string
 }
 
 export interface ProofFormatAcceptRequestOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatPayload<[PF], 'acceptRequest'>
   attachmentId?: string
 
@@ -84,7 +84,7 @@ export interface ProofFormatAcceptRequestOptions<PF extends ProofFormat> {
 }
 
 export interface ProofFormatGetCredentialsForRequestOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<[PF], 'getCredentialsForRequest', 'input'>
 
   requestAttachment: Attachment
@@ -95,7 +95,7 @@ export type ProofFormatGetCredentialsForRequestReturn<PF extends ProofFormat> =
   PF['proofFormats']['getCredentialsForRequest']['output']
 
 export interface ProofFormatSelectCredentialsForRequestOptions<PF extends ProofFormat> {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proofFormats?: ProofFormatCredentialForRequestPayload<[PF], 'selectCredentialsForRequest', 'input'>
 
   requestAttachment: Attachment
@@ -106,19 +106,19 @@ export type ProofFormatSelectCredentialsForRequestReturn<PF extends ProofFormat>
   PF['proofFormats']['selectCredentialsForRequest']['output']
 
 export interface ProofFormatAutoRespondProposalOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proposalAttachment: Attachment
   requestAttachment: Attachment
 }
 
 export interface ProofFormatAutoRespondRequestOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   requestAttachment: Attachment
   proposalAttachment: Attachment
 }
 
 export interface ProofFormatAutoRespondPresentationOptions {
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
   proposalAttachment?: Attachment
   requestAttachment: Attachment
   presentationAttachment: Attachment

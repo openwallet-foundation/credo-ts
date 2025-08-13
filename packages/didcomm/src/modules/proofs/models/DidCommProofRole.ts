@@ -1,4 +1,4 @@
-export enum ProofRole {
+export enum DidCommProofRole {
   Verifier = 'verifier',
   Prover = 'prover',
 }

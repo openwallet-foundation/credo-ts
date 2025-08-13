@@ -19,10 +19,10 @@ import type {
   SelectCredentialsForProofRequestOptions,
   SelectCredentialsForProofRequestReturn,
   SendProofProblemReportOptions,
-} from './ProofsApiOptions'
-import type { ProofProtocol } from './protocol/ProofProtocol'
-import type { ProofFormatsFromProtocols } from './protocol/ProofProtocolOptions'
-import type { ProofExchangeRecord } from './repository/ProofExchangeRecord'
+} from './DidCommProofsApiOptions'
+import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
+import type { ProofFormatsFromProtocols } from './protocol/DidCommProofProtocolOptions'
+import type { DidCommProofExchangeRecord } from './repository/DidCommProofExchangeRecord'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
@@ -31,29 +31,29 @@ import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
 import { DidCommConnectionService } from '../connections'
 
-import { ProofsModuleConfig } from './ProofsModuleConfig'
-import { ProofState } from './models/ProofState'
-import { ProofRepository } from './repository/ProofRepository'
+import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
+import { DidCommProofState } from './models/DidCommProofState'
+import { DidCommProofExchangeRepository } from './repository/DidCommProofExchangeRepository'
 
-export interface ProofsApi<PPs extends ProofProtocol[]> {
+export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
   // Proposal methods
-  proposeProof(options: ProposeProofOptions<PPs>): Promise<ProofExchangeRecord>
-  acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<ProofExchangeRecord>
-  negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<ProofExchangeRecord>
+  proposeProof(options: ProposeProofOptions<PPs>): Promise<DidCommProofExchangeRecord>
+  acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord>
+  negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord>
 
   // Request methods
-  requestProof(options: RequestProofOptions<PPs>): Promise<ProofExchangeRecord>
-  acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
-  declineRequest(options: DeclineProofRequestOptions): Promise<ProofExchangeRecord>
-  negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<ProofExchangeRecord>
+  requestProof(options: RequestProofOptions<PPs>): Promise<DidCommProofExchangeRecord>
+  acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord>
+  declineRequest(options: DeclineProofRequestOptions): Promise<DidCommProofExchangeRecord>
+  negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord>
 
   // Present
-  acceptPresentation(options: AcceptProofOptions): Promise<ProofExchangeRecord>
+  acceptPresentation(options: AcceptProofOptions): Promise<DidCommProofExchangeRecord>
 
   // out of band
   createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
     message: DidCommMessage
-    proofRecord: ProofExchangeRecord
+    proofRecord: DidCommProofExchangeRecord
   }>
 
   // Auto Select
@@ -66,15 +66,15 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
     options: GetCredentialsForProofRequestOptions<PPs>
   ): Promise<GetCredentialsForProofRequestReturn<PPs>>
 
-  sendProblemReport(options: SendProofProblemReportOptions): Promise<ProofExchangeRecord>
+  sendProblemReport(options: SendProofProblemReportOptions): Promise<DidCommProofExchangeRecord>
 
   // Record Methods
-  getAll(): Promise<ProofExchangeRecord[]>
-  findAllByQuery(query: Query<ProofExchangeRecord>, queryOptions?: QueryOptions): Promise<ProofExchangeRecord[]>
-  getById(proofRecordId: string): Promise<ProofExchangeRecord>
-  findById(proofRecordId: string): Promise<ProofExchangeRecord | null>
+  getAll(): Promise<DidCommProofExchangeRecord[]>
+  findAllByQuery(query: Query<DidCommProofExchangeRecord>, queryOptions?: QueryOptions): Promise<DidCommProofExchangeRecord[]>
+  getById(proofRecordId: string): Promise<DidCommProofExchangeRecord>
+  findById(proofRecordId: string): Promise<DidCommProofExchangeRecord | null>
   deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
-  update(proofRecord: ProofExchangeRecord): Promise<void>
+  update(proofRecord: DidCommProofExchangeRecord): Promise<void>
   getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>>
 
   // DidComm Message Records
@@ -85,23 +85,23 @@ export interface ProofsApi<PPs extends ProofProtocol[]> {
 
 @injectable()
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
-export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
+export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements DidCommProofsApi<PPs> {
   /**
    * Configuration for the proofs module
    */
-  public readonly config: ProofsModuleConfig<PPs>
+  public readonly config: DidCommProofsModuleConfig<PPs>
 
   private connectionService: DidCommConnectionService
   private messageSender: DidCommMessageSender
-  private proofRepository: ProofRepository
+  private proofRepository: DidCommProofExchangeRepository
   private agentContext: AgentContext
 
   public constructor(
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
     agentContext: AgentContext,
-    proofRepository: ProofRepository,
-    config: ProofsModuleConfig<PPs>
+    proofRepository: DidCommProofExchangeRepository,
+    config: DidCommProofsModuleConfig<PPs>
   ) {
     this.messageSender = messageSender
     this.connectionService = connectionService
@@ -110,7 +110,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     this.config = config
   }
 
-  private getProtocol<PVT extends PPs[number]['version']>(protocolVersion: PVT): ProofProtocol {
+  private getProtocol<PVT extends PPs[number]['version']>(protocolVersion: PVT): DidCommProofProtocol {
     const proofProtocol = this.config.proofProtocols.find((protocol) => protocol.version === protocolVersion)
 
     if (!proofProtocol) {
@@ -127,7 +127,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @param options configuration to use for the proposal
    * @returns Proof exchange record associated with the sent proposal message
    */
-  public async proposeProof(options: ProposeProofOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async proposeProof(options: ProposeProofOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const protocol = this.getProtocol(options.protocolVersion)
 
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
@@ -162,7 +162,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @param options config object for accepting the proposal
    * @returns Proof exchange record associated with the presentation request
    */
-  public async acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
@@ -207,7 +207,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent request message
    */
-  public async negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
@@ -249,7 +249,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @param options multiple properties like connection id, protocol version, proof Formats to build the proof request
    * @returns Proof record associated with the sent request message
    */
-  public async requestProof(options: RequestProofOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async requestProof(options: RequestProofOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const connectionRecord = await this.connectionService.getById(this.agentContext, options.connectionId)
     const protocol = this.getProtocol(options.protocolVersion)
 
@@ -285,7 +285,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * specifying which credentials to use for the proof
    * @returns Proof record associated with the sent presentation message
    */
-  public async acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
@@ -321,9 +321,9 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
     return proofRecord
   }
 
-  public async declineRequest(options: DeclineProofRequestOptions): Promise<ProofExchangeRecord> {
+  public async declineRequest(options: DeclineProofRequestOptions): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
-    proofRecord.assertState(ProofState.RequestReceived)
+    proofRecord.assertState(DidCommProofState.RequestReceived)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
     if (options.sendProblemReport) {
@@ -333,7 +333,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
       })
     }
 
-    await protocol.updateState(this.agentContext, proofRecord, ProofState.Declined)
+    await protocol.updateState(this.agentContext, proofRecord, DidCommProofState.Declined)
 
     return proofRecord
   }
@@ -346,7 +346,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * to include in the message
    * @returns Proof record associated with the sent proposal message
    */
-  public async negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<ProofExchangeRecord> {
+  public async negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     if (!proofRecord.connectionId) {
@@ -389,7 +389,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    */
   public async createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
     message: DidCommMessage
-    proofRecord: ProofExchangeRecord
+    proofRecord: DidCommProofExchangeRecord
   }> {
     const protocol = this.getProtocol(options.protocolVersion)
 
@@ -412,7 +412,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
-  public async acceptPresentation(options: AcceptProofOptions): Promise<ProofExchangeRecord> {
+  public async acceptPresentation(options: AcceptProofOptions): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
@@ -495,7 +495,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
-  public async sendProblemReport(options: SendProofProblemReportOptions): Promise<ProofExchangeRecord> {
+  public async sendProblemReport(options: SendProofProblemReportOptions): Promise<DidCommProofExchangeRecord> {
     const proofRecord = await this.getById(options.proofRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
@@ -515,7 +515,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
 
     // If there's no connection (so connection-less, we require the state to be request received)
     if (!connectionRecord) {
-      proofRecord.assertState(ProofState.RequestReceived)
+      proofRecord.assertState(DidCommProofState.RequestReceived)
 
       if (!requestMessage) {
         throw new CredoError(`No request message found for proof record with id '${proofRecord.id}'`)
@@ -545,7 +545,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    *
    * @returns List containing all proof records
    */
-  public async getAll(): Promise<ProofExchangeRecord[]> {
+  public async getAll(): Promise<DidCommProofExchangeRecord[]> {
     return this.proofRepository.getAll(this.agentContext)
   }
 
@@ -555,9 +555,9 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @returns List containing all proof records matching specified params
    */
   public findAllByQuery(
-    query: Query<ProofExchangeRecord>,
+    query: Query<DidCommProofExchangeRecord>,
     queryOptions?: QueryOptions
-  ): Promise<ProofExchangeRecord[]> {
+  ): Promise<DidCommProofExchangeRecord[]> {
     return this.proofRepository.findByQuery(this.agentContext, query, queryOptions)
   }
 
@@ -569,7 +569,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @return The proof record
    *
    */
-  public async getById(proofRecordId: string): Promise<ProofExchangeRecord> {
+  public async getById(proofRecordId: string): Promise<DidCommProofExchangeRecord> {
     return await this.proofRepository.getById(this.agentContext, proofRecordId)
   }
 
@@ -580,7 +580,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @return The proof record or null if not found
    *
    */
-  public async findById(proofRecordId: string): Promise<ProofExchangeRecord | null> {
+  public async findById(proofRecordId: string): Promise<DidCommProofExchangeRecord | null> {
     return await this.proofRepository.findById(this.agentContext, proofRecordId)
   }
 
@@ -604,7 +604,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<ProofExchangeRecord> {
+  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<DidCommProofExchangeRecord> {
     return this.proofRepository.getByThreadAndConnectionId(this.agentContext, threadId, connectionId)
   }
 
@@ -618,7 +618,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
   public async getByParentThreadAndConnectionId(
     parentThreadId: string,
     connectionId?: string
-  ): Promise<ProofExchangeRecord[]> {
+  ): Promise<DidCommProofExchangeRecord[]> {
     return this.proofRepository.getByParentThreadAndConnectionId(this.agentContext, parentThreadId, connectionId)
   }
 
@@ -627,7 +627,7 @@ export class ProofsApi<PPs extends ProofProtocol[]> implements ProofsApi<PPs> {
    *
    * @param proofRecord the proof record
    */
-  public async update(proofRecord: ProofExchangeRecord): Promise<void> {
+  public async update(proofRecord: DidCommProofExchangeRecord): Promise<void> {
     await this.proofRepository.update(this.agentContext, proofRecord)
   }
 

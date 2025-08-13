@@ -1,15 +1,15 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
-import type { V2ProofProtocol } from '../V2ProofProtocol'
+import type { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
+import type { V2DidCommProofProtocol } from '../V2DidCommProofProtocol'
 
 import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
 
 export class V2ProposePresentationHandler implements DidCommMessageHandler {
-  private proofProtocol: V2ProofProtocol
+  private proofProtocol: V2DidCommProofProtocol
   public supportedMessages = [V2ProposePresentationMessage]
 
-  public constructor(proofProtocol: V2ProofProtocol) {
+  public constructor(proofProtocol: V2DidCommProofProtocol) {
     this.proofProtocol = proofProtocol
   }
 
@@ -26,7 +26,7 @@ export class V2ProposePresentationHandler implements DidCommMessageHandler {
     }
   }
   private async acceptProposal(
-    proofRecord: ProofExchangeRecord,
+    proofRecord: DidCommProofExchangeRecord,
     messageContext: DidCommMessageHandlerInboundMessage<V2ProposePresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
