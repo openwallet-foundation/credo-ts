@@ -1,7 +1,13 @@
-import { Buffer } from 'buffer'
-import { createPublicKey, verify } from 'crypto'
-import { type AgentContext, type VerificationMethod } from '@credo-ts/core'
-import { DidsApi, MultiBaseEncoder, Sha256 } from '@credo-ts/core'
+import { type AgentContext, DidDocument } from '@credo-ts/core'
+import {
+  DidsApi,
+  Hasher,
+  Kms,
+  MultiBaseEncoder,
+  TypedArrayEncoder,
+  getPublicJwkFromVerificationMethod,
+} from '@credo-ts/core'
+import { PublicJwk } from '@credo-ts/core/src/modules/kms'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
 import { ProofOptions } from './types'
@@ -20,56 +26,15 @@ export class EddsaJcs2022Cryptosuite {
     this.agentContext.config.logger.error(error)
   }
 
-  public async _publicBytesFromVerificationMethodId(verificationMethodId: string): Promise<Uint8Array | undefined> {
+  public async _publicJwkFromId(verificationMethodId: string): Promise<PublicJwk> {
     const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
-    const didDocument = await didsApi.resolveDidDocument(verificationMethodId as string)
-
-    let verificationMethod: VerificationMethod | undefined
-    if ((verificationMethodId as string).includes('#')) {
-      const fragment = (verificationMethodId as string).split('#')[1]
-      verificationMethod = didDocument.verificationMethod?.find((vm: VerificationMethod) =>
-        vm.id.endsWith(`#${fragment}`)
-      )
-    }
-
-    if (!verificationMethod) {
-      this._logError('Could not find verification method in did:webvh DID document')
-      return
-    }
-
-    if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-      const publicKeyBytes = this._publicKeyBytesFromMultikey(verificationMethod.publicKeyMultibase)
-      return publicKeyBytes
-    }
-    this._logError('Could not find verification method in did:webvh DID document')
-    return
+    let didDocument = await didsApi.resolveDidDocument(verificationMethodId as string)
+    didDocument = new DidDocument(didDocument)
+    const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    return publicJwk
   }
 
-  public _publicKeyBytesFromMultikey(multikey: string) {
-    const publicMultikeyBytes = MultiBaseEncoder.decode(multikey).data
-    const publicMultikeyHex = Array.from(publicMultikeyBytes)
-      .map((n) => n.toString(16).padStart(2, '0'))
-      .join('')
-    const publicKeyHex = publicMultikeyHex.substring(4)
-    const publicKeyLength = publicKeyHex.length / 2
-    const publicKeyBytes = new Uint8Array(publicKeyLength)
-    for (let i = 0; i < publicKeyLength; i++) {
-      publicKeyBytes[i] = Number.parseInt(publicKeyHex.substr(i * 2, 2), 16)
-    }
-    return publicKeyBytes
-  }
-
-  public _keyFromPublicBytes(publicKeyBytes: Uint8Array) {
-    const publicKey = createPublicKey({
-      key: Buffer.concat([
-        Buffer.from([0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70, 0x03, 0x21, 0x00]),
-        Buffer.from(publicKeyBytes),
-      ]),
-      format: 'der',
-      type: 'spki',
-    })
-    return publicKey
-  }
   public transformation(unsecuredDocument: object, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
     if (options.type !== 'DataIntegrityProof') {
@@ -101,10 +66,8 @@ export class EddsaJcs2022Cryptosuite {
 
   public hashing(transformedDocument: string, canonicalProofConfig: string) {
     // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
-    const hasher = new Sha256()
-    const encoder = new TextEncoder()
-    const transformedDocumentHash = hasher.hash(encoder.encode(transformedDocument))
-    const proofConfigHash = hasher.hash(encoder.encode(canonicalProofConfig))
+    const transformedDocumentHash = Hasher.hash(TypedArrayEncoder.fromString(transformedDocument), 'sha-256')
+    const proofConfigHash = Hasher.hash(TypedArrayEncoder.fromString(canonicalProofConfig), 'sha-256')
     const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length)
     hashData.set(proofConfigHash, 0)
     hashData.set(transformedDocumentHash, proofConfigHash.length)
@@ -113,14 +76,15 @@ export class EddsaJcs2022Cryptosuite {
 
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
-    const publicKeyBytes = await this._publicBytesFromVerificationMethodId(options.verificationMethod)
-    if (typeof publicKeyBytes === 'undefined') {
-      this._logError('Unable to get public key bytes.')
-      return false
-    }
-    const publicKey = this._keyFromPublicBytes(publicKeyBytes)
-    const verified = verify(null, hashData, publicKey, proofBytes)
-    return verified
+    const publicJwk = await this._publicJwkFromId(options.verificationMethod)
+    const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
+    const verificationResult = await kms.verify({
+      key: { publicJwk: publicJwk.toJson() },
+      algorithm: 'EdDSA',
+      signature: proofBytes,
+      data: hashData,
+    })
+    return verificationResult.verified
   }
 
   public async verifyProof(securedDocument: WebVhResource) {

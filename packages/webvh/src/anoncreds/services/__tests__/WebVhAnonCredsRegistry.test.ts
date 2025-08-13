@@ -408,7 +408,7 @@ describe('WebVhAnonCredsRegistry', () => {
       mockResolveDidDocument.mockResolvedValue(mockResolvedDidDocument)
 
       // Mock successful signature verification
-      mockVerify.mockResolvedValue({ verified: true })
+      // mockVerify.mockResolvedValue({ verified: true })
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
