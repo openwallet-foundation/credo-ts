@@ -418,196 +418,152 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(mockResolveDidDocument).toHaveBeenCalledWith(verificationMethodId)
     })
 
-    // it('should return false for null proof', async () => {
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, null, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for null proof', async () => {
+      let testInput = { ...mockSchemaResource}
+      // @ts-ignore
+      testInput.proof = null
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for undefined proof', async () => {
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for undefined proof', async () => {
+      let testInput = { ...mockSchemaResource}
+      // @ts-ignore
+      delete testInput.proof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for non-object proof', async () => {
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, 'not an object')
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for non-object proof', async () => {
+      let testInput = { ...mockSchemaResource}
+      // @ts-ignore
+      testInput.proof = testInput.proof.proofValue
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for wrong proof type', async () => {
-    //   const invalidProof = {
-    //     type: 'WrongProofType',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofPurpose: 'test',
-    //     proofValue: 'validSignature',
-    //   }
+    it('should return false for wrong proof type', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      testProof.type = "Ed25519Signature2020"
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for wrong cryptosuite', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      testProof.cryptosuite = "eddsa-rdfc-2022"
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for wrong cryptosuite', async () => {
-    //   const invalidProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'wrong-cryptosuite',
-    //     proofPurpose: 'test',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofValue: 'validSignature',
-    //   }
+    it('should return false for missing verificationMethod', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      delete testProof.verificationMethod
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      // expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for invalid verificationMethod type', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      testProof.verificationMethod = {"id": testProof.verificationMethod}
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for missing verificationMethod', async () => {
-    //   const invalidProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     proofPurpose: 'test',
-    //     proofValue: 'validSignature',
-    //   }
+    it('should return false for missing proofValue', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      delete testProof.proofValue
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false for invalid proofValue type', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      testProof.proofValue = {"value": testInput.proof.proofValue}
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).not.toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for invalid verificationMethod type', async () => {
-    //   const invalidProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     proofPurpose: 'test',
-    //     verificationMethod: 123, // Should be string
-    //     proofValue: 'validSignature',
-    //   }
+    it('should return false when DID resolution fails', async () => {
+      let testInput = { ...mockSchemaResource}
 
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+      // Mock DID resolution failure
+      mockResolveDidDocument.mockResolvedValue({
+        didDocument: null,
+        didResolutionMetadata: { error: 'notFound' },
+        didDocumentMetadata: {},
+      })
 
-    // it('should return false for missing proofValue', async () => {
-    //   const invalidProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     proofPurpose: 'test',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //   }
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+    it('should return false when verification method not found in DID document', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      // @ts-ignore
+      testProof.verificationMethod = issuerId+"#key-01"
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false for invalid proofValue type', async () => {
-    //   const invalidProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofPurpose: 'test',
-    //     proofValue: 123, // Should be string
-    //   }
+    it('should return false when signature verification fails', async () => {
+      let testInput = { ...mockSchemaResource}
+      let testProof = { ...mockSchemaResource.proof}
+      testProof.proofValue = "z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz"
+      testInput.proof = testProof
 
-    //   // @ts-ignore
-    //   const result = await registry.verifyProof(agentContext, invalidProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).not.toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
+      const result = await registry.verifyProof(agentContext, testInput)
+      expect(result).toBe(false)
+      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
 
-    // it('should return false when DID resolution fails', async () => {
-    //   const validProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofPurpose: 'test',
-    //     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-    //   }
+    it('should handle proof without optional fields', async () => {
+      let testInput = { ...mockSchemaResource}
+      const result = await registry.verifyProof(agentContext, testInput)
 
-    //   // Mock DID resolution failure
-    //   mockResolveDidDocument.mockResolvedValue({
-    //     didDocument: null,
-    //     didResolutionMetadata: { error: 'notFound' },
-    //     didDocumentMetadata: {},
-    //   })
-
-    //   const result = await registry.verifyProof(agentContext, validProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
-
-    // it('should return false when verification method not found in DID document', async () => {
-    //   const validProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#nonexistent-key',
-    //     proofPurpose: 'test',
-    //     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-    //   }
-
-    //   const result = await registry.verifyProof(agentContext, validProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).toHaveBeenCalled()
-    //   expect(mockVerify).not.toHaveBeenCalled()
-    // })
-
-    // it('should return false when signature verification fails', async () => {
-    //   const validProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofPurpose: 'test',
-    //     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-    //   }
-
-    //   // Mock signature verification failure
-    //   mockVerify.mockResolvedValue({ verified: false })
-
-    //   const result = await registry.verifyProof(agentContext, validProof, {})
-    //   expect(result).toBe(false)
-    //   expect(mockResolveDidDocument).toHaveBeenCalled()
-    //   expect(mockVerify).toHaveBeenCalled()
-    // })
-
-    // it('should handle proof without optional fields', async () => {
-    //   const minimalProof = {
-    //     type: 'DataIntegrityProof',
-    //     cryptosuite: 'eddsa-jcs-2022',
-    //     verificationMethod: 'did:webvh:example.com#key-1',
-    //     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-    //     proofPurpose: 'test',
-    //   }
-    //   let attestedResource = {
-    //     id: 'did:webvh:{SCID}:example.com/resources/{digestMultibase}',
-    //     type: ['AttestedResource'],
-    //     content: { hello: 'world' },
-    //     proof: minimalProof
-    //   }
-
-    //   const result = await registry.verifyProof(agentContext, attestedResource, minimalProof)
-
-    //   expect(result).toBe(true)
-    //   expect(mockResolveDidDocument).toHaveBeenCalled()
-    //   expect(mockVerify).toHaveBeenCalled()
-    // })
+      expect(result).toBe(true)
+      expect(mockResolveDidDocument).toHaveBeenCalled()
+      expect(mockVerify).not.toHaveBeenCalled()
+    })
   })
 })

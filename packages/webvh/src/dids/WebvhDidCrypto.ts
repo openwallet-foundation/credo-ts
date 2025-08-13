@@ -17,7 +17,6 @@ export class WebvhDidCrypto implements Verifier {
         data: Buffer.from(message),
         signature: Buffer.from(signature),
       })
-
       return verificationResult
     } catch (error) {
       this.agentContext.config.logger.error('Wallet verification failed:', error)
