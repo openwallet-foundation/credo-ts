@@ -171,21 +171,29 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         throw new CredoError(`Parsed resource content for ${schemaId} is not a valid schema.`)
       }
 
-      // Use the issuerId from the content if available, otherwise extract from schemaId
-      // We need the hash part for this, extract it again or pass from helper?
-      // For simplicity, extract again.
-      const parts = schemaId.split(/[:/]/)
-      const expectedMultibaseHash = parts[parts.length - 1]
-      const issuerId =
-        schemaContent.issuerId ||
-        schemaId.substring(0, schemaId.lastIndexOf(expectedMultibaseHash)).replace(/[:/]$/, '')
+      const contentIssuerId = (schemaContent as { issuerId?: string })?.issuerId // Type assertion for accessing issuerId
+      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
+        throw new CredoError(`Resolved resource content for ${schemaId} is missing a valid issuerId.`)
+      }
+
+      const resourceDidMatch = schemaId.match(/^(did:webvh:[^/]+)/)
+      if (!resourceDidMatch || !resourceDidMatch[1]) {
+        throw new CredoError(`Could not extract DID from resource ID: ${schemaId}`)
+      }
+      const expectedIssuerDid = resourceDidMatch[1]
+
+      if (contentIssuerId !== expectedIssuerDid) {
+        throw new CredoError(
+          `Issuer ID mismatch for ${schemaId}. Expected: ${expectedIssuerDid}, Actual: ${contentIssuerId}`
+        )
+      }
 
       return {
         schema: {
           attrNames: schemaContent.attrNames,
           name: schemaContent.name,
           version: schemaContent.version,
-          issuerId,
+          issuerId: contentIssuerId,
         },
         schemaId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
@@ -229,6 +237,24 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         !('value' in credDefContent)
       ) {
         throw new CredoError('Resolved resource content is not a valid credential definition.')
+      }
+
+      const contentIssuerId = (credDefContent as { issuerId?: string })?.issuerId
+      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
+        throw new CredoError(`Resolved resource content for ${credentialDefinitionId} is missing a valid issuerId.`)
+      }
+
+      // Extract the DID from the resourceId (part before /resources/hash)
+      const resourceDidMatch = credentialDefinitionId.match(/^(did:webvh:[^/]+)/)
+      if (!resourceDidMatch || !resourceDidMatch[1]) {
+        throw new CredoError(`Could not extract DID from resource ID: ${credentialDefinitionId}`)
+      }
+      const expectedIssuerDid = resourceDidMatch[1]
+
+      if (contentIssuerId !== expectedIssuerDid) {
+        throw new CredoError(
+          `Issuer ID mismatch for ${credentialDefinitionId}. Expected: ${expectedIssuerDid}, Actual: ${contentIssuerId}`
+        )
       }
 
       // Extract metadata from the resolved resource
