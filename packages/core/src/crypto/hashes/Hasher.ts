@@ -2,13 +2,16 @@ import { CredoError } from '../../error'
 
 import { Sha1 } from './Sha1'
 import { Sha256 } from './Sha256'
+import { Sha512 } from './Sha512'
 
-export type HashName = 'sha-256' | 'sha-1'
+export type HashName = 'sha-512' | 'sha-256' | 'sha-1'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class Hasher {
   public static hash(data: Uint8Array | string, hashName: HashName | string) {
     switch (hashName.toUpperCase()) {
+      case 'SHA-512':
+        return new Sha512().hash(data)
       case 'SHA-256':
         return new Sha256().hash(data)
       case 'SHA-1':
