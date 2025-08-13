@@ -17,7 +17,6 @@ import { CredoError, JsonTransformer, MultiBaseEncoder, MultiHashEncoder, TypedA
 import { canonicalize } from 'json-canonicalize'
 import { EddsaJcs2022Cryptosuite } from '../../cryptosuites/eddsa-jcs-2022'
 import { WebvhDidResolver } from '../../dids'
-import { AttestedResource } from '../types'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -409,7 +408,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     throw new CredoError('Method not implemented.')
   }
 
-  public async verifyProof(agentContext: AgentContext, attestedResource: AttestedResource): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
     const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
     try {
       const verificationResult = await cryptosuite.verifyProof(attestedResource)
