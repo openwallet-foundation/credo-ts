@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { AgentContext, DidsApi, Kms, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import { AgentContext, DidsApi, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -30,12 +30,6 @@ const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
 }
 
-// Mock KeyManagementApi
-const mockVerify = jest.fn()
-const mockKeyManagementApi = {
-  verify: mockVerify,
-}
-
 describe('WebVhAnonCredsRegistry', () => {
   let agentContext: AgentContext
   let registry: WebVhAnonCredsRegistry
@@ -44,14 +38,12 @@ describe('WebVhAnonCredsRegistry', () => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
     mockResolveDidDocument.mockReset()
-    mockVerify.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
         [DidsApi, mockDidsApi],
-        [Kms.KeyManagementApi, mockKeyManagementApi],
         [WebvhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
@@ -395,9 +387,6 @@ describe('WebVhAnonCredsRegistry', () => {
         if (tokenString.includes('DidsApi')) {
           return mockDidsApi
         }
-        if (tokenString.includes('KeyManagementApi')) {
-          return mockKeyManagementApi
-        }
         if (token === WebvhDidResolver || tokenString.includes('WebvhDidResolver')) {
           return { resolveResource: mockResolveResource }
         }
@@ -406,9 +395,6 @@ describe('WebVhAnonCredsRegistry', () => {
 
       // Mock successful DID resolution
       mockResolveDidDocument.mockResolvedValue(mockResolvedDidDocument)
-
-      // Mock successful signature verification
-      // mockVerify.mockResolvedValue({ verified: true })
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
@@ -425,7 +411,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for undefined proof', async () => {
@@ -435,7 +420,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for non-object proof', async () => {
@@ -445,7 +429,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for wrong proof type', async () => {
@@ -457,7 +440,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for wrong cryptosuite', async () => {
@@ -468,7 +450,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for missing verificationMethod', async () => {
@@ -480,7 +461,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       // expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for invalid verificationMethod type', async () => {
@@ -491,7 +471,6 @@ describe('WebVhAnonCredsRegistry', () => {
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for missing proofValue', async () => {
@@ -503,7 +482,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for invalid proofValue type', async () => {
@@ -515,7 +493,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when DID resolution fails', async () => {
@@ -531,7 +508,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when verification method not found in DID document', async () => {
@@ -542,7 +518,6 @@ describe('WebVhAnonCredsRegistry', () => {
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when signature verification fails', async () => {
@@ -554,7 +529,6 @@ describe('WebVhAnonCredsRegistry', () => {
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should handle proof without optional fields', async () => {
@@ -563,7 +537,6 @@ describe('WebVhAnonCredsRegistry', () => {
 
       expect(result).toBe(true)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
   })
 })
