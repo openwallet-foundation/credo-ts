@@ -123,13 +123,12 @@ export class ConnectionService {
     })
 
     const { label, imageUrl } = config
-    const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
 
     const connectionRequest = new ConnectionRequestMessage({
       label: label ?? agentContext.config.label,
       did: didDoc.id,
       didDoc,
-      imageUrl: imageUrl ?? didcommConfig.connectionImageUrl,
+      imageUrl
     })
 
     connectionRequest.setThread({

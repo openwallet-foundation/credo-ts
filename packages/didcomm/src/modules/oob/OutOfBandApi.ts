@@ -21,7 +21,6 @@ import {
 } from '@credo-ts/core'
 import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { AgentEventTypes, type AgentMessageReceivedEvent } from '../../Events'
 import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
@@ -163,8 +162,7 @@ export class OutOfBandApi {
     // We don't want to treat an empty array as messages being provided
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
     const label = config.label ?? this.agentContext.config.label
-    const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const imageUrl = config.imageUrl ?? didcommConfig.connectionImageUrl
+    const imageUrl = config.imageUrl
     const appendedAttachments =
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
@@ -431,8 +429,7 @@ export class OutOfBandApi {
     const reuseConnection = config.reuseConnection ?? false
     const label = config.label ?? this.agentContext.config.label
     const alias = config.alias
-    const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const imageUrl = config.imageUrl ?? didcommConfig.connectionImageUrl
+    const imageUrl = config.imageUrl
 
     const messages = outOfBandInvitation.getRequests()
 

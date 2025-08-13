@@ -58,7 +58,6 @@ const connectionImageUrl = 'https://example.com/image.png'
 const endpoint = 'http://agent.com:8080'
 const agentConfig = getAgentConfig('ConnectionServiceTest', {
   endpoints: [endpoint],
-  connectionImageUrl,
 })
 
 const outOfBandRepository = new OutOfBandRepositoryMock()
@@ -81,7 +80,7 @@ describe('ConnectionService', () => {
         [OutOfBandRepository, outOfBandRepository],
         [OutOfBandService, outOfBandService],
         [DidRepository, didRepository],
-        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint], connectionImageUrl })],
+        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint] })],
       ],
     })
     kms = agentContext.resolve(Kms.KeyManagementApi)
@@ -120,7 +119,7 @@ describe('ConnectionService', () => {
       expect.assertions(5)
 
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
-      const config = { routing: myRouting }
+      const config = { routing: myRouting, imageUrl: connectionImageUrl }
 
       const { connectionRecord, message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
@@ -168,7 +167,7 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
-      const config = { label: 'Custom label', routing: myRouting }
+      const config = { label: 'Custom label', connectionImageUrl, routing: myRouting }
 
       const { connectionRecord } = await connectionService.createRequest(agentContext, outOfBand, config)
 
