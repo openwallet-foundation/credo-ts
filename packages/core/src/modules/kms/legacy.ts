@@ -8,6 +8,12 @@ import { PublicJwk } from './jwk'
  * This is what was has been used by askar
  */
 export function legacyKeyIdFromPublicJwk(publicJwk: PublicJwk) {
+  // Compressed public keys were used for legacy key ids
+  const compresedPublicKey = publicJwk.compressedPublicKey
+  if (compresedPublicKey) {
+    return TypedArrayEncoder.toBase58(compresedPublicKey.publicKey)
+  }
+
   const publicKey = publicJwk.publicKey
   if (publicKey.kty === 'RSA') {
     throw new KeyManagementError(

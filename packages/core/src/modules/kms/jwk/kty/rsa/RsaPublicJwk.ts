@@ -40,6 +40,13 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
     }
   }
 
+  /**
+   * Not supported for RSA
+   */
+  public get compressedPublicKey() {
+    return null
+  }
+
   public get multicodec(): Uint8Array {
     throw new KeyManagementError('multicodec not supported for RsaPublicJwk')
   }
