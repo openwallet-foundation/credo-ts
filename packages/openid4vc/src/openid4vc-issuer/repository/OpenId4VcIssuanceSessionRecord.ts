@@ -1,7 +1,7 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
-import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
@@ -167,6 +167,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    *
    * @since 0.6
    */
+  @DateTransformer()
   public expiresAt?: Date
 
   /**
