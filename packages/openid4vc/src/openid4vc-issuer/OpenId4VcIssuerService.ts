@@ -65,13 +65,7 @@ import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import {
-  addSecondsToDate,
-  dateToSeconds,
-  getProofTypeFromPublicJwk,
-  getPublicJwkFromDid,
-  getSupportedJwaSignatureAlgorithms,
-} from '../shared/utils'
+import { getProofTypeFromPublicJwk, getPublicJwkFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
@@ -215,7 +209,10 @@ export class OpenId4VcIssuerService {
     })
 
     const createdAt = new Date()
-    const expiresAt = addSecondsToDate(createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+    const expiresAt = utils.addSecondsToDate(
+      createdAt,
+      this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+    )
 
     const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
@@ -1011,14 +1008,14 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
-    const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
+    const cNonceExpiresAt = utils.addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const cNonce = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(cNonceExpiresAt),
+        exp: utils.dateToSeconds(cNonceExpiresAt),
       }),
       protectedHeaderOptions: {
         typ: 'credo+cnonce',
@@ -1108,15 +1105,20 @@ export class OpenId4VcIssuerService {
   ) {
     const expiresAt =
       issuanceSession.expiresAt ??
-      addSecondsToDate(issuanceSession.createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+      utils.addSecondsToDate(
+        issuanceSession.createdAt,
+        this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+      )
 
     issuanceSession.expiresAt = new Date(
       Math.max(
         expiresAt.getTime(),
-        addSecondsToDate(
-          new Date(),
-          Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
-        ).getTime()
+        utils
+          .addSecondsToDate(
+            new Date(),
+            Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+          )
+          .getTime()
       )
     )
 

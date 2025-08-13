@@ -30,13 +30,13 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
   equalsIgnoreOrder,
+  utils,
   w3cDate,
 } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
-import { dateToSeconds } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -103,7 +103,7 @@ const createCredentialRequest = async (
   const jws = await jwsService.createJwsCompact(agentContext, {
     protectedHeaderOptions: { alg: publicJwk.signatureAlgorithm, kid, typ: 'openid4vci-proof+jwt' },
     payload: new JwtPayload({
-      iat: dateToSeconds(new Date()),
+      iat: utils.dateToSeconds(new Date()),
       iss: clientId,
       aud: issuerMetadata.credentialIssuer.credential_issuer,
       additionalClaims: {

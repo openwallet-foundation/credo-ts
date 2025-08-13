@@ -61,7 +61,6 @@ import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
-  addSecondsToDate,
   dcqlFormatToPresentationClaimFormat,
   getSupportedJwaSignatureAlgorithms,
   requestSignerToJwtIssuer,
@@ -318,7 +317,7 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
