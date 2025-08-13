@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { AgentContext, DidsApi, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import { AgentContext, DidDocument, DidsApi, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -379,22 +379,8 @@ describe('WebVhAnonCredsRegistry', () => {
       // Clear the default verifyProof mock for these tests
       jest.restoreAllMocks()
 
-      // Re-setup the dependency manager mocks
-      const originalResolve = agentContext.dependencyManager.resolve.bind(agentContext.dependencyManager)
-      agentContext.dependencyManager.resolve = jest.fn().mockImplementation((token) => {
-        const tokenString = token?.name || token?.toString?.() || String(token)
-
-        if (tokenString.includes('DidsApi')) {
-          return mockDidsApi
-        }
-        if (token === WebvhDidResolver || tokenString.includes('WebvhDidResolver')) {
-          return { resolveResource: mockResolveResource }
-        }
-        return originalResolve(token)
-      })
-
       // Mock successful DID resolution
-      mockResolveDidDocument.mockResolvedValue(mockResolvedDidDocument)
+      mockResolveDidDocument.mockResolvedValue(new DidDocument(mockResolvedDidDocument as any))
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
