@@ -111,9 +111,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    */
   public async createProposal(
     _agentContext: AgentContext,
-    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     {
+      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialFormats,
+      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialExchangeRecord,
     }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
