@@ -600,81 +600,141 @@ describe('0.1-0.2 | Connection', () => {
   describe('oobStateFromDidExchangeRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.InvitationSent)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.InvitationSent
+        )
       ).toEqual(DidCommOutOfBandState.AwaitResponse)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.RequestReceived)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.RequestReceived
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.ResponseSent)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.ResponseSent
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Completed)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.Completed
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Abandoned)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.Abandoned
+        )
       ).toEqual(DidCommOutOfBandState.Done)
-      expect(testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Start)).toEqual(
-        DidCommOutOfBandState.PrepareResponse
-      )
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Start)
+      ).toEqual(DidCommOutOfBandState.PrepareResponse)
 
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.InvitationReceived)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.InvitationReceived
+        )
       ).toEqual(DidCommOutOfBandState.PrepareResponse)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.RequestSent)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.RequestSent
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.ResponseReceived)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.ResponseReceived
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Completed)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.Completed
+        )
       ).toEqual(DidCommOutOfBandState.Done)
       expect(
-        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Abandoned)
+        testModule.oobStateFromDidExchangeRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommDidExchangeState.Abandoned
+        )
       ).toEqual(DidCommOutOfBandState.Done)
-      expect(testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Start)).toEqual(
-        DidCommOutOfBandState.AwaitResponse
-      )
+      expect(
+        testModule.oobStateFromDidExchangeRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Start)
+      ).toEqual(DidCommOutOfBandState.AwaitResponse)
     })
   })
 
   describe('didExchangeStateAndRoleFromRoleAndState', () => {
     it('should return the correct state for all connection role and state combinations', () => {
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Inviter, DidCommConnectionState.Invited)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Invited
+        )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.InvitationSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Inviter, DidCommConnectionState.Requested)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Requested
+        )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.RequestReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Inviter, DidCommConnectionState.Responded)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Responded
+        )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.ResponseSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Inviter, DidCommConnectionState.Complete)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Inviter,
+          DidCommConnectionState.Complete
+        )
       ).toEqual([DidCommDidExchangeRole.Responder, DidCommDidExchangeState.Completed])
 
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Invitee, DidCommConnectionState.Invited)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Invited
+        )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.InvitationReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Invitee, DidCommConnectionState.Requested)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Requested
+        )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.RequestSent])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Invitee, DidCommConnectionState.Responded)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Responded
+        )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.ResponseReceived])
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommConnectionRole.Invitee, DidCommConnectionState.Complete)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommConnectionRole.Invitee,
+          DidCommConnectionState.Complete
+        )
       ).toEqual([DidCommDidExchangeRole.Requester, DidCommDidExchangeState.Completed])
     })
 
     it('should return did exchange role if role is already did exchange role', () => {
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommDidExchangeRole.Responder, DidCommDidExchangeState.RequestSent)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommDidExchangeRole.Responder,
+          DidCommDidExchangeState.RequestSent
+        )
       ).toEqual([DidCommDidExchangeRole.Responder, expect.anything()])
 
       expect(
-        testModule.didExchangeStateAndRoleFromRoleAndState(DidCommDidExchangeRole.Requester, DidCommConnectionState.Requested)
+        testModule.didExchangeStateAndRoleFromRoleAndState(
+          DidCommDidExchangeRole.Requester,
+          DidCommConnectionState.Requested
+        )
       ).toEqual([DidCommDidExchangeRole.Requester, expect.anything()])
     })
 

@@ -3,7 +3,11 @@ import type { CredentialRecordBinding } from '../../../modules/credentials'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
-import { DidCommCredentialExchangeRecord, DidCommCredentialRole, DidCommCredentialState } from '../../../modules/credentials'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '../../../modules/credentials'
 import { DidCommCredentialExchangeRepository } from '../../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRecord, DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
@@ -48,7 +52,9 @@ describe('0.4-0.5 | Migration | Credential Exchange Record', () => {
 
   describe('migrateCredentialExchangeRecordToV0_5()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: DidCommCredentialExchangeRecord[] = [getCredentialRecord({ state: DidCommCredentialState.OfferSent })]
+      const records: DidCommCredentialExchangeRecord[] = [
+        getCredentialRecord({ state: DidCommCredentialState.OfferSent }),
+      ]
 
       mockFunction(credentialRepository.getAll).mockResolvedValue(records)
 

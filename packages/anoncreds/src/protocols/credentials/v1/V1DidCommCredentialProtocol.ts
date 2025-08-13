@@ -1,12 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  DidCommMessage,
-  DidCommCredentialProtocol,
   CredentialProtocolOptions,
-  ExtractCredentialFormats,
+  DidCommCredentialProtocol,
   DidCommFeatureRegistry,
-  InboundDidCommMessageContext,
+  DidCommMessage,
   DidCommMessageHandlerRegistry,
+  ExtractCredentialFormats,
+  InboundDidCommMessageContext,
   ProblemReportMessage,
 } from '@credo-ts/didcomm'
 import type { LegacyIndyCredentialFormatService } from '../../../formats'
@@ -16,12 +16,12 @@ import {
   AckStatus,
   Attachment,
   AttachmentData,
-  DidCommAutoAcceptCredential,
   BaseDidCommCredentialProtocol,
+  DidCommAutoAcceptCredential,
   DidCommConnectionService,
   DidCommCredentialExchangeRecord,
-  DidCommCredentialProblemReportReason,
   DidCommCredentialExchangeRepository,
+  DidCommCredentialProblemReportReason,
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommCredentialsModuleConfig,
@@ -242,7 +242,11 @@ export class V1CredentialProtocol
       })
 
       // Update record
-      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalReceived)
+      await this.updateState(
+        messageContext.agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.ProposalReceived
+      )
       await didCommMessageRepository.saveOrUpdateAgentMessage(messageContext.agentContext, {
         agentMessage: proposalMessage,
         role: DidCommMessageRole.Receiver,
@@ -331,10 +335,14 @@ export class V1CredentialProtocol
       attachments: credentialExchangeRecord.linkedAttachments,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -388,10 +396,14 @@ export class V1CredentialProtocol
       }),
       attachments: credentialExchangeRecord.linkedAttachments,
     })
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     credentialExchangeRecord.credentialAttributes = message.credentialPreview.attributes
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -543,7 +555,11 @@ export class V1CredentialProtocol
         role: DidCommMessageRole.Receiver,
         associatedRecordId: credentialExchangeRecord.id,
       })
-      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.OfferReceived)
+      await this.updateState(
+        messageContext.agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.OfferReceived
+      )
 
       return credentialExchangeRecord
     }
@@ -622,10 +638,14 @@ export class V1CredentialProtocol
       requestAttachments: [attachment],
       attachments: offerMessage.appendedAttachments?.filter((attachment) => isLinkedAttachment(attachment)),
     })
-    requestMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    requestMessage.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     credentialExchangeRecord.credentialAttributes = offerMessage.credentialPreview.attributes
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     credentialExchangeRecord.linkedAttachments = offerMessage.appendedAttachments?.filter((attachment) =>
       isLinkedAttachment(attachment)
     )
@@ -701,7 +721,10 @@ export class V1CredentialProtocol
       comment,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -712,7 +735,8 @@ export class V1CredentialProtocol
     // Update record
     credentialExchangeRecord.credentialAttributes = message.credentialPreview?.attributes
     credentialExchangeRecord.linkedAttachments = linkedAttachments?.map((attachment) => attachment.attachment)
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalSent)
 
     return { credentialExchangeRecord, message }
@@ -746,7 +770,10 @@ export class V1CredentialProtocol
       role: DidCommCredentialRole.Issuer,
     })
 
-    agentContext.config.logger.trace('Credential record found when processing credential request', credentialExchangeRecord)
+    agentContext.config.logger.trace(
+      'Credential record found when processing credential request',
+      credentialExchangeRecord
+    )
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(messageContext.agentContext, {
       associatedRecordId: credentialExchangeRecord.id,
@@ -795,7 +822,11 @@ export class V1CredentialProtocol
       associatedRecordId: credentialExchangeRecord.id,
     })
 
-    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.RequestReceived)
+    await this.updateState(
+      messageContext.agentContext,
+      credentialExchangeRecord,
+      DidCommCredentialState.RequestReceived
+    )
 
     return credentialExchangeRecord
   }
@@ -856,7 +887,10 @@ export class V1CredentialProtocol
       attachments: credentialExchangeRecord.linkedAttachments,
     })
 
-    issueMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    issueMessage.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
     issueMessage.setPleaseAck()
 
     await didCommMessageRepository.saveAgentMessage(agentContext, {
@@ -865,7 +899,8 @@ export class V1CredentialProtocol
       role: DidCommMessageRole.Sender,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialIssued)
 
     return { message: issueMessage, credentialExchangeRecord }
@@ -945,7 +980,11 @@ export class V1CredentialProtocol
       associatedRecordId: credentialExchangeRecord.id,
     })
 
-    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialReceived)
+    await this.updateState(
+      messageContext.agentContext,
+      credentialExchangeRecord,
+      DidCommCredentialState.CredentialReceived
+    )
 
     return credentialExchangeRecord
   }
@@ -970,7 +1009,10 @@ export class V1CredentialProtocol
       threadId: credentialExchangeRecord.threadId,
     })
 
-    ackMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    ackMessage.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.Done)
 

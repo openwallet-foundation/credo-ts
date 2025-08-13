@@ -7,7 +7,12 @@ import type {
 } from './ActionMenuApiOptions'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { DidCommConnectionService, DidCommMessageHandlerRegistry, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import {
+  DidCommConnectionService,
+  DidCommMessageHandlerRegistry,
+  DidCommMessageSender,
+  getOutboundDidCommMessageContext,
+} from '@credo-ts/didcomm'
 
 import { ActionMenuRole } from './ActionMenuRole'
 import {

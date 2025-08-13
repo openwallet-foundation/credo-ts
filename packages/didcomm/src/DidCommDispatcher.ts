@@ -1,5 +1,5 @@
-import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommMessageProcessedEvent } from './DidCommEvents'
+import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
 import type { InboundDidCommMessageContext } from './models/InboundDidCommMessageContext'
 

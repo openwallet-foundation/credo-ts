@@ -1,4 +1,8 @@
-import type { DidCommConnectionRecord, DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
+import type {
+  DidCommConnectionRecord,
+  DidCommCredentialExchangeRecord,
+  DidCommProofExchangeRecord,
+} from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText, redText } from './OutputClass'

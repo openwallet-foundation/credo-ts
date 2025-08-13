@@ -15,16 +15,30 @@ describe('ConnectionState', () => {
       expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Abandoned)).toEqual(DidCommConnectionState.Null)
       expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Start)).toEqual(DidCommConnectionState.Null)
 
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationReceived)).toEqual(DidCommConnectionState.Invited)
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationSent)).toEqual(DidCommConnectionState.Invited)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationReceived)).toEqual(
+        DidCommConnectionState.Invited
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationSent)).toEqual(
+        DidCommConnectionState.Invited
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestReceived)).toEqual(DidCommConnectionState.Requested)
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestSent)).toEqual(DidCommConnectionState.Requested)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestReceived)).toEqual(
+        DidCommConnectionState.Requested
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestSent)).toEqual(
+        DidCommConnectionState.Requested
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(DidCommConnectionState.Responded)
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(DidCommConnectionState.Responded)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(
+        DidCommConnectionState.Responded
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(
+        DidCommConnectionState.Responded
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Completed)).toEqual(DidCommConnectionState.Complete)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Completed)).toEqual(
+        DidCommConnectionState.Complete
+      )
     })
   })
 })

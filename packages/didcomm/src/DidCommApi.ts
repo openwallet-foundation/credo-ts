@@ -3,11 +3,11 @@ import type { InboundDidCommTransport, OutboundDidCommTransport } from './transp
 
 import { injectable } from '@credo-ts/core'
 
-import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageReceiver } from './DidCommMessageReceiver'
 import { DidCommMessageSender } from './DidCommMessageSender'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 
 @injectable()
 export class DidCommApi {

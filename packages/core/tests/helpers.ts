@@ -1,6 +1,5 @@
 import type { Observable } from 'rxjs'
 import type {
-  DidCommMessageProcessedEvent,
   BasicMessage,
   DidCommBasicMessageStateChangedEvent,
   DidCommConnectionDidRotatedEvent,
@@ -8,6 +7,7 @@ import type {
   DidCommConnectionStateChangedEvent,
   DidCommCredentialState,
   DidCommCredentialStateChangedEvent,
+  DidCommMessageProcessedEvent,
   DidCommOutOfBandInlineServiceKey,
   DidCommProofStateChangedEvent,
   DidCommRevocationNotificationReceivedEvent,
@@ -35,7 +35,6 @@ import path from 'path'
 import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import {
-  DidCommEventTypes,
   DidCommBasicMessageEventTypes,
   DidCommConnectionEventTypes,
   DidCommConnectionRecord,
@@ -43,10 +42,11 @@ import {
   DidCommCredentialEventTypes,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
+  DidCommEventTypes,
   DidCommHandshakeProtocol,
-  OutOfBandDidCommService,
   DidCommProofEventTypes,
   DidCommTrustPingEventTypes,
+  OutOfBandDidCommService,
 } from '../../didcomm/src'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
@@ -316,7 +316,9 @@ export async function waitForTrustPingReceivedEvent(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<DidCommTrustPingReceivedEvent>(DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent)
+  const observable = agent.events.observable<DidCommTrustPingReceivedEvent>(
+    DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
+  )
 
   return waitForTrustPingReceivedEventSubject(observable, options)
 }
@@ -479,7 +481,9 @@ export async function waitForCredentialRecord(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged)
+  const observable = agent.events.observable<DidCommCredentialStateChangedEvent>(
+    DidCommCredentialEventTypes.DidCommCredentialStateChanged
+  )
   return waitForCredentialRecordSubject(observable, options)
 }
 
@@ -559,7 +563,9 @@ export async function waitForConnectionRecord(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+  const observable = agent.events.observable<DidCommConnectionStateChangedEvent>(
+    DidCommConnectionEventTypes.DidCommConnectionStateChanged
+  )
   return waitForConnectionRecordSubject(observable, options)
 }
 
@@ -571,7 +577,9 @@ export async function waitForDidRotate(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<DidCommConnectionDidRotatedEvent>(DidCommConnectionEventTypes.DidCommConnectionDidRotated)
+  const observable = agent.events.observable<DidCommConnectionDidRotatedEvent>(
+    DidCommConnectionEventTypes.DidCommConnectionDidRotated
+  )
   return waitForDidRotateSubject(observable, options)
 }
 
@@ -586,13 +594,19 @@ export async function waitForBasicMessage(
         connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
 
       if (contentMatches && connectionIdMatches) {
-        agent.events.off<DidCommBasicMessageStateChangedEvent>(DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged, listener)
+        agent.events.off<DidCommBasicMessageStateChangedEvent>(
+          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+          listener
+        )
 
         resolve(event.payload.message)
       }
     }
 
-    agent.events.on<DidCommBasicMessageStateChangedEvent>(DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged, listener)
+    agent.events.on<DidCommBasicMessageStateChangedEvent>(
+      DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+      listener
+    )
   })
 }
 
@@ -611,7 +625,9 @@ export async function waitForRevocationNotification(
 }
 
 export function waitForRevocationNotificationSubject(
-  subject: ReplaySubject<DidCommRevocationNotificationReceivedEvent> | Observable<DidCommRevocationNotificationReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommRevocationNotificationReceivedEvent>
+    | Observable<DidCommRevocationNotificationReceivedEvent>,
   {
     threadId,
     timeoutMs = 10000,

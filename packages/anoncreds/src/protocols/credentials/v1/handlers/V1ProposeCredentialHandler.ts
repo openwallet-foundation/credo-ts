@@ -1,4 +1,8 @@
-import type { DidCommCredentialExchangeRecord, DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
+import type {
+  DidCommCredentialExchangeRecord,
+  DidCommMessageHandler,
+  DidCommMessageHandlerInboundMessage,
+} from '@credo-ts/didcomm'
 import type { V1CredentialProtocol } from '../V1DidCommCredentialProtocol'
 
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'

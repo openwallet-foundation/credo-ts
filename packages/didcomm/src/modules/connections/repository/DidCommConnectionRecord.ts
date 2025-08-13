@@ -5,7 +5,12 @@ import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 
-import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol, rfc0160StateFromDidExchangeState } from '../models'
+import {
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+  rfc0160StateFromDidExchangeState,
+} from '../models'
 
 export interface DidCommConnectionRecordProps {
   id?: string
@@ -45,7 +50,11 @@ export type DefaultDidCommConnectionTags = {
   previousTheirDids?: Array<string>
 }
 
-export class DidCommConnectionRecord extends BaseRecord<DefaultDidCommConnectionTags, CustomDidCommConnectionTags, DidCommConnectionMetadata> {
+export class DidCommConnectionRecord extends BaseRecord<
+  DefaultDidCommConnectionTags,
+  CustomDidCommConnectionTags,
+  DidCommConnectionMetadata
+> {
   public state!: DidCommDidExchangeState
   public role!: DidCommDidExchangeRole
 

@@ -74,13 +74,15 @@ describe('credentials', () => {
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
-      comment: 'V2 Out of Band offer (W3C)',
-      credentialFormats: {
-        jsonld: signCredentialOptions,
-      },
-      protocolVersion: 'v2',
-    })
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+      {
+        comment: 'V2 Out of Band offer (W3C)',
+        credentialFormats: {
+          jsonld: signCredentialOptions,
+        },
+        protocolVersion: 'v2',
+      }
+    )
 
     const offerMessage = message as V2OfferCredentialMessage
     const attachment = offerMessage?.offerAttachments[0]

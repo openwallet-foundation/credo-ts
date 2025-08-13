@@ -2,7 +2,12 @@ import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
-import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, DidCommProofState } from '@credo-ts/didcomm'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialState,
+  DidCommProofState,
+} from '@credo-ts/didcomm'
 
 import {
   createDidKidVerificationMethod,

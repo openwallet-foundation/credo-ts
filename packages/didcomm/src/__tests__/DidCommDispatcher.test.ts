@@ -2,8 +2,8 @@ import { Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
-import { DidCommMessage } from '../DidCommMessage'
 import { DidCommDispatcher } from '../DidCommDispatcher'
+import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../getOutboundDidCommMessageContext'
@@ -77,7 +77,10 @@ describe('DidCommDispatcher', () => {
       const agentContext = getAgentContext()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         new MessageSenderMock(),
@@ -93,8 +96,12 @@ describe('DidCommDispatcher', () => {
 
       const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
       const secondMiddleware = jest.fn()
-      agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(firstMiddleware)
-      agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(secondMiddleware)
+      agentContext.dependencyManager
+        .resolve(DidCommMessageHandlerRegistry)
+        .registerMessageHandlerMiddleware(firstMiddleware)
+      agentContext.dependencyManager
+        .resolve(DidCommMessageHandlerRegistry)
+        .registerMessageHandlerMiddleware(secondMiddleware)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -111,7 +118,10 @@ describe('DidCommDispatcher', () => {
       const agentContext = getAgentContext()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         new MessageSenderMock(),
@@ -127,8 +137,12 @@ describe('DidCommDispatcher', () => {
 
       const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
       const secondMiddleware = jest.fn()
-      agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(firstMiddleware)
-      agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(secondMiddleware)
+      agentContext.dependencyManager
+        .resolve(DidCommMessageHandlerRegistry)
+        .registerMessageHandlerMiddleware(firstMiddleware)
+      agentContext.dependencyManager
+        .resolve(DidCommMessageHandlerRegistry)
+        .registerMessageHandlerMiddleware(secondMiddleware)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -145,7 +159,10 @@ describe('DidCommDispatcher', () => {
       const agentContext = getAgentContext()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         new MessageSenderMock(),
@@ -160,7 +177,9 @@ describe('DidCommDispatcher', () => {
       const inboundMessageContext = new InboundDidCommMessageContext(customProtocolMessage, { agentContext })
 
       const fallbackMessageHandler = jest.fn()
-      agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).setFallbackMessageHandler(fallbackMessageHandler)
+      agentContext.dependencyManager
+        .resolve(DidCommMessageHandlerRegistry)
+        .setFallbackMessageHandler(fallbackMessageHandler)
 
       await dispatcher.dispatch(inboundMessageContext)
 
@@ -171,7 +190,10 @@ describe('DidCommDispatcher', () => {
       const agentContext = getAgentContext()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         new MessageSenderMock(),
@@ -208,7 +230,10 @@ describe('DidCommDispatcher', () => {
       const agentContext = getAgentContext()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         new MessageSenderMock(),
@@ -247,7 +272,10 @@ describe('DidCommDispatcher', () => {
       const messageSenderMock = new MessageSenderMock()
 
       // Replace the DidCommMessageHandlerRegistry instance with a empty one
-      agentContext.dependencyManager.registerInstance(DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry())
+      agentContext.dependencyManager.registerInstance(
+        DidCommMessageHandlerRegistry,
+        new DidCommMessageHandlerRegistry()
+      )
 
       const dispatcher = new DidCommDispatcher(
         messageSenderMock,
@@ -266,15 +294,20 @@ describe('DidCommDispatcher', () => {
         connection: connectionMock,
       })
 
-      const middleware = jest.fn().mockImplementationOnce(async (inboundMessageContext: InboundDidCommMessageContext) => {
-        // We do not call next
-        inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(inboundMessageContext.agentContext, {
-          message: new CustomProtocolMessage({
-            id: 'static-id',
-          }),
-          connectionRecord: inboundMessageContext.connection,
+      const middleware = jest
+        .fn()
+        .mockImplementationOnce(async (inboundMessageContext: InboundDidCommMessageContext) => {
+          // We do not call next
+          inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
+            inboundMessageContext.agentContext,
+            {
+              message: new CustomProtocolMessage({
+                id: 'static-id',
+              }),
+              connectionRecord: inboundMessageContext.connection,
+            }
+          )
         })
-      })
 
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)

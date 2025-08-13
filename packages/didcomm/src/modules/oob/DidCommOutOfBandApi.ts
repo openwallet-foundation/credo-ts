@@ -21,10 +21,10 @@ import {
 } from '@credo-ts/core'
 import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
 import { OutboundDidCommMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
@@ -35,16 +35,21 @@ import {
   supportsIncomingMessageType,
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
-import { ConnectionInvitationMessage, DidCommConnectionRecord, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../connections'
+import {
+  ConnectionInvitationMessage,
+  DidCommConnectionRecord,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+} from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
 import { convertToNewInvitation, convertToOldInvitation } from './converters'
-import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
+import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { HandshakeReuseHandler } from './handlers'
 import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
@@ -934,7 +939,10 @@ export class DidCommOutOfBandApi {
     plaintextMessage['~thread'].pthid = outOfBandRecord.outOfBandInvitation.id
   }
 
-  private async handleHandshakeReuse(outOfBandRecord: DidCommOutOfBandRecord, connectionRecord: DidCommConnectionRecord) {
+  private async handleHandshakeReuse(
+    outOfBandRecord: DidCommOutOfBandRecord,
+    connectionRecord: DidCommConnectionRecord
+  ) {
     const reuseMessage = await this.outOfBandService.createHandShakeReuse(
       this.agentContext,
       outOfBandRecord,

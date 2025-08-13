@@ -4,7 +4,9 @@ import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePick
  * MessagePickupModuleConfigOptions defines the interface for the options of the MessagePickupModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
-export interface MessagePickupModuleConfigOptions<DidCommMessagePickupProtocols extends DidCommMessagePickupProtocol[]> {
+export interface MessagePickupModuleConfigOptions<
+  DidCommMessagePickupProtocols extends DidCommMessagePickupProtocol[],
+> {
   /**
    * Maximum number of messages to retrieve in a single batch message pickup
    *

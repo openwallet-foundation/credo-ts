@@ -5,9 +5,9 @@ import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionsModule,
   DidCommModule,
+  DidCommOutOfBandModule,
   HttpOutboundDidCommTransport,
   MessagePickupModule,
-  DidCommOutOfBandModule,
   WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'

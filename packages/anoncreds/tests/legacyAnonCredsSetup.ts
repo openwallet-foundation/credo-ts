@@ -15,11 +15,11 @@ import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinit
 import { randomUUID } from 'crypto'
 import { Agent, CacheModule, CredoError, DidsModule, InMemoryLruCache, TypedArrayEncoder } from '@credo-ts/core'
 import {
-  DidCommEventTypes,
   DidCommAutoAcceptCredential,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommCredentialsModule,
+  DidCommEventTypes,
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofsModule,

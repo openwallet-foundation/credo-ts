@@ -83,7 +83,9 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidCommDidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -116,7 +118,9 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidCommDidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -147,7 +151,9 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidCommDidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -187,7 +193,9 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidCommDidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -212,7 +220,9 @@ describe('out of band implicit', () => {
     })
 
     // Wait for a connection event in faber agent
-    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, { state: DidCommDidExchangeState.RequestReceived })
+    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceNewConnection.id)
     faberAliceNewConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceNewConnection?.id)
     expect(faberAliceNewConnection.state).toBe(DidCommDidExchangeState.Completed)

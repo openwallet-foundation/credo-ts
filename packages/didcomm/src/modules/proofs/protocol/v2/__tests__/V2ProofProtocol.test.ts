@@ -12,7 +12,12 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Attachment, AttachmentData, DidCommDidExchangeState, InboundDidCommMessageContext } from '../../../../../../src'
+import {
+  Attachment,
+  AttachmentData,
+  DidCommDidExchangeState,
+  InboundDidCommMessageContext,
+} from '../../../../../../src'
 import { DidCommMessageRepository } from '../../../../../repository/DidCommMessageRepository'
 import { DidCommConnectionService } from '../../../../connections/services/DidCommConnectionService'
 import { DidCommProofEventTypes } from '../../../DidCommProofEvents'

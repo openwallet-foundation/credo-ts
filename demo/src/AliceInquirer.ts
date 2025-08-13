@@ -72,7 +72,9 @@ export class AliceInquirer extends BaseInquirer {
   public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.modules.credentials.declineOffer({ credentialExchangeRecordId: credentialExchangeRecord.id })
+      await this.alice.agent.modules.credentials.declineOffer({
+        credentialExchangeRecordId: credentialExchangeRecord.id,
+      })
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptCredentialOffer(credentialExchangeRecord)
     }

@@ -151,7 +151,10 @@ describe('V1CredentialProtocolProposeOffer', () => {
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.ProposalSent} state`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       mockFunction(indyCredentialFormatService.createProposal).mockResolvedValue({
         attachment: proposalAttachment,
@@ -260,7 +263,10 @@ describe('V1CredentialProtocolProposeOffer', () => {
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.OfferSent} state`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       mockFunction(indyCredentialFormatService.createOffer).mockResolvedValue({
         attachment: offerAttachment,
@@ -369,7 +375,10 @@ describe('V1CredentialProtocolProposeOffer', () => {
 
     test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.processOffer(messageContext)

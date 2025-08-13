@@ -25,7 +25,10 @@ export interface DidCommBasicMessageStorageProps {
   sentTime: string
 }
 
-export class DidCommBasicMessageRecord extends BaseRecord<DefaultDidCommBasicMessageTags, CustomDidCommBasicMessageTags> {
+export class DidCommBasicMessageRecord extends BaseRecord<
+  DefaultDidCommBasicMessageTags,
+  CustomDidCommBasicMessageTags
+> {
   public content!: string
   public sentTime!: string
   public connectionId!: string

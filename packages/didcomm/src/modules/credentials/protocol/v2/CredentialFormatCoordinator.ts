@@ -77,7 +77,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -196,7 +199,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -274,7 +280,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       credentialPreview,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -375,7 +384,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -435,7 +447,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       requestAttachments: requestAttachments,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
       agentMessage: message,
@@ -543,7 +558,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
       goal,
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
     message.setPleaseAck()
 
     await didCommMessageRepository.saveOrUpdateAgentMessage(agentContext, {
@@ -622,7 +640,10 @@ export class CredentialFormatCoordinator<CFs extends CredentialFormatService[]> 
     return attachment
   }
 
-  private getAttachmentIdForService(credentialFormatService: CredentialFormatService, formats: DidCommCredentialFormatSpec[]) {
+  private getAttachmentIdForService(
+    credentialFormatService: CredentialFormatService,
+    formats: DidCommCredentialFormatSpec[]
+  ) {
     const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
 
     if (!format) throw new CredoError(`No attachment found for service ${credentialFormatService.formatKey}`)

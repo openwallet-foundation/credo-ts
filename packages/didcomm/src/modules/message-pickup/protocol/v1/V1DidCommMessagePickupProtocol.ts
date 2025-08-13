@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { InboundDidCommMessageContext } from '../../../../models'
 import type { MessagePickupCompletedEvent } from '../../DidCommMessagePickupEvents'
@@ -16,7 +16,7 @@ import type {
 import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
 import { DidCommEventTypes } from '../../../../DidCommEvents'
-import { OutboundDidCommMessageContext, DidCommProtocol } from '../../../../models'
+import { DidCommProtocol, OutboundDidCommMessageContext } from '../../../../models'
 import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
 import { BaseDidCommMessagePickupProtocol } from '../BaseDidCommMessagePickupProtocol'
@@ -35,7 +35,10 @@ export class V1DidCommMessagePickupProtocol extends BaseDidCommMessagePickupProt
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void {
+  public register(
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    featureRegistry: DidCommFeatureRegistry
+  ): void {
     messageHandlerRegistry.registerMessageHandlers([new V1BatchPickupHandler(this), new V1BatchHandler(this)])
 
     featureRegistry.register(

@@ -8,7 +8,6 @@ import type {
 import type {
   AnonCredsLinkSecretBindingMethod,
   AnonCredsLinkSecretDataIntegrityBindingProof,
-  DidCommCredentialExchangeRecord,
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
   CredentialFormatAcceptRequestOptions,
@@ -24,12 +23,13 @@ import type {
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
   CredentialFormatService,
-  DidCommCredentialPreviewAttributeOptions,
   DataIntegrityCredential,
   DataIntegrityCredentialFormat,
   DataIntegrityCredentialRequest,
   DataIntegrityCredentialRequestBindingProof,
   DataIntegrityOfferCredentialFormat,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttributeOptions,
   DidCommSignedAttachmentBindingMethod,
   DidCommSignedAttachmentDataIntegrityBindingProof,
   W3C_VC_DATA_MODEL_VERSION,
@@ -61,10 +61,10 @@ import {
 import {
   Attachment,
   AttachmentData,
+  DataIntegrityCredentialOffer,
   DidCommCredentialFormatSpec,
   DidCommCredentialPreviewAttribute,
   DidCommCredentialProblemReportReason,
-  DataIntegrityCredentialOffer,
   ProblemReportError,
 } from '@credo-ts/didcomm'
 
@@ -112,7 +112,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   public async createProposal(
     _agentContext: AgentContext,
     // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { credentialFormats, credentialExchangeRecord }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+    }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
   }
@@ -782,7 +785,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
       linkSecretMetadata.revocationRegistryId = revocationRegistryDefinitionReturn?.revocationRegistryDefinitionId
       linkSecretMetadata.credentialRevocationId = anonCredsTags.anonCredsCredentialRevocationId?.toString()
-      credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(AnonCredsCredentialMetadataKey, linkSecretMetadata)
+      credentialExchangeRecord.metadata.set<AnonCredsCredentialMetadata>(
+        AnonCredsCredentialMetadataKey,
+        linkSecretMetadata
+      )
     }
 
     return w3cCredentialRecord
@@ -795,7 +801,12 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialExchangeRecord, attachment, requestAttachment, offerAttachment }: CredentialFormatProcessCredentialOptions
+    {
+      credentialExchangeRecord,
+      attachment,
+      requestAttachment,
+      offerAttachment,
+    }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
     const offeredCredentialJson = credentialOffer.credential
@@ -913,7 +924,10 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: DidCommCredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
+  public getAttachment(
+    formats: DidCommCredentialFormatSpec[],
+    messageAttachments: Attachment[]
+  ): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 

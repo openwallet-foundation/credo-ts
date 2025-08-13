@@ -10,18 +10,14 @@ import type {
 // re-export GetCredentialFormatDataReturn type from protocol, as it is also used in the api
 export type { GetCredentialFormatDataReturn, DeleteCredentialOptions }
 
-export type FindCredentialProposalMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> = ReturnType<
-  CPs[number]['findProposalMessage']
->
-export type FindCredentialOfferMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> = ReturnType<
-  CPs[number]['findOfferMessage']
->
-export type FindCredentialRequestMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> = ReturnType<
-  CPs[number]['findRequestMessage']
->
-export type FindCredentialMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> = ReturnType<
-  CPs[number]['findCredentialMessage']
->
+export type FindCredentialProposalMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> =
+  ReturnType<CPs[number]['findProposalMessage']>
+export type FindCredentialOfferMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> =
+  ReturnType<CPs[number]['findOfferMessage']>
+export type FindCredentialRequestMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> =
+  ReturnType<CPs[number]['findRequestMessage']>
+export type FindCredentialMessageReturn<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> =
+  ReturnType<CPs[number]['findCredentialMessage']>
 
 /**
  * Get the supported protocol versions based on the provided credential protocols.
@@ -47,7 +43,8 @@ interface BaseOptions {
 /**
  * Interface for CredentialsApi.proposeCredential. Will send a proposal.
  */
-export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]> extends BaseOptions {
+export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
+  extends BaseOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersionType<CPs>
   credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
@@ -67,8 +64,9 @@ export interface AcceptCredentialProposalOptions<CPs extends DidCommCredentialPr
 /**
  * Interface for CredentialsApi.negotiateProposal. Will send an offer
  */
-export interface NegotiateCredentialProposalOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
-  extends BaseOptions {
+export interface NegotiateCredentialProposalOptions<
+  CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[],
+> extends BaseOptions {
   credentialExchangeRecordId: string
   credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
 }

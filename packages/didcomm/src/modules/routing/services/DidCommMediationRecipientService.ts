@@ -1,6 +1,6 @@
 import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../../DidCommMessage'
-import type { InboundDidCommMessageContext, DidCommRouting } from '../../../models'
+import type { DidCommRouting, InboundDidCommMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import type { MediationDenyMessage } from '../messages'
@@ -19,8 +19,8 @@ import {
 import { ReplaySubject, firstValueFrom } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
 
-import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { OutboundDidCommMessageContext } from '../../../models'
 import { DidCommConnectionType } from '../../connections/models/DidCommConnectionType'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
@@ -180,7 +180,9 @@ export class DidCommMediationRecipientService {
     mediationRecord.assertRole(DidCommMediationRole.Recipient)
 
     // Create observable for event
-    const observable = this.eventEmitter.observable<DidCommKeylistUpdatedEvent>(DidCommRoutingEventTypes.RecipientKeylistUpdated)
+    const observable = this.eventEmitter.observable<DidCommKeylistUpdatedEvent>(
+      DidCommRoutingEventTypes.RecipientKeylistUpdated
+    )
     const subject = new ReplaySubject<DidCommKeylistUpdatedEvent>(1)
 
     // Apply required filters to observable stream and create promise to subscribe to observable
@@ -299,7 +301,11 @@ export class DidCommMediationRecipientService {
    * @param newState The state to update to
    *
    */
-  private async updateState(agentContext: AgentContext, mediationRecord: DidCommMediationRecord, newState: DidCommMediationState) {
+  private async updateState(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    newState: DidCommMediationState
+  ) {
     const previousState = mediationRecord.state
     mediationRecord.state = newState
     await this.mediationRepository.update(agentContext, mediationRecord)
@@ -326,7 +332,10 @@ export class DidCommMediationRecipientService {
     return this.mediationRepository.getById(agentContext, id)
   }
 
-  public async findByConnectionId(agentContext: AgentContext, connectionId: string): Promise<DidCommMediationRecord | null> {
+  public async findByConnectionId(
+    agentContext: AgentContext,
+    connectionId: string
+  ): Promise<DidCommMediationRecord | null> {
     return this.mediationRepository.findSingleByQuery(agentContext, { connectionId })
   }
 

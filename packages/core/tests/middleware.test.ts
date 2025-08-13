@@ -6,8 +6,8 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
-  DidCommMessage,
   BasicMessage,
+  DidCommMessage,
   DidCommMessageSender,
   TrustPingResponseMessage,
   getOutboundDidCommMessageContext,

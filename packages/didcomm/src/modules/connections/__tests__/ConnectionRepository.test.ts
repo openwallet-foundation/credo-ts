@@ -48,7 +48,9 @@ describe('ConnectionRepository', () => {
   })
 
   test('check if cache is hit on get', async () => {
-    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(InjectionSymbols.StorageService)
+    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(
+      InjectionSymbols.StorageService
+    )
     const storageServiceGetByIdSpy = jest.spyOn(storageService, 'getById')
 
     const connectionRecord = new DidCommConnectionRecord({
@@ -82,7 +84,9 @@ describe('ConnectionRepository', () => {
     expect(foundConnectionRecord).toBeInstanceOf(DidCommConnectionRecord)
     expect(cacheSetSpy).toHaveBeenCalled()
 
-    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(InjectionSymbols.StorageService)
+    const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(
+      InjectionSymbols.StorageService
+    )
     const storageServiceFindByQuerySpy = jest.spyOn(storageService, 'findByQuery')
 
     const foundConnectionRecord2 = await connectionRepository.findByDids(agent.context, dids)

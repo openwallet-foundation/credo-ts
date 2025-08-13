@@ -12,7 +12,12 @@ import {
   W3cCredentialRepository,
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
-import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository, DidCommCredentialRole, DidCommCredentialState } from '@credo-ts/didcomm'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialExchangeRepository,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'

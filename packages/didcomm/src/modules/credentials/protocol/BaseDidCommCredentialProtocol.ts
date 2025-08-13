@@ -1,6 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
@@ -66,7 +66,9 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
     agentContext: AgentContext,
     options: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
-  public abstract processOffer(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  public abstract processOffer(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
   public abstract acceptOffer(
     agentContext: AgentContext,
     options: AcceptCredentialOfferOptions<CFs>
@@ -81,7 +83,9 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
-  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  public abstract processRequest(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptCredentialRequestOptions<CFs>
@@ -97,7 +101,9 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  public abstract processAck(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
 
   // methods for problem-report
   public abstract createProblemReport(
@@ -126,7 +132,10 @@ export abstract class BaseDidCommCredentialProtocol<CFs extends CredentialFormat
     credentialExchangeId: string
   ): Promise<GetCredentialFormatDataReturn<ExtractCredentialFormats<CFs>>>
 
-  public abstract register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
+  public abstract register(
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    featureRegistry: DidCommFeatureRegistry
+  ): void
 
   /**
    * Process a received credential {@link ProblemReportMessage}.

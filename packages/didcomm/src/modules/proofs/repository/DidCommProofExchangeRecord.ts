@@ -28,7 +28,10 @@ export type DefaultDidCommProofExchangeTags = {
   role: DidCommProofRole
 }
 
-export class DidCommProofExchangeRecord extends BaseRecord<DefaultDidCommProofExchangeTags, CustomDidCommProofExchangeTags> {
+export class DidCommProofExchangeRecord extends BaseRecord<
+  DefaultDidCommProofExchangeTags,
+  CustomDidCommProofExchangeTags
+> {
   public connectionId?: string
   public threadId!: string
   public protocolVersion!: string

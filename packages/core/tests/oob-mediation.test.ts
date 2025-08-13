@@ -7,14 +7,18 @@ import { Subject, filter, firstValueFrom, map, timeout } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DidCommEventTypes } from '../../didcomm/src'
-import { DidCommConnectionType, DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateMessage,
+  DidCommConnectionType,
+  DidCommDidExchangeState,
+  DidCommHandshakeProtocol,
+} from '../../didcomm/src/modules/connections'
+import {
   DidCommMediationRecipientModule,
   DidCommMediationState,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
+  KeylistUpdateAction,
+  KeylistUpdateMessage,
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'

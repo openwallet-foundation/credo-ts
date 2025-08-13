@@ -44,7 +44,10 @@ export interface CredentialRecordBinding {
   credentialRecordId: string
 }
 
-export class DidCommCredentialExchangeRecord extends BaseRecord<DefaultDidCommCredentialExchangeTags, CustomDidCommCredentialExchangeTags> {
+export class DidCommCredentialExchangeRecord extends BaseRecord<
+  DefaultDidCommCredentialExchangeTags,
+  CustomDidCommCredentialExchangeTags
+> {
   public connectionId?: string
   public threadId!: string
   public parentThreadId?: string

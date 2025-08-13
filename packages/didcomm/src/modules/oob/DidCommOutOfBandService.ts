@@ -129,7 +129,9 @@ export class DidCommOutOfBandService {
     return reuseAcceptedMessage
   }
 
-  public async processHandshakeReuseAccepted(messageContext: InboundDidCommMessageContext<HandshakeReuseAcceptedMessage>) {
+  public async processHandshakeReuseAccepted(
+    messageContext: InboundDidCommMessageContext<HandshakeReuseAcceptedMessage>
+  ) {
     const reuseAcceptedMessage = messageContext.message
     const parentThreadId = reuseAcceptedMessage.thread?.parentThreadId
 
@@ -189,7 +191,11 @@ export class DidCommOutOfBandService {
     return this.outOfBandRepository.save(agentContext, outOfBandRecord)
   }
 
-  public async updateState(agentContext: AgentContext, outOfBandRecord: DidCommOutOfBandRecord, newState: DidCommOutOfBandState) {
+  public async updateState(
+    agentContext: AgentContext,
+    outOfBandRecord: DidCommOutOfBandRecord,
+    newState: DidCommOutOfBandState
+  ) {
     const previousState = outOfBandRecord.state
     outOfBandRecord.state = newState
     await this.outOfBandRepository.update(agentContext, outOfBandRecord)
@@ -248,7 +254,11 @@ export class DidCommOutOfBandService {
     return this.outOfBandRepository.getAll(agentContext)
   }
 
-  public async findAllByQuery(agentContext: AgentContext, query: Query<DidCommOutOfBandRecord>, queryOptions?: QueryOptions) {
+  public async findAllByQuery(
+    agentContext: AgentContext,
+    query: Query<DidCommOutOfBandRecord>,
+    queryOptions?: QueryOptions
+  ) {
     return this.outOfBandRepository.findByQuery(agentContext, query, queryOptions)
   }
 

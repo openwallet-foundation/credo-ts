@@ -1,6 +1,6 @@
 import type { DidDocument } from '@credo-ts/core'
-import type { DidCommMessage } from './DidCommMessage'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
+import type { DidCommMessage } from './DidCommMessage'
 import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
 import type { EncryptedDidCommMessage } from './types'
 

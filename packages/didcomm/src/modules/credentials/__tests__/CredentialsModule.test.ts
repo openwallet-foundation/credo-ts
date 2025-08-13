@@ -30,7 +30,10 @@ describe('CredentialsModule', () => {
     credentialsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommCredentialsModuleConfig, credentialsModule.config)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(
+      DidCommCredentialsModuleConfig,
+      credentialsModule.config
+    )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
 

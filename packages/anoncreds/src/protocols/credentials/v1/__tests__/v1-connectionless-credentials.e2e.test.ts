@@ -45,16 +45,18 @@ describe('V1 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
-      comment: 'V1 Out of Band offer',
-      credentialFormats: {
-        indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId,
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+      {
+        comment: 'V1 Out of Band offer',
+        credentialFormats: {
+          indy: {
+            attributes: credentialPreview.attributes,
+            credentialDefinitionId,
+          },
         },
-      },
-      protocolVersion: 'v1',
-    })
+        protocolVersion: 'v1',
+      }
+    )
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
@@ -145,17 +147,19 @@ describe('V1 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
-      comment: 'V1 Out of Band offer',
-      credentialFormats: {
-        indy: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId,
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+      {
+        comment: 'V1 Out of Band offer',
+        credentialFormats: {
+          indy: {
+            attributes: credentialPreview.attributes,
+            credentialDefinitionId,
+          },
         },
-      },
-      protocolVersion: 'v1',
-      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
-    })
+        protocolVersion: 'v1',
+        autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
+      }
+    )
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       message,

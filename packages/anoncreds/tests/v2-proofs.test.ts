@@ -6,9 +6,9 @@ import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import {
   Attachment,
   AttachmentData,
-  LinkedAttachment,
   DidCommProofExchangeRecord,
   DidCommProofState,
+  LinkedAttachment,
   V2PresentationMessage,
   V2ProposePresentationMessage,
   V2RequestPresentationMessage,

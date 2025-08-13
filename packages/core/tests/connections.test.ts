@@ -3,12 +3,12 @@ import type { DidCommMessageProcessedEvent, KeylistUpdate } from '../../didcomm/
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
 import {
-  DidCommEventTypes,
   DidCommDidExchangeState,
+  DidCommEventTypes,
   DidCommHandshakeProtocol,
+  DidCommMediatorModule,
   KeylistUpdateAction,
   KeylistUpdateMessage,
-  DidCommMediatorModule,
 } from '../../didcomm/src'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { Agent } from '../src/agent/Agent'

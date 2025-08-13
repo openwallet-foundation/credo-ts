@@ -1,10 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  DidCommMessage,
   DidCommFeatureRegistry,
+  DidCommMessage,
+  DidCommMessageHandlerRegistry,
   GetProofFormatDataReturn,
   InboundDidCommMessageContext,
-  DidCommMessageHandlerRegistry,
   ProblemReportMessage,
   ProofFormat,
   ProofProtocol,
@@ -16,18 +16,18 @@ import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } fro
 import {
   AckStatus,
   Attachment,
-  DidCommAutoAcceptProof,
   BaseProofProtocol,
+  DidCommAutoAcceptProof,
   DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
-  PresentationProblemReportReason,
   DidCommProofExchangeRecord,
   DidCommProofExchangeRepository,
   DidCommProofRole,
   DidCommProofState,
   DidCommProofsModuleConfig,
   DidCommProtocol,
+  PresentationProblemReportReason,
 } from '@credo-ts/didcomm'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'

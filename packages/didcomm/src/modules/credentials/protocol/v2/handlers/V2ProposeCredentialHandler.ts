@@ -39,7 +39,9 @@ export class V2ProposeCredentialHandler implements DidCommMessageHandler {
       return
     }
 
-    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialExchangeRecord })
+    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, {
+      credentialExchangeRecord,
+    })
 
     return new OutboundDidCommMessageContext(message, {
       agentContext: messageContext.agentContext,

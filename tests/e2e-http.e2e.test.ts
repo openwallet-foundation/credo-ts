@@ -8,10 +8,10 @@ import { e2eTest } from './e2e-test'
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
-  HttpOutboundDidCommTransport,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
+  HttpOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { HttpInboundDidCommTransport } from '@credo-ts/node'
 

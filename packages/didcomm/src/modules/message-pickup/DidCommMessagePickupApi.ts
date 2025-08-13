@@ -41,8 +41,9 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
 
 @injectable()
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
-export class DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtocol[] = [V1DidCommMessagePickupProtocol, V2DidCommMessagePickupProtocol]>
-  implements DidCommMessagePickupApi<MPPs>
+export class DidCommMessagePickupApi<
+  MPPs extends DidCommMessagePickupProtocol[] = [V1DidCommMessagePickupProtocol, V2DidCommMessagePickupProtocol],
+> implements DidCommMessagePickupApi<MPPs>
 {
   public config: DidCommMessagePickupModuleConfig<MPPs>
 

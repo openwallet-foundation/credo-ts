@@ -143,7 +143,9 @@ export class QuestionAnswerService {
    * @param messageContext the message context containing an answer message message
    * @returns QuestionAnswer record
    */
-  public async receiveAnswer(messageContext: InboundDidCommMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
+  public async receiveAnswer(
+    messageContext: InboundDidCommMessageContext<AnswerMessage>
+  ): Promise<QuestionAnswerRecord> {
     const { message: answerMessage } = messageContext
 
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)

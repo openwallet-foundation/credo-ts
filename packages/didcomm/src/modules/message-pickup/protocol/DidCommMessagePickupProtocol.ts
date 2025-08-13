@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type {
   DeliverMessagesProtocolOptions,

@@ -32,9 +32,9 @@ import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBan
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
   DidCommConnection,
-  DidDoc,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
+  DidDoc,
   Ed25119Sig2018,
   EmbeddedAuthentication,
   ReferencedAuthentication,
@@ -90,7 +90,12 @@ describe('DidCommConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new DidCommConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
+    connectionService = new DidCommConnectionService(
+      agentConfig.logger,
+      connectionRepository,
+      didRepository,
+      eventEmitter
+    )
 
     const recipientKey = Kms.PublicJwk.fromFingerprint(
       'z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'
@@ -189,7 +194,10 @@ describe('DidCommConnectionService', () => {
     it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Receiver}`, async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state: DidCommOutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.PrepareResponse,
+      })
       const config = { routing: myRouting }
 
       return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
@@ -197,7 +205,11 @@ describe('DidCommConnectionService', () => {
       )
     })
 
-    const invalidConnectionStates = [DidCommOutOfBandState.Initial, DidCommOutOfBandState.AwaitResponse, DidCommOutOfBandState.Done]
+    const invalidConnectionStates = [
+      DidCommOutOfBandState.Initial,
+      DidCommOutOfBandState.AwaitResponse,
+      DidCommOutOfBandState.Done,
+    ]
     test.each(invalidConnectionStates)(
       `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.PrepareResponse}`,
       (state) => {
@@ -369,7 +381,10 @@ describe('DidCommConnectionService', () => {
         }),
       })
 
-      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state: DidCommOutOfBandState.AwaitResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+      })
 
       return expect(connectionService.processRequest(messageContext, outOfBand)).rejects.toThrowError(
         'Public DIDs are not supported yet'
@@ -393,14 +408,21 @@ describe('DidCommConnectionService', () => {
         }),
       })
 
-      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Receiver, state: DidCommOutOfBandState.AwaitResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.AwaitResponse,
+      })
 
       return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
         `Invalid out-of-band record role ${DidCommOutOfBandRole.Receiver}, expected is ${DidCommOutOfBandRole.Sender}.`
       )
     })
 
-    const invalidOutOfBandStates = [DidCommOutOfBandState.Initial, DidCommOutOfBandState.PrepareResponse, DidCommOutOfBandState.Done]
+    const invalidOutOfBandStates = [
+      DidCommOutOfBandState.Initial,
+      DidCommOutOfBandState.PrepareResponse,
+      DidCommOutOfBandState.Done,
+    ]
     test.each(invalidOutOfBandStates)(
       `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.AwaitResponse}`,
       (state) => {

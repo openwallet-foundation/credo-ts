@@ -1,7 +1,7 @@
 import { JsonTransformer } from '../../../../../../core'
-import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import { DidCommOutOfBandRole } from '../../domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../domain/DidCommOutOfBandState'
+import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
 import { OutOfBandInvitation } from '../../messages'
 import { DidCommOutOfBandRecord } from '../DidCommOutOfBandRecord'
 

@@ -23,8 +23,9 @@ export type DidCommCredentialsModuleOptions<CredentialProtocols extends DidCommC
   'credentialProtocols'
 >
 
-export class DidCommCredentialsModule<CredentialProtocols extends DidCommCredentialProtocol[] = DefaultCredentialProtocols>
-  implements ApiModule
+export class DidCommCredentialsModule<
+  CredentialProtocols extends DidCommCredentialProtocol[] = DefaultCredentialProtocols,
+> implements ApiModule
 {
   public readonly config: DidCommCredentialsModuleConfig<CredentialProtocols>
 

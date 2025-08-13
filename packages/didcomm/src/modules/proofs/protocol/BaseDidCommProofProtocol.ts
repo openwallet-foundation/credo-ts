@@ -1,6 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
@@ -40,14 +40,19 @@ export abstract class BaseDidCommProofProtocol<PFs extends ProofFormatService[] 
 {
   public abstract readonly version: string
 
-  public abstract register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void
+  public abstract register(
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    featureRegistry: DidCommFeatureRegistry
+  ): void
 
   // methods for proposal
   public abstract createProposal(
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  public abstract processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  public abstract processProposal(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommProofExchangeRecord>
   public abstract acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
@@ -62,7 +67,9 @@ export abstract class BaseDidCommProofProtocol<PFs extends ProofFormatService[] 
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  public abstract processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  public abstract processRequest(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommProofExchangeRecord>
   public abstract acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
@@ -83,22 +90,32 @@ export abstract class BaseDidCommProofProtocol<PFs extends ProofFormatService[] 
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  public abstract processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  public abstract processPresentation(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommProofExchangeRecord>
   public abstract acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  public abstract processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  public abstract processAck(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommProofExchangeRecord>
   // method for problem report
   public abstract createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
   ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
 
-  public abstract findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
-  public abstract findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
+  public abstract findProposalMessage(
+    agentContext: AgentContext,
+    proofExchangeId: string
+  ): Promise<DidCommMessage | null>
+  public abstract findRequestMessage(
+    agentContext: AgentContext,
+    proofExchangeId: string
+  ): Promise<DidCommMessage | null>
   public abstract findPresentationMessage(
     agentContext: AgentContext,
     proofExchangeId: string
@@ -149,7 +166,11 @@ export abstract class BaseDidCommProofProtocol<PFs extends ProofFormatService[] 
    * @param newState The state to update to
    *
    */
-  public async updateState(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, newState: DidCommProofState) {
+  public async updateState(
+    agentContext: AgentContext,
+    proofRecord: DidCommProofExchangeRecord,
+    newState: DidCommProofState
+  ) {
     const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
     agentContext.config.logger.debug(

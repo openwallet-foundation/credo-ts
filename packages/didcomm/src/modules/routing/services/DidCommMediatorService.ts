@@ -20,15 +20,15 @@ import {
   verkeyToDidKey,
 } from '@credo-ts/core'
 
-import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
 import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
-import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
 import {
   KeylistUpdateAction,
   KeylistUpdateMessage,
@@ -310,7 +310,11 @@ export class DidCommMediatorService {
     return await this.mediationRepository.findByQuery(agentContext, query, queryOptions)
   }
 
-  private async updateState(agentContext: AgentContext, mediationRecord: DidCommMediationRecord, newState: DidCommMediationState) {
+  private async updateState(
+    agentContext: AgentContext,
+    mediationRecord: DidCommMediationRecord,
+    newState: DidCommMediationState
+  ) {
     const previousState = mediationRecord.state
 
     mediationRecord.state = newState

@@ -18,7 +18,9 @@ import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/message
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
 
 const Decorated = ThreadDecorated(
-  L10nDecorated(TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseDidCommMessage))))))
+  L10nDecorated(
+    TransportDecorated(TimingDecorated(AckDecorated(AttachmentDecorated(ServiceDecorated(BaseDidCommMessage)))))
+  )
 )
 
 export class DidCommMessage extends Decorated {
@@ -40,7 +42,9 @@ export class DidCommMessage extends Decorated {
   @Exclude()
   public readonly allowQueueTransport: boolean = true
 
-  public toJSON({ useDidSovPrefixWhereAllowed }: { useDidSovPrefixWhereAllowed?: boolean } = {}): PlaintextDidCommMessage {
+  public toJSON({
+    useDidSovPrefixWhereAllowed,
+  }: { useDidSovPrefixWhereAllowed?: boolean } = {}): PlaintextDidCommMessage {
     const json = JsonTransformer.toJSON(this)
 
     // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.

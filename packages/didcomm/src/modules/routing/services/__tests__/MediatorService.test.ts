@@ -111,7 +111,10 @@ describe('MediatorService - default config', () => {
         ],
       })
 
-      const messageContext = new InboundDidCommMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(keyListUpdate, {
+        connection: mockConnection,
+        agentContext,
+      })
       const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])

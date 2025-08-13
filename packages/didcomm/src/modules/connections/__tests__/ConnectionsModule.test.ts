@@ -23,7 +23,10 @@ describe('DidCommConnectionsModule', () => {
     connectionsModule.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
-    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(DidCommConnectionsModuleConfig, connectionsModule.config)
+    expect(dependencyManager.registerInstance).toHaveBeenCalledWith(
+      DidCommConnectionsModuleConfig,
+      connectionsModule.config
+    )
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(5)
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommConnectionService)

@@ -70,7 +70,10 @@ export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
 
   // Record Methods
   getAll(): Promise<DidCommProofExchangeRecord[]>
-  findAllByQuery(query: Query<DidCommProofExchangeRecord>, queryOptions?: QueryOptions): Promise<DidCommProofExchangeRecord[]>
+  findAllByQuery(
+    query: Query<DidCommProofExchangeRecord>,
+    queryOptions?: QueryOptions
+  ): Promise<DidCommProofExchangeRecord[]>
   getById(proofRecordId: string): Promise<DidCommProofExchangeRecord>
   findById(proofRecordId: string): Promise<DidCommProofExchangeRecord | null>
   deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
@@ -604,7 +607,10 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @throws {RecordDuplicateError} If multiple records are found
    * @returns The proof record
    */
-  public async getByThreadAndConnectionId(threadId: string, connectionId?: string): Promise<DidCommProofExchangeRecord> {
+  public async getByThreadAndConnectionId(
+    threadId: string,
+    connectionId?: string
+  ): Promise<DidCommProofExchangeRecord> {
     return this.proofRepository.getByThreadAndConnectionId(this.agentContext, threadId, connectionId)
   }
 

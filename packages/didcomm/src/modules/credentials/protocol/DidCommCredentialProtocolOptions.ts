@@ -58,13 +58,12 @@ export type CredentialFormatDataMessagePayload<
  * }
  * ```
  */
-export type CredentialFormatsFromProtocols<Type extends DidCommCredentialProtocol[]> = Type[number] extends DidCommCredentialProtocol<
-  infer CredentialFormatServices
->
-  ? CredentialFormatServices extends CredentialFormatService[]
-    ? ExtractCredentialFormats<CredentialFormatServices>
+export type CredentialFormatsFromProtocols<Type extends DidCommCredentialProtocol[]> =
+  Type[number] extends DidCommCredentialProtocol<infer CredentialFormatServices>
+    ? CredentialFormatServices extends CredentialFormatService[]
+      ? ExtractCredentialFormats<CredentialFormatServices>
+      : never
     : never
-  : never
 
 /**
  * Get format data return value. Each key holds a mapping of credential format key to format data.

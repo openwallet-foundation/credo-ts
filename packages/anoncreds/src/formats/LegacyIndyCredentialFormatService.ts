@@ -1,6 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  DidCommCredentialExchangeRecord,
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
   CredentialFormatAcceptRequestOptions,
@@ -16,6 +15,7 @@ import type {
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
   CredentialFormatService,
+  DidCommCredentialExchangeRecord,
   DidCommCredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
@@ -25,7 +25,12 @@ import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } 
 import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
-import { Attachment, DidCommCredentialFormatSpec, DidCommCredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
+import {
+  Attachment,
+  DidCommCredentialFormatSpec,
+  DidCommCredentialProblemReportReason,
+  ProblemReportError,
+} from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
@@ -189,7 +194,9 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     agentContext: AgentContext,
     { attachment, credentialExchangeRecord }: CredentialFormatProcessOptions
   ) {
-    agentContext.config.logger.debug(`Processing indy credential offer for credential record ${credentialExchangeRecord.id}`)
+    agentContext.config.logger.debug(
+      `Processing indy credential offer for credential record ${credentialExchangeRecord.id}`
+    )
 
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
@@ -403,7 +410,10 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: DidCommCredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
+  public getAttachment(
+    formats: DidCommCredentialFormatSpec[],
+    messageAttachments: Attachment[]
+  ): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 

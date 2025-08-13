@@ -51,7 +51,10 @@ export class DidCommBasicMessageService {
   /**
    * @todo use connection from message context
    */
-  public async save({ message, agentContext }: InboundDidCommMessageContext<BasicMessage>, connection: DidCommConnectionRecord) {
+  public async save(
+    { message, agentContext }: InboundDidCommMessageContext<BasicMessage>,
+    connection: DidCommConnectionRecord
+  ) {
     const basicMessageRecord = new DidCommBasicMessageRecord({
       sentTime: message.sentTime.toISOString(),
       content: message.content,

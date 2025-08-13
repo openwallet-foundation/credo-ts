@@ -2,8 +2,8 @@ import type { EventEmitter as NativeEventEmitter } from 'events'
 
 import { Subject } from 'rxjs'
 
-import { EventEmitter } from '../EventEmitter'
 import { agentDependencies, getAgentContext } from '../../../tests/helpers'
+import { EventEmitter } from '../EventEmitter'
 
 const mockEmit = jest.fn()
 const mockOn = jest.fn()

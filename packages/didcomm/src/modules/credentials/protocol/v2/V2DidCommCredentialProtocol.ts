@@ -1,6 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommMessageHandlerInboundMessage } from '../../../../handlers'
 import type { ProblemReportMessage } from '../../../../messages'
@@ -36,7 +36,12 @@ import { DidCommProtocol } from '../../../../models'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import { DidCommConnectionService } from '../../../connections'
 import { DidCommCredentialsModuleConfig } from '../../DidCommCredentialsModuleConfig'
-import { DidCommAutoAcceptCredential, DidCommCredentialProblemReportReason, DidCommCredentialRole, DidCommCredentialState } from '../../models'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialProblemReportReason,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '../../models'
 import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../repository'
 import { composeAutoAccept } from '../../util/composeAutoAccept'
 import { arePreviewAttributesEqual } from '../../util/previewAttributes'
@@ -221,7 +226,11 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
         message: proposalMessage,
       })
 
-      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalReceived)
+      await this.updateState(
+        messageContext.agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.ProposalReceived
+      )
 
       return credentialExchangeRecord
     }
@@ -298,7 +307,8 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       credentialFormats,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message: offerMessage }
@@ -347,7 +357,8 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       goalCode,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.OfferSent)
 
     return { credentialExchangeRecord, message: offerMessage }
@@ -462,7 +473,11 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
         message: offerMessage,
       })
 
-      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.OfferReceived)
+      await this.updateState(
+        messageContext.agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.OfferReceived
+      )
       return credentialExchangeRecord
     }
     // Assert
@@ -540,7 +555,8 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       credentialFormats,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.RequestSent)
 
     return { credentialExchangeRecord, message }
@@ -589,7 +605,8 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       goalCode,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.ProposalSent)
 
     return { credentialExchangeRecord, message: proposalMessage }
@@ -714,7 +731,11 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
         message: requestMessage,
       })
 
-      await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.RequestReceived)
+      await this.updateState(
+        messageContext.agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.RequestReceived
+      )
       return credentialExchangeRecord
     }
     // Assert
@@ -791,7 +812,8 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       credentialFormats,
     })
 
-    credentialExchangeRecord.autoAcceptCredential = autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
+    credentialExchangeRecord.autoAcceptCredential =
+      autoAcceptCredential ?? credentialExchangeRecord.autoAcceptCredential
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialIssued)
 
     return { credentialExchangeRecord, message }
@@ -856,7 +878,11 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       message: credentialMessage,
     })
 
-    await this.updateState(messageContext.agentContext, credentialExchangeRecord, DidCommCredentialState.CredentialReceived)
+    await this.updateState(
+      messageContext.agentContext,
+      credentialExchangeRecord,
+      DidCommCredentialState.CredentialReceived
+    )
 
     return credentialExchangeRecord
   }
@@ -881,7 +907,10 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       threadId: credentialExchangeRecord.threadId,
     })
 
-    ackMessage.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    ackMessage.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     await this.updateState(agentContext, credentialExchangeRecord, DidCommCredentialState.Done)
 
@@ -957,7 +986,10 @@ export class V2DidCommCredentialProtocol<CFs extends CredentialFormatService[] =
       },
     })
 
-    message.setThread({ threadId: credentialExchangeRecord.threadId, parentThreadId: credentialExchangeRecord.parentThreadId })
+    message.setThread({
+      threadId: credentialExchangeRecord.threadId,
+      parentThreadId: credentialExchangeRecord.parentThreadId,
+    })
 
     return { credentialExchangeRecord, message }
   }

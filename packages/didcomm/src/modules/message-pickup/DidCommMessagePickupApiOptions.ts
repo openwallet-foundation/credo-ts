@@ -1,11 +1,12 @@
-import type { EncryptedDidCommMessage } from '../../types'
 import type { QueuedDidCommMessage } from '../../transport/queue'
+import type { EncryptedDidCommMessage } from '../../types'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
 /**
  * Get the supported protocol versions based on the provided message pickup protocols
  */
-export type DidCommMessagePickupProtocolVersionType<MPPs extends DidCommMessagePickupProtocol[]> = MPPs[number]['version']
+export type DidCommMessagePickupProtocolVersionType<MPPs extends DidCommMessagePickupProtocol[]> =
+  MPPs[number]['version']
 
 export interface QueueMessageOptions {
   connectionId: string
@@ -33,7 +34,9 @@ export interface PickupMessagesOptions<MPPs extends DidCommMessagePickupProtocol
   awaitCompletionTimeoutMs?: number
 }
 
-export interface SetLiveDeliveryModeOptions<MPPs extends DidCommMessagePickupProtocol[] = DidCommMessagePickupProtocol[]> {
+export interface SetLiveDeliveryModeOptions<
+  MPPs extends DidCommMessagePickupProtocol[] = DidCommMessagePickupProtocol[],
+> {
   connectionId: string
   protocolVersion: DidCommMessagePickupProtocolVersionType<MPPs>
   liveDelivery: boolean

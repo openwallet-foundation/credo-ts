@@ -1,6 +1,6 @@
 import type { LegacyIndyProofRequest } from '../../../../formats'
 
-import { DidCommMessage, Attachment, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { Attachment, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 

@@ -163,7 +163,9 @@ describe('Agent', () => {
       expect(container.resolve(DidCommProofExchangeRepository)).toBe(container.resolve(DidCommProofExchangeRepository))
 
       expect(container.resolve(DidCommCredentialsApi)).toBe(container.resolve(DidCommCredentialsApi))
-      expect(container.resolve(DidCommCredentialExchangeRepository)).toBe(container.resolve(DidCommCredentialExchangeRepository))
+      expect(container.resolve(DidCommCredentialExchangeRepository)).toBe(
+        container.resolve(DidCommCredentialExchangeRepository)
+      )
 
       expect(container.resolve(DidCommBasicMessagesApi)).toBe(container.resolve(DidCommBasicMessagesApi))
       expect(container.resolve(DidCommBasicMessageService)).toBe(container.resolve(DidCommBasicMessageService))
@@ -174,7 +176,9 @@ describe('Agent', () => {
       expect(container.resolve(DidCommMessagePickupApi)).toBe(container.resolve(DidCommMessagePickupApi))
       expect(container.resolve(DidCommMediationRepository)).toBe(container.resolve(DidCommMediationRepository))
       expect(container.resolve(DidCommMediatorService)).toBe(container.resolve(DidCommMediatorService))
-      expect(container.resolve(DidCommMediationRecipientService)).toBe(container.resolve(DidCommMediationRecipientService))
+      expect(container.resolve(DidCommMediationRecipientService)).toBe(
+        container.resolve(DidCommMediationRecipientService)
+      )
 
       // Symbols, interface based
       expect(container.resolve(InjectionSymbols.Logger)).toBe(container.resolve(InjectionSymbols.Logger))

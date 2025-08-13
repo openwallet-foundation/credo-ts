@@ -166,7 +166,10 @@ describe('V2CredentialProtocolOffer', () => {
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.OfferSent} state`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       await credentialProtocol.createOffer(agentContext, offerOptions)
 
@@ -248,7 +251,10 @@ describe('V2CredentialProtocolOffer', () => {
 
     test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.processOffer(messageContext)

@@ -6,9 +6,9 @@ import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import {
   DidCommConnectionsModule,
   DidCommModule,
-  MessagePickupModule,
   DidCommOutOfBandModule,
   DidCommOutOfBandRecord,
+  MessagePickupModule,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 

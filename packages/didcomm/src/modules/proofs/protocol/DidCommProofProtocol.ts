@@ -1,6 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
@@ -84,7 +84,9 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
   ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
-  processProblemReport(messageContext: InboundDidCommMessageContext<ProblemReportMessage>): Promise<DidCommProofExchangeRecord>
+  processProblemReport(
+    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
+  ): Promise<DidCommProofExchangeRecord>
 
   findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
   findRequestMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>
@@ -95,7 +97,11 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
   ): Promise<GetProofFormatDataReturn<ExtractProofFormats<PFs>>>
 
   // repository methods
-  updateState(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, newState: DidCommProofState): Promise<void>
+  updateState(
+    agentContext: AgentContext,
+    proofRecord: DidCommProofExchangeRecord,
+    newState: DidCommProofState
+  ): Promise<void>
   getById(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommProofExchangeRecord>
   getAll(agentContext: AgentContext): Promise<DidCommProofExchangeRecord[]>
   findAllByQuery(
@@ -104,7 +110,11 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
     queryOptions?: QueryOptions
   ): Promise<DidCommProofExchangeRecord[]>
   findById(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommProofExchangeRecord | null>
-  delete(agentContext: AgentContext, proofRecord: DidCommProofExchangeRecord, options?: DeleteProofOptions): Promise<void>
+  delete(
+    agentContext: AgentContext,
+    proofRecord: DidCommProofExchangeRecord,
+    options?: DeleteProofOptions
+  ): Promise<void>
   getByProperties(
     agentContext: AgentContext,
     properties: {

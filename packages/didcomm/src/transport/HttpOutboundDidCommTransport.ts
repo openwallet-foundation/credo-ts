@@ -6,8 +6,8 @@ import type { OutboundDidCommTransport } from './OutboundDidCommTransport'
 import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
-import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommEventTypes } from '../DidCommEvents'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { isValidJweStructure } from '../util/JWE'
 
 export class HttpOutboundDidCommTransport implements OutboundDidCommTransport {
@@ -109,7 +109,9 @@ export class HttpOutboundDidCommTransport implements OutboundDidCommTransport {
 
         // This should not happen
         if (!this.isActive) {
-          this.logger.error('Received response message over HttpOutboundDidCommTransport while transport was not active.')
+          this.logger.error(
+            'Received response message over HttpOutboundDidCommTransport while transport was not active.'
+          )
         }
 
         try {

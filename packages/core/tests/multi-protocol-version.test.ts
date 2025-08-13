@@ -5,8 +5,8 @@ import { filter, firstValueFrom, timeout } from 'rxjs'
 import {
   DidCommEventTypes,
   DidCommMessage,
-  IsValidMessageType,
   DidCommMessageSender,
+  IsValidMessageType,
   OutboundDidCommMessageContext,
   parseMessageType,
 } from '../../didcomm/src'
@@ -84,7 +84,10 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundDidCommMessageContext(new TestMessageV11(), { agentContext: bobAgent.context, connection: bobConnection })
+      new OutboundDidCommMessageContext(new TestMessageV11(), {
+        agentContext: bobAgent.context,
+        connection: bobConnection,
+      })
     )
 
     // Wait for the agent message processed event to be called
@@ -101,7 +104,10 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundDidCommMessageContext(new TestMessageV15(), { agentContext: bobAgent.context, connection: bobConnection })
+      new OutboundDidCommMessageContext(new TestMessageV15(), {
+        agentContext: bobAgent.context,
+        connection: bobConnection,
+      })
     )
     await agentMessageV15ProcessedPromise
 

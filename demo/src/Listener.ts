@@ -71,11 +71,14 @@ export class Listener {
   }
 
   public messageListener(agent: Agent, name: string) {
-    agent.events.on(DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged, async (event: DidCommBasicMessageStateChangedEvent) => {
-      if (event.payload.basicMessageRecord.role === DidCommBasicMessageRole.Receiver) {
-        this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
+    agent.events.on(
+      DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+      async (event: DidCommBasicMessageStateChangedEvent) => {
+        if (event.payload.basicMessageRecord.role === DidCommBasicMessageRole.Receiver) {
+          this.ui.updateBottomBar(purpleText(`\n${name} received a message: ${event.payload.message.content}\n`))
+        }
       }
-    })
+    )
   }
 
   private async newProofRequestPrompt(proofRecord: DidCommProofExchangeRecord, aliceInquirer: AliceInquirer) {
@@ -86,19 +89,25 @@ export class Listener {
   }
 
   public proofRequestListener(alice: Alice, aliceInquirer: AliceInquirer) {
-    alice.agent.events.on(DidCommProofEventTypes.ProofStateChanged, async ({ payload }: DidCommProofStateChangedEvent) => {
-      if (payload.proofRecord.state === DidCommProofState.RequestReceived) {
-        await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
+    alice.agent.events.on(
+      DidCommProofEventTypes.ProofStateChanged,
+      async ({ payload }: DidCommProofStateChangedEvent) => {
+        if (payload.proofRecord.state === DidCommProofState.RequestReceived) {
+          await this.newProofRequestPrompt(payload.proofRecord, aliceInquirer)
+        }
       }
-    })
+    )
   }
 
   public proofAcceptedListener(faber: Faber, faberInquirer: FaberInquirer) {
-    faber.agent.events.on(DidCommProofEventTypes.ProofStateChanged, async ({ payload }: DidCommProofStateChangedEvent) => {
-      if (payload.proofRecord.state === DidCommProofState.Done) {
-        await faberInquirer.processAnswer()
+    faber.agent.events.on(
+      DidCommProofEventTypes.ProofStateChanged,
+      async ({ payload }: DidCommProofStateChangedEvent) => {
+        if (payload.proofRecord.state === DidCommProofState.Done) {
+          await faberInquirer.processAnswer()
+        }
       }
-    })
+    )
   }
 
   public async newAcceptedPrompt(title: string, faberInquirer: FaberInquirer) {

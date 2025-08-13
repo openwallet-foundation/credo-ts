@@ -49,7 +49,11 @@ const proverProofStates = [
   DidCommProofState.PresentationSent,
   DidCommProofState.Declined,
 ]
-const verifierProofStates = [DidCommProofState.RequestSent, DidCommProofState.ProposalReceived, DidCommProofState.PresentationReceived]
+const verifierProofStates = [
+  DidCommProofState.RequestSent,
+  DidCommProofState.ProposalReceived,
+  DidCommProofState.PresentationReceived,
+]
 
 export async function getProofRole(agent: BaseAgent, proofRecord: DidCommProofExchangeRecord) {
   // For these states we know for certain that we're the prover

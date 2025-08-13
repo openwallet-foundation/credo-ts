@@ -126,7 +126,10 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: DidC
 /**
  * Add a role to the credential record.
  */
-export async function migrateRole<Agent extends BaseAgent>(agent: Agent, credentialRecord: DidCommCredentialExchangeRecord) {
+export async function migrateRole<Agent extends BaseAgent>(
+  agent: Agent,
+  credentialRecord: DidCommCredentialExchangeRecord
+) {
   agent.config.logger.debug(`Adding role to record with id ${credentialRecord.id} to for version 0.4`)
 
   credentialRecord.role = await getCredentialRole(agent, credentialRecord)

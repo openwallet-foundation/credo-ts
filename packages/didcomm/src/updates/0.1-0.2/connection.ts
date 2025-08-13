@@ -16,9 +16,9 @@ import {
   DidCommConnectionRepository,
   DidCommConnectionRole,
   DidCommConnectionState,
-  DidDoc,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
+  DidDoc,
 } from '../../modules/connections'
 import { convertToNewDidDocument } from '../../modules/connections/services/helpers'
 import { convertToNewInvitation } from '../../modules/oob/converters'
@@ -148,7 +148,10 @@ export async function updateConnectionRoleAndState<Agent extends BaseAgent>(
  * }
  * ```
  */
-export async function extractDidDocument<Agent extends BaseAgent>(agent: Agent, connectionRecord: DidCommConnectionRecord) {
+export async function extractDidDocument<Agent extends BaseAgent>(
+  agent: Agent,
+  connectionRecord: DidCommConnectionRecord
+) {
   agent.config.logger.debug(
     `Extracting 'didDoc' and 'theirDidDoc' from connection record into separate DidRecord and updating unqualified dids to did:peer dids`
   )
@@ -332,7 +335,10 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
 
-    const oobRole = connectionRecord.role === DidCommDidExchangeRole.Responder ? DidCommOutOfBandRole.Sender : DidCommOutOfBandRole.Receiver
+    const oobRole =
+      connectionRecord.role === DidCommDidExchangeRole.Responder
+        ? DidCommOutOfBandRole.Sender
+        : DidCommOutOfBandRole.Receiver
     const oobRecords = await oobRepository.findByQuery(agent.context, {
       invitationId: oldInvitation.id,
       recipientKeyFingerprints,
@@ -428,7 +434,9 @@ export function oobStateFromDidExchangeRoleAndState(role: DidCommDidExchangeRole
   }
 
   if (state === DidCommDidExchangeState.Start) {
-    return role === DidCommDidExchangeRole.Requester ? DidCommOutOfBandState.PrepareResponse : DidCommOutOfBandState.AwaitResponse
+    return role === DidCommDidExchangeRole.Requester
+      ? DidCommOutOfBandState.PrepareResponse
+      : DidCommOutOfBandState.AwaitResponse
   }
 
   return stateMapping[state]

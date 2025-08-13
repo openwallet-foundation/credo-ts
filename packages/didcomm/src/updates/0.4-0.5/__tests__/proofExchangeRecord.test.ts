@@ -1,7 +1,12 @@
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
-import { DidCommProofExchangeRecord, DidCommProofExchangeRepository, DidCommProofRole, DidCommProofState } from '../../../modules/proofs'
+import {
+  DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofRole,
+  DidCommProofState,
+} from '../../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../proofExchangeRecord'

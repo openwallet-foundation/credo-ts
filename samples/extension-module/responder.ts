@@ -3,7 +3,7 @@ import type { DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { DidCommConnectionsModule, DidCommModule, MessagePickupModule, DidCommOutOfBandModule } from '@credo-ts/didcomm'
+import { DidCommConnectionsModule, DidCommModule, DidCommOutOfBandModule, MessagePickupModule } from '@credo-ts/didcomm'
 import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'

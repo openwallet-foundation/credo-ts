@@ -7,7 +7,9 @@ import type {
 import { ReplaySubject, catchError, firstValueFrom, map, timeout } from 'rxjs'
 
 export function waitForDisclosureSubject(
-  subject: ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent> | Observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommDiscoverFeaturesDisclosureReceivedEvent>
+    | Observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>,
   { timeoutMs = 10000 }: { timeoutMs: number }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
@@ -24,7 +26,9 @@ export function waitForDisclosureSubject(
 }
 
 export function waitForQuerySubject(
-  subject: ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent> | Observable<DidCommDiscoverFeaturesQueryReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommDiscoverFeaturesQueryReceivedEvent>
+    | Observable<DidCommDiscoverFeaturesQueryReceivedEvent>,
   { timeoutMs = 10000 }: { timeoutMs: number }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject

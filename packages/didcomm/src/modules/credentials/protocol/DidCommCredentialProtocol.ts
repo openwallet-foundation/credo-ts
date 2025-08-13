@@ -1,6 +1,6 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { ProblemReportMessage } from '../../../messages'
 import type { InboundDidCommMessageContext } from '../../../models'
@@ -32,7 +32,9 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
     agentContext: AgentContext,
     options: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
-  processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  processProposal(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptCredentialProposalOptions<CFs>
@@ -69,7 +71,9 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for issue
-  processCredential(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  processCredential(
+    messageContext: InboundDidCommMessageContext<DidCommMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
   acceptCredential(
     agentContext: AgentContext,
     options: AcceptCredentialOptions
@@ -83,7 +87,9 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
     agentContext: AgentContext,
     options: CreateCredentialProblemReportOptions
   ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>>
-  processProblemReport(messageContext: InboundDidCommMessageContext<ProblemReportMessage>): Promise<DidCommCredentialExchangeRecord>
+  processProblemReport(
+    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
+  ): Promise<DidCommCredentialExchangeRecord>
 
   findProposalMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>
   findOfferMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>

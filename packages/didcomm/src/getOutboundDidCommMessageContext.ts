@@ -8,7 +8,12 @@ import { CredoError, Kms, utils } from '@credo-ts/core'
 
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import { OutboundDidCommMessageContext } from './models'
-import { InvitationType, DidCommOutOfBandRepository, DidCommOutOfBandRole, DidCommOutOfBandService } from './modules/oob'
+import {
+  DidCommOutOfBandRepository,
+  DidCommOutOfBandRole,
+  DidCommOutOfBandService,
+  InvitationType,
+} from './modules/oob'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from './modules/routing'
 import { DidCommMessageRepository, DidCommMessageRole } from './repository'

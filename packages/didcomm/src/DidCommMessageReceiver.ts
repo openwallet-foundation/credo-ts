@@ -15,9 +15,9 @@ import {
   injectable,
 } from '@credo-ts/core'
 
-import { DidCommMessage } from './DidCommMessage'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommTransportService } from './DidCommTransportService'

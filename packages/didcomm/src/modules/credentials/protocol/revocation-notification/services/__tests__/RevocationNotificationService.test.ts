@@ -141,7 +141,10 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        connection,
+        agentContext,
+      })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -204,7 +207,10 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        agentContext,
+        connection,
+      })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -249,7 +255,10 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        connection,
+        agentContext,
+      })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 

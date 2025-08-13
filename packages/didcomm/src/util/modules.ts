@@ -9,9 +9,9 @@ import {
   DidCommDiscoverFeaturesModule,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
-  MessagePickupModule,
   DidCommOutOfBandModule,
   DidCommProofsModule,
+  MessagePickupModule,
 } from '../modules'
 
 /**

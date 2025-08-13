@@ -37,8 +37,9 @@ export interface QueryFeaturesOptions<DFSs extends DidCommDiscoverFeaturesServic
   comment?: string
 }
 
-export interface DiscloseFeaturesOptions<DFSs extends DidCommDiscoverFeaturesService[] = DidCommDiscoverFeaturesService[]>
-  extends BaseOptions {
+export interface DiscloseFeaturesOptions<
+  DFSs extends DidCommDiscoverFeaturesService[] = DidCommDiscoverFeaturesService[],
+> extends BaseOptions {
   protocolVersion: DiscoverFeaturesProtocolVersionType<DFSs>
   disclosureQueries: DidCommFeatureQueryOptions[]
   threadId?: string

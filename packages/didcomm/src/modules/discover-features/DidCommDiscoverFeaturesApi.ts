@@ -73,7 +73,9 @@ export class DidCommDiscoverFeaturesApi<
     ) as DiscoverFeaturesServiceMap<DFSs>
   }
 
-  public getService<PVT extends DidCommDiscoverFeaturesService['version']>(protocolVersion: PVT): DidCommDiscoverFeaturesService {
+  public getService<PVT extends DidCommDiscoverFeaturesService['version']>(
+    protocolVersion: PVT
+  ): DidCommDiscoverFeaturesService {
     if (!this.serviceMap[protocolVersion]) {
       throw new CredoError(`No discover features service registered for protocol version ${protocolVersion}`)
     }
@@ -110,7 +112,9 @@ export class DidCommDiscoverFeaturesApi<
     if (options.awaitDisclosures) {
       // Listen for response to our feature query
       this.eventEmitter
-        .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(DidCommDiscoverFeaturesEventTypes.DisclosureReceived)
+        .observable<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
+          DidCommDiscoverFeaturesEventTypes.DisclosureReceived
+        )
         .pipe(
           // Stop when the agent shuts down
           takeUntil(this.stop$),

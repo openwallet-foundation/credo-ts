@@ -10,8 +10,12 @@ import type {
 // re-export GetFormatDataReturn type from protocol, as it is also used in the api
 export type { GetProofFormatDataReturn, DeleteProofOptions }
 
-export type FindProofProposalMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<PPs[number]['findProposalMessage']>
-export type FindProofRequestMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<PPs[number]['findRequestMessage']>
+export type FindProofProposalMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<
+  PPs[number]['findProposalMessage']
+>
+export type FindProofRequestMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<
+  PPs[number]['findRequestMessage']
+>
 export type FindProofPresentationMessageReturn<PPs extends DidCommProofProtocol[]> = ReturnType<
   PPs[number]['findPresentationMessage']
 >
@@ -52,7 +56,8 @@ export interface ProposeProofOptions<PPs extends DidCommProofProtocol[] = DidCom
  *
  * proofFormats is optional because this is an accept method
  */
-export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
+export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
   proofRecordId: string
   proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptProposal'>
 
@@ -63,7 +68,8 @@ export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] =
 /**
  * Interface for ProofsApi.negotiateProposal. Will send a request
  */
-export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
+export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
   proofRecordId: string
   proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
 
@@ -74,7 +80,8 @@ export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[
 /**
  * Interface for ProofsApi.createRequest. Will create an out of band request
  */
-export interface CreateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
+export interface CreateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
   protocolVersion: ProofsProtocolVersionType<PPs>
   proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
 
@@ -96,7 +103,8 @@ export interface RequestProofOptions<PPs extends DidCommProofProtocol[] = DidCom
 /**
  * Interface for ProofsApi.acceptRequest. Will send a presentation
  */
-export interface AcceptProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
+export interface AcceptProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
   proofRecordId: string
 
   /**
@@ -113,7 +121,8 @@ export interface AcceptProofRequestOptions<PPs extends DidCommProofProtocol[] = 
 /**
  * Interface for ProofsApi.negotiateRequest. Will send a proposal
  */
-export interface NegotiateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
+export interface NegotiateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
   proofRecordId: string
   proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
 }

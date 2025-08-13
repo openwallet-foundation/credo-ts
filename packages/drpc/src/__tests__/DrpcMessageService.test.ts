@@ -70,7 +70,10 @@ describe('DrpcService', () => {
     it('stores record and emits message and basic message record', async () => {
       const drpcMessage = new DrpcRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
-      const messageContext = new InboundDidCommMessageContext(drpcMessage, { agentContext, connection: mockConnectionRecord })
+      const messageContext = new InboundDidCommMessageContext(drpcMessage, {
+        agentContext,
+        connection: mockConnectionRecord,
+      })
 
       await drpcMessageService.receiveRequest(messageContext)
 

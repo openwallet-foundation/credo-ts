@@ -663,7 +663,9 @@ describe('v2 credentials', () => {
     })
 
     testLogger.test('Alice declines offer')
-    aliceCredentialRecord = await aliceAgent.modules.credentials.declineOffer({ credentialExchangeRecordId: aliceCredentialRecord.id })
+    aliceCredentialRecord = await aliceAgent.modules.credentials.declineOffer({
+      credentialExchangeRecordId: aliceCredentialRecord.id,
+    })
 
     expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.Declined)
   })

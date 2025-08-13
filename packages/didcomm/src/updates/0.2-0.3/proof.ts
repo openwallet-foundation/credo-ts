@@ -1,7 +1,11 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
 import type { PlaintextDidCommMessage } from '../../types'
 
-import { type DidCommProofExchangeRecord, DidCommProofExchangeRepository, DidCommProofState } from '../../modules/proofs'
+import {
+  type DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofState,
+} from '../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 
 /**
@@ -118,7 +122,10 @@ export async function migrateInternalProofExchangeRecordProperties<Agent extends
  * This migration scripts extracts all message (proposalMessage, requestMessage, presentationMessage) and moves
  * them into the DidCommMessageRepository.
  */
-export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent, proofRecord: DidCommProofExchangeRecord) {
+export async function moveDidCommMessages<Agent extends BaseAgent>(
+  agent: Agent,
+  proofRecord: DidCommProofExchangeRecord
+) {
   agent.config.logger.debug(
     `Moving didcomm messages from proof record with id ${proofRecord.id} to DidCommMessageRecord`
   )

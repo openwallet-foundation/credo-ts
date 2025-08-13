@@ -1,6 +1,10 @@
 import type { Subscription } from 'rxjs'
 import type { AgentContext } from '../../packages/core/src'
-import type { EncryptedDidCommMessage, InboundDidCommTransport, DidCommTransportSession } from '../../packages/didcomm/src'
+import type {
+  DidCommTransportSession,
+  EncryptedDidCommMessage,
+  InboundDidCommTransport,
+} from '../../packages/didcomm/src'
 
 import { Subject } from 'rxjs'
 

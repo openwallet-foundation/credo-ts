@@ -32,10 +32,10 @@ import {
   DidCommCredentialEventTypes,
   DidCommCredentialState,
   DidCommCredentialsModule,
-  DifPresentationExchangeProofFormatService,
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofsModule,
+  DifPresentationExchangeProofFormatService,
   V2DidCommCredentialProtocol,
   V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'

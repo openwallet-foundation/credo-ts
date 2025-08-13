@@ -1,6 +1,6 @@
 import type { EventEmitter, Logger } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import type { InboundDidCommMessageContext } from '../../../models'
 import type { DidCommDiscoverFeaturesModuleConfig } from '../DidCommDiscoverFeaturesModuleConfig'
 import type {
@@ -29,7 +29,9 @@ export abstract class DidCommDiscoverFeaturesService {
 
   public abstract readonly version: string
 
-  public abstract createQuery(options: CreateQueryOptions): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage>>
+  public abstract createQuery(
+    options: CreateQueryOptions
+  ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage>>
   public abstract processQuery(
     messageContext: InboundDidCommMessageContext<DidCommMessage>
   ): Promise<DiscoverFeaturesProtocolMsgReturnType<DidCommMessage> | undefined>

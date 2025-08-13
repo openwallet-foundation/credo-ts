@@ -1,11 +1,16 @@
 import type { DidCommMediationRecordProps } from '../../../modules'
-import type { DidCommConnectionRecordProps, CustomDidCommConnectionTags } from '../../../modules/connections'
+import type { CustomDidCommConnectionTags, DidCommConnectionRecordProps } from '../../../modules/connections'
 
 import { Agent } from '../../../../..//core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import { DidCommMediationRecord, DidCommMediationRole, DidCommMediationState } from '../../../modules'
-import { DidCommConnectionRecord, DidCommConnectionType, DidCommDidExchangeRole, DidCommDidExchangeState } from '../../../modules/connections'
+import {
+  DidCommConnectionRecord,
+  DidCommConnectionType,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+} from '../../../modules/connections'
 import { DidCommConnectionRepository } from '../../../modules/connections/repository/DidCommConnectionRepository'
 import { DidCommMediationRepository } from '../../../modules/routing/repository/DidCommMediationRepository'
 import * as testModule from '../connection'
@@ -183,7 +188,12 @@ describe('0.2-0.3 | Connection', () => {
   })
 })
 
-function getConnection({ state, role, id, _tags }: DidCommConnectionRecordProps & { _tags?: CustomDidCommConnectionTags }) {
+function getConnection({
+  state,
+  role,
+  id,
+  _tags,
+}: DidCommConnectionRecordProps & { _tags?: CustomDidCommConnectionTags }) {
   return JsonTransformer.fromJSON({ state, role, id, _tags }, DidCommConnectionRecord)
 }
 

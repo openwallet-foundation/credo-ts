@@ -16,31 +16,36 @@ import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
   return firstValueFrom(
-    agent.events.observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged).pipe(
-      map((event) => event.payload.connectionRecord),
-      // Wait for request received
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidCommDidExchangeState.RequestReceived && connectionRecord.theirLabel === theirLabel
-      ),
-      first(),
-      timeout(5000)
-    )
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        map((event) => event.payload.connectionRecord),
+        // Wait for request received
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.RequestReceived &&
+            connectionRecord.theirLabel === theirLabel
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 
 function waitForResponse(agent: Agent, connectionId: string) {
   return firstValueFrom(
-    agent.events.observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged).pipe(
-      // Wait for response received
-      map((event) => event.payload.connectionRecord),
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidCommDidExchangeState.ResponseReceived && connectionRecord.id === connectionId
-      ),
-      first(),
-      timeout(5000)
-    )
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        // Wait for response received
+        map((event) => event.payload.connectionRecord),
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.ResponseReceived && connectionRecord.id === connectionId
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 

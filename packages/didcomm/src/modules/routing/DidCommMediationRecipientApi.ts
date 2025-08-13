@@ -20,9 +20,9 @@ import {
 import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { OutboundDidCommMessageContext } from '../../models'
 import { DidCommTransportEventTypes } from '../../transport'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
@@ -96,7 +96,10 @@ export class DidCommMediationRecipientApi {
     this.registerMessageHandlers(messageHandlerRegistry)
   }
 
-  private async sendMessage(outboundMessageContext: OutboundDidCommMessageContext, pickupStrategy?: DidCommMediatorPickupStrategy) {
+  private async sendMessage(
+    outboundMessageContext: OutboundDidCommMessageContext,
+    pickupStrategy?: DidCommMediatorPickupStrategy
+  ) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
     const transportPriority =
       mediatorPickupStrategy === DidCommMediatorPickupStrategy.Implicit
@@ -160,7 +163,10 @@ export class DidCommMediationRecipientApi {
    * @param mediator mediation record
    * @param pickupStrategy chosen pick up strategy (should be Implicit or PickUp in Live Mode)
    */
-  private async monitorMediatorWebSocketEvents(mediator: DidCommMediationRecord, pickupStrategy: DidCommMediatorPickupStrategy) {
+  private async monitorMediatorWebSocketEvents(
+    mediator: DidCommMediationRecord,
+    pickupStrategy: DidCommMediatorPickupStrategy
+  ) {
     const { baseMediatorReconnectionIntervalMs, maximumMediatorReconnectionIntervalMs } = this.config
     let interval = baseMediatorReconnectionIntervalMs
 
@@ -241,7 +247,10 @@ export class DidCommMediationRecipientApi {
    * strategy or attempt to find it by Discover Features otherwise
    * @returns
    */
-  public async initiateMessagePickup(mediator?: DidCommMediationRecord, pickupStrategy?: DidCommMediatorPickupStrategy) {
+  public async initiateMessagePickup(
+    mediator?: DidCommMediationRecord,
+    pickupStrategy?: DidCommMediatorPickupStrategy
+  ) {
     const { mediatorPollingInterval } = this.config
     const mediatorRecord = mediator ?? (await this.findDefaultMediator())
     if (!mediatorRecord) {
@@ -418,14 +427,19 @@ export class DidCommMediationRecipientApi {
     return null
   }
 
-  public async requestAndAwaitGrant(connection: DidCommConnectionRecord, timeoutMs = 10000): Promise<DidCommMediationRecord> {
+  public async requestAndAwaitGrant(
+    connection: DidCommConnectionRecord,
+    timeoutMs = 10000
+  ): Promise<DidCommMediationRecord> {
     const { mediationRecord, message } = await this.mediationRecipientService.createRequest(
       this.agentContext,
       connection
     )
 
     // Create observable for event
-    const observable = this.eventEmitter.observable<DidCommMediationStateChangedEvent>(DidCommRoutingEventTypes.MediationStateChanged)
+    const observable = this.eventEmitter.observable<DidCommMediationStateChangedEvent>(
+      DidCommRoutingEventTypes.MediationStateChanged
+    )
     const subject = new ReplaySubject<DidCommMediationStateChangedEvent>(1)
 
     // Apply required filters to observable stream subscribe to replay subject

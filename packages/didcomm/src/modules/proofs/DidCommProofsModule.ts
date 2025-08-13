@@ -21,7 +21,9 @@ export type DidCommProofsModuleOptions<ProofProtocols extends DidCommProofProtoc
   'proofProtocols'
 >
 
-export class DidCommProofsModule<ProofProtocols extends DidCommProofProtocol[] = DefaultDidCommProofProtocols> implements ApiModule {
+export class DidCommProofsModule<ProofProtocols extends DidCommProofProtocol[] = DefaultDidCommProofProtocols>
+  implements ApiModule
+{
   public readonly config: DidCommProofsModuleConfig<ProofProtocols>
 
   public readonly api: Constructor<DidCommProofsApi<ProofProtocols>> = DidCommProofsApi

@@ -103,7 +103,9 @@ describe('Presentation Exchange ProofFormatService', () => {
         {
           pex: new DifPresentationExchangeModule(),
           proofs: new DidCommProofsModule({
-            proofProtocols: [new V2DidCommProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
+            proofProtocols: [
+              new V2DidCommProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] }),
+            ],
           }),
         },
         { requireDidcomm: true }

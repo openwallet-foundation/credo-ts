@@ -1,7 +1,10 @@
 import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type { AcceptCredentialOfferOptions, AcceptCredentialRequestOptions } from '../../../DidCommCredentialsApiOptions'
+import type {
+  AcceptCredentialOfferOptions,
+  AcceptCredentialRequestOptions,
+} from '../../../DidCommCredentialsApiOptions'
 
 import { ReplaySubject, Subject } from 'rxjs'
 
@@ -94,16 +97,18 @@ describe('V2 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
-      comment: 'V2 Out of Band offer',
-      credentialFormats: {
-        anoncreds: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+      {
+        comment: 'V2 Out of Band offer',
+        credentialFormats: {
+          anoncreds: {
+            attributes: credentialPreview.attributes,
+            credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
+          },
         },
-      },
-      protocolVersion: 'v2',
-    })
+        protocolVersion: 'v2',
+      }
+    )
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
@@ -192,17 +197,19 @@ describe('V2 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
-      comment: 'V2 Out of Band offer',
-      credentialFormats: {
-        anoncreds: {
-          attributes: credentialPreview.attributes,
-          credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+      {
+        comment: 'V2 Out of Band offer',
+        credentialFormats: {
+          anoncreds: {
+            attributes: credentialPreview.attributes,
+            credentialDefinitionId: anoncredsDefinitionFourAttributesNoRevocation.credentialDefinitionId,
+          },
         },
-      },
-      protocolVersion: 'v2',
-      autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
-    })
+        protocolVersion: 'v2',
+        autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
+      }
+    )
 
     const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,

@@ -17,7 +17,10 @@ export class DidCommTrustPingService {
     this.eventEmitter = eventEmitter
   }
 
-  public processPing({ message, agentContext }: InboundDidCommMessageContext<TrustPingMessage>, connection: DidCommConnectionRecord) {
+  public processPing(
+    { message, agentContext }: InboundDidCommMessageContext<TrustPingMessage>,
+    connection: DidCommConnectionRecord
+  ) {
     this.eventEmitter.emit<DidCommTrustPingReceivedEvent>(agentContext, {
       type: DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent,
       payload: {

@@ -1,5 +1,9 @@
 import type { AgentConfig, AgentContext } from '@credo-ts/core'
-import type { DidCommCredentialPreviewAttribute, DidCommCredentialStateChangedEvent, CustomDidCommCredentialExchangeTags } from '@credo-ts/didcomm'
+import type {
+  CustomDidCommCredentialExchangeTags,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialStateChangedEvent,
+} from '@credo-ts/didcomm'
 
 import { CredoError, EventEmitter, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import {
@@ -13,9 +17,9 @@ import {
   DidCommCredentialProblemReportReason,
   DidCommCredentialRole,
   DidCommCredentialState,
+  DidCommDidExchangeState,
   DidCommMessageRecord,
   DidCommMessageRole,
-  DidCommDidExchangeState,
   InboundDidCommMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
@@ -293,7 +297,11 @@ describe('V1CredentialProtocol', () => {
       })
 
       // then
-      expect(updateStateSpy).toHaveBeenCalledWith(agentContext, credentialExchangeRecord, DidCommCredentialState.RequestSent)
+      expect(updateStateSpy).toHaveBeenCalledWith(
+        agentContext,
+        credentialExchangeRecord,
+        DidCommCredentialState.RequestSent
+      )
     })
 
     const validState = DidCommCredentialState.OfferReceived
@@ -346,7 +354,10 @@ describe('V1CredentialProtocol', () => {
 
     test(`emits stateChange event from ${DidCommCredentialState.OfferSent} to ${DidCommCredentialState.RequestReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
 
       // mock offer so that the request works
@@ -424,7 +435,10 @@ describe('V1CredentialProtocol', () => {
       })
 
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.acceptRequest(agentContext, { credentialExchangeRecord })
@@ -556,7 +570,10 @@ describe('V1CredentialProtocol', () => {
 
     test(`emits stateChange event from ${DidCommCredentialState.CredentialReceived} to ${DidCommCredentialState.Done}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord: credential })
@@ -787,7 +804,11 @@ describe('V1CredentialProtocol', () => {
       const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialProtocol.findAllByQuery(agentContext, { state: DidCommCredentialState.OfferSent }, {})
+      const result = await credentialProtocol.findAllByQuery(
+        agentContext,
+        { state: DidCommCredentialState.OfferSent },
+        {}
+      )
       expect(credentialRepository.findByQuery).toHaveBeenCalledWith(
         agentContext,
         { state: DidCommCredentialState.OfferSent },

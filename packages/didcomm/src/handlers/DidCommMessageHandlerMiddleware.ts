@@ -7,7 +7,10 @@ export type DidCommMessageHandlerMiddleware = (
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DidCommMessageHandlerMiddlewareRunner {
-  public static async run(middlewares: DidCommMessageHandlerMiddleware[], inboundMessageContext: InboundDidCommMessageContext) {
+  public static async run(
+    middlewares: DidCommMessageHandlerMiddleware[],
+    inboundMessageContext: InboundDidCommMessageContext
+  ) {
     const compose = (middlewares: DidCommMessageHandlerMiddleware[]) => {
       return async (inboundMessageContext: InboundDidCommMessageContext) => {
         let index = -1

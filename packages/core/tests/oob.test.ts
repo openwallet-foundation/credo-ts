@@ -1,7 +1,7 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
-import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
 import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
+import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
 
 import { Subject } from 'rxjs'
 
@@ -15,15 +15,15 @@ import {
 import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
-  DidCommAutoAcceptCredential,
   type CreateCredentialOfferOptions,
+  DidCommAutoAcceptCredential,
   DidCommCredentialState,
   type V2DidCommCredentialProtocol,
 } from '../../didcomm/src/modules/credentials'
-import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/OutOfBandDidCommService'
 import { DidCommOutOfBandEventTypes } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
+import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/OutOfBandDidCommService'
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { Agent } from '../src/agent/Agent'
 import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
@@ -83,7 +83,9 @@ describe('out of band', () => {
     autoAcceptConnection: false,
   }
 
-  let credentialTemplate: CreateCredentialOfferOptions<[V2DidCommCredentialProtocol<[AnonCredsCredentialFormatService]>]>
+  let credentialTemplate: CreateCredentialOfferOptions<
+    [V2DidCommCredentialProtocol<[AnonCredsCredentialFormatService]>]
+  >
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()

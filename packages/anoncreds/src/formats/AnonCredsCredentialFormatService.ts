@@ -1,6 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  DidCommCredentialExchangeRecord,
   CredentialFormatAcceptOfferOptions,
   CredentialFormatAcceptProposalOptions,
   CredentialFormatAcceptRequestOptions,
@@ -16,6 +15,7 @@ import type {
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
   CredentialFormatService,
+  DidCommCredentialExchangeRecord,
   DidCommCredentialPreviewAttributeOptions,
   LinkedAttachment,
 } from '@credo-ts/didcomm'
@@ -30,7 +30,12 @@ import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } 
 import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
-import { Attachment, DidCommCredentialFormatSpec, DidCommCredentialProblemReportReason, ProblemReportError } from '@credo-ts/didcomm'
+import {
+  Attachment,
+  DidCommCredentialFormatSpec,
+  DidCommCredentialProblemReportReason,
+  ProblemReportError,
+} from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
@@ -174,7 +179,11 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    */
   public async createOffer(
     agentContext: AgentContext,
-    { credentialFormats, credentialExchangeRecord, attachmentId }: CredentialFormatCreateOfferOptions<AnonCredsCredentialFormat>
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+      attachmentId,
+    }: CredentialFormatCreateOfferOptions<AnonCredsCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anoncredsFormat = credentialFormats.anoncreds
 
@@ -467,7 +476,10 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    * @returns The Attachment if found or undefined
    *
    */
-  public getAttachment(formats: DidCommCredentialFormatSpec[], messageAttachments: Attachment[]): Attachment | undefined {
+  public getAttachment(
+    formats: DidCommCredentialFormatSpec[],
+    messageAttachments: Attachment[]
+  ): Attachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 

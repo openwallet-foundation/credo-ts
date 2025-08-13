@@ -6,7 +6,10 @@ import { DidCommAutoAcceptCredential, DidCommAutoAcceptProof } from '@credo-ts/d
  *	- Otherwise the agent config
  *	- Otherwise {@link DidCommAutoAcceptCredential.Never} is returned
  */
-export function composeCredentialAutoAccept(recordConfig?: DidCommAutoAcceptCredential, agentConfig?: DidCommAutoAcceptCredential) {
+export function composeCredentialAutoAccept(
+  recordConfig?: DidCommAutoAcceptCredential,
+  agentConfig?: DidCommAutoAcceptCredential
+) {
   return recordConfig ?? agentConfig ?? DidCommAutoAcceptCredential.Never
 }
 

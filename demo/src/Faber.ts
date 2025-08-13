@@ -108,12 +108,15 @@ export class Faber extends BaseAgent {
         const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
 
         // Start listener
-        this.agent.events.on<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged, (e) => {
-          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+        this.agent.events.on<DidCommConnectionStateChangedEvent>(
+          DidCommConnectionEventTypes.DidCommConnectionStateChanged,
+          (e) => {
+            if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
 
-          clearTimeout(timeoutId)
-          resolve(e.payload.connectionRecord)
-        })
+            clearTimeout(timeoutId)
+            resolve(e.payload.connectionRecord)
+          }
+        )
 
         // Also retrieve the connection record by invitation if the event has already fired
         void this.agent.modules.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {

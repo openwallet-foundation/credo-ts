@@ -25,7 +25,11 @@ export class TrustPingMessageHandler implements DidCommMessageHandler {
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
     if (connection.state === DidCommDidExchangeState.ResponseSent) {
-      await this.connectionService.updateState(messageContext.agentContext, connection, DidCommDidExchangeState.Completed)
+      await this.connectionService.updateState(
+        messageContext.agentContext,
+        connection,
+        DidCommDidExchangeState.Completed
+      )
     }
 
     return this.trustPingService.processPing(messageContext, connection)

@@ -2,10 +2,10 @@ import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnec
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialsModule,
-  DifPresentationExchangeProofFormatService,
-  JsonLdCredentialFormatService,
   DidCommProofEventTypes,
   DidCommProofsModule,
+  DifPresentationExchangeProofFormatService,
+  JsonLdCredentialFormatService,
   V2DidCommCredentialProtocol,
   V2DidCommProofProtocol,
 } from '../../didcomm/src'
@@ -29,7 +29,9 @@ export const getJsonLdModules = (
 ) =>
   ({
     credentials: new DidCommCredentialsModule({
-      credentialProtocols: [new V2DidCommCredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+      credentialProtocols: [
+        new V2DidCommCredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] }),
+      ],
       autoAcceptCredentials,
     }),
     w3cCredentials: new W3cCredentialsModule({

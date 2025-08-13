@@ -1,7 +1,12 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { JsonTransformer } from '@credo-ts/core'
-import { DidCommCredentialExchangeRecord, DidCommCredentialRole, DidCommCredentialState, DidCommMessageRepository } from '@credo-ts/didcomm'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommMessageRepository,
+} from '@credo-ts/didcomm'
 
 import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'

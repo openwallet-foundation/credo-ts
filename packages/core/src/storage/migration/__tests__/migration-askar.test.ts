@@ -1,7 +1,10 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
-import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../../../../didcomm/src/modules/credentials'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialExchangeRepository,
+} from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'

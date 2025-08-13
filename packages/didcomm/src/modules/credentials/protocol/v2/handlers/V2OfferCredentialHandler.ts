@@ -33,7 +33,9 @@ export class V2OfferCredentialHandler implements DidCommMessageHandler {
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending request with autoAccept')
 
-    const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, { credentialExchangeRecord })
+    const { message } = await this.credentialProtocol.acceptOffer(messageContext.agentContext, {
+      credentialExchangeRecord,
+    })
 
     return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,

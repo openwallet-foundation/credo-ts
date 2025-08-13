@@ -28,9 +28,7 @@ import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable 
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
-import { DidCommMessageRepository } from '../../repository/DidCommMessageRepository'
 import { DidCommConnectionService } from '../connections'
-import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
 import { DidCommCredentialState } from './models/DidCommCredentialState'
@@ -80,7 +78,9 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
   findById(credentialExchangeRecordId: string): Promise<DidCommCredentialExchangeRecord | null>
   deleteById(credentialExchangeRecordId: string, options?: DeleteCredentialOptions): Promise<void>
   update(credentialExchangeRecordId: DidCommCredentialExchangeRecord): Promise<void>
-  getFormatData(credentialExchangeRecordId: string): Promise<GetCredentialFormatDataReturn<CredentialFormatsFromProtocols<CPs>>>
+  getFormatData(
+    credentialExchangeRecordId: string
+  ): Promise<GetCredentialFormatDataReturn<CredentialFormatsFromProtocols<CPs>>>
 
   // DidComm Message Records
   findProposalMessage(credentialExchangeRecordId: string): Promise<FindCredentialProposalMessageReturn<CPs>>
@@ -187,7 +187,10 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
 
     // with version we can get the protocol
     const protocol = this.getProtocol(credentialExchangeRecord.protocolVersion)
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(
+      this.agentContext,
+      credentialExchangeRecord.connectionId
+    )
 
     // Assert
     connectionRecord.assertReady()
@@ -221,7 +224,9 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
    * @returns Credential exchange record associated with the credential offer
    *
    */
-  public async negotiateProposal(options: NegotiateCredentialProposalOptions<CPs>): Promise<DidCommCredentialExchangeRecord> {
+  public async negotiateProposal(
+    options: NegotiateCredentialProposalOptions<CPs>
+  ): Promise<DidCommCredentialExchangeRecord> {
     const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
 
     if (!credentialExchangeRecord.connectionId) {
@@ -242,7 +247,10 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       goal: options.goal,
     })
 
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(
+      this.agentContext,
+      credentialExchangeRecord.connectionId
+    )
     const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
@@ -330,10 +338,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     return credentialExchangeRecord
   }
 
-  public async declineOffer(
-    options: DeclineCredentialOfferOptions
-  ): Promise<DidCommCredentialExchangeRecord> {
-
+  public async declineOffer(options: DeclineCredentialOfferOptions): Promise<DidCommCredentialExchangeRecord> {
     const credentialExchangeRecord = await this.getById(options.credentialExchangeRecordId)
     credentialExchangeRecord.assertState(DidCommCredentialState.OfferReceived)
 
@@ -360,7 +365,10 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       )
     }
 
-    const connectionRecord = await this.connectionService.getById(this.agentContext, credentialExchangeRecord.connectionId)
+    const connectionRecord = await this.connectionService.getById(
+      this.agentContext,
+      credentialExchangeRecord.connectionId
+    )
 
     // Assert
     connectionRecord.assertReady()

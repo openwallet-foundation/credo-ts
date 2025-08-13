@@ -1,2 +1,5 @@
 export { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from './DidCommMessageHandler'
-export { DidCommMessageHandlerMiddleware, DidCommMessageHandlerMiddlewareRunner } from './DidCommMessageHandlerMiddleware'
+export {
+  DidCommMessageHandlerMiddleware,
+  DidCommMessageHandlerMiddlewareRunner,
+} from './DidCommMessageHandlerMiddleware'

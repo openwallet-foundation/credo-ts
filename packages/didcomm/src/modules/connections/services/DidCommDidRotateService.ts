@@ -1,5 +1,5 @@
 import type { AgentContext, DidDocument, DidDocumentKey } from '@credo-ts/core'
-import type { InboundDidCommMessageContext, DidCommRouting } from '../../../models'
+import type { DidCommRouting, InboundDidCommMessageContext } from '../../../models'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 

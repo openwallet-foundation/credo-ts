@@ -12,7 +12,10 @@ describe('DidCommTransportService', () => {
     let transportService: DidCommTransportService
 
     beforeEach(() => {
-      transportService = new DidCommTransportService(getAgentContext(), new EventEmitter(agentDependencies, new Subject()))
+      transportService = new DidCommTransportService(
+        getAgentContext(),
+        new EventEmitter(agentDependencies, new Subject())
+      )
     })
 
     test('remove session saved for a given connection', () => {

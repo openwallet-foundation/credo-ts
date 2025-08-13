@@ -26,11 +26,11 @@ import { Agent, LogLevel } from '@credo-ts/core'
 import {
   ConnectionInvitationMessage,
   DidCommConnectionsModule,
-  DidCommModule,
-  HttpOutboundDidCommTransport,
   DidCommMediatorModule,
-  MessagePickupModule,
+  DidCommModule,
   DidCommOutOfBandModule,
+  HttpOutboundDidCommTransport,
+  MessagePickupModule,
   WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
 import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'

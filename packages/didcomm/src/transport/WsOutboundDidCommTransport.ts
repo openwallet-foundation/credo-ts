@@ -2,8 +2,11 @@ import type { AgentContext, Logger } from '@credo-ts/core'
 import type { WebSocket } from 'ws'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import type { OutboundDidCommPackage } from '../types'
+import type {
+  DidCommOutboundWebSocketClosedEvent,
+  DidCommOutboundWebSocketOpenedEvent,
+} from './DidCommTransportEventTypes'
 import type { OutboundDidCommTransport } from './OutboundDidCommTransport'
-import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from './DidCommTransportEventTypes'
 
 import { Buffer, CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 

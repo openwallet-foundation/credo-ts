@@ -3,9 +3,9 @@ import type { AgentContext } from '@credo-ts/core'
 import type {
   DidCommMessageProcessedEvent,
   DidCommMessageReceivedEvent,
+  DidCommTransportSession,
   EncryptedDidCommMessage,
   InboundDidCommTransport,
-  DidCommTransportSession,
 } from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
 
@@ -74,7 +74,9 @@ export class HttpInboundDidCommTransport implements InboundDidCommTransport {
         const encryptedMessage = JSON.parse(message) as EncryptedDidCommMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-        const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
+        const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(
+          DidCommEventTypes.DidCommMessageProcessed
+        )
         const subject = new ReplaySubject(1)
 
         observable

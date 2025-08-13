@@ -2,8 +2,8 @@ import { utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-validator'
 
-import { DidCommMessage } from '../../../../../DidCommMessage'
 import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { EncryptedDidCommMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 

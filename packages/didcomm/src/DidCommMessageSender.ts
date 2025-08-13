@@ -1,6 +1,6 @@
-import type { DidCommMessage } from './DidCommMessage'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommMessageSentEvent } from './DidCommEvents'
+import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
@@ -23,9 +23,9 @@ import {
   verkeyToDidKey,
 } from '@credo-ts/core'
 
-import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { DidCommEventTypes } from './DidCommEvents'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
@@ -97,7 +97,11 @@ export class DidCommMessageSender {
     }
   }
 
-  private async sendMessageToSession(agentContext: AgentContext, session: DidCommTransportSession, message: DidCommMessage) {
+  private async sendMessageToSession(
+    agentContext: AgentContext,
+    session: DidCommTransportSession,
+    message: DidCommMessage
+  ) {
     agentContext.config.logger.debug(`Packing message and sending it via existing session ${session.type}...`)
     if (!session.keys) {
       throw new CredoError(`There are no keys for the given ${session.type} transport session.`)
@@ -579,7 +583,10 @@ export class DidCommMessageSender {
     return { services, queueService }
   }
 
-  private emitMessageSentEvent(outboundMessageContext: OutboundDidCommMessageContext, status: OutboundMessageSendStatus) {
+  private emitMessageSentEvent(
+    outboundMessageContext: OutboundDidCommMessageContext,
+    status: OutboundMessageSendStatus
+  ) {
     const { agentContext } = outboundMessageContext
     this.eventEmitter.emit<DidCommMessageSentEvent>(agentContext, {
       type: DidCommEventTypes.DidCommMessageSent,

@@ -9,12 +9,12 @@ import {
   Attachment,
   AttachmentData,
   DidCommDidExchangeState,
-  InboundDidCommMessageContext,
-  PresentationProblemReportReason,
   DidCommProofEventTypes,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
+  InboundDidCommMessageContext,
+  PresentationProblemReportReason,
 } from '../../../../../../didcomm/src'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'

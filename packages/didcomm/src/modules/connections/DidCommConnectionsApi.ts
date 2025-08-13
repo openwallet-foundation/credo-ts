@@ -376,7 +376,10 @@ export class DidCommConnectionsApi {
     }
   }
 
-  public async returnWhenIsConnected(connectionId: string, options?: { timeoutMs: number }): Promise<DidCommConnectionRecord> {
+  public async returnWhenIsConnected(
+    connectionId: string,
+    options?: { timeoutMs: number }
+  ): Promise<DidCommConnectionRecord> {
     return this.connectionService.returnWhenIsConnected(this.agentContext, connectionId, options?.timeoutMs)
   }
 

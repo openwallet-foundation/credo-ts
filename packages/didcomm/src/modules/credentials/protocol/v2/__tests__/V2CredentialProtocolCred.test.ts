@@ -369,7 +369,10 @@ describe('credentialProtocol', () => {
       })
 
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       mockFunction(credentialRepository.findSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
@@ -437,7 +440,10 @@ describe('credentialProtocol', () => {
 
       // given
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.acceptRequest(agentContext, {
@@ -538,7 +544,10 @@ describe('credentialProtocol', () => {
       })
 
       const eventListenerMock = jest.fn()
-      eventEmitter.on<DidCommCredentialStateChangedEvent>(DidCommCredentialEventTypes.DidCommCredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord })
@@ -569,7 +578,9 @@ describe('credentialProtocol', () => {
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
 
       // when
-      const { message: ackMessage } = await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord })
+      const { message: ackMessage } = await credentialProtocol.acceptCredential(agentContext, {
+        credentialExchangeRecord,
+      })
 
       // then
       expect(ackMessage.toJSON()).toMatchObject({
@@ -747,7 +758,11 @@ describe('credentialProtocol', () => {
       const expected = [mockCredentialRecord(), mockCredentialRecord()]
 
       mockFunction(credentialRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
-      const result = await credentialProtocol.findAllByQuery(agentContext, { state: DidCommCredentialState.OfferSent }, {})
+      const result = await credentialProtocol.findAllByQuery(
+        agentContext,
+        { state: DidCommCredentialState.OfferSent },
+        {}
+      )
       expect(credentialRepository.findByQuery).toHaveBeenCalledWith(
         agentContext,
         { state: DidCommCredentialState.OfferSent },

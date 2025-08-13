@@ -12,9 +12,9 @@ import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
-  DidCommEventTypes,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
+  DidCommEventTypes,
   DidCommMediationState,
   DidCommProofEventTypes,
   DidCommProofState,

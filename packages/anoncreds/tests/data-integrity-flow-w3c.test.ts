@@ -242,7 +242,10 @@ describe('data integrity format service (w3c)', () => {
 
     const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-    const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+    const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(
+      agentContext,
+      credentialRecordId
+    )
 
     expect(credentialExchangeRecord.credential).toEqual({
       ...{

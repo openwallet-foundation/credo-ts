@@ -46,11 +46,11 @@ import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
   DidCommConnection,
-  DidDoc,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
-  Ed25119Sig2018,
   DidCommHandshakeProtocol,
+  DidDoc,
+  Ed25119Sig2018,
   ReferencedAuthentication,
   authenticationTypes,
 } from '../models'
@@ -418,7 +418,9 @@ export class DidCommConnectionService {
    * @param messageContext the message context containing an ack message
    * @returns updated connection record
    */
-  public async processAck(messageContext: InboundDidCommMessageContext<AckDidCommMessage>): Promise<DidCommConnectionRecord> {
+  public async processAck(
+    messageContext: InboundDidCommMessageContext<AckDidCommMessage>
+  ): Promise<DidCommConnectionRecord> {
     const { connection, recipientKey } = messageContext
 
     if (!connection) {
@@ -429,7 +431,10 @@ export class DidCommConnectionService {
 
     // TODO: This is better addressed in a middleware of some kind because
     // any message can transition the state to complete, not just an ack or trust ping
-    if (connection.state === DidCommDidExchangeState.ResponseSent && connection.role === DidCommDidExchangeRole.Responder) {
+    if (
+      connection.state === DidCommDidExchangeState.ResponseSent &&
+      connection.role === DidCommDidExchangeRole.Responder
+    ) {
       await this.updateState(messageContext.agentContext, connection, DidCommDidExchangeState.Completed)
     }
 
@@ -689,7 +694,11 @@ export class DidCommConnectionService {
     }
   }
 
-  public async updateState(agentContext: AgentContext, connectionRecord: DidCommConnectionRecord, newState: DidCommDidExchangeState) {
+  public async updateState(
+    agentContext: AgentContext,
+    connectionRecord: DidCommConnectionRecord,
+    newState: DidCommDidExchangeState
+  ) {
     const previousState = connectionRecord.state
     connectionRecord.state = newState
     await this.connectionRepository.update(agentContext, connectionRecord)
@@ -789,7 +798,10 @@ export class DidCommConnectionService {
     return this.connectionRepository.findByQuery(agentContext, { outOfBandId })
   }
 
-  public async findAllByConnectionTypes(agentContext: AgentContext, connectionTypes: Array<DidCommConnectionType | string>) {
+  public async findAllByConnectionTypes(
+    agentContext: AgentContext,
+    connectionTypes: Array<DidCommConnectionType | string>
+  ) {
     return this.connectionRepository.findByQuery(agentContext, { connectionTypes })
   }
 
@@ -831,7 +843,10 @@ export class DidCommConnectionService {
     return this.connectionRepository.findByQuery(agentContext, query, queryOptions)
   }
 
-  public async createConnection(agentContext: AgentContext, options: DidCommConnectionRecordProps): Promise<DidCommConnectionRecord> {
+  public async createConnection(
+    agentContext: AgentContext,
+    options: DidCommConnectionRecordProps
+  ): Promise<DidCommConnectionRecord> {
     const connectionRecord = new DidCommConnectionRecord(options)
     await this.connectionRepository.save(agentContext, connectionRecord)
     return connectionRecord
@@ -843,7 +858,11 @@ export class DidCommConnectionService {
     await this.update(agentContext, connectionRecord)
   }
 
-  public async removeConnectionType(agentContext: AgentContext, connectionRecord: DidCommConnectionRecord, type: string) {
+  public async removeConnectionType(
+    agentContext: AgentContext,
+    connectionRecord: DidCommConnectionRecord,
+    type: string
+  ) {
     connectionRecord.connectionTypes = connectionRecord.connectionTypes.filter((value) => value !== type)
     await this.update(agentContext, connectionRecord)
   }

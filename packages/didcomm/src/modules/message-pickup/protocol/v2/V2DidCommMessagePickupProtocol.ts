@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
+import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { InboundDidCommMessageContext } from '../../../../models'
 import type { EncryptedDidCommMessage } from '../../../../types'
@@ -20,7 +20,7 @@ import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 import { DidCommEventTypes } from '../../../../DidCommEvents'
 import { Attachment } from '../../../../decorators/attachment/Attachment'
 import { ProblemReportError } from '../../../../errors'
-import { OutboundDidCommMessageContext, DidCommProtocol } from '../../../../models'
+import { DidCommProtocol, OutboundDidCommMessageContext } from '../../../../models'
 import { RoutingProblemReportReason } from '../../../routing/error'
 import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
@@ -56,7 +56,10 @@ export class V2DidCommMessagePickupProtocol extends BaseDidCommMessagePickupProt
   /**
    * Registers the protocol implementation (handlers, feature registry) on the agent.
    */
-  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry): void {
+  public register(
+    messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    featureRegistry: DidCommFeatureRegistry
+  ): void {
     messageHandlerRegistry.registerMessageHandlers([
       new V2StatusRequestHandler(this),
       new V2DeliveryRequestHandler(this),
@@ -248,7 +251,9 @@ export class V2DidCommMessagePickupProtocol extends BaseDidCommMessagePickupProt
 
     const connection = messageContext.assertReadyConnection()
 
-    const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(DidCommMessagePickupModuleConfig)
+    const messagePickupModuleConfig = messageContext.agentContext.dependencyManager.resolve(
+      DidCommMessagePickupModuleConfig
+    )
 
     const eventEmitter = messageContext.agentContext.dependencyManager.resolve(EventEmitter)
 

@@ -7,7 +7,12 @@ import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentat
 import { W3cCredential, W3cCredentialSubject } from '../../core'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
-import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCredentialState, DidCommProofState } from '../../didcomm'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialState,
+  DidCommProofState,
+} from '../../didcomm'
 
 import { cheqdPayerSeeds } from './setupCheqdModule'
 
