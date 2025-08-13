@@ -3,6 +3,7 @@ import { DidsApi, MultiBaseEncoder } from '@credo-ts/core'
 import { sha256 } from '@noble/hashes/sha256'
 import { Key, KeyAlgorithm } from '@openwallet-foundation/askar-shared'
 import { canonicalize } from 'json-canonicalize'
+import { ProofOptions, SecuredDocument } from './types'
 
 export class EddsaJcs2022Cryptosuite {
   agentContext: AgentContext
@@ -50,7 +51,7 @@ export class EddsaJcs2022Cryptosuite {
     // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
     return Key.fromPublicBytes({ options: { algorithm: 'Ed25519', publicKey: publicKeyBytes } })
   }
-  public transformation(unsecuredDocument: object, options: any) {
+  public transformation(unsecuredDocument: object, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
     if (options.type !== 'DataIntegrityProof') {
       this._logError('PROOF_VERIFICATION_ERROR')
@@ -64,7 +65,7 @@ export class EddsaJcs2022Cryptosuite {
     return canonicalDocument
   }
 
-  public proofConfiguration(proofOptions: any) {
+  public proofConfiguration(proofOptions: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
     const proofConfig = Object.assign({}, proofOptions)
     if (proofConfig.type !== 'DataIntegrityProof') {
@@ -87,7 +88,7 @@ export class EddsaJcs2022Cryptosuite {
     return hashData
   }
 
-  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: any) {
+  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicKeyBytes = await this._publicBytesFromVerificationMethodId(options.verificationMethod)
     const key = Key.fromPublicBytes({
@@ -106,7 +107,7 @@ export class EddsaJcs2022Cryptosuite {
     return verificationResult
   }
 
-  public async verifyProof(securedDocument: any) {
+  public async verifyProof(securedDocument: SecuredDocument) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
     const unsecuredDocument = (({ proof, ...unsecuredDocument }) => unsecuredDocument)(securedDocument)
     const proofOptions = (({ proofValue, ...proofOptions }) => proofOptions)(securedDocument.proof)
