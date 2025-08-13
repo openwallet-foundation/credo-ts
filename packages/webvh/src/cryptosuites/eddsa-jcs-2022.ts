@@ -103,8 +103,8 @@ export class EddsaJcs2022Cryptosuite {
     // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
     const hasher = new Sha256()
     const encoder = new TextEncoder()
-    const transformedDocumentHash = hasher.hash((encoder.encode(transformedDocument)))
-    const proofConfigHash = hasher.hash((encoder.encode(canonicalProofConfig)))
+    const transformedDocumentHash = hasher.hash(encoder.encode(transformedDocument))
+    const proofConfigHash = hasher.hash(encoder.encode(canonicalProofConfig))
     const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length)
     hashData.set(proofConfigHash, 0)
     hashData.set(transformedDocumentHash, proofConfigHash.length)
@@ -114,7 +114,7 @@ export class EddsaJcs2022Cryptosuite {
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicKeyBytes = await this._publicBytesFromVerificationMethodId(options.verificationMethod)
-    if (typeof publicKeyBytes == 'undefined') {
+    if (typeof publicKeyBytes === 'undefined') {
       this._logError('Unable to get public key bytes.')
       return false
     }
@@ -125,8 +125,8 @@ export class EddsaJcs2022Cryptosuite {
 
   public async verifyProof(securedDocument: WebVhResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
-    const unsecuredDocument = (({ proof, ...unsecuredDocument }) => unsecuredDocument)(securedDocument)
-    const proofOptions = (({ proofValue, ...proofOptions }) => proofOptions)(securedDocument.proof)
+    const { proof, ...unsecuredDocument } = securedDocument
+    const { proofValue, ...proofOptions } = securedDocument.proof
     const proofBytes = MultiBaseEncoder.decode(securedDocument.proof.proofValue)
     const transformedData = this.transformation(unsecuredDocument, proofOptions)
     const proofConfig = this.proofConfiguration(proofOptions)
