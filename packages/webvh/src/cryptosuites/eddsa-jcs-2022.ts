@@ -1,8 +1,7 @@
 import { Buffer } from 'buffer'
 import { createPublicKey, verify } from 'crypto'
 import { type AgentContext, type VerificationMethod } from '@credo-ts/core'
-import { DidsApi, MultiBaseEncoder } from '@credo-ts/core'
-import { sha256 } from '@noble/hashes/sha256'
+import { DidsApi, MultiBaseEncoder, Sha256 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
 import { ProofOptions } from './types'
@@ -21,7 +20,7 @@ export class EddsaJcs2022Cryptosuite {
     this.agentContext.config.logger.error(error)
   }
 
-  public async _publicBytesFromVerificationMethodId(verificationMethodId: string) {
+  public async _publicBytesFromVerificationMethodId(verificationMethodId: string): Promise<Uint8Array | undefined> {
     const didsApi = this.agentContext.dependencyManager.resolve(DidsApi)
     const didDocument = await didsApi.resolveDidDocument(verificationMethodId as string)
 
@@ -102,9 +101,10 @@ export class EddsaJcs2022Cryptosuite {
 
   public hashing(transformedDocument: string, canonicalProofConfig: string) {
     // https://www.w3.org/TR/vc-di-eddsa/#hashing-eddsa-jcs-2022
+    const hasher = new Sha256()
     const encoder = new TextEncoder()
-    const transformedDocumentHash = sha256(encoder.encode(transformedDocument))
-    const proofConfigHash = sha256(encoder.encode(canonicalProofConfig))
+    const transformedDocumentHash = hasher.hash((encoder.encode(transformedDocument)))
+    const proofConfigHash = hasher.hash((encoder.encode(canonicalProofConfig)))
     const hashData = new Uint8Array(proofConfigHash.length + transformedDocumentHash.length)
     hashData.set(proofConfigHash, 0)
     hashData.set(transformedDocumentHash, proofConfigHash.length)
@@ -114,6 +114,10 @@ export class EddsaJcs2022Cryptosuite {
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicKeyBytes = await this._publicBytesFromVerificationMethodId(options.verificationMethod)
+    if (typeof publicKeyBytes == 'undefined') {
+      this._logError('Unable to get public key bytes.')
+      return false
+    }
     const publicKey = this._keyFromPublicBytes(publicKeyBytes)
     const verified = verify(null, hashData, publicKey, proofBytes)
     return verified
