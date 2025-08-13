@@ -168,6 +168,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
           if (credentialRequest.format === 'vc+sd-jwt') {
             return {
+              type: 'credentials',
               format: credentialRequest.format,
               credentials: holderBinding.keys.map((holderBinding) => ({
                 payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
