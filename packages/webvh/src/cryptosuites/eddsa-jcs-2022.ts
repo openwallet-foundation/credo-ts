@@ -1,4 +1,4 @@
-import { type AgentContext, DidDocument } from '@credo-ts/core'
+import { type AgentContext, CredoError } from '@credo-ts/core'
 import {
   DidsApi,
   Hasher,
@@ -30,7 +30,7 @@ export class EddsaJcs2022Cryptosuite {
   }
 
   public async _publicJwkFromId(verificationMethodId: string): Promise<Kms.PublicJwk> {
-    const didDocument = new DidDocument(await this.didApi.resolveDidDocument(verificationMethodId))
+    const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return publicJwk
@@ -39,12 +39,14 @@ export class EddsaJcs2022Cryptosuite {
   public transformation(unsecuredDocument: object, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
     if (options.type !== 'DataIntegrityProof') {
-      this._logError('PROOF_VERIFICATION_ERROR')
-      throw new Error('PROOF_VERIFICATION_ERROR')
+      const err = 'Proof type is not DataIntegrityProof'
+      this._logError(err)
+      throw new CredoError(err)
     }
     if (options.cryptosuite !== 'eddsa-jcs-2022') {
-      this._logError('PROOF_VERIFICATION_ERROR')
-      throw new Error('PROOF_VERIFICATION_ERROR')
+      const err = 'Cryptosuite is not eddsa-jcs-2022'
+      this._logError(err)
+      throw new CredoError(err)
     }
     const canonicalDocument = canonicalize(unsecuredDocument)
     return canonicalDocument
@@ -54,12 +56,14 @@ export class EddsaJcs2022Cryptosuite {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
     const proofConfig = Object.assign({}, proofOptions)
     if (proofConfig.type !== 'DataIntegrityProof') {
-      this._logError('PROOF_GENERATION_ERROR')
-      throw new Error('PROOF_GENERATION_ERROR')
+      const err = 'Proof type is not DataIntegrityProof'
+      this._logError(err)
+      throw new CredoError(err)
     }
     if (proofConfig.cryptosuite !== 'eddsa-jcs-2022') {
-      this._logError('PROOF_GENERATION_ERROR')
-      throw new Error('PROOF_GENERATION_ERROR')
+      const err = 'Cryptosuite is not eddsa-jcs-2022'
+      this._logError(err)
+      throw new CredoError(err)
     }
     const canonicalProofConfig = canonicalize(proofConfig)
     return canonicalProofConfig
