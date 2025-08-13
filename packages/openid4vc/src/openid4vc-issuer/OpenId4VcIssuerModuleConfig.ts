@@ -10,6 +10,7 @@ import { importExpress } from '../shared/router'
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
@@ -57,6 +58,21 @@ export interface OpenId4VcIssuerModuleConfigOptions {
    * @default 180 (3 minutes)
    */
   accessTokenExpiresInSeconds?: number
+
+  /**
+   * The time after which a refresh token will expire.
+   *
+   * @default 7776000 (90 days)
+   */
+  refreshTokenExpiresInSeconds?: number
+
+  /**
+   * Whether to generate refresh tokens for issuance sessions. This can be useful if
+   * you're planning on deferring the issuance of credentials.
+   *
+   * @default false
+   */
+  generateRefreshTokens?: boolean
 
   /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
@@ -226,10 +242,29 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * The time after which an access token will expire.
    *
-   * @default 360 (5 minutes)
+   * @default 180 (3 minutes)
    */
   public get accessTokenExpiresInSeconds(): number {
     return this.options.accessTokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN
+  }
+
+  /**
+   * The time after which a refresh token will expire.
+   *
+   * @default 7776000 (90 days)
+   */
+  public get refreshTokenExpiresInSeconds(): number {
+    return this.options.refreshTokenExpiresInSeconds ?? DEFAULT_REFRESH_TOKEN_EXPIRES_IN
+  }
+
+  /**
+   * Whether to generate refresh tokens for issuance sessions. This can be useful if
+   * you're planning on deferring the issuance of credentials.
+   *
+   * @default false
+   */
+  public get generateRefreshTokens(): boolean {
+    return this.options.generateRefreshTokens ?? false
   }
 
   /**

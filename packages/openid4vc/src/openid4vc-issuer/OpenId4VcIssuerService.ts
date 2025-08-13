@@ -1067,6 +1067,95 @@ export class OpenId4VcIssuerService {
     }
   }
 
+  public async createRefreshToken(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options: {
+      issuerState?: string
+      preAuthorizedCode?: string
+    }
+  ) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
+    const expiresAt = addSecondsToDate(new Date(), expiresInSeconds)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const refreshToken = await jwsService.createJwsCompact(agentContext, {
+      keyId: key.keyId,
+      payload: JwtPayload.fromJson({
+        iss: issuerMetadata.credentialIssuer.credential_issuer,
+        aud: issuerMetadata.credentialIssuer.credential_issuer,
+        exp: dateToSeconds(expiresAt),
+        issuer_state: options.issuerState,
+        'pre-authorized_code': options.preAuthorizedCode,
+      }),
+      protectedHeaderOptions: {
+        typ: 'credo+refresh_token',
+        kid: key.keyId,
+        alg: key.signatureAlgorithm,
+      },
+    })
+
+    return refreshToken
+  }
+
+  public async verifyRefreshToken(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord, token: string) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const jwt = Jwt.fromSerializedJwt(token)
+    jwt.payload.validate()
+
+    if (jwt.payload.iss !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'iss' claim in refresh token jwt`)
+    }
+    if (jwt.payload.aud !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'aud' claim in refresh token jwt`)
+    }
+    if (!jwt.payload.exp) {
+      throw new CredoError(`Missing 'exp' claim in refresh token jwt`)
+    }
+    if (jwt.header.typ !== 'credo+refresh_token') {
+      throw new CredoError(`Invalid 'typ' claim in refresh token jwt header`)
+    }
+
+    const { 'pre-authorized_code': preAuthorizedCode, issuer_state: issuerState } = jwt.payload.additionalClaims
+
+    if (preAuthorizedCode && typeof preAuthorizedCode !== 'string') {
+      throw new CredoError(`Invalid 'pre-authorized_code' claim in refresh token jwt payload`)
+    }
+
+    if (issuerState && typeof issuerState !== 'string') {
+      throw new CredoError(`Invalid 'issuer_state' claim in refresh token jwt payload`)
+    }
+
+    if (!preAuthorizedCode && !issuerState) {
+      throw new CredoError(`Missing 'issuer_state' or 'pre-authorized_code' claim in refresh token jwt payload`)
+    }
+
+    const verification = await jwsService.verifyJws(agentContext, {
+      jws: token,
+      jwsSigner: {
+        method: 'jwk',
+        jwk: key,
+      },
+    })
+
+    if (!verification.isValid) {
+      throw new CredoError('Invalid refresh token')
+    }
+
+    return {
+      jwt,
+      expiresAt: new Date(jwt.payload.exp * 1000),
+      issuerState: issuerState as string | undefined,
+      preAuthorizedCode: preAuthorizedCode as string | undefined,
+    }
+  }
+
   public getIssuer(agentContext: AgentContext, options: { issuanceSessionId?: string } = {}) {
     return new Openid4vciIssuer({
       callbacks: getOid4vcCallbacks(agentContext, options),
