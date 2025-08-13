@@ -1,21 +1,18 @@
 import { createHash } from 'crypto'
-import {
-  AgentContext,
-  DidsApi,
-  JsonTransformer,
-  Kms,
-  MultiBaseEncoder,
-  MultiHashEncoder,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
+import { AgentContext, DidsApi, Kms, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
 import { WebvhDidResolver } from '../../../dids'
-import { WebVhResource } from '../../utils/transform'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
-import { issuerId, verificationMethodId, mockCredDefResource, mockRevRegDefResource, mockRegRevEntryResource, mockSchemaResource, mockResolvedDidDocument } from './mock-resources'
+import {
+  issuerId,
+  mockResolvedDidDocument,
+  mockRevRegDefResource,
+  mockSchemaResource,
+  verificationMethodId,
+} from './mock-resources'
 
 // Mock the WebvhDidResolver
 const mockResolveResource = jest.fn()
@@ -384,9 +381,8 @@ describe('WebVhAnonCredsRegistry', () => {
     // Add more tests for error cases (invalid ID, not found, hash mismatch, invalid content etc.)
     // similar to the getSchema tests
   })
-  
-  describe('verifyProof', () => {
 
+  describe('verifyProof', () => {
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
       jest.restoreAllMocks()
@@ -416,7 +412,6 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
-
       const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
@@ -607,7 +602,6 @@ describe('WebVhAnonCredsRegistry', () => {
     //     content: { hello: 'world' },
     //     proof: minimalProof
     //   }
-
 
     //   const result = await registry.verifyProof(agentContext, attestedResource, minimalProof)
 
