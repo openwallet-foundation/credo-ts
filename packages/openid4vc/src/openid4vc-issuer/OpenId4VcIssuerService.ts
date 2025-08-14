@@ -38,6 +38,8 @@ import {
 } from '@credo-ts/core'
 import {
   AuthorizationServerMetadata,
+  HashAlgorithm,
+  Jwk,
   JwtSignerJwk,
   JwtSignerWithJwk,
   Oauth2AuthorizationServer,
@@ -46,6 +48,7 @@ import {
   Oauth2ResourceServer,
   Oauth2ServerErrorResponseError,
   PkceCodeChallengeMethod,
+  calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
@@ -251,6 +254,7 @@ export class OpenId4VcIssuerService {
       userPin: preAuthorizedCodeFlowConfig?.txCode
         ? generateTxCode(agentContext, preAuthorizedCodeFlowConfig.txCode)
         : undefined,
+      generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)
@@ -867,7 +871,7 @@ export class OpenId4VcIssuerService {
     return this.openId4VcIssuanceSessionRepository.findByQuery(agentContext, query, queryOptions)
   }
 
-  public async findSingleIssuancSessionByQuery(
+  public async findSingleIssuanceSessionByQuery(
     agentContext: AgentContext,
     query: Query<OpenId4VcIssuanceSessionRecord>
   ) {
@@ -1064,6 +1068,140 @@ export class OpenId4VcIssuerService {
 
     if (!verification.isValid) {
       throw new CredoError('Invalid nonce')
+    }
+  }
+
+  public async createRefreshToken(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    options: {
+      issuerState?: string
+      preAuthorizedCode?: string
+      dpop?: {
+        jwk: Jwk
+      }
+    }
+  ) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
+    const expiresAt = addSecondsToDate(new Date(), expiresInSeconds)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+    const refreshToken = await jwsService.createJwsCompact(agentContext, {
+      keyId: key.keyId,
+      payload: JwtPayload.fromJson({
+        iss: issuerMetadata.credentialIssuer.credential_issuer,
+        aud: issuerMetadata.credentialIssuer.credential_issuer,
+        exp: dateToSeconds(expiresAt),
+        issuer_state: options.issuerState,
+        'pre-authorized_code': options.preAuthorizedCode,
+        cnf: options.dpop
+          ? {
+              jkt: await calculateJwkThumbprint({
+                hashAlgorithm: HashAlgorithm.Sha256,
+                hashCallback: getOid4vcCallbacks(agentContext).hash,
+                jwk: options.dpop.jwk,
+              }),
+            }
+          : undefined,
+      }),
+      protectedHeaderOptions: {
+        typ: 'credo+refresh_token',
+        kid: key.keyId,
+        alg: key.signatureAlgorithm,
+      },
+    })
+
+    return refreshToken
+  }
+
+  public parseRefreshToken(token: string) {
+    const jwt = Jwt.fromSerializedJwt(token)
+    jwt.payload.validate()
+
+    if (!jwt.payload.exp) {
+      throw new CredoError(`Missing 'exp' claim in refresh token jwt`)
+    }
+    if (jwt.header.typ !== 'credo+refresh_token') {
+      throw new CredoError(`Invalid 'typ' claim in refresh token jwt header`)
+    }
+
+    const { 'pre-authorized_code': preAuthorizedCode, issuer_state: issuerState, cnf } = jwt.payload.additionalClaims
+
+    if (preAuthorizedCode && typeof preAuthorizedCode !== 'string') {
+      throw new CredoError(`Invalid 'pre-authorized_code' claim in refresh token jwt payload`)
+    }
+
+    if (issuerState && typeof issuerState !== 'string') {
+      throw new CredoError(`Invalid 'issuer_state' claim in refresh token jwt payload`)
+    }
+
+    if (!preAuthorizedCode && !issuerState) {
+      throw new CredoError(`Missing 'issuer_state' or 'pre-authorized_code' claim in refresh token jwt payload`)
+    }
+
+    let jwkThumbprint: string | undefined
+    if (cnf) {
+      if (typeof cnf !== 'object' || !('jkt' in cnf) || typeof cnf.jkt !== 'string') {
+        throw new CredoError(`Invalid 'cnf' claim in refresh token jwt payload`)
+      }
+
+      jwkThumbprint = cnf.jkt
+    }
+
+    return {
+      jwt,
+      expiresAt: new Date(jwt.payload.exp * 1000),
+      issuerState: issuerState as string | undefined,
+      preAuthorizedCode: preAuthorizedCode as string | undefined,
+      dpop: jwkThumbprint
+        ? {
+            jwkThumbprint,
+          }
+        : undefined,
+    }
+  }
+
+  public async verifyRefreshToken(
+    agentContext: AgentContext,
+    issuer: OpenId4VcIssuerRecord,
+    parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']>,
+    options: {
+      dpop?: {
+        jwkThumbprint?: string
+      }
+    } = {}
+  ) {
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    const key = issuer.resolvedAccessTokenPublicJwk
+
+    if (parsedRefreshToken.jwt.payload.iss !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'iss' claim in refresh token jwt`)
+    }
+    if (parsedRefreshToken.jwt.payload.aud !== issuerMetadata.credentialIssuer.credential_issuer) {
+      throw new CredoError(`Invalid 'aud' claim in refresh token jwt`)
+    }
+
+    const verification = await jwsService.verifyJws(agentContext, {
+      jws: parsedRefreshToken.jwt.serializedJwt,
+      jwsSigner: {
+        method: 'jwk',
+        jwk: key,
+      },
+    })
+
+    if (!verification.isValid) {
+      throw new CredoError('Invalid refresh token')
+    }
+
+    if (options.dpop?.jwkThumbprint) {
+      if (parsedRefreshToken.dpop?.jwkThumbprint !== options.dpop.jwkThumbprint) {
+        throw new CredoError(`Invalid 'cnf.jkt' claim in refresh token jwt payload`)
+      }
     }
   }
 
