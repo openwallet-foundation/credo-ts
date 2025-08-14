@@ -71,7 +71,7 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
             issuer,
           })
         } else {
-          // First call, no auth_sesion yet
+          // First call, no auth_session yet
           await handleAuthorizationChallengeNoAuthSession({
             agentContext,
             issuer,
@@ -99,7 +99,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   const { agentContext, issuer, parseResult, request } = options
   const { authorizationChallengeRequest } = parseResult
 
-  // First call, no auth_sesion yet
+  // First call, no auth_session yet
 
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
@@ -130,7 +130,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     })
   }
 
-  const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
+  const issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
     issuerState: authorizationChallengeRequest.issuer_state,
   })
@@ -275,7 +275,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   // NOTE: we ignore scope, issuer_state etc.. parameters if auth_session is present
   // should we validate that these are not in the request? I'm not sure what best practice would be here
 
-  const issuanceSession = await openId4VcIssuerService.findSingleIssuancSessionByQuery(agentContext, {
+  const issuanceSession = await openId4VcIssuerService.findSingleIssuanceSessionByQuery(agentContext, {
     issuerId: issuer.issuerId,
     presentationAuthSession: authorizationChallengeRequest.auth_session,
   })
@@ -328,7 +328,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     throw new Oauth2ServerErrorResponseError(
       {
         error: Oauth2ErrorCodes.InvalidDpopProof,
-        error_description: 'Invalid jwk thubmprint',
+        error_description: 'Invalid jwk thumbprint',
       },
       {
         internalMessage: `DPoP JWK thumbprint '${dpop.jwkThumbprint}' does not match expected value '${issuanceSession.dpop?.dpopJkt}'`,
@@ -354,7 +354,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
     .getVerificationSessionById(openId4VcVerificationSessionId)
     .catch(async () => {
       // Issuance session is corrupted
-      issuanceSession.errorMessage = `Associated openId4VcVeificationSessionRecord with id '${openId4VcVerificationSessionId}' does not exist`
+      issuanceSession.errorMessage = `Associated openId4VcVerificationSessionRecord with id '${openId4VcVerificationSessionId}' does not exist`
       await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
 
       throw new Oauth2ServerErrorResponseError(
