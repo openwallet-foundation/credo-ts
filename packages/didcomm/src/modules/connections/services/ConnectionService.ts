@@ -31,8 +31,6 @@ import {
 } from '@credo-ts/core'
 import { ReplaySubject, firstValueFrom } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
-
-import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { Routing } from '../../../models'
 import { OutOfBandService } from '../../oob/OutOfBandService'
@@ -63,7 +61,7 @@ import {
 } from './helpers'
 
 export interface ConnectionRequestParams {
-  label?: string
+  label: string
   imageUrl?: string
   alias?: string
   routing: Routing
@@ -125,10 +123,10 @@ export class ConnectionService {
     const { label, imageUrl } = config
 
     const connectionRequest = new ConnectionRequestMessage({
-      label: label ?? agentContext.config.label,
+      label,
       did: didDoc.id,
       didDoc,
-      imageUrl
+      imageUrl,
     })
 
     connectionRequest.setThread({
