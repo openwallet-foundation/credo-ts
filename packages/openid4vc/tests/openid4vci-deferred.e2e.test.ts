@@ -77,7 +77,7 @@ describe('OpenId4Vci (Deferred)', () => {
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
           generateRefreshTokens: true,
-
+          dpopRequired: true,
           credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
             const uuid = randomUUID()
 
@@ -494,11 +494,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const { payload: refreshTokenPayload } = Jwt.fromSerializedJwt(tokenResponseTenant.refreshToken as string)
 
     expect(refreshTokenPayload.toJson()).toEqual({
+      cnf: {
+        jkt: await calculateJwkThumbprint({
+          hashAlgorithm: HashAlgorithm.Sha256,
+          hashCallback: getOid4vcCallbacks(holderTenant.context).hash,
+          jwk: tokenResponseTenant.dpop?.jwk.toJson() as Jwk,
+        }),
+      },
       'pre-authorized_code':
         resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
           'pre-authorized_code'
         ],
-
       aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
       iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
       exp: expect.any(Number),
