@@ -254,6 +254,7 @@ export class OpenId4VcIssuerService {
       userPin: preAuthorizedCodeFlowConfig?.txCode
         ? generateTxCode(agentContext, preAuthorizedCodeFlowConfig.txCode)
         : undefined,
+      generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)

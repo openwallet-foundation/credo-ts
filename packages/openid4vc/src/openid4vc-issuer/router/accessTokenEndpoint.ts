@@ -259,7 +259,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
       // Generate a refresh token if they're enabled in the config and the grant type is not refresh token
       let refreshToken: string | undefined
-      if (config.generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier) {
+      if (issuanceSession.generateRefreshTokens && grant.grantType !== refreshTokenGrantIdentifier) {
         refreshToken = await openId4VcIssuerService.createRefreshToken(agentContext, issuer, {
           preAuthorizedCode: grant.grantType === preAuthorizedCodeGrantIdentifier ? grant.preAuthorizedCode : undefined,
           issuerState: issuanceSession.authorization?.issuerState,

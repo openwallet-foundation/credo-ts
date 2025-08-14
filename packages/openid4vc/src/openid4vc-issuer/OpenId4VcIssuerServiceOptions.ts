@@ -160,6 +160,11 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
    * data.
    */
   issuanceMetadata?: Record<string, unknown>
+
+  /**
+   * Whether this issuance session allows to generate refresh tokens.
+   */
+  generateRefreshTokens?: boolean
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {

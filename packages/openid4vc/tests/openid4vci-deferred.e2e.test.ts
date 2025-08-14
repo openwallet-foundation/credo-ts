@@ -76,7 +76,6 @@ describe('OpenId4Vci (Deferred)', () => {
         inMemory: new InMemoryWalletModule(),
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
-          generateRefreshTokens: true,
           dpopRequired: true,
           credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
             const uuid = randomUUID()
@@ -304,6 +303,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
       version: 'v1.draft15',
+      generateRefreshTokens: true,
     })
 
     await issuerTenant.endSession()
@@ -416,6 +416,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
       version: 'v1.draft15',
+      generateRefreshTokens: true,
     })
 
     await issuerTenant.endSession()

@@ -67,14 +67,6 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   refreshTokenExpiresInSeconds?: number
 
   /**
-   * Whether to generate refresh tokens for issuance sessions. This can be useful if
-   * you're planning on deferring the issuance of credentials.
-   *
-   * @default false
-   */
-  generateRefreshTokens?: boolean
-
-  /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
    * a credential offer. If dpop is not required, but used by a client in the first request to credo,
    * DPoP will be required going forward.
@@ -255,16 +247,6 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get refreshTokenExpiresInSeconds(): number {
     return this.options.refreshTokenExpiresInSeconds ?? DEFAULT_REFRESH_TOKEN_EXPIRES_IN
-  }
-
-  /**
-   * Whether to generate refresh tokens for issuance sessions. This can be useful if
-   * you're planning on deferring the issuance of credentials.
-   *
-   * @default false
-   */
-  public get generateRefreshTokens(): boolean {
-    return this.options.generateRefreshTokens ?? false
   }
 
   /**
