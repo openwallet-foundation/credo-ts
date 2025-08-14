@@ -9,15 +9,15 @@ describe('WebVhTransform', () => {
     const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
-    expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
+    expect(resource['@context']).toContain('https://opsecid.github.io/attested-resource/v1')
     expect(resource.type).toEqual(['AttestedResource'])
 
     // Type guard to check if content is a schema
     if ('attrNames' in resource.content) {
-      expect(resource.content.name).toBe('Meeting Invitation')
-      expect(resource.content.version).toBe('1.1')
+      expect(resource.content.name).toBe(mockSchemaResource.content.name)
+      expect(resource.content.version).toBe(mockSchemaResource.content.version)
       expect(Array.isArray(resource.content.attrNames)).toBe(true)
-      expect(resource.content.attrNames).toContain('email')
+      expect(resource.content.attrNames).toContain(mockSchemaResource.content.attrNames[0])
     } else {
       fail('Content should be a schema')
     }
@@ -27,14 +27,14 @@ describe('WebVhTransform', () => {
     const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
-    expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
+    expect(resource['@context']).toContain('https://opsecid.github.io/attested-resource/v1')
     expect(resource.type).toEqual(['AttestedResource'])
 
     // Type guard to check if content is a credential definition
     if ('schemaId' in resource.content) {
-      expect(resource.content.type).toBe('CL')
-      expect(resource.content.tag).toBe('Meeting Invitation')
-      expect(resource.content.schemaId).toContain('zQmc3ZT6N3s3UhqTcC5kWcWVoHwnkK6dZVBVfkLtYKY8YJm')
+      expect(resource.content.type).toBe(mockCredDefResource.content.type)
+      expect(resource.content.tag).toBe(mockCredDefResource.content.tag)
+      expect(resource.content.schemaId).toBe(mockSchemaResource.id)
     } else {
       fail('Content should be a credential definition')
     }
