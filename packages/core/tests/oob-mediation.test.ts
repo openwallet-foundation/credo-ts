@@ -101,7 +101,8 @@ describe('out of band with mediation', () => {
       { label: 'alice' }
     )
 
-    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
 
     // Tag the connection with an initial type
@@ -151,7 +152,8 @@ describe('out of band with mediation', () => {
       label: 'alice',
     })
 
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)

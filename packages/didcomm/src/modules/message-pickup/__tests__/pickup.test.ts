@@ -80,6 +80,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       recipientMediatorConnection!.id
     )
 
@@ -144,6 +145,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       recipientMediatorConnection!.id
     )
 
@@ -213,6 +215,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       recipientMediatorConnection!.id
     )
 
@@ -221,7 +224,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection?.id
+      mediatorRecipientConnection.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
@@ -299,6 +302,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       recipientMediatorConnection!.id
     )
 
@@ -307,7 +311,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection?.id
+      mediatorRecipientConnection.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
