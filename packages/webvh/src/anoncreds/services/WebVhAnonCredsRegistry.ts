@@ -1,27 +1,22 @@
 import type {
   AnonCredsRegistry,
+  AnonCredsRevocationRegistryDefinition,
   GetCredentialDefinitionReturn,
-  GetRevocationStatusListReturn,
   GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
   GetSchemaReturn,
-  RegisterSchemaReturn,
   RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import type { AgentContext, DataIntegrityProof, VerificationMethod } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
 
-import {
-  CredoError,
-  JsonTransformer,
-  DidsApi,
-  TypedArrayEncoder,
-  MultiBaseEncoder,
-  MultiHashEncoder,
-} from '@credo-ts/core'
+import { CredoError, JsonTransformer, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidResolver, WebvhDidCrypto } from '../../dids'
+import { EddsaJcs2022Cryptosuite } from '../../cryptosuites/eddsa-jcs-2022'
+import { WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -49,6 +44,12 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
    * @returns The parsed and validated WebVhResource object and the original resolution result.
    * @throws {CredoError} If resolution, parsing, or validation fails.
    */
+  private _digestMultibase(value: string) {
+    const valueBytes = TypedArrayEncoder.fromString(value)
+    const digestMultihash = MultiHashEncoder.encode(valueBytes, 'sha-256')
+    const digestMultibase = MultiBaseEncoder.encode(digestMultihash, 'base58btc')
+    return digestMultibase
+  }
   private async _resolveAndValidateAttestedResource(
     agentContext: AgentContext,
     resourceId: string,
@@ -95,72 +96,58 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         )
       }
 
-      // --- Validation Steps on parsed object ---
-      // 1. Check for attestation type
+      // --- Attested Resource Validation steps ---
+
+      // 1. Data Model Verification
       if (!Array.isArray(resourceObject.type) || !resourceObject.type.includes('AttestedResource')) {
-        throw new CredoError('Resolved resource data is not attested.')
+        throw new CredoError('Missing AttestedResource type.')
+      }
+      if (!resourceObject.id || typeof resourceObject.id !== 'string') {
+        throw new CredoError('Missing resource id.')
+      }
+      if (!resourceObject.content || typeof resourceObject.content !== 'object') {
+        throw new CredoError('Missing resource content.')
+      }
+      if (resourceObject.metadata && typeof resourceObject.metadata !== 'object') {
+        throw new CredoError('Expecting metadata to be an object.')
+      }
+      if (resourceObject.links && typeof resourceObject.links !== 'object') {
+        throw new CredoError('Expecting metadata to be an array.')
+      }
+      if (!resourceObject.proof || typeof resourceObject.proof !== 'object') {
+        throw new CredoError('Missing resource proof.')
       }
       agentContext.config.logger.trace(`Resource ${resourceId} attestation found.`)
 
-      // 2. Check for valid proof
-      const isProofValid = await this.verifyProof(
-        agentContext,
-        resourceObject.proof,
-        resourceObject.content as unknown as Record<string, unknown>
-      )
-      if (!isProofValid) {
+      // 2. DataIntegrityProof Verification
+      const verified = await this.verifyProof(agentContext, resourceObject)
+      if (!verified) {
+        agentContext.config.logger.trace('Resolved resource proof is invalid.')
         throw new CredoError('Resolved resource proof is invalid.')
       }
       agentContext.config.logger.trace(`Resource ${resourceId} proof validated.`)
 
-      // 3. Check filename hash against content hash
-      const contentObject = resourceObject.content
-      if (!contentObject) {
-        throw new CredoError('Resolved resource data does not contain a content object.')
+      // 3. Resource Digest Multibase Verification
+      if (resourceObject.id !== resourceId) {
+        throw new CredoError(`ID mismatch ${resourceObject.id} != ${resourceId}`)
       }
-
       const parts = resourceId.split(/[:/]/)
       const expectedMultibaseHash = parts[parts.length - 1]
       if (!expectedMultibaseHash) {
         throw new CredoError(`Could not extract expected hash from ${resourceTypeString} ID: ${resourceId}`)
       }
+      const digestMultibase = this._digestMultibase(canonicalize(resourceObject.content))
 
-      const contentString = canonicalize(contentObject)
-      const actualHashMultibase = MultiBaseEncoder.encode(
-        MultiHashEncoder.encode(TypedArrayEncoder.fromString(contentString), 'sha-256'),
-        'base58btc'
-      )
-
-      if (actualHashMultibase !== expectedMultibaseHash) {
+      if (digestMultibase !== expectedMultibaseHash) {
         throw new CredoError(
-          `Content hash mismatch for ${resourceId}. Expected: ${expectedMultibaseHash}, Actual: ${actualHashMultibase}`
+          `Content hash mismatch for ${resourceId}. Expected: ${expectedMultibaseHash}, Actual: ${digestMultibase}`
         )
       }
       agentContext.config.logger.trace(`Resource ${resourceId} content hash matches filename.`)
 
-      // 4. Check that the issuerId in the content matches the DID part of the resourceId
-      const contentIssuerId = (contentObject as { issuerId?: string })?.issuerId // Type assertion for accessing issuerId
-      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
-        throw new CredoError(`Resolved resource content for ${resourceId} is missing a valid issuerId.`)
-      }
-
-      // Extract the DID from the resourceId (part before /resources/hash)
-      const resourceDidMatch = resourceId.match(/^(did:webvh:[^/]+)/)
-      if (!resourceDidMatch || !resourceDidMatch[1]) {
-        throw new CredoError(`Could not extract DID from resource ID: ${resourceId}`)
-      }
-      const expectedIssuerDid = resourceDidMatch[1]
-
-      if (contentIssuerId !== expectedIssuerDid) {
-        throw new CredoError(
-          `Issuer ID mismatch for ${resourceId}. Expected: ${expectedIssuerDid}, Actual: ${contentIssuerId}`
-        )
-      }
-      agentContext.config.logger.trace(`Resource ${resourceId} issuer ID matches DID.`)
-
       return { resourceObject, resolutionResult }
     } catch (error) {
-      agentContext.config.logger.error(`Error in did:webvh _resolveAndValidateAttestedResource:`, error)
+      agentContext.config.logger.error('Error in did:webvh _resolveAndValidateAttestedResource:', error)
       throw error
     }
   }
@@ -177,29 +164,42 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       const schemaContent = resourceObject.content
 
       // Type check to ensure we have a schema content object
-      if (!('attrNames' in schemaContent) || !('name' in schemaContent) || !('version' in schemaContent)) {
+      if (
+        !('attrNames' in schemaContent) ||
+        !('name' in schemaContent) ||
+        !('version' in schemaContent) ||
+        !('issuerId' in schemaContent)
+      ) {
         throw new CredoError(`Parsed resource content for ${schemaId} is not a valid schema.`)
       }
 
-      // Use the issuerId from the content if available, otherwise extract from schemaId
-      // We need the hash part for this, extract it again or pass from helper?
-      // For simplicity, extract again.
-      const parts = schemaId.split(/[:/]/)
-      const expectedMultibaseHash = parts[parts.length - 1]
-      const issuerId =
-        schemaContent.issuerId ||
-        schemaId.substring(0, schemaId.lastIndexOf(expectedMultibaseHash)).replace(/[:/]$/, '')
+      const contentIssuerId = (schemaContent as { issuerId?: string })?.issuerId // Type assertion for accessing issuerId
+      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
+        throw new CredoError(`Resolved resource content for ${schemaId} is missing a valid issuerId.`)
+      }
+
+      const resourceDidMatch = schemaId.match(/^(did:webvh:[^/]+)/)
+      if (!resourceDidMatch || !resourceDidMatch[1]) {
+        throw new CredoError(`Could not extract DID from resource ID: ${schemaId}`)
+      }
+      const expectedIssuerDid = resourceDidMatch[1]
+
+      if (contentIssuerId !== expectedIssuerDid) {
+        throw new CredoError(
+          `Issuer ID mismatch for ${schemaId}. Expected: ${expectedIssuerDid}, Actual: ${contentIssuerId}`
+        )
+      }
 
       return {
         schema: {
           attrNames: schemaContent.attrNames,
           name: schemaContent.name,
           version: schemaContent.version,
-          issuerId: issuerId,
+          issuerId: contentIssuerId,
         },
         schemaId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
-        schemaMetadata: resolutionResult.contentMetadata || {},
+        schemaMetadata: resourceObject.metadata || {},
       }
     } catch (error) {
       agentContext.config.logger.error(`Error retrieving schema '${schemaId}' via did:webvh`, {
@@ -239,6 +239,24 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
         !('value' in credDefContent)
       ) {
         throw new CredoError('Resolved resource content is not a valid credential definition.')
+      }
+
+      const contentIssuerId = (credDefContent as { issuerId?: string })?.issuerId
+      if (!contentIssuerId || typeof contentIssuerId !== 'string') {
+        throw new CredoError(`Resolved resource content for ${credentialDefinitionId} is missing a valid issuerId.`)
+      }
+
+      // Extract the DID from the resourceId (part before /resources/hash)
+      const resourceDidMatch = credentialDefinitionId.match(/^(did:webvh:[^/]+)/)
+      if (!resourceDidMatch || !resourceDidMatch[1]) {
+        throw new CredoError(`Could not extract DID from resource ID: ${credentialDefinitionId}`)
+      }
+      const expectedIssuerDid = resourceDidMatch[1]
+
+      if (contentIssuerId !== expectedIssuerDid) {
+        throw new CredoError(
+          `Issuer ID mismatch for ${credentialDefinitionId}. Expected: ${expectedIssuerDid}, Actual: ${contentIssuerId}`
+        )
       }
 
       // Extract metadata from the resolved resource
@@ -306,12 +324,10 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       return {
         revocationRegistryDefinition: {
           issuerId: revRegDefContent.issuerId,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          revocDefType: revRegDefContent.revocDefType as any, // TODO: Map revocDefType string to AnonCreds type
+          revocDefType: revRegDefContent.revocDefType as AnonCredsRevocationRegistryDefinition['revocDefType'], // TODO: Map revocDefType string to AnonCreds type
           credDefId: revRegDefContent.credDefId,
           tag: revRegDefContent.tag,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          value: revRegDefContent.value as any, // TODO: Map value structure to AnonCreds type
+          value: revRegDefContent.value,
         },
         revocationRegistryDefinitionId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
@@ -420,109 +436,11 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     throw new CredoError('Method not implemented.')
   }
 
-  // Proof validation logic for DataIntegrityProof with eddsa-jcs-2022
-  public async verifyProof(
-    agentContext: AgentContext,
-    proof: DataIntegrityProof,
-    content: Record<string, unknown>
-  ): Promise<boolean> {
+  public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
+    const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
     try {
-      // Type check the proof object
-      if (!proof || typeof proof !== 'object') {
-        agentContext.config.logger.error('Invalid proof: proof must be an object in did:webvh resource proof')
-        return false
-      }
-
-      // Validate proof structure for DataIntegrityProof
-      if (proof.type !== 'DataIntegrityProof') {
-        agentContext.config.logger.error(`Unsupported type: ${proof.type} in did:webvh resource proof`)
-        return false
-      }
-
-      if (proof.cryptosuite !== 'eddsa-jcs-2022') {
-        agentContext.config.logger.error(`Unsupported cryptosuite: ${proof.cryptosuite} in did:webvh resource proof`)
-        return false
-      }
-
-      if (!proof.verificationMethod || typeof proof.verificationMethod !== 'string') {
-        agentContext.config.logger.error('Invalid verificationMethod in did:webvh resource proof')
-        return false
-      }
-
-      if (!proof.proofValue || typeof proof.proofValue !== 'string') {
-        agentContext.config.logger.error('Invalid proofValue in did:webvh resource proof')
-        return false
-      }
-
-      // Resolve the verification method to get the public key
-      const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-      const didDocument = await didsApi.resolveDidDocument(proof.verificationMethod as string)
-
-      if (!didDocument) {
-        agentContext.config.logger.error('Could not resolve verification method did:webvh DID document')
-        return false
-      }
-
-      // Extract the verification method from the DID document
-      let verificationMethod
-      if ((proof.verificationMethod as string).includes('#')) {
-        const fragment = (proof.verificationMethod as string).split('#')[1]
-        verificationMethod = didDocument.verificationMethod?.find((vm: VerificationMethod) =>
-          vm.id.endsWith(`#${fragment}`)
-        )
-      }
-
-      if (!verificationMethod) {
-        agentContext.config.logger.error('Could not find verification method in did:webvh DID document')
-        return false
-      }
-
-      // Extract public key from verification method
-      let publicKeyBytes: Uint8Array
-      if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-        const publicKeyBuffer = MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase)
-        publicKeyBytes = publicKeyBuffer.data
-      } else {
-        agentContext.config.logger.error(
-          'did:webvh resource verification method does not contain a supported public key format'
-        )
-        return false
-      }
-
-      // For eddsa-jcs-2022, we need to:
-      // 1. Create a document with the content and proof metadata (without proofValue)
-      // 2. Canonicalize it using JCS (JSON Canonicalization Scheme)
-      // 3. Verify the signature using EdDSA
-
-      // Create the document to be verified (content + proof without proofValue)
-      const documentToVerify = {
-        ...content,
-        proof: {
-          type: proof.type,
-          cryptosuite: proof.cryptosuite,
-          verificationMethod: proof.verificationMethod,
-          proofPurpose: proof.proofPurpose || 'assertionMethod',
-          created: proof.created || new Date().toISOString(),
-        },
-      }
-
-      // Canonicalize the document using JCS
-      const canonicalizedDocument = canonicalize(documentToVerify)
-      const documentBytes = TypedArrayEncoder.fromString(canonicalizedDocument)
-
-      // Decode the signature from the proofValue (should be multibase encoded)
-      const signatureBuffer = MultiBaseEncoder.decode(proof.proofValue as string)
-
-      const crypto = new WebvhDidCrypto(agentContext)
-      const isVerified = await crypto.verify(signatureBuffer.data, documentBytes, publicKeyBytes)
-
-      if (!isVerified) {
-        agentContext.config.logger.error('Signature verification failed for did:webvh resource')
-        return false
-      }
-
-      agentContext.config.logger.debug('DataIntegrityProof verification successful')
-      return true
+      const verificationResult = await cryptosuite.verifyProof(attestedResource)
+      return verificationResult.verified
     } catch (error) {
       agentContext.config.logger.error('Error during proof validation of did:webvh resource', {
         error: error instanceof Error ? error.message : String(error),
