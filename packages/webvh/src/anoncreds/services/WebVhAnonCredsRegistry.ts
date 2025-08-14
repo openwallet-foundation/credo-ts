@@ -1,7 +1,6 @@
 import type {
   AnonCredsRegistry,
   AnonCredsRevocationRegistryDefinition,
-  AnonCredsRevocationRegistryDefinitionValue,
   GetCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
@@ -15,6 +14,7 @@ import type { AgentContext } from '@credo-ts/core'
 
 import { CredoError, JsonTransformer, MultiBaseEncoder, MultiHashEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
+
 import { EddsaJcs2022Cryptosuite } from '../../cryptosuites/eddsa-jcs-2022'
 import { WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
@@ -72,7 +72,9 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
       if ('error' in resolutionResult || !('content' in resolutionResult)) {
         throw new CredoError(
-          `Resource ${resourceId} could not be resolved or is missing data. Error: ${resolutionResult.error || 'unknown'} - ${resolutionResult.message || 'no message'}`
+          `Resource ${resourceId} could not be resolved or is missing data. Error: ${
+            resolutionResult.error || 'unknown'
+          } - ${resolutionResult.message || 'no message'}`
         )
       }
 
@@ -325,7 +327,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
           revocDefType: revRegDefContent.revocDefType as AnonCredsRevocationRegistryDefinition['revocDefType'], // TODO: Map revocDefType string to AnonCreds type
           credDefId: revRegDefContent.credDefId,
           tag: revRegDefContent.tag,
-          value: revRegDefContent.value as AnonCredsRevocationRegistryDefinitionValue, // TODO: Map value structure to AnonCreds type
+          value: revRegDefContent.value,
         },
         revocationRegistryDefinitionId,
         resolutionMetadata: resolutionResult.dereferencingMetadata || {},
