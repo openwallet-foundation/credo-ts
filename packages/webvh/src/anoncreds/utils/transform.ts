@@ -138,4 +138,8 @@ export class WebVhLink {
   @IsOptional()
   @IsNumber()
   public timestamp?: number
+
+  @IsOptional()
+  @IsString()
+  public digestMultibase!: string
 }
