@@ -2,9 +2,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
-import { CredoError } from '../../../../error'
 import { SingleOrArray, isJsonObject } from '../../../../types'
-import { getProtocolScheme } from '../../../../utils/uri'
 
 type ServiceEndpointType = SingleOrArray<string | Record<string, unknown>>
 
@@ -15,18 +13,6 @@ export class DidDocumentService {
       this.serviceEndpoint = options.serviceEndpoint
       this.type = options.type
     }
-  }
-
-  /**
-   * @deprecated will be removed in 0.6, as it's not possible from the base did document service class to determine
-   * the protocol scheme. It needs to be implemented on a specific did document service class.
-   */
-  public get protocolScheme(): string {
-    if (typeof this.serviceEndpoint !== 'string') {
-      throw new CredoError('Unable to extract protocol scheme from serviceEndpoint as it is not a string.')
-    }
-
-    return getProtocolScheme(this.serviceEndpoint)
   }
 
   @IsString()
