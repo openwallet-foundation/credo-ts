@@ -80,7 +80,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -144,7 +144,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -213,7 +213,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -299,7 +299,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
