@@ -112,6 +112,7 @@ describe('out of band implicit', () => {
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       did: serviceUrl!,
       alias: 'Faber public',
+      label: 'alice',
       handshakeProtocols: [HandshakeProtocol.DidExchange],
     })
 
@@ -128,7 +129,7 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
@@ -142,6 +143,7 @@ describe('out of band implicit', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      label: 'alice',
       alias: 'Faber public',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
@@ -159,7 +161,7 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
@@ -171,6 +173,7 @@ describe('out of band implicit', () => {
     await expect(
       aliceAgent.modules.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
+        label: 'alice',
         alias: 'Faber public',
         handshakeProtocols: [HandshakeProtocol.DidExchange],
       })
@@ -182,6 +185,7 @@ describe('out of band implicit', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      label: 'alice',
       alias: 'Faber public',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
@@ -199,7 +203,7 @@ describe('out of band implicit', () => {
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 

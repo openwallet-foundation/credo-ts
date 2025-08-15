@@ -1,4 +1,3 @@
-import type { InitConfig } from '@credo-ts/core'
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
@@ -57,21 +56,14 @@ type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 export class BaseAgent {
   public port: number
   public name: string
-  public config: InitConfig
   public agent: DemoAgent
 
   public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
 
-    const config = {
-      label: name,
-    } satisfies InitConfig
-
-    this.config = config
-
     this.agent = new Agent({
-      config,
+      config: {},
       dependencies: agentDependencies,
       modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
     })

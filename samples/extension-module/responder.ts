@@ -24,7 +24,6 @@ const run = async () => {
   // Setup the agent
   const agent = new Agent({
     config: {
-      label: 'Dummy-powered agent - responder',
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {

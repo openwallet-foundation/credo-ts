@@ -2,10 +2,6 @@ import { Kms } from '.'
 import type { Logger } from './logger'
 
 export interface InitConfig {
-  /**
-   * Agent public endpoints, sorted by priority (higher priority first)
-   */
-  label: string
   logger?: Logger
   autoUpdateStorageOnStartup?: boolean
 

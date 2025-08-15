@@ -37,9 +37,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
 
     const agent = new Agent(
       {
-        config: {
-          label: 'Test Agent',
-        },
+        config: {},
         dependencies: agentDependencies,
         modules: {
           // We need to include the AnonCredsModule to run the updates
@@ -109,9 +107,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
 
     const agent = new Agent(
       {
-        config: {
-          label: 'Test Agent',
-        },
+        config: {},
         dependencies: agentDependencies,
         modules: {
           // We need to include the AnonCredsModule to run the updates

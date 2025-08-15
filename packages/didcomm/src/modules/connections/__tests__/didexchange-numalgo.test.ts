@@ -99,9 +99,7 @@ async function didExchangeNumAlgoBaseTest(options: {
     {
       endpoints: ['rxjs:alice'],
     },
-    {
-      label: 'alice',
-    },
+    {},
     {
       connections: new ConnectionsModule({
         autoAcceptConnections: false,
@@ -172,6 +170,7 @@ async function didExchangeNumAlgoBaseTest(options: {
   let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
     faberOutOfBandRecord.outOfBandInvitation,
     {
+      label: 'alice',
       autoAcceptInvitation: true,
       autoAcceptConnection: false,
       ourDid,

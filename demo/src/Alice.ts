@@ -26,7 +26,9 @@ export class Alice extends BaseAgent {
   }
 
   private async receiveConnectionRequest(invitationUrl: string) {
-    const { connectionRecord } = await this.agent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    const { connectionRecord } = await this.agent.modules.oob.receiveInvitationFromUrl(invitationUrl, {
+      label: 'alice',
+    })
     if (!connectionRecord) {
       throw new Error(redText(Output.NoConnectionRecordFromOutOfBand))
     }

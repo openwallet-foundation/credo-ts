@@ -80,6 +80,7 @@ describe('out of band', () => {
   }
 
   const receiveInvitationConfig = {
+    label: 'alice',
     autoAcceptConnection: false,
   }
 
@@ -298,6 +299,7 @@ describe('out of band', () => {
 
       const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } =
         await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+          label: 'alice',
           autoAcceptInvitation: false,
           autoAcceptConnection: false,
         })
@@ -314,7 +316,7 @@ describe('out of band', () => {
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: aliceFaberConnection } =
-        await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+        await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'alice' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -340,7 +342,10 @@ describe('out of band', () => {
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+        urlMessage,
+        { label: 'alice' }
+      )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
@@ -359,7 +364,10 @@ describe('out of band', () => {
       const { outOfBandRecord, invitation } = await faberAgent.modules.oob.createLegacyInvitation(makeConnectionConfig)
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+        urlMessage,
+        { label: 'alice' }
+      )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
@@ -450,7 +458,10 @@ describe('out of band', () => {
       })
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { autoAcceptConnection: false })
+      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+        label: 'alice',
+        autoAcceptConnection: false,
+      })
 
       // Event should not be emitted because an agent must wait until the connection is ready
       expect(eventListener).toHaveBeenCalledTimes(0)
@@ -470,6 +481,7 @@ describe('out of band', () => {
       const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.modules.oob.receiveInvitation(
         outOfBandInvitation,
         {
+          label: 'alice',
           autoAcceptInvitation: false,
           autoAcceptConnection: false,
         }
@@ -511,7 +523,8 @@ describe('out of band', () => {
       // Create first connection
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
       let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
-        outOfBandRecord.outOfBandInvitation
+        outOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
       )
       firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -535,6 +548,7 @@ describe('out of band', () => {
         connectionRecord: secondAliceFaberConnection,
         outOfBandRecord: { id: secondOobRecordId },
       } = await aliceAgent.modules.oob.receiveInvitation(outOfBandRecord2.outOfBandInvitation, {
+        label: 'alice',
         reuseConnection: true,
       })
 
@@ -588,7 +602,10 @@ describe('out of band', () => {
       // Create first connection
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
       let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
-        outOfBandRecord.outOfBandInvitation
+        outOfBandRecord.outOfBandInvitation,
+        {
+          label: 'alice',
+        }
       )
       firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -603,7 +620,7 @@ describe('out of band', () => {
 
       const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
         outOfBandRecord2.outOfBandInvitation,
-        { reuseConnection: false }
+        { label: 'alice', reuseConnection: false }
       )
 
       aliceAgent.events.off(OutOfBandEventTypes.HandshakeReused, reuseListener)
@@ -638,8 +655,10 @@ describe('out of band', () => {
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
 
-      const { connectionRecord: aliceFaberConnection } =
-        await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)
+      const { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+        outOfBandInvitation,
+        { label: 'alice' }
+      )
 
       // Wait until connection is ready
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -649,7 +668,7 @@ describe('out of band', () => {
       await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
 
       // Try to receive the invitation again
-      await expect(aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)).rejects.toThrow(
+      await expect(aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })).rejects.toThrow(
         new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
@@ -665,6 +684,7 @@ describe('out of band', () => {
       const { outOfBandRecord, connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
         outOfBandInvitation,
         {
+          label: 'alice',
           autoAcceptConnection: true,
           autoAcceptInvitation: true,
         }
@@ -710,14 +730,16 @@ describe('out of band', () => {
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      let { connectionRecord: firstAliceFaberConnection } =
-        await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+        outOfBandInvitation,
+        { label: 'alice' }
+      )
       firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         firstAliceFaberConnection?.id!
       )
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)
+      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       // TODO Somehow check agents throws an error or sends problem report
 
@@ -771,7 +793,8 @@ describe('out of band', () => {
       const outOfBandRecord1 = await faberAgent.modules.oob.createInvitation({})
 
       let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
-        outOfBandRecord1.outOfBandInvitation
+        outOfBandRecord1.outOfBandInvitation,
+        { label: 'alice' }
       )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -789,7 +812,8 @@ describe('out of band', () => {
       })
 
       let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.modules.oob.receiveInvitation(
-        outOfBandRecord2.outOfBandInvitation
+        outOfBandRecord2.outOfBandInvitation,
+        { label: 'alice' }
       )
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       aliceFaberConnection2 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection2?.id!)
@@ -810,7 +834,7 @@ describe('out of band', () => {
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)
+      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: CredentialState.OfferReceived,
@@ -845,7 +869,8 @@ describe('out of band', () => {
 
       // Create connection
       const { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
-        connectionOutOfBandRecord.outOfBandInvitation
+        connectionOutOfBandRecord.outOfBandInvitation,
+        { label: 'alice' }
       )
       if (!connectionRecord) throw new Error('Connection record is undefined')
       await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord.id)
@@ -859,6 +884,7 @@ describe('out of band', () => {
       const { connectionRecord: offerConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
         outOfBandRecord.outOfBandInvitation,
         {
+          label: 'alice',
           reuseConnection: true,
         }
       )
@@ -900,7 +926,7 @@ describe('out of band', () => {
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation)
+      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: CredentialState.OfferReceived,
@@ -936,6 +962,7 @@ describe('out of band', () => {
       const routing = await aliceAgent.modules.mediationRecipient.getRouting({})
 
       await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+        label: 'alice',
         routing,
       })
 
@@ -983,7 +1010,7 @@ describe('out of band', () => {
         threadId: message.threadId,
         timeoutMs: 10000,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)
@@ -1017,7 +1044,7 @@ describe('out of band', () => {
         threadId: message.threadId,
         timeoutMs: 10000,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { routing })
+      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice', routing })
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(CredentialState.OfferReceived)

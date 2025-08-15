@@ -47,7 +47,6 @@ const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:
 const logger = new TestLogger(LogLevel.info)
 
 const agentConfig: InitConfig = {
-  label: process.env.AGENT_LABEL || 'Credo Mediator',
   logger,
 }
 

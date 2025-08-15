@@ -14,7 +14,6 @@ import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrat
 describe('Indy SDK To Askar Migration', () => {
   test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: 'indy | indy-sdk sqlite to aries-askar sqlite successful migration',
       autoUpdateStorageOnStartup: true,
     }
 
@@ -81,9 +80,7 @@ describe('Indy SDK To Askar Migration', () => {
    *  - Check if the record can still be accessed
    */
   test('indy-sdk sqlite to aries-askar sqlite fails and restores', async () => {
-    const indySdkAndAskarConfig: InitConfig = {
-      label: 'indy | indy-sdk sqlite to aries-askar sqlite fails and restores',
-    }
+    const indySdkAndAskarConfig: InitConfig = {}
 
     const indySdkAgentDbPath = `${homedir()}/.indy_client/wallet/indy-sdk sqlite to aries-askar sqlite fails and restores/sqlite.db`
     const indySdkWalletTestPath = path.join(__dirname, 'indy-sdk-040-wallet.db')
