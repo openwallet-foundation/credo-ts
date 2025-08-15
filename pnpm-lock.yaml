@@ -826,8 +826,8 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.5.0
-        version: 2.5.0
+        specifier: ^2.5.2
+        version: 2.5.2
       json-canonicalize:
         specifier: ^1.0.6
         version: 1.2.0
@@ -3925,8 +3925,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.5.0:
-    resolution: {integrity: sha512-6wBHXnWKwJeSkGrPS0wghARDzFdFT0CYcm4JmjWd2bIeb8V23qnthQFhs26KCwUBYQPvBj3HweTy15H/NePaFw==}
+  didwebvh-ts@2.5.2:
+    resolution: {integrity: sha512-3aMzoYwqefEnat2eyVOiuCqndnYOxFpRsgaXLI4X//GGitJRmhxKc5A4X1LQl7ARzAji5CD4LboQ7Df0aI8T2g==}
     hasBin: true
 
   diff-sequences@29.6.3:
@@ -12389,7 +12389,7 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.5.0:
+  didwebvh-ts@2.5.2:
     dependencies:
       '@noble/hashes': 1.8.0
       json-canonicalize: 1.2.0
