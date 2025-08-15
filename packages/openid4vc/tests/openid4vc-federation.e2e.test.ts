@@ -82,6 +82,7 @@ describe('OpenId4Vc-federation', () => {
 
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
+                type: 'credentials',
                 credentialConfigurationId,
                 format: credentialRequest.format,
                 credentials: holderBinding.keys.map((holderBinding) => ({
@@ -207,6 +208,7 @@ describe('OpenId4Vc-federation', () => {
           presentationExchange: {
             definition: openBadgePresentationDefinition,
           },
+          version: 'v1.draft24',
         })
         .catch((error) => {
           throw error
@@ -227,6 +229,7 @@ describe('OpenId4Vc-federation', () => {
           definition: universityDegreePresentationDefinition,
         },
         verifierId: openIdVerifierTenant2.verifierId,
+        version: 'v1.draft24',
       })
 
     expect(authorizationRequestUri2).toEqual(
@@ -454,6 +457,7 @@ describe('OpenId4Vc-federation', () => {
         presentationExchange: {
           definition: openBadgePresentationDefinition,
         },
+        version: 'v1.draft24',
       })
 
     expect(authorizationRequestUri1).toEqual(
@@ -471,6 +475,7 @@ describe('OpenId4Vc-federation', () => {
           definition: universityDegreePresentationDefinition,
         },
         verifierId: openIdVerifierTenant2.verifierId,
+        version: 'v1.draft24',
       })
 
     expect(authorizationRequestUri2).toEqual(
@@ -712,6 +717,7 @@ describe('OpenId4Vc-federation', () => {
         presentationExchange: {
           definition: openBadgePresentationDefinition,
         },
+        version: 'v1.draft24',
       })
 
     expect(authorizationRequestUri1).toEqual(
@@ -729,6 +735,7 @@ describe('OpenId4Vc-federation', () => {
           definition: universityDegreePresentationDefinition,
         },
         verifierId: openIdVerifierTenant2.verifierId,
+        version: 'v1.draft24',
       })
 
     expect(authorizationRequestUri2).toEqual(

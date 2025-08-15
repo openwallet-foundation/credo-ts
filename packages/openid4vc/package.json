@@ -29,10 +29,10 @@
     "rxjs": "catalog:",
     "zod": "catalog:",
     "@openid-federation/core": "0.1.1-alpha.17",
-    "@openid4vc/openid4vci": "0.3.0-alpha-20250602121005",
-    "@openid4vc/oauth2": "0.3.0-alpha-20250602121005",
-    "@openid4vc/openid4vp": "0.3.0-alpha-20250602121005",
-    "@openid4vc/utils": "0.3.0-alpha-20250602121005"
+    "@openid4vc/openid4vci": "0.3.0-alpha-20250813113255",
+    "@openid4vc/oauth2": "0.3.0-alpha-20250813113255",
+    "@openid4vc/openid4vp": "0.3.0-alpha-20250813113255",
+    "@openid4vc/utils": "0.3.0-alpha-20250813113255"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",

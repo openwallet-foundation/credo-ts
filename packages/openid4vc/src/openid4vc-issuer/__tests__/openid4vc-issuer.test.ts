@@ -331,6 +331,7 @@ describe('OpenId4VcIssuer', () => {
       },
 
       credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
         format: 'vc+sd-jwt',
         credentials: [
           {
@@ -431,6 +432,7 @@ describe('OpenId4VcIssuer', () => {
       },
 
       credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
         format: 'vc+sd-jwt',
         credentials: [
           {
@@ -499,6 +501,7 @@ describe('OpenId4VcIssuer', () => {
         })
 
         return {
+          type: 'credentials',
           format: 'jwt_vc',
           credentialConfigurationId: openBadgeCredential.id,
           credentials: [
@@ -636,6 +639,7 @@ describe('OpenId4VcIssuer', () => {
         },
       },
       credentialRequestToCredentialMapper: () => ({
+        type: 'credentials',
         format: 'jwt_vc',
         credentials: [
           {
@@ -760,6 +764,7 @@ describe('OpenId4VcIssuer', () => {
       const credential =
         credentialConfigurationId === openBadgeCredential.id ? openBadgeCredential : universityDegreeCredential
       return {
+        type: 'credentials',
         format: 'jwt_vc',
         credentials: [
           {

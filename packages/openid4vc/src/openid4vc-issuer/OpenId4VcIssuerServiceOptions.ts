@@ -1,4 +1,12 @@
-import type { AgentContext, ClaimFormat, Kms, MdocSignOptions, SdJwtVcSignOptions, W3cCredential } from '@credo-ts/core'
+import type {
+  AgentContext,
+  CanBePromise,
+  ClaimFormat,
+  Kms,
+  MdocSignOptions,
+  SdJwtVcSignOptions,
+  W3cCredential,
+} from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
   OpenId4VcVerificationSessionRecord,
@@ -13,6 +21,7 @@ import type {
   OpenId4VciCredentialOfferPayload,
   OpenId4VciCredentialRequest,
   OpenId4VciCredentialRequestFormatSpecific,
+  OpenId4VciDeferredCredentialRequest,
   OpenId4VciTxCode,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
@@ -151,6 +160,11 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
    * data.
    */
   issuanceMetadata?: Record<string, unknown>
+
+  /**
+   * Whether this issuance session allows to generate refresh tokens.
+   */
+  generateRefreshTokens?: boolean
 }
 
 export interface OpenId4VciCreateCredentialResponseOptions {
@@ -165,6 +179,20 @@ export interface OpenId4VciCreateCredentialResponseOptions {
    * will be used.
    */
   credentialRequestToCredentialMapper?: OpenId4VciCredentialRequestToCredentialMapper
+}
+
+export interface OpenId4VciCreateDeferredCredentialResponseOptions {
+  deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
+  authorization: OpenId4VciCredentialRequestAuthorization
+
+  /**
+   * You can optionally provide a deferred credential request to credential mapper that will be
+   * dynamically invoked to return credential data based on the credential request.
+   *
+   * If not provided, the `deferredCredentialRequestToCredentialMapper` from the agent config
+   * will be used.
+   */
+  deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
 }
 
 /**
@@ -273,9 +301,34 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
    */
   credentialConfigurationId: string
 }
+
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
-) => Promise<OpenId4VciSignCredentials> | OpenId4VciSignCredentials
+) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
+
+export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
+  agentContext: AgentContext
+
+  /**
+   * Authorization associated with the credential request
+   */
+  authorization: OpenId4VciCredentialRequestAuthorization
+
+  /**
+   * The issuance session associated with the credential request. You can extract the
+   * issuance metadata from this record if passed in the offer creation method.
+   */
+  issuanceSession: OpenId4VcIssuanceSessionRecord
+
+  /**
+   * The deferred credential request received from the wallet
+   */
+  deferredCredentialRequest: OpenId4VciDeferredCredentialRequest
+}
+
+export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
+  options: OpenId4VciDeferredCredentialRequestToCredentialMapperOptions
+) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
@@ -283,21 +336,30 @@ export type OpenId4VciSignCredentials =
   | OpenId4VciSignMdocCredentials
 
 export interface OpenId4VciSignSdJwtCredentials {
+  type: 'credentials'
   format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
   credentials: SdJwtVcSignOptions[]
 }
 
 export interface OpenId4VciSignMdocCredentials {
+  type: 'credentials'
   format: ClaimFormat.MsoMdoc | `${ClaimFormat.MsoMdoc}`
   credentials: MdocSignOptions[]
 }
 
 export interface OpenId4VciSignW3cCredentials {
+  type: 'credentials'
   format: ClaimFormat.JwtVc | `${ClaimFormat.JwtVc}` | ClaimFormat.LdpVc | `${ClaimFormat.LdpVc}`
   credentials: Array<{
     verificationMethod: string
     credential: W3cCredential
   }>
+}
+
+export type OpenId4VciDeferredCredentials = {
+  type: 'deferral'
+  transactionId: string
+  interval: number
 }
 
 export interface OpenId4VciBatchCredentialIssuanceOptions {
@@ -333,7 +395,7 @@ export type OpenId4VciCreateIssuerOptions = {
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**
-   * Indicate support for batch issuane of credentials
+   * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }

@@ -18,6 +18,7 @@ import {
   configureAuthorizationChallengeEndpoint,
   configureCredentialEndpoint,
   configureCredentialOfferEndpoint,
+  configureDeferredCredentialEndpoint,
   configureIssuerMetadataEndpoint,
   configureJwksEndpoint,
   configureNonceEndpoint,
@@ -135,6 +136,7 @@ export class OpenId4VcIssuerModule implements Module {
     configureAccessTokenEndpoint(endpointRouter, this.config)
     configureAuthorizationChallengeEndpoint(endpointRouter, this.config)
     configureCredentialEndpoint(endpointRouter, this.config)
+    configureDeferredCredentialEndpoint(endpointRouter, this.config)
     configureFederationEndpoint(endpointRouter)
 
     // First one will be called for all requests (when next is called)

@@ -6,6 +6,7 @@ import {
   BasicConstraintsExtension,
   CRLDistributionPointsExtension,
   ExtendedKeyUsageExtension,
+  IssuerAlternativeNameExtension,
   KeyUsagesExtension,
   SubjectAlternativeNameExtension,
   SubjectKeyIdentifierExtension,
@@ -13,7 +14,6 @@ import {
 import { publicJwkToSpki } from '../../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../../utils'
 import { PublicJwk } from '../../kms'
-import { IssuerAlternativeNameExtension } from '../extensions'
 
 export const createSubjectKeyIdentifierExtension = (
   options: X509CertificateExtensionsOptions['subjectKeyIdentifier'],

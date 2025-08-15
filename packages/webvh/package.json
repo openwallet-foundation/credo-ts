@@ -1,0 +1,35 @@
+{
+  "name": "@credo-ts/webvh",
+  "version": "0.5.13",
+  "description": "Credo WebVH DID method implementation",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "files": ["build"],
+  "publishConfig": {
+    "main": "build/index",
+    "types": "build/index",
+    "access": "public"
+  },
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf -rf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build",
+    "test": "jest",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --config jest.config.js"
+  },
+  "dependencies": {
+    "@credo-ts/anoncreds": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "class-transformer": "^0.5.1",
+    "class-validator": "0.14.1",
+    "didwebvh-ts": "^2.5.0",
+    "json-canonicalize": "^1.0.6",
+    "tsyringe": "^4.8.0"
+  },
+  "devDependencies": {
+    "rimraf": "^4.4.0",
+    "typescript": "~5.5.2"
+  }
+}

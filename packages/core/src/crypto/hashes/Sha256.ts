@@ -1,6 +1,6 @@
 import type { IHash } from './IHash'
 
-import { sha256 } from '@noble/hashes/sha256'
+import { sha256 } from '@noble/hashes/sha2'
 
 export class Sha256 implements IHash {
   public hash(data: Uint8Array | string): Uint8Array {
