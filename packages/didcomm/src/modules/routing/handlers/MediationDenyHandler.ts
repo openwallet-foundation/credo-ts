@@ -1,17 +1,17 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
-import type { MediationRecipientService } from '../services'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMediationRecipientService } from '../services'
 
 import { MediationDenyMessage } from '../messages'
 
-export class MediationDenyHandler implements MessageHandler {
-  private mediationRecipientService: MediationRecipientService
+export class MediationDenyHandler implements DidCommMessageHandler {
+  private mediationRecipientService: DidCommMediationRecipientService
   public supportedMessages = [MediationDenyMessage]
 
-  public constructor(mediationRecipientService: MediationRecipientService) {
+  public constructor(mediationRecipientService: DidCommMediationRecipientService) {
     this.mediationRecipientService = mediationRecipientService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<MediationDenyHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<MediationDenyHandler>) {
     messageContext.assertReadyConnection()
 
     await this.mediationRecipientService.processMediationDeny(messageContext)

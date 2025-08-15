@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
@@ -11,7 +11,7 @@ export interface V2DeliveryRequestMessageOptions {
   limit: number
 }
 
-export class V2DeliveryRequestMessage extends AgentMessage {
+export class V2DeliveryRequestMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: V2DeliveryRequestMessageOptions) {

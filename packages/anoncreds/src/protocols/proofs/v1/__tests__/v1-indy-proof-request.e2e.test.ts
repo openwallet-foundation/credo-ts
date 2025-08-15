@@ -1,7 +1,7 @@
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
-import { ProofState } from '../../../../../../didcomm/src'
+import { DidCommProofState } from '../../../../../../didcomm/src'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof | V1ProofProtocol', () => {
@@ -34,7 +34,7 @@ describe('Present Proof | V1ProofProtocol', () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -96,13 +96,13 @@ describe('Present Proof | V1ProofProtocol', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v1',
     })
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Accept Proposal
@@ -135,7 +135,7 @@ describe('Present Proof | V1ProofProtocol', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v1',
     })
   })

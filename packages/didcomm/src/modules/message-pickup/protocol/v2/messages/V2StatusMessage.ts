@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsBoolean, IsDate, IsInt, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 import { DateParser } from '../../../../../util/transformers'
@@ -18,7 +18,7 @@ export interface V2StatusMessageOptions {
   liveDelivery?: boolean
 }
 
-export class V2StatusMessage extends AgentMessage {
+export class V2StatusMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: V2StatusMessageOptions) {

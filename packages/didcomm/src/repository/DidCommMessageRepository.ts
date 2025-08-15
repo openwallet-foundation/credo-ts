@@ -1,5 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { AgentMessage, ConstructableAgentMessage } from '../AgentMessage'
+import type { ConstructableAgentMessage, DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
@@ -82,11 +82,11 @@ export class DidCommMessageRepository extends Repository<DidCommMessageRecord> {
 
 export interface SaveAgentMessageOptions {
   role: DidCommMessageRole
-  agentMessage: AgentMessage
+  agentMessage: DidCommMessage
   associatedRecordId: string
 }
 
-export interface GetAgentMessageOptions<MessageClass extends typeof AgentMessage> {
+export interface GetAgentMessageOptions<MessageClass extends typeof DidCommMessage> {
   associatedRecordId: string
   messageClass: MessageClass
   role?: DidCommMessageRole

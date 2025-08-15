@@ -1,24 +1,24 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
-import type { V1DiscoverFeaturesService } from '../V1DiscoverFeaturesService'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { V1DidCommDiscoverFeaturesService } from '../V1DidCommDiscoverFeaturesService'
 
-import { OutboundMessageContext } from '../../../../../models'
+import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V1QueryMessage } from '../messages'
 
-export class V1QueryMessageHandler implements MessageHandler {
-  private discoverFeaturesService: V1DiscoverFeaturesService
+export class V1QueryMessageHandler implements DidCommMessageHandler {
+  private discoverFeaturesService: V1DidCommDiscoverFeaturesService
   public supportedMessages = [V1QueryMessage]
 
-  public constructor(discoverFeaturesService: V1DiscoverFeaturesService) {
+  public constructor(discoverFeaturesService: V1DidCommDiscoverFeaturesService) {
     this.discoverFeaturesService = discoverFeaturesService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<V1QueryMessageHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<V1QueryMessageHandler>) {
     const connection = inboundMessage.assertReadyConnection()
 
     const discloseMessage = await this.discoverFeaturesService.processQuery(inboundMessage)
 
     if (discloseMessage) {
-      return new OutboundMessageContext(discloseMessage.message, {
+      return new OutboundDidCommMessageContext(discloseMessage.message, {
         agentContext: inboundMessage.agentContext,
         connection,
       })

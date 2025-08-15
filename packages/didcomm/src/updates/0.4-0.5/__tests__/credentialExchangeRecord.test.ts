@@ -3,8 +3,12 @@ import type { CredentialRecordBinding } from '../../../modules/credentials'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
-import { CredentialExchangeRecord, CredentialRole, CredentialState } from '../../../modules/credentials'
-import { CredentialRepository } from '../../../modules/credentials/repository/CredentialRepository'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '../../../modules/credentials'
+import { DidCommCredentialExchangeRepository } from '../../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRecord, DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../credentialExchangeRecord'
@@ -12,8 +16,8 @@ import * as testModule from '../credentialExchangeRecord'
 const agentConfig = getAgentConfig('Migration - Credential Exchange Record - 0.4-0.5')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/credentials/repository/CredentialRepository')
-const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
+jest.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
 jest.mock('../../../repository/DidCommMessageRepository')
@@ -26,7 +30,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => ({
     context: agentContext,
     dependencyManager: {
       resolve: jest.fn((injectionToken) =>
-        injectionToken === CredentialRepository ? credentialRepository : didCommMessageRepository
+        injectionToken === DidCommCredentialExchangeRepository ? credentialRepository : didCommMessageRepository
       ),
     },
   })),
@@ -48,7 +52,9 @@ describe('0.4-0.5 | Migration | Credential Exchange Record', () => {
 
   describe('migrateCredentialExchangeRecordToV0_5()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: CredentialExchangeRecord[] = [getCredentialRecord({ state: CredentialState.OfferSent })]
+      const records: DidCommCredentialExchangeRecord[] = [
+        getCredentialRecord({ state: DidCommCredentialState.OfferSent }),
+      ]
 
       mockFunction(credentialRepository.getAll).mockResolvedValue(records)
 
@@ -59,51 +65,51 @@ describe('0.4-0.5 | Migration | Credential Exchange Record', () => {
 
       const [, credentialRecord] = mockFunction(credentialRepository.update).mock.calls[0]
       expect(credentialRecord.toJSON()).toMatchObject({
-        role: CredentialRole.Issuer,
+        role: DidCommCredentialRole.Issuer,
       })
     })
   })
 
   describe('migrateRole()', () => {
     // according to: https://github.com/hyperledger/aries-rfcs/blob/main/features/0036-issue-credential/README.md#states
-    genMigrateRoleTests(CredentialState.ProposalReceived, CredentialRole.Issuer)
-    genMigrateRoleTests(CredentialState.OfferSent, CredentialRole.Issuer)
-    genMigrateRoleTests(CredentialState.RequestReceived, CredentialRole.Issuer)
-    genMigrateRoleTests(CredentialState.CredentialIssued, CredentialRole.Issuer)
-    genMigrateRoleTests(CredentialState.Done, CredentialRole.Issuer, { doneStateWithCredentials: false })
+    genMigrateRoleTests(DidCommCredentialState.ProposalReceived, DidCommCredentialRole.Issuer)
+    genMigrateRoleTests(DidCommCredentialState.OfferSent, DidCommCredentialRole.Issuer)
+    genMigrateRoleTests(DidCommCredentialState.RequestReceived, DidCommCredentialRole.Issuer)
+    genMigrateRoleTests(DidCommCredentialState.CredentialIssued, DidCommCredentialRole.Issuer)
+    genMigrateRoleTests(DidCommCredentialState.Done, DidCommCredentialRole.Issuer, { doneStateWithCredentials: false })
 
-    genMigrateRoleTests(CredentialState.ProposalSent, CredentialRole.Holder)
-    genMigrateRoleTests(CredentialState.OfferReceived, CredentialRole.Holder)
-    genMigrateRoleTests(CredentialState.RequestSent, CredentialRole.Holder)
-    genMigrateRoleTests(CredentialState.CredentialReceived, CredentialRole.Holder)
-    genMigrateRoleTests(CredentialState.Done, CredentialRole.Holder, { doneStateWithCredentials: true })
-    genMigrateRoleTests(CredentialState.Declined, CredentialRole.Holder)
+    genMigrateRoleTests(DidCommCredentialState.ProposalSent, DidCommCredentialRole.Holder)
+    genMigrateRoleTests(DidCommCredentialState.OfferReceived, DidCommCredentialRole.Holder)
+    genMigrateRoleTests(DidCommCredentialState.RequestSent, DidCommCredentialRole.Holder)
+    genMigrateRoleTests(DidCommCredentialState.CredentialReceived, DidCommCredentialRole.Holder)
+    genMigrateRoleTests(DidCommCredentialState.Done, DidCommCredentialRole.Holder, { doneStateWithCredentials: true })
+    genMigrateRoleTests(DidCommCredentialState.Declined, DidCommCredentialRole.Holder)
 
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Issuer, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Issuer, {
       didCommMessage: { messageName: 'propose-credential', didCommMessageRole: DidCommMessageRole.Receiver },
     })
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Holder, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Holder, {
       didCommMessage: { messageName: 'propose-credential', didCommMessageRole: DidCommMessageRole.Sender },
     })
 
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Holder, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Holder, {
       didCommMessage: { messageName: 'offer-credential', didCommMessageRole: DidCommMessageRole.Receiver },
     })
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Issuer, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Issuer, {
       didCommMessage: { messageName: 'offer-credential', didCommMessageRole: DidCommMessageRole.Sender },
     })
 
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Issuer, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Issuer, {
       didCommMessage: { messageName: 'request-credential', didCommMessageRole: DidCommMessageRole.Receiver },
     })
-    genMigrateRoleTests(CredentialState.Abandoned, CredentialRole.Holder, {
+    genMigrateRoleTests(DidCommCredentialState.Abandoned, DidCommCredentialRole.Holder, {
       didCommMessage: { messageName: 'request-credential', didCommMessageRole: DidCommMessageRole.Sender },
     })
   })
 
   function genMigrateRoleTests(
-    state: CredentialState,
-    expectedRole: CredentialRole,
+    state: DidCommCredentialState,
+    expectedRole: DidCommCredentialRole,
     {
       doneStateWithCredentials,
       didCommMessage,
@@ -170,7 +176,7 @@ function getCredentialRecord({
   id?: string
   metadata?: Record<string, unknown>
   credentials?: CredentialRecordBinding[]
-  state?: CredentialState
+  state?: DidCommCredentialState
 }) {
   return JsonTransformer.fromJSON(
     {
@@ -179,6 +185,6 @@ function getCredentialRecord({
       credentials,
       state,
     },
-    CredentialExchangeRecord
+    DidCommCredentialExchangeRecord
   )
 }

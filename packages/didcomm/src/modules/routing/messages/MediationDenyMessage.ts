@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface MediationDenyMessageOptions {
@@ -10,7 +10,7 @@ export interface MediationDenyMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-deny
  */
-export class MediationDenyMessage extends AgentMessage {
+export class MediationDenyMessage extends DidCommMessage {
   public constructor(options: MediationDenyMessageOptions) {
     super()
 

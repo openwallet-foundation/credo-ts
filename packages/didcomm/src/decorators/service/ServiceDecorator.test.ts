@@ -1,11 +1,11 @@
 import { JsonTransformer } from '../../../../core/src/utils/JsonTransformer'
 import { Compose } from '../../../../core/src/utils/mixins'
-import { BaseMessage } from '../../BaseMessage'
+import { BaseDidCommMessage } from '../../BaseDidCommMessage'
 
 import { ServiceDecorated } from './ServiceDecoratorExtension'
 
 describe('Decorators | ServiceDecoratorExtension', () => {
-  class TestMessage extends Compose(BaseMessage, [ServiceDecorated]) {
+  class TestMessage extends Compose(BaseDidCommMessage, [ServiceDecorated]) {
     public toJSON(): Record<string, unknown> {
       return JsonTransformer.toJSON(this)
     }

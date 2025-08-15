@@ -1,11 +1,11 @@
-import type { CredentialPreviewOptions } from '../../../models/CredentialPreviewAttribute'
+import type { CredentialPreviewOptions } from '../../../models/DidCommCredentialPreviewAttribute'
 
 import { JsonTransformer } from '@credo-ts/core'
 import { Expose, Transform, Type } from 'class-transformer'
 import { IsInstance, ValidateNested } from 'class-validator'
 
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../../../util/messageType'
-import { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
+import { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 
 /**
  * Credential preview inner message class.
@@ -17,7 +17,7 @@ import { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAtt
 export class V2CredentialPreview {
   public constructor(options: CredentialPreviewOptions) {
     if (options) {
-      this.attributes = options.attributes.map((a) => new CredentialPreviewAttribute(a))
+      this.attributes = options.attributes.map((a) => new DidCommCredentialPreviewAttribute(a))
     }
   }
 
@@ -29,10 +29,10 @@ export class V2CredentialPreview {
   public readonly type = V2CredentialPreview.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/credential-preview')
 
-  @Type(() => CredentialPreviewAttribute)
+  @Type(() => DidCommCredentialPreviewAttribute)
   @ValidateNested({ each: true })
-  @IsInstance(CredentialPreviewAttribute, { each: true })
-  public attributes!: CredentialPreviewAttribute[]
+  @IsInstance(DidCommCredentialPreviewAttribute, { each: true })
+  public attributes!: DidCommCredentialPreviewAttribute[]
 
   public toJSON(): Record<string, unknown> {
     return JsonTransformer.toJSON(this)
@@ -50,7 +50,7 @@ export class V2CredentialPreview {
   public static fromRecord(record: Record<string, string>) {
     const attributes = Object.entries(record).map(
       ([name, value]) =>
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name,
           mimeType: 'text/plain',
           value,

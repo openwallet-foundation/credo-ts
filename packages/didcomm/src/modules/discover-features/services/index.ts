@@ -1,1 +1,1 @@
-export * from './DiscoverFeaturesService'
+export * from './DidCommDiscoverFeaturesService'

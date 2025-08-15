@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { AckDecorator } from '../../../../../decorators/ack/AckDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
@@ -13,7 +13,7 @@ export interface RevocationNotificationMessageV2Options {
   pleaseAck?: AckDecorator
 }
 
-export class V2RevocationNotificationMessage extends AgentMessage {
+export class V2RevocationNotificationMessage extends DidCommMessage {
   public constructor(options: RevocationNotificationMessageV2Options) {
     super()
     if (options) {

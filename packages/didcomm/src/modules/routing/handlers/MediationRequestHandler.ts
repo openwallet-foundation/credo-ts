@@ -1,21 +1,21 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
-import type { MediatorModuleConfig } from '../MediatorModuleConfig'
-import type { MediatorService } from '../services/MediatorService'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
+import type { DidCommMediatorService } from '../services/DidCommMediatorService'
 
-import { OutboundMessageContext } from '../../../models'
+import { OutboundDidCommMessageContext } from '../../../models'
 import { MediationRequestMessage } from '../messages/MediationRequestMessage'
 
-export class MediationRequestHandler implements MessageHandler {
-  private mediatorService: MediatorService
-  private mediatorModuleConfig: MediatorModuleConfig
+export class MediationRequestHandler implements DidCommMessageHandler {
+  private mediatorService: DidCommMediatorService
+  private mediatorModuleConfig: DidCommMediatorModuleConfig
   public supportedMessages = [MediationRequestMessage]
 
-  public constructor(mediatorService: MediatorService, mediatorModuleConfig: MediatorModuleConfig) {
+  public constructor(mediatorService: DidCommMediatorService, mediatorModuleConfig: DidCommMediatorModuleConfig) {
     this.mediatorService = mediatorService
     this.mediatorModuleConfig = mediatorModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<MediationRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<MediationRequestHandler>) {
     const connection = messageContext.assertReadyConnection()
 
     const mediationRecord = await this.mediatorService.processMediationRequest(messageContext)
@@ -25,7 +25,7 @@ export class MediationRequestHandler implements MessageHandler {
         messageContext.agentContext,
         mediationRecord
       )
-      return new OutboundMessageContext(message, {
+      return new OutboundDidCommMessageContext(message, {
         agentContext: messageContext.agentContext,
         connection,
         associatedRecord: mediationRecord,

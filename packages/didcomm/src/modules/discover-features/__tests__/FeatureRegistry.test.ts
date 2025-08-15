@@ -1,25 +1,25 @@
 import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
-import { FeatureRegistry } from '../../../FeatureRegistry'
-import { Feature, GoalCode, Protocol } from '../../../models'
+import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommFeature, DidCommGoalCode, DidCommProtocol } from '../../../models'
 
 describe('Feature Registry', () => {
   test('register goal codes', () => {
-    const featureRegistry = new FeatureRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
 
-    const goalCode = new GoalCode({ id: 'aries.vc.issue' })
+    const goalCode = new DidCommGoalCode({ id: 'aries.vc.issue' })
 
     expect(JsonTransformer.toJSON(goalCode)).toMatchObject({ id: 'aries.vc.issue', 'feature-type': 'goal-code' })
 
     featureRegistry.register(goalCode)
-    const found = featureRegistry.query({ featureType: GoalCode.type, match: 'aries.*' })
+    const found = featureRegistry.query({ featureType: DidCommGoalCode.type, match: 'aries.*' })
 
     expect(found.map((t) => t.toJSON())).toStrictEqual([{ id: 'aries.vc.issue', 'feature-type': 'goal-code' }])
   })
 
   test('register generic feature', () => {
-    const featureRegistry = new FeatureRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
 
-    class GenericFeature extends Feature {
+    class GenericFeature extends DidCommFeature {
       public customFieldString: string
       public customFieldNumber: number
       public constructor(id: string, customFieldString: string, customFieldNumber: number) {
@@ -37,14 +37,14 @@ describe('Feature Registry', () => {
   })
 
   test('register combined features', () => {
-    const featureRegistry = new FeatureRegistry()
+    const featureRegistry = new DidCommFeatureRegistry()
 
     featureRegistry.register(
-      new Protocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['requester'] }),
-      new Protocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['responder'] }),
-      new Protocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['responder'] })
+      new DidCommProtocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['requester'] }),
+      new DidCommProtocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['responder'] }),
+      new DidCommProtocol({ id: 'https://didcomm.org/dummy/1.0', roles: ['responder'] })
     )
-    const found = featureRegistry.query({ featureType: Protocol.type, match: 'https://didcomm.org/dummy/1.0' })
+    const found = featureRegistry.query({ featureType: DidCommProtocol.type, match: 'https://didcomm.org/dummy/1.0' })
 
     expect(found.map((t) => t.toJSON())).toStrictEqual([
       { id: 'https://didcomm.org/dummy/1.0', 'feature-type': 'protocol', roles: ['requester', 'responder'] },

@@ -1,32 +1,32 @@
 import type { DidRepository } from '@credo-ts/core'
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
-import type { OutOfBandService } from '../../oob/OutOfBandService'
-import type { RoutingService } from '../../routing/services/RoutingService'
-import type { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import type { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
+import type { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
 
 import { CredoError, tryParseDid } from '@credo-ts/core'
 
-import { TransportService } from '../../../TransportService'
-import { OutboundMessageContext } from '../../../models'
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
+import { DidCommTransportService } from '../../../DidCommTransportService'
+import { OutboundDidCommMessageContext } from '../../../models'
+import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidExchangeRequestMessage } from '../messages'
-import { HandshakeProtocol } from '../models'
+import { DidCommHandshakeProtocol } from '../models'
 
-export class DidExchangeRequestHandler implements MessageHandler {
+export class DidExchangeRequestHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol
-  private outOfBandService: OutOfBandService
-  private routingService: RoutingService
+  private outOfBandService: DidCommOutOfBandService
+  private routingService: DidCommRoutingService
   private didRepository: DidRepository
-  private connectionsModuleConfig: ConnectionsModuleConfig
+  private connectionsModuleConfig: DidCommConnectionsModuleConfig
   public supportedMessages = [DidExchangeRequestMessage]
 
   public constructor(
     didExchangeProtocol: DidExchangeProtocol,
-    outOfBandService: OutOfBandService,
-    routingService: RoutingService,
+    outOfBandService: DidCommOutOfBandService,
+    routingService: DidCommRoutingService,
     didRepository: DidRepository,
-    connectionsModuleConfig: ConnectionsModuleConfig
+    connectionsModuleConfig: DidCommConnectionsModuleConfig
   ) {
     this.didExchangeProtocol = didExchangeProtocol
     this.outOfBandService = outOfBandService
@@ -35,7 +35,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
     this.connectionsModuleConfig = connectionsModuleConfig
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<DidExchangeRequestHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<DidExchangeRequestHandler>) {
     const { agentContext, recipientKey, senderKey, message, connection, sessionId } = messageContext
 
     if (!recipientKey || !senderKey) {
@@ -53,7 +53,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
           did: parentThreadId,
           threadId: message.threadId,
           recipientKey,
-          handshakeProtocols: [HandshakeProtocol.DidExchange],
+          handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
         })
       : await this.outOfBandService.findByCreatedInvitationId(agentContext, parentThreadId)
     if (!outOfBandRecord) {
@@ -71,7 +71,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     // TODO Shouldn't we check also if the keys match the keys from oob invitation services?
 
-    if (outOfBandRecord.state === OutOfBandState.Done) {
+    if (outOfBandRecord.state === DidCommOutOfBandState.Done) {
       throw new CredoError('Out-of-band record has been already processed and it does not accept any new requests')
     }
 
@@ -79,12 +79,12 @@ export class DidExchangeRequestHandler implements MessageHandler {
 
     // Associate the new connection with the session created for the inbound message
     if (sessionId) {
-      const transportService = agentContext.dependencyManager.resolve(TransportService)
+      const transportService = agentContext.dependencyManager.resolve(DidCommTransportService)
       transportService.setConnectionIdForSession(sessionId, connectionRecord.id)
     }
 
     if (!outOfBandRecord.reusable) {
-      await this.outOfBandService.updateState(agentContext, outOfBandRecord, OutOfBandState.Done)
+      await this.outOfBandService.updateState(agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
     }
 
     if (connectionRecord.autoAcceptConnection ?? this.connectionsModuleConfig.autoAcceptConnections) {
@@ -105,7 +105,7 @@ export class DidExchangeRequestHandler implements MessageHandler {
         outOfBandRecord,
         routing
       )
-      return new OutboundMessageContext(message, {
+      return new OutboundDidCommMessageContext(message, {
         agentContext,
         connection: connectionRecord,
         outOfBand: outOfBandRecord,

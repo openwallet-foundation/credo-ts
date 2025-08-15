@@ -1,6 +1,6 @@
 import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds'
 import type { AgentContext } from '../../../../../../../../core/src/agent'
-import type { RevocationNotificationReceivedEvent } from '../../../../CredentialEvents'
+import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
 
 import { Subject } from 'rxjs'
 
@@ -11,30 +11,30 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
-import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry'
-import { InboundMessageContext } from '../../../../../../models'
-import { DidExchangeState } from '../../../../../connections'
-import { CredentialEventTypes } from '../../../../CredentialEvents'
-import { CredentialRole, CredentialState } from '../../../../models'
-import { CredentialExchangeRecord } from '../../../../repository'
-import { CredentialRepository } from '../../../../repository/CredentialRepository'
+import { DidCommMessageHandlerRegistry } from '../../../../../../DidCommMessageHandlerRegistry'
+import { InboundDidCommMessageContext } from '../../../../../../models'
+import { DidCommDidExchangeState } from '../../../../../connections'
+import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
+import { DidCommCredentialRole, DidCommCredentialState } from '../../../../models'
+import { DidCommCredentialExchangeRecord } from '../../../../repository'
+import { DidCommCredentialExchangeRepository } from '../../../../repository/DidCommCredentialExchangeRepository'
 import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
-import { RevocationNotificationService } from '../RevocationNotificationService'
+import { DidCommRevocationNotificationService } from '../DidCommRevocationNotificationService'
 
-jest.mock('../../../../repository/CredentialRepository')
-const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
+jest.mock('../../../../repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
+jest.mock('../../../../../../DidCommMessageHandlerRegistry')
+const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 describe('RevocationNotificationService', () => {
-  let revocationNotificationService: RevocationNotificationService
+  let revocationNotificationService: DidCommRevocationNotificationService
   let agentContext: AgentContext
   let eventEmitter: EventEmitter
 
@@ -44,7 +44,7 @@ describe('RevocationNotificationService', () => {
     agentContext = getAgentContext()
 
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-    revocationNotificationService = new RevocationNotificationService(
+    revocationNotificationService = new DidCommRevocationNotificationService(
       credentialRepository,
       eventEmitter,
       messageHandlerRegistry,
@@ -60,8 +60,8 @@ describe('RevocationNotificationService', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -70,11 +70,11 @@ describe('RevocationNotificationService', () => {
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const credentialRecord = new CredentialExchangeRecord({
+      const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
         protocolVersion: 'v1',
-        state: CredentialState.Done,
-        role: CredentialRole.Holder,
+        state: DidCommCredentialState.Done,
+        role: DidCommCredentialRole.Holder,
       })
 
       const metadata = {
@@ -94,14 +94,14 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, {
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
         connection,
         agentContext,
       })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
-      const clonedCredentialRecord = eventListenerMock.mock.calls[0][0].payload.credentialRecord
+      const clonedCredentialRecord = eventListenerMock.mock.calls[0][0].payload.credentialExchangeRecord
       expect(clonedCredentialRecord.toJSON()).toEqual(credentialRecord.toJSON())
 
       expect(credentialRecord.revocationNotification).toMatchObject({
@@ -110,12 +110,12 @@ describe('RevocationNotificationService', () => {
       })
 
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'RevocationNotificationReceived',
+        type: 'DidCommRevocationNotificationReceived',
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
-          credentialRecord: expect.any(CredentialExchangeRecord),
+          credentialExchangeRecord: expect.any(DidCommCredentialExchangeRecord),
         },
       })
 
@@ -125,8 +125,8 @@ describe('RevocationNotificationService', () => {
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -141,7 +141,10 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        connection,
+        agentContext,
+      })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -151,8 +154,8 @@ describe('RevocationNotificationService', () => {
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -161,7 +164,7 @@ describe('RevocationNotificationService', () => {
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -173,8 +176,8 @@ describe('RevocationNotificationService', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -183,11 +186,11 @@ describe('RevocationNotificationService', () => {
       // @ts-ignore
       const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
 
-      const credentialRecord = new CredentialExchangeRecord({
+      const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
         protocolVersion: 'v2',
-        state: CredentialState.Done,
-        role: CredentialRole.Holder,
+        state: DidCommCredentialState.Done,
+        role: DidCommCredentialRole.Holder,
       })
 
       const metadata = {
@@ -204,11 +207,14 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        agentContext,
+        connection,
+      })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
-      const clonedCredentialRecord = eventListenerMock.mock.calls[0][0].payload.credentialRecord
+      const clonedCredentialRecord = eventListenerMock.mock.calls[0][0].payload.credentialExchangeRecord
       expect(clonedCredentialRecord.toJSON()).toEqual(credentialRecord.toJSON())
 
       expect(credentialRecord.revocationNotification).toMatchObject({
@@ -217,12 +223,12 @@ describe('RevocationNotificationService', () => {
       })
 
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'RevocationNotificationReceived',
+        type: 'DidCommRevocationNotificationReceived',
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
-          credentialRecord: expect.any(CredentialExchangeRecord),
+          credentialExchangeRecord: expect.any(DidCommCredentialExchangeRecord),
         },
       })
 
@@ -232,8 +238,8 @@ describe('RevocationNotificationService', () => {
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -249,7 +255,10 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { connection, agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+        connection,
+        agentContext,
+      })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
@@ -259,8 +268,8 @@ describe('RevocationNotificationService', () => {
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
       const eventListenerMock = jest.fn()
 
-      eventEmitter.on<RevocationNotificationReceivedEvent>(
-        CredentialEventTypes.RevocationNotificationReceived,
+      eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
+        DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
         eventListenerMock
       )
 
@@ -270,7 +279,7 @@ describe('RevocationNotificationService', () => {
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 
