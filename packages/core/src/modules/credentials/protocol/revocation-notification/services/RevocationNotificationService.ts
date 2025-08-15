@@ -1,27 +1,25 @@
+import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 import type { RevocationNotificationReceivedEvent } from '../../../CredentialEvents'
 import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
-import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
-import {
-  AgentContext,
-  CredoError,
-  EventEmitter,
-  InboundMessageContext,
-  InjectionSymbols,
-  Logger,
-  MessageHandlerRegistry,
-  W3cCredentialRepository,
-  inject,
-  injectable,
-} from '@credo-ts/core'
-
+import { AgentContext } from '../../../../../agent'
+import { EventEmitter } from '../../../../../agent/EventEmitter'
+import { MessageHandlerRegistry } from '../../../../../agent/MessageHandlerRegistry'
+import { InboundMessageContext } from '../../../../../agent/models'
+import { InjectionSymbols } from '../../../../../constants'
+import { CredoError } from '../../../../../error'
+import { Logger } from '../../../../../logger'
+import { W3cCredentialRepository } from '../../../../../modules/vc'
+import { inject, injectable } from '../../../../../plugins'
 import { ConnectionRecord } from '../../../../connections'
 import { CredentialEventTypes } from '../../../CredentialEvents'
+import { CredentialState } from '../../../models'
 import { RevocationNotification } from '../../../models/RevocationNotification'
 import { CredentialRepository } from '../../../repository'
 import { V1RevocationNotificationHandler, V2RevocationNotificationHandler } from '../handlers'
 import { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 import {
+  unqualifiedRevocationRegistryIdRegex,
   v1ThreadRegex,
   v2AnonCredsRevocationFormat,
   v2AnonCredsRevocationIdentifierRegex,
@@ -75,7 +73,8 @@ export class RevocationNotificationService {
     this.logger.trace('Getting Credential Exchange record by query for revocation notification:', query)
     let credentialExchangeRecord = await this.credentialRepository.findSingleByQuery(agentContext, query)
 
-    if (!credentialExchangeRecord) {
+    // Look in W3C Credential Records only in case unqualified identifiers are being used
+    if (!credentialExchangeRecord && unqualifiedRevocationRegistryIdRegex.test(anonCredsRevocationRegistryId)) {
       const w3cCredentialQuery = {
         $or: [
           {
@@ -98,9 +97,12 @@ export class RevocationNotificationService {
 
       // Find credential exchange record associated with this credential
       credentialExchangeRecord =
-        (await this.credentialRepository.getAll(agentContext)).find((record) =>
-          record.credentials.find((item) => item.credentialRecordId === w3cCredentialRecord.id)
-        ) ?? null
+        (
+          await this.credentialRepository.findByQuery(agentContext, {
+            $or: [{ state: CredentialState.CredentialReceived }, { state: CredentialState.Done }],
+          })
+        ).find((record) => record.credentials.find((item) => item.credentialRecordId === w3cCredentialRecord.id)) ??
+        null
 
       // TODO: Add revocation data to W3C Credential Record
     }
