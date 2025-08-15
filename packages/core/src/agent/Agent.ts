@@ -48,7 +48,7 @@ export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAge
     }
     if (!dependencyManager.isRegistered(InjectionSymbols.StorageService)) {
       throw new CredoError(
-        "Missing required dependency: 'StorageService'. You can register it using the AskarModule, or implement your own."
+        "Missing required dependency: 'StorageService'. You can register it using the AskarModule, DrizzleStorageModule, or implement your own."
       )
     }
 

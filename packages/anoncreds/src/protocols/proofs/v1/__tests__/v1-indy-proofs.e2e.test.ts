@@ -482,7 +482,7 @@ describe('Present Proof', () => {
           },
         },
       })
-    ).rejects.toThrowError('The proof request contains duplicate predicates and attributes: age')
+    ).rejects.toThrow('The proof request contains duplicate predicates and attributes: age')
   })
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {

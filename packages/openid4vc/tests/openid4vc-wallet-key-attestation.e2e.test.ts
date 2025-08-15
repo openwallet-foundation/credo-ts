@@ -326,7 +326,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
     const credentials = credentialResponse.credentials[0].credentials
 
-    for (const credentialIndex in credentials) {
+    for (const credentialIndex of credentials.keys()) {
       const credential = credentials[credentialIndex]
       if (credential.claimFormat !== ClaimFormat.MsoMdoc) {
         throw new Error('Expected mdoc')

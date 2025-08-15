@@ -64,7 +64,7 @@ describe('util | assertNoDuplicateGroupsNamesInProofRequest', () => {
         },
       } satisfies AnonCredsProofRequest
 
-      expect(() => assertNoDuplicateGroupsNamesInProofRequest(proofRequest)).toThrowError(
+      expect(() => assertNoDuplicateGroupsNamesInProofRequest(proofRequest)).toThrow(
         'The proof request contains duplicate predicates and attributes: age'
       )
     })
