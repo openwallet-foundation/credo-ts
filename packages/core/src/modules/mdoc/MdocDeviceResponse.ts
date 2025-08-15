@@ -19,8 +19,7 @@ import {
   IssuerSigned,
   SessionTranscript,
   Verifier,
-  cborEncode,
-  limitDisclosureToInputDescriptor as mdocLimitDisclosureToInputDescriptor,
+  limitDisclosureToInputDescriptor,
   defaultCallback as onCheck,
 } from '@animo-id/mdoc'
 import { uuid } from '../../utils/uuid'
@@ -34,10 +33,7 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
 import { nameSpacesRecordToMap } from './mdocUtil'
 
 export class MdocDeviceResponse {
-  private constructor(
-    public base64Url: string,
-    public documents: Mdoc[]
-  ) {}
+  private constructor(public readonly deviceResponse: DeviceResponse) {}
 
   /**
    * claim format is convenience method added to all credential instances
@@ -50,7 +46,7 @@ export class MdocDeviceResponse {
    * Encoded is convenience method added to all credential instances
    */
   public get encoded() {
-    return this.base64Url
+    return TypedArrayEncoder.toBase64URL(this.deviceResponse.encode())
   }
 
   /**
@@ -59,45 +55,30 @@ export class MdocDeviceResponse {
   public splitIntoSingleDocumentResponses(): MdocDeviceResponse[] {
     const deviceResponses: MdocDeviceResponse[] = []
 
-    if (this.documents.length === 0) {
+    if (!this.deviceResponse.documents || this.deviceResponse.documents.length === 0) {
       throw new MdocError('mdoc device response does not contain any mdocs')
     }
 
-    for (const document of this.documents) {
-      const deviceResponse = new MDoc()
-
-      deviceResponse.addDocument(document.issuerSignedDocument)
-
-      deviceResponses.push(MdocDeviceResponse.fromDeviceResponse(deviceResponse))
+    for (const document of this.deviceResponse.documents) {
+      deviceResponses.push(
+        new MdocDeviceResponse(
+          new DeviceResponse({
+            version: this.deviceResponse.version,
+            status: this.deviceResponse.status,
+            documentErrors: this.deviceResponse.documentErrors,
+            documents: [document],
+          })
+        )
+      )
     }
 
     return deviceResponses
   }
 
-  private static fromDeviceResponse(mdoc: MDoc) {
-    const documents = mdoc.documents.map((doc) => {
-      const prepared = doc.prepare()
-      const docType = prepared.get('docType') as string
-      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
-      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
-
-      return Mdoc.fromDeviceSignedDocument(
-        TypedArrayEncoder.toBase64URL(issuerSigned),
-        TypedArrayEncoder.toBase64URL(deviceSigned),
-        docType
-      )
-    })
-
-    return new MdocDeviceResponse(TypedArrayEncoder.toBase64URL(mdoc.encode()), documents)
-  }
-
   public static fromBase64Url(base64Url: string) {
-    const parsed = parseDeviceResponse(TypedArrayEncoder.fromBase64(base64Url))
-    if (parsed.status !== MDocStatus.OK) {
-      throw new MdocError('Parsing Mdoc Device Response failed.')
-    }
+    const parsed = DeviceResponse.decode(TypedArrayEncoder.fromBase64(base64Url))
 
-    return MdocDeviceResponse.fromDeviceResponse(parsed)
+    return new MdocDeviceResponse(parsed)
   }
 
   private static assertMdocInputDescriptor(inputDescriptor: InputDescriptorV2) {
@@ -187,11 +168,11 @@ export class MdocDeviceResponse {
     const { mdoc } = options
 
     const inputDescriptor = MdocDeviceResponse.assertMdocInputDescriptor(options.inputDescriptor)
-    const _mdoc = IssuerSigned.fromEncodedForOid4Vci(mdoc.base64Url)
 
-    const disclosure = mdocLimitDisclosureToInputDescriptor(_mdoc, inputDescriptor)
+    const disclosure = limitDisclosureToInputDescriptor(mdoc.issuerSigned, inputDescriptor)
+
     const disclosedPayloadAsRecord = Object.fromEntries(
-      Array.from(disclosure.entries()).map(([namespace, issuerSignedItem]) => {
+      Array.from(disclosure.deviceNamespaces.entries()).map(([namespace, _deviceSignedItem]) => {
         return [
           namespace,
           Object.fromEntries(issuerSignedItem.map((item) => [item.elementIdentifier, item.elementValue])),
