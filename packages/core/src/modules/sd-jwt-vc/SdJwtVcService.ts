@@ -21,7 +21,7 @@ import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import { JsonObject } from '../../types'
-import { TypedArrayEncoder, nowInSeconds } from '../../utils'
+import { TypedArrayEncoder, dateToSeconds, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -237,7 +237,7 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates }: SdJwtVcVerifyOptions
+    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
   ): Promise<
     | { isValid: true; verification: VerificationResult; sdJwtVc: SdJwtVc<Header, Payload> }
     | { isValid: false; verification: VerificationResult; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
@@ -299,10 +299,12 @@ export class SdJwtVcService {
         kbVerifier: holder ? this.verifier(agentContext, holder.publicJwk) : undefined,
       })
 
-      const requiredKeys = requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct']
-
       try {
-        await sdjwt.verify(compactSdJwtVc, requiredKeys, keyBinding !== undefined)
+        await sdjwt.verify(compactSdJwtVc, {
+          requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
+          keyBindingNonce: keyBinding?.nonce,
+          currentDate: dateToSeconds(now ?? new Date()),
+        })
 
         verificationResult.isSignatureValid = true
         verificationResult.areRequiredClaimsIncluded = true
