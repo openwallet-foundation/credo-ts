@@ -24,7 +24,7 @@
     "@credo-ts/core": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "0.14.1",
-    "didwebvh-ts": "^2.5.0",
+    "didwebvh-ts": "^2.5.2",
     "json-canonicalize": "^1.0.6",
     "tsyringe": "^4.8.0"
   },
