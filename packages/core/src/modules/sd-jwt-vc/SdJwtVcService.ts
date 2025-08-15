@@ -32,7 +32,7 @@ import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
-import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
+import { SdJwtVcRecord, SdJwtVcRecordInstances, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
@@ -60,6 +60,13 @@ export interface SdJwtVc<
     header: Record<string, unknown>
     payload: Record<string, unknown>
   }
+
+  /**
+   * The key id in the KMS bound to this SD-JWT VC, used for presentations.
+   *
+   * This will only be set on the holder side if defined on the SdJwtVcRecord
+   */
+  kmsKeyId?: string
 
   typeMetadata?: SdJwtVcTypeMetadata
 }
@@ -401,9 +408,9 @@ export class SdJwtVcService {
     }
   }
 
-  public async store(agentContext: AgentContext, compactSdJwtVc: string) {
+  public async store(agentContext: AgentContext, sdJwtVcs: SdJwtVcRecordInstances) {
     const sdJwtVcRecord = new SdJwtVcRecord({
-      compactSdJwtVc,
+      sdJwtVcs,
     })
     await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
 

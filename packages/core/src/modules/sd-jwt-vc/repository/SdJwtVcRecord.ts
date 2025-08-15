@@ -11,6 +11,7 @@ import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 import { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
+import { NonEmptyArray } from '../../../types'
 
 export type DefaultSdJwtVcRecordTags = {
   vct: string
@@ -30,17 +31,39 @@ export type SdJwtVcRecordStorageProps = {
   id?: string
   createdAt?: Date
   tags?: TagsBase
-  compactSdJwtVc: string
+  sdJwtVcs: SdJwtVcRecordInstances
 
   typeMetadata?: SdJwtVcTypeMetadata
 }
+
+export type SdJwtVcRecordInstances = NonEmptyArray<{
+  compactSdJwtVc: string
+
+  /**
+   * The kms key id to which the credential is bound. If not defined it either:
+   * - uses a legacy key id (which can be calculated based on the key id)
+   * - or is bound to a did (which stores the kms key id on the did record)
+   */
+  kmsKeyId?: string
+}>
 
 export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
   public static readonly type = 'SdJwtVcRecord'
   public readonly type = SdJwtVcRecord.type
 
-  // We store the sdJwtVc in compact format.
-  public compactSdJwtVc!: string
+  public sdJwtVcs!: SdJwtVcRecordInstances
+
+  /**
+   * Only here for class transformation. If compactSdJwtVc is set we transform
+   * it to the new sdJwtVcs array format
+   */
+  private set compactSdJwtVc(compactSdJwtVc: string) {
+    this.sdJwtVcs = [
+      {
+        compactSdJwtVc,
+      },
+    ]
+  }
 
   public typeMetadata?: SdJwtVcTypeMetadata
 
@@ -50,18 +73,21 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     if (props) {
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
-      this.compactSdJwtVc = props.compactSdJwtVc
+      this.sdJwtVcs = props.sdJwtVcs
       this.typeMetadata = props.typeMetadata
       this._tags = props.tags ?? {}
     }
   }
 
-  public get sdJwtVc(): SdJwtVc {
-    return decodeSdJwtVc(this.compactSdJwtVc, this.typeMetadata)
+  public get firstSdJwtVc(): SdJwtVc {
+    return {
+      ...decodeSdJwtVc(this.sdJwtVcs[0].compactSdJwtVc, this.typeMetadata),
+      kmsKeyId: this.sdJwtVcs[0].kmsKeyId,
+    }
   }
 
   public getTags() {
-    const sdjwt = decodeSdJwtSync(this.compactSdJwtVc, Hasher.hash)
+    const sdjwt = decodeSdJwtSync(this.sdJwtVcs[0].compactSdJwtVc, Hasher.hash)
     const vct = sdjwt.jwt.payload.vct as string
     const sdAlg = sdjwt.jwt.payload._sd_alg as string | undefined
     const alg = sdjwt.jwt.header.alg as KnownJwaSignatureAlgorithm
@@ -82,13 +108,13 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
    * credential is convenience method added to all credential records
    */
   public get credential(): SdJwtVc {
-    return decodeSdJwtVc(this.compactSdJwtVc, this.typeMetadata)
+    return this.firstSdJwtVc
   }
 
   /**
    * encoded is convenience method added to all credential records
    */
   public get encoded(): string {
-    return this.compactSdJwtVc
+    return this.sdJwtVcs[0].compactSdJwtVc
   }
 }
