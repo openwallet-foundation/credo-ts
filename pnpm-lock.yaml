@@ -932,11 +932,11 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.5.2
-        version: 2.5.2
+        specifier: ^2.5.3
+        version: 2.5.3
       json-canonicalize:
-        specifier: ^1.0.6
-        version: 1.0.6
+        specifier: ^1.2.0
+        version: 1.2.0
       tsyringe:
         specifier: ^4.8.0
         version: 4.8.0
@@ -4158,8 +4158,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.5.2:
-    resolution: {integrity: sha512-3aMzoYwqefEnat2eyVOiuCqndnYOxFpRsgaXLI4X//GGitJRmhxKc5A4X1LQl7ARzAji5CD4LboQ7Df0aI8T2g==}
+  didwebvh-ts@2.5.3:
+    resolution: {integrity: sha512-VTjA6yKRplrxV2lA1d14lf6B+0uVLdZzPwoqnTuHm/RQVPG1xNj7CRm6Gl5wEnq3NEd/9xJBabqAY7adX94MIQ==}
     hasBin: true
 
   diff-sequences@29.6.3:
@@ -5453,8 +5453,8 @@ packages:
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
 
-  json-canonicalize@1.0.6:
-    resolution: {integrity: sha512-kP2iYpOS5SZHYhIaR1t9oG80d4uTY3jPoaBj+nimy3njtJk8+sRsVatN8pyJRDRtk9Su3+6XqA2U8k0dByJBUQ==}
+  json-canonicalize@1.2.0:
+    resolution: {integrity: sha512-TTdjBvqrqJKSADlEsY5rWbx8/1tOrVlTR/aSLU8N2VSInCTffP0p+byYB8Es+OmL4ZOeEftjUdvV+eJeSzJC/Q==}
 
   json-parse-better-errors@1.0.2:
     resolution: {integrity: sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==}
@@ -12315,10 +12315,10 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.5.2:
+  didwebvh-ts@2.5.3:
     dependencies:
       '@noble/hashes': 1.8.0
-      json-canonicalize: 1.0.6
+      json-canonicalize: 1.2.0
 
   diff-sequences@29.6.3: {}
 
@@ -14060,7 +14060,7 @@ snapshots:
 
   json-buffer@3.0.1: {}
 
-  json-canonicalize@1.0.6: {}
+  json-canonicalize@1.2.0: {}
 
   json-parse-better-errors@1.0.2: {}
 
