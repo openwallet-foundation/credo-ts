@@ -1,22 +1,12 @@
-import type { IssuerSignedDocument } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
 import type { MdocNameSpaces, MdocSignOptions, MdocVerifyOptions } from './MdocOptions'
 
-import {
-  COSEKey,
-  DeviceSignedDocument,
-  Document,
-  Verifier,
-  cborEncode,
-  parseDeviceSigned,
-  parseIssuerSigned,
-} from '@animo-id/mdoc'
+import { DeviceKey, Holder, Issuer, IssuerSigned, SignatureAlgorithm } from '@animo-id/mdoc'
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
 import { KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
-import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'
 import { MdocError } from './MdocError'
 import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } from './mdocSupportedAlgs'
@@ -26,12 +16,7 @@ import { isMdocSupportedSignatureAlgorithm, mdocSupporteSignatureAlgorithms } fr
  * which are the actual credentials being issued to holders.
  */
 export class Mdoc {
-  public base64Url: string
-
-  private constructor(public issuerSignedDocument: IssuerSignedDocument | DeviceSignedDocument) {
-    const issuerSigned = issuerSignedDocument.prepare().get('issuerSigned')
-    this.base64Url = TypedArrayEncoder.toBase64URL(cborEncode(issuerSigned))
-  }
+  private constructor(public readonly issuerSigned: IssuerSigned) {}
 
   /**
    * claim format is convenience method added to all credential instances
@@ -44,51 +29,27 @@ export class Mdoc {
    * Encoded is convenience method added to all credential instances
    */
   public get encoded() {
-    return this.base64Url
+    return this.issuerSigned.encodedForOid4Vci
   }
 
   /**
    * Get the device key to which the mdoc is bound
    */
-  public get deviceKey(): PublicJwk | null {
-    const deviceKeyRaw = this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.deviceKeyInfo?.deviceKey
-    if (!deviceKeyRaw) return null
-
-    return PublicJwk.fromUnknown(COSEKey.import(deviceKeyRaw).toJWK())
+  public get deviceKey(): PublicJwk {
+    return PublicJwk.fromUnknown(this.issuerSigned.issuerAuth.mobileSecurityObject.deviceKeyInfo.deviceKey.jwk)
   }
 
-  public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {
-    const issuerSignedDocument = parseIssuerSigned(TypedArrayEncoder.fromBase64(mdocBase64Url), expectedDocType)
-    return new Mdoc(issuerSignedDocument)
-  }
-
-  public static fromIssuerSignedDocument(issuerSignedBase64Url: string, expectedDocType?: string): Mdoc {
-    return new Mdoc(parseIssuerSigned(TypedArrayEncoder.fromBase64(issuerSignedBase64Url), expectedDocType))
-  }
-
-  public static fromDeviceSignedDocument(
-    issuerSignedBase64Url: string,
-    deviceSignedBase64Url: string,
-    expectedDocType?: string
-  ): Mdoc {
-    return new Mdoc(
-      parseDeviceSigned(
-        TypedArrayEncoder.fromBase64(deviceSignedBase64Url),
-        TypedArrayEncoder.fromBase64(issuerSignedBase64Url),
-        expectedDocType
-      )
-    )
+  public static fromBase64Url(mdocBase64Url: string): Mdoc {
+    const issuerSigned = IssuerSigned.fromEncodedForOid4Vci(mdocBase64Url)
+    return new Mdoc(issuerSigned)
   }
 
   public get docType(): string {
-    return this.issuerSignedDocument.docType
+    return this.issuerSigned.issuerAuth.mobileSecurityObject.docType
   }
 
   public get alg(): KnownJwaSignatureAlgorithm {
-    const algName = this.issuerSignedDocument.issuerSigned.issuerAuth.algName
-    if (!algName) {
-      throw new MdocError('Cannot extract the signature algorithm from the mdoc.')
-    }
+    const algName = this.issuerSigned.issuerAuth.signatureAlgorithmName
     if (isKnownJwaSignatureAlgorithm(algName)) {
       return algName
     }
@@ -97,33 +58,22 @@ export class Mdoc {
   }
 
   public get validityInfo() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.decodedPayload.validityInfo
-  }
-
-  public get deviceSignedNamespaces(): MdocNameSpaces | null {
-    if (this.issuerSignedDocument instanceof DeviceSignedDocument === false) {
-      return null
-    }
-
-    return Object.fromEntries(
-      Array.from(this.issuerSignedDocument.allDeviceSignedNamespaces.entries()).map(([namespace, value]) => [
-        namespace,
-        Object.fromEntries(Array.from(value.entries())),
-      ])
-    )
+    return this.issuerSigned.issuerAuth.mobileSecurityObject.validityInfo
   }
 
   public get issuerSignedCertificateChain() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain
+    return this.issuerSigned.issuerAuth.certificateChain
   }
 
   public get signingCertificate() {
-    return this.issuerSignedDocument.issuerSigned.issuerAuth.certificate
+    return this.issuerSigned.issuerAuth.certificate
   }
 
   public get issuerSignedNamespaces(): MdocNameSpaces {
+    if (!this.issuerSigned.issuerNamespaces?.issuerNamespaces) return {}
+
     return Object.fromEntries(
-      Array.from(this.issuerSignedDocument.allIssuerSignedNamespaces.entries()).map(([namespace, value]) => [
+      Array.from(this.issuerSigned.issuerNamespaces.issuerNamespaces.entries()).map(([namespace, value]) => [
         namespace,
         Object.fromEntries(Array.from(value.entries())),
       ])
@@ -134,13 +84,10 @@ export class Mdoc {
     const { docType, validityInfo, namespaces, holderKey, issuerCertificate } = options
     const mdocContext = getMdocContext(agentContext)
 
-    const document = new Document(docType, mdocContext)
-      .useDigestAlgorithm('SHA-256')
-      .addValidityInfo(validityInfo)
-      .addDeviceKeyInfo({ deviceKey: holderKey.toJson() })
+    const issuer = new Issuer(docType, mdocContext)
 
     for (const [namespace, namespaceRecord] of Object.entries(namespaces)) {
-      document.addIssuerNameSpace(namespace, namespaceRecord)
+      issuer.addIssuerNamespace(namespace, namespaceRecord)
     }
 
     const issuerKey = issuerCertificate.publicJwk
@@ -155,16 +102,21 @@ export class Mdoc {
       )
     }
 
-    const issuerSignedDocument = await document.sign(
-      {
-        issuerPrivateKey: issuerKey.toJson(),
-        alg,
-        issuerCertificate: issuerCertificate.rawCertificate,
+    const now = new Date()
+    const issuerSigned = await issuer.sign({
+      digestAlgorithm: 'SHA-256',
+      validityInfo: {
+        ...validityInfo,
+        signed: validityInfo.signed ?? now,
+        validFrom: validityInfo.validFrom ?? now,
       },
-      mdocContext
-    )
+      algorithm: SignatureAlgorithm[alg],
+      certificate: issuerCertificate.rawCertificate,
+      deviceKeyInfo: { deviceKey: DeviceKey.fromJwk(holderKey.toJson()) },
+      signingKey: issuerKey.toJson(),
+    })
 
-    return new Mdoc(issuerSignedDocument)
+    return new Mdoc(issuerSigned)
   }
 
   public async verify(
@@ -172,7 +124,7 @@ export class Mdoc {
     options?: MdocVerifyOptions
   ): Promise<{ isValid: true } | { isValid: false; error: string }> {
     const x509ModuleConfig = agentContext.dependencyManager.resolve(X509ModuleConfig)
-    const certificateChain = this.issuerSignedDocument.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
+    const certificateChain = this.issuerSigned.issuerAuth.certificateChain.map((certificate) =>
       X509Certificate.fromRawCertificate(certificate)
     )
 
@@ -194,20 +146,18 @@ export class Mdoc {
 
     const mdocContext = getMdocContext(agentContext)
     try {
-      const verifier = new Verifier()
-      await verifier.verifyIssuerSignature(
+      await Holder.validateIssuerSigned(
         {
           trustedCertificates: trustedCertificates.map(
             (cert) => X509Certificate.fromEncodedCertificate(cert).rawCertificate
           ),
-          issuerAuth: this.issuerSignedDocument.issuerSigned.issuerAuth,
+          issuerSigned: this.issuerSigned,
           disableCertificateChainValidation: false,
           now: options?.now,
         },
         mdocContext
       )
 
-      await verifier.verifyData({ mdoc: this.issuerSignedDocument }, mdocContext)
       return { isValid: true }
     } catch (error) {
       return { isValid: false, error: error.message }
@@ -215,10 +165,10 @@ export class Mdoc {
   }
 
   private toJSON() {
-    return this.base64Url
+    return this.encoded
   }
 
   private toString() {
-    return this.base64Url
+    return this.encoded
   }
 }
