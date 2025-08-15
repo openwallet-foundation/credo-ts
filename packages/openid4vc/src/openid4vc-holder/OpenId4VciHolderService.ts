@@ -1083,6 +1083,8 @@ export class OpenId4VciHolderService {
         )
       }
 
+      // FIXME: we need to link the credential bound key back to the credential request
+      // so we can store the correct `kmsKeyId` along with the SD-JWT VC for presentations
       const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
       const verificationResults = await Promise.all(
         credentials.map((compactSdJwtVc, index) =>
