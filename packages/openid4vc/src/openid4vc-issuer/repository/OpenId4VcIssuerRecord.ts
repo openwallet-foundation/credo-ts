@@ -112,6 +112,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     if (this.accessTokenPublicKeyFingerprint) {
       const publicJwk = Kms.PublicJwk.fromFingerprint(this.accessTokenPublicKeyFingerprint)
       publicJwk.keyId = publicJwk.legacyKeyId
+      return publicJwk
     }
 
     throw new CredoError(

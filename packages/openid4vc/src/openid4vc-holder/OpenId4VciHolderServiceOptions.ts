@@ -9,7 +9,6 @@ import type {
 } from '../shared'
 
 import { AuthorizationFlow as OpenId4VciAuthorizationFlow } from '@openid4vc/openid4vci'
-
 import { OpenId4VciCredentialFormatProfile } from '../shared/models/OpenId4VciCredentialFormatProfile'
 
 export { OpenId4VciAuthorizationFlow }
@@ -46,8 +45,10 @@ export type OpenId4VciNotificationEvent = 'credential_accepted' | 'credential_fa
 
 export type OpenId4VciRequestTokenResponse = {
   accessToken: string
+  refreshToken?: string
   cNonce?: string
   dpop?: OpenId4VciDpopRequestOptions
+  authorizationServer?: string
 
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
@@ -59,6 +60,14 @@ export interface OpenId4VciCredentialResponse {
   credentialConfigurationId: string
   credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
   credentials: UnionToArrayUnion<VerifiableCredential>
+  notificationId?: string
+}
+
+export interface OpenId4VciDeferredCredentialResponse {
+  credentialConfigurationId: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+  transactionId: string
+  interval?: number
   notificationId?: string
 }
 
@@ -138,7 +147,7 @@ export interface OpenId4VcAuthorizationCodeTokenRequestOptions {
    * if client attestations are supported by the issuer, and should be provided
    * if wallet attestation was provided in the authorization request as well.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -160,7 +169,7 @@ export interface OpenId4VciPreAuthorizedTokenRequestOptions {
    * The wallet attestation to send to the issuer. This will only be used
    * if client attestations are supported by the issuer.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -169,6 +178,40 @@ export interface OpenId4VciPreAuthorizedTokenRequestOptions {
 export type OpenId4VciTokenRequestOptions =
   | OpenId4VciPreAuthorizedTokenRequestOptions
   | OpenId4VcAuthorizationCodeTokenRequestOptions
+
+export type OpenId4VciTokenRefreshOptions = {
+  refreshToken: string
+
+  /**
+   * The issuer metadata.
+   */
+  issuerMetadata: IssuerMetadataResult
+
+  /**
+   * The authorization server where the refresh token was obtained from.
+   */
+  authorizationServer?: string
+
+  /**
+   * DPoP parameters to use in the request if supported by the authorization server.
+   */
+  dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * The client id used for authorization. Only required if authorization_code flow was used.
+   */
+  clientId?: string
+
+  /**
+   * The wallet attestation to send to the issuer. This will only be used
+   * if client attestations are supported by the issuer, and should be provided
+   * if wallet attestation was provided in the authorization request as well.
+   *
+   * A Proof of Possession will be created based on the wallet attestation,
+   * so the key bound to the wallet attestation must be in the wallet.
+   */
+  walletAttestationJwt?: string
+}
 
 export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
   resolvedCredentialOffer: OpenId4VciResolvedCredentialOffer
@@ -179,7 +222,7 @@ export interface OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions {
    * if client attestations are supported by the issuer, and should be provided
    * if wallet attestation was provided in the authorization request as well.
    *
-   * A Proof of Possesion will be created based on the wallet attestation,
+   * A Proof of Possession will be created based on the wallet attestation,
    * so the key bound to the wallet attestation must be in the wallet.
    */
   walletAttestationJwt?: string
@@ -249,6 +292,19 @@ export interface OpenId4VciAcceptCredentialOfferOptions {
    * for the proof of possession signature.
    */
   credentialBindingResolver: OpenId4VciCredentialBindingResolver
+}
+
+/**
+ * Options to request deferred credentials from the issuer.
+ */
+export interface OpenId4VciDeferredCredentialRequestOptions {
+  issuerMetadata: IssuerMetadataResult
+  transactionId: string
+  credentialConfigurationId: string
+  credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+  verifyCredentialStatus?: boolean
+  accessToken: string
+  dpop?: OpenId4VciDpopRequestOptions
 }
 
 /**

@@ -156,6 +156,17 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   }
 
   /**
+   * Return the compressed public key. If the key type does not support compressed public keys, it will return null
+   */
+  public get compressedPublicKey(): Jwk['compressedPublicKey'] {
+    return this.jwk.compressedPublicKey
+  }
+
+  public get JwkClass() {
+    return this.jwk.constructor as SupportedPublicJwkClass
+  }
+
+  /**
    * SHA-256 jwk thumbprint
    */
   public getJwkThumbprint(hashAlgorithm: HashName = 'sha-256') {
@@ -163,10 +174,6 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
       jwk: this.jwk.jwk,
       hashAlgorithm: hashAlgorithm,
     })
-  }
-
-  public get JwkClass() {
-    return this.jwk.constructor as SupportedPublicJwkClass
   }
 
   /**

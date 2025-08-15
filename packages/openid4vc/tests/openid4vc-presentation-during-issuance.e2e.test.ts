@@ -101,6 +101,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             method: 'x5c',
             x5c: [issuer.certificate],
           },
+          version: queryMethod === 'presentationDefinition' ? 'v1.draft24' : 'v1',
           responseMode: 'direct_post.jwt',
           presentationExchange:
             queryMethod === 'presentationDefinition'
@@ -155,8 +156,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
             credential = descriptor.credential
           } else {
-            const presentation = verification.dcql.presentations[verification.dcql.presentationResult.credentials[0].id]
-
+            const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
             if (presentation.claimFormat !== ClaimFormat.SdJwtVc) {
               throw new Error('Expected preentation with sd-jwt vc format')
             }
@@ -168,6 +168,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
           if (credentialRequest.format === 'vc+sd-jwt') {
             return {
+              type: 'credentials',
               format: credentialRequest.format,
               credentials: holderBinding.keys.map((holderBinding) => ({
                 payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },

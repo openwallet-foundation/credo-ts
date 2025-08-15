@@ -36,7 +36,6 @@ export type MdocSessionTranscriptByteOptions = {
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {
   type: 'openId4VpDcApi'
-
   origin: string
   verifierGeneratedNonce: string
   encryptionJwk?: PublicJwk

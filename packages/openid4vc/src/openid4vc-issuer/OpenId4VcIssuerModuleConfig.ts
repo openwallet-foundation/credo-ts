@@ -1,6 +1,7 @@
 import type { Router } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
+  OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
 
@@ -9,6 +10,7 @@ import { importExpress } from '../shared/router'
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
 export interface OpenId4VcIssuerModuleConfigOptions {
@@ -58,6 +60,13 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   accessTokenExpiresInSeconds?: number
 
   /**
+   * The time after which a refresh token will expire.
+   *
+   * @default 7776000 (90 days)
+   */
+  refreshTokenExpiresInSeconds?: number
+
+  /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
    * a credential offer. If dpop is not required, but used by a client in the first request to credo,
    * DPoP will be required going forward.
@@ -97,6 +106,14 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   credentialRequestToCredentialMapper: OpenId4VciCredentialRequestToCredentialMapper
 
   /**
+   * A function mapping a deferred credential request to the credential to be issued.
+   *
+   * When multiple credentials are returned it is recommended to use different or approximate issuance and expiration
+   * times to prevent correlation based on the specific time
+   */
+  deferredCredentialRequestToCredentialMapper?: OpenId4VciDeferredCredentialRequestToCredentialMapper
+
+  /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
    * of a credential issuance session. Once the verification session has been completed the user can
    * retrieve an authorization code and access token and retrieve the credential(s).
@@ -128,6 +145,11 @@ export interface OpenId4VcIssuerModuleConfigOptions {
      * @default /credential
      */
     credential?: string
+
+    /**
+     * @default /deferred-credential
+     */
+    deferredCredential?: string
 
     /**
      * @default /token
@@ -174,6 +196,13 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * A function mapping a credential request to the credential to be issued.
+   */
+  public get deferredCredentialRequestToCredentialMapper() {
+    return this.options.deferredCredentialRequestToCredentialMapper
+  }
+
+  /**
    * The time after which a cNone will expire.
    *
    * @default 60 (1 minute)
@@ -205,10 +234,19 @@ export class OpenId4VcIssuerModuleConfig {
   /**
    * The time after which an access token will expire.
    *
-   * @default 360 (5 minutes)
+   * @default 180 (3 minutes)
    */
   public get accessTokenExpiresInSeconds(): number {
     return this.options.accessTokenExpiresInSeconds ?? DEFAULT_TOKEN_EXPIRES_IN
+  }
+
+  /**
+   * The time after which a refresh token will expire.
+   *
+   * @default 7776000 (90 days)
+   */
+  public get refreshTokenExpiresInSeconds(): number {
+    return this.options.refreshTokenExpiresInSeconds ?? DEFAULT_REFRESH_TOKEN_EXPIRES_IN
   }
 
   /**
@@ -274,6 +312,13 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get credentialEndpointPath(): string {
     return this.options.endpoints?.credential ?? '/credential'
+  }
+
+  /**
+   * @default /deferred-credential
+   */
+  public get deferredCredentialEndpointPath(): string {
+    return this.options.endpoints?.deferredCredential ?? '/deferred-credential'
   }
 
   /**

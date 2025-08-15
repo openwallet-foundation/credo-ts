@@ -313,17 +313,19 @@ export class MdocDeviceResponse {
           }))
       )
 
+      const mdocContext = getMdocContext(agentContext)
       const deviceResponseBuilder = DeviceResponse.from(new MDoc([issuerSignedDocument]))
         .authenticateWithSignature(deviceKeyJwk.toJson(), alg)
         .usingDeviceRequest(deviceRequestForDocument)
-
-      MdocDeviceResponse.usingSessionTranscript(deviceResponseBuilder, options.sessionTranscriptOptions)
+        .usingSessionTranscriptBytes(
+          await MdocDeviceResponse.getSessionTranscriptBytesForOptions(mdocContext, options.sessionTranscriptOptions)
+        )
 
       for (const [nameSpace, nameSpaceValue] of Object.entries(options.deviceNameSpaces ?? {})) {
         deviceResponseBuilder.addDeviceNameSpace(nameSpace, nameSpaceValue)
       }
 
-      const deviceResponseMdoc = await deviceResponseBuilder.sign(getMdocContext(agentContext))
+      const deviceResponseMdoc = await deviceResponseBuilder.sign(mdocContext)
       combinedDeviceResponseMdoc.addDocument(deviceResponseMdoc.documents[0])
     }
 

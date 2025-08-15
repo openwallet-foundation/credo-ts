@@ -1,4 +1,4 @@
-import { Hasher, HashName } from '../../../crypto'
+import { HashName, Hasher } from '../../../crypto/hashes/Hasher'
 import { TypedArrayEncoder } from '../../../utils'
 import { parseWithErrorHandling } from '../../../utils/zod'
 import { KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
