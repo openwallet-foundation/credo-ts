@@ -11,6 +11,7 @@ import type {
 } from './OpenId4VciHolderServiceOptions'
 import type {
   OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpResolveTrustChainsOptions,
   ResolveOpenId4VpAuthorizationRequestOptions,
 } from './OpenId4vpHolderServiceOptions'
 
@@ -221,5 +222,9 @@ export class OpenId4VcHolderApi {
    */
   public async sendNotification(options: OpenId4VciSendNotificationOptions) {
     return this.openId4VciHolderService.sendNotification(this.agentContext, options)
+  }
+
+  public async resolveOpenIdFederationChains(options: OpenId4VpResolveTrustChainsOptions) {
+    return this.openId4VpHolderService.resolveOpenIdFederationChains(this.agentContext, options)
   }
 }
