@@ -14,3 +14,6 @@ export const v2IndyRevocationFormat = 'indy-anoncreds'
 export const v2AnonCredsRevocationIdentifierRegex = /([a-zA-Z0-9+\-.]+:.+)::(\d+)$/
 
 export const v2AnonCredsRevocationFormat = 'anoncreds'
+
+export const unqualifiedRevocationRegistryIdRegex =
+  /^([a-zA-Z0-9]{21,22}):4:[a-zA-Z0-9]{21,22}:3:CL:([1-9][0-9]*):(.+):CL_ACCUM:(.+)$/
