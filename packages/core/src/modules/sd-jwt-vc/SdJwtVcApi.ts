@@ -12,6 +12,7 @@ import { AgentContext } from '../../agent'
 import { injectable } from '../../plugins'
 
 import { SdJwtVcService } from './SdJwtVcService'
+import { TokenStatusListService } from './credential-status'
 
 /**
  * @public
@@ -20,10 +21,16 @@ import { SdJwtVcService } from './SdJwtVcService'
 export class SdJwtVcApi {
   private agentContext: AgentContext
   private sdJwtVcService: SdJwtVcService
+  public statusList: TokenStatusListService
 
-  public constructor(agentContext: AgentContext, sdJwtVcService: SdJwtVcService) {
+  public constructor(
+    agentContext: AgentContext,
+    sdJwtVcService: SdJwtVcService,
+    tokenStatusListService: TokenStatusListService
+  ) {
     this.agentContext = agentContext
     this.sdJwtVcService = sdJwtVcService
+    this.statusList = tokenStatusListService
   }
 
   public async sign<Payload extends SdJwtVcPayload>(options: SdJwtVcSignOptions<Payload>) {
