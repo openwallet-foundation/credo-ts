@@ -826,10 +826,10 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.5.2
-        version: 2.5.2
+        specifier: ^2.5.3
+        version: 2.5.3
       json-canonicalize:
-        specifier: ^1.0.6
+        specifier: ^1.2.0
         version: 1.2.0
       tsyringe:
         specifier: ^4.8.0
@@ -3925,8 +3925,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.5.2:
-    resolution: {integrity: sha512-3aMzoYwqefEnat2eyVOiuCqndnYOxFpRsgaXLI4X//GGitJRmhxKc5A4X1LQl7ARzAji5CD4LboQ7Df0aI8T2g==}
+  didwebvh-ts@2.5.3:
+    resolution: {integrity: sha512-VTjA6yKRplrxV2lA1d14lf6B+0uVLdZzPwoqnTuHm/RQVPG1xNj7CRm6Gl5wEnq3NEd/9xJBabqAY7adX94MIQ==}
     hasBin: true
 
   diff-sequences@29.6.3:
@@ -12389,7 +12389,7 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.5.2:
+  didwebvh-ts@2.5.3:
     dependencies:
       '@noble/hashes': 1.8.0
       json-canonicalize: 1.2.0
