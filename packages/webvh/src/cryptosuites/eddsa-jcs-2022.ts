@@ -1,7 +1,7 @@
 import type { ProofOptions } from './types'
 import type { WebVhResource } from '../anoncreds/utils/transform'
 
-import { type AgentContext, CredoError } from '@credo-ts/core'
+import { type AgentContext, CredoError, Key } from '@credo-ts/core'
 import { DidsApi, Hasher, MultiBaseEncoder, TypedArrayEncoder } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
@@ -24,7 +24,7 @@ export class EddsaJcs2022Cryptosuite {
     const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-      return MultiBaseEncoder.decode(verificationMethod.publicKeyMultibase).data
+      return Key.fromFingerprint(verificationMethod.publicKeyMultibase).publicKey
     }
     return null
   }
