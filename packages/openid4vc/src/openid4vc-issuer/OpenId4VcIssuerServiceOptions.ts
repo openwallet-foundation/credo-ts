@@ -304,7 +304,7 @@ export interface OpenId4VciCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciCredentialRequestToCredentialMapper = (
   options: OpenId4VciCredentialRequestToCredentialMapperOptions
-) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
+) => CanBePromise<OpenId4VciSignCredentials | OpenId4VciDeferredCredentials>
 
 export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
   agentContext: AgentContext
@@ -328,7 +328,7 @@ export interface OpenId4VciDeferredCredentialRequestToCredentialMapperOptions {
 
 export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
   options: OpenId4VciDeferredCredentialRequestToCredentialMapperOptions
-) => CanBePromise<OpenId4VciSignCredentials> | CanBePromise<OpenId4VciDeferredCredentials>
+) => CanBePromise<OpenId4VciSignCredentials | OpenId4VciDeferredCredentials>
 
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
