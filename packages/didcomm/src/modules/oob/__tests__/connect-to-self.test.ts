@@ -46,7 +46,7 @@ describe('out of band', () => {
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
@@ -72,7 +72,7 @@ describe('out of band', () => {
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
@@ -98,7 +98,7 @@ describe('out of band', () => {
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(

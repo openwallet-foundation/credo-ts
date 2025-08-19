@@ -26,9 +26,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     )
 
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -89,9 +87,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
 
     // We need core DIDComm modules for this update to fully work
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
       dependencies: agentDependencies,
     })
@@ -144,9 +140,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
 
     // We need core DIDComm modules for this update to fully work
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
       dependencies: agentDependencies,
     })

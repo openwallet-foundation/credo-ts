@@ -99,7 +99,7 @@ describe('TenantSessionCoordinator', () => {
       const tenantAgentContext = await tenantSessionCoordinator.getContextForSession(tenantRecord)
 
       expect(tenantSessionMutexMock.acquireSession).toHaveBeenCalledTimes(1)
-      expect(extendSpy).toHaveBeenCalledWith(tenantRecord.config)
+      expect(extendSpy).toHaveBeenCalledWith({})
       expect(createChildSpy).toHaveBeenCalledWith()
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentContext, expect.any(AgentContext))
       expect(tenantDependencyManager.registerInstance).toHaveBeenCalledWith(AgentConfig, expect.any(AgentConfig))

@@ -13,7 +13,6 @@ import { AskarStoreManager } from '../../askar/src/AskarStoreManager'
 describe('Tenants Askar database schemes E2E', () => {
   test('uses AskarWallet for all wallets and tenants when database schema is DatabasePerWallet', async () => {
     const agentConfig: InitConfig = {
-      label: 'Tenant Agent 1',
       logger: testLogger,
     }
 
@@ -66,7 +65,6 @@ describe('Tenants Askar database schemes E2E', () => {
 
   test('uses AskarWallet for main agent, and ProfileAskarWallet for tenants', async () => {
     const agentConfig: InitConfig = {
-      label: 'Tenant Agent 1',
       logger: testLogger,
     }
 

@@ -30,7 +30,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     for (const mediationRoleUpdateStrategy of mediationRoleUpdateStrategies) {
       const agent = new Agent({
-        config: { label: 'Test Agent' },
+        config: {},
         dependencies,
         modules: {
           inMemory: new InMemoryWalletModule(),
@@ -88,7 +88,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     const agent = new Agent({
-      config: { label: 'Test Agent' },
+      config: {},
       dependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -146,7 +146,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
     )
 
     const agent = new Agent({
-      config: { label: 'Test Agent', autoUpdateStorageOnStartup: true },
+      config: { autoUpdateStorageOnStartup: true },
       dependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -205,7 +205,6 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
 
     const agent = new Agent({
       config: {
-        label: 'Test Agent',
         autoUpdateStorageOnStartup: true,
       },
       modules: {

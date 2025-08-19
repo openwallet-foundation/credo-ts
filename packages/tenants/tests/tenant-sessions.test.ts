@@ -11,7 +11,6 @@ import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig: InitConfig = {
-  label: 'Tenant Agent 1',
   logger: testLogger,
 }
 

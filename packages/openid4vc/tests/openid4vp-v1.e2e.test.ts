@@ -47,7 +47,6 @@ describe('OpenID4VP 1.0', () => {
     expressApp = express()
 
     holder = (await createAgentFromModules(
-      'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
@@ -73,7 +72,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,

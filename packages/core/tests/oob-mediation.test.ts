@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AgentMessageProcessedEvent } from '../../didcomm/src'
+import type { AgentMessageProcessedEvent, getDefaultDidcommModules } from '../../didcomm/src'
 import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
 
 import { Subject, filter, firstValueFrom, map, timeout } from 'rxjs'
@@ -62,9 +62,9 @@ describe('out of band with mediation', () => {
     multiUseInvitation: false,
   }
 
-  let faberAgent: Agent
-  let aliceAgent: Agent
-  let mediatorAgent: Agent
+  let faberAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  let aliceAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  let mediatorAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
 
   beforeAll(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -96,10 +96,13 @@ describe('out of band with mediation', () => {
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = mediationOutOfBandRecord
     const mediatorUrlMessage = mediatorOutOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-    let { connectionRecord: aliceMediatorConnection } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(mediatorUrlMessage)
+    let { connectionRecord: aliceMediatorConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      mediatorUrlMessage,
+      { label: 'alice' }
+    )
 
-    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceMediatorConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
     expect(aliceMediatorConnection.state).toBe(DidExchangeState.Completed)
 
     // Tag the connection with an initial type
@@ -145,9 +148,12 @@ describe('out of band with mediation', () => {
     const { outOfBandInvitation } = outOfBandRecord
     const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, {
+      label: 'alice',
+    })
 
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id)
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)

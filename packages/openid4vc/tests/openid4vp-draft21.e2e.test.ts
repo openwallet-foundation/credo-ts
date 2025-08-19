@@ -30,7 +30,6 @@ describe('OpenID4VP Draft 21', () => {
     expressApp = express()
 
     holder = (await createAgentFromModules(
-      'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
@@ -40,7 +39,6 @@ describe('OpenID4VP Draft 21', () => {
     )) as unknown as typeof holder
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
