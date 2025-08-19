@@ -20,11 +20,11 @@ export function aeadDecrypt(options: {
   }
 
   const decrypted = key.aeadDecrypt({
-    ciphertext: encrypted,
-    tag: decryption.tag,
-    aad: decryption.aad,
-    nonce: decryption.iv,
+    ciphertext: new Uint8Array(encrypted),
+    tag: new Uint8Array(decryption.tag),
+    aad: decryption.aad ? new Uint8Array(decryption.aad) : undefined,
+    nonce: new Uint8Array(decryption.iv),
   })
 
-  return decrypted
+  return new Uint8Array(decrypted)
 }
