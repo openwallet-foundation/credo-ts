@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface MediationRequestMessageOptions {
@@ -13,7 +13,7 @@ export interface MediationRequestMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0211-route-coordination/README.md#mediation-request
  */
-export class MediationRequestMessage extends AgentMessage {
+export class MediationRequestMessage extends DidCommMessage {
   /**
    * Create new BasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed

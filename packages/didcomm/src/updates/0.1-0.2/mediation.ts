@@ -1,10 +1,10 @@
 import type { BaseAgent, V0_1ToV0_2UpdateConfig } from '@credo-ts/core'
-import type { MediationRecord } from '../../modules/routing'
+import type { DidCommMediationRecord } from '../../modules/routing'
 
-import { MediationRepository, MediationRole } from '../../modules/routing'
+import { DidCommMediationRepository, DidCommMediationRole } from '../../modules/routing'
 
 /**
- * Migrates the {@link MediationRecord} to 0.2 compatible format. It fetches all records from storage
+ * Migrates the {@link DidCommMediationRecord} to 0.2 compatible format. It fetches all records from storage
  * and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
@@ -16,7 +16,7 @@ export async function migrateMediationRecordToV0_2<Agent extends BaseAgent>(
   upgradeConfig: V0_1ToV0_2UpdateConfig
 ) {
   agent.config.logger.info('Migrating mediation records to storage version 0.2')
-  const mediationRepository = agent.dependencyManager.resolve(MediationRepository)
+  const mediationRepository = agent.dependencyManager.resolve(DidCommMediationRepository)
 
   agent.config.logger.debug('Fetching all mediation records from storage')
   const allMediationRecords = await mediationRepository.getAll(agent.context)
@@ -36,15 +36,15 @@ export async function migrateMediationRecordToV0_2<Agent extends BaseAgent>(
 }
 
 /**
- * The role in the mediation record was always being set to {@link MediationRole.Mediator} for both mediators and recipients. This didn't cause any issues, but would return the wrong role for recipients.
+ * The role in the mediation record was always being set to {@link DidCommMediationRole.Mediator} for both mediators and recipients. This didn't cause any issues, but would return the wrong role for recipients.
  *
  * In 0.2 a check is added to make sure the role of a mediation record matches with actions (e.g. a recipient can't grant mediation), which means it will throw an error if the role is not set correctly.
  *
  * Because it's not always possible detect whether the role should actually be mediator or recipient, a number of configuration options are provided on how the role should be updated:
  *
- * - `allMediator`: The role is set to {@link MediationRole.Mediator} for both mediators and recipients
- * - `allRecipient`: The role is set to {@link MediationRole.Recipient} for both mediators and recipients
- * - `recipientIfEndpoint`: The role is set to {@link MediationRole.Recipient} if their is an `endpoint` configured on the record otherwise it is set to {@link MediationRole.Mediator}.
+ * - `allMediator`: The role is set to {@link DidCommMediationRole.Mediator} for both mediators and recipients
+ * - `allRecipient`: The role is set to {@link DidCommMediationRole.Recipient} for both mediators and recipients
+ * - `recipientIfEndpoint`: The role is set to {@link DidCommMediationRole.Recipient} if their is an `endpoint` configured on the record otherwise it is set to {@link DidCommMediationRole.Mediator}.
  *      The endpoint is not set when running as a mediator, so in theory this allows to determine the role of the record.
  *      There is one case where this could be problematic when the role should be recipient, if the mediation grant hasn't actually occurred (meaning the endpoint is not set).
  * - `doNotChange`: The role is not changed
@@ -54,25 +54,25 @@ export async function migrateMediationRecordToV0_2<Agent extends BaseAgent>(
  */
 export async function updateMediationRole<Agent extends BaseAgent>(
   agent: Agent,
-  mediationRecord: MediationRecord,
+  mediationRecord: DidCommMediationRecord,
   { mediationRoleUpdateStrategy }: V0_1ToV0_2UpdateConfig
 ) {
   agent.config.logger.debug(`Updating mediation record role using strategy '${mediationRoleUpdateStrategy}'`)
 
   switch (mediationRoleUpdateStrategy) {
     case 'allMediator':
-      mediationRecord.role = MediationRole.Mediator
+      mediationRecord.role = DidCommMediationRole.Mediator
       break
     case 'allRecipient':
-      mediationRecord.role = MediationRole.Recipient
+      mediationRecord.role = DidCommMediationRole.Recipient
       break
     case 'recipientIfEndpoint':
       if (mediationRecord.endpoint) {
         agent.config.logger.debug('Mediation record endpoint is set, setting mediation role to recipient')
-        mediationRecord.role = MediationRole.Recipient
+        mediationRecord.role = DidCommMediationRole.Recipient
       } else {
         agent.config.logger.debug('Mediation record endpoint is not set, setting mediation role to mediator')
-        mediationRecord.role = MediationRole.Mediator
+        mediationRecord.role = DidCommMediationRole.Mediator
       }
       break
     case 'doNotChange':

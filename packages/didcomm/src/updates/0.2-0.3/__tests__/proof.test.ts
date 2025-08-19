@@ -1,17 +1,17 @@
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { ProofExchangeRecord, ProofState } from '../../../modules/proofs'
-import { ProofRepository } from '../../../modules/proofs/repository/ProofRepository'
+import { DidCommProofExchangeRecord, DidCommProofState } from '../../../modules/proofs'
+import { DidCommProofExchangeRepository } from '../../../modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../proof'
 
-const agentConfig = getAgentConfig('Migration ProofExchangeRecord 0.2-0.3')
+const agentConfig = getAgentConfig('Migration DidCommProofExchangeRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/proofs/repository/ProofRepository')
-const ProofRepositoryMock = ProofRepository as jest.Mock<ProofRepository>
+jest.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
+const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
 const proofRepository = new ProofRepositoryMock()
 
 jest.mock('../../../repository/DidCommMessageRepository')
@@ -46,7 +46,7 @@ describe('0.2-0.3 | Proof', () => {
 
   describe('migrateProofExchangeRecordToV0_3()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: ProofExchangeRecord[] = [getProof({})]
+      const records: DidCommProofExchangeRecord[] = [getProof({})]
 
       mockFunction(proofRepository.getAll).mockResolvedValue(records)
 
@@ -96,7 +96,7 @@ describe('0.2-0.3 | Proof', () => {
 
       const proofRecord = getProof({
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
         proposalMessage,
         requestMessage,
         presentationMessage,
@@ -131,7 +131,7 @@ describe('0.2-0.3 | Proof', () => {
         _tags: {},
         protocolVersion: undefined,
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
         metadata: {},
         isVerified: undefined,
       })
@@ -142,7 +142,7 @@ describe('0.2-0.3 | Proof', () => {
 
       const proofRecord = getProof({
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
         proposalMessage,
         isVerified: true,
       })
@@ -162,7 +162,7 @@ describe('0.2-0.3 | Proof', () => {
         _tags: {},
         protocolVersion: undefined,
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
         metadata: {},
         isVerified: true,
         presentationMessage: undefined,
@@ -177,7 +177,7 @@ describe('0.2-0.3 | Proof', () => {
 
       const proofRecord = getProof({
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
         proposalMessage,
         requestMessage,
         presentationMessage,
@@ -213,13 +213,13 @@ describe('0.2-0.3 | Proof', () => {
         metadata: {},
         protocolVersion: undefined,
         id: 'theProofId',
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
       })
     })
   })
 
   describe('getProofRole', () => {
-    it('should return ProofRole.Verifier if isVerified is set', () => {
+    it('should return DidCommProofRole.Verifier if isVerified is set', () => {
       expect(
         testModule.getProofRole(
           getProof({
@@ -237,20 +237,20 @@ describe('0.2-0.3 | Proof', () => {
       ).toBe(testModule.V02_03MigrationProofRole.Verifier)
     })
 
-    it('should return ProofRole.Prover if state is Done and isVerified is not set', () => {
+    it('should return DidCommProofRole.Prover if state is Done and isVerified is not set', () => {
       const proofRecord = getProof({
-        state: ProofState.Done,
+        state: DidCommProofState.Done,
       })
 
       expect(testModule.getProofRole(proofRecord)).toBe(testModule.V02_03MigrationProofRole.Prover)
     })
 
-    it('should return ProofRole.Prover if the value is a prover state', () => {
+    it('should return DidCommProofRole.Prover if the value is a prover state', () => {
       const holderStates = [
-        ProofState.Declined,
-        ProofState.ProposalSent,
-        ProofState.RequestReceived,
-        ProofState.PresentationSent,
+        DidCommProofState.Declined,
+        DidCommProofState.ProposalSent,
+        DidCommProofState.RequestReceived,
+        DidCommProofState.PresentationSent,
       ]
 
       for (const holderState of holderStates) {
@@ -264,11 +264,11 @@ describe('0.2-0.3 | Proof', () => {
       }
     })
 
-    it('should return ProofRole.Verifier if the state is not a prover state, isVerified is not set and the state is not Done', () => {
+    it('should return DidCommProofRole.Verifier if the state is not a prover state, isVerified is not set and the state is not Done', () => {
       expect(
         testModule.getProofRole(
           getProof({
-            state: ProofState.PresentationReceived,
+            state: DidCommProofState.PresentationReceived,
           })
         )
       ).toBe(testModule.V02_03MigrationProofRole.Verifier)
@@ -292,7 +292,7 @@ function getProof({
   requestMessage?: any
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   presentationMessage?: any
-  state?: ProofState
+  state?: DidCommProofState
   isVerified?: boolean
   id?: string
 }) {
@@ -306,6 +306,6 @@ function getProof({
       isVerified,
       id,
     },
-    ProofExchangeRecord
+    DidCommProofExchangeRecord
   )
 }

@@ -1,11 +1,15 @@
-import type { MessageHandler, MessageHandlerInboundMessage, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type {
+  DidCommMessageHandler,
+  DidCommMessageHandlerInboundMessage,
+  DidCommProofExchangeRecord,
+} from '@credo-ts/didcomm'
 import type { V1ProofProtocol } from '../V1ProofProtocol'
 
-import { getOutboundMessageContext } from '@credo-ts/didcomm'
+import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { V1RequestPresentationMessage } from '../messages'
 
-export class V1RequestPresentationHandler implements MessageHandler {
+export class V1RequestPresentationHandler implements DidCommMessageHandler {
   private proofProtocol: V1ProofProtocol
   public supportedMessages = [V1RequestPresentationMessage]
 
@@ -13,7 +17,7 @@ export class V1RequestPresentationHandler implements MessageHandler {
     this.proofProtocol = proofProtocol
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1RequestPresentationHandler>) {
     const proofRecord = await this.proofProtocol.processRequest(messageContext)
 
     const shouldAutoRespond = await this.proofProtocol.shouldAutoRespondToRequest(messageContext.agentContext, {
@@ -27,8 +31,8 @@ export class V1RequestPresentationHandler implements MessageHandler {
   }
 
   private async acceptRequest(
-    proofRecord: ProofExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V1RequestPresentationHandler>
+    proofRecord: DidCommProofExchangeRecord,
+    messageContext: DidCommMessageHandlerInboundMessage<V1RequestPresentationHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending presentation with autoAccept on')
 
@@ -36,7 +40,7 @@ export class V1RequestPresentationHandler implements MessageHandler {
       proofRecord,
     })
 
-    return getOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       message,
       lastReceivedMessage: messageContext.message,
       associatedRecord: proofRecord,

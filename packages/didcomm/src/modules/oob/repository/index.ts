@@ -1,2 +1,2 @@
-export * from './OutOfBandRecord'
-export * from './OutOfBandRepository'
+export * from './DidCommOutOfBandRecord'
+export * from './DidCommOutOfBandRepository'

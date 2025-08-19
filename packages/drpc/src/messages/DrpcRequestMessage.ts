@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 
 import { IsValidDrpcRequest } from '../models'
@@ -13,7 +13,7 @@ export interface DrpcRequestObject {
 
 export type DrpcRequest = DrpcRequestObject | DrpcRequestObject[]
 
-export class DrpcRequestMessage extends AgentMessage {
+export class DrpcRequestMessage extends DidCommMessage {
   public constructor(options: { request: DrpcRequest }) {
     super()
     if (options) {

@@ -2,7 +2,7 @@ import type { EventReplaySubject } from '../../../../../../core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
-import { ProofExchangeRecord, ProofState } from '../../../../../../didcomm/src'
+import { DidCommProofExchangeRecord, DidCommProofState } from '../../../../../../didcomm/src'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
 
@@ -58,7 +58,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice sends a presentation proposal to Faber')
 
     let faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
@@ -116,13 +116,13 @@ describe('Present Proof', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v1',
     })
 
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber accepts the presentation proposal from Alice
@@ -162,7 +162,7 @@ describe('Present Proof', () => {
 
     faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
@@ -195,13 +195,13 @@ describe('Present Proof', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v1',
     })
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation provided by Alice
@@ -213,22 +213,22 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     const proposalMessage = await aliceAgent.modules.proofs.findProposalMessage(aliceProofExchangeRecord.id)
@@ -305,7 +305,7 @@ describe('Present Proof', () => {
 
   test('Faber starts with proof request to Alice', async () => {
     let aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -365,7 +365,7 @@ describe('Present Proof', () => {
     expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v1',
     })
 
@@ -378,7 +378,7 @@ describe('Present Proof', () => {
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
@@ -411,13 +411,13 @@ describe('Present Proof', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v1',
     })
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation
@@ -429,22 +429,22 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 
@@ -487,7 +487,7 @@ describe('Present Proof', () => {
 
   test('Faber starts with proof request to Alice but gets Problem Reported', async () => {
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     // Faber sends a presentation request to Alice
@@ -547,13 +547,13 @@ describe('Present Proof', () => {
     expect(aliceProofExchangeRecord.id).not.toBeNull()
     expect(aliceProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v1',
     })
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
     })
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.sendProblemReport({
@@ -565,7 +565,7 @@ describe('Present Proof', () => {
 
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Abandoned,
+      state: DidCommProofState.Abandoned,
       protocolVersion: 'v1',
     })
   })

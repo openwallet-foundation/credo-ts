@@ -1,2 +1,2 @@
-export * from './BasicMessageRecord'
-export * from './BasicMessageRepository'
+export * from './DidCommBasicMessageRecord'
+export * from './DidCommBasicMessageRepository'

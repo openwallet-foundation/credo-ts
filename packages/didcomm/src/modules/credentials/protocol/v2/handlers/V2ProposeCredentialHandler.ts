@@ -1,36 +1,36 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
-import type { InboundMessageContext } from '../../../../../models'
-import type { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import type { V2CredentialProtocol } from '../V2CredentialProtocol'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { InboundDidCommMessageContext } from '../../../../../models'
+import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import type { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
 
-import { OutboundMessageContext } from '../../../../../models'
+import { OutboundDidCommMessageContext } from '../../../../../models'
 import { V2ProposeCredentialMessage } from '../messages/V2ProposeCredentialMessage'
 
-export class V2ProposeCredentialHandler implements MessageHandler {
-  private credentialProtocol: V2CredentialProtocol
+export class V2ProposeCredentialHandler implements DidCommMessageHandler {
+  private credentialProtocol: V2DidCommCredentialProtocol
 
   public supportedMessages = [V2ProposeCredentialMessage]
 
-  public constructor(credentialProtocol: V2CredentialProtocol) {
+  public constructor(credentialProtocol: V2DidCommCredentialProtocol) {
     this.credentialProtocol = credentialProtocol
   }
 
-  public async handle(messageContext: InboundMessageContext<V2ProposeCredentialMessage>) {
-    const credentialRecord = await this.credentialProtocol.processProposal(messageContext)
+  public async handle(messageContext: InboundDidCommMessageContext<V2ProposeCredentialMessage>) {
+    const credentialExchangeRecord = await this.credentialProtocol.processProposal(messageContext)
 
     const shouldAutoRespond = await this.credentialProtocol.shouldAutoRespondToProposal(messageContext.agentContext, {
-      credentialRecord,
+      credentialExchangeRecord,
       proposalMessage: messageContext.message,
     })
 
     if (shouldAutoRespond) {
-      return await this.acceptProposal(credentialRecord, messageContext)
+      return await this.acceptProposal(credentialExchangeRecord, messageContext)
     }
   }
 
   private async acceptProposal(
-    credentialRecord: CredentialExchangeRecord,
-    messageContext: MessageHandlerInboundMessage<V2ProposeCredentialHandler>
+    credentialExchangeRecord: DidCommCredentialExchangeRecord,
+    messageContext: DidCommMessageHandlerInboundMessage<V2ProposeCredentialHandler>
   ) {
     messageContext.agentContext.config.logger.info('Automatically sending offer with autoAccept')
 
@@ -39,12 +39,14 @@ export class V2ProposeCredentialHandler implements MessageHandler {
       return
     }
 
-    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, { credentialRecord })
+    const { message } = await this.credentialProtocol.acceptProposal(messageContext.agentContext, {
+      credentialExchangeRecord,
+    })
 
-    return new OutboundMessageContext(message, {
+    return new OutboundDidCommMessageContext(message, {
       agentContext: messageContext.agentContext,
       connection: messageContext.connection,
-      associatedRecord: credentialRecord,
+      associatedRecord: credentialExchangeRecord,
     })
   }
 }

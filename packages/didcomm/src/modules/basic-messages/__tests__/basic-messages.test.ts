@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../connections'
+import type { DidCommConnectionRecord } from '../../connections'
 
 import { Agent, RecordNotFoundError } from '@credo-ts/core'
 import { Subject } from 'rxjs'
@@ -10,7 +10,7 @@ import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../.
 import testLogger from '../../../../../core/tests/logger'
 import { MessageSendingError } from '../../../errors'
 import { BasicMessage } from '../messages'
-import { BasicMessageRecord } from '../repository'
+import { DidCommBasicMessageRecord } from '../repository'
 
 const faberConfig = getAgentOptions(
   'Faber Basic Messages',
@@ -35,8 +35,8 @@ const aliceConfig = getAgentOptions(
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
+  let faberConnection: DidCommConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -159,7 +159,7 @@ describe('Basic Messages E2E', () => {
         `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
       )
       testLogger.test('Error thrown includes the outbound message and recently created record id')
-      expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(BasicMessageRecord)
+      expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
       expect(thrownError.outboundMessageContext.message).toBeInstanceOf(BasicMessage)
       expect((thrownError.outboundMessageContext.message as BasicMessage).content).toBe('Hello undeliverable')
 
@@ -167,7 +167,7 @@ describe('Basic Messages E2E', () => {
       const storedRecord = await aliceAgent.modules.basicMessages.getById(
         thrownError.outboundMessageContext.associatedRecord?.id
       )
-      expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
+      expect(storedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.modules.basicMessages.deleteById(storedRecord.id)

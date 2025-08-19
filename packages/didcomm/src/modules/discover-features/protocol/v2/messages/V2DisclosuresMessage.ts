@@ -1,17 +1,17 @@
 import { Type } from 'class-transformer'
 import { IsInstance } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
-import { Feature } from '../../../../../models'
+import { DidCommMessage } from '../../../../../DidCommMessage'
+import { DidCommFeature } from '../../../../../models'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface V2DisclosuresMessageOptions {
   id?: string
   threadId?: string
-  features?: Feature[]
+  features?: DidCommFeature[]
 }
 
-export class V2DisclosuresMessage extends AgentMessage {
+export class V2DisclosuresMessage extends DidCommMessage {
   public constructor(options: V2DisclosuresMessageOptions) {
     super()
 
@@ -30,7 +30,7 @@ export class V2DisclosuresMessage extends AgentMessage {
   public readonly type = V2DisclosuresMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/discover-features/2.0/disclosures')
 
-  @IsInstance(Feature, { each: true })
-  @Type(() => Feature)
-  public disclosures!: Feature[]
+  @IsInstance(DidCommFeature, { each: true })
+  @Type(() => DidCommFeature)
+  public disclosures!: DidCommFeature[]
 }

@@ -1,16 +1,16 @@
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { CredentialFormatSpec } from '../../../models'
+import { DidCommCredentialFormatSpec } from '../../../models'
 
 import { V2CredentialPreview } from './V2CredentialPreview'
 
 export interface V2ProposeCredentialMessageOptions {
   id?: string
-  formats: CredentialFormatSpec[]
+  formats: DidCommCredentialFormatSpec[]
   proposalAttachments: Attachment[]
   comment?: string
   goalCode?: string
@@ -19,7 +19,7 @@ export interface V2ProposeCredentialMessageOptions {
   attachments?: Attachment[]
 }
 
-export class V2ProposeCredentialMessage extends AgentMessage {
+export class V2ProposeCredentialMessage extends DidCommMessage {
   public constructor(options: V2ProposeCredentialMessageOptions) {
     super()
     if (options) {
@@ -34,11 +34,11 @@ export class V2ProposeCredentialMessage extends AgentMessage {
     }
   }
 
-  @Type(() => CredentialFormatSpec)
+  @Type(() => DidCommCredentialFormatSpec)
   @ValidateNested({ each: true })
   @IsArray()
-  @IsInstance(CredentialFormatSpec, { each: true })
-  public formats!: CredentialFormatSpec[]
+  @IsInstance(DidCommCredentialFormatSpec, { each: true })
+  public formats!: DidCommCredentialFormatSpec[]
 
   @IsValidMessageType(V2ProposeCredentialMessage.type)
   public readonly type = V2ProposeCredentialMessage.type.messageTypeUri

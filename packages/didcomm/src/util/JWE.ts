@@ -1,7 +1,7 @@
-import type { EncryptedMessage } from '../types'
+import type { EncryptedDidCommMessage } from '../types'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function isValidJweStructure(message: any): message is EncryptedMessage {
+export function isValidJweStructure(message: any): message is EncryptedDidCommMessage {
   return Boolean(
     message &&
       typeof message === 'object' &&

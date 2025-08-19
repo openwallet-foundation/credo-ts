@@ -1,5 +1,5 @@
-import type { PlaintextMessage } from '../types'
+import type { PlaintextDidCommMessage } from '../types'
 
-export function getThreadIdFromPlainTextMessage(message: PlaintextMessage) {
+export function getThreadIdFromPlainTextMessage(message: PlaintextDidCommMessage) {
   return message['~thread']?.thid ?? message['@id']
 }

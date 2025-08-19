@@ -1,9 +1,9 @@
-import type { AgentContext } from '@credo-ts/core/src/agent'
-import type { Routing } from '../../../models'
+import type { AgentContext } from '../../../../../core/src/agent'
+import type { DidCommRouting } from '../../../models'
 
 import { Subject } from 'rxjs'
 
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder } from '../../../../../core'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
@@ -20,37 +20,37 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../../core/tests/helpers'
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { AckMessage, AckStatus } from '../../../messages'
-import { InboundMessageContext } from '../../../models'
-import { OutOfBandService } from '../../oob/OutOfBandService'
-import { OutOfBandRole } from '../../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../oob/domain/OutOfBandState'
-import { OutOfBandRepository } from '../../oob/repository/OutOfBandRepository'
+import { AckDidCommMessage, AckStatus } from '../../../messages'
+import { InboundDidCommMessageContext } from '../../../models'
+import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
+import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
 import {
-  Connection,
+  DidCommConnection,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
   DidDoc,
-  DidExchangeRole,
-  DidExchangeState,
   Ed25119Sig2018,
   EmbeddedAuthentication,
   ReferencedAuthentication,
   authenticationTypes,
 } from '../models'
-import { ConnectionRepository } from '../repository'
-import { ConnectionService } from '../services'
+import { DidCommConnectionRepository } from '../repository'
+import { DidCommConnectionService } from '../services'
 import { convertToNewDidDocument } from '../services/helpers'
 
-jest.mock('../repository/ConnectionRepository')
-jest.mock('../../oob/repository/OutOfBandRepository')
-jest.mock('../../oob/OutOfBandService')
+jest.mock('../repository/DidCommConnectionRepository')
+jest.mock('../../oob/repository/DidCommOutOfBandRepository')
+jest.mock('../../oob/DidCommOutOfBandService')
 jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
-const ConnectionRepositoryMock = ConnectionRepository as jest.Mock<ConnectionRepository>
-const OutOfBandRepositoryMock = OutOfBandRepository as jest.Mock<OutOfBandRepository>
-const OutOfBandServiceMock = OutOfBandService as jest.Mock<OutOfBandService>
+const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as jest.Mock<DidCommOutOfBandRepository>
+const OutOfBandServiceMock = DidCommOutOfBandService as jest.Mock<DidCommOutOfBandService>
 const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
 
 const connectionImageUrl = 'https://example.com/image.png'
@@ -65,12 +65,12 @@ const outOfBandRepository = new OutOfBandRepositoryMock()
 const outOfBandService = new OutOfBandServiceMock()
 const didRepository = new DidRepositoryMock()
 
-describe('ConnectionService', () => {
-  let connectionRepository: ConnectionRepository
+describe('DidCommConnectionService', () => {
+  let connectionRepository: DidCommConnectionRepository
 
-  let connectionService: ConnectionService
+  let connectionService: DidCommConnectionService
   let eventEmitter: EventEmitter
-  let myRouting: Routing
+  let myRouting: DidCommRouting
   let agentContext: AgentContext
   let kms: Kms.KeyManagementApi
 
@@ -78,8 +78,8 @@ describe('ConnectionService', () => {
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
-        [OutOfBandRepository, outOfBandRepository],
-        [OutOfBandService, outOfBandService],
+        [DidCommOutOfBandRepository, outOfBandRepository],
+        [DidCommOutOfBandService, outOfBandService],
         [DidRepository, didRepository],
         [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint], connectionImageUrl })],
       ],
@@ -90,7 +90,12 @@ describe('ConnectionService', () => {
   beforeEach(async () => {
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
     connectionRepository = new ConnectionRepositoryMock()
-    connectionService = new ConnectionService(agentConfig.logger, connectionRepository, didRepository, eventEmitter)
+    connectionService = new DidCommConnectionService(
+      agentConfig.logger,
+      connectionRepository,
+      didRepository,
+      eventEmitter
+    )
 
     const recipientKey = Kms.PublicJwk.fromFingerprint(
       'z6MkwFkSP4uv5PhhKJCGehtjuZedkotC7VF64xtMsxuM8R3W'
@@ -119,12 +124,12 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing the information from the connection record', async () => {
       expect.assertions(5)
 
-      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
       const config = { routing: myRouting }
 
       const { connectionRecord, message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
-      expect(connectionRecord.state).toBe(DidExchangeState.RequestSent)
+      expect(connectionRecord.state).toBe(DidCommDidExchangeState.RequestSent)
       expect(message.label).toBe(agentConfig.label)
       expect(message.connection.did).toBe('XpwgBjsC2wh3eHcMW6ZRJT')
 
@@ -156,7 +161,7 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing a custom label', async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
       const config = { label: 'Custom label', routing: myRouting }
 
       const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
@@ -167,7 +172,7 @@ describe('ConnectionService', () => {
     it('returns a connection record containing image url', async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
       const config = { label: 'Custom label', routing: myRouting }
 
       const { connectionRecord } = await connectionService.createRequest(agentContext, outOfBand, config)
@@ -178,7 +183,7 @@ describe('ConnectionService', () => {
     it('returns a connection request message containing a custom image url', async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ state: OutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
       const config = { imageUrl: 'custom-image-url', routing: myRouting }
 
       const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
@@ -186,20 +191,27 @@ describe('ConnectionService', () => {
       expect(message.imageUrl).toBe('custom-image-url')
     })
 
-    it(`throws an error when out-of-band role is not ${OutOfBandRole.Receiver}`, async () => {
+    it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Receiver}`, async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.PrepareResponse,
+      })
       const config = { routing: myRouting }
 
       return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
-        `Invalid out-of-band record role ${OutOfBandRole.Sender}, expected is ${OutOfBandRole.Receiver}.`
+        `Invalid out-of-band record role ${DidCommOutOfBandRole.Sender}, expected is ${DidCommOutOfBandRole.Receiver}.`
       )
     })
 
-    const invalidConnectionStates = [OutOfBandState.Initial, OutOfBandState.AwaitResponse, OutOfBandState.Done]
+    const invalidConnectionStates = [
+      DidCommOutOfBandState.Initial,
+      DidCommOutOfBandState.AwaitResponse,
+      DidCommOutOfBandState.Done,
+    ]
     test.each(invalidConnectionStates)(
-      `throws an error when out-of-band state is %s and not ${OutOfBandState.PrepareResponse}`,
+      `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.PrepareResponse}`,
       (state) => {
         expect.assertions(1)
 
@@ -207,7 +219,7 @@ describe('ConnectionService', () => {
         const config = { routing: myRouting }
 
         return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
-          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.PrepareResponse}.`
+          `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.PrepareResponse}.`
         )
       }
     )
@@ -251,7 +263,7 @@ describe('ConnectionService', () => {
         imageUrl: connectionImageUrl,
       })
 
-      const messageContext = new InboundMessageContext(connectionRequest, {
+      const messageContext = new InboundDidCommMessageContext(connectionRequest, {
         agentContext,
         senderKey: theirKey,
         recipientKey: Kms.PublicJwk.fromPublicKey({
@@ -263,12 +275,12 @@ describe('ConnectionService', () => {
 
       const outOfBand = getMockOutOfBand({
         mediatorId: 'fakeMediatorId',
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
       })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
-      expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
+      expect(processedConnection.state).toBe(DidCommDidExchangeState.RequestReceived)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
@@ -280,8 +292,8 @@ describe('ConnectionService', () => {
 
       const connectionRecord = getMockConnection({
         id: 'test',
-        state: DidExchangeState.InvitationSent,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.InvitationSent,
+        role: DidCommDidExchangeRole.Responder,
       })
 
       const theirDid = 'their-did'
@@ -318,7 +330,7 @@ describe('ConnectionService', () => {
         label: 'test-label',
       })
 
-      const messageContext = new InboundMessageContext(connectionRequest, {
+      const messageContext = new InboundDidCommMessageContext(connectionRequest, {
         agentContext,
         connection: connectionRecord,
         senderKey: theirKey,
@@ -331,12 +343,12 @@ describe('ConnectionService', () => {
 
       const outOfBand = getMockOutOfBand({
         mediatorId: 'fakeMediatorId',
-        role: OutOfBandRole.Sender,
-        state: OutOfBandState.AwaitResponse,
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
       })
       const processedConnection = await connectionService.processRequest(messageContext, outOfBand)
 
-      expect(processedConnection.state).toBe(DidExchangeState.RequestReceived)
+      expect(processedConnection.state).toBe(DidCommDidExchangeState.RequestReceived)
       expect(processedConnection.theirDid).toBe('did:peer:1zQmcLh1CQfxn2rCN4xBkgjrozMJAdmHEchbjrzsxNPzXUZa')
       expect(processedConnection.theirLabel).toBe('test-label')
       expect(processedConnection.threadId).toBe(connectionRequest.id)
@@ -344,7 +356,7 @@ describe('ConnectionService', () => {
       expect(connectionRepository.save).toHaveBeenCalledTimes(1)
       expect(processedConnection.id).not.toBe(connectionRecord.id)
       expect(connectionRecord.id).toBe('test')
-      expect(connectionRecord.state).toBe(DidExchangeState.InvitationSent)
+      expect(connectionRecord.state).toBe(DidCommDidExchangeState.InvitationSent)
     })
 
     it('throws an error when the message does not contain a did doc', async () => {
@@ -355,7 +367,7 @@ describe('ConnectionService', () => {
         label: 'test-label',
       })
 
-      const messageContext = new InboundMessageContext(connectionRequest, {
+      const messageContext = new InboundDidCommMessageContext(connectionRequest, {
         agentContext,
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
@@ -369,17 +381,20 @@ describe('ConnectionService', () => {
         }),
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state: OutOfBandState.AwaitResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.AwaitResponse,
+      })
 
       return expect(connectionService.processRequest(messageContext, outOfBand)).rejects.toThrowError(
         'Public DIDs are not supported yet'
       )
     })
 
-    it(`throws an error when out-of-band role is not ${OutOfBandRole.Sender}`, async () => {
+    it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Sender}`, async () => {
       expect.assertions(1)
 
-      const inboundMessage = new InboundMessageContext(jest.fn()(), {
+      const inboundMessage = new InboundDidCommMessageContext(jest.fn()(), {
         agentContext,
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
@@ -393,24 +408,31 @@ describe('ConnectionService', () => {
         }),
       })
 
-      const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Receiver, state: OutOfBandState.AwaitResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Receiver,
+        state: DidCommOutOfBandState.AwaitResponse,
+      })
 
       return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
-        `Invalid out-of-band record role ${OutOfBandRole.Receiver}, expected is ${OutOfBandRole.Sender}.`
+        `Invalid out-of-band record role ${DidCommOutOfBandRole.Receiver}, expected is ${DidCommOutOfBandRole.Sender}.`
       )
     })
 
-    const invalidOutOfBandStates = [OutOfBandState.Initial, OutOfBandState.PrepareResponse, OutOfBandState.Done]
+    const invalidOutOfBandStates = [
+      DidCommOutOfBandState.Initial,
+      DidCommOutOfBandState.PrepareResponse,
+      DidCommOutOfBandState.Done,
+    ]
     test.each(invalidOutOfBandStates)(
-      `throws an error when out-of-band state is %s and not ${OutOfBandState.AwaitResponse}`,
+      `throws an error when out-of-band state is %s and not ${DidCommOutOfBandState.AwaitResponse}`,
       (state) => {
         expect.assertions(1)
 
-        const inboundMessage = new InboundMessageContext(jest.fn()(), { agentContext })
-        const outOfBand = getMockOutOfBand({ role: OutOfBandRole.Sender, state })
+        const inboundMessage = new InboundDidCommMessageContext(jest.fn()(), { agentContext })
+        const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrowError(
-          `Invalid out-of-band record state ${state}, valid states are: ${OutOfBandState.AwaitResponse}.`
+          `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.AwaitResponse}.`
         )
       }
     )
@@ -426,8 +448,8 @@ describe('ConnectionService', () => {
 
       // Needed for signing connection~sig
       const mockConnection = getMockConnection({
-        state: DidExchangeState.RequestReceived,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.RequestReceived,
+        role: DidCommDidExchangeRole.Responder,
         tags: {
           threadId: 'test',
         },
@@ -468,48 +490,48 @@ describe('ConnectionService', () => {
         outOfBand
       )
 
-      const connection = new Connection({
+      const connection = new DidCommConnection({
         did,
         didDoc: mockDidDoc,
       })
       const plainConnection = JsonTransformer.toJSON(connection)
 
-      expect(connectionRecord.state).toBe(DidExchangeState.ResponseSent)
+      expect(connectionRecord.state).toBe(DidCommDidExchangeState.ResponseSent)
       expect(await unpackAndVerifySignatureDecorator(agentContext, message.connectionSig)).toEqual(plainConnection)
     })
 
-    it(`throws an error when connection role is ${DidExchangeRole.Requester} and not ${DidExchangeRole.Responder}`, async () => {
+    it(`throws an error when connection role is ${DidCommDidExchangeRole.Requester} and not ${DidCommDidExchangeRole.Responder}`, async () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        role: DidExchangeRole.Requester,
-        state: DidExchangeState.RequestReceived,
+        role: DidCommDidExchangeRole.Requester,
+        state: DidCommDidExchangeState.RequestReceived,
       })
       const outOfBand = getMockOutOfBand()
       return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrowError(
-        `Connection record has invalid role ${DidExchangeRole.Requester}. Expected role ${DidExchangeRole.Responder}.`
+        `Connection record has invalid role ${DidCommDidExchangeRole.Requester}. Expected role ${DidCommDidExchangeRole.Responder}.`
       )
     })
 
     const invalidOutOfBandStates = [
-      DidExchangeState.InvitationSent,
-      DidExchangeState.InvitationReceived,
-      DidExchangeState.RequestSent,
-      DidExchangeState.ResponseSent,
-      DidExchangeState.ResponseReceived,
-      DidExchangeState.Completed,
-      DidExchangeState.Abandoned,
-      DidExchangeState.Start,
+      DidCommDidExchangeState.InvitationSent,
+      DidCommDidExchangeState.InvitationReceived,
+      DidCommDidExchangeState.RequestSent,
+      DidCommDidExchangeState.ResponseSent,
+      DidCommDidExchangeState.ResponseReceived,
+      DidCommDidExchangeState.Completed,
+      DidCommDidExchangeState.Abandoned,
+      DidCommDidExchangeState.Start,
     ]
     test.each(invalidOutOfBandStates)(
-      `throws an error when connection state is %s and not ${DidExchangeState.RequestReceived}`,
+      `throws an error when connection state is %s and not ${DidCommDidExchangeState.RequestReceived}`,
       async (state) => {
         expect.assertions(1)
 
         const connection = getMockConnection({ state })
         const outOfBand = getMockOutOfBand()
         return expect(connectionService.createResponse(agentContext, connection, outOfBand)).rejects.toThrowError(
-          `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.RequestReceived}.`
+          `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.RequestReceived}.`
         )
       }
     )
@@ -529,11 +551,11 @@ describe('ConnectionService', () => {
 
       const connectionRecord = getMockConnection({
         did,
-        state: DidExchangeState.RequestSent,
-        role: DidExchangeRole.Requester,
+        state: DidCommDidExchangeState.RequestSent,
+        role: DidCommDidExchangeRole.Requester,
       })
 
-      const otherPartyConnection = new Connection({
+      const otherPartyConnection = new DidCommConnection({
         did: theirDid,
         didDoc: new DidDoc({
           id: theirDid,
@@ -568,7 +590,7 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({
         recipientKeys: [new DidKey(theirPublicJwk).did],
       })
-      const messageContext = new InboundMessageContext(connectionResponse, {
+      const messageContext = new InboundDidCommMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
         senderKey: theirPublicJwk,
@@ -582,19 +604,19 @@ describe('ConnectionService', () => {
         convertToNewDidDocument(otherPartyConnection.didDoc!).didDocument.toJSON()
       )
 
-      expect(processedConnection.state).toBe(DidExchangeState.ResponseReceived)
+      expect(processedConnection.state).toBe(DidCommDidExchangeState.ResponseReceived)
       expect(processedConnection.theirDid).toBe(peerDid)
     })
 
-    it(`throws an error when connection role is ${DidExchangeRole.Responder} and not ${DidExchangeRole.Requester}`, async () => {
+    it(`throws an error when connection role is ${DidCommDidExchangeRole.Responder} and not ${DidCommDidExchangeRole.Requester}`, async () => {
       expect.assertions(1)
 
       const outOfBandRecord = getMockOutOfBand()
       const connectionRecord = getMockConnection({
-        role: DidExchangeRole.Responder,
-        state: DidExchangeState.RequestSent,
+        role: DidCommDidExchangeRole.Responder,
+        state: DidCommDidExchangeState.RequestSent,
       })
-      const messageContext = new InboundMessageContext(jest.fn()(), {
+      const messageContext = new InboundDidCommMessageContext(jest.fn()(), {
         agentContext,
         connection: connectionRecord,
         recipientKey: Kms.PublicJwk.fromPublicKey({
@@ -610,7 +632,7 @@ describe('ConnectionService', () => {
       })
 
       return expect(connectionService.processResponse(messageContext, outOfBandRecord)).rejects.toThrowError(
-        `Connection record has invalid role ${DidExchangeRole.Responder}. Expected role ${DidExchangeRole.Requester}.`
+        `Connection record has invalid role ${DidCommDidExchangeRole.Responder}. Expected role ${DidCommDidExchangeRole.Requester}.`
       )
     })
 
@@ -626,11 +648,11 @@ describe('ConnectionService', () => {
       const theirDid = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey))
       const connectionRecord = getMockConnection({
         did,
-        role: DidExchangeRole.Requester,
-        state: DidExchangeState.RequestSent,
+        role: DidCommDidExchangeRole.Requester,
+        state: DidCommDidExchangeState.RequestSent,
       })
 
-      const otherPartyConnection = new Connection({
+      const otherPartyConnection = new DidCommConnection({
         did: theirDid,
         didDoc: new DidDoc({
           id: theirDid,
@@ -666,7 +688,7 @@ describe('ConnectionService', () => {
       const outOfBandRecord = getMockOutOfBand({
         recipientKeys: [new DidKey(publicJwk).did],
       })
-      const messageContext = new InboundMessageContext(connectionResponse, {
+      const messageContext = new InboundDidCommMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
         senderKey: theirPublicJwk,
@@ -690,18 +712,18 @@ describe('ConnectionService', () => {
       const theirDid = indyDidFromPublicKeyBase58(TypedArrayEncoder.toBase58(theirPublicJwk.publicKey.publicKey))
       const connectionRecord = getMockConnection({
         did,
-        state: DidExchangeState.RequestSent,
+        state: DidCommDidExchangeState.RequestSent,
         theirDid: undefined,
       })
 
-      const otherPartyConnection = new Connection({ did: theirDid })
+      const otherPartyConnection = new DidCommConnection({ did: theirDid })
       const plainConnection = JsonTransformer.toJSON(otherPartyConnection)
       const connectionSig = await signData(agentContext, plainConnection, theirPublicJwk)
 
       const connectionResponse = new ConnectionResponseMessage({ threadId: uuid(), connectionSig })
 
       const outOfBandRecord = getMockOutOfBand({ recipientKeys: [new DidKey(theirPublicJwk).did] })
-      const messageContext = new InboundMessageContext(connectionResponse, {
+      const messageContext = new InboundDidCommMessageContext(connectionResponse, {
         agentContext,
         connection: connectionRecord,
         recipientKey: Kms.PublicJwk.fromPublicKey({
@@ -726,31 +748,31 @@ describe('ConnectionService', () => {
     it('returns a trust ping message', async () => {
       expect.assertions(2)
 
-      const mockConnection = getMockConnection({ state: DidExchangeState.ResponseReceived })
+      const mockConnection = getMockConnection({ state: DidCommDidExchangeState.ResponseReceived })
 
       const { message, connectionRecord } = await connectionService.createTrustPing(agentContext, mockConnection)
 
-      expect(connectionRecord.state).toBe(DidExchangeState.Completed)
+      expect(connectionRecord.state).toBe(DidCommDidExchangeState.Completed)
       expect(message).toEqual(expect.any(TrustPingMessage))
     })
 
     const invalidConnectionStates = [
-      DidExchangeState.InvitationSent,
-      DidExchangeState.InvitationReceived,
-      DidExchangeState.RequestSent,
-      DidExchangeState.RequestReceived,
-      DidExchangeState.ResponseSent,
-      DidExchangeState.Abandoned,
-      DidExchangeState.Start,
+      DidCommDidExchangeState.InvitationSent,
+      DidCommDidExchangeState.InvitationReceived,
+      DidCommDidExchangeState.RequestSent,
+      DidCommDidExchangeState.RequestReceived,
+      DidCommDidExchangeState.ResponseSent,
+      DidCommDidExchangeState.Abandoned,
+      DidCommDidExchangeState.Start,
     ]
     test.each(invalidConnectionStates)(
-      `throws an error when connection state is %s and not ${DidExchangeState.ResponseReceived} or ${DidExchangeState.Completed}`,
+      `throws an error when connection state is %s and not ${DidCommDidExchangeState.ResponseReceived} or ${DidCommDidExchangeState.Completed}`,
       (state) => {
         expect.assertions(1)
         const connection = getMockConnection({ state })
 
         return expect(connectionService.createTrustPing(agentContext, connection)).rejects.toThrowError(
-          `Connection record is in invalid state ${state}. Valid states are: ${DidExchangeState.ResponseReceived}, ${DidExchangeState.Completed}.`
+          `Connection record is in invalid state ${state}. Valid states are: ${DidCommDidExchangeState.ResponseReceived}, ${DidCommDidExchangeState.Completed}.`
         )
       }
     )
@@ -760,12 +782,12 @@ describe('ConnectionService', () => {
     it('throws an error when the message context does not have a connection', async () => {
       expect.assertions(1)
 
-      const ack = new AckMessage({
+      const ack = new AckDidCommMessage({
         status: AckStatus.OK,
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(ack, { agentContext })
 
       return expect(connectionService.processAck(messageContext)).rejects.toThrowError(
         'Unable to process connection ack: connection for recipient key undefined not found'
@@ -776,40 +798,40 @@ describe('ConnectionService', () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        state: DidExchangeState.ResponseSent,
-        role: DidExchangeRole.Responder,
+        state: DidCommDidExchangeState.ResponseSent,
+        role: DidCommDidExchangeRole.Responder,
       })
 
-      const ack = new AckMessage({
+      const ack = new AckDidCommMessage({
         status: AckStatus.OK,
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(ack, { agentContext, connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
-      expect(updatedConnection.state).toBe(DidExchangeState.Completed)
+      expect(updatedConnection.state).toBe(DidCommDidExchangeState.Completed)
     })
 
     it('does not update the state when the state is not ResponseSent or the role is not Responder', async () => {
       expect.assertions(1)
 
       const connection = getMockConnection({
-        state: DidExchangeState.ResponseReceived,
-        role: DidExchangeRole.Requester,
+        state: DidCommDidExchangeState.ResponseReceived,
+        role: DidCommDidExchangeRole.Requester,
       })
 
-      const ack = new AckMessage({
+      const ack = new AckDidCommMessage({
         status: AckStatus.OK,
         threadId: 'thread-id',
       })
 
-      const messageContext = new InboundMessageContext(ack, { agentContext, connection })
+      const messageContext = new InboundDidCommMessageContext(ack, { agentContext, connection })
 
       const updatedConnection = await connectionService.processAck(messageContext)
 
-      expect(updatedConnection.state).toBe(DidExchangeState.ResponseReceived)
+      expect(updatedConnection.state).toBe(DidCommDidExchangeState.ResponseReceived)
     })
   })
 
@@ -817,7 +839,7 @@ describe('ConnectionService', () => {
     it('should throw an error when a expectedConnectionId is present, but no connection is present in the messageContext', async () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundDidCommMessageContext(new DidCommMessage(), {
         agentContext,
       })
 
@@ -831,9 +853,9 @@ describe('ConnectionService', () => {
     it('should throw an error when a expectedConnectionId is present, but does not match with connection id present in the messageContext', async () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundDidCommMessageContext(new DidCommMessage(), {
         agentContext,
-        connection: getMockConnection({ state: DidExchangeState.InvitationReceived, id: 'something' }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.InvitationReceived, id: 'something' }),
       })
 
       await expect(
@@ -846,9 +868,9 @@ describe('ConnectionService', () => {
     it('should not throw an error when a connection record with state complete is present in the messageContext', async () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundDidCommMessageContext(new DidCommMessage(), {
         agentContext,
-        connection: getMockConnection({ state: DidExchangeState.Completed }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.Completed }),
       })
 
       await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
@@ -857,9 +879,9 @@ describe('ConnectionService', () => {
     it('should throw an error when a connection record is present and state not complete in the messageContext', async () => {
       expect.assertions(1)
 
-      const messageContext = new InboundMessageContext(new AgentMessage(), {
+      const messageContext = new InboundDidCommMessageContext(new DidCommMessage(), {
         agentContext,
-        connection: getMockConnection({ state: DidExchangeState.InvitationReceived }),
+        connection: getMockConnection({ state: DidCommDidExchangeState.InvitationReceived }),
       })
 
       await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).rejects.toThrowError(
@@ -872,13 +894,13 @@ describe('ConnectionService', () => {
 
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(null)
 
-      const message = new AgentMessage()
+      const message = new DidCommMessage()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(message, { agentContext })
 
       await expect(connectionService.assertConnectionOrOutOfBandExchange(messageContext)).resolves.not.toThrow()
     })
@@ -897,27 +919,27 @@ describe('ConnectionService', () => {
         publicKey: TypedArrayEncoder.fromBase58('79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'),
       })
 
-      const lastSentMessage = new AgentMessage()
+      const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
         recipientKeys: [TypedArrayEncoder.toBase58(recipientKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const lastReceivedMessage = new AgentMessage()
+      const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
         recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DidCommMessage()
       message.setService({
         recipientKeys: [TypedArrayEncoder.toBase58(senderKey.publicKey.publicKey)],
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey, senderKey })
+      const messageContext = new InboundDidCommMessageContext(message, { agentContext, recipientKey, senderKey })
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -930,20 +952,20 @@ describe('ConnectionService', () => {
     it('should throw an error when lastSentMessage is present, but recipientVerkey is not ', async () => {
       expect.assertions(1)
 
-      const lastSentMessage = new AgentMessage()
+      const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DidCommMessage()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, { agentContext })
+      const messageContext = new InboundDidCommMessageContext(message, { agentContext })
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -968,20 +990,20 @@ describe('ConnectionService', () => {
         publicKey: TypedArrayEncoder.fromBase58('8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'),
       })
 
-      const lastSentMessage = new AgentMessage()
+      const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
+      const message = new DidCommMessage()
       message.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
-      const messageContext = new InboundMessageContext(message, { agentContext, recipientKey, senderKey })
+      const messageContext = new InboundDidCommMessageContext(message, { agentContext, recipientKey, senderKey })
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -993,15 +1015,15 @@ describe('ConnectionService', () => {
     it('should throw an error when lastReceivedMessage is present, but senderVerkey is not ', async () => {
       expect.assertions(1)
 
-      const lastReceivedMessage = new AgentMessage()
+      const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
         recipientKeys: [],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message, { agentContext })
+      const message = new DidCommMessage()
+      const messageContext = new InboundDidCommMessageContext(message, { agentContext })
 
       await expect(
         connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -1017,22 +1039,22 @@ describe('ConnectionService', () => {
 
       const senderKey = 'senderKey'
 
-      const lastReceivedMessage = new AgentMessage()
+      const lastReceivedMessage = new DidCommMessage()
       lastReceivedMessage.setService({
         recipientKeys: ['anotherKey'],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const lastSentMessage = new AgentMessage()
+      const lastSentMessage = new DidCommMessage()
       lastSentMessage.setService({
         recipientKeys: [senderKey],
         serviceEndpoint: '',
         routingKeys: [],
       })
 
-      const message = new AgentMessage()
-      const messageContext = new InboundMessageContext(message, {
+      const message = new DidCommMessage()
+      const messageContext = new InboundDidCommMessageContext(message, {
         agentContext,
         senderKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
@@ -1100,14 +1122,14 @@ describe('ConnectionService', () => {
       const result = await connectionService.findAllByQuery(
         agentContext,
         {
-          state: DidExchangeState.InvitationReceived,
+          state: DidCommDidExchangeState.InvitationReceived,
         },
         undefined
       )
       expect(connectionRepository.findByQuery).toBeCalledWith(
         agentContext,
         {
-          state: DidExchangeState.InvitationReceived,
+          state: DidCommDidExchangeState.InvitationReceived,
         },
         undefined
       )

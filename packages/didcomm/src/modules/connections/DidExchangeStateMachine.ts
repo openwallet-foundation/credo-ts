@@ -1,58 +1,58 @@
 import type { ParsedMessageType } from '../../util/messageType'
-import type { ConnectionRecord } from './repository'
+import type { DidCommConnectionRecord } from './repository'
 
 import { CredoError } from '@credo-ts/core'
 
 import { canHandleMessageType } from '../../util/messageType'
 
 import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
-import { DidExchangeRole, DidExchangeState } from './models'
+import { DidCommDidExchangeRole, DidCommDidExchangeState } from './models'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {
       message: DidExchangeRequestMessage,
-      state: DidExchangeState.InvitationReceived,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.RequestSent,
+      state: DidCommDidExchangeState.InvitationReceived,
+      role: DidCommDidExchangeRole.Requester,
+      nextState: DidCommDidExchangeState.RequestSent,
     },
     {
       message: DidExchangeResponseMessage,
-      state: DidExchangeState.RequestReceived,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.ResponseSent,
+      state: DidCommDidExchangeState.RequestReceived,
+      role: DidCommDidExchangeRole.Responder,
+      nextState: DidCommDidExchangeState.ResponseSent,
     },
     {
       message: DidExchangeCompleteMessage,
-      state: DidExchangeState.ResponseReceived,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.Completed,
+      state: DidCommDidExchangeState.ResponseReceived,
+      role: DidCommDidExchangeRole.Requester,
+      nextState: DidCommDidExchangeState.Completed,
     },
   ]
 
   private static processMessageStateRules = [
     {
       message: DidExchangeRequestMessage,
-      state: DidExchangeState.InvitationSent,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.RequestReceived,
+      state: DidCommDidExchangeState.InvitationSent,
+      role: DidCommDidExchangeRole.Responder,
+      nextState: DidCommDidExchangeState.RequestReceived,
     },
     {
       message: DidExchangeResponseMessage,
-      state: DidExchangeState.RequestSent,
-      role: DidExchangeRole.Requester,
-      nextState: DidExchangeState.ResponseReceived,
+      state: DidCommDidExchangeState.RequestSent,
+      role: DidCommDidExchangeRole.Requester,
+      nextState: DidCommDidExchangeState.ResponseReceived,
     },
     {
       message: DidExchangeCompleteMessage,
-      state: DidExchangeState.ResponseSent,
-      role: DidExchangeRole.Responder,
-      nextState: DidExchangeState.Completed,
+      state: DidCommDidExchangeState.ResponseSent,
+      role: DidCommDidExchangeRole.Responder,
+      nextState: DidCommDidExchangeState.Completed,
     },
   ]
 
-  public static assertCreateMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
+  public static assertCreateMessageState(messageType: ParsedMessageType, record: DidCommConnectionRecord) {
     const rule = DidExchangeStateMachine.createMessageStateRules.find((r) =>
       canHandleMessageType(r.message, messageType)
     )
@@ -66,7 +66,7 @@ export class DidExchangeStateMachine {
     }
   }
 
-  public static assertProcessMessageState(messageType: ParsedMessageType, record: ConnectionRecord) {
+  public static assertProcessMessageState(messageType: ParsedMessageType, record: DidCommConnectionRecord) {
     const rule = DidExchangeStateMachine.processMessageStateRules.find((r) =>
       canHandleMessageType(r.message, messageType)
     )
@@ -80,7 +80,7 @@ export class DidExchangeStateMachine {
     }
   }
 
-  public static nextState(messageType: ParsedMessageType, record: ConnectionRecord) {
+  public static nextState(messageType: ParsedMessageType, record: DidCommConnectionRecord) {
     const rule = DidExchangeStateMachine.createMessageStateRules
       .concat(DidExchangeStateMachine.processMessageStateRules)
       .find((r) => canHandleMessageType(r.message, messageType) && r.role === record.role)

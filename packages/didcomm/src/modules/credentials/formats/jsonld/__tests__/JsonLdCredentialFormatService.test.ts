@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { CredentialPreviewAttribute } from '../../../models/CredentialPreviewAttribute'
-import type { CustomCredentialTags } from '../../../repository/CredentialExchangeRecord'
+import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
+import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { CredentialFormatService } from '../../CredentialFormatService'
 import type { JsonCredential, JsonLdCredentialDetailFormat, JsonLdCredentialFormat } from '../JsonLdCredentialFormat'
 
@@ -18,9 +18,9 @@ import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { CredentialRole, CredentialState } from '../../../models'
+import { DidCommCredentialRole, DidCommCredentialState } from '../../../models'
 import { V2CredentialPreview } from '../../../protocol/v2/messages'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
 
 jest.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
@@ -106,26 +106,26 @@ const mockCredentialRecord = ({
   id,
   credentialAttributes,
 }: {
-  state?: CredentialState
-  role?: CredentialRole
-  tags?: CustomCredentialTags
+  state?: DidCommCredentialState
+  role?: DidCommCredentialRole
+  tags?: CustomDidCommCredentialExchangeTags
   threadId?: string
   connectionId?: string
   id?: string
-  credentialAttributes?: CredentialPreviewAttribute[]
+  credentialAttributes?: DidCommCredentialPreviewAttribute[]
 } = {}) => {
-  const credentialRecord = new CredentialExchangeRecord({
+  const credentialExchangeRecord = new DidCommCredentialExchangeRecord({
     id,
     credentialAttributes: credentialAttributes || credentialPreview.attributes,
-    state: state || CredentialState.OfferSent,
-    role: role || CredentialRole.Issuer,
+    state: state || DidCommCredentialState.OfferSent,
+    role: role || DidCommCredentialRole.Issuer,
     threadId: threadId ?? 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     connectionId: connectionId ?? '123',
     tags,
     protocolVersion: 'v2',
   })
 
-  return credentialRecord
+  return credentialExchangeRecord
 }
 const inputDocAsJson: JsonCredential = {
   '@context': [CREDENTIALS_CONTEXT_V1_URL, 'https://www.w3.org/2018/credentials/examples/v1'],
@@ -185,7 +185,7 @@ describe('JsonLd CredentialFormatService', () => {
     test('Creates JsonLd Credential Proposal', async () => {
       // when
       const { attachment, format } = await jsonLdFormatService.createProposal(agentContext, {
-        credentialRecord: mockCredentialRecord(),
+        credentialExchangeRecord: mockCredentialRecord(),
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
@@ -221,7 +221,7 @@ describe('JsonLd CredentialFormatService', () => {
         credentialFormats: {
           jsonld: signCredentialOptions,
         },
-        credentialRecord: mockCredentialRecord(),
+        credentialExchangeRecord: mockCredentialRecord(),
       })
 
       // then
@@ -259,8 +259,8 @@ describe('JsonLd CredentialFormatService', () => {
           jsonld: undefined,
         },
         offerAttachment,
-        credentialRecord: mockCredentialRecord({
-          state: CredentialState.OfferReceived,
+        credentialExchangeRecord: mockCredentialRecord({
+          state: DidCommCredentialState.OfferReceived,
           threadId: 'fd9c5ddb-ec11-4acd-bc32-540736249746',
           connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
         }),
@@ -318,14 +318,14 @@ describe('JsonLd CredentialFormatService', () => {
       // given
       mockFunction(w3cJsonLdCredentialService.signCredential).mockReturnValue(Promise.resolve(vc))
 
-      const credentialRecord = mockCredentialRecord({
-        state: CredentialState.RequestReceived,
+      const credentialExchangeRecord = mockCredentialRecord({
+        state: DidCommCredentialState.RequestReceived,
         threadId,
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
       const { format, attachment } = await jsonLdFormatService.acceptRequest(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         credentialFormats: {
           jsonld: {
             verificationMethod,
@@ -360,8 +360,8 @@ describe('JsonLd CredentialFormatService', () => {
   })
 
   describe('Process Credential', () => {
-    const credentialRecord = mockCredentialRecord({
-      state: CredentialState.RequestSent,
+    const credentialExchangeRecord = mockCredentialRecord({
+      state: DidCommCredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
     let signCredentialOptionsWithProperty: JsonLdCredentialDetailFormat
@@ -393,14 +393,14 @@ describe('JsonLd CredentialFormatService', () => {
         offerAttachment,
         attachment: credentialAttachment,
         requestAttachment: requestAttachment,
-        credentialRecord,
+        credentialExchangeRecord,
       })
 
       // then
       expect(w3cCredentialService.storeCredential).toHaveBeenCalledTimes(1)
-      expect(credentialRecord.credentials.length).toBe(1)
-      expect(credentialRecord.credentials[0].credentialRecordType).toBe('w3c')
-      expect(credentialRecord.credentials[0].credentialRecordId).toBe('foo')
+      expect(credentialExchangeRecord.credentials.length).toBe(1)
+      expect(credentialExchangeRecord.credentials[0].credentialRecordType).toBe('w3c')
+      expect(credentialExchangeRecord.credentials[0].credentialRecordId).toBe('foo')
     })
 
     test('throws error if credential subject not equal to request subject', async () => {
@@ -428,7 +428,7 @@ describe('JsonLd CredentialFormatService', () => {
           offerAttachment: offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachment,
-          credentialRecord,
+          credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential does not match credential request')
     })
@@ -452,7 +452,7 @@ describe('JsonLd CredentialFormatService', () => {
           offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithDomain,
-          credentialRecord,
+          credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential proof domain does not match domain from credential request')
     })
@@ -478,7 +478,7 @@ describe('JsonLd CredentialFormatService', () => {
           offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithChallenge,
-          credentialRecord,
+          credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential proof challenge does not match challenge from credential request')
     })
@@ -501,7 +501,7 @@ describe('JsonLd CredentialFormatService', () => {
           offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofType,
-          credentialRecord,
+          credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential proof type does not match proof type from credential request')
     })
@@ -524,7 +524,7 @@ describe('JsonLd CredentialFormatService', () => {
           offerAttachment,
           attachment: credentialAttachment,
           requestAttachment: requestAttachmentWithProofPurpose,
-          credentialRecord,
+          credentialExchangeRecord,
         })
       ).rejects.toThrow('Received credential proof purpose does not match proof purpose from credential request')
     })
@@ -548,7 +548,7 @@ describe('JsonLd CredentialFormatService', () => {
 
       // indirectly test areCredentialsEqual as black box rather than expose that method in the API
       let areCredentialsEqual = await jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         proposalAttachment: message1,
         offerAttachment: message2,
       })
@@ -562,7 +562,7 @@ describe('JsonLd CredentialFormatService', () => {
       })
 
       areCredentialsEqual = await jsonLdFormatService.shouldAutoRespondToProposal(agentContext, {
-        credentialRecord,
+        credentialExchangeRecord,
         proposalAttachment: message1,
         offerAttachment: message2,
       })

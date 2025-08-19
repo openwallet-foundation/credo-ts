@@ -1,7 +1,7 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { FeatureRegistry } from '@credo-ts/didcomm'
+import type { DidCommFeatureRegistry } from '@credo-ts/didcomm'
 
-import { Protocol } from '@credo-ts/didcomm'
+import { DidCommProtocol } from '@credo-ts/didcomm'
 
 import { getAgentContext } from '../../../core/tests'
 import { ActionMenuModule } from '../ActionMenuModule'
@@ -11,7 +11,7 @@ import { ActionMenuService } from '../services'
 
 const featureRegistry = {
   register: jest.fn(),
-} as unknown as FeatureRegistry
+} as unknown as DidCommFeatureRegistry
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -34,7 +34,7 @@ describe('ActionMenuModule', () => {
 
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/action-menu/1.0',
         roles: [ActionMenuRole.Requester, ActionMenuRole.Responder],
       })

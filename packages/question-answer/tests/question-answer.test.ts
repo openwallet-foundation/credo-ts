@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 
 import { Agent } from '@credo-ts/core'
 
@@ -35,7 +35,7 @@ const aliceAgentOptions = getAgentOptions(
 describe('Question Answer', () => {
   let bobAgent: Agent<typeof bobAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     bobAgent = new Agent(bobAgentOptions)

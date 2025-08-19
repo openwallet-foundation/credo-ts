@@ -1,10 +1,10 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { CredentialExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 
-import { CredentialRepository } from '@credo-ts/didcomm'
+import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 
 /**
- * Migrates the {@link CredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
+ * Migrates the {@link DidCommCredentialExchangeRecord} to 0.4 compatible format. It fetches all credential exchange records from
  *  storage and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
@@ -14,7 +14,7 @@ import { CredentialRepository } from '@credo-ts/didcomm'
  */
 export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating credential exchange records to storage version 0.4')
-  const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+  const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
   agent.config.logger.debug('Fetching all credential records from storage')
   const credentialRecords = await credentialRepository.getAll(agent.context)
@@ -75,7 +75,7 @@ export async function migrateCredentialExchangeRecordToV0_4<Agent extends BaseAg
  */
 export function migrateIndyCredentialTypeToAnonCredsCredential<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: CredentialExchangeRecord
+  credentialRecord: DidCommCredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Migrating credential record with id ${credentialRecord.id} to anoncreds credential binding for version 0.4`
@@ -118,7 +118,7 @@ export function migrateIndyCredentialTypeToAnonCredsCredential<Agent extends Bas
  */
 export function migrateIndyCredentialMetadataToAnonCredsMetadata<Agent extends BaseAgent>(
   agent: Agent,
-  credentialRecord: CredentialExchangeRecord
+  credentialRecord: DidCommCredentialExchangeRecord
 ) {
   agent.config.logger.debug(
     `Migrating credential record with id ${credentialRecord.id} to anoncreds metadata for version 0.4`
