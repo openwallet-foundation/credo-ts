@@ -774,17 +774,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250813113255
-        version: 0.3.0-alpha-20250813113255
+        specifier: 0.3.0-alpha-20250820113635
+        version: 0.3.0-alpha-20250820113635
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250813113255
-        version: 0.3.0-alpha-20250813113255
+        specifier: 0.3.0-alpha-20250820113635
+        version: 0.3.0-alpha-20250820113635
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250813113255
-        version: 0.3.0-alpha-20250813113255
+        specifier: 0.3.0-alpha-20250820113635
+        version: 0.3.0-alpha-20250820113635
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250813113255
-        version: 0.3.0-alpha-20250813113255
+        specifier: 0.3.0-alpha-20250820113635
+        version: 0.3.0-alpha-20250820113635
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -2622,17 +2622,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250813113255':
-    resolution: {integrity: sha512-eUkQzX2G5yBhzGnODuRZlPx40fXvyVgKiGHk8MR75LzTE8kAkQBZ63ToEo/cCiJFkROKfRJtN14ux1C8HFrLjQ==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250820113635':
+    resolution: {integrity: sha512-6C12PK603JbC6Ilw0JWH7b9ifk0msrWrCvJ8vMCXl9fUHHolGzPI5nJ/LFYmimmYpWakrI/E9t0ywOTV/CHdhA==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250813113255':
-    resolution: {integrity: sha512-Gr17Yvx9JtTgEFOeekr1WHkW+qQiyptE5hoIaXShxJstaSQTXTEN5Y3SXaWKwa3fl541HG2viqdTxhOp7Q8RzA==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250820113635':
+    resolution: {integrity: sha512-odFNuvLu6aOgkMkDsya8Abw3TmfeuPLYzmAK/E78auPGWGHLjHOp1wJ4TUZhhn3AtkGxyyuerDwnlPmGVAnYTw==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250813113255':
-    resolution: {integrity: sha512-L3hiNIHmX7u6yH2cnGoL3l5rzX8gc8jd8EfE/Xlta7j9igqySBawZjyywN8S/x4jzeLwbyoYP2DLYX3iEXIPJA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250820113635':
+    resolution: {integrity: sha512-FVCWuNS5BKNfeQqN248+DyQ03THGwbM0toIERmvNUu0gLuM0OBJjxkLo6pv+dIAs/iM+jmR0e/Yaos63RCQsHA==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250813113255':
-    resolution: {integrity: sha512-AVImRki1YDOzGbwKddiBJEn7/z4IIjBGO/tnE1zovF6dZkfeWyffhKbjL9fLTucGbJG83T+eEImB2X9r/5YUYQ==}
+  '@openid4vc/utils@0.3.0-alpha-20250820113635':
+    resolution: {integrity: sha512-Q76wZB6DEH5TcrzgvavzcR8IO6B2w5gzxNC3KEmm21LxsU9d3FHfUG+e25EXuKeSJEywPLg8dpcRnsSy0of6HQ==}
 
   '@openwallet-foundation/askar-nodejs@0.3.2':
     resolution: {integrity: sha512-kHZaPl32azKzqT/+ksRqGXNs9lxTrhbuWVuILS1HNGXA+A5vSINRA8WwDHk2KGZ9WP7jhszbPx804cfRKrrBPA==}
@@ -5848,6 +5848,7 @@ packages:
 
   metro-react-native-babel-preset@0.73.10:
     resolution: {integrity: sha512-1/dnH4EHwFb2RKEKx34vVDpUS3urt2WEeR8FYim+ogqALg4sTpG7yeQPxWpbgKATezt4rNfqAANpIyH19MS4BQ==}
+    deprecated: Use @react-native/babel-preset instead
     peerDependencies:
       '@babel/core': '*'
 
@@ -10293,24 +10294,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250813113255':
+  '@openid4vc/oauth2@0.3.0-alpha-20250820113635':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250813113255
+      '@openid4vc/utils': 0.3.0-alpha-20250820113635
       zod: 3.25.67
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250813113255':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250820113635':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250813113255
-      '@openid4vc/utils': 0.3.0-alpha-20250813113255
+      '@openid4vc/oauth2': 0.3.0-alpha-20250820113635
+      '@openid4vc/utils': 0.3.0-alpha-20250820113635
       zod: 3.25.67
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250813113255':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250820113635':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250813113255
-      '@openid4vc/utils': 0.3.0-alpha-20250813113255
+      '@openid4vc/oauth2': 0.3.0-alpha-20250820113635
+      '@openid4vc/utils': 0.3.0-alpha-20250820113635
       zod: 3.25.67
 
-  '@openid4vc/utils@0.3.0-alpha-20250813113255':
+  '@openid4vc/utils@0.3.0-alpha-20250820113635':
     dependencies:
       buffer: 6.0.3
       zod: 3.25.67
