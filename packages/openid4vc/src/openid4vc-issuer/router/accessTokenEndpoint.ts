@@ -238,11 +238,16 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         })
       }
 
-      await openId4VcIssuerService.updateState(
-        agentContext,
-        issuanceSession,
-        OpenId4VcIssuanceSessionState.AccessTokenRequested
-      )
+      // Do not update the session state if the grant type is refresh token. This
+      // avoids the session state going "backwards".
+      if (grant.grantType !== refreshTokenGrantIdentifier) {
+        await openId4VcIssuerService.updateState(
+          agentContext,
+          issuanceSession,
+          OpenId4VcIssuanceSessionState.AccessTokenRequested
+        )
+      }
+
       const { cNonce, cNonceExpiresInSeconds } = await openId4VcIssuerService.createNonce(agentContext, issuer)
 
       // for authorization code flow we take the authorization scopes. For pre-auth we don't use scopes (we just
@@ -302,10 +307,14 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
         ...issuanceSession.authorization,
         subject,
       }
+
       await openId4VcIssuerService.updateState(
         agentContext,
         issuanceSession,
-        OpenId4VcIssuanceSessionState.AccessTokenCreated
+        // Retain the current session state when refreshing the access token.
+        grant.grantType === refreshTokenGrantIdentifier
+          ? issuanceSession.state
+          : OpenId4VcIssuanceSessionState.AccessTokenCreated
       )
 
       return sendJsonResponse(response, next, accessTokenResponse)

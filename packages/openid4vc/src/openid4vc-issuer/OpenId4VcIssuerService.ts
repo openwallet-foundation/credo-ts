@@ -456,11 +456,7 @@ export class OpenId4VcIssuerService {
     options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
   ) {
     options.issuanceSession.assertState([
-      // OfferUriRetrieved is valid when doing auth flow (we should add a check)
-      OpenId4VcIssuanceSessionState.OfferUriRetrieved,
-      OpenId4VcIssuanceSessionState.AccessTokenCreated,
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-      // It is possible to issue multiple credentials in one session
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
     ])
     const transaction = options.issuanceSession.transactions.find(
