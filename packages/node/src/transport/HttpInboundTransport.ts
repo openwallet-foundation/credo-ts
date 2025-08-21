@@ -12,7 +12,7 @@ import type { Server } from 'http'
 
 import { DidCommMimeType, CredoError, TransportService, utils, AgentEventTypes } from '@credo-ts/core'
 import express, { text } from 'express'
-import { filter, firstValueFrom, ReplaySubject, timeout } from 'rxjs'
+import { filter, firstValueFrom, ReplaySubject, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -83,7 +83,8 @@ export class HttpInboundTransport implements InboundTransport {
             timeout({
               first: this.processedMessageListenerTimeoutMs,
               meta: 'HttpInboundTransport.start',
-            })
+            }),
+            take(1)
           )
           .subscribe(subject)
 
