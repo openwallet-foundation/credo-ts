@@ -51,7 +51,7 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
             {
               credentialOfferId: request.params.credentialOfferId,
             },
-            // NOTE: this can soon be removed, credenial offer id is cleaner,
+            // NOTE: this can soon be removed, credential offer id is cleaner,
             // but only introduced since 0.6
             {
               credentialOfferUri: fullCredentialOfferUri,
