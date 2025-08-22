@@ -1,6 +1,7 @@
 import type {
   AnonCredsRegistry,
   AnonCredsRevocationRegistryDefinition,
+  AnonCredsRevocationStatusList,
   GetCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
@@ -358,47 +359,59 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public async getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
-    timestamp: number // TODO: How should timestamp be handled?
+    timestamp: number
   ): Promise<GetRevocationStatusListReturn> {
     try {
-      const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
-      if (!revocationRegistryId.startsWith('did:web:'))
+      if (!revocationRegistryId.startsWith('did:webvh:'))
         throw new CredoError(`Invalid revocationRegistryId: ${revocationRegistryId}`)
 
       agentContext.config.logger.trace(
-        `Attempting to resolve revocation status list resource for '${revocationRegistryId}' at timestamp ${timestamp} via did:web resolver`
+        `Attempting to resolve revocation status list resource for '${revocationRegistryId}' at timestamp ${timestamp} via did:webvh resolver`
       )
-
-      // TODO: Determine how to incorporate the timestamp into the resolution process for did:web
-      // Maybe resolving just the revocationRegistryId gives the structure, and another resource/path gives the status at a time?
-      // For now, just resolving the base ID.
-      const effectiveIdToResolve = revocationRegistryId // Adjust this based on timestamp handling strategy
-
-      // Attempt to resolve the resource
-      await webvhDidResolver.resolveResource(agentContext, effectiveIdToResolve)
-
-      // TODO: Implement actual logic for parsing the resolved resource into AnonCreds RevocationStatusList format
-      throw new CredoError('Method not implemented.')
-
-      // Placeholder return - replace with actual implementation
-      /*
-      return {
-        revocationStatusList: {
-          issuerId: '', // Extract issuerId from revocationRegistryId or resolved data
-          revRegDefId: revocationRegistryId,
-          currentAccumulator: '', // Replace with actual data
-          revocationList: [], // Replace with actual data
-          timestamp: 0 // Extract or determine timestamp based on resolved data
-        },
-        resolutionMetadata: {},
-        revocationStatusListMetadata: {},
+      const { resourceObject } = await this._resolveAndValidateAttestedResource(
+        agentContext,
+        revocationRegistryId,
+        'revocation status list'
+      )
+      if (!resourceObject.links) {
+        throw new CredoError('No revocation entries found.')
       }
-      */
+
+      const revocationEntries = resourceObject.links
+        .filter((entry) => entry.timestamp != null)
+        .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0))
+      if (!revocationEntries || revocationEntries.length === 0) {
+        throw new CredoError('No revocation entries found.')
+      }
+
+      let revocationEntryId: string | undefined
+      for (const [index, entry] of revocationEntries?.entries() ?? []) {
+        if (entry.timestamp && entry.timestamp > timestamp) {
+          revocationEntryId = revocationEntries?.[index - 1]?.id
+          break
+        }
+      }
+      if (!revocationEntryId) {
+        revocationEntryId = revocationEntries?.[revocationEntries.length - 1]?.id
+      }
+
+      const { resourceObject: revocationEntryResourceObject, resolutionResult: revocationEntryResolutionResult } =
+        await this._resolveAndValidateAttestedResource(agentContext, revocationEntryId, 'revocation status list entry')
+
+      if (!revocationEntryResourceObject) {
+        throw new CredoError('No revocation entry found for the given timestamp.')
+      }
+
+      return {
+        revocationStatusList: revocationEntryResourceObject.content as AnonCredsRevocationStatusList,
+        resolutionMetadata: revocationEntryResolutionResult.dereferencingMetadata || {},
+        revocationStatusListMetadata: revocationEntryResourceObject.metadata || {},
+      }
     } catch (error) {
       agentContext.config.logger.error(
-        `Error retrieving revocation registry status list '${revocationRegistryId}' via did:web`,
+        `Error retrieving revocation registry status list '${revocationRegistryId}' via did:webvh`,
         {
-          error,
+          error: error instanceof Error ? error.message : String(error),
           revocationRegistryId,
           timestamp,
         }
