@@ -152,7 +152,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
           agentContext: this.agentContext,
           connection: connectionRecord,
         }),
-        { transportPriority: { schemes: ['wss', 'ws'], restrictive: true } }
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }
@@ -191,7 +191,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
           agentContext: this.agentContext,
           connection: connectionRecord,
         }),
-        { transportPriority: { schemes: ['wss', 'ws'], restrictive: true } }
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }
@@ -243,7 +243,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
     }
 
     // For picking up messages we prefer a long-lived transport session, so we will set a higher priority to
-    // WebSocket endpoints. However, it is not extrictly required.
+    // WebSocket endpoints. However, it is not explicitly required.
     await this.messageSender.sendMessage(outboundMessageContext, { transportPriority: { schemes: ['wss', 'ws'] } })
 
     if (options.awaitCompletion) {
