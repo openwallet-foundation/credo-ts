@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { EncryptedMessage } from '../../../../build/types'
+import type { EncryptedMessage } from '../../../../../core/src/types'
 import type { MessagePickupSession } from '../MessagePickupSession'
 import type { MessagePickupProtocol } from '../protocol/MessagePickupProtocol'
 
