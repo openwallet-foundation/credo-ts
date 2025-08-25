@@ -233,7 +233,7 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
           filter((e) => e.payload.connection.id === connectionRecord.id),
           // Only wait for first event that matches the criteria
           first(),
-          // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
+          // If we don't receive all messages within timeoutMs milliseconds (no response, not supported, etc...) error
           timeout({
             first: options.awaitCompletionTimeoutMs ?? 10000,
             meta: 'MessagePickupApi.pickupMessages',
