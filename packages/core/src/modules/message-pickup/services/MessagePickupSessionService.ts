@@ -35,7 +35,7 @@ export class MessagePickupSessionService {
     eventEmitter
       .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
       .pipe(
-        filter((e) => e.payload.session.type === 'Websocket'),
+        filter((e) => e.payload.session.type === 'WebSocket'),
         takeUntil(stop$)
       )
       .subscribe({
