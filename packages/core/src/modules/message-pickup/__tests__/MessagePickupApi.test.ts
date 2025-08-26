@@ -133,7 +133,7 @@ describe('MessagePickupApi', () => {
     expect(outboundCtx.message.type).toEqual(V2MessageDeliveryMessage.type.messageTypeUri)
     expect(outboundCtx.connection).toEqual(mockConnection)
     expect(options).toEqual({
-      transportPriority: { schemes: ['wss', 'ws'], restrictive: true },
+      transportPriority: { schemes: ['wss', 'ws'] },
     })
   })
 
@@ -171,7 +171,7 @@ describe('MessagePickupApi', () => {
     expect(outboundCtx.message.type).toEqual(V2MessageDeliveryMessage.type.messageTypeUri)
     expect(outboundCtx.connection).toEqual(mockConnection)
     expect(options).toEqual({
-      transportPriority: { schemes: ['wss', 'ws'], restrictive: true },
+      transportPriority: { schemes: ['wss', 'ws'] },
     })
   })
 
