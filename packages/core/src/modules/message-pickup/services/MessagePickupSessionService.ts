@@ -3,7 +3,7 @@ import type { TransportSessionRemovedEvent } from '../../../transport'
 import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSavedEvent } from '../MessagePickupEvents'
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
 
-import { takeUntil, type Subject } from 'rxjs'
+import { filter, takeUntil, type Subject } from 'rxjs'
 
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
@@ -34,7 +34,10 @@ export class MessagePickupSessionService {
 
     eventEmitter
       .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
-      .pipe(takeUntil(stop$))
+      .pipe(
+        filter((e) => e.payload.session.type === 'WebSocket'),
+        takeUntil(stop$)
+      )
       .subscribe({
         next: (e) => {
           const connectionId = e.payload.session.connectionId
