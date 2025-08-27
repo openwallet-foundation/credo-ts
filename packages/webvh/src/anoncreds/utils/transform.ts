@@ -68,6 +68,24 @@ export class WebVhRevRegDefContent {
   }
 }
 
+export class WebVhRevocationStatusListContent {
+  @IsString()
+  public issuerId!: string
+
+  @IsString()
+  public revRegDefId!: string
+
+  @IsArray()
+  @IsNumber({}, { each: true })
+  public revocationList!: number[]
+
+  @IsString()
+  public currentAccumulator!: string
+
+  @IsNumber()
+  public timestamp!: number
+}
+
 export class WebVhProof {
   @IsString()
   public type!: string
@@ -110,7 +128,7 @@ export class WebVhResource {
     }
     return value
   })
-  public content!: WebVhSchemaContent | WebVhCredDefContent | WebVhRevRegDefContent
+  public content!: WebVhSchemaContent | WebVhCredDefContent | WebVhRevRegDefContent | WebVhRevocationStatusListContent
 
   @ValidateNested()
   @Type(() => WebVhProof)
