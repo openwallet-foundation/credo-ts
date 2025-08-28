@@ -211,7 +211,7 @@ export class DcqlService {
       }
 
       if (record.type === 'SdJwtVcRecord') {
-        const sdJwtVc = this.getSdJwtVcApi(agentContext).fromCompact(record.compactSdJwtVc)
+        const sdJwtVc = record.firstSdJwtVc
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
 
         const akiValues = (sdJwtVc.header.x5c as string[] | undefined)
@@ -293,7 +293,7 @@ export class DcqlService {
                               // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
                               output: agentContext.dependencyManager
                                 .resolve(SdJwtVcService)
-                                .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
+                                .applyDisclosuresForPayload(record.encoded, claimSet.output as JsonObject)
                                 .prettyClaims as DcqlSdJwtVcCredential.Claims,
                             }
                           : {}),
@@ -336,8 +336,9 @@ export class DcqlService {
                           // Otherwise TypeScript explains, but I'm not sure why Record<string, unknown> wouldn't be applicable to { [key: string]: JsonValue }
                           output: agentContext.dependencyManager
                             .resolve(SdJwtVcService)
-                            .applyDisclosuresForPayload(record.compactSdJwtVc, claimSet.output as JsonObject)
-                            .prettyClaims as { [key: string]: JsonValue },
+                            .applyDisclosuresForPayload(record.encoded, claimSet.output as JsonObject).prettyClaims as {
+                            [key: string]: JsonValue
+                          },
                         }
                       : {}),
                   })),
@@ -562,7 +563,10 @@ export class DcqlService {
 
           const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
           const presentation = await sdJwtVcApi.present({
-            compactSdJwtVc: presentationToCreate.credentialRecord.compactSdJwtVc,
+            // FIXME: we should take into account batch issuance and single issuance
+            // credentials here. Should probably become a setting somewhere.
+            // Which should then also remove it from the record
+            compactSdJwtVc: presentationToCreate.credentialRecord.encoded,
             presentationFrame,
             verifierMetadata: {
               audience: domain,
