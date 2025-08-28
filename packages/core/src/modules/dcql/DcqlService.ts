@@ -3,6 +3,7 @@ import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
 
 import {
   DcqlCredential,
+  DcqlCredentialQuery,
   DcqlMdocCredential,
   DcqlPresentationResult,
   DcqlQuery,
@@ -10,8 +11,9 @@ import {
   DcqlW3cVcCredential,
 } from 'dcql'
 import { injectable } from 'tsyringe'
-
+import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
+import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
@@ -25,9 +27,6 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cPresentation,
 } from '../vc'
-
-import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
-import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
@@ -71,12 +70,13 @@ export class DcqlService {
       allRecords.push(...mdocRecords)
     }
 
-    const sdJwtVctValues = dcqlQuery.credentials
-      .filter(
-        (credentialQuery): credentialQuery is typeof credentialQuery & { format: 'vc+sd-jwt' | 'dc+sd-jwt' } =>
-          credentialQuery.format === 'vc+sd-jwt' || credentialQuery.format === 'dc+sd-jwt'
-      )
-      .flatMap((c) => c.meta?.vct_values)
+    const sdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.SdJwtVc =>
+        (credentialQuery.format === 'vc+sd-jwt' && !(credentialQuery.meta && 'type_values' in credentialQuery.meta)) ||
+        credentialQuery.format === 'dc+sd-jwt'
+    )
+
+    const sdJwtVctValues = sdJwts.flatMap((c) => c.meta?.vct_values)
 
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
     if (sdJwtVctValues.every((vct) => vct !== undefined)) {
@@ -86,7 +86,7 @@ export class DcqlService {
         })),
       })
       allRecords.push(...sdjwtVcRecords)
-    } else if (formats.has('dc+sd-jwt') || formats.has('vc+sd-jwt')) {
+    } else if (sdJwts.length > 0) {
       const sdJwtVcRecords = await sdJwtVcApi.getAll()
       allRecords.push(...sdJwtVcRecords)
     }
@@ -118,6 +118,16 @@ export class DcqlService {
           })),
       })
       allRecords.push(...w3cRecords)
+    }
+
+    const w3cSdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.W3cVc & { format: 'vc+sd-jwt' } =>
+        credentialQuery.format === 'vc+sd-jwt' && !!credentialQuery.meta && 'type_values' in credentialQuery.meta
+    )
+
+    if (w3cSdJwts.length > 0) {
+      // TODO(hacdias)
+      throw new DcqlError('Querying for W3C VCDM 2.0 as vc+sd-jwt is not supported yet')
     }
 
     return allRecords
