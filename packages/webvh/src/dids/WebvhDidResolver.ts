@@ -1,6 +1,6 @@
 import type { AgentContext, DidResolutionResult, DidResolver } from '@credo-ts/core'
 
-import { DidDocument } from '@credo-ts/core'
+import { DidDocument, JsonTransformer } from '@credo-ts/core'
 import { resolveDID } from 'didwebvh-ts'
 
 import { WebvhDidCrypto } from './WebvhDidCrypto'
@@ -122,7 +122,7 @@ export class WebvhDidResolver implements DidResolver {
     const crypto = new WebvhDidCrypto(agentContext)
     const { doc } = await resolveDID(did, { verifier: crypto })
     return {
-      didDocument: new DidDocument(doc),
+      didDocument: JsonTransformer.fromJSON(doc, DidDocument),
       didDocumentMetadata: {},
       didResolutionMetadata: {},
     }
