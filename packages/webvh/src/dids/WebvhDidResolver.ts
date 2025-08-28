@@ -120,7 +120,7 @@ export class WebvhDidResolver implements DidResolver {
     const crypto = new WebvhDidCrypto(agentContext)
     const { doc } = await resolveDID(did, { verifier: crypto })
     return {
-      didDocument: new DidDocument(doc),
+      didDocument: DidDocument.fromJSON(doc),
       didDocumentMetadata: {},
       didResolutionMetadata: {},
     }
