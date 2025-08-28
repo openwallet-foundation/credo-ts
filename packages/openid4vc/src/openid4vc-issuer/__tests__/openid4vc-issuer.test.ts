@@ -332,7 +332,7 @@ describe('OpenId4VcIssuer', () => {
 
       credentialRequestToCredentialMapper: () => ({
         type: 'credentials',
-        format: 'vc+sd-jwt',
+        format: 'dc+sd-jwt',
         credentials: [
           {
             payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },
@@ -433,7 +433,7 @@ describe('OpenId4VcIssuer', () => {
 
       credentialRequestToCredentialMapper: () => ({
         type: 'credentials',
-        format: 'vc+sd-jwt',
+        format: 'dc+sd-jwt',
         credentials: [
           {
             payload: { vct: 'UniversityDegreeCredential', university: 'innsbruck', degree: 'bachelor' },

@@ -140,7 +140,7 @@ export class DcqlService {
   ): Promise<DcqlCredential> {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
-    if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
+    if (presentation.claimFormat === ClaimFormat.SdJwtDc) {
       return {
         cryptographic_holder_binding: true,
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
@@ -442,7 +442,7 @@ export class DcqlService {
     }
     if (validCredential.record.type === 'SdJwtVcRecord') {
       return {
-        claimFormat: ClaimFormat.SdJwtVc,
+        claimFormat: ClaimFormat.SdJwtDc,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
@@ -564,7 +564,7 @@ export class DcqlService {
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
-        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
           const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
 
           if (!domain) {

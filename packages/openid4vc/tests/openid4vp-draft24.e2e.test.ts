@@ -533,7 +533,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -657,7 +657,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -815,7 +815,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -919,7 +919,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1140,7 +1140,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1171,7 +1171,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -1332,7 +1332,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1378,7 +1378,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1734,7 +1734,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1861,7 +1861,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -2051,7 +2051,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -2082,7 +2082,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -2188,7 +2188,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -2232,7 +2232,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',

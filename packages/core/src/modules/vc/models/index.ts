@@ -1,4 +1,5 @@
+export * from './ClaimFormat'
 export * from './credential'
 export * from './presentation'
+export * from './W3cV2VerifyResult'
 export * from './W3cVerifyResult'
-export * from './ClaimFormat'

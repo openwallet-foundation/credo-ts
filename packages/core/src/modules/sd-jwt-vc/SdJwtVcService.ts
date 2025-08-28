@@ -44,7 +44,7 @@ export interface SdJwtVc<
   /**
    * claim format is convenience method added to all credential instances
    */
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   /**
    * encoded is convenience method added to all credential instances
    */
@@ -150,7 +150,7 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
-      claimFormat: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtDc,
       encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
   }
@@ -279,7 +279,7 @@ export class SdJwtVcService {
             header: sdJwtVc.kbJwt.header as Record<string, unknown>,
           }
         : undefined,
-      claimFormat: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtDc,
       encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
