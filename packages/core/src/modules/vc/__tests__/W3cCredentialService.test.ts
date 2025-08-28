@@ -137,7 +137,7 @@ describe('W3cCredentialsService', () => {
       it('should remove a credential', async () => {
         await w3cCredentialService.removeCredentialRecord(agentContext, 'some-id')
 
-        expect(w3cCredentialRepositoryDeleteMock).toBeCalledWith(agentContext, 'some-id')
+        expect(w3cCredentialRepositoryDeleteMock).toHaveBeenCalledWith(agentContext, 'some-id')
       })
     })
 

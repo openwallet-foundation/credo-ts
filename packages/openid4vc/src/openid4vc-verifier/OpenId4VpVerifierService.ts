@@ -1151,7 +1151,7 @@ export class OpenId4VpVerifierService {
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
-        for (const deviceResponseIndex in deviceResponses) {
+        for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
           const document = mdocDeviceResponse.documents[0]

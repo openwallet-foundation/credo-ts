@@ -361,7 +361,7 @@ describe('AnonCredsRsHolderService', () => {
           proofRequest,
           attributeReferent: 'name',
         })
-      ).rejects.toThrowError()
+      ).rejects.toThrow()
     })
 
     test('referent with single restriction', async () => {
@@ -513,7 +513,7 @@ describe('AnonCredsRsHolderService', () => {
     findByIdMock.mockResolvedValueOnce(null).mockResolvedValueOnce(record)
     getByCredentialIdMock.mockRejectedValueOnce(new Error())
 
-    await expect(anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })).rejects.toThrowError()
+    await expect(anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })).rejects.toThrow()
 
     const credentialInfo = await anonCredsHolderService.getCredential(agentContext, { id: 'myCredentialId' })
 

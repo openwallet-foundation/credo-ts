@@ -12,11 +12,15 @@ export type DefaultAnonCredsLinkSecretTags = {
   linkSecretId: string
 }
 
+// TODO: isDefault should not be a tag, but a field in the record
 export type CustomAnonCredsLinkSecretTags = TagsBase & {
   isDefault?: boolean
 }
 
-export class AnonCredsLinkSecretRecord extends BaseRecord<DefaultAnonCredsLinkSecretTags, TagsBase> {
+export class AnonCredsLinkSecretRecord extends BaseRecord<
+  DefaultAnonCredsLinkSecretTags,
+  CustomAnonCredsLinkSecretTags
+> {
   public static readonly type = 'AnonCredsLinkSecretRecord'
   public readonly type = AnonCredsLinkSecretRecord.type
 

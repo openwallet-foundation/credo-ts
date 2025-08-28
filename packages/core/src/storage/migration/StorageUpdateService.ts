@@ -9,7 +9,7 @@ import { inject, injectable } from '../../plugins'
 import { isStorageUpToDate } from './isUpToDate'
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
-import { INITIAL_STORAGE_VERSION } from './updates'
+import { CURRENT_FRAMEWORK_STORAGE_VERSION, INITIAL_STORAGE_VERSION } from './updates'
 
 @injectable()
 export class StorageUpdateService {
@@ -29,10 +29,23 @@ export class StorageUpdateService {
     return isStorageUpToDate(currentStorageVersion, updateToVersion)
   }
 
+  public async hasStorageVersionRecord(agentContext: AgentContext) {
+    const storageVersionRecord = await this.storageVersionRepository.findById(
+      agentContext,
+      StorageVersionRecord.storageVersionRecordId
+    )
+
+    return storageVersionRecord !== null
+  }
+
   public async getCurrentStorageVersion(agentContext: AgentContext): Promise<VersionString> {
     const storageVersionRecord = await this.getStorageVersionRecord(agentContext)
 
     return storageVersionRecord.storageVersion
+  }
+
+  public static get frameworkStorageVersion() {
+    return CURRENT_FRAMEWORK_STORAGE_VERSION
   }
 
   public async setCurrentStorageVersion(agentContext: AgentContext, storageVersion: VersionString) {
