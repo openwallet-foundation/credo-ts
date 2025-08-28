@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.17
+
+### Patch Changes
+
+- 9e93dca: fix: support receivedAt in DIDComm message receiver
+- c55fb1e: feat: emit rotation event on hangup
+- 9e93dca: fix: unqualified anoncreds revocation notification support
+- 9e93dca: fix: AgentMessageProcessed event listener leak
+- 9e93dca: fix: set pickup delivery to prefer websocket transport
+
 ## 0.5.16
 
 ### Patch Changes
