@@ -581,7 +581,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -923,7 +923,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1165,14 +1165,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           credentials: {
             OpenBadgeCredentialDescriptor: [
               {
-                claimFormat: ClaimFormat.SdJwtVc,
+                claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 credentialRecord: (validCredentials?.[0] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
               },
               {
-                claimFormat: ClaimFormat.SdJwtVc,
+                claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 credentialRecord: (validCredentials?.[1] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -1236,7 +1236,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1282,7 +1282,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           },
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1662,7 +1662,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1710,7 +1710,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor2: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -2183,7 +2183,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',

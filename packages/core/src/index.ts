@@ -60,6 +60,7 @@ export {
   isDid,
   IsUri,
   IsStringOrInstance,
+  IsStringOrInstanceOrArrayOfInstances,
   asArray,
   equalsIgnoreOrder,
   equalsWithOrder,

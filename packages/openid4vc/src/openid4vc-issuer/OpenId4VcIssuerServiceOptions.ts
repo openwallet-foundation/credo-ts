@@ -337,7 +337,7 @@ export type OpenId4VciSignCredentials =
 
 export interface OpenId4VciSignSdJwtCredentials {
   type: 'credentials'
-  format: ClaimFormat.SdJwtVc | `${ClaimFormat.SdJwtVc}`
+  format: ClaimFormat.SdJwtDc | `${ClaimFormat.SdJwtDc}`
   credentials: SdJwtVcSignOptions[]
 }
 

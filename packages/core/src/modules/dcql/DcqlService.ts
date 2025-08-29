@@ -3,6 +3,7 @@ import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
 
 import {
   DcqlCredential,
+  DcqlCredentialQuery,
   DcqlMdocCredential,
   DcqlPresentationResult,
   DcqlQuery,
@@ -11,7 +12,9 @@ import {
 } from 'dcql'
 import { injectable } from 'tsyringe'
 
+import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { TypedArrayEncoder } from '../../utils'
+import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
@@ -25,9 +28,6 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cPresentation,
 } from '../vc'
-
-import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
-import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
@@ -70,12 +70,13 @@ export class DcqlService {
       allRecords.push(...mdocRecords)
     }
 
-    const sdJwtVctValues = dcqlQuery.credentials
-      .filter(
-        (credentialQuery): credentialQuery is typeof credentialQuery & { format: 'vc+sd-jwt' | 'dc+sd-jwt' } =>
-          credentialQuery.format === 'vc+sd-jwt' || credentialQuery.format === 'dc+sd-jwt'
-      )
-      .flatMap((c) => c.meta?.vct_values)
+    const sdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.SdJwtVc =>
+        (credentialQuery.format === 'vc+sd-jwt' && !(credentialQuery.meta && 'type_values' in credentialQuery.meta)) ||
+        credentialQuery.format === 'dc+sd-jwt'
+    )
+
+    const sdJwtVctValues = sdJwts.flatMap((c) => c.meta?.vct_values)
 
     const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
     if (sdJwtVctValues.every((vct) => vct !== undefined)) {
@@ -85,7 +86,7 @@ export class DcqlService {
         })),
       })
       allRecords.push(...sdjwtVcRecords)
-    } else if (formats.has('dc+sd-jwt') || formats.has('vc+sd-jwt')) {
+    } else if (sdJwts.length > 0) {
       const sdJwtVcRecords = await sdJwtVcApi.getAll()
       allRecords.push(...sdJwtVcRecords)
     }
@@ -119,6 +120,16 @@ export class DcqlService {
       allRecords.push(...w3cRecords)
     }
 
+    const w3cSdJwts = dcqlQuery.credentials.filter(
+      (credentialQuery): credentialQuery is DcqlCredentialQuery.W3cVc & { format: 'vc+sd-jwt' } =>
+        credentialQuery.format === 'vc+sd-jwt' && !!credentialQuery.meta && 'type_values' in credentialQuery.meta
+    )
+
+    if (w3cSdJwts.length > 0) {
+      // TODO(hacdias)
+      throw new DcqlError('Querying for W3C VCDM 2.0 as vc+sd-jwt is not supported yet')
+    }
+
     return allRecords
   }
 
@@ -129,7 +140,7 @@ export class DcqlService {
   ): Promise<DcqlCredential> {
     // SD-JWT credential can be used as both dc+sd-jwt and vc+sd-jwt
     // At some point we might want to look at the header value of the sd-jwt (vc+sd-jwt vc dc+sd-jwt)
-    if (presentation.claimFormat === ClaimFormat.SdJwtVc) {
+    if (presentation.claimFormat === ClaimFormat.SdJwtDc) {
       return {
         cryptographic_holder_binding: true,
         credential_format: queryCredential.format === 'dc+sd-jwt' ? 'dc+sd-jwt' : 'vc+sd-jwt',
@@ -431,7 +442,7 @@ export class DcqlService {
     }
     if (validCredential.record.type === 'SdJwtVcRecord') {
       return {
-        claimFormat: ClaimFormat.SdJwtVc,
+        claimFormat: ClaimFormat.SdJwtDc,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
@@ -553,7 +564,7 @@ export class DcqlService {
 
           encodedCreatedPresentation = deviceResponseBase64Url
           createdPresentation = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
-        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
           const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
 
           if (!domain) {
