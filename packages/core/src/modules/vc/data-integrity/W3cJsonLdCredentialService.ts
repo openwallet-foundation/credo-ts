@@ -216,6 +216,7 @@ export class W3cJsonLdCredentialService {
       suite: suite,
       challenge: options.challenge,
       domain: options.domain,
+      purpose: options.proofPurpose,
       documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
     })
 
@@ -270,6 +271,7 @@ export class W3cJsonLdCredentialService {
         suite: allSuites,
         challenge: options.challenge,
         domain: options.domain,
+        purpose: options.purpose,
         documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
       }
 
