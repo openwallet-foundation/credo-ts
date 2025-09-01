@@ -54,6 +54,7 @@ import {
   getSphereonOriginalVerifiablePresentation,
   getVerifiablePresentationFromEncoded,
 } from './utils'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 
 /**
  * @todo create a public api for using dif presentation exchange
@@ -556,7 +557,7 @@ export class DifPresentationExchangeService {
           // as then we know when determining which VPs to submit already if the proof types are supported
           // by the verifier, and we can then just add this to the vpToCreate interface
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
-          proofPurpose: 'authentication',
+          proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
           challenge,

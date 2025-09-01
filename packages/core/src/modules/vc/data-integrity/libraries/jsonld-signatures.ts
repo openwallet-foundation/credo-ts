@@ -16,6 +16,7 @@ export interface Suites {
 export interface Purposes {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   AssertionProofPurpose: any
+  AuthenticationProofPurpose: any
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>

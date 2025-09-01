@@ -39,6 +39,7 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 
 @injectable()
 export class DcqlService {
@@ -626,7 +627,7 @@ export class DcqlService {
             // as then we know when determining which VPs to submit already if the proof types are supported
             // by the verifier, and we can then just add this to the vpToCreate interface
             proofType: this.getProofTypeForLdpVc(agentContext, verificationMethod),
-            proofPurpose: 'authentication',
+            proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
             verificationMethod: verificationMethod.id,
             presentation: w3cPresentation,
             challenge,
