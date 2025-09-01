@@ -28,6 +28,7 @@ import {
 
 import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
@@ -39,7 +40,6 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 
 @injectable()
 export class DcqlService {

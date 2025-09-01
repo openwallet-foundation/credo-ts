@@ -45,6 +45,7 @@ import {
 
 import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { getJwkHumanDescription } from '../kms'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
@@ -54,7 +55,6 @@ import {
   getSphereonOriginalVerifiablePresentation,
   getVerifiablePresentationFromEncoded,
 } from './utils'
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 
 /**
  * @todo create a public api for using dif presentation exchange
