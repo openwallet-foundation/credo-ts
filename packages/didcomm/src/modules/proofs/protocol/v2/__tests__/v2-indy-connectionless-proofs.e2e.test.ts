@@ -122,7 +122,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -246,7 +246,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
         domain: 'https://a-domain.com',
       })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -441,7 +441,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -538,7 +538,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       threadId: requestMessage.threadId,
@@ -627,7 +627,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.RequestReceived,
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     await aliceAgent.modules.proofs.declineRequest({

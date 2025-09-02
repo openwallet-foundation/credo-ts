@@ -11,9 +11,7 @@ import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
-  config: {
-    label: 'OpenId4VcHolder Test28',
-  },
+  config: {},
   dependencies: agentDependencies,
   modules: {
     openId4VcHolder: new OpenId4VcHolderModule(),

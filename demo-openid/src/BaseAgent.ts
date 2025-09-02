@@ -35,7 +35,6 @@ export class BaseAgent<AgentModules extends ModulesMap> {
     this.app = express()
 
     const config = {
-      label: name,
       allowInsecureHttpUrls: true,
       logger: new ConsoleLogger(LogLevel.off),
     } satisfies InitConfig

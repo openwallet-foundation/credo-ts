@@ -29,9 +29,7 @@ describe('TenantsApi', () => {
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({
-          label: 'tenant-agent',
-        }),
+        agentConfig: rootAgent.config.extend({}),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
@@ -40,7 +38,6 @@ describe('TenantsApi', () => {
       const tenantAgent = await tenantsApi.getTenantAgent({ tenantId: 'tenant-id' })
 
       expect(tenantAgent.isInitialized).toBe(true)
-      expect(tenantAgent.config.label).toEqual('tenant-agent')
 
       expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
         provisionContext: false,
@@ -54,15 +51,13 @@ describe('TenantsApi', () => {
 
   describe('withTenantAgent', () => {
     test('gets context from agent context provider and initializes tenant agent instance', async () => {
-      expect.assertions(6)
+      expect.assertions(5)
 
       const tenantDependencyManager = rootAgent.dependencyManager.createChild()
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({
-          label: 'tenant-agent',
-        }),
+        agentConfig: rootAgent.config.extend({}),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
@@ -72,7 +67,6 @@ describe('TenantsApi', () => {
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
         endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
         expect(tenantAgent.isInitialized).toBe(true)
-        expect(tenantAgent.config.label).toEqual('tenant-agent')
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
           provisionContext: false,
@@ -85,15 +79,13 @@ describe('TenantsApi', () => {
     })
 
     test('endSession is called even if the tenant agent callback throws an error', async () => {
-      expect.assertions(7)
+      expect.assertions(6)
 
       const tenantDependencyManager = rootAgent.dependencyManager.createChild()
       const tenantAgentContext = getAgentContext({
         contextCorrelationId: 'tenant-id',
         dependencyManager: tenantDependencyManager,
-        agentConfig: rootAgent.config.extend({
-          label: 'tenant-agent',
-        }),
+        agentConfig: rootAgent.config.extend({}),
       })
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
@@ -104,7 +96,6 @@ describe('TenantsApi', () => {
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
           endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
           expect(tenantAgent.isInitialized).toBe(true)
-          expect(tenantAgent.config.label).toEqual('tenant-agent')
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
             provisionContext: false,

@@ -34,7 +34,7 @@ describe('OpenId4Vc Batch Issuance', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules('issuer', {
+    issuer = await createAgentFromModules({
       openId4VcIssuer: new OpenId4VcIssuerModule({
         baseUrl: issuerBaseUrl,
         credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
@@ -68,7 +68,7 @@ describe('OpenId4Vc Batch Issuance', () => {
       inMemory: new InMemoryWalletModule(),
     })
 
-    holder = await createAgentFromModules('holder', {
+    holder = await createAgentFromModules({
       openId4VcHolder: new OpenId4VcHolderModule(),
       inMemory: new InMemoryWalletModule(),
     })

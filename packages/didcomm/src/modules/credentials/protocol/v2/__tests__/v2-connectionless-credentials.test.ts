@@ -111,7 +111,7 @@ describe('V2 Connectionless Credentials', () => {
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -211,7 +211,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     // Receive Message
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {

@@ -73,7 +73,9 @@ describe('out of band with mediation set up with provision method', () => {
     const mediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation(makeConnectionConfig)
     mediatorOutOfBandInvitation = mediationOutOfBandRecord.outOfBandInvitation
 
-    let { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
+    let { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation, {
+      label: 'alice',
+    })
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     connectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -97,7 +99,9 @@ describe('out of band with mediation set up with provision method', () => {
     const { outOfBandInvitation } = outOfBandRecord
     const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, {
+      label: 'alice',
+    })
 
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)

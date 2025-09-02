@@ -65,7 +65,7 @@ export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {
   }
 
   public async createTenant(options: CreateTenantOptions) {
-    this.logger.debug(`Creating tenant with label ${options.config.label}`)
+    this.logger.debug('Creating tenant')
 
     const tenantRecord = await this.tenantRecordService.createTenant(this.rootAgentContext, options.config)
 
