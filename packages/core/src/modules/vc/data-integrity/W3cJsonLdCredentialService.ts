@@ -211,13 +211,20 @@ export class W3cJsonLdCredentialService {
       useNativeCanonize: false,
     })
 
-    const result = await vc.signPresentation({
+    const signOptions: Record<string, unknown> = {
       presentation: JsonTransformer.toJSON(options.presentation),
       suite: suite,
       challenge: options.challenge,
       domain: options.domain,
       documentLoader: this.w3cCredentialsModuleConfig.documentLoader(agentContext),
-    })
+    }
+
+    // this is a hack because vcjs throws if purpose is passed as undefined or null
+    if (options.proofPurpose) {
+      signOptions.purpose = options.proofPurpose
+    }
+
+    const result = await vc.signPresentation(signOptions)
 
     return JsonTransformer.fromJSON(result, W3cJsonLdVerifiablePresentation)
   }

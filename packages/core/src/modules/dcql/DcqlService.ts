@@ -28,6 +28,7 @@ import {
 
 import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
@@ -626,7 +627,7 @@ export class DcqlService {
             // as then we know when determining which VPs to submit already if the proof types are supported
             // by the verifier, and we can then just add this to the vpToCreate interface
             proofType: this.getProofTypeForLdpVc(agentContext, verificationMethod),
-            proofPurpose: 'authentication',
+            proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
             verificationMethod: verificationMethod.id,
             presentation: w3cPresentation,
             challenge,
