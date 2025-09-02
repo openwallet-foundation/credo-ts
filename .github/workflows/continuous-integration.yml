@@ -26,7 +26,7 @@ jobs:
     name: Validate
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
@@ -62,7 +62,7 @@ jobs:
         shard: [1, 2]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
@@ -110,7 +110,7 @@ jobs:
         node-version: [20, 22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # setup dependencies
       - name: Setup services
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: [e2e-tests, unit-tests]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: coverage-artifacts-20
           path: coverage
