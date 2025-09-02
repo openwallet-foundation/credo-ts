@@ -111,7 +111,7 @@ export class HttpInboundTransport implements InboundTransport {
           res.status(500).send('Error processing message')
         }
       } finally {
-        transportService.removeSession(session)
+        await transportService.removeSession(session)
       }
     })
 
