@@ -357,7 +357,7 @@ describe('V2MessagePickupProtocol', () => {
         agentContext,
       })
 
-      await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrowError(
+      await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrow(
         new CredoError('Error processing attachments')
       )
     })

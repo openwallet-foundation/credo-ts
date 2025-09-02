@@ -2,7 +2,7 @@ import type { TagsBase } from '@credo-ts/core'
 import type { CredentialRole } from '../models'
 import type { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
 import type { CredentialState } from '../models/CredentialState'
-import type { RevocationNotification } from '../models/RevocationNotification'
+import { RevocationNotification } from '../models/RevocationNotification'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
@@ -51,6 +51,8 @@ export class CredentialExchangeRecord extends BaseRecord<DefaultCredentialTags, 
   public state!: CredentialState
   public role!: CredentialRole
   public autoAcceptCredential?: AutoAcceptCredential
+
+  @Type(() => RevocationNotification)
   public revocationNotification?: RevocationNotification
   public errorMessage?: string
   public protocolVersion!: string

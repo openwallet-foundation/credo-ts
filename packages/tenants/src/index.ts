@@ -1,4 +1,5 @@
 export { TenantRecord, TenantRecordProps } from './repository/TenantRecord'
+export { TenantRoutingRecord } from './repository/TenantRoutingRecord'
 export * from './TenantsModule'
 export * from './TenantsApi'
 export * from './TenantsApiOptions'

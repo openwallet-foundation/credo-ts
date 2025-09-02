@@ -323,7 +323,7 @@ export class MdocDeviceResponse {
 
     // NOTE: we do not use the verification from mdoc library, as it checks all documents
     // based on the same trusted certificates
-    for (const documentIndex in this.documents) {
+    for (const documentIndex of this.documents.keys()) {
       const rawDocument = deviceResponse.documents[documentIndex]
       const document = this.documents[documentIndex]
 
