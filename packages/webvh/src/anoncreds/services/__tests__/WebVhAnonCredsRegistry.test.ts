@@ -329,6 +329,45 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
+  describe('registerSchema', () => {
+    it('should correctly resolve and parse a valid schema using MockSchemaResource', async () => {
+      const schemaId = mockSchemaResource.id
+
+      const mockResolverResponse = {
+        content: mockSchemaResource,
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      const schema = mockSchemaResource.content
+
+      const result = await registry.registerSchema(agentContext, { schema, options: {} })
+      expect(result).toMatchObject({
+        schemaState: {
+          state: 'finished',
+          schemaId,
+        },
+      })
+
+      const schemaResponse = await registry.getSchema(agentContext, schemaId)
+
+      expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
+      expect(schemaResponse).toEqual({
+        schema: {
+          attrNames: mockSchemaResource.content.attrNames,
+          name: mockSchemaResource.content.name,
+          version: mockSchemaResource.content.version,
+          issuerId: issuerId,
+        },
+        schemaId,
+        resolutionMetadata: mockResolverResponse.dereferencingMetadata,
+        schemaMetadata: mockSchemaResource.metadata,
+      })
+    })
+  })
+
   describe('getCredentialDefinition', () => {
     it('should return resolutionMetadata with error for invalid prefix (tested via helper)', async () => {
       const credDefId = 'did:web:example.com/resource/credDef123' // Invalid prefix for this registry

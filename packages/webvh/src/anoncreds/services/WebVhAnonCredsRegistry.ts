@@ -10,6 +10,7 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
@@ -425,9 +426,18 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerSchema(agentContext: AgentContext): Promise<RegisterSchemaReturn> {
-    agentContext.config.logger.warn('registerSchema not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerSchema(
+    _agentContext: AgentContext,
+    options: RegisterSchemaOptions
+  ): Promise<RegisterSchemaReturn> {
+    const resourceId = this.calculateResourceId(options.schema)
+
+    const schemaId = `${options.schema.issuerId}/resources/${resourceId}`
+    return {
+      schemaState: { state: 'finished', schema: options.schema, schemaId },
+      registrationMetadata: {},
+      schemaMetadata: {},
+    }
   }
 
   public async registerCredentialDefinition(agentContext: AgentContext): Promise<RegisterCredentialDefinitionReturn> {
@@ -459,5 +469,15 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       })
       return false
     }
+  }
+
+  private calculateResourceId(resourceObjectValue: unknown) {
+    const objectString = canonicalize(resourceObjectValue)
+
+    if (!objectString) {
+      throw new Error('Cannot canonicalize resource object')
+    }
+
+    return this._digestMultibase(objectString)
   }
 }
