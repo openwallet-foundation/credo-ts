@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.18
+
+### Patch Changes
+
+- 6f7912a: fix: allow selecting proof purpose for Verifiable Presentations
+
 ## 0.5.17
 
 ### Patch Changes
