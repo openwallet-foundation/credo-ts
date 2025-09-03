@@ -40,6 +40,7 @@ import {
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import {
   AnonCredsDataIntegrityServiceSymbol,
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
@@ -533,7 +534,7 @@ export class DifPresentationExchangeService {
           // as then we know when determining which VPs to submit already if the proof types are supported
           // by the verifier, and we can then just add this to the vpToCreate interface
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
-          proofPurpose: 'authentication',
+          proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
           challenge,

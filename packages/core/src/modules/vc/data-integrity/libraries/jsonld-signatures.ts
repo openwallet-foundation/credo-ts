@@ -16,6 +16,8 @@ export interface Suites {
 
 export interface Purposes {
   AssertionProofPurpose: any
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  AuthenticationProofPurpose: any
 }
 
 type Constants = any
