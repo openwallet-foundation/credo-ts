@@ -4,7 +4,7 @@ import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSave
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
 
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { type Subject, takeUntil } from 'rxjs'
+import { filter, type Subject, takeUntil } from 'rxjs'
 
 import { TransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'
@@ -31,7 +31,10 @@ export class MessagePickupSessionService {
 
     eventEmitter
       .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
-      .pipe(takeUntil(stop$))
+      .pipe(
+        filter((e) => e.payload.session.type === 'WebSocket'),
+        takeUntil(stop$)
+      )
       .subscribe({
         next: (e) => {
           const connectionId = e.payload.session.connectionId
