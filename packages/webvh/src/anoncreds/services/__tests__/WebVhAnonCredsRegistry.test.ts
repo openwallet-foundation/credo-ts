@@ -15,8 +15,10 @@ import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpe
 import { WebvhDidResolver } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
+import { AnonCredsCredentialDefinition } from '@credo-ts/anoncreds'
 import {
   issuerId,
+  mockCredDefResource,
   mockResolvedDidDocument,
   mockRevRegDefResource,
   mockSchemaResource,
@@ -397,6 +399,37 @@ describe('WebVhAnonCredsRegistry', () => {
       // Expect the error propagated from the helper/resolver
       expect(result.resolutionMetadata.error).toBe('invalid')
       expect(result.resolutionMetadata.message).toContain('could not be resolved or is missing data')
+    })
+  })
+
+  describe('registerCredentialDefinition', () => {
+    it('registers and retrieves a credential definition with correct resolutionMetadata', async () => {
+      const credentialDefinition = mockCredDefResource.content as AnonCredsCredentialDefinition
+      const mockResolverResponse = {
+        content: mockCredDefResource,
+        contentMetadata: {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+
+      const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
+      const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResource.id)
+
+      expect(result).toMatchObject({
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+        },
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(credDef).toMatchObject({
+        credentialDefinition,
+        credentialDefinitionId: mockCredDefResource.id,
+        resolutionMetadata: { contentType: 'application/json' },
+        credentialDefinitionMetadata: mockCredDefResource.metadata,
+      })
     })
   })
 

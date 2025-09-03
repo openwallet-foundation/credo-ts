@@ -7,6 +7,7 @@ import type {
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
   GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
@@ -430,7 +431,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     _agentContext: AgentContext,
     options: RegisterSchemaOptions
   ): Promise<RegisterSchemaReturn> {
-    const resourceId = this.calculateResourceId(options.schema)
+    const resourceId = this._digestMultibase(canonicalize(options.schema))
 
     const schemaId = `${options.schema.issuerId}/resources/${resourceId}`
     return {
@@ -440,9 +441,23 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerCredentialDefinition(agentContext: AgentContext): Promise<RegisterCredentialDefinitionReturn> {
-    agentContext.config.logger.warn('registerCredentialDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerCredentialDefinition(
+    _agentContext: AgentContext,
+    options: RegisterCredentialDefinitionOptions
+  ): Promise<RegisterCredentialDefinitionReturn> {
+    const resourceId = this._digestMultibase(canonicalize(options.credentialDefinition))
+
+    const credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${resourceId}`
+
+    return {
+      credentialDefinitionState: {
+        state: 'finished',
+        credentialDefinition: options.credentialDefinition,
+        credentialDefinitionId,
+      },
+      credentialDefinitionMetadata: {},
+      registrationMetadata: {},
+    }
   }
 
   public async registerRevocationRegistryDefinition(
@@ -469,15 +484,5 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
       })
       return false
     }
-  }
-
-  private calculateResourceId(resourceObjectValue: unknown) {
-    const objectString = canonicalize(resourceObjectValue)
-
-    if (!objectString) {
-      throw new Error('Cannot canonicalize resource object')
-    }
-
-    return this._digestMultibase(objectString)
   }
 }
