@@ -24,7 +24,7 @@ export function decodeSdJwtVc<
     header: jwt.header as Header,
     payload: jwt.payload as Payload,
     prettyClaims: prettyClaims as Payload,
-    claimFormat: ClaimFormat.SdJwtVc,
+    claimFormat: ClaimFormat.SdJwtDc,
     encoded: compactSdJwtVc,
     kbJwt: kbJwt
       ? {

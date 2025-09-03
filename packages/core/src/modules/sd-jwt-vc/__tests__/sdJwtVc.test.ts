@@ -125,7 +125,7 @@ describe('sd-jwt-vc end to end test', () => {
     // parse SD-JWT
     const sdJwtVc = holder.sdJwtVc.fromCompact<Header, Payload>(compact)
     expect(sdJwtVc).toEqual({
-      claimFormat: 'vc+sd-jwt',
+      claimFormat: 'dc+sd-jwt',
       compact: expect.any(String),
       encoded: expect.any(String),
       kbJwt: undefined,

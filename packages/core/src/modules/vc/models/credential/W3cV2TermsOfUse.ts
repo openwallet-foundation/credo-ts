@@ -1,0 +1,60 @@
+import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
+import { IsString, isInstance } from 'class-validator'
+import { CredoError } from '../../../../error'
+
+export interface W3cV2TermsOfUseOptions {
+  type: string
+}
+
+/**
+ * Represents a terms of use.
+ *
+ * TODO: figure out how to retain arbitrary properties and make them accessible in the class.
+ *
+ * @see https://www.w3.org/TR/vc-data-model-2.0/#terms-of-use
+ */
+export class W3cV2TermsOfUse {
+  public constructor(options: W3cV2TermsOfUseOptions) {
+    if (options) {
+      this.type = options.type
+    }
+  }
+
+  @IsString()
+  public type!: string
+}
+
+const jsonToClass = (v: unknown) => {
+  if (!v || typeof v !== 'object') {
+    throw new CredoError('Invalid plain W3cV2CredentialTermsOfUse')
+  }
+
+  if (isInstance(v, W3cV2TermsOfUse)) {
+    return v
+  }
+
+  return plainToInstance(W3cV2TermsOfUse, v)
+}
+
+const classToJson = (v: unknown) => {
+  return instanceToPlain(v)
+}
+
+export function W3cV2TermsOfUseTransformer() {
+  return Transform(({ value, type }: { value: W3cV2TermsOfUseOptions; type: TransformationType }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS) {
+      if (Array.isArray(value) && value.length === 0) {
+        throw new CredoError('At least one terms of use is required')
+      }
+
+      return Array.isArray(value) ? value.map(jsonToClass) : jsonToClass(value)
+    }
+
+    if (type === TransformationType.CLASS_TO_PLAIN) {
+      return Array.isArray(value) ? value.map(classToJson) : classToJson(value)
+    }
+
+    // PLAIN_TO_PLAIN
+    return value
+  })
+}

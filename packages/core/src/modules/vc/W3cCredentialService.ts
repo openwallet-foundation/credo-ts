@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../agent/context'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  StoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
@@ -9,6 +8,7 @@ import type {
   W3cJwtVerifyPresentationOptions,
   W3cSignCredentialOptions,
   W3cSignPresentationOptions,
+  W3cStoreCredentialOptions,
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'
@@ -159,7 +159,7 @@ export class W3cCredentialService {
    */
   public async storeCredential(
     agentContext: AgentContext,
-    options: StoreCredentialOptions
+    options: W3cStoreCredentialOptions
   ): Promise<W3cCredentialRecord> {
     let expandedTypes: string[] = []
 

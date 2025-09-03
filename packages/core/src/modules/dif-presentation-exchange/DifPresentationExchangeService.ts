@@ -566,7 +566,7 @@ export class DifPresentationExchangeService {
 
         return signedPresentation.encoded as W3CVerifiablePresentation
       }
-      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtVc) {
+      if (presentationToCreate.claimFormat === ClaimFormat.SdJwtDc) {
         const sdJwtInput = presentationInput as
           | SdJwtDecodedVerifiableCredential
           | PartialSdJwtDecodedVerifiableCredential

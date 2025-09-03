@@ -61,7 +61,7 @@ export async function getCredentialsForRequest(
           const prettyClaims = getClaimsSync(jwt.payload, disclosures, Hasher.hash)
 
           return {
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             credentialRecord,
             disclosedPayload: prettyClaims as JsonObject,
           }

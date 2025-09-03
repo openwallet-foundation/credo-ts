@@ -72,6 +72,40 @@ export function IsInstanceOrArrayOfInstances(
   )
 }
 
+export function IsStringOrInstanceOrArrayOfInstances(
+  validationOptions: IsInstanceOrArrayOfInstancesValidationOptions
+): PropertyDecorator {
+  const classTypes = asArray(validationOptions.classType)
+  const allowEmptyArray = validationOptions.allowEmptyArray ?? false
+
+  return ValidateBy(
+    {
+      name: 'IsStringOrInstanceOrArrayOfInstances',
+      validator: {
+        validate: (values) => {
+          if (isString(values)) return true
+          if (!values) return false
+          if (Array.isArray(values) && values.length === 0) return allowEmptyArray
+
+          return (
+            asArray(values)
+              // all values MUST be instance of one of the class types
+              .every((value) => classTypes.some((classType) => isInstance(value, classType)))
+          )
+        },
+        defaultMessage: buildMessage(
+          (eachPrefix) =>
+            `${eachPrefix}$property value must be a string, an instance of, or an array of instances containing ${classTypes
+              .map((c) => c.name)
+              .join(', ')}`,
+          validationOptions
+        ),
+      },
+    },
+    validationOptions
+  )
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string')
