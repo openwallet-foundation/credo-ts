@@ -7,9 +7,13 @@ import type {
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
   GetSchemaReturn,
+  RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
+  RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
@@ -425,26 +429,80 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerSchema(agentContext: AgentContext): Promise<RegisterSchemaReturn> {
-    agentContext.config.logger.warn('registerSchema not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerSchema(
+    _agentContext: AgentContext,
+    options: RegisterSchemaOptions
+  ): Promise<RegisterSchemaReturn> {
+    const resourceId = this._digestMultibase(canonicalize(options.schema))
+
+    const schemaId = `${options.schema.issuerId}/resources/${resourceId}`
+    return {
+      schemaState: { state: 'finished', schema: options.schema, schemaId },
+      registrationMetadata: {},
+      schemaMetadata: {},
+    }
   }
 
-  public async registerCredentialDefinition(agentContext: AgentContext): Promise<RegisterCredentialDefinitionReturn> {
-    agentContext.config.logger.warn('registerCredentialDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerCredentialDefinition(
+    _agentContext: AgentContext,
+    options: RegisterCredentialDefinitionOptions
+  ): Promise<RegisterCredentialDefinitionReturn> {
+    const resourceId = this._digestMultibase(canonicalize(options.credentialDefinition))
+
+    const credentialDefinitionId = `${options.credentialDefinition.issuerId}/resources/${resourceId}`
+
+    return {
+      credentialDefinitionState: {
+        state: 'finished',
+        credentialDefinition: options.credentialDefinition,
+        credentialDefinitionId,
+      },
+      credentialDefinitionMetadata: {},
+      registrationMetadata: {},
+    }
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext
+    _agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    agentContext.config.logger.warn('registerRevocationRegistryDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+    const resourceId = this._digestMultibase(canonicalize(options.revocationRegistryDefinition))
+
+    const revocationRegistryDefinitionId = `${options.revocationRegistryDefinition.issuerId}/resources/${resourceId}`
+
+    return {
+      revocationRegistryDefinitionState: {
+        state: 'finished',
+        revocationRegistryDefinition: options.revocationRegistryDefinition,
+        revocationRegistryDefinitionId,
+      },
+      registrationMetadata: {},
+      revocationRegistryDefinitionMetadata: {},
+    }
   }
 
-  public async registerRevocationStatusList(agentContext: AgentContext): Promise<RegisterRevocationStatusListReturn> {
-    agentContext.config.logger.warn('registerRevocationStatusList not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    options: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const latestRevocationStatusList = await this.getRevocationStatusList(
+      agentContext,
+      options.revocationStatusList.revRegDefId,
+      timestamp
+    )
+
+    return {
+      revocationStatusListState: {
+        state: 'finished',
+        revocationStatusList: { ...options.revocationStatusList, timestamp },
+      },
+      registrationMetadata: {},
+      revocationStatusListMetadata: {
+        previousVersionId: latestRevocationStatusList.revocationStatusList?.timestamp.toString() || '',
+        nextVersionId: '',
+      },
+    }
   }
 
   public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
