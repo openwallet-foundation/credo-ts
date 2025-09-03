@@ -40,12 +40,12 @@ import {
   W3cCredentialService,
   W3cPresentation,
 } from '../vc'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import {
   AnonCredsDataIntegrityServiceSymbol,
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
-import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
