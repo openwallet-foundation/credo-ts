@@ -9,6 +9,7 @@ import type {
   GetSchemaReturn,
   RegisterCredentialDefinitionOptions,
   RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
   RegisterRevocationStatusListReturn,
   RegisterSchemaOptions,
@@ -461,10 +462,22 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   }
 
   public async registerRevocationRegistryDefinition(
-    agentContext: AgentContext
+    _agentContext: AgentContext,
+    options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
-    agentContext.config.logger.warn('registerRevocationRegistryDefinition not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+    const resourceId = this._digestMultibase(canonicalize(options.revocationRegistryDefinition))
+
+    const revocationRegistryDefinitionId = `${options.revocationRegistryDefinition.issuerId}/resources/${resourceId}`
+
+    return {
+      revocationRegistryDefinitionState: {
+        state: 'finished',
+        revocationRegistryDefinition: options.revocationRegistryDefinition,
+        revocationRegistryDefinitionId,
+      },
+      registrationMetadata: {},
+      revocationRegistryDefinitionMetadata: {},
+    }
   }
 
   public async registerRevocationStatusList(agentContext: AgentContext): Promise<RegisterRevocationStatusListReturn> {
