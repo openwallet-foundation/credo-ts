@@ -19,6 +19,7 @@ import { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } 
 import {
   issuerId,
   mockCredDefResource,
+  mockRegRevEntryResource,
   mockResolvedDidDocument,
   mockRevRegDefResource,
   mockSchemaResource,
@@ -490,16 +491,37 @@ describe('WebVhAnonCredsRegistry', () => {
       expect(result).toMatchObject({
         revocationRegistryDefinitionState: {
           state: 'finished',
-          revocationRegistryDefinition: mockRevRegDefResource,
+          revocationRegistryDefinition,
         },
         revocationRegistryDefinitionMetadata: {},
         registrationMetadata: {},
       })
       expect(revRegDef).toMatchObject({
-        revocationRegistryDefinition: mockRevRegDefResource,
+        revocationRegistryDefinition,
         revocationRegistryDefinitionId: revRegDefId,
         resolutionMetadata: { contentType: 'application/json' },
         revocationRegistryDefinitionMetadata: mockRevRegDefResource.metadata,
+      })
+    })
+  })
+
+  describe('registerRevocationStatusList', () => {
+    it('should correctly resolve and parse a valid RevocationStatusList resource', async () => {
+      // Remove timestamp from validations
+      const { timestamp, ...revocationStatusList } = mockRegRevEntryResource.content
+
+      const result = await registry.registerRevocationStatusList(agentContext, {
+        revocationStatusList,
+        options: {},
+      })
+
+      expect(result).toMatchObject({
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList,
+        },
+        revocationStatusListMetadata: { previousVersionId: '', nextVersionId: '' },
+        registrationMetadata: {},
       })
     })
   })

@@ -11,6 +11,7 @@ import type {
   RegisterCredentialDefinitionReturn,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListOptions,
   RegisterRevocationStatusListReturn,
   RegisterSchemaOptions,
   RegisterSchemaReturn,
@@ -480,9 +481,28 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     }
   }
 
-  public async registerRevocationStatusList(agentContext: AgentContext): Promise<RegisterRevocationStatusListReturn> {
-    agentContext.config.logger.warn('registerRevocationStatusList not implemented for WebVhAnonCredsRegistry')
-    throw new CredoError('Method not implemented.')
+  public async registerRevocationStatusList(
+    agentContext: AgentContext,
+    options: RegisterRevocationStatusListOptions
+  ): Promise<RegisterRevocationStatusListReturn> {
+    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const latestRevocationStatusList = await this.getRevocationStatusList(
+      agentContext,
+      options.revocationStatusList.revRegDefId,
+      timestamp
+    )
+
+    return {
+      revocationStatusListState: {
+        state: 'finished',
+        revocationStatusList: { ...options.revocationStatusList, timestamp },
+      },
+      registrationMetadata: {},
+      revocationStatusListMetadata: {
+        previousVersionId: latestRevocationStatusList.revocationStatusList?.timestamp.toString() || '',
+        nextVersionId: '',
+      },
+    }
   }
 
   public async verifyProof(agentContext: AgentContext, attestedResource: WebVhResource): Promise<boolean> {
