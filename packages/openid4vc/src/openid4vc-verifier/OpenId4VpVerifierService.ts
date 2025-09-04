@@ -1057,7 +1057,7 @@ export class OpenId4VpVerifierService {
       const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
       return mdocDeviceResponse
     }
-    if (ClaimFormat.JwtVp) {
+    if (format === ClaimFormat.JwtVp) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }
