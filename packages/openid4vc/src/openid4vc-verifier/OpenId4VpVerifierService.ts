@@ -987,7 +987,7 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('jwt_vc_json')
+              ...(dclqQueryFormats.has('ldp_vc')
                 ? {
                     ldp_vc: {
                       proof_type_values: supportedProofTypes as [string, ...string[]],
