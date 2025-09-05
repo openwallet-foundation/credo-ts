@@ -197,7 +197,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         // TODO: handle batch issuance
         const credential = response.credentials[0]
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
-          return this.agent.w3cCredentials.storeCredential({ credential })
+          return this.agent.w3cCredentials.store({ credential })
         }
         if (credential instanceof Mdoc) {
           return this.agent.mdoc.store(credential)

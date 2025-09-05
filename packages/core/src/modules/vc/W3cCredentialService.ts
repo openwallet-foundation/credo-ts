@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../agent/context'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  StoreCredentialOptions,
+  W3cStoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
@@ -159,28 +159,22 @@ export class W3cCredentialService {
    */
   public async storeCredential(
     agentContext: AgentContext,
-    options: StoreCredentialOptions
+    options: W3cStoreCredentialOptions
   ): Promise<W3cCredentialRecord> {
-    let expandedTypes: string[] = []
+    const credential = options.record.credential
 
     // JsonLd credentials need expanded types to be stored.
-    if (options.credential instanceof W3cJsonLdVerifiableCredential) {
-      expandedTypes = await this.w3cJsonLdCredentialService.getExpandedTypesForCredential(
-        agentContext,
-        options.credential
+    if (credential instanceof W3cJsonLdVerifiableCredential && !options.record.getTag('expandedTypes')) {
+      options.record.setTag(
+        'expandedTypes',
+        await this.w3cJsonLdCredentialService.getExpandedTypesForCredential(agentContext, credential)
       )
     }
 
-    // Create an instance of the w3cCredentialRecord
-    const w3cCredentialRecord = new W3cCredentialRecord({
-      tags: { expandedTypes },
-      credential: options.credential,
-    })
-
     // Store the w3c credential record
-    await this.w3cCredentialRepository.save(agentContext, w3cCredentialRecord)
+    await this.w3cCredentialRepository.save(agentContext, options.record)
 
-    return w3cCredentialRecord
+    return options.record
   }
 
   public async removeCredentialRecord(agentContext: AgentContext, id: string) {

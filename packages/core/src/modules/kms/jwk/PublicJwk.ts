@@ -132,6 +132,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
   /**
    * Get the key id for a public jwk. If the public jwk does not have
+   * a key id, an error will be thrown
    */
   public get keyId(): string {
     if (this.jwk.jwk.kid) return this.jwk.jwk.kid

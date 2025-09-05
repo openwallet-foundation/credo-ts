@@ -1,4 +1,15 @@
-import { AgentContext, DidsApi } from '@credo-ts/core'
+import {
+  AgentContext,
+  DidsApi,
+  MdocRecord,
+  MdocRecordInstances,
+  SdJwtVcRecord,
+  SdJwtVcRecordInstances,
+  TypedArrayEncoder,
+  W3cCredentialRecord,
+  W3cCredentialRecordInstances,
+  W3cJsonLdCredentialService,
+} from '@credo-ts/core'
 import {
   CredoError,
   InjectionSymbols,
@@ -481,7 +492,7 @@ export class OpenId4VciHolderService {
     }
 
     for (const [offeredCredentialId, offeredCredentialConfiguration] of credentialConfigurationsToRequest) {
-      const proofs = await this.getCredentialRequestOptions(agentContext, {
+      const { proofs, keyMapping } = await this.getCredentialRequestOptions(agentContext, {
         allowedProofOfPossessionAlgorithms:
           allowedProofOfPossessionSignatureAlgorithms ?? getSupportedJwaSignatureAlgorithms(agentContext),
         metadata,
@@ -548,14 +559,20 @@ export class OpenId4VciHolderService {
           format: offeredCredentialConfiguration.format as OpenId4VciCredentialFormatProfile,
           credentialConfigurationId: offeredCredentialId,
           credentialConfiguration: offeredCredentialConfiguration,
+          keyMapping,
         })
 
-        this.logger.debug(
-          'received credential',
-          credential.credentials.map((c) =>
-            c instanceof Mdoc ? { issuerSignedNamespaces: c.issuerSignedNamespaces, base64Url: c.base64Url } : c
-          )
-        )
+        const firstCredential = credential.record.credential
+        this.logger.debug('received credential response', {
+          firstCredential:
+            firstCredential instanceof Mdoc
+              ? {
+                  issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                  base64Url: firstCredential.base64Url,
+                }
+              : firstCredential,
+          totalNumberOfCredentials: credential.record.credentialInstances.length,
+        })
         receivedCredentials.push(credential)
       }
     }
@@ -627,12 +644,17 @@ export class OpenId4VciHolderService {
         credentialConfiguration: credentialConfiguration,
       })
 
-      this.logger.debug(
-        'received credential',
-        credential.credentials.map((c) =>
-          c instanceof Mdoc ? { issuerSignedNamespaces: c.issuerSignedNamespaces, base64Url: c.base64Url } : c
-        )
-      )
+      const firstCredential = credential.record.credential
+      this.logger.debug('received credential response', {
+        firstCredential:
+          firstCredential instanceof Mdoc
+            ? {
+                issuerSignedNamespaces: firstCredential.issuerSignedNamespaces,
+                base64Url: firstCredential.base64Url,
+              }
+            : firstCredential,
+        totalNumberOfCredentials: credential.record.credentialInstances.length,
+      })
       receivedCredentials.push(credential)
     }
 
@@ -783,24 +805,26 @@ export class OpenId4VciHolderService {
       }
 
       return {
-        jwt: await Promise.all(
-          keys.map((key) =>
-            client
-              .createCredentialRequestJwtProof({
-                credentialConfigurationId: configurationId,
-                issuerMetadata: options.metadata,
-                signer: {
-                  method: 'did',
-                  didUrl: key.didUrl,
-                  alg: algorithm,
-                  kid: key.jwk.keyId,
-                },
-                nonce: options.cNonce,
-                clientId: options.clientId,
-              })
-              .then(({ jwt }) => jwt)
-          )
-        ),
+        proofs: {
+          jwt: await Promise.all(
+            keys.map((key) =>
+              client
+                .createCredentialRequestJwtProof({
+                  credentialConfigurationId: configurationId,
+                  issuerMetadata: options.metadata,
+                  signer: {
+                    method: 'did',
+                    didUrl: key.didUrl,
+                    alg: algorithm,
+                    kid: key.jwk.keyId,
+                  },
+                  nonce: options.cNonce,
+                  clientId: options.clientId,
+                })
+                .then(({ jwt }) => jwt)
+            )
+          ),
+        },
       }
     }
 
@@ -848,24 +872,31 @@ export class OpenId4VciHolderService {
         )
       }
 
+      const thumpbrintKeyIdMapping = Object.fromEntries(
+        credentialBinding.keys.map((jwk) => [TypedArrayEncoder.toBase64(jwk.getJwkThumbprint()), jwk.keyId])
+      )
+
       return {
-        jwt: await Promise.all(
-          credentialBinding.keys.map((jwk) =>
-            client
-              .createCredentialRequestJwtProof({
-                credentialConfigurationId: configurationId,
-                issuerMetadata: options.metadata,
-                signer: {
-                  method: 'jwk',
-                  publicJwk: jwk.toJson() as Jwk,
-                  alg: algorithm,
-                },
-                nonce: options.cNonce,
-                clientId: options.clientId,
-              })
-              .then(({ jwt }) => jwt)
-          )
-        ),
+        keyMapping: thumpbrintKeyIdMapping,
+        proofs: {
+          jwt: await Promise.all(
+            credentialBinding.keys.map((jwk) =>
+              client
+                .createCredentialRequestJwtProof({
+                  credentialConfigurationId: configurationId,
+                  issuerMetadata: options.metadata,
+                  signer: {
+                    method: 'jwk',
+                    publicJwk: jwk.toJson() as Jwk,
+                    alg: algorithm,
+                  },
+                  nonce: options.cNonce,
+                  clientId: options.clientId,
+                })
+                .then(({ jwt }) => jwt)
+            )
+          ),
+        },
       }
     }
 
@@ -884,31 +915,43 @@ export class OpenId4VciHolderService {
       if (proofTypes.attestation && payload.nonce) {
         // If attestation is supported and the attestation contains a nonce, we can use the attestation directly
         return {
-          attestation: [credentialBinding.keyAttestationJwt],
+          proofs: {
+            attestation: [credentialBinding.keyAttestationJwt],
+          },
         }
       }
 
       if (proofTypes.jwt) {
         const jwk = Kms.PublicJwk.fromUnknown(payload.attested_keys[0])
 
+        const thumpbrintKeyIdMapping = Object.fromEntries(
+          payload.attested_keys.map((jwk) => {
+            const jwkInstance = Kms.PublicJwk.fromUnknown(jwk)
+            return [TypedArrayEncoder.toBase64(jwkInstance.getJwkThumbprint()), jwkInstance.keyId]
+          })
+        )
+
         return {
-          jwt: [
-            await client
-              .createCredentialRequestJwtProof({
-                credentialConfigurationId: configurationId,
-                issuerMetadata: options.metadata,
-                signer: {
-                  method: 'jwk',
-                  publicJwk: payload.attested_keys[0],
-                  // TODO: we should probably use the 'alg' from the jwk
-                  alg: jwk.supportedSignatureAlgorithms[0],
-                },
-                keyAttestationJwt: credentialBinding.keyAttestationJwt,
-                nonce: options.cNonce,
-                clientId: options.clientId,
-              })
-              .then(({ jwt }) => jwt),
-          ],
+          keyMapping: thumpbrintKeyIdMapping,
+          proofs: {
+            jwt: [
+              await client
+                .createCredentialRequestJwtProof({
+                  credentialConfigurationId: configurationId,
+                  issuerMetadata: options.metadata,
+                  signer: {
+                    method: 'jwk',
+                    publicJwk: payload.attested_keys[0],
+                    // TODO: we should probably use the 'alg' from the jwk
+                    alg: jwk.supportedSignatureAlgorithms[0],
+                  },
+                  keyAttestationJwt: credentialBinding.keyAttestationJwt,
+                  nonce: options.cNonce,
+                  clientId: options.clientId,
+                })
+                .then(({ jwt }) => jwt),
+            ],
+          },
         }
       }
 
@@ -1058,6 +1101,7 @@ export class OpenId4VciHolderService {
       format: OpenId4VciCredentialFormatProfile
       credentialConfigurationId: string
       credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
+      keyMapping?: Record<string, string>
     }
   ): Promise<OpenId4VciCredentialResponse> {
     const { verifyCredentialStatus, credentialConfigurationId, credentialConfiguration } = options
@@ -1087,13 +1131,17 @@ export class OpenId4VciHolderService {
       // so we can store the correct `kmsKeyId` along with the SD-JWT VC for presentations
       const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
       const verificationResults = await Promise.all(
-        credentials.map((compactSdJwtVc, index) =>
-          sdJwtVcApi.verify({
+        credentials.map(async (compactSdJwtVc, index) => {
+          const result = await sdJwtVcApi.verify({
             compactSdJwtVc,
             // Only load and verify it for the first instance
             fetchTypeMetadata: index === 0,
           })
-        )
+
+          return {
+            ...result,
+          }
+        })
       )
 
       if (!verificationResults.every((result) => result.isValid)) {
@@ -1104,7 +1152,13 @@ export class OpenId4VciHolderService {
       }
 
       return {
-        credentials: verificationResults.map((result) => result.sdJwtVc),
+        record: new SdJwtVcRecord({
+          credentialInstances: verificationResults.map((r) => ({
+            compactSdJwtVc: r.sdJwtVc.compact,
+            kmsKeyId: r.sdJwtVc.kmsKeyId,
+          })) as SdJwtVcRecordInstances,
+          typeMetadata: verificationResults[0].sdJwtVc.typeMetadata,
+        }),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,
@@ -1145,7 +1199,12 @@ export class OpenId4VciHolderService {
       }
 
       return {
-        credentials: result.map((r) => r.credential),
+        record: new W3cCredentialRecord({
+          credentialInstances: result.map((r) => ({
+            credential: r.credential.encoded,
+          })) as W3cCredentialRecordInstances,
+          tags: {},
+        }),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,
@@ -1181,8 +1240,20 @@ export class OpenId4VciHolderService {
         )
       }
 
+      const w3cJsonLdCredentialService = agentContext.resolve(W3cJsonLdCredentialService)
       return {
-        credentials: result.map((r) => r.credential),
+        record: new W3cCredentialRecord({
+          credentialInstances: result.map((r) => ({
+            credential: r.credential.encoded,
+          })) as W3cCredentialRecordInstances,
+          tags: {
+            // Fetch it directly
+            expandedTypes: await w3cJsonLdCredentialService.getExpandedTypesForCredential(
+              agentContext,
+              result[0].credential
+            ),
+          },
+        }),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,
@@ -1219,7 +1290,12 @@ export class OpenId4VciHolderService {
       }
 
       return {
-        credentials: result.map((c) => c.mdoc),
+        record: new MdocRecord({
+          credentialInstances: result.map((c) => ({
+            issuerSignedBase64Url: c.mdoc.base64Url,
+            kmsKeyId: c.mdoc.deviceKeyId,
+          })) as MdocRecordInstances,
+        }),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,

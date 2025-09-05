@@ -3,14 +3,31 @@ import type { Constructable } from '../../../utils/mixins'
 import { BaseRecord, Tags } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { ClaimFormat, W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../models'
+import { ClaimFormat, W3cVerifiableCredential } from '../models'
+import { NonEmptyArray } from '../../../types'
+import { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
+import { W3cJwtVerifiableCredential } from '../jwt-vc'
+import { W3cJsonLdVerifiableCredential } from '../data-integrity'
 
 export interface W3cCredentialRecordOptions {
   id?: string
   createdAt?: Date
-  credential: W3cVerifiableCredential
   tags: CustomW3cCredentialTags
+
+  /**
+   * The W3C credential instances to store on the record.
+   *
+   * NOTE that all instances should contain roughly the same data (e.g. exp can differ slighty), as they should be usable
+   * interchangeably for presentations (allowing single-use credentials and batch issuance).
+   */
+  credentialInstances: W3cCredentialRecordInstances
 }
+
+export type W3cCredentialRecordInstances = NonEmptyArray<{
+  credential: string | W3cJsonCredential
+
+  // no kmsKeyId for w3c credential record, since all credentials are bound to a DID
+}>
 
 export type CustomW3cCredentialTags = {
   /**
@@ -39,8 +56,8 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
   public static readonly type = 'W3cCredentialRecord'
   public readonly type = W3cCredentialRecord.type
 
-  @W3cVerifiableCredentialTransformer()
-  public credential!: W3cVerifiableCredential
+  public credentialInstances!: W3cCredentialRecordInstances
+  public readonly isMultiInstanceRecord!: boolean
 
   public constructor(props: W3cCredentialRecordOptions) {
     super()
@@ -48,35 +65,73 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
       this.id = props.id ?? uuid()
       this.createdAt = props.createdAt ?? new Date()
       this._tags = props.tags
-      this.credential = props.credential
+      this.credentialInstances = props.credentialInstances
+      // We set this as a property since we can get down to 1 credential
+      // and in this case we still need to know whether this was a multi instance
+      // record when it was created.
+      this.isMultiInstanceRecord = this.credentialInstances.length > 1
     }
   }
 
+  /**
+   * Only here for class transformation. If credential is set we transform
+   * it to the new credentialInstances array format
+   */
+  private set credential(credential: W3cVerifiableCredential) {
+    this.credentialInstances = [
+      {
+        // NOTE: we have to type the `set` method the same as the `get`. Previously
+        // we had a transformer that would transform. Now the set is private and will
+        // only be called by class transformer, and is the raw type.
+        credential: credential as unknown as string | W3cJsonCredential,
+      },
+    ]
+  }
+
+  public get firstCredential(): W3cVerifiableCredential {
+    const credential = this.credentialInstances[0].credential
+    return typeof credential === 'string'
+      ? W3cJwtVerifiableCredential.fromSerializedJwt(credential)
+      : W3cJsonLdVerifiableCredential.fromJson(credential)
+  }
+
+  public static fromCredential(credential: W3cVerifiableCredential) {
+    return new W3cCredentialRecord({
+      credentialInstances: [
+        {
+          credential: credential.encoded as string | W3cJsonCredential,
+        },
+      ],
+      tags: {},
+    })
+  }
+
   public getTags(): Tags<DefaultW3cCredentialTags, CustomW3cCredentialTags> {
+    const credential = this.firstCredential
     // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
     // so we filter out the objects before setting the tags.
-    const stringContexts = this.credential.contexts.filter((ctx): ctx is string => typeof ctx === 'string')
+    const stringContexts = credential.contexts.filter((ctx): ctx is string => typeof ctx === 'string')
 
     const tags: Tags<DefaultW3cCredentialTags, CustomW3cCredentialTags> = {
       ...this._tags,
-      issuerId: this.credential.issuerId,
-      subjectIds: this.credential.credentialSubjectIds,
-      schemaIds: this.credential.credentialSchemaIds,
+      issuerId: credential.issuerId,
+      subjectIds: credential.credentialSubjectIds,
+      schemaIds: credential.credentialSchemaIds,
       contexts: stringContexts,
-      givenId: this.credential.id,
-      claimFormat: this.credential.claimFormat,
-      types: this.credential.type,
+      givenId: credential.id,
+      claimFormat: credential.claimFormat,
+      types: credential.type,
     }
 
     // Proof types is used for ldp_vc credentials
-    if (this.credential.claimFormat === ClaimFormat.LdpVc) {
-      tags.proofTypes = this.credential.proofTypes
-      tags.cryptosuites = this.credential.dataIntegrityCryptosuites
+    if (credential.claimFormat === ClaimFormat.LdpVc) {
+      tags.proofTypes = credential.proofTypes
+      tags.cryptosuites = credential.dataIntegrityCryptosuites
     }
 
     // Algs is used for jwt_vc credentials
-    else if (this.credential.claimFormat === ClaimFormat.JwtVc) {
-      tags.algs = [this.credential.jwt.header.alg]
+    else if (credential.claimFormat === ClaimFormat.JwtVc) {
+      tags.algs = [credential.jwt.header.alg]
     }
 
     return tags
@@ -93,10 +148,14 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 
+  public get credential() {
+    return this.firstCredential
+  }
+
   /**
    * encoded is convenience method added to all credential records
    */
   public get encoded() {
-    return this.credential.encoded
+    return this.credentialInstances[0].credential
   }
 }

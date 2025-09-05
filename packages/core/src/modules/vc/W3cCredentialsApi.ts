@@ -1,6 +1,6 @@
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  StoreCredentialOptions,
+  W3cStoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cSignCredentialOptions,
   W3cSignPresentationOptions,
@@ -28,23 +28,23 @@ export class W3cCredentialsApi {
     this.w3cCredentialService = w3cCredentialService
   }
 
-  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
+  public async store(options: W3cStoreCredentialOptions): Promise<W3cCredentialRecord> {
     return this.w3cCredentialService.storeCredential(this.agentContext, options)
   }
 
-  public async removeCredentialRecord(id: string) {
+  public async deleteById(id: string) {
     return this.w3cCredentialService.removeCredentialRecord(this.agentContext, id)
   }
 
-  public async getAllCredentialRecords(): Promise<W3cCredentialRecord[]> {
+  public async getAll(): Promise<W3cCredentialRecord[]> {
     return this.w3cCredentialService.getAllCredentialRecords(this.agentContext)
   }
 
-  public async getCredentialRecordById(id: string): Promise<W3cCredentialRecord> {
+  public async getById(id: string): Promise<W3cCredentialRecord> {
     return this.w3cCredentialService.getCredentialRecordById(this.agentContext, id)
   }
 
-  public async findCredentialRecordsByQuery(
+  public async findAllByQuery(
     query: Query<W3cCredentialRecord>,
     queryOptions?: QueryOptions
   ): Promise<W3cVerifiableCredential[]> {

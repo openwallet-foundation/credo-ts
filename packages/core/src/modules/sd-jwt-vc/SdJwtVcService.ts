@@ -8,6 +8,7 @@ import type {
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
   SdJwtVcSignOptions,
+  SdJwtVcStoreOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
 
@@ -32,7 +33,7 @@ import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
-import { SdJwtVcRecord, SdJwtVcRecordInstances, SdJwtVcRepository } from './repository'
+import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
@@ -197,18 +198,23 @@ export class SdJwtVcService {
 
   public async present<Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
+    { sdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: SdJwtVcPresentOptions<Payload>
   ): Promise<string> {
     const sdjwt = new SDJwtVcInstance(this.getBaseSdJwtConfig(agentContext))
+    const compactSdJwtVc = typeof sdJwtVc === 'string' ? sdJwtVc : sdJwtVc.compact
+    const sdJwtVcInstance = await sdjwt.decode(compactSdJwtVc)
 
-    const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
-
-    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVcInstance)
     if (!holderBinding && verifierMetadata) {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
+    const holder = holderBinding
+      ? await this.extractKeyFromHolderBinding(agentContext, holderBinding, {
+          forSigning: true,
+          jwkKeyId: typeof sdJwtVc !== 'string' ? sdJwtVc.kmsKeyId : undefined,
+        })
+      : undefined
     sdjwt.config({
       kbSigner: holder ? this.signer(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
@@ -273,24 +279,28 @@ export class SdJwtVcService {
         error,
       }
     }
-
-    const returnSdJwtVc: SdJwtVc<Header, Payload> = {
-      payload: sdJwtVc.jwt.payload as Payload,
-      header: sdJwtVc.jwt.header as Header,
-      compact: compactSdJwtVc,
-      prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
-
-      kbJwt: sdJwtVc.kbJwt
-        ? {
-            payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
-            header: sdJwtVc.kbJwt.header as Record<string, unknown>,
-          }
-        : undefined,
-      claimFormat: ClaimFormat.SdJwtVc,
-      encoded: compactSdJwtVc,
-    } satisfies SdJwtVc<Header, Payload>
+    let returnSdJwtVc: SdJwtVc<Header, Payload>
 
     try {
+      const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+
+      returnSdJwtVc = {
+        payload: sdJwtVc.jwt.payload as Payload,
+        header: sdJwtVc.jwt.header as Header,
+        compact: compactSdJwtVc,
+        prettyClaims: await sdJwtVc.getClaims(sdJwtVcHasher),
+        holderBinding,
+
+        kbJwt: sdJwtVc.kbJwt
+          ? {
+              payload: sdJwtVc.kbJwt.payload as Record<string, unknown>,
+              header: sdJwtVc.kbJwt.header as Record<string, unknown>,
+            }
+          : undefined,
+        claimFormat: ClaimFormat.SdJwtVc,
+        encoded: compactSdJwtVc,
+      } satisfies SdJwtVc<Header, Payload>
+
       const credentialIssuer = await this.parseIssuerFromCredential(
         agentContext,
         sdJwtVc,
@@ -298,7 +308,7 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+
       const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
@@ -408,13 +418,9 @@ export class SdJwtVcService {
     }
   }
 
-  public async store(agentContext: AgentContext, sdJwtVcs: SdJwtVcRecordInstances) {
-    const sdJwtVcRecord = new SdJwtVcRecord({
-      sdJwtVcs,
-    })
-    await this.sdJwtVcRepository.save(agentContext, sdJwtVcRecord)
-
-    return sdJwtVcRecord
+  public async store(agentContext: AgentContext, options: SdJwtVcStoreOptions) {
+    await this.sdJwtVcRepository.save(agentContext, options.record)
+    return options.record
   }
 
   public async getById(agentContext: AgentContext, id: string): Promise<SdJwtVcRecord> {
@@ -696,7 +702,7 @@ export class SdJwtVcService {
   private async extractKeyFromHolderBinding(
     agentContext: AgentContext,
     holder: SdJwtVcHolderBinding,
-    forSigning = false
+    { forSigning = false, jwkKeyId }: { forSigning?: boolean; jwkKeyId?: string } = {}
   ) {
     if (holder.method === 'did') {
       const parsedDid = parseDid(holder.didUrl)
@@ -738,8 +744,8 @@ export class SdJwtVcService {
 
       // If there is no key id configured when signing, we assume this credential was issued before we included key ids
       // and the we use the legacy key id.
-      if (forSigning && !publicJwk.hasKeyId) {
-        publicJwk.keyId = publicJwk.legacyKeyId
+      if (forSigning) {
+        publicJwk.keyId = jwkKeyId ?? publicJwk.legacyKeyId
       }
 
       return {

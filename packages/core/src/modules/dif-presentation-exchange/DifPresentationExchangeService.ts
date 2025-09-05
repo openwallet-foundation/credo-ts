@@ -28,7 +28,7 @@ import { injectable } from 'tsyringe'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
+import { MdocApi, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -214,7 +214,7 @@ export class DifPresentationExchangeService {
 
         const { deviceResponseBase64Url, presentationSubmission } =
           await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
-            mdocs: [Mdoc.fromBase64Url(mdocRecord.base64Url)],
+            mdocs: [mdocRecord.firstMdoc],
             presentationDefinition: presentationDefinition,
             sessionTranscriptOptions: mdocSessionTranscript,
           })
@@ -576,7 +576,7 @@ export class DifPresentationExchangeService {
 
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
         const sdJwtVc = await sdJwtVcApi.present({
-          compactSdJwtVc: sdJwtInput.compactSdJwtVc,
+          sdJwtVc: sdJwtInput.compactSdJwtVc,
           // SD is already handled by PEX, so we presents all keys
           presentationFrame: undefined,
           verifierMetadata: {

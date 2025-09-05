@@ -323,8 +323,8 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
-    const credentials = credentialResponse.credentials[0].credentials
+    expect(credentialResponse.credentials[0].record).toHaveLength(10)
+    const credentials = credentialResponse.credentials[0].record
 
     for (const credentialIndex in credentials) {
       const credential = credentials[credentialIndex]
@@ -425,7 +425,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
+    expect(credentialResponse.credentials[0].record).toHaveLength(10)
   })
 
   it('throws error if wallet attestation required but not provided', async () => {
