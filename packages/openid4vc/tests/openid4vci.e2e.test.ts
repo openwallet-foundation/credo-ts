@@ -313,7 +313,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVcTenant1 = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
+    const compactSdJwtVcTenant1 = (credentialResponse.credentials[0].record[0] as SdJwtVc).compact
     const sdJwtVcTenant1 = holderTenant.sdJwtVc.fromCompact(compactSdJwtVcTenant1)
     expect(sdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
@@ -462,7 +462,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialsTenant1.credentials).toHaveLength(1)
-    const mdocBase64Url = (credentialsTenant1.credentials[0].credentials[0] as Mdoc).base64Url
+    const mdocBase64Url = (credentialsTenant1.credentials[0].record[0] as Mdoc).base64Url
     const mdoc = holderTenant1.mdoc.fromBase64Url(mdocBase64Url)
     expect(mdoc.docType).toEqual('UniversityDegreeCredential')
 

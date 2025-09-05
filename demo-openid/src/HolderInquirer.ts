@@ -305,7 +305,7 @@ export class HolderInquirer extends BaseInquirer {
       console.log('')
     } else {
       console.log(greenText('SdJwtVcRecord', true))
-      const prettyClaims = this.holder.agent.sdJwtVc.fromCompact(credential.compactSdJwtVc).prettyClaims
+      const prettyClaims = credential.firstSdJwtVc.prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')
     }

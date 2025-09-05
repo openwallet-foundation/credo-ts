@@ -579,8 +579,8 @@ describe('SdJwtVcService', () => {
   describe('SdJwtVcService.receive', () => {
     test('Receive sd-jwt-vc from a basic payload without disclosures', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVc)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, sdJwtVc.compact)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVc)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, [{ compactSdJwtVc: simpleJwtVc }])
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVc)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',
@@ -601,8 +601,12 @@ describe('SdJwtVcService', () => {
 
     test('Receive sd-jwt-vc without holder binding', async () => {
       const sdJwtVc = sdJwtVcService.fromCompact(simpleJwtVcWithoutHolderBinding)
-      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, simpleJwtVcWithoutHolderBinding)
-      expect(sdJwtVcRecord.compactSdJwtVc).toEqual(simpleJwtVcWithoutHolderBinding)
+      const sdJwtVcRecord = await sdJwtVcService.store(agent.context, [
+        {
+          compactSdJwtVc: simpleJwtVcWithoutHolderBinding,
+        },
+      ])
+      expect(sdJwtVcRecord.encoded).toEqual(simpleJwtVcWithoutHolderBinding)
 
       expect(sdJwtVc.header).toEqual({
         alg: 'EdDSA',

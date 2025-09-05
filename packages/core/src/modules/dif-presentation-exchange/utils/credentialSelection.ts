@@ -25,7 +25,6 @@ import { Rules } from '@sphereon/pex-models'
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { MdocRecord } from '../../mdoc'
-import { Mdoc } from '../../mdoc/Mdoc'
 import { MdocDeviceResponse } from '../../mdoc/MdocDeviceResponse'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
@@ -123,7 +122,7 @@ export async function getCredentialsForRequest(
       inputDescriptorIds.has(id)
     )
 
-    const mdoc = Mdoc.fromBase64Url(verifiableCredential.credentialRecord.base64Url)
+    const mdoc = verifiableCredential.credentialRecord.firstMdoc
     verifiableCredential.disclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
       inputDescriptor: {
         id: mdoc.docType,
@@ -137,7 +136,7 @@ export async function getCredentialsForRequest(
           fields: inputDescriptorsForCredential.flatMap((i) => i.constraints?.fields ?? []),
         },
       },
-      mdoc: Mdoc.fromBase64Url(verifiableCredential.credentialRecord.base64Url),
+      mdoc,
     })
   }
 

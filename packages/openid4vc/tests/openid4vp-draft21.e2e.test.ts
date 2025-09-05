@@ -1,7 +1,7 @@
 import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import type { AgentType } from './utils'
 
-import { ClaimFormat, Kms, X509Service, parseDid } from '@credo-ts/core'
+import { ClaimFormat, Kms, MdocRecord, SdJwtVcRecord, X509Service, parseDid } from '@credo-ts/core'
 import express, { type Express } from 'express'
 import { TenantsModule } from '../../tenants/src'
 import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
@@ -92,7 +92,9 @@ describe('OpenID4VP Draft 21', () => {
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({
+      record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(certificate)
     verifier.agent.x509.config.addTrustedCertificate(certificate)
@@ -327,7 +329,9 @@ describe('OpenID4VP Draft 21', () => {
         _sd: ['university', 'name'],
       },
     })
-    await holder.agent.sdJwtVc.store(signedSdJwtVc.compact)
+    await holder.agent.sdJwtVc.store({
+      record: SdJwtVcRecord.fromSdJwtVc(signedSdJwtVc),
+    })
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -369,8 +373,11 @@ describe('OpenID4VP Draft 21', () => {
       extensions: { subjectAlternativeName: { name: [{ type: 'dns', value: 'localhost' }] } },
     })
 
+    signedMdoc.deviceKeyId = holderKey.keyId
     const rawCertificate = certificate.toString('base64')
-    await holder.agent.mdoc.store(signedMdoc)
+    await holder.agent.mdoc.store({
+      record: MdocRecord.fromMdoc(signedMdoc),
+    })
 
     holder.agent.x509.config.addTrustedCertificate(rawCertificate)
     verifier.agent.x509.config.addTrustedCertificate(rawCertificate)

@@ -7,6 +7,7 @@ import type { W3cJwtVerifiablePresentation } from './jwt-vc/W3cJwtVerifiablePres
 import type { ClaimFormat, W3cVerifiableCredential } from './models'
 import type { W3cCredential } from './models/credential/W3cCredential'
 import type { W3cPresentation } from './models/presentation/W3cPresentation'
+import { W3cCredentialRecord } from './repository'
 
 export type W3cSignCredentialOptions<Format extends ClaimFormat.JwtVc | ClaimFormat.LdpVc | undefined = undefined> =
   Format extends ClaimFormat.JwtVc
@@ -188,6 +189,6 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
   purpose?: ProofPurpose
 }
 
-export interface StoreCredentialOptions {
-  credential: W3cVerifiableCredential
+export interface W3cStoreCredentialOptions {
+  record: W3cCredentialRecord
 }

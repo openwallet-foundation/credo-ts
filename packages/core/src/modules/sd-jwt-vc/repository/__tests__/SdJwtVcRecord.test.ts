@@ -13,7 +13,11 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      sdJwtVcs: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     expect(sdJwtVcRecord.type).toBe('SdJwtVcRecord')
@@ -25,7 +29,7 @@ describe('SdJwtVcRecord', () => {
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
     })
-    expect(sdJwtVcRecord.compactSdJwtVc).toEqual(compactSdJwtVc)
+    expect(sdJwtVcRecord.encoded).toEqual(compactSdJwtVc)
   })
 
   test('serializes and deserializes', () => {
@@ -38,7 +42,11 @@ describe('SdJwtVcRecord', () => {
       tags: {
         some: 'tag',
       },
-      compactSdJwtVc,
+      sdJwtVcs: [
+        {
+          compactSdJwtVc,
+        },
+      ],
     })
 
     const json = sdJwtVcRecord.toJSON()
@@ -63,6 +71,6 @@ describe('SdJwtVcRecord', () => {
       sdAlg: 'sha-256',
       vct: 'IdentityCredential',
     })
-    expect(instance.compactSdJwtVc).toBe(compactSdJwtVc)
+    expect(instance.encoded).toBe(compactSdJwtVc)
   })
 })
