@@ -1,9 +1,9 @@
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  W3cStoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cSignCredentialOptions,
   W3cSignPresentationOptions,
+  W3cStoreCredentialOptions,
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'

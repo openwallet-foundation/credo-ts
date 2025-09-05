@@ -1,7 +1,6 @@
 import type { AgentContext } from '../../agent/context'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  W3cStoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
   W3cJsonLdVerifyPresentationOptions,
@@ -9,6 +8,7 @@ import type {
   W3cJwtVerifyPresentationOptions,
   W3cSignCredentialOptions,
   W3cSignPresentationOptions,
+  W3cStoreCredentialOptions,
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'

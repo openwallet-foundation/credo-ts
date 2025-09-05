@@ -1,8 +1,8 @@
 import type { HashName } from '../../crypto'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
-import { SdJwtVcRecord } from './repository'
 import { SdJwtVc } from './SdJwtVcService'
+import { SdJwtVcRecord } from './repository'
 
 export interface SdJwtVcStoreOptions {
   record: SdJwtVcRecord

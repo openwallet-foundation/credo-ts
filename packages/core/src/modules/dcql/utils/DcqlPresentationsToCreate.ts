@@ -1,11 +1,11 @@
 import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
 import { JsonObject } from '../../../types'
+import { CredentialUseMode, canUseInstanceFromCredentialRecord } from '../../../utils/credentialUse'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
-import type { DcqlCredentialsForRequest } from '../models'
-import { canUseInstanceFromCredentialRecord, CredentialUseMode } from '../../../utils/credentialUse'
 import { DcqlError } from '../DcqlError'
+import type { DcqlCredentialsForRequest } from '../models'
 
 //  - the credentials included in the presentation
 export interface DcqlSdJwtVcPresentationToCreate {

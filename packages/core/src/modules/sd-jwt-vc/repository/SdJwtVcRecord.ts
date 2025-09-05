@@ -7,11 +7,11 @@ import { decodeSdJwtSync } from '@sd-jwt/decode'
 
 import { Hasher } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 import { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
-import { NonEmptyArray } from '../../../types'
 
 export type DefaultSdJwtVcRecordTags = {
   vct: string

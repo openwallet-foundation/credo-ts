@@ -2,11 +2,11 @@ import type { TagsBase } from '../../../storage/BaseRecord'
 import type { Constructable } from '../../../utils/mixins'
 
 import { BaseRecord } from '../../../storage/BaseRecord'
+import { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
 import { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
-import { NonEmptyArray } from '../../../types'
 
 export type DefaultMdocRecordTags = {
   docType: string

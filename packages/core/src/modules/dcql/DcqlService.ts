@@ -27,6 +27,11 @@ import {
 } from '../vc'
 
 import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
+import {
+  CredentialUseMode,
+  canUseInstanceFromCredentialRecord,
+  useInstanceFromCredentialRecord,
+} from '../../utils/credentialUse'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
@@ -39,11 +44,6 @@ import {
   DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
-import {
-  canUseInstanceFromCredentialRecord,
-  CredentialUseMode,
-  useInstanceFromCredentialRecord,
-} from '../../utils/credentialUse'
 
 @injectable()
 export class DcqlService {

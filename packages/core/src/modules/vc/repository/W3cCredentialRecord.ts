@@ -1,13 +1,13 @@
 import type { Constructable } from '../../../utils/mixins'
 
 import { BaseRecord, Tags } from '../../../storage/BaseRecord'
+import { NonEmptyArray } from '../../../types'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { ClaimFormat, W3cVerifiableCredential } from '../models'
-import { NonEmptyArray } from '../../../types'
-import { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
-import { W3cJwtVerifiableCredential } from '../jwt-vc'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
+import { W3cJwtVerifiableCredential } from '../jwt-vc'
+import { ClaimFormat, W3cVerifiableCredential } from '../models'
+import { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 export interface W3cCredentialRecordOptions {
   id?: string
