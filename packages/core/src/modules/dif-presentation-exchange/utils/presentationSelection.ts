@@ -83,7 +83,7 @@ export function extractPresentationsWithDescriptorsFromSubmission(
       } as const
     }
     return {
-      claimFormat: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtDc,
       descriptor,
       presentation,
       credential: presentation,

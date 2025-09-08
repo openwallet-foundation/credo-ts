@@ -7,7 +7,7 @@ import type { DcqlCredentialsForRequest } from '../models'
 
 //  - the credentials included in the presentation
 export interface DcqlSdJwtVcPresentationToCreate {
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   subjectIds: [] // subject is included in the cnf of the sd-jwt and automatically extracted by PEX
   credentialRecord: SdJwtVcRecord
   disclosedPayload: DcqlSdJwtVcCredential.Claims
@@ -58,9 +58,9 @@ export function dcqlGetPresentationsToCreate(
     for (const match of matches) {
       let presentationToCreate: DcqlPresentationToCreate
 
-      if (match.claimFormat === ClaimFormat.SdJwtVc) {
+      if (match.claimFormat === ClaimFormat.SdJwtDc) {
         presentationToCreate = {
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           subjectIds: [],
           credentialRecord: match.credentialRecord,
           disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,

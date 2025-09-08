@@ -1499,13 +1499,13 @@ export class OpenId4VcIssuerService {
         )) as string[] | Record<string, unknown>[],
       }
     }
-    if (signOptions.format === ClaimFormat.SdJwtVc) {
+    if (signOptions.format === ClaimFormat.SdJwtDc) {
       if (
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc &&
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtDc
       ) {
         throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtVc}', received '${signOptions.format}'.`
+          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtDc}', received '${signOptions.format}'.`
         )
       }
 

@@ -1,0 +1,77 @@
+import { BaseRecord, Tags, TagsBase } from '../../../storage/BaseRecord'
+import { asArray } from '../../../utils'
+import { uuid } from '../../../utils/uuid'
+import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, W3cV2VerifiableCredential } from '../models'
+import { W3cV2VerifiableCredentialTransformer } from '../models/credential/W3cV2VerifiableCredential'
+
+export interface W3cV2CredentialRecordOptions {
+  id?: string
+  createdAt?: Date
+  credential: W3cV2VerifiableCredential
+}
+
+export type DefaultW3cV2CredentialTags = {
+  issuerId: string
+  subjectIds: Array<string>
+  schemaIds: Array<string>
+  contexts: Array<string>
+  givenId?: string
+  claimFormat: W3cV2VerifiableCredential['claimFormat']
+
+  types: Array<string>
+  algs?: Array<string>
+}
+
+export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags> {
+  public static readonly type = 'W3cV2CredentialRecord'
+  public readonly type = W3cV2CredentialRecord.type
+
+  @W3cV2VerifiableCredentialTransformer()
+  public credential!: W3cV2VerifiableCredential
+
+  public constructor(props: W3cV2CredentialRecordOptions) {
+    super()
+    if (props) {
+      this.id = props.id ?? uuid()
+      this.createdAt = props.createdAt ?? new Date()
+      this.credential = props.credential
+    }
+  }
+
+  public getTags(): Tags<DefaultW3cV2CredentialTags, TagsBase> {
+    const resolvedCredential = this.credential.resolvedCredential
+
+    // Contexts are usually strings, but can sometimes be objects. We're unable to use objects as tags,
+    // so we filter out the objects before setting the tags.
+    const stringContexts = resolvedCredential.contexts.filter((ctx): ctx is string => typeof ctx === 'string')
+
+    const tags: Tags<DefaultW3cV2CredentialTags, TagsBase> = {
+      ...this._tags,
+      issuerId: resolvedCredential.issuerId,
+      subjectIds: resolvedCredential.credentialSubjectIds,
+      schemaIds: resolvedCredential.credentialSchemaIds,
+      contexts: stringContexts,
+      givenId: resolvedCredential.id,
+      claimFormat: this.credential.claimFormat,
+      types: asArray(resolvedCredential.type),
+    }
+
+    if (this.credential instanceof W3cV2EnvelopedVerifiableCredential) {
+      const enveloped = this.credential.envelopedCredential
+      if (enveloped.claimFormat === ClaimFormat.JwtW3cVc) {
+        tags.algs = [enveloped.jwt.header.alg]
+      } else if (enveloped.claimFormat === ClaimFormat.SdJwtW3cVc) {
+        tags.algs = [enveloped.sdJwt.header.alg]
+      }
+    }
+
+    return tags
+  }
+
+  /**
+   * encoded is convenience method added to all credential records
+   */
+  public get encoded() {
+    return this.credential.encoded
+  }
+}

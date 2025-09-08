@@ -134,8 +134,8 @@ export function parseIfJson<T>(input: T): T | Record<string, unknown> {
 }
 
 export const dcqlFormatToPresentationClaimFormat = {
-  'dc+sd-jwt': ClaimFormat.SdJwtVc,
-  'vc+sd-jwt': ClaimFormat.SdJwtVc,
+  'dc+sd-jwt': ClaimFormat.SdJwtDc,
+  'vc+sd-jwt': ClaimFormat.SdJwtDc,
   jwt_vc_json: ClaimFormat.JwtVp,
   ldp_vc: ClaimFormat.LdpVp,
   mso_mdoc: ClaimFormat.MsoMdoc,

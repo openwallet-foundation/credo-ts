@@ -15,7 +15,7 @@ export type DcqlCredentialsForRequest = Record<
         disclosedPayload: MdocNameSpaces
       }
     | {
-        claimFormat: ClaimFormat.SdJwtVc
+        claimFormat: ClaimFormat.SdJwtDc
         credentialRecord: SdJwtVcRecord
         disclosedPayload: JsonObject
 

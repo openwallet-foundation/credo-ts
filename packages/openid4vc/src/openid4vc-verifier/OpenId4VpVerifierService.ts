@@ -702,9 +702,9 @@ export class OpenId4VpVerifierService {
    */
   private claimFormatFromEncodedPresentation(
     presentation: string | Record<string, unknown>
-  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc {
+  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc {
     if (typeof presentation === 'object') return ClaimFormat.LdpVp
-    if (presentation.includes('~')) return ClaimFormat.SdJwtVc
+    if (presentation.includes('~')) return ClaimFormat.SdJwtDc
     if (Jwt.format.test(presentation)) return ClaimFormat.JwtVp
 
     // Fallback, we tried all other formats
@@ -816,7 +816,7 @@ export class OpenId4VpVerifierService {
     for (const [credentialId, presentations] of idToCredential) {
       // Only SD-JWT VC supported for now
       const transactionDataHashes = presentations.map((presentation) =>
-        presentation.claimFormat === ClaimFormat.SdJwtVc ? getSdJwtVcTransactionDataHashes(presentation) : undefined
+        presentation.claimFormat === ClaimFormat.SdJwtDc ? getSdJwtVcTransactionDataHashes(presentation) : undefined
       )
 
       const firstHasHash = transactionDataHashes[0] !== undefined
@@ -1036,12 +1036,12 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     options: {
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
     }
   ): VerifiablePresentation {
     const { presentation, format } = options
 
-    if (format === ClaimFormat.SdJwtVc) {
+    if (format === ClaimFormat.SdJwtDc) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }
@@ -1078,7 +1078,7 @@ export class OpenId4VpVerifierService {
       origin?: string
       verificationSessionId: string
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
       version: OpenId4VpVersion
       encryptionJwk?: Kms.PublicJwk
     }
@@ -1102,7 +1102,7 @@ export class OpenId4VpVerifierService {
       let cause: Error | undefined = undefined
       let verifiablePresentation: VerifiablePresentation
 
-      if (format === ClaimFormat.SdJwtVc) {
+      if (format === ClaimFormat.SdJwtDc) {
         if (typeof presentation !== 'string') {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }

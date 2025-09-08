@@ -162,7 +162,7 @@ describe('OpenID4VP Draft 21', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -259,7 +259,7 @@ describe('OpenID4VP Draft 21', () => {
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -490,7 +490,7 @@ describe('OpenID4VP Draft 21', () => {
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -617,7 +617,7 @@ describe('OpenID4VP Draft 21', () => {
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',

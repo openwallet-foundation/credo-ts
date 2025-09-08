@@ -188,6 +188,6 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
   purpose?: ProofPurpose
 }
 
-export interface StoreCredentialOptions {
+export interface W3cStoreCredentialOptions {
   credential: W3cVerifiableCredential
 }
