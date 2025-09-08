@@ -2,14 +2,14 @@ import type { TransportSessionRemovedEvent } from '../../../transport'
 
 import { Subject } from 'rxjs'
 
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { AgentContext } from '../../../../../core/src/agent/context/AgentContext'
+import { InjectionSymbols } from '../../../../../core/src/constants'
+import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers'
+import { AgentMessage } from '../../../AgentMessage'
+import { TransportSession } from '../../../TransportService'
 import { TransportEventTypes } from '../../../transport/TransportEventTypes'
 import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
-import { AgentContext } from '../../../../../core/src/agent/context/AgentContext';
-import { EventEmitter } from '../../../../../core/src/agent/EventEmitter';
-import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers';
-import { InjectionSymbols } from '../../../../../core/src/constants';
-import { TransportSession } from '../../../TransportService'
-import { AgentMessage } from '../../../AgentMessage'
 
 describe('start listener remove live sessions', () => {
   let instance: MessagePickupSessionService

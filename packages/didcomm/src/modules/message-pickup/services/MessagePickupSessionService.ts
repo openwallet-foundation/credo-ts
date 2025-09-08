@@ -4,7 +4,7 @@ import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSave
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
 
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { filter, type Subject, takeUntil } from 'rxjs'
+import { type Subject, filter, takeUntil } from 'rxjs'
 
 import { TransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'

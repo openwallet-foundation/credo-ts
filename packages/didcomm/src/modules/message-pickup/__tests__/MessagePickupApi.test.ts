@@ -4,17 +4,19 @@ import type { MessagePickupProtocol } from '../protocol/MessagePickupProtocol'
 
 import { Subject } from 'rxjs'
 
+import { Logger } from '@credo-ts/core'
+import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { CredoError } from '../../../../../core/src/error/CredoError'
+import { testLogger } from '../../../../../core/tests'
+import { getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
+import { DidCommModuleConfig } from '../../../../../didcomm'
+import { MessageSender } from '../../../MessageSender'
 import { DidExchangeState } from '../../connections/models/DidExchangeState'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { MessagePickupApi } from '../MessagePickupApi'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
 import { V1MessagePickupProtocol, V2MessageDeliveryMessage, V2MessagePickupProtocol } from '../protocol'
 import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
-import { getMockConnection, mockFunction, getAgentContext } from '../../../../../core/tests/helpers';
-import { CredoError } from '../../../../../core/src/error/CredoError';
-import { EventEmitter } from '../../../../../core/src/agent/EventEmitter';
-import { MessageSender } from '../../../MessageSender'
-import { DidCommModuleConfig } from '../../../../../didcomm';
 
 const mockConnection = getMockConnection({
   state: DidExchangeState.Completed,
@@ -35,13 +37,11 @@ const messagePickupModuleConfig = new MessagePickupModuleConfig({
   protocols: [new V1MessagePickupProtocol(), new V2MessagePickupProtocol()],
 })
 
-
 // Mock classes
 const eventEmitter = new EventEmitterMock()
 const messageSender = new MessageSenderMock()
 const connectionService = new ConnectionServiceMock()
 const messagePickupSessionService = new MessagePickupSessionServiceMock()
-
 
 // Mock typed object
 const agentContext = getAgentContext({
@@ -51,7 +51,7 @@ const agentContext = getAgentContext({
     [ConnectionService, connectionService],
     [MessagePickupModuleConfig, messagePickupModuleConfig],
     [MessagePickupSessionService, messagePickupSessionService],
-    [DidCommModuleConfig, new DidCommModuleConfig()]
+    [DidCommModuleConfig, new DidCommModuleConfig()],
   ],
 })
 
@@ -59,14 +59,13 @@ describe('MessagePickupApi', () => {
   jest.resetAllMocks()
 
   let api: MessagePickupApi<MessagePickupProtocol[]>
-  let mockLogger: any
+  let mockLogger: Logger
   let stop$: Subject<boolean>
 
   beforeEach(() => {
     jest.resetAllMocks()
-    mockLogger = { debug: jest.fn() }
     stop$ = new Subject()
-
+    mockLogger = testLogger
     api = new MessagePickupApi(
       messageSender,
       agentContext,
