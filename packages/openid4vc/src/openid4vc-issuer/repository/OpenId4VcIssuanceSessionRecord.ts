@@ -155,6 +155,8 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 
   issuanceMetadata?: Record<string, unknown>
   errorMessage?: string
+
+  generateRefreshTokens?: boolean
 }
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
@@ -284,6 +286,13 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferId?: string
 
   /**
+   * Whether to generate refresh tokens for the issuance session.
+   *
+   * @since 0.6
+   */
+  public generateRefreshTokens?: boolean
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -310,6 +319,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.dpop = props.dpop
       this.walletAttestation = props.walletAttestation
       this.state = props.state
+      this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
     }
   }

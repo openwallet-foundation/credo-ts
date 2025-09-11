@@ -1,32 +1,30 @@
-import { IsOptional, IsString } from 'class-validator'
+import { Type } from 'class-transformer'
+import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { IsUri } from '../../../../utils'
+import { CredoError } from '../../../../error'
+import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils'
 
+import { SingleOrArray } from '../../../../types'
 import { DidDocumentService } from './DidDocumentService'
-import { NewDidCommV2Service, NewDidCommV2ServiceEndpoint } from './NewDidCommV2Service'
 
-export interface DidCommV2ServiceOptions {
-  id: string
-  serviceEndpoint: string
+export interface DidCommV2ServiceEndpointOptions {
+  uri: string
   routingKeys?: string[]
   accept?: string[]
 }
 
-/**
- * @deprecated use `NewDidCommV2Service` instead. Will be renamed to `LegacyDidCommV2Service` in 0.6
- */
-export class DidCommV2Service extends DidDocumentService {
-  public constructor(options: DidCommV2ServiceOptions) {
-    super({ ...options, type: DidCommV2Service.type })
-
+export class DidCommV2ServiceEndpoint {
+  public constructor(options: DidCommV2ServiceEndpointOptions) {
     if (options) {
-      this.serviceEndpoint = options.serviceEndpoint
-      this.accept = options.accept
+      this.uri = options.uri
       this.routingKeys = options.routingKeys
+      this.accept = options.accept
     }
   }
 
-  public static type = 'DIDComm'
+  @IsString()
+  @IsUri()
+  public uri!: string
 
   @IsString({ each: true })
   @IsOptional()
@@ -34,20 +32,41 @@ export class DidCommV2Service extends DidDocumentService {
 
   @IsString({ each: true })
   @IsOptional()
-  public accept?: string[]
+  public accept?: string[];
 
-  @IsUri()
-  @IsString()
-  public serviceEndpoint!: string
+  [key: string]: unknown | undefined
+}
 
-  public toNewDidCommV2(): NewDidCommV2Service {
-    return new NewDidCommV2Service({
-      id: this.id,
-      serviceEndpoint: new NewDidCommV2ServiceEndpoint({
-        uri: this.serviceEndpoint,
-        accept: this.accept,
-        routingKeys: this.routingKeys,
-      }),
-    })
+export interface DidCommV2ServiceOptions {
+  id: string
+  serviceEndpoint: SingleOrArray<DidCommV2ServiceEndpoint>
+}
+
+export class DidCommV2Service extends DidDocumentService {
+  public constructor(options: DidCommV2ServiceOptions) {
+    super({ ...options, type: DidCommV2Service.type })
+
+    if (options) {
+      this.serviceEndpoint = options.serviceEndpoint
+    }
+  }
+
+  public static type = 'DIDCommMessaging'
+
+  @IsInstanceOrArrayOfInstances({ classType: [DidCommV2ServiceEndpoint] })
+  @ValidateNested()
+  @Type(() => DidCommV2ServiceEndpoint)
+  public serviceEndpoint!: SingleOrArray<DidCommV2ServiceEndpoint>
+
+  public get firstServiceEndpointUri(): string {
+    if (Array.isArray(this.serviceEndpoint)) {
+      if (this.serviceEndpoint.length === 0) {
+        throw new CredoError('No entries in serviceEndpoint array')
+      }
+
+      return this.serviceEndpoint[0].uri
+    }
+
+    return this.serviceEndpoint.uri
   }
 }

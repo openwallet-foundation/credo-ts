@@ -45,6 +45,7 @@ import {
 
 import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
 import { getJwkHumanDescription } from '../kms'
+import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'
 import { DifPresentationExchangeSubmissionLocation } from './models'
 import {
@@ -556,7 +557,7 @@ export class DifPresentationExchangeService {
           // as then we know when determining which VPs to submit already if the proof types are supported
           // by the verifier, and we can then just add this to the vpToCreate interface
           proofType: this.getProofTypeForLdpVc(agentContext, presentationDefinition, verificationMethod),
-          proofPurpose: 'authentication',
+          proofPurpose: new purposes.AuthenticationProofPurpose({ challenge, domain }),
           verificationMethod: verificationMethod.id,
           presentation: w3cPresentation,
           challenge,

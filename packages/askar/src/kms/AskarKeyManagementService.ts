@@ -276,12 +276,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
       // 3. Perform the signing operation
       const signature = key.key.signMessage({
-        message: data,
+        message: new Uint8Array(data),
         sigType,
       })
 
       return {
-        signature,
+        signature: new Uint8Array(signature),
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
@@ -335,7 +335,11 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       }
 
       // 4. Perform the verify operation
-      const verified = askarKey.verifySignature({ message: data, signature, sigType })
+      const verified = askarKey.verifySignature({
+        message: new Uint8Array(data),
+        signature: new Uint8Array(signature),
+        sigType,
+      })
       if (verified) {
         return {
           verified: true,
@@ -421,10 +425,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           // anonymous encryption
           if (!privateKey) {
             return {
-              encrypted: CryptoBox.seal({
-                recipientKey,
-                message: data,
-              }),
+              encrypted: new Uint8Array(
+                CryptoBox.seal({
+                  recipientKey,
+                  message: new Uint8Array(data),
+                })
+              ),
             }
           }
 
@@ -435,13 +441,15 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             keysToFree.push(privateKey)
           }
 
-          const nonce = CryptoBox.randomNonce()
-          const encrypted = CryptoBox.cryptoBox({
-            recipientKey,
-            senderKey: privateKey,
-            message: data,
-            nonce,
-          })
+          const nonce = new Uint8Array(CryptoBox.randomNonce())
+          const encrypted = new Uint8Array(
+            CryptoBox.cryptoBox({
+              recipientKey,
+              senderKey: privateKey,
+              message: new Uint8Array(data),
+              nonce,
+            })
+          )
 
           return {
             encrypted,
@@ -571,10 +579,12 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
           if (!senderKey) {
             // anonymous encryption
             return {
-              data: CryptoBox.sealOpen({
-                recipientKey: privateKey,
-                ciphertext: encrypted,
-              }),
+              data: new Uint8Array(
+                CryptoBox.sealOpen({
+                  recipientKey: privateKey,
+                  ciphertext: new Uint8Array(encrypted),
+                })
+              ),
             }
           }
 
@@ -584,12 +594,14 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
             )
           }
 
-          const decrypted = CryptoBox.open({
-            recipientKey: privateKey,
-            senderKey: senderKey,
-            message: encrypted,
-            nonce: decryption.iv,
-          })
+          const decrypted = new Uint8Array(
+            CryptoBox.open({
+              recipientKey: privateKey,
+              senderKey: senderKey,
+              message: new Uint8Array(encrypted),
+              nonce: new Uint8Array(decryption.iv),
+            })
+          )
 
           return {
             data: decrypted,
@@ -672,7 +684,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       askar.keyFromJwk({
         // TODO: the JWK class in JS Askar wrapper is too limiting
         // so we use this method directly. should update it
-        jwk: JsonEncoder.toBuffer(jwk) as unknown as Jwk,
+        jwk: new Uint8Array(JsonEncoder.toBuffer(jwk)) as unknown as Jwk,
       })
     )
 
@@ -690,7 +702,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     return Key.fromSecretBytes({
       algorithm: askarEncryptionAlgorithm,
-      secretKey: secretBytes,
+      secretKey: new Uint8Array(secretBytes),
     })
   }
 
