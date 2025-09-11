@@ -16,9 +16,9 @@ export class W3cV2RefreshService {
     if (options) {
       const { type, ...rest } = options
 
-      this.type = type
-
       plainToClassFromExist(this, rest)
+
+      this.type = type
     }
   }
 

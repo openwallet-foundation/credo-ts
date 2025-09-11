@@ -169,6 +169,26 @@ describe('W3cV2SdJwtCredentialService', () => {
         })
       ).rejects.toThrow('Only did identifiers are supported as verification method')
 
+      // Does not allow vc property
+      await expect(
+        w3cV2JwtCredentialService.signCredential(agentContext, {
+          verificationMethod: 'hello',
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          credential: JsonTransformer.fromJSON({ ...credentialJson, vc: 'test' }, W3cV2Credential, { validate: false }),
+          format: ClaimFormat.SdJwtW3cVc,
+        })
+      ).rejects.toThrow(/property vc has failed the following constraints: vc is forbidden/)
+
+      // Does not allow vp property
+      await expect(
+        w3cV2JwtCredentialService.signCredential(agentContext, {
+          verificationMethod: 'hello',
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          credential: JsonTransformer.fromJSON({ ...credentialJson, vp: 'test' }, W3cV2Credential, { validate: false }),
+          format: ClaimFormat.SdJwtW3cVc,
+        })
+      ).rejects.toThrow(/property vp has failed the following constraints: vp is forbidden/)
+
       // Throw when not according to data model
       await expect(
         w3cV2JwtCredentialService.signCredential(agentContext, {
@@ -244,10 +264,33 @@ describe('W3cV2SdJwtCredentialService', () => {
       expect(result.validations.dataModel?.error?.message).toContain('Failed to validate class')
     })
 
+    test('returns invalid result when credential is not according to data model', async () => {
+      const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      // @ts-ignore
+      jwtVc.resolvedCredential.vc = 'mamma mia'
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(result).toEqual({
+        isValid: false,
+        validations: {
+          dataModel: {
+            isValid: false,
+            error: expect.any(ClassValidationError),
+          },
+        },
+      })
+
+      expect(result.validations.dataModel?.error?.message).toContain('Failed to validate class')
+    })
+
     test('returns invalid result when credential is expired', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      jwtVc.sdJwt.payload.exp = new Date('2020-01-01').getTime() / 1000
+      jwtVc.sdJwt.payload.exp = Math.floor(new Date('2020-01-01').getTime() / 1000)
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

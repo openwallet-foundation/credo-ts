@@ -1,4 +1,4 @@
-import { AgentContext, DidsApi } from '@credo-ts/core'
+import { AgentContext, DidsApi, W3cV2CredentialService, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import {
   CredoError,
   InjectionSymbols,
@@ -71,9 +71,15 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
+  private w3cV2CredentialService: W3cV2CredentialService
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
+  public constructor(
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    w3cCredentialService: W3cCredentialService,
+    w3cV2CredentialService: W3cV2CredentialService
+  ) {
     this.w3cCredentialService = w3cCredentialService
+    this.w3cV2CredentialService = w3cV2CredentialService
     this.logger = logger
   }
 
@@ -1083,26 +1089,56 @@ export class OpenId4VciHolderService {
         )
       }
 
-      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-      const verificationResults = await Promise.all(
-        credentials.map((compactSdJwtVc, index) =>
-          sdJwtVcApi.verify({
-            compactSdJwtVc,
-            // Only load and verify it for the first instance
-            fetchTypeMetadata: index === 0,
-          })
+      if (format === OpenId4VciCredentialFormatProfile.SdJwtDc || credentialConfiguration.vct) {
+        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+        const verificationResults = await Promise.all(
+          credentials.map((compactSdJwtVc, index) =>
+            sdJwtVcApi.verify({
+              compactSdJwtVc,
+              // Only load and verify it for the first instance
+              fetchTypeMetadata: index === 0,
+            })
+          )
         )
+
+        if (!verificationResults.every((result) => result.isValid)) {
+          agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+          throw new CredoError(
+            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+          )
+        }
+
+        return {
+          credentials: verificationResults.map((result) => result.sdJwtVc),
+          notificationId,
+          credentialConfigurationId,
+          credentialConfiguration,
+        }
+      }
+
+      const result = await Promise.all(
+        credentials.map(async (c) => {
+          const credential = W3cV2SdJwtVerifiableCredential.fromCompact(c)
+          const result = await this.w3cV2CredentialService.verifyCredential(agentContext, {
+            credential,
+          })
+
+          return { credential, result }
+        })
       )
 
-      if (!verificationResults.every((result) => result.isValid)) {
-        agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+      if (!result.every((c) => c.result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credentials', { result })
         throw new CredoError(
-          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+          `Failed to validate credential, error = ${result
+            .map((e) => e.result.error?.message)
+            .filter(Boolean)
+            .join(', ')}`
         )
       }
 
       return {
-        credentials: verificationResults.map((result) => result.sdJwtVc),
+        credentials: result.map((r) => r.credential),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,

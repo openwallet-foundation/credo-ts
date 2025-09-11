@@ -1,4 +1,5 @@
-import { JsonTransformer } from '../../../utils'
+import { CredoError } from '../../../error'
+import { JsonTransformer, MessageValidator } from '../../../utils'
 import { ClaimFormat } from '../models'
 import { W3cV2Presentation } from '../models/presentation/W3cV2Presentation'
 import { W3cV2SdJwt, decodeSdJwt } from './W3cV2SdJwt'
@@ -15,7 +16,12 @@ export interface W3cV2SdJwtVerifiablePresentationOptions {
 export class W3cV2SdJwtVerifiablePresentation {
   public constructor(options: W3cV2SdJwtVerifiablePresentationOptions) {
     this.sdJwt = options.sdJwt
-    this.resolvedPresentation = JsonTransformer.fromJSON(options.sdJwt.prettyClaims, W3cV2Presentation)
+    this.resolvedPresentation = JsonTransformer.fromJSON(options.sdJwt.prettyClaims, W3cV2Presentation, {
+      validate: false,
+    })
+
+    // Validates the SD-JWT and resolved presentation
+    this.validate()
   }
 
   public static fromCompact(compact: string) {
@@ -50,5 +56,25 @@ export class W3cV2SdJwtVerifiablePresentation {
    */
   public get claimFormat(): ClaimFormat.SdJwtW3cVp {
     return ClaimFormat.SdJwtW3cVp
+  }
+
+  /**
+   * Validates the SD-JWT and the resolved presentation.
+   */
+  public validate() {
+    // Validate the resolved credential according to the data model
+    MessageValidator.validateSync(this.resolvedPresentation)
+
+    // Basic JWT validations to ensure compliance to the specification
+    const sdJwt = this.sdJwt
+    const header = sdJwt.header
+
+    if ('typ' in header && header.typ !== 'vp+sd-jwt') {
+      throw new CredoError(`The provided W3C VP JWT does not have the correct 'typ' header.`)
+    }
+
+    if ('cyt' in header && header.cyt !== 'vp') {
+      throw new CredoError(`The provided W3C VP JWT does not have the correct 'cyt' header.`)
+    }
   }
 }

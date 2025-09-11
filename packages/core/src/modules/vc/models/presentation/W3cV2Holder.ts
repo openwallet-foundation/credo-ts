@@ -24,9 +24,9 @@ export class W3cV2Holder {
     if (options) {
       const { id, ...rest } = options
 
-      this.id = id
-
       plainToClassFromExist(this, rest)
+
+      this.id = id
     }
   }
 

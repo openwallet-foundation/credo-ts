@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import { JsonTransformer, mapSingleOrArray } from '../../../../utils'
-import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
+import { IsInstanceOrArrayOfInstances, IsNever, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V2_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { IsCredentialJsonLdContext, IsVerifiablePresentationType } from '../../validators'
 import {
@@ -59,6 +59,12 @@ export class W3cV2Presentation {
   @IsInstanceOrArrayOfInstances({ classType: W3cV2EnvelopedVerifiableCredential })
   @ValidateNested({ each: true })
   public verifiableCredential!: SingleOrArray<W3cV2EnvelopedVerifiableCredential>
+
+  @IsNever()
+  public vc?: never
+
+  @IsNever()
+  public vp?: never
 
   public get holderId(): string | null {
     if (!this.holder) return null

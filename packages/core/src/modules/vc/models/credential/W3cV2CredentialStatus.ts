@@ -18,10 +18,10 @@ export class W3cV2CredentialStatus {
     if (options) {
       const { id, type, ...rest } = options
 
+      plainToClassFromExist(this, rest)
+
       this.id = id
       this.type = type
-
-      plainToClassFromExist(this, rest)
     }
   }
 

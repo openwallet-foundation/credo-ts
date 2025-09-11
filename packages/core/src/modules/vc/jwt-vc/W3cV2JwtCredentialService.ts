@@ -69,8 +69,6 @@ export class W3cV2JwtCredentialService {
       },
     })
 
-    // TODO: this re-parses and validates the credential in the JWT, which is not necessary.
-    // We should somehow create an instance of W3cV2JwtVerifiableCredential directly from the JWT.
     return W3cV2JwtVerifiableCredential.fromCompact(jwt)
   }
 
@@ -92,9 +90,10 @@ export class W3cV2JwtCredentialService {
     try {
       let credential: W3cV2JwtVerifiableCredential
       try {
-        // If instance is provided as input, we want to validate the credential (otherwise it's done in the fromSerializedJwt method below)
+        // If instance is provided as input, we want to validate the credential.
+        // Otherwise, it is done by the fromCompact method below
         if (options.credential instanceof W3cV2JwtVerifiableCredential) {
-          MessageValidator.validateSync(options.credential.resolvedCredential)
+          options.credential.validate()
         }
 
         credential =
@@ -226,8 +225,6 @@ export class W3cV2JwtCredentialService {
       },
     })
 
-    // TODO: this re-parses and validates the presentation in the JWT, which is not necessary.
-    // We should somehow create an instance of W3cV2JwtVerifiablePresentation directly from the JWT
     return W3cV2JwtVerifiablePresentation.fromCompact(jwt)
   }
 
@@ -251,7 +248,7 @@ export class W3cV2JwtCredentialService {
       try {
         // If instance is provided as input, we want to validate the presentation
         if (options.presentation instanceof W3cV2JwtVerifiablePresentation) {
-          MessageValidator.validateSync(options.presentation.resolvedPresentation)
+          options.presentation.validate()
         }
 
         presentation =
@@ -351,7 +348,7 @@ export class W3cV2JwtCredentialService {
             return {
               isValid: false,
               error: new CredoError(
-                'Credential is of format SD-JWT. Presentations in JWT format can only contain credentials in JWT format.'
+                'Credential is not of format JWT. Presentations in JWT format can only contain credentials in JWT format.'
               ),
               validations: {},
             }

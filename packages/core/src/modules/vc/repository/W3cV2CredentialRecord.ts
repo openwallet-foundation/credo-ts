@@ -1,5 +1,6 @@
 import { BaseRecord, Tags, TagsBase } from '../../../storage/BaseRecord'
-import { asArray } from '../../../utils'
+import { JsonTransformer, asArray } from '../../../utils'
+import { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, W3cV2VerifiableCredential } from '../models'
 import { W3cV2VerifiableCredentialTransformer } from '../models/credential/W3cV2VerifiableCredential'
@@ -66,6 +67,16 @@ export class W3cV2CredentialRecord extends BaseRecord<DefaultW3cV2CredentialTags
     }
 
     return tags
+  }
+
+  /**
+   * This overwrites the default `clone` method for records, as the W3cV3CredentialRecord
+   * has issues with the default clone method due to the way the JWT and SD-JWT
+   * records are implemented. This is a temporary way to make sure the clone still works, but ideally
+   * we find an alternative.
+   */
+  public clone(): this {
+    return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
   }
 
   /**

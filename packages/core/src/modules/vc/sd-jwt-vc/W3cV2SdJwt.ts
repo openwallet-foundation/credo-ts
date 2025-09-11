@@ -13,6 +13,7 @@ export interface W3cV2SdJwtHeader {
 export interface W3cV2SdJwtPayload {
   type: SingleOrArray<string>
   iss?: string
+  jti?: string
   [property: string]: unknown
 }
 
@@ -44,45 +45,6 @@ export function decodeSdJwt<T extends ClaimFormat.SdJwtW3cVc | ClaimFormat.SdJwt
 
   if (!isJsonObject(prettyClaims)) {
     throw new CredoError('SD-JWT claims are not a valid JSON object')
-  }
-
-  if (!prettyClaims.type) {
-    throw new CredoError('SD-JWT claims must have a "type" claim')
-  }
-
-  switch (claimFormat) {
-    case ClaimFormat.SdJwtW3cVc:
-      {
-        if ('typ' in header && header.typ !== 'vc+sd-jwt') {
-          throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'typ' header.`)
-        }
-
-        if ('cyt' in header && header.cyt !== 'vc') {
-          throw new CredoError(`The provided W3C VC SD-JWT does not have the correct 'cyt' header.`)
-        }
-
-        const iss = header.iss ?? payload.iss
-        if (typeof payload.issuer === 'string' && iss) {
-          if (payload.issuer !== iss) {
-            throw new CredoError(`The provided W3C VC SD-JWT has both 'iss' and 'issuer' claims, but they differ.`)
-          }
-        }
-      }
-      break
-    case ClaimFormat.SdJwtW3cVp:
-      {
-        if ('typ' in header && header.typ !== 'vp+sd-jwt') {
-          throw new CredoError(`The provided W3C VP SD-JWT does not have the correct 'typ' header.`)
-        }
-
-        if ('cyt' in header && header.cyt !== 'vp') {
-          throw new CredoError(`The provided W3C VP SD-JWT does not have the correct 'cyt' header.`)
-        }
-      }
-      break
-
-    default:
-      throw new CredoError(`Unsupported claim format: ${claimFormat}`)
   }
 
   return {

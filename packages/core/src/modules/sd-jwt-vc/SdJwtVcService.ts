@@ -3,7 +3,6 @@ import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   SdJwtVcHeader,
-  SdJwtVcHolderBinding,
   SdJwtVcIssuer,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
@@ -28,7 +27,7 @@ import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
-import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
@@ -38,6 +37,7 @@ import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
   getSdJwtVerifier,
+  parseHolderBindingFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
 } from './utils'
@@ -69,11 +69,6 @@ export interface SdJwtVc<
   }
 
   typeMetadata?: SdJwtVcTypeMetadata
-}
-
-export interface CnfPayload {
-  jwk?: Jwk
-  kid?: string
 }
 
 export interface VerificationResult {
@@ -201,7 +196,7 @@ export class SdJwtVcService {
 
     const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
 
-    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+    const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt?.payload)
     if (!holderBinding && verifierMetadata) {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
@@ -296,7 +291,7 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+      const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload)
       const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
@@ -604,37 +599,6 @@ export class SdJwtVcService {
       }
     }
     throw new SdJwtVcError("Unsupported 'iss' value. Only did is supported at the moment.")
-  }
-
-  private parseHolderBindingFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    sdJwtVc: SDJwt<Header, Payload>
-  ): SdJwtVcHolderBinding | null {
-    if (!sdJwtVc.jwt?.payload) {
-      throw new SdJwtVcError('Unable to extract payload from SD-JWT VC')
-    }
-
-    if (!sdJwtVc.jwt?.payload.cnf) {
-      return null
-    }
-    const cnf: CnfPayload = sdJwtVc.jwt.payload.cnf
-
-    if (cnf.jwk) {
-      return {
-        method: 'jwk',
-        jwk: PublicJwk.fromUnknown(cnf.jwk),
-      }
-    }
-    if (cnf.kid) {
-      if (!cnf.kid.startsWith('did:') || !cnf.kid.includes('#')) {
-        throw new SdJwtVcError('Invalid holder kid for did. Only absolute KIDs for cnf are supported')
-      }
-      return {
-        method: 'did',
-        didUrl: cnf.kid,
-      }
-    }
-
-    throw new SdJwtVcError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {

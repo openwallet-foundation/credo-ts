@@ -1,5 +1,6 @@
 import { Jwt } from '../../../crypto/jose/jwt/Jwt'
-import { JsonTransformer } from '../../../utils'
+import { CredoError } from '../../../error'
+import { JsonTransformer, MessageValidator } from '../../../utils'
 import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Credential } from '../models/credential/W3cV2Credential'
 
@@ -15,7 +16,12 @@ export interface W3cV2JwtVerifiableCredentialOptions {
 export class W3cV2JwtVerifiableCredential {
   public constructor(options: W3cV2JwtVerifiableCredentialOptions) {
     this.jwt = options.jwt
-    this.resolvedCredential = JsonTransformer.fromJSON(options.jwt.payload.additionalClaims, W3cV2Credential)
+    this.resolvedCredential = JsonTransformer.fromJSON(options.jwt.payload.additionalClaims, W3cV2Credential, {
+      validate: false,
+    })
+
+    // Validates the JWT and resolved credential
+    this.validate()
   }
 
   public static fromCompact(compact: string) {
@@ -50,5 +56,45 @@ export class W3cV2JwtVerifiableCredential {
    */
   public get claimFormat(): ClaimFormat.JwtW3cVc {
     return ClaimFormat.JwtW3cVc
+  }
+
+  /**
+   * Validates the JWT and the resolved credential contained.
+   */
+  public validate() {
+    // Validate the resolved credential according to the data model
+    MessageValidator.validateSync(this.resolvedCredential)
+
+    // Basic JWT validations to ensure compliance to the specification
+    const jwt = this.jwt
+    const header = jwt.header
+    const payload = jwt.payload
+
+    if ('typ' in header && header.typ !== 'vc+jwt') {
+      throw new CredoError(`The provided W3C VC JWT does not have the correct 'typ' header.`)
+    }
+
+    if ('cyt' in header && header.cyt !== 'vc') {
+      throw new CredoError(`The provided W3C VC JWT does not have the correct 'cyt' header.`)
+    }
+
+    const iss = header.iss ?? payload.iss
+    if (iss) {
+      if (this.resolvedCredential.issuerId !== iss) {
+        throw new CredoError(`The provided W3C VC JWT has both 'iss' and 'issuer' claims, but they differ.`)
+      }
+    }
+
+    if (payload.jti) {
+      if (this.resolvedCredential.id && this.resolvedCredential.id !== payload.jti) {
+        throw new CredoError(`The provided W3C VC JWT has both 'jti' and 'id' claims, but they differ.`)
+      }
+    }
+
+    if (payload.sub) {
+      if (!this.resolvedCredential.credentialSubjectIds.includes(payload.sub)) {
+        throw new CredoError(`The provided W3C VC JWT has a 'sub' claim, but it does not match any credentialSubject.`)
+      }
+    }
   }
 }

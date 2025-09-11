@@ -18,10 +18,10 @@ export class W3cV2CredentialSchema {
     if (options) {
       const { id, type, ...rest } = options
 
+      plainToClassFromExist(this, rest)
+
       this.id = options.id
       this.type = options.type
-
-      plainToClassFromExist(this, rest)
     }
   }
 

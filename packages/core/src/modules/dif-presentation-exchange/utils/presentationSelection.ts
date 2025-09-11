@@ -10,7 +10,13 @@ import { JSONPath } from '@astronautlabs/jsonpath'
 import { CredoError } from '../../../error'
 import { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
-import { ClaimFormat, W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
+import {
+  ClaimFormat,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+  W3cV2JwtVerifiablePresentation,
+} from '../../vc'
+import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
 
 export type DifPexPresentationWithDescriptor = ReturnType<
   typeof extractPresentationsWithDescriptorsFromSubmission
@@ -81,6 +87,14 @@ export function extractPresentationsWithDescriptorsFromSubmission(
         credential: verifiableCredential,
         inputDescriptor,
       } as const
+    }
+    if (
+      presentation instanceof W3cV2JwtVerifiablePresentation ||
+      presentation instanceof W3cV2SdJwtVerifiablePresentation
+    ) {
+      throw new CredoError(
+        `Presentation format '${presentation.claimFormat}' is not supported with DIF Presentation Exchange`
+      )
     }
     return {
       claimFormat: ClaimFormat.SdJwtDc,

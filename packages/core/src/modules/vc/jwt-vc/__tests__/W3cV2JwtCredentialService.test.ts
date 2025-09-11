@@ -155,6 +155,26 @@ describe('W3cV2JwtCredentialService', () => {
         })
       ).rejects.toThrow('Only did identifiers are supported as verification method')
 
+      // Does not allow vc property
+      await expect(
+        w3cV2JwtCredentialService.signCredential(agentContext, {
+          verificationMethod: 'hello',
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          credential: JsonTransformer.fromJSON({ ...credentialJson, vc: 'test' }, W3cV2Credential, { validate: false }),
+          format: ClaimFormat.JwtW3cVc,
+        })
+      ).rejects.toThrow(/property vc has failed the following constraints: vc is forbidden/)
+
+      // Does not allow vp property
+      await expect(
+        w3cV2JwtCredentialService.signCredential(agentContext, {
+          verificationMethod: 'hello',
+          alg: KnownJwaSignatureAlgorithms.ES256,
+          credential: JsonTransformer.fromJSON({ ...credentialJson, vp: 'test' }, W3cV2Credential, { validate: false }),
+          format: ClaimFormat.JwtW3cVc,
+        })
+      ).rejects.toThrow(/property vp has failed the following constraints: vp is forbidden/)
+
       // Throw when not according to data model
       await expect(
         w3cV2JwtCredentialService.signCredential(agentContext, {
@@ -212,6 +232,29 @@ describe('W3cV2JwtCredentialService', () => {
 
       // @ts-ignore
       jwtVc.resolvedCredential.issuer = undefined
+
+      const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
+        credential: jwtVc,
+      })
+
+      expect(result).toEqual({
+        isValid: false,
+        validations: {
+          dataModel: {
+            isValid: false,
+            error: expect.any(ClassValidationError),
+          },
+        },
+      })
+
+      expect(result.validations.dataModel?.error?.message).toContain('Failed to validate class')
+    })
+
+    test('returns invalid result when credential is not according to data model', async () => {
+      const jwtVc = W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
+
+      // @ts-ignore
+      jwtVc.resolvedCredential.vc = 'HELLO'
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
         credential: jwtVc,

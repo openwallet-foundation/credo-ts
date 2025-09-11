@@ -132,3 +132,16 @@ export function IsUri(validationOptions?: ValidationOptions): PropertyDecorator 
     validationOptions
   )
 }
+
+export function IsNever(validationOptions?: ValidationOptions): PropertyDecorator {
+  return ValidateBy(
+    {
+      name: 'IsNever',
+      validator: {
+        validate: (values) => typeof values === 'undefined',
+        defaultMessage: buildMessage((eachPrefix) => `${eachPrefix}$property is forbidden.`, validationOptions),
+      },
+    },
+    validationOptions
+  )
+}

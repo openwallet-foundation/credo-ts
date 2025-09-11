@@ -1,7 +1,7 @@
 import { HashName } from '../../crypto'
 import type { SingleOrArray } from '../../types'
 import { KnownJwaSignatureAlgorithm } from '../kms'
-import { IDisclosureFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
+import { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import type { ClaimFormat, W3cV2VerifiableCredential } from './models'
 import type { W3cV2Credential, W3cV2Presentation } from './models'
@@ -200,4 +200,30 @@ export interface W3cV2SdJwtVerifyPresentationOptions extends W3cV2VerifyPresenta
 
 export interface W3cV2StoreCredentialOptions {
   credential: W3cV2VerifiableCredential
+}
+
+export interface W3cV2SdJwtVcPresentOptions {
+  compactSdJwtVc: string
+
+  /**
+   * Use true to disclose everything
+   */
+  presentationFrame?: IPresentationFrame | true
+
+  /**
+   * This information is received out-of-band from the verifier.
+   * The claims will be used to create a normal JWT, used for key binding.
+   *
+   * If not defined, a KB-JWT will not be created
+   */
+  verifierMetadata?: {
+    audience: string
+    nonce: string
+    issuedAt: number
+  }
+
+  /**
+   * Additional payload to include in the KB JWT
+   */
+  additionalPayload?: Record<string, unknown>
 }

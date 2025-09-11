@@ -28,9 +28,12 @@ import {
   W3cPresentation,
   W3cV2CredentialRecord,
   W3cV2CredentialRepository,
+  W3cV2CredentialService,
+  W3cV2EnvelopedVerifiableCredential,
+  W3cV2Presentation,
 } from '../vc'
 import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
-import { W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
+import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
@@ -134,7 +137,7 @@ export class DcqlService {
       const w3cV2Records = await w3cV2CredentialRepository.findByQuery(agentContext, {
         claimFormat: ClaimFormat.SdJwtW3cVc,
         $or: dcqlQuery.credentials
-          .flatMap((c) => (c.format === 'jwt_vc_json' ? c.meta.type_values : []))
+          .flatMap((c) => (c.format === 'vc+sd-jwt' && c.meta && 'type_values' in c.meta ? c.meta.type_values : []))
           .map((typeValues) => ({
             types: typeValues,
           })),
@@ -184,7 +187,6 @@ export class DcqlService {
         type: vc.type,
       } satisfies DcqlW3cVcCredential
     }
-
     if (presentation.claimFormat === ClaimFormat.LdpVp) {
       const vc = Array.isArray(presentation.verifiableCredential)
         ? (presentation.verifiableCredential[0] as W3cJsonLdVerifiableCredential)
@@ -198,6 +200,18 @@ export class DcqlService {
         credential_format: 'ldp_vc',
         claims: vc.jsonCredential as DcqlW3cVcCredential.Claims,
         type: expandedTypes,
+      } satisfies DcqlW3cVcCredential
+    }
+    if (presentation.claimFormat === ClaimFormat.SdJwtW3cVp) {
+      const vc = Array.isArray(presentation.resolvedPresentation.verifiableCredential)
+        ? presentation.resolvedPresentation.verifiableCredential[0].resolvedCredential
+        : presentation.resolvedPresentation.verifiableCredential.resolvedCredential
+
+      return {
+        cryptographic_holder_binding: true,
+        credential_format: 'vc+sd-jwt',
+        type: asArray(vc.type),
+        claims: vc.toJSON() as { [key: string]: JsonValue },
       } satisfies DcqlW3cVcCredential
     }
 
@@ -433,6 +447,7 @@ export class DcqlService {
         })
       )
     )
+
     const presentationResult = DcqlPresentationResult.fromDcqlPresentation(internalDcqlPresentation, { dcqlQuery })
 
     if (!presentationResult.can_be_satisfied) {
@@ -493,6 +508,14 @@ export class DcqlService {
         claimFormat: validCredential.record.credential.claimFormat,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.record.credential.jsonCredential as JsonObject,
+      } as const
+    }
+
+    if (validCredential.record.type === 'W3cV2CredentialRecord') {
+      return {
+        claimFormat: validCredential.record.credential.claimFormat,
+        credentialRecord: validCredential.record,
+        disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
     }
 
@@ -683,6 +706,89 @@ export class DcqlService {
             challenge,
             domain,
           })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
+        } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
+          if (!presentationToCreate.subjectIds) {
+            throw new DcqlError('Cannot create presentation for credentials without subject id')
+          }
+
+          // Determine a suitable verification method for the presentation
+          const verificationMethod = await this.getVerificationMethodForSubjectId(
+            agentContext,
+            presentationToCreate.subjectIds[0]
+          )
+
+          const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+          const w3cV2Presentation = new W3cV2Presentation({
+            verifiableCredential: [
+              W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
+                presentationToCreate.credentialRecord.credential
+              ),
+            ],
+            holder: verificationMethod.controller,
+          })
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+          const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.JwtW3cVp>(agentContext, {
+            format: ClaimFormat.JwtW3cVp,
+            alg: publicJwk.signatureAlgorithm,
+            verificationMethod: verificationMethod.id,
+            presentation: w3cV2Presentation,
+            challenge,
+            domain,
+          })
+
+          encodedCreatedPresentation = signedPresentation.encoded
+          createdPresentation = signedPresentation
+        } else if (presentationToCreate.claimFormat === ClaimFormat.SdJwtW3cVp) {
+          if (!presentationToCreate.subjectIds) {
+            throw new DcqlError('Cannot create presentation for credentials without subject id')
+          }
+
+          // Determine a suitable verification method for the presentation
+          const verificationMethod = await this.getVerificationMethodForSubjectId(
+            agentContext,
+            presentationToCreate.subjectIds[0]
+          )
+
+          const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
+          if (!domain) {
+            throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')
+          }
+
+          const w3cV2SdJwtCredentialService = agentContext.resolve(W3cV2SdJwtCredentialService)
+          const sdJwtVc = await w3cV2SdJwtCredentialService.present(agentContext, {
+            compactSdJwtVc: presentationToCreate.credentialRecord.credential.encoded,
+            presentationFrame,
+            verifierMetadata: {
+              audience: domain,
+              nonce: challenge,
+              issuedAt: Math.floor(Date.now() / 1000),
+            },
+          })
+
+          const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
+          const w3cV2Presentation = new W3cV2Presentation({
+            verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
+            holder: verificationMethod.controller,
+          })
+
+          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+
+          const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.SdJwtW3cVp>(
+            agentContext,
+            {
+              format: ClaimFormat.SdJwtW3cVp,
+              alg: publicJwk.signatureAlgorithm,
+              verificationMethod: verificationMethod.id,
+              presentation: w3cV2Presentation,
+              challenge,
+              domain,
+            }
+          )
 
           encodedCreatedPresentation = signedPresentation.encoded
           createdPresentation = signedPresentation

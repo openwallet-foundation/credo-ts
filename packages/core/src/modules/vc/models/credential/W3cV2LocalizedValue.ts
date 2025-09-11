@@ -25,11 +25,11 @@ export class W3cV2LocalizedValue {
     if (options) {
       const { value, language, direction, ...rest } = options
 
+      plainToClassFromExist(this, rest)
+
       this.value = value
       this.language = language
       this.direction = direction
-
-      plainToClassFromExist(this, rest)
     }
   }
 

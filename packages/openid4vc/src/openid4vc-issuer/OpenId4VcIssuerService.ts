@@ -32,6 +32,7 @@ import {
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
+  W3cV2CredentialService,
   injectable,
   joinUriParts,
   utils,
@@ -94,17 +95,20 @@ import { generateTxCode } from './util/txCode'
 @injectable()
 export class OpenId4VcIssuerService {
   private w3cCredentialService: W3cCredentialService
+  private w3cV2CredentialService: W3cV2CredentialService
   private openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig
   private openId4VcIssuerRepository: OpenId4VcIssuerRepository
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
 
   public constructor(
     w3cCredentialService: W3cCredentialService,
+    w3cV2CredentialService: W3cV2CredentialService,
     openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig,
     openId4VcIssuerRepository: OpenId4VcIssuerRepository,
     openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   ) {
     this.w3cCredentialService = w3cCredentialService
+    this.w3cV2CredentialService = w3cV2CredentialService
     this.openId4VcIssuerConfig = openId4VcIssuerConfig
     this.openId4VcIssuerRepository = openId4VcIssuerRepository
     this.openId4VcIssuanceSessionRepository = openId4VcIssuanceSessionRepository
@@ -1553,6 +1557,21 @@ export class OpenId4VcIssuerService {
         credentials: await Promise.all(
           signOptions.credentials.map((credential) => mdocApi.sign(credential).then((signed) => signed.base64Url))
         ),
+      }
+    }
+    if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
+      return {
+        format: credentialConfiguration.format,
+        credentials: (await Promise.all(
+          signOptions.credentials.map((credential) =>
+            this.w3cV2CredentialService
+              .signCredential(agentContext, {
+                format: ClaimFormat.SdJwtW3cVc,
+                ...credential,
+              })
+              .then((signed) => signed.encoded)
+          )
+        )) as string[] | Record<string, unknown>[],
       }
     }
     throw new CredoError(`Unsupported credential format ${signOptions.format}`)

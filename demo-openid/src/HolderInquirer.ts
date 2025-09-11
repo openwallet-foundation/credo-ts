@@ -1,4 +1,4 @@
-import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
+import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRecord } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciResolvedCredentialOffer,
@@ -293,10 +293,14 @@ export class HolderInquirer extends BaseInquirer {
     }
   }
 
-  private printCredential = (credential: W3cCredentialRecord | SdJwtVcRecord | MdocRecord) => {
+  private printCredential = (credential: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord) => {
     if (credential.type === 'W3cCredentialRecord') {
       console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
       console.log(JSON.stringify(credential.credential.jsonCredential, null, 2))
+      console.log('')
+    } else if (credential.type === 'W3cV2CredentialRecord') {
+      console.log(greenText(`W3cCredentialRecord with claim format ${credential.credential.claimFormat}`, true))
+      console.log(JSON.stringify(credential.credential.resolvedCredential.toJSON(), null, 2))
       console.log('')
     } else if (credential.type === 'MdocRecord') {
       console.log(greenText('MdocRecord', true))

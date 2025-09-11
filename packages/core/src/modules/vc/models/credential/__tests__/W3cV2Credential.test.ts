@@ -21,8 +21,22 @@ const validCredential = {
 }
 
 describe('W3cV2Credential', () => {
-  test('preserves unknown properties', () => {
-    const credential = new W3cV2Credential({ ...validCredential, someProperty: 'someValue' })
+  test('preserves unknown properties via constructor', () => {
+    const { '@context': context, ...properties } = validCredential
+    const credential = new W3cV2Credential({ ...properties, context, someProperty: 'someValue' })
+
+    expect(credential.context).toEqual(validCredential['@context'])
+    expect(credential.someProperty).toBe('someValue')
+  })
+
+  test('preserves unknown properties via JSONTransformer', () => {
+    const credential = JsonTransformer.fromJSON(
+      {
+        ...validCredential,
+        someProperty: 'someValue',
+      },
+      W3cV2Credential
+    )
 
     expect(credential.context).toEqual(validCredential['@context'])
     expect(credential.someProperty).toBe('someValue')

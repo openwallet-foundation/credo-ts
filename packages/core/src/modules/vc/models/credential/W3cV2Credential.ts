@@ -2,7 +2,12 @@ import { Expose, Type, plainToClassFromExist } from 'class-transformer'
 import { IsOptional, IsRFC3339, ValidateNested } from 'class-validator'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import { JsonTransformer, asArray, mapSingleOrArray } from '../../../../utils'
-import { IsInstanceOrArrayOfInstances, IsStringOrInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
+import {
+  IsInstanceOrArrayOfInstances,
+  IsNever,
+  IsStringOrInstanceOrArrayOfInstances,
+  IsUri,
+} from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { IsCredentialJsonLdContext, IsCredentialType } from '../../validators'
 import { W3cV2CredentialSchema, W3cV2CredentialSchemaOptions } from './W3cV2CredentialSchema'
@@ -53,6 +58,8 @@ export class W3cV2Credential {
         evidence,
         ...rest
       } = options
+
+      plainToClassFromExist(this, rest)
 
       this.context = context ?? [CREDENTIALS_CONTEXT_V2_URL]
       this.id = id
@@ -113,8 +120,6 @@ export class W3cV2Credential {
           evidence instanceof W3cV2Evidence ? evidence : new W3cV2Evidence(evidence)
         )
       }
-
-      plainToClassFromExist(this, rest)
     }
   }
 
@@ -184,7 +189,13 @@ export class W3cV2Credential {
   @Type(() => W3cV2TermsOfUse)
   @ValidateNested({ each: true })
   @IsInstanceOrArrayOfInstances({ classType: W3cV2TermsOfUse, allowEmptyArray: true })
-  public termsOfUse?: SingleOrArray<W3cV2TermsOfUse>;
+  public termsOfUse?: SingleOrArray<W3cV2TermsOfUse>
+
+  @IsNever()
+  public vc?: never
+
+  @IsNever()
+  public vp?: never;
 
   [property: string]: unknown
 

@@ -6,6 +6,7 @@ import type {
   MdocSignOptions,
   SdJwtVcSignOptions,
   W3cCredential,
+  W3cV2SignCredentialOptions,
 } from '@credo-ts/core'
 import type { AccessTokenProfileJwtPayload, TokenIntrospectionResponse } from '@openid4vc/oauth2'
 import type {
@@ -333,6 +334,7 @@ export type OpenId4VciDeferredCredentialRequestToCredentialMapper = (
 export type OpenId4VciSignCredentials =
   | OpenId4VciSignSdJwtCredentials
   | OpenId4VciSignW3cCredentials
+  | OpenId4VciSignW3cV2Credentials
   | OpenId4VciSignMdocCredentials
 
 export interface OpenId4VciSignSdJwtCredentials {
@@ -354,6 +356,12 @@ export interface OpenId4VciSignW3cCredentials {
     verificationMethod: string
     credential: W3cCredential
   }>
+}
+
+export interface OpenId4VciSignW3cV2Credentials {
+  type: 'credentials'
+  format: ClaimFormat.SdJwtW3cVc | `${ClaimFormat.SdJwtW3cVc}`
+  credentials: Omit<W3cV2SignCredentialOptions<ClaimFormat.SdJwtW3cVc>, 'format'>[]
 }
 
 export type OpenId4VciDeferredCredentials = {

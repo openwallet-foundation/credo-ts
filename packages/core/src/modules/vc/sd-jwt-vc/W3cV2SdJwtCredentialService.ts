@@ -1,5 +1,5 @@
 import { SDJwtInstance } from '@sd-jwt/core'
-import { DisclosureFrame, SDJWTConfig } from '@sd-jwt/types'
+import { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
 import type { AgentContext } from '../../../agent/context'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
@@ -12,10 +12,16 @@ import {
   getSupportedVerificationMethodTypesForPublicJwk,
 } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi, KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
-import { extractKeyFromHolderBinding, getSdJwtSigner, getSdJwtVerifier } from '../../sd-jwt-vc/utils'
+import {
+  extractKeyFromHolderBinding,
+  getSdJwtSigner,
+  getSdJwtVerifier,
+  parseHolderBindingFromCredential,
+} from '../../sd-jwt-vc/utils'
 import type {
   W3cV2SdJwtSignCredentialOptions,
   W3cV2SdJwtSignPresentationOptions,
+  W3cV2SdJwtVcPresentOptions,
   W3cV2SdJwtVerifyCredentialOptions,
   W3cV2SdJwtVerifyPresentationOptions,
 } from '../W3cV2CredentialServiceOptions'
@@ -29,6 +35,14 @@ import type {
 import { sdJwtVcHasher } from './W3cV2SdJwt'
 import { W3cV2SdJwtVerifiableCredential } from './W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './W3cV2SdJwtVerifiablePresentation'
+
+/**
+ * List of fields that cannot be selectively disclosed.
+ *
+ * @see https://www.w3.org/TR/vc-jose-cose/#securing-with-sd-jwt
+ * @see https://www.w3.org/TR/vc-jose-cose/#securing-vps-sd-jwt
+ */
+const NON_DISCLOSEABLE_FIELDS = ['@context', 'type', 'credentialStatus', 'credentialSchema', 'relatedResource']
 
 /**
  * Supports signing and verifying W3C Verifiable Credentials and Presentations
@@ -66,7 +80,7 @@ export class W3cV2SdJwtCredentialService {
       )
     }
 
-    // holer binding is optional
+    // Holder binding is optional
     const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
 
     const sdjwt = new SDJwtInstance({
@@ -76,14 +90,17 @@ export class W3cV2SdJwtCredentialService {
       signAlg: options.alg,
     })
 
+    // Validate the disclosure frame
+    const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential> | undefined
+    this.validateDisclosureFrame(disclosureFrame)
+
     const compact = await sdjwt.issue<W3cV2JsonCredential>(
       {
         ...payload,
         cnf: holderBinding?.cnf,
-        iss: parsedDid.did,
         iat: nowInSeconds(),
       },
-      options.disclosureFrame as DisclosureFrame<W3cV2JsonCredential>,
+      disclosureFrame,
       {
         header: {
           alg: options.alg,
@@ -93,8 +110,6 @@ export class W3cV2SdJwtCredentialService {
       }
     )
 
-    // TODO: this re-parses and validates the credential in the JWT, which is not necessary.
-    // We should somehow create an instance of W3cV2SdJwtVerifiableCredential directly from the JWT.
     return W3cV2SdJwtVerifiableCredential.fromCompact(compact)
   }
 
@@ -120,9 +135,10 @@ export class W3cV2SdJwtCredentialService {
     try {
       let credential: W3cV2SdJwtVerifiableCredential
       try {
-        // If instance is provided as input, we want to validate the credential (otherwise it's done in the fromSerializedJwt method below)
+        // If instance is provided as input, we want to validate the credential
+        // Otherwise, it is done by fromCompact below
         if (options.credential instanceof W3cV2SdJwtVerifiableCredential) {
-          MessageValidator.validateSync(options.credential.resolvedCredential)
+          options.credential.validate()
         }
 
         credential =
@@ -150,9 +166,12 @@ export class W3cV2SdJwtCredentialService {
         purpose: ['assertionMethod'],
       })
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
+      const holderBinding = parseHolderBindingFromCredential(credential.sdJwt.prettyClaims)
+      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, issuerPublicKey),
+        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
       try {
@@ -228,6 +247,10 @@ export class W3cV2SdJwtCredentialService {
       signAlg: options.alg,
     })
 
+    // Validate the disclosure frame
+    const disclosureFrame = options.disclosureFrame as DisclosureFrame<W3cV2JsonPresentation> | undefined
+    this.validateDisclosureFrame(disclosureFrame)
+
     const compact = await sdjwt.issue<W3cV2JsonPresentation>(
       {
         ...payload,
@@ -236,7 +259,7 @@ export class W3cV2SdJwtCredentialService {
         nonce: options.challenge,
         aud: options.domain,
       },
-      options.disclosureFrame as DisclosureFrame<W3cV2JsonPresentation>,
+      disclosureFrame,
       {
         header: {
           alg: options.alg,
@@ -246,8 +269,6 @@ export class W3cV2SdJwtCredentialService {
       }
     )
 
-    // TODO: this re-parses and validates the presentation in the JWT, which is not necessary.
-    // We should somehow create an instance of W3cV2SdJwtVerifiablePresentation directly from the JWT
     return W3cV2SdJwtVerifiablePresentation.fromCompact(compact)
   }
 
@@ -303,9 +324,12 @@ export class W3cV2SdJwtCredentialService {
         purpose: ['authentication'],
       })
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
+      const holderBinding = parseHolderBindingFromCredential(presentation.sdJwt.prettyClaims)
+      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
         verifier: getSdJwtVerifier(agentContext, proverPublicKey),
+        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
       try {
@@ -351,7 +375,7 @@ export class W3cV2SdJwtCredentialService {
             return {
               isValid: false,
               error: new CredoError(
-                'Credential is of format SD-JWT. Presentations in JWT format can only contain credentials in JWT format.'
+                'Credential is not of format SD-JWT. Presentations in SD-JWT format can only contain credentials in SD-JWT format.'
               ),
               validations: {},
             }
@@ -408,6 +432,59 @@ export class W3cV2SdJwtCredentialService {
     } catch (error) {
       validationResults.error = error
       return validationResults
+    }
+  }
+
+  public async present(
+    agentContext: AgentContext,
+    { compactSdJwtVc, presentationFrame, verifierMetadata, additionalPayload }: W3cV2SdJwtVcPresentOptions
+  ): Promise<W3cV2SdJwtVerifiableCredential> {
+    const sdjwt = new SDJwtInstance(this.getBaseSdJwtConfig(agentContext))
+
+    const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
+
+    const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt?.payload)
+    if (!holderBinding && verifierMetadata) {
+      throw new CredoError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
+    }
+
+    const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
+    sdjwt.config({
+      kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
+      kbSignAlg: holder?.alg,
+    })
+
+    const compact = await sdjwt.present(compactSdJwtVc, presentationFrame as PresentationFrame<W3cV2JsonCredential>, {
+      kb: verifierMetadata
+        ? {
+            payload: {
+              iat: verifierMetadata.issuedAt,
+              nonce: verifierMetadata.nonce,
+              aud: verifierMetadata.audience,
+              ...additionalPayload,
+            },
+          }
+        : undefined,
+    })
+
+    return W3cV2SdJwtVerifiableCredential.fromCompact(compact)
+  }
+
+  private validateDisclosureFrame(
+    disclosureFrame?:
+      | DisclosureFrame<W3cV2JsonCredential | W3cV2JsonPresentation>
+      | PresentationFrame<W3cV2JsonCredential | W3cV2JsonPresentation>
+  ) {
+    if (!disclosureFrame) return
+
+    for (const field of NON_DISCLOSEABLE_FIELDS) {
+      if (disclosureFrame[field]) {
+        throw new CredoError(`'${field}' property cannot be selectively disclosed`)
+      }
+
+      if (Array.isArray(disclosureFrame._sd) && disclosureFrame._sd?.includes(field)) {
+        throw new CredoError(`'${field}' property cannot be selectively disclosed`)
+      }
     }
   }
 
