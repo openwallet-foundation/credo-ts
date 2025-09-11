@@ -35,10 +35,10 @@ import {
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
+import { OpenId4VcModule } from '../../OpenId4VcModule'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
 import { dateToSeconds } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuerModule } from '../OpenId4VcIssuerModule'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
@@ -74,10 +74,12 @@ const universityDegreeCredentialSdJwt = {
 } satisfies OpenId4VciCredentialConfigurationSupportedWithFormats
 
 const modules = {
-  openId4VcIssuer: new OpenId4VcIssuerModule({
-    baseUrl: 'https://openid4vc-issuer.com',
-    credentialRequestToCredentialMapper: () => {
-      throw new Error('Not implemented')
+  openid4vc: new OpenId4VcModule({
+    issuer: {
+      baseUrl: 'https://openid4vc-issuer.com',
+      credentialRequestToCredentialMapper: () => {
+        throw new Error('Not implemented')
+      },
     },
   }),
   inMemory: new InMemoryWalletModule(),
@@ -208,7 +210,7 @@ describe('OpenId4VcIssuer', () => {
     if (!_issuerVerificationMethod) throw new Error('No verification method found')
     issuerVerificationMethod = _issuerVerificationMethod
 
-    openId4VcIssuer = await issuer.modules.openId4VcIssuer.createIssuer({
+    openId4VcIssuer = await issuer.openid4vc.issuer.createIssuer({
       credentialConfigurationsSupported: {
         openBadgeCredential,
         universityDegreeCredential,
@@ -271,7 +273,7 @@ describe('OpenId4VcIssuer', () => {
   it('pre authorized code flow (sd-jwt-vc)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
       preAuthorizedCodeFlowConfig: {
@@ -303,7 +305,7 @@ describe('OpenId4VcIssuer', () => {
     })
 
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const credentialRequest = await createCredentialRequest(holder.context, {
       credentialConfiguration: universityDegreeCredentialSdJwt,
       issuerMetadata,
@@ -315,7 +317,7 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest,
       authorization: {
@@ -360,7 +362,7 @@ describe('OpenId4VcIssuer', () => {
   it('pre authorized code flow (sd-jwt-vc) v13', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [universityDegreeCredentialSdJwt.id],
       preAuthorizedCodeFlowConfig: {
@@ -401,7 +403,7 @@ describe('OpenId4VcIssuer', () => {
       },
     })
 
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
 
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
@@ -416,7 +418,7 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest,
       authorization: {
@@ -461,7 +463,7 @@ describe('OpenId4VcIssuer', () => {
   it('pre authorized code flow (jwt-vc-json)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
@@ -478,10 +480,10 @@ describe('OpenId4VcIssuer', () => {
 
     expect(result.credentialOffer).toBeDefined()
 
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       authorization: {
         authorizationServer: 'https://authorization.com',
@@ -542,7 +544,7 @@ describe('OpenId4VcIssuer', () => {
     const preAuthorizedCode = '1234567890'
 
     await expect(
-      issuer.modules.openId4VcIssuer.createCredentialOffer({
+      issuer.openid4vc.issuer.createCredentialOffer({
         issuerId: openId4VcIssuer.issuerId,
         credentialConfigurationIds: ['invalid id'],
         preAuthorizedCodeFlowConfig: {
@@ -557,7 +559,7 @@ describe('OpenId4VcIssuer', () => {
   it('issuing non offered credential errors', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
@@ -570,11 +572,11 @@ describe('OpenId4VcIssuer', () => {
     result.issuanceSession.state = OpenId4VcIssuanceSessionState.AccessTokenCreated
     await issuanceSessionRepository.update(issuer.context, result.issuanceSession)
 
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
     await expect(
-      issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuer.openid4vc.issuer.createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         authorization: {
           authorizationServer: 'https://authorization.com',
@@ -603,7 +605,7 @@ describe('OpenId4VcIssuer', () => {
   it('pre authorized code flow using multiple credentials_supported', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredentialLd.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
@@ -618,8 +620,8 @@ describe('OpenId4VcIssuer', () => {
 
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialConfiguration: universityDegreeCredentialLd,
@@ -671,7 +673,7 @@ describe('OpenId4VcIssuer', () => {
   it('requesting non offered credential errors', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       credentialConfigurationIds: [openBadgeCredential.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
@@ -686,9 +688,9 @@ describe('OpenId4VcIssuer', () => {
 
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     await expect(
-      issuer.modules.openId4VcIssuer.createCredentialResponse({
+      issuer.openid4vc.issuer.createCredentialResponse({
         issuanceSessionId: result.issuanceSession.id,
         authorization: {
           authorizationServer: 'https://authorization.com',
@@ -723,7 +725,7 @@ describe('OpenId4VcIssuer', () => {
   it('create credential offer and retrieve it from the uri (pre authorized flow)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const { credentialOffer } = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [openBadgeCredential.id],
       preAuthorizedCodeFlowConfig: {
@@ -741,7 +743,7 @@ describe('OpenId4VcIssuer', () => {
   it('offer and request multiple credentials', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.openid4vc.issuer.createCredentialOffer({
       credentialConfigurationIds: [openBadgeCredential.id, universityDegreeCredential.id],
       issuerId: openId4VcIssuer.issuerId,
       preAuthorizedCodeFlowConfig: {
@@ -786,8 +788,8 @@ describe('OpenId4VcIssuer', () => {
 
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const issuerMetadata = await issuer.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const { credentialResponse } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialConfiguration: openBadgeCredential,
@@ -820,7 +822,7 @@ describe('OpenId4VcIssuer', () => {
 
     await handleCredentialResponse(holder.context, credentialResponse.credential, openBadgeCredential)
 
-    const { credentialResponse: credentialResponse2 } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const { credentialResponse: credentialResponse2 } = await issuer.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       credentialRequest: await createCredentialRequest(holder.context, {
         credentialConfiguration: universityDegreeCredential,

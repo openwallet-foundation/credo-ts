@@ -24,7 +24,12 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import type { OpenId4VciSignMdocCredentials, VerifiedOpenId4VcCredentialHolderBinding } from '../src'
+import type {
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcModule,
+  OpenId4VciSignMdocCredentials,
+  VerifiedOpenId4VcCredentialHolderBinding,
+} from '../src'
 import { OpenId4VcHolderModule, OpenId4VcIssuanceSessionState, OpenId4VcIssuerModule } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
@@ -44,15 +49,15 @@ describe('OpenId4Vci (Deferred)', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
-    tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions> }>
     x509: X509Module
   }>
   let issuer1: TenantType
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
   let holder1: TenantType
 
@@ -175,7 +180,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
+    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -283,7 +288,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     const clearNock = setupNockToExpress('http://localhost:4747', app)
 
-    const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
       issuerId: '8bc91672-6a32-466c-96ec-6efca8760068',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
@@ -295,7 +300,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       ],
     })
 
-    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -308,8 +313,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     await issuerTenant.endSession()
 
-    const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holderTenant.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holderTenant.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -322,7 +327,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     }
 
     // Bind to JWK
-    const tokenResponseTenant = await holderTenant.modules.openId4VcHolder.requestToken({
+    const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       // Mock the authorization code flow part,
       code: 'some-authorization-code',
@@ -330,7 +335,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       redirectUri: 'http://localhost:1234/redirect',
       codeVerifier: resolvedAuthorization.codeVerifier,
     })
-    const credentialResponse = await holderTenant.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holderTenant.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponseTenant,
       credentialBindingResolver,
@@ -346,7 +351,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(credentialResponse.credentials).toHaveLength(0)
     expect(credentialResponse.deferredCredentials[0].interval).toEqual(2000)
 
-    const refreshTokenTenant = await holderTenant.modules.openId4VcHolder.refreshToken({
+    const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
       authorizationServer: tokenResponseTenant.authorizationServer,
       refreshToken: tokenResponseTenant.refreshToken as string,
@@ -354,7 +359,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       clientId: 'foo',
     })
 
-    const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
+    const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,
       ...credentialResponse.deferredCredentials[0],
       issuerMetadata: resolvedCredentialOffer.metadata,
@@ -388,13 +393,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
     credentialIssuerCertificate = issuerCertificate
 
-    const openIdIssuerTenant = await issuerTenant.modules.openId4VcIssuer.createIssuer({
+    const openIdIssuerTenant = await issuerTenant.openid4vc.issuer.createIssuer({
       dpopSigningAlgValuesSupported: [Kms.KnownJwaSignatureAlgorithms.ES256],
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupportedMdoc,
       },
     })
-    const issuer1Record = await issuerTenant.modules.openId4VcIssuer.getIssuerByIssuerId(openIdIssuerTenant.issuerId)
+    const issuer1Record = await issuerTenant.openid4vc.issuer.getIssuerByIssuerId(openIdIssuerTenant.issuerId)
     expect(issuer1Record.dpopSigningAlgValuesSupported).toEqual(['ES256'])
 
     expect(issuer1Record.credentialConfigurationsSupported).toEqual({
@@ -411,7 +416,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    const { issuanceSession, credentialOffer } = await issuerTenant.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuerTenant.openid4vc.issuer.createCredentialOffer({
       issuerId: openIdIssuerTenant.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
@@ -430,7 +435,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
     holderTenant.x509.config.setTrustedCertificates([issuerCertificate.toString('pem')])
 
-    const resolvedCredentialOffer = await holderTenant.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holderTenant.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     expect(resolvedCredentialOffer.metadata.credentialIssuer?.dpop_signing_alg_values_supported).toEqual(['ES256'])
     expect(resolvedCredentialOffer.offeredCredentialConfigurations).toEqual({
@@ -461,7 +466,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     // Bind to JWK
-    const tokenResponseTenant = await holderTenant.modules.openId4VcHolder.requestToken({
+    const tokenResponseTenant = await holderTenant.openid4vc.holder.requestToken({
       resolvedCredentialOffer: resolvedCredentialOffer,
     })
 
@@ -511,7 +516,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       exp: expect.any(Number),
     })
 
-    const credentialsTenant1 = await holderTenant.modules.openId4VcHolder.requestCredentials({
+    const credentialsTenant1 = await holderTenant.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer: resolvedCredentialOffer,
       ...tokenResponseTenant,
       credentialBindingResolver,
@@ -543,7 +548,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(credentialsTenant1.credentials).toHaveLength(0)
     expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(2000)
 
-    const refreshTokenTenant = await holderTenant.modules.openId4VcHolder.refreshToken({
+    const refreshTokenTenant = await holderTenant.openid4vc.holder.refreshToken({
       issuerMetadata: resolvedCredentialOffer.metadata,
       authorizationServer: tokenResponseTenant.authorizationServer,
       refreshToken: tokenResponseTenant.refreshToken as string,
@@ -551,7 +556,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       clientId: 'foo',
     })
 
-    const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
+    const deferredCredentialResponse = await holderTenant.openid4vc.holder.requestDeferredCredentials({
       ...refreshTokenTenant,
       ...credentialsTenant1.deferredCredentials[0],
       issuerMetadata: resolvedCredentialOffer.metadata,

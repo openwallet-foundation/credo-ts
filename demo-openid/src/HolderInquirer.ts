@@ -225,7 +225,7 @@ export class HolderInquirer extends BaseInquirer {
 
       if (this.resolvedPresentationRequest.presentationExchange.credentialsForRequest.areRequirementsSatisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
             this.resolvedPresentationRequest.presentationExchange.credentialsForRequest
           )
         ).flat()
@@ -244,7 +244,7 @@ export class HolderInquirer extends BaseInquirer {
 
       if (this.resolvedPresentationRequest.dcql.queryResult.can_be_satisfied) {
         const selectedCredentials = Object.values(
-          this.holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+          this.holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
             this.resolvedPresentationRequest.dcql.queryResult
           )
         ).flatMap((e) => e[0].credentialRecord)

@@ -17,7 +17,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -31,14 +31,14 @@ describe('OpenID4VP 1.0', () => {
   let clearNock: () => void
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
   let holder1: TenantType
 
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
-    tenants: TenantsModule<{ openId4VcVerifier: OpenId4VcVerifierModule }>
+    openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions> }>
   }>
   let verifier1: TenantType
   let verifier2: TenantType
@@ -49,7 +49,7 @@ describe('OpenID4VP 1.0', () => {
     holder = (await createAgentFromModules(
       'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module({
@@ -75,8 +75,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier = (await createAgentFromModules(
       'verifier',
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
@@ -87,7 +89,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
 
-    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
+    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -104,8 +106,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await verifier.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -135,7 +137,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'did',
@@ -154,7 +156,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'did',
           didUrl: verifier2.verificationMethod.id,
@@ -176,7 +178,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await verifierTenant2.endSession()
 
     const resolvedProofRequest1 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
 
     expect(resolvedProofRequest1.dcql?.queryResult).toMatchObject({
       can_be_satisfied: true,
@@ -197,7 +199,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const resolvedProofRequest2 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
 
     expect(resolvedProofRequest2.dcql?.queryResult).toMatchObject({
       can_be_satisfied: true,
@@ -221,12 +223,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedProofRequest1.dcql.queryResult
     )
 
     const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -253,7 +255,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession1.id,
     })
 
-    const { dcql } = await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql } = await verifierTenant1_2.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession1.id
     )
     expect(dcql).toMatchObject({
@@ -274,17 +276,18 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
     })
 
-    const selectedCredentials2 = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials2 = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedProofRequest2.dcql.queryResult
     )
 
-    const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const { serverResponse: serverResponse2 } = await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest(
+      {
         authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials2,
         },
-      })
+      }
+    )
     expect(serverResponse2).toMatchObject({
       status: 200,
     })
@@ -298,7 +301,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession2.id,
     })
-    const { dcql: dcql2 } = await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql: dcql2 } = await verifierTenant2_2.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession2.id
     )
 
@@ -322,7 +325,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('Invalid verifier attestation in combination with dcql', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const certificate = await verifier.agent.x509.createCertificate({
       issuer: { commonName: 'Credo', countryName: 'NL' },
@@ -335,7 +338,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier.agent.x509.config.addTrustedCertificate(certificate.toString('base64'))
 
     await expect(
-      verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         responseMode: 'direct_post.jwt',
         requestSigner: {
@@ -364,7 +367,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -415,7 +418,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         responseMode: 'direct_post.jwt',
         requestSigner: {
@@ -444,7 +447,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.authorizationRequestPayload).toMatchObject({
@@ -502,12 +505,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -534,7 +537,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { dcql, transactionData: _transactionData } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
     expect(_transactionData).toEqual([
@@ -631,7 +634,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with unsiged request (redirect_uri)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -670,7 +673,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, authorizationRequestObject, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'none',
@@ -687,7 +690,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.signedAuthorizationRequest).toBeUndefined()
     expect(resolvedAuthorizationRequest.verifier).toEqual({
@@ -700,12 +703,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -733,7 +736,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -785,7 +788,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -811,7 +814,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       can_be_satisfied: true,
@@ -864,12 +867,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -895,9 +898,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
 
@@ -973,7 +974,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying multiple sd-jwt-vc for a single credential query', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1044,7 +1045,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -1070,7 +1071,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       can_be_satisfied: true,
@@ -1159,7 +1160,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       resolvedAuthorizationRequest.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: {
@@ -1202,9 +1203,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = dcql?.presentations.OpenBadgeCredentialDescriptor[0] as SdJwtVc
     const presentation1 = dcql?.presentations.OpenBadgeCredentialDescriptor[1] as SdJwtVc
@@ -1332,7 +1331,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1413,7 +1412,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
 
         requestSigner: {
@@ -1437,7 +1436,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.transactionData).toEqual([
       {
@@ -1554,12 +1553,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -1594,7 +1593,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { dcql, transactionData: tdResult } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(tdResult).toEqual([
       {
@@ -1760,7 +1759,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc allowed with direct_post', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -1828,7 +1827,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -1840,17 +1839,17 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     if (!resolvedAuthorizationRequest.dcql) {
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const result = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
@@ -1873,7 +1872,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1977,7 +1976,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -1997,7 +1996,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql?.queryResult).toEqual({
       credentials: [
@@ -2124,12 +2123,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('DCQL not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -2157,9 +2156,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { dcql } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
-      verificationSession.id
-    )
+    const { dcql } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const mdocPresentation = dcql?.presentations.university[0] as MdocDeviceResponse
     expect(mdocPresentation.documents).toHaveLength(1)
@@ -2249,7 +2246,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm) (dcql) (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -2353,7 +2350,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -2374,7 +2371,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
       queryResult: {
@@ -2508,12 +2505,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -2535,7 +2532,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
 
-    const { dcql, transactionData } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql, transactionData } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 

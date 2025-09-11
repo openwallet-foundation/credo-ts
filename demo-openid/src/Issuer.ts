@@ -1,6 +1,9 @@
 import type { DidKey, X509Certificate } from '@credo-ts/core'
-import type {
+import {
+  OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
+  OpenId4VcModule,
+  OpenId4VcVerifierModuleConfigOptions,
   OpenId4VcVerifierRecord,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialRequestToCredentialMapper,
@@ -25,12 +28,7 @@ import {
   utils,
   w3cDate,
 } from '@credo-ts/core'
-import {
-  OpenId4VcIssuerModule,
-  OpenId4VcVerifierApi,
-  OpenId4VcVerifierModule,
-  OpenId4VciCredentialFormatProfile,
-} from '@credo-ts/openid4vc'
+import { OpenId4VcVerifierApi, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Router } from 'express'
 
@@ -217,8 +215,7 @@ function getCredentialRequestToCredentialMapper({
 
 export class Issuer extends BaseAgent<{
   askar: AskarModule
-  openId4VcIssuer: OpenId4VcIssuerModule
-  openId4VcVerifier: OpenId4VcVerifierModule
+  openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
 }> {
   public issuerRecord!: OpenId4VcIssuerRecord
   public verifierRecord!: OpenId4VcVerifierRecord
@@ -232,53 +229,55 @@ export class Issuer extends BaseAgent<{
       name,
       modules: {
         askar: new AskarModule({ askar, store: { id: name, key: name } }),
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: `${url}/oid4vp`,
-          router: openId4VpRouter,
-        }),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: `${url}/oid4vci`,
-          router: openId4VciRouter,
-          credentialRequestToCredentialMapper: (...args) =>
-            getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
-          getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
-            const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
-            const authorizationRequest = await verifierApi.createAuthorizationRequest({
-              verifierId: this.verifierRecord.verifierId,
-              requestSigner: {
-                method: 'did',
-                didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
-              },
-              responseMode: 'direct_post.jwt',
-              presentationExchange: {
-                definition: {
-                  id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
-                  input_descriptors: [
-                    {
-                      id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
-                      constraints: {
-                        fields: [
-                          {
-                            path: ['$.vct'],
-                            filter: {
-                              type: 'string',
-                              const: credentialConfigurationsSupported.PresentationAuthorization.vct,
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
-                  name: 'Presentation Authorization',
-                  purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: `${url}/oid4vp`,
+            router: openId4VpRouter,
+          },
+          issuer: {
+            baseUrl: `${url}/oid4vci`,
+            router: openId4VciRouter,
+            credentialRequestToCredentialMapper: (...args) =>
+              getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
+            getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
+              const verifierApi = agentContext.dependencyManager.resolve(OpenId4VcVerifierApi)
+              const authorizationRequest = await verifierApi.createAuthorizationRequest({
+                verifierId: this.verifierRecord.verifierId,
+                requestSigner: {
+                  method: 'did',
+                  didUrl: `${this.didKey.did}#${this.didKey.publicJwk.fingerprint}`,
                 },
-              },
-            })
+                responseMode: 'direct_post.jwt',
+                presentationExchange: {
+                  definition: {
+                    id: '18e2c9c3-1722-4393-a558-f0ce1e32c4ec',
+                    input_descriptors: [
+                      {
+                        id: '16f00df5-67f1-47e6-81b1-bd3e3743f84c',
+                        constraints: {
+                          fields: [
+                            {
+                              path: ['$.vct'],
+                              filter: {
+                                type: 'string',
+                                const: credentialConfigurationsSupported.PresentationAuthorization.vct,
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                    name: 'Presentation Authorization',
+                    purpose: `To issue the requested credentials, we need to verify your 'Presentation Authorization' credential`,
+                  },
+                },
+              })
 
-            return {
-              scopes,
-              ...authorizationRequest,
-            }
+              return {
+                scopes,
+                ...authorizationRequest,
+              }
+            },
           },
         }),
       },
@@ -319,10 +318,10 @@ export class Issuer extends BaseAgent<{
     console.log('Set the following certficate for the holder to verify mdoc credentials.')
     console.log(issuerCertificate.toString('base64'))
 
-    issuer.verifierRecord = await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    issuer.verifierRecord = await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
     })
-    issuer.issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    issuer.issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialConfigurationsSupported,
       authorizationServerConfigs: [
@@ -336,7 +335,7 @@ export class Issuer extends BaseAgent<{
       ],
     })
 
-    const issuerMetadata = await issuer.agent.modules.openId4VcIssuer.getIssuerMetadata(issuer.issuerRecord.issuerId)
+    const issuerMetadata = await issuer.agent.openid4vc.issuer.getIssuerMetadata(issuer.issuerRecord.issuerId)
     console.log(`\nIssuer url is ${issuerMetadata.credentialIssuer.credential_issuer}`)
 
     return issuer
@@ -347,9 +346,9 @@ export class Issuer extends BaseAgent<{
     requireAuthorization?: 'presentation' | 'browser'
     requirePin: boolean
   }) {
-    const issuerMetadata = await this.agent.modules.openId4VcIssuer.getIssuerMetadata(this.issuerRecord.issuerId)
+    const issuerMetadata = await this.agent.openid4vc.issuer.getIssuerMetadata(this.issuerRecord.issuerId)
 
-    const { credentialOffer, issuanceSession } = await this.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer, issuanceSession } = await this.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: this.issuerRecord.issuerId,
       credentialConfigurationIds: options.credentialConfigurationIds,
       // Pre-auth using our own server

@@ -1,10 +1,7 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
 import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './router'
-
-import { AgentConfig } from '@credo-ts/core'
-import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
@@ -28,8 +25,7 @@ import {
 /**
  * @public
  */
-export class OpenId4VcIssuerModule implements Module {
-  public readonly api = OpenId4VcIssuerApi
+export class OpenId4VcIssuerModule {
   public readonly config: OpenId4VcIssuerModuleConfig
 
   public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
@@ -40,18 +36,10 @@ export class OpenId4VcIssuerModule implements Module {
    * Registers the dependencies of the openid4vc issuer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    const agentConfig = dependencyManager.resolve(AgentConfig)
+    // Since the OpenID4VC module is a nested module (a module consisting of three modules) we register the API
+    // manually. In the future we may disallow resolving the sub-api, but for now it allows for a cleaner migration path
+    dependencyManager.registerContextScoped(OpenId4VcIssuerApi)
 
-    // Warn about experimental module
-    agentConfig.logger.warn(
-      "The '@credo-ts/openid4vc' Issuer module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-    )
-
-    if (agentConfig.allowInsecureHttpUrls) {
-      setGlobalConfig({
-        allowInsecureUrls: true,
-      })
-    }
     // Register config
     dependencyManager.registerInstance(OpenId4VcIssuerModuleConfig, this.config)
 
