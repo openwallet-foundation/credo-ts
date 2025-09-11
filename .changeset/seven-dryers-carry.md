@@ -1,11 +1,11 @@
 ---
-"@credo-ts/indy-sdk-to-askar-migration": patch
-"@credo-ts/anoncreds": patch
-"@credo-ts/openid4vc": patch
-"@credo-ts/didcomm": patch
-"@credo-ts/tenants": patch
-"@credo-ts/askar": patch
-"@credo-ts/core": patch
+"@credo-ts/indy-sdk-to-askar-migration": minor
+"@credo-ts/anoncreds": minor
+"@credo-ts/openid4vc": minor
+"@credo-ts/didcomm": minor
+"@credo-ts/tenants": minor
+"@credo-ts/askar": minor
+"@credo-ts/core": minor
 ---
 
 BREAKING CHANGE:
