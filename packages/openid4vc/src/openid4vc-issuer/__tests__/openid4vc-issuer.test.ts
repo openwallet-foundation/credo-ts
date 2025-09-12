@@ -138,17 +138,13 @@ const createCredentialRequest = async (
 }
 
 const issuer = new Agent({
-  config: {
-    label: 'OpenId4VcIssuer Test323',
-  },
+  config: {},
   dependencies: agentDependencies,
   modules,
 })
 
 const holder = new Agent({
-  config: {
-    label: 'OpenId4VciIssuer(Holder) Test323',
-  },
+  config: {},
   dependencies: agentDependencies,
   modules,
 })

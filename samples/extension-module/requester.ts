@@ -25,7 +25,6 @@ const run = async () => {
   // Setup the agent
   const agent = new Agent({
     config: {
-      label: 'Dummy-powered agent - requester',
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
@@ -58,7 +57,9 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl, {
+    label: 'requester',
+  })
   if (!connectionRecord) {
     throw new CredoError('Connection record for out-of-band invitation was not created.')
   }
