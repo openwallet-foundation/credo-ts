@@ -58,6 +58,9 @@ export class OpenId4VcModule<
       })
     }
 
+    // Register config
+    dependencyManager.registerInstance(OpenId4VcModuleConfig, this.config)
+
     this.issuer?.register(dependencyManager)
     this.holder?.register(dependencyManager)
     this.verifier?.register(dependencyManager)
