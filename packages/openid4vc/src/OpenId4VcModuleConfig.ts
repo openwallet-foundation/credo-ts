@@ -25,8 +25,8 @@ export class OpenId4VcModuleConfig<
 
   public readonly router?: Router
 
-  public readonly issuer: IssuerConfig
-  public readonly verifier: VerifierConfig
+  public readonly issuer: IssuerConfig extends OpenId4VcIssuerModuleConfigOptions ? IssuerConfig : undefined
+  public readonly verifier: VerifierConfig extends OpenId4VcVerifierModuleConfigOptions ? VerifierConfig : undefined
 
   public constructor(options?: OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>) {
     this.options = options ?? ({} as OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>)
