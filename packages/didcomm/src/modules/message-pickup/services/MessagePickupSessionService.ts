@@ -4,7 +4,7 @@ import type { MessagePickupLiveSessionRemovedEvent, MessagePickupLiveSessionSave
 import type { MessagePickupSession, MessagePickupSessionRole } from '../MessagePickupSession'
 
 import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { type Subject, filter, takeUntil } from 'rxjs'
+import { type Subject, takeUntil } from 'rxjs'
 
 import { TransportEventTypes } from '../../../transport'
 import { MessagePickupEventTypes } from '../MessagePickupEvents'
@@ -32,13 +32,13 @@ export class MessagePickupSessionService {
     eventEmitter
       .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
       .pipe(
-        filter((e) => e.payload.session.type === 'WebSocket'),
         takeUntil(stop$)
       )
       .subscribe({
         next: (e) => {
-          const connectionId = e.payload.session.connectionId
-          if (connectionId) this.removeLiveSession(agentContext, { connectionId })
+          // Find the live mode session that matches the transport session being removed
+          const liveModeSession = this.sessions.find(session => session.transportSessionId === e.payload.session.id)
+          if (liveModeSession) this.removeLiveSession(agentContext, { connectionId: liveModeSession.connectionId })
         },
       })
   }
@@ -60,18 +60,19 @@ export class MessagePickupSessionService {
 
   public saveLiveSession(
     agentContext: AgentContext,
-    options: { connectionId: string; protocolVersion: string; role: MessagePickupSessionRole }
+    options: { connectionId: string; protocolVersion: string; role: MessagePickupSessionRole; transportSessionId: string }
   ) {
-    const { connectionId, protocolVersion, role } = options
+    const { connectionId, protocolVersion, role, transportSessionId } = options
 
     // First remove any live session for the given connection Id
     this.removeLiveSession(agentContext, { connectionId })
 
-    const session = {
+    const session: MessagePickupSession = {
       id: utils.uuid(),
       connectionId,
       protocolVersion,
       role,
+      transportSessionId,
     }
 
     this.sessions.push(session)
