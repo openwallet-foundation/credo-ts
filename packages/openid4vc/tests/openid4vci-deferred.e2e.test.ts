@@ -24,13 +24,13 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import type {
+import {
   OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcModule,
   OpenId4VciSignMdocCredentials,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
-import { OpenId4VcHolderModule, OpenId4VcIssuanceSessionState, OpenId4VcIssuerModule } from '../src'
+import { OpenId4VcIssuanceSessionState } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
@@ -79,71 +79,73 @@ describe('OpenId4Vci (Deferred)', () => {
       {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
-        openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: issuanceBaseUrl,
-          dpopRequired: true,
-          credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
-            const uuid = randomUUID()
+        openid4vc: new OpenId4VcModule({
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            dpopRequired: true,
+            credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
+              const uuid = randomUUID()
 
-            storage[uuid] = {
-              credentialRequest,
-              holderBinding,
-            }
-
-            return {
-              type: 'deferral',
-              transactionId: uuid,
-              interval: 2000,
-            }
-          },
-
-          deferredCredentialRequestToCredentialMapper: async ({ agentContext, deferredCredentialRequest }) => {
-            if (!storage[deferredCredentialRequest.transaction_id]) {
-              throw new Error('No credential request found for transaction id')
-            }
-            const { credentialRequest, holderBinding } = storage[deferredCredentialRequest.transaction_id]
-
-            // We sign the request with the first did:key did we have
-            const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-            const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
-            const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
-            const verificationMethod = didDocument.verificationMethod?.[0]
-            if (!verificationMethod) {
-              throw new Error('No verification method found')
-            }
-
-            if (credentialRequest.format === 'vc+sd-jwt') {
-              return {
-                type: 'credentials',
-                format: credentialRequest.format,
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
-                  holder: holderBinding,
-                  issuer: {
-                    method: 'did',
-                    didUrl: verificationMethod.id,
-                  },
-                  disclosureFrame: { _sd: ['university', 'degree'] },
-                })),
+              storage[uuid] = {
+                credentialRequest,
+                holderBinding,
               }
-            }
-            if (credentialRequest.format === 'mso_mdoc') {
+
               return {
-                type: 'credentials',
-                format: ClaimFormat.MsoMdoc,
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
-                  issuerCertificate: credentialIssuerCertificate,
-                  holderKey: holderBinding.jwk,
-                  namespaces: {
-                    'Leopold-Franzens-University': {
-                      degree: 'bachelor',
+                type: 'deferral',
+                transactionId: uuid,
+                interval: 2000,
+              }
+            },
+
+            deferredCredentialRequestToCredentialMapper: async ({ agentContext, deferredCredentialRequest }) => {
+              if (!storage[deferredCredentialRequest.transaction_id]) {
+                throw new Error('No credential request found for transaction id')
+              }
+              const { credentialRequest, holderBinding } = storage[deferredCredentialRequest.transaction_id]
+
+              // We sign the request with the first did:key did we have
+              const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+              const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
+              const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
+              const verificationMethod = didDocument.verificationMethod?.[0]
+              if (!verificationMethod) {
+                throw new Error('No verification method found')
+              }
+
+              if (credentialRequest.format === 'vc+sd-jwt') {
+                return {
+                  type: 'credentials',
+                  format: credentialRequest.format,
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'did',
+                      didUrl: verificationMethod.id,
                     },
-                  },
-                })),
-              } satisfies OpenId4VciSignMdocCredentials
-            }
-            throw new Error('Invalid request')
+                    disclosureFrame: { _sd: ['university', 'degree'] },
+                  })),
+                }
+              }
+              if (credentialRequest.format === 'mso_mdoc') {
+                return {
+                  type: 'credentials',
+                  format: ClaimFormat.MsoMdoc,
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    docType: universityDegreeCredentialConfigurationSupportedMdoc.doctype,
+                    issuerCertificate: credentialIssuerCertificate,
+                    holderKey: holderBinding.jwk,
+                    namespaces: {
+                      'Leopold-Franzens-University': {
+                        degree: 'bachelor',
+                      },
+                    },
+                  })),
+                } satisfies OpenId4VciSignMdocCredentials
+              }
+              throw new Error('Invalid request')
+            },
           },
         }),
         tenants: new TenantsModule(),
@@ -156,7 +158,7 @@ describe('OpenId4Vci (Deferred)', () => {
     holder = (await createAgentFromModules(
       'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module({

@@ -1,5 +1,5 @@
 import type { DcqlQuery, X509Certificate } from '@credo-ts/core'
-import type { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '../src'
+import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '../src'
 import type { AgentType } from './utils'
 
 import {
@@ -13,7 +13,7 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcVerificationSessionState } from '../src'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules } from './utils'
@@ -143,7 +143,7 @@ const expectedDcqlResult = {
 describe('OpenId4VP DC API', () => {
   let holder: AgentType<{
     openid4vc: OpenId4VcModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
 
   let verifier: AgentType<{
@@ -157,7 +157,7 @@ describe('OpenId4VP DC API', () => {
     holder = (await createAgentFromModules(
       'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e'
@@ -166,8 +166,10 @@ describe('OpenId4VP DC API', () => {
     verifier = (await createAgentFromModules(
       'verifier',
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),

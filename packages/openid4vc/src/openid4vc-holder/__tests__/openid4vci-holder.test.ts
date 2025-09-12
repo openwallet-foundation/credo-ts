@@ -3,11 +3,11 @@ import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
 import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
 import { agentDependencies } from '../../../../node/src'
-import { OpenId4VcHolderModule } from '../OpenId4VcHolderModule'
 import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { OpenId4VcModule } from '../../OpenId4VcModule'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
@@ -16,7 +16,7 @@ const holder = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    openId4VcHolder: new OpenId4VcHolderModule(),
+    openid4vc: new OpenId4VcModule(),
     inMemory: new InMemoryWalletModule(),
   },
 })
@@ -100,8 +100,8 @@ describe('OpenId4VcHolder', () => {
         .post('/oidc/v1/auth/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOffer)
-      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const resolved = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOffer)
+      const accessTokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer: resolved,
       })
 
@@ -111,7 +111,7 @@ describe('OpenId4VcHolder', () => {
         .spyOn(w3cCredentialService, 'verifyCredential')
         .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
 
-      const credentialsResult = await holder.modules.openId4VcHolder.requestCredentials({
+      const credentialsResult = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer: resolved,
         ...accessTokenResponse,
 
@@ -156,13 +156,13 @@ describe('OpenId4VcHolder', () => {
         .post('/credential')
         .reply(200, fixture.credentialResponse)
 
-      const resolved = await holder.modules.openId4VcHolder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
-      const accessTokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const resolved = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOfferPreAuth)
+      const accessTokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer: resolved,
       })
 
       await expect(() =>
-        holder.modules.openId4VcHolder.requestCredentials({
+        holder.openid4vc.holder.requestCredentials({
           resolvedCredentialOffer: resolved,
           ...accessTokenResponse,
           verifyCredentialStatus: false,
@@ -208,15 +208,13 @@ describe('OpenId4VcHolder', () => {
         .post('/notification')
         .reply(204, 'No Content')
 
-      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOffer
-      )
+      const resolvedCredentialOffer = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOffer)
 
-      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const tokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
       })
 
-      const credentialResponse = await holder.modules.openId4VcHolder.requestCredentials({
+      const credentialResponse = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
         verifyCredentialStatus: false,
@@ -231,7 +229,7 @@ describe('OpenId4VcHolder', () => {
 
       if (!credentialResponse.credentials[0]?.notificationId) throw new Error("Notification metadata wasn't returned")
 
-      await holder.modules.openId4VcHolder.sendNotification({
+      await holder.openid4vc.holder.sendNotification({
         accessToken: tokenResponse.accessToken,
         notificationEvent: 'credential_accepted',
         notificationId: credentialResponse.credentials[0]?.notificationId,
@@ -321,11 +319,9 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/oauth-authorization-server')
         .reply(404)
 
-      const resolvedCredentialOffer = await holder.modules.openId4VcHolder.resolveCredentialOffer(
-        fixture.credentialOfferAuth
-      )
+      const resolvedCredentialOffer = await holder.openid4vc.holder.resolveCredentialOffer(fixture.credentialOfferAuth)
 
-      const resolvedAuthorizationRequest = await holder.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+      const resolvedAuthorizationRequest = await holder.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
         resolvedCredentialOffer,
         {
           clientId: 'test-client',
@@ -338,7 +334,7 @@ describe('OpenId4VcHolder', () => {
         throw new Error('unexpected authorization flow')
       }
 
-      const tokenResponse = await holder.modules.openId4VcHolder.requestToken({
+      const tokenResponse = await holder.openid4vc.holder.requestToken({
         resolvedCredentialOffer,
         clientId: 'test-client',
         redirectUri: 'https://example.com',
@@ -346,7 +342,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       await expect(
-        holder.modules.openId4VcHolder.requestCredentials({
+        holder.openid4vc.holder.requestCredentials({
           resolvedCredentialOffer,
           ...tokenResponse,
           allowedProofOfPossessionSignatureAlgorithms: [Kms.KnownJwaSignatureAlgorithms.EdDSA],

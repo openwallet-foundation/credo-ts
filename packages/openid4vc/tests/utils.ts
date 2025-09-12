@@ -41,8 +41,6 @@ export async function createAgentFromModules<MM extends ModulesMap>(
 
   let dns = 'localhost'
   if (modulesMap.openid4vc instanceof OpenId4VcModule) {
-    // const openid4vc = modulesMap.openid4vc as OpenId4VcModule
-
     const baseUrl = modulesMap.openid4vc.issuer?.config.baseUrl ?? modulesMap.openid4vc.verifier?.config.baseUrl
     if (baseUrl) {
       dns = getDomainFromUrl(baseUrl)

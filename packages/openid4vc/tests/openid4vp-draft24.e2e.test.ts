@@ -18,13 +18,7 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import {
-  OpenId4VcHolderModule,
-  OpenId4VcModule,
-  OpenId4VcVerificationSessionState,
-  OpenId4VcVerifierModule,
-  OpenId4VcVerifierModuleConfigOptions,
-} from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
@@ -56,7 +50,7 @@ describe('OpenID4VP Draft 24', () => {
     holder = (await createAgentFromModules(
       'holder',
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),
         x509: new X509Module({
@@ -82,8 +76,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier = (await createAgentFromModules(
       'verifier',
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule(),
         tenants: new TenantsModule(),

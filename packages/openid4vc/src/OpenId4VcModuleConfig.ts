@@ -5,13 +5,19 @@ import {
 } from './openid4vc-issuer/OpenId4VcIssuerModuleConfig'
 import { OpenId4VcVerifierModuleConfig, OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
 
-export interface OpenId4VcModuleConfigOptions<
+export type OpenId4VcModuleConfigOptions<
   IssuerConfig extends OpenId4VcIssuerModuleConfigOptions | undefined | null = null,
   VerifierConfig extends OpenId4VcVerifierModuleConfigOptions | undefined | null = null,
-> {
-  issuer?: Exclude<IssuerConfig, null>
-  verifier?: Exclude<VerifierConfig, null>
-}
+> = (IssuerConfig extends null
+  ? { issuer?: OpenId4VcIssuerModuleConfigOptions }
+  : IssuerConfig extends undefined
+    ? { issuer?: undefined }
+    : { issuer: IssuerConfig }) &
+  (VerifierConfig extends null
+    ? { verifier?: OpenId4VcVerifierModuleConfigOptions }
+    : VerifierConfig extends undefined
+      ? { verifier?: undefined }
+      : { verifier: VerifierConfig })
 
 export class OpenId4VcModuleConfig<
   IssuerConfig extends OpenId4VcIssuerModuleConfigOptions | undefined | null = null,
@@ -25,7 +31,7 @@ export class OpenId4VcModuleConfig<
   public readonly verifier: VerifierConfig
 
   public constructor(options?: OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>) {
-    this.options = options ?? {}
+    this.options = options ?? ({} as OpenId4VcModuleConfigOptions<IssuerConfig, VerifierConfig>)
 
     this.issuer = (
       this.options.issuer ? new OpenId4VcIssuerModuleConfig(this.options.issuer) : undefined
