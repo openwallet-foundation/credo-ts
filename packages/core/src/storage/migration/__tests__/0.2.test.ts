@@ -26,9 +26,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     )
 
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -91,7 +89,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const agent = new Agent({
       config: {
-        label: 'Test Agent',
         autoUpdateStorageOnStartup: true,
       },
       modules: {
@@ -129,7 +126,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const agent = new Agent({
       config: {
-        label: 'Test Agent',
         autoUpdateStorageOnStartup: true,
       },
       dependencies: agentDependencies,
