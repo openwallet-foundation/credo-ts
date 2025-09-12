@@ -24,9 +24,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     )
 
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -83,9 +81,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     )
 
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),

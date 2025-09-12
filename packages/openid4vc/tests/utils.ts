@@ -21,14 +21,12 @@ import {
 import { OpenId4VcIssuerEvents, OpenId4VcModule, OpenId4VcVerifierEvents } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
-  label: string,
   modulesMap: MM,
   secretKey?: string,
   customFetch?: typeof global.fetch
 ) {
   const agent = new Agent<MM>({
     config: {
-      label,
       allowInsecureHttpUrls: true,
       logger: new TestLogger(LogLevel.off),
     },

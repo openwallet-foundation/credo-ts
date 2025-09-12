@@ -62,7 +62,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules('issuer', {
+    issuer = await createAgentFromModules({
       openid4vc: new OpenId4VcModule({
         issuer: {
           baseUrl: issuerBaseUrl,
@@ -163,7 +163,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       inMemory: new InMemoryWalletModule({}),
     })
 
-    holder = await createAgentFromModules('holder', {
+    holder = await createAgentFromModules({
       openid4vc: new OpenId4VcModule(),
       inMemory: new InMemoryWalletModule({}),
     })

@@ -155,7 +155,6 @@ describe('OpenId4VP DC API', () => {
 
   beforeEach(async () => {
     holder = (await createAgentFromModules(
-      'holder',
       {
         openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
@@ -164,7 +163,6 @@ describe('OpenId4VP DC API', () => {
     )) as unknown as typeof holder
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
         openid4vc: new OpenId4VcModule({
           verifier: {

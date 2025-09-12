@@ -17,7 +17,7 @@ describe('OpenId4VcVerifier', () => {
   let verifier: AgentType<typeof modules>
 
   beforeEach(async () => {
-    verifier = await createAgentFromModules('verifier', modules, '96213c3d7fc8d4d6754c7a0fd969598f')
+    verifier = await createAgentFromModules(modules, '96213c3d7fc8d4d6754c7a0fd969598f')
   })
 
   afterEach(async () => {

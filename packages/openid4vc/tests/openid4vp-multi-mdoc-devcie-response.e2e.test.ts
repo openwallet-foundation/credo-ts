@@ -12,7 +12,7 @@ describe('OpenId4Vc', () => {
   }>
 
   beforeEach(async () => {
-    verifier = (await createAgentFromModules('verifier', {
+    verifier = (await createAgentFromModules({
       openid4vc: new OpenId4VcModule({
         verifier: {
           baseUrl,

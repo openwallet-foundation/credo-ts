@@ -11,9 +11,7 @@ import { OpenId4VcModule } from '../../OpenId4VcModule'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
-  config: {
-    label: 'OpenId4VcHolder Test28',
-  },
+  config: {},
   dependencies: agentDependencies,
   modules: {
     openid4vc: new OpenId4VcModule(),
