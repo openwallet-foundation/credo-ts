@@ -31,13 +31,11 @@ export class MessagePickupSessionService {
 
     eventEmitter
       .observable<TransportSessionRemovedEvent>(TransportEventTypes.TransportSessionRemoved)
-      .pipe(
-        takeUntil(stop$)
-      )
+      .pipe(takeUntil(stop$))
       .subscribe({
         next: (e) => {
           // Find the live mode session that matches the transport session being removed
-          const liveModeSession = this.sessions.find(session => session.transportSessionId === e.payload.session.id)
+          const liveModeSession = this.sessions.find((session) => session.transportSessionId === e.payload.session.id)
           if (liveModeSession) this.removeLiveSession(agentContext, { connectionId: liveModeSession.connectionId })
         },
       })
@@ -60,7 +58,12 @@ export class MessagePickupSessionService {
 
   public saveLiveSession(
     agentContext: AgentContext,
-    options: { connectionId: string; protocolVersion: string; role: MessagePickupSessionRole; transportSessionId: string }
+    options: {
+      connectionId: string
+      protocolVersion: string
+      role: MessagePickupSessionRole
+      transportSessionId: string
+    }
   ) {
     const { connectionId, protocolVersion, role, transportSessionId } = options
 

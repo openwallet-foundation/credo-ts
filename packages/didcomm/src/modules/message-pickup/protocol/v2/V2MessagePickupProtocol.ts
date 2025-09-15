@@ -290,7 +290,7 @@ export class V2MessagePickupProtocol extends BaseMessagePickupProtocol {
         connectionId: connection.id,
         protocolVersion: 'v2',
         role: MessagePickupSessionRole.MessageHolder,
-        transportSessionId: sessionId
+        transportSessionId: sessionId,
       })
     } else {
       sessionService.removeLiveSession(agentContext, { connectionId: connection.id })
