@@ -18,7 +18,6 @@ import type {
   TrustPingResponseReceivedEvent,
 } from '../../didcomm/src/modules/connections/TrustPingEvents'
 import type { ProofState } from '../../didcomm/src/modules/proofs'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
   Agent,
   AgentDependencies,
@@ -39,8 +38,8 @@ import {
   BasicMessageEventTypes,
   ConnectionEventTypes,
   ConnectionRecord,
-  ConnectionsModule,
   CredentialEventTypes,
+  DidCommModule,
   DidExchangeRole,
   DidExchangeState,
   HandshakeProtocol,
@@ -52,7 +51,6 @@ import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRol
 import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -100,19 +98,24 @@ export function getAskarStoreConfig(
   } satisfies AskarModuleConfigStoreOptions
 }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+export function getAgentOptions<
+  AgentModules extends AgentModulesInput | EmptyModuleMap,
+  RequireDidComm extends boolean | undefined = undefined,
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  DidCommConfig extends DidCommModuleConfigOptions = {},
+>(
   name: string,
-  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
+  didcommConfig?: DidCommConfig,
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
-  { requireDidcomm = false, inMemory = true }: { requireDidcomm?: boolean; inMemory?: boolean } = {}
+  { requireDidcomm, inMemory = true }: { requireDidcomm?: RequireDidComm; inMemory?: boolean } = {}
 ): {
   config: InitConfig
-  modules: AgentModules & DefaultAgentModulesInput
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  modules: (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) & AgentModules
   dependencies: AgentDependencies
   inMemory?: boolean
 } {
-  const _random = uuid().slice(0, 4)
   const config: InitConfig = {
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
@@ -137,13 +140,11 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   const modules = {
     ...(requireDidcomm
       ? {
-          ...getDefaultDidcommModules(didcommConfig),
-          connections:
+          didcomm: new DidCommModule({
+            ...(didcommConfig ?? {}),
             // Make sure connections module is always defined so we can set autoAcceptConnections
-            m.connections ??
-            new ConnectionsModule({
-              autoAcceptConnections: true,
-            }),
+            connections: { autoAcceptConnections: true },
+          }),
         }
       : {}),
     ...m,
@@ -152,7 +153,10 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
   return {
     config,
-    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
+    modules:
+      // biome-ignore lint/complexity/noBannedTypes: <explanation>
+      modules as unknown as (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) &
+        AgentModules,
     dependencies: agentDependencies,
   } as const
 }
@@ -719,20 +723,25 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
-export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, agentB: Agent<DefaultAgentModulesInput>) {
-  const agentAOutOfBand = await agentA.modules.oob.createInvitation({
+export async function makeConnection(
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  agentA: Agent<{ didcomm: DidCommModule<any> }>,
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  agentB: Agent<{ didcomm: DidCommModule<any> }>
+) {
+  const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
     handshakeProtocols: [HandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
+  let { connectionRecord: agentBConnection } = await agentB.didcomm.oob.receiveInvitation(
     agentAOutOfBand.outOfBandInvitation,
     { label: '' }
   )
 
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id!)
-  let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection?.id)
+  agentBConnection = await agentB.didcomm.connections.returnWhenIsConnected(agentBConnection?.id!)
+  let [agentAConnection] = await agentA.didcomm.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.didcomm.connections.returnWhenIsConnected(agentAConnection?.id)
 
   return [agentAConnection, agentBConnection]
 }

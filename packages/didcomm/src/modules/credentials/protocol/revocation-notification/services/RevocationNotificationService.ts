@@ -5,13 +5,10 @@ import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNo
 import type { V2CreateRevocationNotificationMessageOptions } from './RevocationNotificationServiceOptions'
 
 import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
-import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
 import { ConnectionRecord } from '../../../../connections'
 import { CredentialEventTypes } from '../../../CredentialEvents'
 import { RevocationNotification } from '../../../models/RevocationNotification'
 import { CredentialRepository } from '../../../repository'
-import { V1RevocationNotificationHandler, V2RevocationNotificationHandler } from '../handlers'
 import { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
 import {
   v1ThreadRegex,
@@ -30,14 +27,11 @@ export class RevocationNotificationService {
   public constructor(
     credentialRepository: CredentialRepository,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
     this.logger = logger
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   private async processRevocationNotification(
@@ -179,10 +173,5 @@ export class RevocationNotificationService {
     } catch (error) {
       this.logger.warn('Failed to process revocation notification message', { error, credentialId })
     }
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new V1RevocationNotificationHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2RevocationNotificationHandler(this))
   }
 }

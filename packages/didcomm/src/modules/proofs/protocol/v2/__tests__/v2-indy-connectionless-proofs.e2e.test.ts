@@ -29,8 +29,6 @@ import {
   CredentialEventTypes,
   HandshakeProtocol,
   LinkedAttachment,
-  MediationRecipientModule,
-  MediatorModule,
   MediatorPickupStrategy,
   ProofEventTypes,
   ProofState,
@@ -84,7 +82,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     agents = [aliceAgent, faberAgent]
     testLogger.test('Faber sends presentation request to Alice')
 
-    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.modules.proofs.createRequest({
+    let { proofRecord: faberProofExchangeRecord, message } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -116,13 +114,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
       recordId: faberProofExchangeRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -130,11 +128,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     testLogger.test('Alice accepts presentation request from Faber')
-    const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await aliceAgent.didcomm.proofs.selectCredentialsForRequest({
       proofRecordId: aliceProofExchangeRecord.id,
     })
 
-    aliceProofExchangeRecord = await aliceAgent.modules.proofs.acceptRequest({
+    aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.acceptRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
@@ -146,13 +144,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.PresentationReceived,
     })
 
-    const sentPresentationMessage = aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
+    const sentPresentationMessage = aliceAgent.didcomm.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
 
     // assert presentation is valid
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.didcomm.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -206,7 +204,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -240,13 +238,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     const { invitationUrl, message: requestMessage } =
-      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         recordId: faberProofExchangeRecord.id,
         message,
         domain: 'https://a-domain.com',
       })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -273,14 +271,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
       `Connectionless proofs with mediator Mediator-${unique}`,
       {
         endpoints: ['rxjs:mediator'],
+        mediator: { autoAcceptMediationRequests: true },
       },
       {},
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
-        }),
-        mediator: new MediatorModule({
-          autoAcceptMediationRequests: true,
         }),
       },
       { requireDidcomm: true }
@@ -295,12 +291,12 @@ describe('V2 Connectionless Proofs - Indy', () => {
     mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
-    const faberMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
+    const faberMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'faber invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const aliceMediationOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
+    const aliceMediationOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'alice invitation',
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
@@ -312,12 +308,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
-        }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -330,12 +328,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: AutoAcceptProof.Always,
-        }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -390,7 +390,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -424,13 +424,13 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     const { message: requestMessage, invitationUrl } =
-      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         recordId: faberProofExchangeRecord.id,
         message,
         domain: 'https://a-domain.com',
       })
 
-    const mediationRecord = await faberAgent.modules.mediationRecipient.findDefaultMediator()
+    const mediationRecord = await faberAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!mediationRecord) throw new Error('Faber agent has no default mediator')
 
     expect(requestMessage).toMatchObject({
@@ -441,7 +441,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       },
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
@@ -494,7 +494,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -528,7 +528,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     const { message: requestMessage, invitationUrl } =
-      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         recordId: faberProofExchangeRecord.id,
         message,
         domain: 'rxjs:faber',
@@ -538,7 +538,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: ProofState.Done,
       threadId: requestMessage.threadId,
@@ -590,7 +590,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     agents = [aliceAgent, faberAgent]
 
-    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.modules.proofs.createRequest({
+    const { message, proofRecord: faberProofExchangeRecord } = await faberAgent.didcomm.proofs.createRequest({
       protocolVersion: 'v2',
       proofFormats: {
         indy: {
@@ -613,7 +613,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
 
     const { message: requestMessage, invitationUrl } =
-      await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         recordId: faberProofExchangeRecord.id,
         message,
         domain: 'rxjs:faber',
@@ -627,10 +627,10 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: ProofState.RequestReceived,
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
-    await aliceAgent.modules.proofs.declineRequest({
+    await aliceAgent.didcomm.proofs.declineRequest({
       proofRecordId: aliceProofExchangeRecord.id,
       sendProblemReport: true,
     })

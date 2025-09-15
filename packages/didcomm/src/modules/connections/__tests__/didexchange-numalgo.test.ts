@@ -132,7 +132,7 @@ async function didExchangeNumAlgoBaseTest(options: {
   await aliceAgent.initialize()
   await faberAgent.initialize()
 
-  const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
+  const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
     autoAcceptConnection: false,
     multiUseInvitation: false,
   })
@@ -143,7 +143,7 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   if (options.createExternalDidForRequester) {
     // Create did externally
-    const didRouting = await aliceAgent.modules.mediationRecipient.getRouting({})
+    const didRouting = await aliceAgent.didcomm.mediationRecipient.getRouting({})
     ourDid = `did:inmemory:${uuid()}`
     const { didDocument, keys } = createPeerDidDocumentFromServices(
       [
@@ -167,7 +167,7 @@ async function didExchangeNumAlgoBaseTest(options: {
     })
   }
 
-  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+  let { connectionRecord: aliceConnectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
     faberOutOfBandRecord.outOfBandInvitation,
     {
       label: 'alice',
@@ -182,13 +182,13 @@ async function didExchangeNumAlgoBaseTest(options: {
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
   const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
 
-  await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
+  await faberAgent.didcomm.connections.acceptRequest(faberAliceConnectionRecord.id)
 
   aliceConnectionRecord = await waitForAliceResponse
-  await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord?.id)
+  await aliceAgent.didcomm.connections.acceptResponse(aliceConnectionRecord?.id)
 
-  aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
-  faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
+  aliceConnectionRecord = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
+  faberAliceConnectionRecord = await faberAgent.didcomm.connections.returnWhenIsConnected(
     faberAliceConnectionRecord?.id
   )
 

@@ -6,9 +6,9 @@ import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { X509Api } from '../modules/x509'
-import type { DependencyManager } from '../plugins'
+import type { DependencyManager, Module } from '../plugins'
 import type { AgentConfig } from './AgentConfig'
-import type { AgentApi, EmptyModuleMap, ModulesMap, WithoutDefaultModules } from './AgentModules'
+import type { AgentApi, EmptyModuleMap, ModuleApiInstance, ModulesMap, WithoutDefaultModules } from './AgentModules'
 
 import { getAgentApi } from './AgentModules'
 import { EventEmitter } from './EventEmitter'
@@ -27,6 +27,13 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
   public readonly kms: KeyManagementApi
+
+  /**
+   * The DIDComm module, only available if the didcomm module is registered
+   */
+  public readonly didcomm: AgentModules['didcomm'] extends Module
+    ? ModuleApiInstance<AgentModules['didcomm']>
+    : undefined
 
   public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
 
@@ -64,6 +71,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
 
     // Set the api of the registered modules on the agent, excluding the default apis
     this.modules = getAgentApi(this.dependencyManager, defaultApis)
+
+    // Special case for DIDComm module, to expose it on the top-level of the agent.
+    this.didcomm = ('didcomm' in this.modules ? this.modules.didcomm : undefined) as this['didcomm']
   }
 
   public get isInitialized() {

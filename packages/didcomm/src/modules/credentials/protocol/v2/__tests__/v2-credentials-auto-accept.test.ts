@@ -65,7 +65,7 @@ describe('V2 Credentials Auto Accept', () => {
 
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      let aliceCredentialRecord = await aliceAgent.modules.credentials.proposeCredential({
+      let aliceCredentialRecord = await aliceAgent.didcomm.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -107,7 +107,7 @@ describe('V2 Credentials Auto Accept', () => {
 
     test("Faber starts with V2 credential offer to Alice, both with autoAcceptCredential on 'always'", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      let faberCredentialRecord = await faberAgent.modules.credentials.offerCredential({
+      let faberCredentialRecord = await faberAgent.didcomm.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -189,7 +189,7 @@ describe('V2 Credentials Auto Accept', () => {
     test("Alice starts with V2 credential proposal to Faber, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
 
-      let aliceCredentialRecord = await aliceAgent.modules.credentials.proposeCredential({
+      let aliceCredentialRecord = await aliceAgent.didcomm.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -207,7 +207,7 @@ describe('V2 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber sends credential offer to Alice')
-      await faberAgent.modules.credentials.acceptProposal({
+      await faberAgent.didcomm.credentials.acceptProposal({
         credentialRecordId: faberCredentialRecord.id,
         comment: 'V2 Indy Offer',
         credentialFormats: {
@@ -269,7 +269,7 @@ describe('V2 Credentials Auto Accept', () => {
 
     test("Faber starts with V2 credential offer to Alice, both with autoAcceptCredential on 'contentApproved'", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      let faberCredentialRecord = await faberAgent.modules.credentials.offerCredential({
+      let faberCredentialRecord = await faberAgent.didcomm.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -299,7 +299,7 @@ describe('V2 Credentials Auto Accept', () => {
       testLogger.test('Alice received credential offer from Faber')
 
       testLogger.test('alice sends credential request to faber')
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialRecordId: aliceCredentialRecord.id,
       })
 
@@ -348,7 +348,7 @@ describe('V2 Credentials Auto Accept', () => {
 
     test("Alice starts with V2 credential proposal to Faber, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Alice sends credential proposal to Faber')
-      let aliceCredentialRecord = await aliceAgent.modules.credentials.proposeCredential({
+      let aliceCredentialRecord = await aliceAgent.didcomm.credentials.proposeCredential({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         credentialFormats: {
@@ -368,7 +368,7 @@ describe('V2 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Faber negotiated proposal, sending credential offer to Alice')
-      faberCredentialRecord = await faberAgent.modules.credentials.negotiateProposal({
+      faberCredentialRecord = await faberAgent.didcomm.credentials.negotiateProposal({
         credentialRecordId: faberCredentialRecord.id,
         credentialFormats: {
           anoncreds: {
@@ -397,7 +397,7 @@ describe('V2 Credentials Auto Accept', () => {
 
     test("Faber starts with V2 credential offer to Alice, both have autoAcceptCredential on 'contentApproved' and attributes did change", async () => {
       testLogger.test('Faber sends credential offer to Alice')
-      const faberCredentialRecord = await faberAgent.modules.credentials.offerCredential({
+      const faberCredentialRecord = await faberAgent.didcomm.credentials.offerCredential({
         comment: 'some comment about credential',
         connectionId: faberConnectionId,
         credentialFormats: {
@@ -426,7 +426,7 @@ describe('V2 Credentials Auto Accept', () => {
       })
 
       testLogger.test('Alice sends credential request to Faber')
-      await aliceAgent.modules.credentials.negotiateOffer({
+      await aliceAgent.didcomm.credentials.negotiateOffer({
         credentialRecordId: aliceCredentialRecord.id,
         credentialFormats: {
           anoncreds: {

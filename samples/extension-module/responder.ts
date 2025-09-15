@@ -3,7 +3,7 @@ import type { DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
+import { DidCommModule } from '@credo-ts/didcomm'
 import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
@@ -34,13 +34,12 @@ const run = async () => {
           key: 'responder',
         },
       }),
-      didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
-      oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
-      dummy: new DummyModule({ autoAcceptRequests }),
-      connections: new ConnectionsModule({
-        autoAcceptConnections: true,
+      didcomm: new DidCommModule({
+        endpoints: [`http://localhost:${port}`],
+        connections: { autoAcceptConnections: true },
       }),
+
+      dummy: new DummyModule({ autoAcceptRequests }),
     },
     dependencies: agentDependencies,
   })
@@ -51,7 +50,7 @@ const run = async () => {
 
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (_req, res) => {
-    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
+    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
     res.send(outOfBandInvitation.toUrl({ domain: `http://localhost:${port}/invitation` }))
   })
 

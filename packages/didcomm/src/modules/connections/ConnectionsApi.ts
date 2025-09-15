@@ -4,9 +4,7 @@ import type { OutOfBandRecord } from '../oob/repository'
 import type { ConnectionType } from './models'
 import type { ConnectionRecord } from './repository'
 
-import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
-
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
+import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { MessageSender } from '../../MessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { OutboundMessageContext } from '../../models'
@@ -16,24 +14,9 @@ import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
-import {
-  AckMessageHandler,
-  ConnectionProblemReportHandler,
-  ConnectionRequestHandler,
-  ConnectionResponseHandler,
-  DidExchangeCompleteHandler,
-  DidExchangeRequestHandler,
-  DidExchangeResponseHandler,
-  DidRotateAckHandler,
-  DidRotateHandler,
-  DidRotateProblemReportHandler,
-  HangupHandler,
-  TrustPingMessageHandler,
-  TrustPingResponseMessageHandler,
-} from './handlers'
 import { ConnectionRequestMessage, DidExchangeRequestMessage } from './messages'
 import { HandshakeProtocol } from './models'
-import { ConnectionService, DidRotateService, TrustPingService } from './services'
+import { ConnectionService, DidRotateService } from './services'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -52,21 +35,16 @@ export class ConnectionsApi {
   private didRotateService: DidRotateService
   private outOfBandService: OutOfBandService
   private messageSender: MessageSender
-  private trustPingService: TrustPingService
   private routingService: RoutingService
-  private didRepository: DidRepository
   private didResolverService: DidResolverService
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: ConnectionService,
     didRotateService: DidRotateService,
     outOfBandService: OutOfBandService,
-    trustPingService: TrustPingService,
     routingService: RoutingService,
-    didRepository: DidRepository,
     didResolverService: DidResolverService,
     messageSender: MessageSender,
     agentContext: AgentContext,
@@ -76,15 +54,11 @@ export class ConnectionsApi {
     this.connectionService = connectionService
     this.didRotateService = didRotateService
     this.outOfBandService = outOfBandService
-    this.trustPingService = trustPingService
     this.routingService = routingService
-    this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async acceptOutOfBandInvitation(
@@ -555,57 +529,5 @@ export class ConnectionsApi {
 
   public async findByInvitationDid(invitationDid: string): Promise<ConnectionRecord[]> {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(
-      new ConnectionRequestHandler(
-        this.connectionService,
-        this.outOfBandService,
-        this.routingService,
-        this.didRepository,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(
-      new ConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
-    )
-    messageHandlerRegistry.registerMessageHandler(new AckMessageHandler(this.connectionService))
-    messageHandlerRegistry.registerMessageHandler(new ConnectionProblemReportHandler(this.connectionService))
-    messageHandlerRegistry.registerMessageHandler(
-      new TrustPingMessageHandler(this.trustPingService, this.connectionService)
-    )
-    messageHandlerRegistry.registerMessageHandler(new TrustPingResponseMessageHandler(this.trustPingService))
-
-    messageHandlerRegistry.registerMessageHandler(
-      new DidExchangeRequestHandler(
-        this.didExchangeProtocol,
-        this.outOfBandService,
-        this.routingService,
-        this.didRepository,
-        this.config
-      )
-    )
-
-    messageHandlerRegistry.registerMessageHandler(
-      new DidExchangeResponseHandler(
-        this.didExchangeProtocol,
-        this.outOfBandService,
-        this.connectionService,
-        this.didResolverService,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(
-      new DidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
-    )
-
-    messageHandlerRegistry.registerMessageHandler(new DidRotateHandler(this.didRotateService, this.connectionService))
-
-    messageHandlerRegistry.registerMessageHandler(new DidRotateAckHandler(this.didRotateService))
-
-    messageHandlerRegistry.registerMessageHandler(new HangupHandler(this.didRotateService))
-
-    messageHandlerRegistry.registerMessageHandler(new DidRotateProblemReportHandler(this.didRotateService))
   }
 }

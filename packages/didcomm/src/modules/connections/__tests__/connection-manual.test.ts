@@ -93,7 +93,7 @@ describe('Manual Connection Flow', () => {
     await bobAgent.initialize()
     await faberAgent.initialize()
 
-    const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
+    const faberOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
       autoAcceptConnection: false,
       multiUseInvitation: true,
       label: 'faber',
@@ -102,7 +102,7 @@ describe('Manual Connection Flow', () => {
     const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
     const waitForBobRequest = waitForRequest(faberAgent, 'bob')
 
-    let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+    let { connectionRecord: aliceConnectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
         label: 'alice',
@@ -111,7 +111,7 @@ describe('Manual Connection Flow', () => {
       }
     )
 
-    let { connectionRecord: bobConnectionRecord } = await bobAgent.modules.oob.receiveInvitation(
+    let { connectionRecord: bobConnectionRecord } = await bobAgent.didcomm.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
         label: 'bob',
@@ -128,21 +128,21 @@ describe('Manual Connection Flow', () => {
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord?.id!)
 
-    await faberAgent.modules.connections.acceptRequest(faberAliceConnectionRecord.id)
-    await faberAgent.modules.connections.acceptRequest(faberBobConnectionRecord.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnectionRecord.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberBobConnectionRecord.id)
 
     aliceConnectionRecord = await waitForAliceResponse
-    await aliceAgent.modules.connections.acceptResponse(aliceConnectionRecord?.id)
+    await aliceAgent.didcomm.connections.acceptResponse(aliceConnectionRecord?.id)
 
     bobConnectionRecord = await waitForBobResponse
-    await bobAgent.modules.connections.acceptResponse(bobConnectionRecord?.id)
+    await bobAgent.didcomm.connections.acceptResponse(bobConnectionRecord?.id)
 
-    aliceConnectionRecord = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
-    bobConnectionRecord = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionRecord?.id)
-    faberAliceConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(
+    aliceConnectionRecord = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnectionRecord?.id)
+    bobConnectionRecord = await bobAgent.didcomm.connections.returnWhenIsConnected(bobConnectionRecord?.id)
+    faberAliceConnectionRecord = await faberAgent.didcomm.connections.returnWhenIsConnected(
       faberAliceConnectionRecord?.id
     )
-    faberBobConnectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(faberBobConnectionRecord?.id)
+    faberBobConnectionRecord = await faberAgent.didcomm.connections.returnWhenIsConnected(faberBobConnectionRecord?.id)
 
     expect(aliceConnectionRecord).toBeConnectedWith(faberAliceConnectionRecord)
     expect(bobConnectionRecord).toBeConnectedWith(faberBobConnectionRecord)

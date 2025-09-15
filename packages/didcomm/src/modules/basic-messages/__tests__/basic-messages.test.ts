@@ -65,7 +65,7 @@ describe('Basic Messages E2E', () => {
 
   test('Alice and Faber exchange messages', async () => {
     testLogger.test('Alice sends message to Faber')
-    const helloRecord = await aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello')
+    const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello')
 
     expect(helloRecord.content).toBe('Hello')
 
@@ -75,7 +75,7 @@ describe('Basic Messages E2E', () => {
     })
 
     testLogger.test('Faber sends message to Alice')
-    const replyRecord = await faberAgent.modules.basicMessages.sendMessage(faberConnection.id, 'How are you?')
+    const replyRecord = await faberAgent.didcomm.basicMessages.sendMessage(faberConnection.id, 'How are you?')
     expect(replyRecord.content).toBe('How are you?')
 
     testLogger.test('Alice waits until she receives message from faber')
@@ -86,7 +86,7 @@ describe('Basic Messages E2E', () => {
 
   test('Alice and Faber exchange messages using threadId', async () => {
     testLogger.test('Alice sends message to Faber')
-    const helloRecord = await aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello')
+    const helloRecord = await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello')
 
     expect(helloRecord.content).toBe('Hello')
 
@@ -96,7 +96,7 @@ describe('Basic Messages E2E', () => {
     })
 
     testLogger.test('Faber sends message to Alice')
-    const replyRecord = await faberAgent.modules.basicMessages.sendMessage(
+    const replyRecord = await faberAgent.didcomm.basicMessages.sendMessage(
       faberConnection.id,
       'How are you?',
       helloMessage.id
@@ -113,8 +113,8 @@ describe('Basic Messages E2E', () => {
 
     // Both sender and recipient shall be able to find the threaded messages
     // Hello message
-    const aliceHelloMessage = await aliceAgent.modules.basicMessages.getByThreadId(helloMessage.id)
-    const faberHelloMessage = await faberAgent.modules.basicMessages.getByThreadId(helloMessage.id)
+    const aliceHelloMessage = await aliceAgent.didcomm.basicMessages.getByThreadId(helloMessage.id)
+    const faberHelloMessage = await faberAgent.didcomm.basicMessages.getByThreadId(helloMessage.id)
     expect(aliceHelloMessage).toMatchObject({
       content: helloRecord.content,
       threadId: helloRecord.threadId,
@@ -125,10 +125,10 @@ describe('Basic Messages E2E', () => {
     })
 
     // Reply message
-    const aliceReplyMessages = await aliceAgent.modules.basicMessages.findAllByQuery({
+    const aliceReplyMessages = await aliceAgent.didcomm.basicMessages.findAllByQuery({
       parentThreadId: helloMessage.id,
     })
-    const faberReplyMessages = await faberAgent.modules.basicMessages.findAllByQuery({
+    const faberReplyMessages = await faberAgent.didcomm.basicMessages.findAllByQuery({
       parentThreadId: helloMessage.id,
     })
     expect(aliceReplyMessages.length).toBe(1)
@@ -148,11 +148,11 @@ describe('Basic Messages E2E', () => {
       .spyOn(aliceAgent.modules.didcomm.outboundTransports[0], 'sendMessage')
       .mockRejectedValue(new Error('any error'))
 
-    await expect(aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrowError(
+    await expect(aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrowError(
       MessageSendingError
     )
     try {
-      await aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello undeliverable')
+      await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello undeliverable')
     } catch (error) {
       const thrownError = error as MessageSendingError
       expect(thrownError.message).toEqual(
@@ -164,15 +164,15 @@ describe('Basic Messages E2E', () => {
       expect((thrownError.outboundMessageContext.message as BasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
-      const storedRecord = await aliceAgent.modules.basicMessages.getById(
+      const storedRecord = await aliceAgent.didcomm.basicMessages.getById(
         thrownError.outboundMessageContext.associatedRecord?.id
       )
       expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
-      await aliceAgent.modules.basicMessages.deleteById(storedRecord.id)
+      await aliceAgent.didcomm.basicMessages.deleteById(storedRecord.id)
       await expect(
-        aliceAgent.modules.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id)
+        aliceAgent.didcomm.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id)
       ).rejects.toThrowError(RecordNotFoundError)
     }
     spy.mockClear()

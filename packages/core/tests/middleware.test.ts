@@ -113,7 +113,7 @@ describe('Message Handler Middleware E2E', () => {
       }
     )
 
-    await faberAgent.modules.connections.sendPing(faberConnection.id, {})
+    await faberAgent.didcomm.connections.sendPing(faberConnection.id, {})
     const receiveMessage = await waitForAgentMessageProcessedEvent(faberAgent, {
       messageType: TrustPingResponseMessage.type.messageTypeUri,
     })

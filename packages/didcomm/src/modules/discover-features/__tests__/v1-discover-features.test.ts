@@ -65,7 +65,7 @@ describe('v1 discover features', () => {
       .observable<DiscoverFeaturesQueryReceivedEvent>(DiscoverFeaturesEventTypes.QueryReceived)
       .subscribe(aliceReplay)
 
-    await faberAgent.modules.discovery.queryFeatures({
+    await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v1',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],
@@ -90,7 +90,7 @@ describe('v1 discover features', () => {
   })
 
   test('Faber asks Alice for revocation notification protocol support synchronously', async () => {
-    const matchingFeatures = await faberAgent.modules.discovery.queryFeatures({
+    const matchingFeatures = await faberAgent.didcomm.discovery.queryFeatures({
       connectionId: faberConnection.id,
       protocolVersion: 'v1',
       queries: [{ featureType: 'protocol', match: 'https://didcomm.org/revocation_notification/*' }],

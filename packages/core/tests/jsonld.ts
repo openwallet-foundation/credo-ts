@@ -1,15 +1,13 @@
 import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
 import {
   CredentialEventTypes,
-  CredentialsModule,
+  DidCommModule,
   DifPresentationExchangeProofFormatService,
   JsonLdCredentialFormatService,
   ProofEventTypes,
-  ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
 } from '../../didcomm/src'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
@@ -18,7 +16,7 @@ import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
+export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 
 export const getJsonLdModules = (
   _name: string,
@@ -28,16 +26,18 @@ export const getJsonLdModules = (
   }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
 ) =>
   ({
-    credentials: new CredentialsModule({
-      credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
-      autoAcceptCredentials,
+    didcomm: new DidCommModule({
+      credentials: {
+        credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
+        autoAcceptCredentials,
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
+      },
     }),
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),

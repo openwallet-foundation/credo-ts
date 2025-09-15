@@ -1,9 +1,10 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
-import { FeatureRegistry, Protocol } from '@credo-ts/didcomm'
+import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '@credo-ts/didcomm'
 
 import { QuestionAnswerApi } from './QuestionAnswerApi'
 import { QuestionAnswerRole } from './QuestionAnswerRole'
+import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { QuestionAnswerRepository } from './repository'
 import { QuestionAnswerService } from './services'
 
@@ -22,8 +23,14 @@ export class QuestionAnswerModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext) {
-    // Feature Registry
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(MessageHandlerRegistry)
+    const questionAnswerService = agentContext.resolve(QuestionAnswerService)
+
+    messageHandlerRegistry.registerMessageHandlers([
+      new QuestionMessageHandler(questionAnswerService),
+      new AnswerMessageHandler(questionAnswerService),
+    ])
     featureRegistry.register(
       new Protocol({
         id: 'https://didcomm.org/questionanswer/1.0',

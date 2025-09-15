@@ -8,6 +8,10 @@ import { Protocol } from '../../models'
 
 import { CredentialsApi } from './CredentialsApi'
 import { CredentialsModuleConfig } from './CredentialsModuleConfig'
+import {
+  V1RevocationNotificationHandler,
+  V2RevocationNotificationHandler,
+} from './protocol/revocation-notification/handlers'
 import { RevocationNotificationService } from './protocol/revocation-notification/services'
 import { V2CredentialProtocol } from './protocol/v2'
 import { CredentialRepository } from './repository'
@@ -15,7 +19,7 @@ import { CredentialRepository } from './repository'
 /**
  * Default credentialProtocols that will be registered if the `credentialProtocols` property is not configured.
  */
-export type DefaultCredentialProtocols = []
+export type DefaultCredentialProtocols = [V2CredentialProtocol<[]>]
 
 // CredentialsModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
 export type CredentialsModuleOptions<CredentialProtocols extends CredentialProtocol[]> = Optional<
@@ -55,8 +59,12 @@ export class CredentialsModule<CredentialProtocols extends CredentialProtocol[] 
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(MessageHandlerRegistry)
+    const featureRegistry = agentContext.resolve(FeatureRegistry)
+    const revocationNotificationService = agentContext.resolve(RevocationNotificationService)
+
+    messageHandlerRegistry.registerMessageHandler(new V1RevocationNotificationHandler(revocationNotificationService))
+    messageHandlerRegistry.registerMessageHandler(new V2RevocationNotificationHandler(revocationNotificationService))
 
     featureRegistry.register(
       new Protocol({

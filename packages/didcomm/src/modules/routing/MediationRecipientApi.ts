@@ -21,7 +21,6 @@ import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from '
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'
 import { TransportEventTypes } from '../../transport'
@@ -35,9 +34,6 @@ import { V2StatusMessage } from '../message-pickup/protocol/v2'
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
 import { MediatorPickupStrategy } from './MediatorPickupStrategy'
 import { RoutingEventTypes } from './RoutingEvents'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
-import { MediationDenyHandler } from './handlers/MediationDenyHandler'
-import { MediationGrantHandler } from './handlers/MediationGrantHandler'
 import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
 import { MediationState } from './models/MediationState'
 import { MediationRepository } from './repository'
@@ -65,7 +61,6 @@ export class MediationRecipientApi {
   private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
     mediationRecipientService: MediationRecipientService,
     connectionService: ConnectionService,
     dids: DidsApi,
@@ -93,7 +88,6 @@ export class MediationRecipientApi {
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = mediationRecipientModuleConfig
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   private async sendMessage(outboundMessageContext: OutboundMessageContext, pickupStrategy?: MediatorPickupStrategy) {
@@ -485,13 +479,5 @@ export class MediationRecipientApi {
 
   public async getRouting(options: GetRoutingOptions) {
     return this.routingService.getRouting(this.agentContext, options)
-  }
-
-  // Register handlers for the several messages for the mediator.
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
-    //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

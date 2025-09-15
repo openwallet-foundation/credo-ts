@@ -1,52 +1,21 @@
+import { ModulesMap } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import {
   ConnectionsModuleConfigOptions,
   CredentialProtocol,
   CredentialsModuleConfigOptions,
-  DifPresentationExchangeProofFormatService,
-  JsonLdCredentialFormatService,
-  MessagePickupModuleOptions,
+  MessagePickupModuleConfigOptions,
   ProofProtocol,
   ProofsModuleConfigOptions,
-  V1MessagePickupProtocol,
-  V2CredentialProtocol,
-  V2MessagePickupProtocol,
-  V2ProofProtocol,
 } from './modules'
+import { DiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DiscoverFeaturesModuleConfig'
 import { MessagePickupProtocol } from './modules/message-pickup/protocol/MessagePickupProtocol'
 import { MediationRecipientModuleConfigOptions } from './modules/routing/MediationRecipientModuleConfig'
 import { MediatorModuleConfigOptions } from './modules/routing/MediatorModuleConfig'
 import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
-export type DidCommDefaultModuleMap = {
-  basicMessages: true
-  proofs: true
-  credentials: true
-  messagePickup: true
-  mediator: true
-  mediationRecipient: true
-}
-
-export type DidCommModuleMap<
-  PP extends ProofProtocol[],
-  CP extends CredentialProtocol[],
-  MPP extends MessagePickupProtocol[],
-> = {
-  basicMessages: boolean
-  proofs: ProofsModuleConfigOptions<PP> | boolean
-  credentials: CredentialsModuleConfigOptions<CP> | boolean
-  messagePickup: MessagePickupModuleOptions<MPP> | boolean
-  mediator: MediatorModuleConfigOptions | boolean
-  mediationRecipient?: MediationRecipientModuleConfigOptions | boolean
-}
-
-export interface DidCommModuleConfigOptions<
-  ModuleMap extends DidCommModuleMap<PP, CP, MPP> = DidCommDefaultModuleMap,
-  PP extends ProofProtocol[] = [V2ProofProtocol<[DifPresentationExchangeProofFormatService]>],
-  CP extends CredentialProtocol[] = [V2CredentialProtocol<[JsonLdCredentialFormatService]>],
-  MPP extends MessagePickupProtocol[] = [V1MessagePickupProtocol, V2MessagePickupProtocol],
-> {
+export interface DidCommModuleConfigOptions {
   endpoints?: string[]
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
@@ -62,6 +31,13 @@ export interface DidCommModuleConfigOptions<
   connections?: ConnectionsModuleConfigOptions
 
   /**
+   * Configuration for the discover features module.
+   *
+   * The discover features module is always enabled
+   */
+  discovery?: DiscoverFeaturesModuleConfigOptions
+
+  /**
    * Configuration for the credentials module
    *
    * The credentials module is enabled by default with
@@ -72,7 +48,7 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  credentials?: ModuleMap['credentials']
+  credentials?: boolean | CredentialsModuleConfigOptions<CredentialProtocol[]>
 
   /**
    * Configuration for the proofs module
@@ -85,7 +61,7 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  proofs?: ModuleMap['proofs']
+  proofs?: boolean | ProofsModuleConfigOptions<ProofProtocol[]>
 
   /**
    * Configuration to enable to basic messages module
@@ -95,7 +71,7 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  basicMessages?: ModuleMap['basicMessages']
+  basicMessages?: boolean
 
   /**
    * Configuration for the message pickup module
@@ -108,7 +84,7 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  messagePickup?: ModuleMap['messagePickup']
+  messagePickup?: boolean | MessagePickupModuleConfigOptions<MessagePickupProtocol[]>
 
   /**
    * Configuration or the mediator module
@@ -118,7 +94,7 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  mediator?: ModuleMap['mediator']
+  mediator?: boolean | MediatorModuleConfigOptions
 
   /**
    * Configuration for the mediation recipient module
@@ -128,18 +104,52 @@ export interface DidCommModuleConfigOptions<
    *
    * @default true
    */
-  mediationRecipient?: ModuleMap['mediationRecipient']
+  mediationRecipient?: boolean | MediationRecipientModuleConfigOptions
+
+  /**
+   * Additional modules to register as part of the DIDComm module.
+   *
+   * NOTE: you should not register any of the default registered modules,
+   * only extension modules, such as ActionMenuModule.
+   *
+   * Additional modules can be accessed on `agent.didcomm.modules.XXX`
+   */
+  modules?: ModulesMap
 }
 
-export class DidCommModuleConfig {
-  private options: DidCommModuleConfigOptions
+export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
+  private options: Options
   private _endpoints?: string[]
   private _queueTransportRepository: QueueTransportRepository
 
-  public constructor(options?: DidCommModuleConfigOptions) {
-    this.options = options ?? {}
+  public readonly enabledModules: {
+    oob: true
+    connections: true
+    discovery: true
+    credentials: Options['credentials'] extends false ? false : true
+    proofs: Options['proofs'] extends false ? false : true
+    messagePickup: Options['messagePickup'] extends false ? false : true
+    mediator: Options['mediator'] extends false ? false : true
+    mediationRecipient: Options['mediationRecipient'] extends false ? false : true
+    basicMessages: Options['basicMessages'] extends false ? false : true
+  }
+
+  public constructor(options?: Options) {
+    this.options = (options ?? {}) as Options
     this._endpoints = options?.endpoints
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
+
+    this.enabledModules = {
+      connections: true,
+      oob: true,
+      discovery: true,
+      proofs: this.options.proofs !== false,
+      credentials: this.options.credentials !== false,
+      messagePickup: this.options.messagePickup !== false,
+      mediator: this.options.mediator !== false,
+      mediationRecipient: this.options.mediationRecipient !== false,
+      basicMessages: this.options.basicMessages !== false,
+    } as this['enabledModules']
   }
 
   public get endpoints(): [string, ...string[]] {
