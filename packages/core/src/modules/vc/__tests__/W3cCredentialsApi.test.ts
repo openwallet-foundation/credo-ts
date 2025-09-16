@@ -51,7 +51,7 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'save')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'storeCredential')
 
-    await agent.w3cCredentials.storeCredential({
+    await agent.w3cCredentials.store({
       credential: testCredential,
     })
 
@@ -63,11 +63,11 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'getById')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'getCredentialRecordById')
 
-    const storedCredential = await agent.w3cCredentials.storeCredential({
+    const storedCredential = await agent.w3cCredentials.store({
       credential: testCredential,
     })
 
-    const retrievedCredential = await agent.w3cCredentials.getCredentialRecordById(storedCredential.id)
+    const retrievedCredential = await agent.w3cCredentials.getById(storedCredential.id)
     expect(storedCredential.id).toEqual(retrievedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
@@ -81,17 +81,17 @@ describe('W3cCredentialsApi', () => {
     const repoSpy = jest.spyOn(w3cCredentialRepository, 'deleteById')
     const serviceSpy = jest.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
-    const storedCredential = await agent.w3cCredentials.storeCredential({
+    const storedCredential = await agent.w3cCredentials.store({
       credential: testCredential,
     })
 
-    await agent.w3cCredentials.removeCredentialRecord(storedCredential.id)
+    await agent.w3cCredentials.deleteById(storedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
     expect(serviceSpy).toHaveBeenCalledWith(agent.context, storedCredential.id)
 
-    const allCredentials = await agent.w3cCredentials.getAllCredentialRecords()
+    const allCredentials = await agent.w3cCredentials.getAll()
     expect(allCredentials).toHaveLength(0)
   })
 })

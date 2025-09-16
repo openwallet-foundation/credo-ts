@@ -334,7 +334,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVc = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
+    const compactSdJwtVc = (credentialResponse.credentials[0].record[0] as SdJwtVc).compact
     const sdJwtVc = holder.agent.sdJwtVc.fromCompact(compactSdJwtVc)
     expect(sdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
     expect(sdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')
@@ -457,7 +457,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const compactSdJwtVc = (credentialResponse.credentials[0].credentials[0] as SdJwtVc).compact
+    const compactSdJwtVc = (credentialResponse.credentials[0].record[0] as SdJwtVc).compact
     const sdJwtVc = holder.agent.sdJwtVc.fromCompact(compactSdJwtVc)
     expect(sdJwtVc.payload.vct).toEqual(universityDegreeCredentialConfigurationSupported.vct)
     expect(sdJwtVc.prettyClaims.full_name).toEqual('Erika Powerstar')

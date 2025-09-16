@@ -1,4 +1,4 @@
-import type { AgentContext, Kms, VerifiableCredential } from '@credo-ts/core'
+import type { AgentContext, Kms, MdocRecord, SdJwtVcRecord, W3cCredentialRecord } from '@credo-ts/core'
 import type { CredentialOfferObject, IssuerMetadataResult } from '@openid4vc/openid4vci'
 import type {
   OpenId4VcCredentialHolderBinding,
@@ -53,13 +53,21 @@ export type OpenId4VciRequestTokenResponse = {
   accessTokenResponse: OpenId4VciAccessTokenResponse
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-type UnionToArrayUnion<T> = T extends any ? T[] : never
-
 export interface OpenId4VciCredentialResponse {
   credentialConfigurationId: string
   credentialConfiguration: OpenId4VciCredentialConfigurationSupportedWithFormats
-  credentials: UnionToArrayUnion<VerifiableCredential>
+
+  /**
+   * The record containing the credentials returned in the OpenID4VCI credential response
+   *
+   * The credential is returned as a record, which can be provided to the
+   * respective `store()` method of each credential-specific API.
+   *
+   * The record contains the credential instance (instances in case of batch issuance)
+   * along with metadata such as the VCT Type Metadata (in case of SD-JWT)
+   */
+  record: SdJwtVcRecord | MdocRecord | W3cCredentialRecord
+
   notificationId?: string
 }
 

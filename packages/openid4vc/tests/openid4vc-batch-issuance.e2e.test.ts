@@ -148,7 +148,7 @@ describe('OpenId4Vc Batch Issuance', () => {
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
+    expect(credentialResponse.credentials[0].record).toHaveLength(10)
   })
 
   it('e2e flow requesting a batch of mdoc larger than max batch size', async () => {
