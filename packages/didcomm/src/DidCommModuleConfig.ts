@@ -1,5 +1,5 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
+import { InboundTransport, InMemoryQueueTransportRepository, OutboundTransport, QueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -8,6 +8,10 @@ import { DidCommMimeType } from './types'
  */
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
+  transports?: {
+    inbound?: InboundTransport[],
+    outbound?: OutboundTransport[]
+  }
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
