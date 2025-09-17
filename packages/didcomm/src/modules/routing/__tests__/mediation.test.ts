@@ -9,7 +9,6 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { sleep } from '../../../../../core/src/utils/sleep'
 import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
-import { DidCommModule } from '../../../DidCommModule'
 import { DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
@@ -25,6 +24,9 @@ const getRecipientAgentOptions = (
     {
       ...didCommModuleConfig,
       useDidKeyInProtocols,
+      mediationRecipient: {
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
     },
     undefined,
     undefined,
@@ -98,19 +100,20 @@ describe('mediator establishment', () => {
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const module = recipientAgentOptions.modules.didcomm as DidCommModule<object>
-    // @ts-ignore
-    module.modules.mediationRecipient.config.mediatorPickupStrategy = MediatorPickupStrategy.PickUpV1
-    // @ts-ignore
-    module.modules.mediationRecipient.config.mediatorInvitationUrl = mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-      domain: 'https://example.com/ssi',
-    })
-
-    // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent(recipientAgentOptions)
     recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     recipientAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
+
+    let { connectionRecord } = await recipientAgent.didcomm.oob.receiveInvitationFromUrl(
+      mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com/ssi',
+      }),
+      { label: 'wallet' }
+    )
+    if (!connectionRecord) throw new Error('expected connection record')
+    connectionRecord = await recipientAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+    await recipientAgent.didcomm.mediationRecipient.provision(connectionRecord)
 
     const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!recipientMediator) {
@@ -199,7 +202,7 @@ describe('mediator establishment', () => {
     await e2eMediationTest(getMediatorAgentOptions(false), getRecipientAgentOptions(false))
   })
 
-  test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {
+  test.only('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
     const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()

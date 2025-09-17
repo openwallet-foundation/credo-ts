@@ -37,12 +37,13 @@ import { CredoError, Kms } from '@credo-ts/core'
 const faberAgent = new Agent(
   getAgentOptions(
     'Faber Agent OOB',
-    {
-      endpoints: ['rxjs:faber'],
-    },
+    {},
     {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:faber'],
+      },
     }),
     { requireDidcomm: true }
   )
@@ -50,14 +51,15 @@ const faberAgent = new Agent(
 const aliceAgent = new Agent(
   getAgentOptions(
     'Alice Agent OOB',
-    {
-      endpoints: ['rxjs:alice'],
-    },
+    {},
     {
       logger: testLogger,
     },
     getAnonCredsIndyModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:alice'],
+      },
     }),
     { requireDidcomm: true }
   )
@@ -101,8 +103,6 @@ describe('out of band', () => {
     aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
     aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-
-    //await aliceAgent.modules.anoncreds.createLinkSecret()
 
     const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
       faberAgent,

@@ -5,7 +5,8 @@
     "paths": {
       "@credo-ts/*": ["packages/*/src"]
     },
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "isolatedModules": true
   },
   "include": ["tests", "samples", "demo", "demo-openid", "packages/core/types/jest.d.ts"],
   "exclude": ["node_modules", "build", "**/build/**"]

@@ -128,15 +128,12 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
    * Registers the dependencies of the question answer module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    const featureRegistry = new FeatureRegistry()
-    const messageHandlerRegistry = new MessageHandlerRegistry()
-
     // Config
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
     // Registries
-    dependencyManager.registerInstance(MessageHandlerRegistry, messageHandlerRegistry)
-    dependencyManager.registerInstance(FeatureRegistry, featureRegistry)
+    dependencyManager.registerSingleton(MessageHandlerRegistry)
+    dependencyManager.registerSingleton(FeatureRegistry)
 
     // Services
     dependencyManager.registerSingleton(MessageSender)
@@ -150,15 +147,12 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
     dependencyManager.registerSingleton(DidCommMessageRepository)
 
     for (const [_moduleKey, module] of Object.entries(this.modules)) {
-      module.register(dependencyManager, featureRegistry, messageHandlerRegistry)
+      module.register(dependencyManager)
 
       if (module.api) {
         dependencyManager.registerContextScoped(module.api as Constructor<unknown>)
       }
     }
-
-    // Features
-    // TODO: Constraints?
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
@@ -198,8 +192,36 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
       await transport.start(agentContext)
     }
 
-    for (const [_moduleKey, module] of Object.entries(this.modules)) {
+    for (const module of Object.values(this.modules)) {
       await module.initialize?.(agentContext)
+    }
+  }
+
+  public async onInitializeContext(agentContext: AgentContext): Promise<void> {
+    for (const module of Object.values(this.modules)) {
+      const standardModule = module as Module
+      await standardModule.onInitializeContext?.(agentContext)
+    }
+  }
+
+  public async onCloseContext(agentContext: AgentContext): Promise<void> {
+    for (const module of Object.values(this.modules)) {
+      const standardModule = module as Module
+      await standardModule.onCloseContext?.(agentContext)
+    }
+  }
+
+  public async onDeleteContext(agentContext: AgentContext): Promise<void> {
+    for (const module of Object.values(this.modules)) {
+      const standardModule = module as Module
+      await standardModule.onDeleteContext?.(agentContext)
+    }
+  }
+
+  public async onProvisionContext(agentContext: AgentContext): Promise<void> {
+    for (const module of Object.values(this.modules)) {
+      const standardModule = module as Module
+      await standardModule.onProvisionContext?.(agentContext)
     }
   }
 
@@ -211,6 +233,11 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
     const allTransports = [...messageReceiver.inboundTransports, ...messageSender.outboundTransports]
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
+
+    for (const module of Object.values(this.modules)) {
+      const standardModule = module as Module
+      await standardModule.shutdown?.(agentContext)
+    }
   }
 
   public get updates() {

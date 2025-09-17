@@ -17,6 +17,7 @@ import {
   DefaultCredentialProtocols,
   DefaultMessagePickupProtocols,
   DefaultProofProtocols,
+  DiscoverFeaturesApi,
   MediationRecipientApi,
   MediatorApi,
   MessagePickupApi,
@@ -39,6 +40,7 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
 
   public connections = this.agentContext.resolve(ConnectionsApi)
   public oob = this.agentContext.resolve(OutOfBandApi)
+  public discovery = this.agentContext.resolve(DiscoverFeaturesApi)
   public proofs: ApiOrUndefined<
     Options['proofs'],
     ProofsApi<

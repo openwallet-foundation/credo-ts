@@ -11,6 +11,9 @@ import { MediationRecipientService } from './MediationRecipientService'
 
 @injectable()
 export class RoutingService {
+  // TODO: mediation recipient module could be disabled.
+  // We should check if the module is enabled, and only then
+  // inject it.
   private mediationRecipientService: MediationRecipientService
 
   private eventEmitter: EventEmitter
