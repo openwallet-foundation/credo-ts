@@ -1,5 +1,5 @@
 {
-  "id": "63f89bcd-a76f-4726-8f16-07e8671d31a6",
+  "id": "9261d982-c40a-40bc-a3ff-151da279b110",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -47,12 +47,14 @@
         "state": {
           "name": "state",
           "type": "DidcommQuestionAnswerState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommQuestionAnswerRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -142,7 +144,7 @@
     "public.DidcommQuestionAnswerState": {
       "name": "DidcommQuestionAnswerState",
       "schema": "public",
-      "values": ["question-sent", "question-received", "answer-received", "answer-sent"]
+      "values": ["question-sent", "answer-received", "question-received", "answer-sent"]
     },
     "public.DidcommQuestionAnswerRole": {
       "name": "DidcommQuestionAnswerRole",

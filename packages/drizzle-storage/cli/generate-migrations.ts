@@ -17,7 +17,7 @@ export async function generateMigrations({ dialects, bundles, name }: GenerateMi
 
     for (const dialect of dialects) {
       const dialectBundle = bundle.migrations[dialect]
-      const schemaFile = await resolveSchemaFile(dialectBundle.schemaSourcePath)
+      const schemaFile = await resolveSchemaFile(dialectBundle.schemaPath)
       const drizzleMigrationsFolder = getMigrationsDirectory(dialectBundle.migrationsPath)
 
       const migrateResult = spawnSync(
@@ -36,11 +36,11 @@ export async function generateMigrations({ dialects, bundles, name }: GenerateMi
 
       if (migrateResult.status !== 0 || migrateResult.stderr !== '') {
         throw new Error(
-          `Error generating migrations for schema ${dialectBundle.schemaSourcePath} with dialect ${dialect}. Error: ${migrateResult.stderr || migrateResult.stdout}`
+          `Error generating migrations for schema ${dialectBundle.schemaPath} with dialect ${dialect}. Error: ${migrateResult.stderr || migrateResult.stdout}`
         )
       }
 
-      log(`Generated migrations for ${dialectBundle.schemaSourcePath} with dialect ${dialect}:`)
+      log(`Generated migrations for ${dialectBundle.schemaPath} with dialect ${dialect}:`)
       log(migrateResult.stdout)
     }
   }

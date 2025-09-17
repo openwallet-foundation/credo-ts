@@ -1,5 +1,5 @@
 {
-  "id": "e36e3e17-a409-4831-a265-46dc95da62ae",
+  "id": "c63a9b49-3b49-43be-b184-120215072ea2",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -59,12 +59,14 @@
         "state": {
           "name": "state",
           "type": "DidcommDrpcState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommDrpcRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },

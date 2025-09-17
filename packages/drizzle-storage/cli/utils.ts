@@ -30,11 +30,11 @@ export async function resolveBundle(bundle: string) {
       name: string
       migrations: {
         sqlite: {
-          schemaSourcePath: string
+          schemaPath: string
           migrationsPath: string
         }
         postgres: {
-          schemaSourcePath: string
+          schemaPath: string
           migrationsPath: string
         }
       }

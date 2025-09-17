@@ -1,5 +1,5 @@
 {
-  "id": "738b8c3b-a558-4416-99ec-4836e93b82e3",
+  "id": "dcec6c23-3873-4a27-8bc1-a51c27136387",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -59,6 +59,7 @@
         "role": {
           "name": "role",
           "type": "DidcommBasicMessageRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -349,18 +350,21 @@
         "state": {
           "name": "state",
           "type": "DidcommCredentialExchangeState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommCredentialExchangeRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "auto_accept_credential": {
           "name": "auto_accept_credential",
           "type": "DidcommCredentialExchangeAutoAccept",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -479,6 +483,7 @@
         "role": {
           "name": "role",
           "type": "DidcommMessageRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -585,12 +590,14 @@
         "state": {
           "name": "state",
           "type": "DidcommMediationState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommMediationRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -627,6 +634,7 @@
         "pickup_strategy": {
           "name": "pickup_strategy",
           "type": "DidcommMediationPickupStrategry",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -794,12 +802,14 @@
         "role": {
           "name": "role",
           "type": "DidcommOutOfBandRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "state": {
           "name": "state",
           "type": "DidcommOutOfBandState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -960,18 +970,21 @@
         "state": {
           "name": "state",
           "type": "DidcommProofExchangeRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommProofExchangeRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "auto_accept_proof": {
           "name": "auto_accept_proof",
           "type": "DidcommProofExchangeAutoAccept",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
