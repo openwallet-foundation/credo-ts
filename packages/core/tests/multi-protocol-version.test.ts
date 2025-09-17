@@ -57,6 +57,7 @@ describe('multi version protocols', () => {
 
     const { outOfBandInvitation, id } = await aliceAgent.modules.oob.createInvitation()
     let { connectionRecord: bobConnection } = await bobAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+      label: 'bob',
       autoAcceptConnection: true,
       autoAcceptInvitation: true,
     })

@@ -96,8 +96,10 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation with alice agent
-    let { connectionRecord: aliceFaberConnection } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      invitationUrl,
+      { label: 'alice' }
+    )
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -117,8 +119,10 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      invitationUrl,
+      { label: 'alice' }
+    )
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -127,6 +131,7 @@ describe('connections', () => {
     let { connectionRecord: acmeFaberConnection } = await acmeAgent.modules.oob.receiveInvitationFromUrl(
       invitationUrl,
       {
+        label: 'acme',
         reuseConnection: false,
       }
     )
@@ -160,8 +165,10 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      invitationUrl,
+      { label: 'alice' }
+    )
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -211,8 +218,10 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Create first connection
-    let { connectionRecord: aliceFaberConnection1 } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    let { connectionRecord: aliceFaberConnection1 } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      invitationUrl,
+      { label: 'alice' }
+    )
 
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection1 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection1?.id!)
@@ -222,6 +231,7 @@ describe('connections', () => {
     let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
       invitationUrl,
       {
+        label: 'agent',
         reuseConnection: false,
       }
     )
@@ -248,7 +258,9 @@ describe('connections', () => {
   it('agent using mediator should be able to make multiple connections using a multi use invite', async () => {
     // Make Faber use a mediator
     const { outOfBandInvitation: mediatorOutOfBandInvitation } = await mediatorAgent.modules.oob.createInvitation({})
-    let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation)
+    let { connectionRecord } = await faberAgent.modules.oob.receiveInvitation(mediatorOutOfBandInvitation, {
+      label: 'faber',
+    })
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     connectionRecord = await faberAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
 
@@ -282,8 +294,10 @@ describe('connections', () => {
     const invitationUrl = invitation.toUrl({ domain: 'https://example.com' })
 
     // Receive invitation first time with alice agent
-    let { connectionRecord: aliceFaberConnection } =
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      invitationUrl,
+      { label: 'alice' }
+    )
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
@@ -292,6 +306,7 @@ describe('connections', () => {
     let { connectionRecord: acmeFaberConnection } = await acmeAgent.modules.oob.receiveInvitationFromUrl(
       invitationUrl,
       {
+        label: 'acme',
         reuseConnection: false,
       }
     )

@@ -133,7 +133,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules('issuer', {
+    issuer = await createAgentFromModules({
       openId4VcIssuer: new OpenId4VcIssuerModule({
         baseUrl: issuerBaseUrl,
         getVerificationSessionForIssuanceSessionAuthorization:
@@ -193,7 +193,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       inMemory: new InMemoryWalletModule(),
     })
 
-    holder = await createAgentFromModules('holder', {
+    holder = await createAgentFromModules({
       openId4VcHolder: new OpenId4VcHolderModule(),
       inMemory: new InMemoryWalletModule(),
     })
