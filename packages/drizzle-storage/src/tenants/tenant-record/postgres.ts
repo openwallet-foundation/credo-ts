@@ -1,5 +1,5 @@
-import { VersionString } from '@credo-ts/core'
-import { TenantRecord } from '@credo-ts/tenants'
+import type { VersionString } from '@credo-ts/core'
+import type { TenantRecord } from '@credo-ts/tenants'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 

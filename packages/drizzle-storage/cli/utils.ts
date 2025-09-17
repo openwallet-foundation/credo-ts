@@ -64,14 +64,6 @@ export function getDrizzleConfigPath() {
     : path.join(__dirname, 'drizzle.config.js')
 }
 
-export function getDrizzleKitCliPath() {
-  return path.join(path.dirname(require.resolve('drizzle-kit')), 'bin.cjs')
-}
-
-export function getTsNodeCliPath() {
-  return path.join(path.dirname(require.resolve('ts-node')), 'bin.js')
-}
-
 export function log(message: string, ...optionalParams: unknown[]) {
   // biome-ignore lint/suspicious/noConsole: <explanation>
   console.log(message, ...optionalParams)

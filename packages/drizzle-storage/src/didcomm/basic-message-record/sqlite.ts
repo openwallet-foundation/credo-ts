@@ -1,6 +1,6 @@
 import { foreignKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import { BasicMessageRole } from '@credo-ts/didcomm'
+import type { BasicMessageRole } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 

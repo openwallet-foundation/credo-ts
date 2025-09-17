@@ -1,6 +1,6 @@
 import { spawn } from 'child_process'
 import { Dialect } from './generate-migrations'
-import { errorLog, getDrizzleConfigPath, getDrizzleKitCliPath, log } from './utils'
+import { errorLog, getDrizzleConfigPath, log } from './utils'
 
 interface RunStudioOptions {
   database: {
@@ -11,10 +11,9 @@ interface RunStudioOptions {
 
 export async function runStudio({ database }: RunStudioOptions): Promise<void> {
   const drizzleConfigPath = getDrizzleConfigPath()
-  const drizzleKitCliPath = getDrizzleKitCliPath()
 
   return new Promise((resolve, reject) => {
-    const studioResult = spawn(drizzleKitCliPath, ['studio', '--config', drizzleConfigPath], {
+    const studioResult = spawn('drizzle-kit', ['studio', '--config', drizzleConfigPath], {
       env: {
         ...process.env,
         DRIZZLE_DATABASE_URL: database.url,

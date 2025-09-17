@@ -52,7 +52,6 @@
     "class-validator": "catalog:",
     "drizzle-kit": "^0.31.4",
     "shell": "^0.12.0",
-    "ts-node": "catalog:",
     "tsyringe": "catalog:",
     "zod": "catalog:"
   },
@@ -60,6 +59,7 @@
     "drizzle-orm": "^0.44.3"
   },
   "devDependencies": {
+    "ts-node": "catalog:",
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",

@@ -1,10 +1,22 @@
-import { ActionMenuOptions, ActionMenuRole, ActionMenuSelectionOptions, ActionMenuState } from '@credo-ts/action-menu'
+import type {
+  ActionMenuOptions,
+  ActionMenuRole,
+  ActionMenuSelectionOptions,
+  ActionMenuState,
+} from '@credo-ts/action-menu'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection-record/postgres'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 
-export const didcommActionMenuStateEnum = pgEnum('DidcommActionMenuState', ActionMenuState)
-export const didcommActionMenuRoleEnum = pgEnum('DidcommActionMenuRole', ActionMenuRole)
+const actionMenuStates = exhaustiveArray(
+  {} as ActionMenuState,
+  ['null', 'awaiting-root-menu', 'preparing-root-menu', 'preparing-selection', 'awaiting-selection', 'done'] as const
+)
+export const didcommActionMenuStateEnum = pgEnum('DidcommActionMenuState', actionMenuStates)
+
+const actionMenuRoles = exhaustiveArray({} as ActionMenuRole, ['requester', 'responder'] as const)
+export const didcommActionMenuRoleEnum = pgEnum('DidcommActionMenuRole', actionMenuRoles)
 
 export const didcommActionMenu = pgTable(
   'DidcommActionMenu',

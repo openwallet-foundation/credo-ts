@@ -1,4 +1,4 @@
-import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
+import type { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 
 export interface DrizzleRecordBundle {
   /**

@@ -1,4 +1,4 @@
-import { DrizzleRecordBundle } from '../DrizzleRecord'
+import type { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
 import { didcommBasicMessageDrizzleRecord } from './basic-message-record'
 import { didcommConnectionDrizzleRecord } from './connection-record'
