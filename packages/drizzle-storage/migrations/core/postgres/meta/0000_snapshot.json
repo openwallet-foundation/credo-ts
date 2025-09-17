@@ -1,5 +1,5 @@
 {
-  "id": "54dbaec4-6c8e-433d-887d-9cbd9b4e3cae",
+  "id": "8975211a-43ac-41dc-8d7b-02b4ab00ec6b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -118,8 +118,12 @@
           "name": "did_fk_context",
           "tableFrom": "Did",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -127,7 +131,10 @@
       "compositePrimaryKeys": {
         "did_pk": {
           "name": "did_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -188,8 +195,12 @@
           "name": "genericRecord_fk_context",
           "tableFrom": "GenericRecord",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -197,7 +208,10 @@
       "compositePrimaryKeys": {
         "genericRecord_pk": {
           "name": "genericRecord_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -270,8 +284,12 @@
           "name": "mdoc_fk_context",
           "tableFrom": "Mdoc",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -279,7 +297,10 @@
       "compositePrimaryKeys": {
         "mdoc_pk": {
           "name": "mdoc_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -358,8 +379,12 @@
           "name": "sdJwtVc_fk_context",
           "tableFrom": "SdJwtVc",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -367,7 +392,10 @@
       "compositePrimaryKeys": {
         "sdJwtVc_pk": {
           "name": "sdJwtVc_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -428,8 +456,12 @@
           "name": "singleContextLruCache_fk_context",
           "tableFrom": "SingleContextLruCache",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -437,7 +469,10 @@
       "compositePrimaryKeys": {
         "singleContextLruCache_pk": {
           "name": "singleContextLruCache_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -498,8 +533,12 @@
           "name": "storageVersion_fk_context",
           "tableFrom": "StorageVersion",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -507,7 +546,10 @@
       "compositePrimaryKeys": {
         "storageVersion_pk": {
           "name": "storageVersion_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -635,8 +677,12 @@
           "name": "w3cCredential_fk_context",
           "tableFrom": "W3cCredential",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -644,7 +690,10 @@
       "compositePrimaryKeys": {
         "w3cCredential_pk": {
           "name": "w3cCredential_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -657,12 +706,18 @@
     "public.didRole": {
       "name": "didRole",
       "schema": "public",
-      "values": ["created", "received"]
+      "values": [
+        "created",
+        "received"
+      ]
     },
     "public.W3cClaimFormat": {
       "name": "W3cClaimFormat",
       "schema": "public",
-      "values": ["ldp_vc", "jwt_vc"]
+      "values": [
+        "ldp_vc",
+        "jwt_vc"
+      ]
     }
   },
   "schemas": {},

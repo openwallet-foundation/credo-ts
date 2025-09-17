@@ -42,6 +42,7 @@ CREATE TABLE `OpenId4VcIssuanceSession` (
 	`credential_offer_uri` text,
 	`credential_offer_id` text,
 	`credential_offer_payload` text NOT NULL,
+	`generate_refresh_tokens` integer,
 	`error_message` text,
 	PRIMARY KEY(`context_correlation_id`, `id`),
 	FOREIGN KEY (`issuer_id`) REFERENCES `Openid4vcIssuer`(`issuer_id`) ON UPDATE no action ON DELETE cascade,

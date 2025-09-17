@@ -1,6 +1,6 @@
 import { DrpcRequest, DrpcResponse, DrpcRole, DrpcState } from '@credo-ts/drpc'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
-import { didcommConnection } from '../../didcomm/connection/postgres'
+import { didcommConnection } from '../../didcomm/connection-record/postgres'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommDrpcStateEnum = pgEnum('DidcommDrpcState', DrpcState)

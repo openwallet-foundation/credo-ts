@@ -1,5 +1,5 @@
 {
-  "id": "b70bab47-d835-4bbd-8bb2-f5a517bee8f2",
+  "id": "e36e3e17-a409-4831-a265-46dc95da62ae",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -87,8 +87,12 @@
           "name": "didcommDrpc_fk_context",
           "tableFrom": "DidcommDrpc",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -96,8 +100,14 @@
           "name": "DidcommDrpc_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommDrpc",
           "tableTo": "DidcommConnection",
-          "columnsFrom": ["connection_id", "context_correlation_id"],
-          "columnsTo": ["id", "context_correlation_id"],
+          "columnsFrom": [
+            "connection_id",
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "id",
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -105,14 +115,20 @@
       "compositePrimaryKeys": {
         "didcommDrpc_pk": {
           "name": "didcommDrpc_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {
         "DidcommDrpc_context_correlation_id_thread_id_unique": {
           "name": "DidcommDrpc_context_correlation_id_thread_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["context_correlation_id", "thread_id"]
+          "columns": [
+            "context_correlation_id",
+            "thread_id"
+          ]
         }
       },
       "policies": {},
@@ -124,12 +140,19 @@
     "public.DidcommDrpcState": {
       "name": "DidcommDrpcState",
       "schema": "public",
-      "values": ["request-sent", "request-received", "completed"]
+      "values": [
+        "request-sent",
+        "request-received",
+        "completed"
+      ]
     },
     "public.DidcommDrpcRole": {
       "name": "DidcommDrpcRole",
       "schema": "public",
-      "values": ["client", "server"]
+      "values": [
+        "client",
+        "server"
+      ]
     }
   },
   "schemas": {},

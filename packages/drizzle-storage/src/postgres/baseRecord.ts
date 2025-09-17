@@ -1,5 +1,5 @@
 import { ExtraConfigColumn, foreignKey, jsonb, primaryKey, text, timestamp } from 'drizzle-orm/pg-core'
-import { context } from '../core/context/postgres'
+import { context } from '../core/context-record/postgres'
 
 export const getPostgresBaseRecordTable = () =>
   ({

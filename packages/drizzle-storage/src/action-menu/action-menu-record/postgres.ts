@@ -1,6 +1,6 @@
 import { ActionMenuOptions, ActionMenuRole, ActionMenuSelectionOptions, ActionMenuState } from '@credo-ts/action-menu'
 import { foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
-import { didcommConnection } from '../../didcomm/connection/postgres'
+import { didcommConnection } from '../../didcomm/connection-record/postgres'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommActionMenuStateEnum = pgEnum('DidcommActionMenuState', ActionMenuState)

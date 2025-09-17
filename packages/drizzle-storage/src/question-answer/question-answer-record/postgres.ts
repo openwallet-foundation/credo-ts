@@ -1,6 +1,6 @@
 import { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
 import { boolean, foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
-import { didcommConnection } from '../../didcomm/connection/postgres'
+import { didcommConnection } from '../../didcomm/connection-record/postgres'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
 export const didcommQuestionAnswerStateEnum = pgEnum('DidcommQuestionAnswerState', QuestionAnswerState)

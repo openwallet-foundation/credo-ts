@@ -43,6 +43,7 @@ CREATE TABLE "OpenId4VcIssuanceSession" (
 	"credential_offer_uri" text,
 	"credential_offer_id" text,
 	"credential_offer_payload" jsonb NOT NULL,
+	"generate_refresh_tokens" boolean,
 	"error_message" text,
 	CONSTRAINT "openId4VcIssuanceSession_pk" PRIMARY KEY("context_correlation_id","id")
 );

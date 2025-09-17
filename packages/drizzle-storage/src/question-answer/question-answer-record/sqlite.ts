@@ -1,7 +1,7 @@
 import { foreignKey, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
 import { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
-import { didcommConnection } from '../../didcomm/connection/sqlite'
+import { didcommConnection } from '../../didcomm/connection-record/sqlite'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommQuestionAnswer = sqliteTable(

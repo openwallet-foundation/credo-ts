@@ -1,5 +1,5 @@
 {
-  "id": "b69d4886-cb51-4dda-975b-5ca4d5348a06",
+  "id": "f4cb330d-7da2-4d44-83c3-6dcc04a0d672",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -87,8 +87,12 @@
           "name": "didcommActionMenu_fk_context",
           "tableFrom": "DidcommActionMenu",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -96,8 +100,14 @@
           "name": "DidcommActionMenu_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommActionMenu",
           "tableTo": "DidcommConnection",
-          "columnsFrom": ["connection_id", "context_correlation_id"],
-          "columnsTo": ["id", "context_correlation_id"],
+          "columnsFrom": [
+            "connection_id",
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "id",
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -105,14 +115,20 @@
       "compositePrimaryKeys": {
         "didcommActionMenu_pk": {
           "name": "didcommActionMenu_pk",
-          "columns": ["context_correlation_id", "id"]
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ]
         }
       },
       "uniqueConstraints": {
         "DidcommActionMenu_context_correlation_id_thread_id_unique": {
           "name": "DidcommActionMenu_context_correlation_id_thread_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["context_correlation_id", "thread_id"]
+          "columns": [
+            "context_correlation_id",
+            "thread_id"
+          ]
         }
       },
       "policies": {},
@@ -136,7 +152,10 @@
     "public.DidcommActionMenuRole": {
       "name": "DidcommActionMenuRole",
       "schema": "public",
-      "values": ["requester", "responder"]
+      "values": [
+        "requester",
+        "responder"
+      ]
     }
   },
   "schemas": {},

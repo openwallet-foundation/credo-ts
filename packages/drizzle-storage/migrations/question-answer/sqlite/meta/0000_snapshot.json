@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "0b03ac9f-1483-4043-9d86-4e3568a48e02",
+  "id": "7f5e60d0-db65-4fad-b2fc-6511bff46d5b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "DidcommQuestionAnswer": {
@@ -116,7 +116,10 @@
       "indexes": {
         "DidcommQuestionAnswer_context_correlation_id_thread_id_unique": {
           "name": "DidcommQuestionAnswer_context_correlation_id_thread_id_unique",
-          "columns": ["context_correlation_id", "thread_id"],
+          "columns": [
+            "context_correlation_id",
+            "thread_id"
+          ],
           "isUnique": true
         }
       },
@@ -125,8 +128,12 @@
           "name": "didcommQuestionAnswer_fk_context",
           "tableFrom": "DidcommQuestionAnswer",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -134,15 +141,24 @@
           "name": "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
           "tableFrom": "DidcommQuestionAnswer",
           "tableTo": "DidcommConnection",
-          "columnsFrom": ["connection_id", "context_correlation_id"],
-          "columnsTo": ["id", "context_correlation_id"],
+          "columnsFrom": [
+            "connection_id",
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "id",
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "didcommQuestionAnswer_pk": {
-          "columns": ["context_correlation_id", "id"],
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ],
           "name": "didcommQuestionAnswer_pk"
         }
       },

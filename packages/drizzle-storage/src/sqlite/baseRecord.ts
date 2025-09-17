@@ -1,5 +1,5 @@
 import { SQLiteColumn, foreignKey, integer, primaryKey, text } from 'drizzle-orm/sqlite-core'
-import { context } from '../core/context/sqlite'
+import { context } from '../core/context-record/sqlite'
 
 export const getSqliteBaseRecordTable = () =>
   ({

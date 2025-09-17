@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "7c067e58-33be-4672-910e-5c6e6394dee7",
+  "id": "a01a7c1a-3790-4ec7-994a-85fc6aa4503e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "Tenant": {
@@ -77,15 +77,22 @@
           "name": "tenant_fk_context",
           "tableFrom": "Tenant",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "tenant_pk": {
-          "columns": ["context_correlation_id", "id"],
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ],
           "name": "tenant_pk"
         }
       },
@@ -158,8 +165,12 @@
           "name": "tenantRouting_fk_context",
           "tableFrom": "TenantRouting",
           "tableTo": "Context",
-          "columnsFrom": ["context_correlation_id"],
-          "columnsTo": ["context_correlation_id"],
+          "columnsFrom": [
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -167,15 +178,24 @@
           "name": "TenantRouting_tenant_id_context_correlation_id_Tenant_id_context_correlation_id_fk",
           "tableFrom": "TenantRouting",
           "tableTo": "Tenant",
-          "columnsFrom": ["tenant_id", "context_correlation_id"],
-          "columnsTo": ["id", "context_correlation_id"],
+          "columnsFrom": [
+            "tenant_id",
+            "context_correlation_id"
+          ],
+          "columnsTo": [
+            "id",
+            "context_correlation_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "tenantRouting_pk": {
-          "columns": ["context_correlation_id", "id"],
+          "columns": [
+            "context_correlation_id",
+            "id"
+          ],
           "name": "tenantRouting_pk"
         }
       },

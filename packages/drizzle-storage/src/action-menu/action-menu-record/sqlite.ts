@@ -6,7 +6,7 @@ import type {
   ActionMenuSelectionOptions,
   ActionMenuState,
 } from '@credo-ts/action-menu'
-import { didcommConnection } from '../../didcomm/connection/sqlite'
+import { didcommConnection } from '../../didcomm/connection-record/sqlite'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommActionMenu = sqliteTable(
