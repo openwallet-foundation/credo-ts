@@ -22,11 +22,11 @@ export function configureIssuerMetadataEndpoint(router: Router) {
         )
 
         const transformedMetadata = {
-          // Get the draft 11 metadata (it also contains drfat 14)
+          // Get the draft 11 metadata (it also contains draft 14)
           ...vcIssuer.getCredentialIssuerMetadataDraft11(issuerMetadata.credentialIssuer),
 
-          // TOOD: these values should be removed, as they need to be hosted in the oauth-authorization-server
-          // metadata. For backwards compatiblity we will keep them in now.
+          // TODO: these values should be removed, as they need to be hosted in the oauth-authorization-server
+          // metadata. For backwards compatibility we will keep them in now.
           token_endpoint: issuerAuthorizationServer.token_endpoint,
           dpop_signing_alg_values_supported: issuerAuthorizationServer.dpop_signing_alg_values_supported,
         } satisfies OpenId4VciCredentialIssuerMetadata

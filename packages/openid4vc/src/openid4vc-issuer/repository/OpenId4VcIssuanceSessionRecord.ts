@@ -1,7 +1,7 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
 import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 
-import { BaseRecord, CredoError, isJsonObject, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
@@ -160,6 +160,8 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 
   issuanceMetadata?: Record<string, unknown>
   errorMessage?: string
+
+  generateRefreshTokens?: boolean
 }
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
@@ -172,6 +174,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
    *
    * @since 0.6
    */
+  @DateTransformer()
   public expiresAt?: Date
 
   /**
@@ -285,6 +288,13 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public credentialOfferId?: string
 
   /**
+   * Whether to generate refresh tokens for the issuance session.
+   *
+   * @since 0.6
+   */
+  public generateRefreshTokens?: boolean
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -311,6 +321,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.dpop = props.dpop
       this.walletAttestation = props.walletAttestation
       this.state = props.state
+      this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
     }
   }

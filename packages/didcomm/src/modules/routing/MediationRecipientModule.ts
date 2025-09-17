@@ -98,6 +98,7 @@ export class MediationRecipientModule implements Module {
 
       agentContext.config.logger.debug('Routing created', routing)
       const { connectionRecord: newConnection } = await oobApi.receiveInvitation(outOfBandInvitation, {
+        label: '',
         routing,
       })
       agentContext.config.logger.debug('Mediation invitation processed', { outOfBandInvitation })

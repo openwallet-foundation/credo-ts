@@ -120,9 +120,8 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   dependencies: AgentDependencies
   inMemory?: boolean
 } {
-  const random = uuid().slice(0, 4)
+  const _random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} - ${random}`,
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),
@@ -753,7 +752,8 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
   })
 
   let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
-    agentAOutOfBand.outOfBandInvitation
+    agentAOutOfBand.outOfBandInvitation,
+    { label: '' }
   )
 
   // biome-ignore lint/style/noNonNullAssertion: <explanation>

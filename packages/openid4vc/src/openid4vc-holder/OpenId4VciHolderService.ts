@@ -16,6 +16,7 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import {
+  CallbackContext,
   Jwk,
   Oauth2Client,
   RequestDpopOptions,
@@ -54,6 +55,7 @@ import type {
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciSupportedCredentialFormats,
+  OpenId4VciTokenRefreshOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 
@@ -354,6 +356,43 @@ export class OpenId4VciHolderService {
           dpop,
           txCode: options.txCode,
         })
+
+    return {
+      ...result,
+      dpop: dpop
+        ? {
+            ...result.dpop,
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+          }
+        : undefined,
+    }
+  }
+
+  public async refreshAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRefreshOptions) {
+    const oauth2Client = this.getOauth2Client(agentContext, {
+      clientAttestation: options.walletAttestationJwt,
+      clientId: options.clientId,
+    })
+
+    const dpop = options.dpop
+      ? await this.getDpopOptions(agentContext, {
+          ...options.dpop,
+          dpopSigningAlgValuesSupported: [options.dpop.alg],
+        })
+      : undefined
+
+    const authorizationServerMetadata = getAuthorizationServerMetadataFromList(
+      options.issuerMetadata.authorizationServers,
+      options.authorizationServer ?? options.issuerMetadata.authorizationServers[0].issuer
+    )
+
+    const result = await oauth2Client.retrieveRefreshTokenAccessToken({
+      authorizationServerMetadata,
+      refreshToken: options.refreshToken,
+      dpop,
+      resource: options.issuerMetadata.credentialIssuer.credential_issuer,
+    })
 
     return {
       ...result,
@@ -1188,67 +1227,72 @@ export class OpenId4VciHolderService {
     throw new CredoError(`Unsupported credential format ${options.format}`)
   }
 
-  private getClient(
+  private getCallbacks(
     agentContext: AgentContext,
     { clientAttestation, clientId }: { clientAttestation?: string; clientId?: string } = {}
   ) {
     const callbacks = getOid4vcCallbacks(agentContext)
-    return new Openid4vciClient({
-      callbacks: {
-        ...callbacks,
-        clientAuthentication: (options) => {
-          const { authorizationServerMetadata, url, body } = options
-          const oauth2Client = this.getOauth2Client(agentContext)
-          const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
-            authorizationServerMetadata,
-          })
 
-          // Client attestations
-          if (clientAttestation && clientAttestationSupported) {
-            return clientAuthenticationClientAttestationJwt({
-              clientAttestationJwt: clientAttestation,
-              callbacks,
-            })(options)
-          }
+    return {
+      ...callbacks,
+      clientAuthentication: (options) => {
+        const { authorizationServerMetadata, url, body } = options
+        const oauth2Client = this.getOauth2Client(agentContext)
+        const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
+          authorizationServerMetadata,
+        })
 
-          // Pre auth flow
-          if (
-            url === authorizationServerMetadata.token_endpoint &&
-            authorizationServerMetadata['pre-authorized_grant_anonymous_access_supported'] &&
-            body.grant_type === preAuthorizedCodeGrantIdentifier
-          ) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // Client attestations
+        if (clientAttestation && clientAttestationSupported) {
+          return clientAuthenticationClientAttestationJwt({
+            clientAttestationJwt: clientAttestation,
+            callbacks,
+          })(options)
+        }
 
-          // Just a client id (no auth)
-          if (clientId) {
-            return clientAuthenticationNone({ clientId })(options)
-          }
+        // Pre auth flow
+        if (
+          url === authorizationServerMetadata.token_endpoint &&
+          authorizationServerMetadata['pre-authorized_grant_anonymous_access_supported'] &&
+          body.grant_type === preAuthorizedCodeGrantIdentifier
+        ) {
+          return clientAuthenticationAnonymous()(options)
+        }
 
-          // NOTE: we fall back to anonymous authentication for pre-auth for now, as there's quite some
-          // issuers that do not have pre-authorized_grant_anonymous_access_supported defined
-          if (
-            url === authorizationServerMetadata.token_endpoint &&
-            body.grant_type === preAuthorizedCodeGrantIdentifier
-          ) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // Just a client id (no auth)
+        if (clientId) {
+          return clientAuthenticationNone({ clientId })(options)
+        }
 
-          // TODO: We should still look at auth_methods_supported
-          // If there is an auth session for the auth challenge endpoint, we don't have to include the client_id
-          if (url === authorizationServerMetadata.authorization_challenge_endpoint && body.auth_session) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // NOTE: we fall back to anonymous authentication for pre-auth for now, as there's quite some
+        // issuers that do not have pre-authorized_grant_anonymous_access_supported defined
+        if (
+          url === authorizationServerMetadata.token_endpoint &&
+          body.grant_type === preAuthorizedCodeGrantIdentifier
+        ) {
+          return clientAuthenticationAnonymous()(options)
+        }
 
-          throw new CredoError('Unable to perform client authentication.')
-        },
+        // TODO: We should still look at auth_methods_supported
+        // If there is an auth session for the auth challenge endpoint, we don't have to include the client_id
+        if (url === authorizationServerMetadata.authorization_challenge_endpoint && body.auth_session) {
+          return clientAuthenticationAnonymous()(options)
+        }
+
+        throw new CredoError('Unable to perform client authentication.')
       },
+    } satisfies Partial<CallbackContext>
+  }
+
+  private getClient(agentContext: AgentContext, options: { clientAttestation?: string; clientId?: string } = {}) {
+    return new Openid4vciClient({
+      callbacks: this.getCallbacks(agentContext, options),
     })
   }
 
-  private getOauth2Client(agentContext: AgentContext) {
+  private getOauth2Client(agentContext: AgentContext, options?: { clientAttestation?: string; clientId?: string }) {
     return new Oauth2Client({
-      callbacks: getOid4vcCallbacks(agentContext),
+      callbacks: options ? this.getCallbacks(agentContext, options) : getOid4vcCallbacks(agentContext),
     })
   }
 }

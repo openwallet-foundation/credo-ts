@@ -25,11 +25,11 @@ catalogs:
       specifier: ^0.2.2
       version: 0.2.2
     '@openwallet-foundation/askar-nodejs':
-      specifier: ^0.3.2
-      version: 0.3.2
+      specifier: ^0.4.0
+      version: 0.4.0
     '@openwallet-foundation/askar-shared':
-      specifier: ^0.3.2
-      version: 0.3.2
+      specifier: ^0.4.0
+      version: 0.4.0
     '@sphereon/pex-models':
       specifier: ^2.3.2
       version: 2.3.2
@@ -154,7 +154,7 @@ importers:
         version: 29.6.3
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -223,7 +223,7 @@ importers:
         version: 0.2.2
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       inquirer:
         specifier: ^8.2.5
         version: 8.2.6
@@ -278,7 +278,7 @@ importers:
         version: 5.1.1(koa@2.16.0)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       express:
         specifier: 'catalog:'
         version: 4.21.2
@@ -423,10 +423,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -798,10 +798,10 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -892,17 +892,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20250811141109
-        version: 0.3.0-alpha-20250811141109
+        specifier: 0.3.0-alpha-20250821080409
+        version: 0.3.0-alpha-20250821080409
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20250811141109
-        version: 0.3.0-alpha-20250811141109
+        specifier: 0.3.0-alpha-20250821080409
+        version: 0.3.0-alpha-20250821080409
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20250811141109
-        version: 0.3.0-alpha-20250811141109
+        specifier: 0.3.0-alpha-20250821080409
+        version: 0.3.0-alpha-20250821080409
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20250811141109
-        version: 0.3.0-alpha-20250811141109
+        specifier: 0.3.0-alpha-20250821080409
+        version: 0.3.0-alpha-20250821080409
       class-transformer:
         specifier: 'catalog:'
         version: 0.5.1
@@ -1050,11 +1050,11 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.4.1
-        version: 2.4.1
+        specifier: ^2.5.3
+        version: 2.5.3
       json-canonicalize:
-        specifier: ^1.0.6
-        version: 1.0.6
+        specifier: ^1.2.0
+        version: 1.2.0
       tsyringe:
         specifier: ^4.8.0
         version: 4.8.0
@@ -1082,7 +1082,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.3.2
+        version: 0.4.0
       class-validator:
         specifier: 'catalog:'
         version: 0.14.1
@@ -3010,24 +3010,24 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250811141109':
-    resolution: {integrity: sha512-fQPlg/8xKilzaWuJBMg9lUZNS2MZb9LGEJ9H1Jyk2bVK+88ThPINJtgcDCkhj3ynoBt/Iru2h0MovjJncWjNYA==}
+  '@openid4vc/oauth2@0.3.0-alpha-20250821080409':
+    resolution: {integrity: sha512-b+aHy52dDqEmwHx2GJKGrdUi9Bf/Cie38n2eYsEKH4rMmC0glldiuCroezSkIUv6u5dRplmHcnic/Ld8AGU/Cw==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250811141109':
-    resolution: {integrity: sha512-kQApjyHZiphNefja16dGWPoD82i5uDCmgS1bY0aJGijbdsPCRq0Bq9mgu1XAzsGwNBHBDR+5GNMPjG9PWeDo+A==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20250821080409':
+    resolution: {integrity: sha512-lUHbLpRS6rJYkXXyHUsJTdcv7f1S8OZFn3kDqKsxgGIBKe6qurILuEpNbdqCBGZ7gTi/TolaYuRkEnlgUPMj0g==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250811141109':
-    resolution: {integrity: sha512-eqqZa/MA52ab5dQPucvPH50gf+UXXwG0bqEthkP1XDIdoPQK3An55TQAitKlmvu2Xj3cqI/hnaMKFlmYc5/0lA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20250821080409':
+    resolution: {integrity: sha512-hKabvV0WZXrI3+mKgNIpuKBt1hyr0l6XXO2waRU+PjSXPqsDGThUVbafA8eH0cPpU29OzRenmXFmCyzR5YAeVQ==}
 
-  '@openid4vc/utils@0.3.0-alpha-20250811141109':
-    resolution: {integrity: sha512-xCm6DsjykcSPFUNekJbPFzoY6Ald9Uc0NqSAE8lR4FfBSGRi/rZaSNjXJDISR7VWoO0pqQ/7j4hRYGSfaWoe4Q==}
+  '@openid4vc/utils@0.3.0-alpha-20250821080409':
+    resolution: {integrity: sha512-WYQyYNQ3r9/ERQS5QXPbx/FZvr1mweAy9kI63dH4bQ4ezvM95+UPV7RBJJRyjXK7MySCTPkQfCm+Xb8mewb9lQ==}
 
-  '@openwallet-foundation/askar-nodejs@0.3.2':
-    resolution: {integrity: sha512-kHZaPl32azKzqT/+ksRqGXNs9lxTrhbuWVuILS1HNGXA+A5vSINRA8WwDHk2KGZ9WP7jhszbPx804cfRKrrBPA==}
+  '@openwallet-foundation/askar-nodejs@0.4.0':
+    resolution: {integrity: sha512-6cez6EjiNTZ7xluCp493hF/uuDm7m0wlALHNHy6s5eTEG9ha2WR2fHIGRP0zoDPEE/K2k1ivpfS7gdEDFNSjPw==}
     engines: {node: '>= 18'}
 
-  '@openwallet-foundation/askar-shared@0.3.2':
-    resolution: {integrity: sha512-WQSHM5+5Vy1QMUpUTj0DpwFKYdciNcksWsft/iD6Ff+AdDERKo5Mjv/4JSIZIzXUEyq7kqqNbejl4a3TDGeU3A==}
+  '@openwallet-foundation/askar-shared@0.4.0':
+    resolution: {integrity: sha512-25gKI+zak8CjDaGNSTNtDM5P1eUtf3jEOaN6koUMIO8MmF59amgA5602wnn40ylnKQnJnbjUbkXyHaRpPu/K/A==}
 
   '@paralleldrive/cuid2@2.2.2':
     resolution: {integrity: sha512-ZOBkgDwEdoYVlSeRbYYXs0S9MejQofiVYoTbKzy/6GQa39/q5tQU2IX46+shYnUkpEl3wc+J6wRlar7r2EK2xA==}
@@ -4700,8 +4700,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.4.1:
-    resolution: {integrity: sha512-TAEVIXYjTQUmj2AG6tCmsiXsbOTU8lcm12ZJ7mX7ER7k6Cou1HIgv7i2iDsfqQ8FRAE6G5XI+al5rSiVxyZVGw==}
+  didwebvh-ts@2.5.3:
+    resolution: {integrity: sha512-VTjA6yKRplrxV2lA1d14lf6B+0uVLdZzPwoqnTuHm/RQVPG1xNj7CRm6Gl5wEnq3NEd/9xJBabqAY7adX94MIQ==}
     hasBin: true
 
   diff@4.0.2:
@@ -6132,8 +6132,8 @@ packages:
   json-buffer@3.0.1:
     resolution: {integrity: sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==}
 
-  json-canonicalize@1.0.6:
-    resolution: {integrity: sha512-kP2iYpOS5SZHYhIaR1t9oG80d4uTY3jPoaBj+nimy3njtJk8+sRsVatN8pyJRDRtk9Su3+6XqA2U8k0dByJBUQ==}
+  json-canonicalize@1.2.0:
+    resolution: {integrity: sha512-TTdjBvqrqJKSADlEsY5rWbx8/1tOrVlTR/aSLU8N2VSInCTffP0p+byYB8Es+OmL4ZOeEftjUdvV+eJeSzJC/Q==}
 
   json-parse-better-errors@1.0.2:
     resolution: {integrity: sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==}
@@ -11331,39 +11331,39 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20250811141109':
+  '@openid4vc/oauth2@0.3.0-alpha-20250821080409':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20250811141109
+      '@openid4vc/utils': 0.3.0-alpha-20250821080409
       zod: 3.25.67
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20250811141109':
+  '@openid4vc/openid4vci@0.3.0-alpha-20250821080409':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250811141109
-      '@openid4vc/utils': 0.3.0-alpha-20250811141109
+      '@openid4vc/oauth2': 0.3.0-alpha-20250821080409
+      '@openid4vc/utils': 0.3.0-alpha-20250821080409
       zod: 3.25.67
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20250811141109':
+  '@openid4vc/openid4vp@0.3.0-alpha-20250821080409':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20250811141109
-      '@openid4vc/utils': 0.3.0-alpha-20250811141109
+      '@openid4vc/oauth2': 0.3.0-alpha-20250821080409
+      '@openid4vc/utils': 0.3.0-alpha-20250821080409
       zod: 3.25.67
 
-  '@openid4vc/utils@0.3.0-alpha-20250811141109':
+  '@openid4vc/utils@0.3.0-alpha-20250821080409':
     dependencies:
       buffer: 6.0.3
       zod: 3.25.67
 
-  '@openwallet-foundation/askar-nodejs@0.3.2':
+  '@openwallet-foundation/askar-nodejs@0.4.0':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.3.2
+      '@openwallet-foundation/askar-shared': 0.4.0
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  '@openwallet-foundation/askar-shared@0.3.2':
+  '@openwallet-foundation/askar-shared@0.4.0':
     dependencies:
       buffer: 6.0.3
       tar: 7.4.3
@@ -13493,10 +13493,10 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.4.1:
+  didwebvh-ts@2.5.3:
     dependencies:
       '@noble/hashes': 1.8.0
-      json-canonicalize: 1.0.6
+      json-canonicalize: 1.2.0
 
   diff@4.0.2: {}
 
@@ -15361,7 +15361,7 @@ snapshots:
 
   json-buffer@3.0.1: {}
 
-  json-canonicalize@1.0.6: {}
+  json-canonicalize@1.2.0: {}
 
   json-parse-better-errors@1.0.2: {}
 

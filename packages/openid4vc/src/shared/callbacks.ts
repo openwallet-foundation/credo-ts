@@ -418,7 +418,7 @@ export function getOid4vcCallbacks(
 
 /**
  * Allows us to authenticate when making requests to an external
- * authorizatin server
+ * authorization server
  */
 export function dynamicOid4vciClientAuthentication(
   agentContext: AgentContext,
