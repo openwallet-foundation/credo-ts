@@ -53,6 +53,8 @@ export const openId4VcIssuanceSession = sqliteTable(
       .$type<OpenId4VciCredentialOfferPayload>()
       .notNull(),
 
+    generateRefreshTokens: integer('generate_refresh_tokens', { mode: 'boolean' }),
+
     errorMessage: text('error_message'),
   },
   (table) => sqliteBaseRecordIndexes(table, 'openId4VcIssuanceSession')

@@ -55,6 +55,7 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
     return {
       credentialOfferId,
       credentialOfferUri,
+      generateRefreshTokens: record.generateRefreshTokens,
       issuerId,
       preAuthorizedCode,
       state,

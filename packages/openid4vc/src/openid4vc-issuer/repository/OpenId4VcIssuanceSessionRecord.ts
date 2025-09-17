@@ -323,6 +323,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.state = props.state
       this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
+      this.transactions = props.transactions ?? []
     }
   }
 

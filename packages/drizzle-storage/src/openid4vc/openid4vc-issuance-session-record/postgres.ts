@@ -8,7 +8,7 @@ import {
   OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VciCredentialOfferPayload,
 } from '@credo-ts/openid4vc'
-import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { boolean, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { openid4vcIssuer } from '../postgres'
 
@@ -55,6 +55,8 @@ export const openId4VcIssuanceSession = pgTable(
     credentialOfferUri: text('credential_offer_uri'),
     credentialOfferId: text('credential_offer_id'),
     credentialOfferPayload: jsonb('credential_offer_payload').$type<OpenId4VciCredentialOfferPayload>().notNull(),
+
+    generateRefreshTokens: boolean('generate_refresh_tokens'),
 
     errorMessage: text('error_message'),
   },
