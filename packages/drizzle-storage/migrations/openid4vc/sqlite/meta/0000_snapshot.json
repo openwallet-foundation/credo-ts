@@ -109,9 +109,7 @@
       "indexes": {
         "Openid4vcIssuer_issuer_id_unique": {
           "name": "Openid4vcIssuer_issuer_id_unique",
-          "columns": [
-            "issuer_id"
-          ],
+          "columns": ["issuer_id"],
           "isUnique": true
         }
       },
@@ -120,22 +118,15 @@
           "name": "openid4vcIssuer_fk_context",
           "tableFrom": "Openid4vcIssuer",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "openid4vcIssuer_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "openid4vcIssuer_pk"
         }
       },
@@ -327,12 +318,8 @@
           "name": "OpenId4VcIssuanceSession_issuer_id_Openid4vcIssuer_issuer_id_fk",
           "tableFrom": "OpenId4VcIssuanceSession",
           "tableTo": "Openid4vcIssuer",
-          "columnsFrom": [
-            "issuer_id"
-          ],
-          "columnsTo": [
-            "issuer_id"
-          ],
+          "columnsFrom": ["issuer_id"],
+          "columnsTo": ["issuer_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -340,22 +327,15 @@
           "name": "openId4VcIssuanceSession_fk_context",
           "tableFrom": "OpenId4VcIssuanceSession",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "openId4VcIssuanceSession_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "openId4VcIssuanceSession_pk"
         }
       },
@@ -425,9 +405,7 @@
       "indexes": {
         "Openid4vcVerifier_verifier_id_unique": {
           "name": "Openid4vcVerifier_verifier_id_unique",
-          "columns": [
-            "verifier_id"
-          ],
+          "columns": ["verifier_id"],
           "isUnique": true
         }
       },
@@ -436,22 +414,15 @@
           "name": "openid4vcVerifier_fk_context",
           "tableFrom": "Openid4vcVerifier",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "openid4vcVerifier_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "openid4vcVerifier_pk"
         }
       },
@@ -601,12 +572,8 @@
           "name": "OpenId4VcVerificationSession_verifier_id_Openid4vcVerifier_verifier_id_fk",
           "tableFrom": "OpenId4VcVerificationSession",
           "tableTo": "Openid4vcVerifier",
-          "columnsFrom": [
-            "verifier_id"
-          ],
-          "columnsTo": [
-            "verifier_id"
-          ],
+          "columnsFrom": ["verifier_id"],
+          "columnsTo": ["verifier_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -614,22 +581,15 @@
           "name": "openId4VcVerificationSession_fk_context",
           "tableFrom": "OpenId4VcVerificationSession",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "openId4VcVerificationSession_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "openId4VcVerificationSession_pk"
         }
       },

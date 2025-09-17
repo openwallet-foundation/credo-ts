@@ -69,12 +69,8 @@
           "name": "tenant_fk_context",
           "tableFrom": "Tenant",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -82,10 +78,7 @@
       "compositePrimaryKeys": {
         "tenant_pk": {
           "name": "tenant_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},
@@ -152,12 +145,8 @@
           "name": "tenantRouting_fk_context",
           "tableFrom": "TenantRouting",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -165,14 +154,8 @@
           "name": "TenantRouting_tenant_id_context_correlation_id_Tenant_id_context_correlation_id_fk",
           "tableFrom": "TenantRouting",
           "tableTo": "Tenant",
-          "columnsFrom": [
-            "tenant_id",
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "id",
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["tenant_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -180,10 +163,7 @@
       "compositePrimaryKeys": {
         "tenantRouting_pk": {
           "name": "tenantRouting_pk",
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ]
+          "columns": ["context_correlation_id", "id"]
         }
       },
       "uniqueConstraints": {},

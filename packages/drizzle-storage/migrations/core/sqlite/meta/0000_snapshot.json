@@ -129,22 +129,15 @@
           "name": "did_fk_context",
           "tableFrom": "Did",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "did_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "did_pk"
         }
       },
@@ -210,22 +203,15 @@
           "name": "genericRecord_fk_context",
           "tableFrom": "GenericRecord",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "genericRecord_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "genericRecord_pk"
         }
       },
@@ -305,22 +291,15 @@
           "name": "mdoc_fk_context",
           "tableFrom": "Mdoc",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "mdoc_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "mdoc_pk"
         }
       },
@@ -407,22 +386,15 @@
           "name": "sdJwtVc_fk_context",
           "tableFrom": "SdJwtVc",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "sdJwtVc_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "sdJwtVc_pk"
         }
       },
@@ -488,22 +460,15 @@
           "name": "singleContextLruCache_fk_context",
           "tableFrom": "SingleContextLruCache",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "singleContextLruCache_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "singleContextLruCache_pk"
         }
       },
@@ -569,22 +534,15 @@
           "name": "storageVersion_fk_context",
           "tableFrom": "StorageVersion",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "storageVersion_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "storageVersion_pk"
         }
       },
@@ -727,22 +685,15 @@
           "name": "w3cCredential_fk_context",
           "tableFrom": "W3cCredential",
           "tableTo": "Context",
-          "columnsFrom": [
-            "context_correlation_id"
-          ],
-          "columnsTo": [
-            "context_correlation_id"
-          ],
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "w3cCredential_pk": {
-          "columns": [
-            "context_correlation_id",
-            "id"
-          ],
+          "columns": ["context_correlation_id", "id"],
           "name": "w3cCredential_pk"
         }
       },
