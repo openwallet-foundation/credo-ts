@@ -1,7 +1,16 @@
 {
   "name": "@credo-ts/drizzle-storage",
   "version": "0.5.13",
-  "files": ["build", "cli-build", "migrations", "tsconfig.drizzle.json", "types", "cli/drizzle.config.ts", "src"],
+  "files": [
+    "build",
+    "cli-build",
+    "migrations",
+    "tsconfig.drizzle.json",
+    "types",
+    "cli/drizzle.config.ts",
+    "src",
+    "bin.js"
+  ],
   "license": "Apache-2.0",
   "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
   "bin": "./bin.js",
