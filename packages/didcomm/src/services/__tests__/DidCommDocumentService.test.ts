@@ -32,7 +32,7 @@ describe('DidCommDocumentService', () => {
       const error = new Error('test')
       mockFunction(didResolverService.resolveDidDocument).mockRejectedValue(error)
 
-      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did')).rejects.toThrowError(error)
+      await expect(didCommDocumentService.resolveServicesFromDid(agentContext, 'did')).rejects.toThrow(error)
     })
 
     test('resolves IndyAgentService', async () => {
