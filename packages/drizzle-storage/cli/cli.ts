@@ -1,5 +1,5 @@
-import { errorLog } from './utils'
 import { cli } from './cli-definition'
+import { errorLog } from './utils'
 
 async function run() {
   // Use the route method to handle parsing and routing automatically

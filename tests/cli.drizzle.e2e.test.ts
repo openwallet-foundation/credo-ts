@@ -1,5 +1,5 @@
-import { createDrizzlePostgresTestDatabase } from '../packages/drizzle-storage/tests/testDatabase'
 import { cli } from '../packages/drizzle-storage/cli/cli-definition'
+import { createDrizzlePostgresTestDatabase } from '../packages/drizzle-storage/tests/testDatabase'
 
 describe('Credo Drizzle CLI', () => {
   test('generate migrations', async () => {
