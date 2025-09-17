@@ -7,7 +7,7 @@ import {
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { ProofState } from '../../../models/ProofState'
+import { DidCommProofState } from '../../../models/DidCommProofState'
 
 describe('V2 Proofs - Indy', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -95,7 +95,7 @@ describe('V2 Proofs - Indy', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
@@ -122,7 +122,7 @@ describe('V2 Proofs - Indy', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
@@ -135,7 +135,7 @@ describe('V2 Proofs - Indy', () => {
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
@@ -164,7 +164,7 @@ describe('V2 Proofs - Indy', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
   })

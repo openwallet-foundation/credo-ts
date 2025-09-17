@@ -2,10 +2,10 @@ import { utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { Attachment } from '../../../../../decorators/attachment/Attachment'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
-import { ProofFormatSpec } from '../../../models/ProofFormatSpec'
+import { ProofFormatSpec } from '../../../models/DidCommProofFormatSpec'
 
 export interface V2ProposePresentationMessageOptions {
   id?: string
@@ -16,7 +16,7 @@ export interface V2ProposePresentationMessageOptions {
   formats: ProofFormatSpec[]
 }
 
-export class V2ProposePresentationMessage extends AgentMessage {
+export class V2ProposePresentationMessage extends DidCommMessage {
   public constructor(options: V2ProposePresentationMessageOptions) {
     super()
 

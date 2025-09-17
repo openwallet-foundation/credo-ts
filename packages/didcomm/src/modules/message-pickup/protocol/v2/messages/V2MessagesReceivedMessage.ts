@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsArray } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
@@ -10,7 +10,7 @@ export interface V2MessagesReceivedMessageOptions {
   messageIdList: string[]
 }
 
-export class V2MessagesReceivedMessage extends AgentMessage {
+export class V2MessagesReceivedMessage extends DidCommMessage {
   public readonly allowQueueTransport = false
 
   public constructor(options: V2MessagesReceivedMessageOptions) {

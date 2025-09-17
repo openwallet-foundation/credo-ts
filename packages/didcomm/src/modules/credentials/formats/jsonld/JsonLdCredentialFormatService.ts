@@ -39,7 +39,7 @@ import {
 } from '@credo-ts/core'
 
 import { Attachment, AttachmentData } from '../../../../decorators/attachment/Attachment'
-import { CredentialFormatSpec } from '../../models/CredentialFormatSpec'
+import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
 
 import { JsonLdCredentialDetail } from './JsonLdCredentialDetail'
 
@@ -61,7 +61,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     _agentContext: AgentContext,
     { credentialFormats }: CredentialFormatCreateProposalOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
     })
 
@@ -101,7 +101,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     { attachmentId, proposalAttachment }: CredentialFormatAcceptProposalOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: JSONLD_VC_DETAIL,
     })
@@ -128,7 +128,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     { credentialFormats, attachmentId }: CredentialFormatCreateOfferOptions<JsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: JSONLD_VC_DETAIL,
     })
@@ -165,7 +165,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     // validate
     JsonTransformer.fromJSON(credentialOffer, JsonLdCredentialDetail)
 
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: JSONLD_VC_DETAIL,
     })
@@ -187,7 +187,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
   ): Promise<CredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
     })
 
@@ -234,7 +234,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
     if (!verificationMethod) {
       throw new CredoError('Missing verification method in credential data')
     }
-    const format = new CredentialFormatSpec({
+    const format = new DidCommCredentialFormatSpec({
       attachmentId,
       format: JSONLD_VC,
     })
@@ -306,11 +306,11 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
   /**
    * Processes an incoming credential - retrieve metadata, retrieve payload and store it in the Indy wallet
    * @param options the issue credential message wrapped inside this object
-   * @param credentialRecord the credential exchange record for this credential
+   * @param credentialExchangeRecord the credential exchange record for this credential
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
+    { credentialExchangeRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
@@ -331,7 +331,7 @@ export class JsonLdCredentialFormatService implements CredentialFormatService<Js
       credential,
     })
 
-    credentialRecord.credentials.push({
+    credentialExchangeRecord.credentials.push({
       credentialRecordType: this.credentialRecordType,
       credentialRecordId: verifiableCredential.id,
     })

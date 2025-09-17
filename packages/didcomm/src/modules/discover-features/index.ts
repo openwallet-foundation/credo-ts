@@ -1,4 +1,4 @@
-export * from './DiscoverFeaturesApi'
-export * from './DiscoverFeaturesEvents'
-export * from './DiscoverFeaturesModule'
+export * from './DidCommDiscoverFeaturesApi'
+export * from './DidCommDiscoverFeaturesEvents'
+export * from './DidCommDiscoverFeaturesModule'
 export * from './protocol'

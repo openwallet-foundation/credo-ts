@@ -11,8 +11,8 @@ import {
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
 import { getDefaultDidcommModules } from '../../../util/modules'
-import { HandshakeProtocol } from '../../connections'
-import { MediatorModule } from '../../routing'
+import { DidCommHandshakeProtocol } from '../../connections'
+import { DidCommMediatorModule } from '../../routing'
 import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
 import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
 
@@ -27,7 +27,7 @@ const mediatorOptions = getAgentOptions(
   },
   {},
   {
-    mediator: new MediatorModule({
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
       messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
@@ -63,7 +63,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -128,7 +128,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -198,7 +198,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -285,7 +285,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient

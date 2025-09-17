@@ -3,8 +3,8 @@ import type { CredentialRecordBinding } from '../../../modules/credentials'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
-import { CredentialExchangeRecord, CredentialState } from '../../../modules/credentials'
-import { CredentialRepository } from '../../../modules/credentials/repository/CredentialRepository'
+import { DidCommCredentialExchangeRecord, DidCommCredentialState } from '../../../modules/credentials'
+import { DidCommCredentialExchangeRepository } from '../../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRole } from '../../../repository'
 import { DidCommMessageRepository } from '../../../repository/DidCommMessageRepository'
 import * as testModule from '../credential'
@@ -12,8 +12,8 @@ import * as testModule from '../credential'
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/credentials/repository/CredentialRepository')
-const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
+jest.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
 const credentialRepository = new CredentialRepositoryMock()
 
 jest.mock('../../../repository/DidCommMessageRepository')
@@ -50,7 +50,7 @@ describe('0.1-0.2 | Credential', () => {
 
   describe('migrateCredentialRecordToV0_2()', () => {
     it('should fetch all records and apply the needed updates ', async () => {
-      const records: CredentialExchangeRecord[] = [
+      const records: DidCommCredentialExchangeRecord[] = [
         getCredential({
           credentialId: 'credentialId1',
           metadata: {
@@ -263,7 +263,7 @@ describe('0.1-0.2 | Credential', () => {
 
       const credentialRecord = getCredential({
         id: 'theCredentialId',
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
@@ -312,7 +312,7 @@ describe('0.1-0.2 | Credential', () => {
         metadata: {},
         protocolVersion: undefined,
         id: 'theCredentialId',
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
@@ -328,7 +328,7 @@ describe('0.1-0.2 | Credential', () => {
 
       const credentialRecord = getCredential({
         id: 'theCredentialId',
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
@@ -362,7 +362,7 @@ describe('0.1-0.2 | Credential', () => {
         metadata: {},
         protocolVersion: undefined,
         id: 'theCredentialId',
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         credentials: [
           {
             credentialRecordId: 'theCredentialRecordId',
@@ -380,7 +380,7 @@ describe('0.1-0.2 | Credential', () => {
 
       const credentialRecord = getCredential({
         id: 'theCredentialId',
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         proposalMessage,
         offerMessage,
         requestMessage,
@@ -424,13 +424,13 @@ describe('0.1-0.2 | Credential', () => {
         protocolVersion: undefined,
         id: 'theCredentialId',
         credentials: [],
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
       })
     })
   })
 
   describe('getCredentialRole', () => {
-    it('should return CredentialRole.Holder if the credentials array is not empty', () => {
+    it('should return DidCommCredentialRole.Holder if the credentials array is not empty', () => {
       const credentialRecord = getCredential({
         credentials: [
           {
@@ -443,22 +443,22 @@ describe('0.1-0.2 | Credential', () => {
       expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.V01_02MigrationCredentialRole.Holder)
     })
 
-    it('should return CredentialRole.Issuer if state is Done and credentials array is empty', () => {
+    it('should return DidCommCredentialRole.Issuer if state is Done and credentials array is empty', () => {
       const credentialRecord = getCredential({
-        state: CredentialState.Done,
+        state: DidCommCredentialState.Done,
         credentials: [],
       })
 
       expect(testModule.getCredentialRole(credentialRecord)).toBe(testModule.V01_02MigrationCredentialRole.Issuer)
     })
 
-    it('should return CredentialRole.Holder if the value is a holder state', () => {
+    it('should return DidCommCredentialRole.Holder if the value is a holder state', () => {
       const holderStates = [
-        CredentialState.Declined,
-        CredentialState.ProposalSent,
-        CredentialState.OfferReceived,
-        CredentialState.RequestSent,
-        CredentialState.CredentialReceived,
+        DidCommCredentialState.Declined,
+        DidCommCredentialState.ProposalSent,
+        DidCommCredentialState.OfferReceived,
+        DidCommCredentialState.RequestSent,
+        DidCommCredentialState.CredentialReceived,
       ]
 
       for (const holderState of holderStates) {
@@ -472,11 +472,11 @@ describe('0.1-0.2 | Credential', () => {
       }
     })
 
-    it('should return CredentialRole.Issuer if the state is not a holder state no credentials are in the array and the state is not Done', () => {
+    it('should return DidCommCredentialRole.Issuer if the state is not a holder state no credentials are in the array and the state is not Done', () => {
       expect(
         testModule.getCredentialRole(
           getCredential({
-            state: CredentialState.CredentialIssued,
+            state: DidCommCredentialState.CredentialIssued,
           })
         )
       ).toBe(testModule.V01_02MigrationCredentialRole.Issuer)
@@ -507,7 +507,7 @@ function getCredential({
   requestMessage?: any
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
   credentialMessage?: any
-  state?: CredentialState
+  state?: DidCommCredentialState
   credentials?: CredentialRecordBinding[]
   id?: string
 }) {
@@ -524,6 +524,6 @@ function getCredential({
       credentials,
       id,
     },
-    CredentialExchangeRecord
+    DidCommCredentialExchangeRecord
   )
 }

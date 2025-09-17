@@ -1,6 +1,6 @@
 import { IsEnum } from 'class-validator'
 
-import { AgentMessage } from '../../AgentMessage'
+import { DidCommMessage } from '../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../util/messageType'
 
 /**
@@ -20,7 +20,7 @@ export interface AckMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0015-acks/README.md#explicit-acks
  */
-export class AckMessage extends AgentMessage {
+export class AckDidCommMessage extends DidCommMessage {
   /**
    * Create new AckMessage instance.
    * @param options
@@ -38,8 +38,8 @@ export class AckMessage extends AgentMessage {
     }
   }
 
-  @IsValidMessageType(AckMessage.type)
-  public readonly type: string = AckMessage.type.messageTypeUri
+  @IsValidMessageType(AckDidCommMessage.type)
+  public readonly type: string = AckDidCommMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/ack')
 
   @IsEnum(AckStatus)

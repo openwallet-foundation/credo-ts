@@ -1,17 +1,17 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../../../handlers'
-import type { V1MessagePickupProtocol } from '../V1MessagePickupProtocol'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import type { V1DidCommMessagePickupProtocol } from '../V1DidCommMessagePickupProtocol'
 
 import { V1BatchPickupMessage } from '../messages'
 
-export class V1BatchPickupHandler implements MessageHandler {
-  private messagePickupService: V1MessagePickupProtocol
+export class V1BatchPickupHandler implements DidCommMessageHandler {
+  private messagePickupService: V1DidCommMessagePickupProtocol
   public supportedMessages = [V1BatchPickupMessage]
 
-  public constructor(messagePickupService: V1MessagePickupProtocol) {
+  public constructor(messagePickupService: V1DidCommMessagePickupProtocol) {
     this.messagePickupService = messagePickupService
   }
 
-  public async handle(messageContext: MessageHandlerInboundMessage<V1BatchPickupHandler>) {
+  public async handle(messageContext: DidCommMessageHandlerInboundMessage<V1BatchPickupHandler>) {
     messageContext.assertReadyConnection()
 
     return this.messagePickupService.processBatchPickup(messageContext)

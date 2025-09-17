@@ -1,7 +1,7 @@
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DiscloseProtocolOptions {
@@ -32,7 +32,7 @@ export interface DiscoverFeaturesDiscloseMessageOptions {
   protocols: DiscloseProtocolOptions[]
 }
 
-export class V1DiscloseMessage extends AgentMessage {
+export class V1DiscloseMessage extends DidCommMessage {
   public constructor(options: DiscoverFeaturesDiscloseMessageOptions) {
     super()
 

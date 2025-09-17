@@ -25,15 +25,15 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   ConnectionInvitationMessage,
-  ConnectionsModule,
+  DidCommConnectionsModule,
+  DidCommMediatorModule,
   DidCommModule,
-  HttpOutboundTransport,
-  MediatorModule,
+  DidCommOutOfBandModule,
+  HttpOutboundDidCommTransport,
   MessagePickupModule,
-  OutOfBandModule,
-  WsOutboundTransport,
+  WsOutboundDidCommTransport,
 } from '@credo-ts/didcomm'
-import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -63,22 +63,22 @@ const agent = new Agent({
       },
     }),
     didcomm: new DidCommModule({ endpoints }),
-    oob: new OutOfBandModule(),
+    oob: new DidCommOutOfBandModule(),
     messagePickup: new MessagePickupModule(),
-    mediator: new MediatorModule({
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
     }),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       autoAcceptConnections: true,
     }),
   },
 })
 
 // Create all transports
-const httpInboundTransport = new HttpInboundTransport({ app, port })
-const httpOutboundTransport = new HttpOutboundTransport()
-const wsInboundTransport = new WsInboundTransport({ server: socketServer })
-const wsOutboundTransport = new WsOutboundTransport()
+const httpInboundTransport = new HttpInboundDidCommTransport({ app, port })
+const httpOutboundTransport = new HttpOutboundDidCommTransport()
+const wsInboundTransport = new WsInboundDidCommTransport({ server: socketServer })
+const wsOutboundTransport = new WsOutboundDidCommTransport()
 
 // Register all Transports
 agent.modules.didcomm.registerInboundTransport(httpInboundTransport)

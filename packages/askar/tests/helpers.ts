@@ -8,7 +8,7 @@ import { registerAskar } from '@openwallet-foundation/askar-shared'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
-import { ConnectionsModule, HandshakeProtocol } from '../../didcomm'
+import { DidCommConnectionsModule, DidCommHandshakeProtocol } from '../../didcomm'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
 import { AskarPostgresStorageConfig } from '../src'
@@ -59,7 +59,7 @@ export function getAskarPostgresAgentOptions(
           database: storageConfig,
         },
       }),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },
@@ -91,7 +91,7 @@ export function getAskarSqliteAgentOptions(
           database: { type: 'sqlite', config: { inMemory } },
         },
       }),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },
@@ -108,7 +108,7 @@ export async function e2eTest(
   receiverAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
 ) {
   const senderReceiverOutOfBandRecord = await senderAgent.modules.oob.createInvitation({
-    handshakeProtocols: [HandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
   const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.modules.oob.receiveInvitation(

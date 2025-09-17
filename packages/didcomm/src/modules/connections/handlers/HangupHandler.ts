@@ -1,17 +1,17 @@
-import type { MessageHandler, MessageHandlerInboundMessage } from '../../../handlers'
-import type { DidRotateService } from '../services'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
+import type { DidCommDidRotateService } from '../services'
 
 import { HangupMessage } from '../messages'
 
-export class HangupHandler implements MessageHandler {
-  private didRotateService: DidRotateService
+export class HangupHandler implements DidCommMessageHandler {
+  private didRotateService: DidCommDidRotateService
   public supportedMessages = [HangupMessage]
 
-  public constructor(didRotateService: DidRotateService) {
+  public constructor(didRotateService: DidCommDidRotateService) {
     this.didRotateService = didRotateService
   }
 
-  public async handle(inboundMessage: MessageHandlerInboundMessage<HangupHandler>) {
+  public async handle(inboundMessage: DidCommMessageHandlerInboundMessage<HangupHandler>) {
     await this.didRotateService.processHangup(inboundMessage)
 
     return undefined

@@ -1,12 +1,12 @@
-import type { FeatureOptions } from './Feature'
+import type { DidCommFeatureOptions } from './DidCommFeature'
 
-import { Feature } from './Feature'
+import { DidCommFeature } from './DidCommFeature'
 
-export type GovernanceFrameworkOptions = Omit<FeatureOptions, 'type'>
+export type DidCommGovernanceFrameworkOptions = Omit<DidCommFeatureOptions, 'type'>
 
-export class GovernanceFramework extends Feature {
-  public constructor(props: GovernanceFrameworkOptions) {
-    super({ ...props, type: GovernanceFramework.type })
+export class DidCommGovernanceFramework extends DidCommFeature {
+  public constructor(props: DidCommGovernanceFrameworkOptions) {
+    super({ ...props, type: DidCommGovernanceFramework.type })
   }
 
   public static readonly type = 'gov-fw'

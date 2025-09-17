@@ -6,8 +6,8 @@ import type {
   ProofFormatPayload,
   ProofFormatService,
 } from '../../formats'
-import type { ProofFormatSpec } from '../../models/ProofFormatSpec'
-import type { ProofExchangeRecord } from '../../repository'
+import type { ProofFormatSpec } from '../../models/DidCommProofFormatSpec'
+import type { DidCommProofExchangeRecord } from '../../repository'
 
 import { CredoError } from '@credo-ts/core'
 
@@ -35,7 +35,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     }: {
       formatServices: ProofFormatService[]
       proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       comment?: string
       goalCode?: string
       goal?: string
@@ -84,7 +84,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       message,
       formatServices,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       message: V2ProposePresentationMessage
       formatServices: ProofFormatService[]
     }
@@ -119,7 +119,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       presentMultiple,
       willConfirm,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptProposal'>
       formatServices: ProofFormatService[]
       comment?: string
@@ -200,7 +200,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
     }: {
       formatServices: ProofFormatService[]
       proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       comment?: string
       goalCode?: string
       goal?: string
@@ -252,7 +252,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       message,
       formatServices,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       message: V2RequestPresentationMessage
       formatServices: ProofFormatService[]
     }
@@ -286,7 +286,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       goalCode,
       goal,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
       formatServices: ProofFormatService[]
       comment?: string
@@ -363,7 +363,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofFormats,
       formatServices,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proofFormats?: ProofFormatCredentialForRequestPayload<
         ExtractProofFormats<PFs>,
         'getCredentialsForRequest',
@@ -423,7 +423,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       proofFormats,
       formatServices,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       proofFormats?: ProofFormatCredentialForRequestPayload<
         ExtractProofFormats<PFs>,
         'selectCredentialsForRequest',
@@ -486,7 +486,7 @@ export class ProofFormatCoordinator<PFs extends ProofFormatService[]> {
       requestMessage,
       formatServices,
     }: {
-      proofRecord: ProofExchangeRecord
+      proofRecord: DidCommProofExchangeRecord
       message: V2PresentationMessage
       requestMessage: V2RequestPresentationMessage
       formatServices: ProofFormatService[]

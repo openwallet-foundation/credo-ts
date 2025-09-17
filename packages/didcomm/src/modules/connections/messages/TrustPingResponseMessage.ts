@@ -2,7 +2,7 @@ import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator
 
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../AgentMessage'
+import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface TrustPingResponseMessageOptions {
@@ -17,7 +17,7 @@ export interface TrustPingResponseMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0048-trust-ping/README.md#messages
  */
-export class TrustPingResponseMessage extends AgentMessage {
+export class TrustPingResponseMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**

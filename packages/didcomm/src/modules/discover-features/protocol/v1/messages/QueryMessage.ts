@@ -1,6 +1,6 @@
 import { IsOptional, IsString } from 'class-validator'
 
-import { AgentMessage } from '../../../../../AgentMessage'
+import { DidCommMessage } from '../../../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export interface DiscoverFeaturesQueryMessageOptions {
@@ -9,7 +9,7 @@ export interface DiscoverFeaturesQueryMessageOptions {
   comment?: string
 }
 
-export class V1QueryMessage extends AgentMessage {
+export class V1QueryMessage extends DidCommMessage {
   public constructor(options: DiscoverFeaturesQueryMessageOptions) {
     super()
 

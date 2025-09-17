@@ -1,7 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { AgentConfig } from '@credo-ts/core'
-import { FeatureRegistry, Protocol } from '@credo-ts/didcomm'
+import { DidCommFeatureRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 
 import { DrpcApi } from './DrpcApi'
 import { DrpcRole } from './models/DrpcRole'
@@ -30,10 +30,10 @@ export class DrpcModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
 
     featureRegistry.register(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/drpc/1.0',
         roles: [DrpcRole.Client, DrpcRole.Server],
       })

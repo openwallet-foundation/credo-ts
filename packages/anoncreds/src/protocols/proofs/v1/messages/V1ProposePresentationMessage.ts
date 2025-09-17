@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
 
@@ -15,7 +15,7 @@ export interface V1ProposePresentationMessageOptions {
  *
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/features/0037-present-proof/README.md#propose-presentation
  */
-export class V1ProposePresentationMessage extends AgentMessage {
+export class V1ProposePresentationMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
   public constructor(options: V1ProposePresentationMessageOptions) {
     super()

@@ -1,4 +1,8 @@
-import type { ConnectionRecord, CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type {
+  DidCommConnectionRecord,
+  DidCommCredentialExchangeRecord,
+  DidCommProofExchangeRecord,
+} from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText, redText } from './OutputClass'
@@ -35,7 +39,7 @@ export class Alice extends BaseAgent {
     return connectionRecord
   }
 
-  private async waitForConnection(connectionRecord: ConnectionRecord) {
+  private async waitForConnection(connectionRecord: DidCommConnectionRecord) {
     const record = await this.agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
     this.connected = true
     console.log(greenText(Output.ConnectionEstablished))
@@ -47,13 +51,13 @@ export class Alice extends BaseAgent {
     this.connectionRecordFaberId = await this.waitForConnection(connectionRecord)
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+  public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     await this.agent.modules.credentials.acceptOffer({
-      credentialRecordId: credentialRecord.id,
+      credentialExchangeRecordId: credentialExchangeRecord.id,
     })
   }
 
-  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
+  public async acceptProofRequest(proofRecord: DidCommProofExchangeRecord) {
     const requestedCredentials = await this.agent.modules.proofs.selectCredentialsForRequest({
       proofRecordId: proofRecord.id,
     })

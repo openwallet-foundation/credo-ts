@@ -51,7 +51,7 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
  * If the following AgentModules type was passed:
  * ```ts
  * {
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }
  * ```
@@ -59,7 +59,7 @@ export type WithoutDefaultModules<Modules extends ModulesMap> = {
  * And we use the `AgentApi` type like this:
  * ```ts
  * type MyAgentApi = AgentApi<{
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }>
  * ```
@@ -156,7 +156,7 @@ export function extendModulesWithDefaultModules<AgentModules extends AgentModule
  * If the dependency manager has the following modules configured:
  * ```ts
  * {
- *   connections: ConnectionsModule
+ *   connections: DidCommConnectionsModule
  *   indy: IndyModule
  * }
  * ```

@@ -1,26 +1,26 @@
-import type { ProofProtocol } from '../protocol/ProofProtocol'
+import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
 
-import { ProofsModuleConfig } from '../ProofsModuleConfig'
-import { AutoAcceptProof } from '../models'
+import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
+import { DidCommAutoAcceptProof } from '../models'
 
 describe('ProofsModuleConfig', () => {
   test('sets default values', () => {
-    const config = new ProofsModuleConfig({
+    const config = new DidCommProofsModuleConfig({
       proofProtocols: [],
     })
 
-    expect(config.autoAcceptProofs).toBe(AutoAcceptProof.Never)
+    expect(config.autoAcceptProofs).toBe(DidCommAutoAcceptProof.Never)
     expect(config.proofProtocols).toEqual([])
   })
 
   test('sets values', () => {
-    const proofProtocol = jest.fn() as unknown as ProofProtocol
-    const config = new ProofsModuleConfig({
-      autoAcceptProofs: AutoAcceptProof.Always,
+    const proofProtocol = jest.fn() as unknown as DidCommProofProtocol
+    const config = new DidCommProofsModuleConfig({
+      autoAcceptProofs: DidCommAutoAcceptProof.Always,
       proofProtocols: [proofProtocol],
     })
 
-    expect(config.autoAcceptProofs).toBe(AutoAcceptProof.Always)
+    expect(config.autoAcceptProofs).toBe(DidCommAutoAcceptProof.Always)
     expect(config.proofProtocols).toEqual([proofProtocol])
   })
 })

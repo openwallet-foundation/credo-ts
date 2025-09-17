@@ -1,4 +1,4 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { IsOptional, IsString } from 'class-validator'
 
 /**
@@ -14,7 +14,7 @@ export interface PerformMessageOptions {
 /**
  * @internal
  */
-export class PerformMessage extends AgentMessage {
+export class PerformMessage extends DidCommMessage {
   public constructor(options: PerformMessageOptions) {
     super()
 

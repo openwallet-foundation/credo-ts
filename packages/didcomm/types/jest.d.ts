@@ -1,9 +1,9 @@
-import type { ConnectionRecord } from '../src'
+import type { DidCommConnectionRecord } from '../src'
 
 declare global {
   namespace jest {
     interface Matchers<R> {
-      toBeConnectedWith(connection: ConnectionRecord): R
+      toBeConnectedWith(connection: DidCommConnectionRecord): R
     }
   }
 }

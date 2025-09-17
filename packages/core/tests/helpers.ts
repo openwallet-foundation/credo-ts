@@ -1,23 +1,23 @@
 import type { Observable } from 'rxjs'
 import type {
-  AgentMessageProcessedEvent,
   BasicMessage,
-  BasicMessageStateChangedEvent,
-  ConnectionDidRotatedEvent,
-  ConnectionRecordProps,
-  ConnectionStateChangedEvent,
-  CredentialState,
-  CredentialStateChangedEvent,
-  OutOfBandInlineServiceKey,
-  ProofStateChangedEvent,
-  RevocationNotificationReceivedEvent,
+  DidCommBasicMessageStateChangedEvent,
+  DidCommConnectionDidRotatedEvent,
+  DidCommConnectionRecordProps,
+  DidCommConnectionStateChangedEvent,
+  DidCommCredentialState,
+  DidCommCredentialStateChangedEvent,
+  DidCommMessageProcessedEvent,
+  DidCommOutOfBandInlineServiceKey,
+  DidCommProofStateChangedEvent,
+  DidCommRevocationNotificationReceivedEvent,
 } from '../../didcomm/src'
 import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
 import type {
-  TrustPingReceivedEvent,
+  DidCommTrustPingReceivedEvent,
   TrustPingResponseReceivedEvent,
-} from '../../didcomm/src/modules/connections/TrustPingEvents'
-import type { ProofState } from '../../didcomm/src/modules/proofs'
+} from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
+import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
   Agent,
@@ -35,23 +35,23 @@ import path from 'path'
 import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
 import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import {
-  AgentEventTypes,
-  BasicMessageEventTypes,
-  ConnectionEventTypes,
-  ConnectionRecord,
-  ConnectionsModule,
-  CredentialEventTypes,
-  DidExchangeRole,
-  DidExchangeState,
-  HandshakeProtocol,
+  DidCommBasicMessageEventTypes,
+  DidCommConnectionEventTypes,
+  DidCommConnectionRecord,
+  DidCommConnectionsModule,
+  DidCommCredentialEventTypes,
+  DidCommDidExchangeRole,
+  DidCommDidExchangeState,
+  DidCommEventTypes,
+  DidCommHandshakeProtocol,
+  DidCommProofEventTypes,
+  DidCommTrustPingEventTypes,
   OutOfBandDidCommService,
-  ProofEventTypes,
-  TrustPingEventTypes,
 } from '../../didcomm/src'
-import { OutOfBandRole } from '../../didcomm/src/modules/oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandState'
+import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
-import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
+import { DidCommOutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
@@ -141,7 +141,7 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
           connections:
             // Make sure connections module is always defined so we can set autoAcceptConnections
             m.connections ??
-            new ConnectionsModule({
+            new DidCommConnectionsModule({
               autoAcceptConnections: true,
             }),
         }
@@ -240,30 +240,30 @@ export async function waitForProofExchangeRecord(
   options: {
     threadId?: string
     parentThreadId?: string
-    state?: ProofState
-    previousState?: ProofState | null
+    state?: DidCommProofState
+    previousState?: DidCommProofState | null
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<ProofStateChangedEvent>(ProofEventTypes.ProofStateChanged)
+  const observable = agent.events.observable<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged)
 
   return waitForProofExchangeRecordSubject(observable, options)
 }
 
-const isProofStateChangedEvent = (e: BaseEvent): e is ProofStateChangedEvent =>
-  e.type === ProofEventTypes.ProofStateChanged
-const isCredentialStateChangedEvent = (e: BaseEvent): e is CredentialStateChangedEvent =>
-  e.type === CredentialEventTypes.CredentialStateChanged
-const isConnectionStateChangedEvent = (e: BaseEvent): e is ConnectionStateChangedEvent =>
-  e.type === ConnectionEventTypes.ConnectionStateChanged
-const isConnectionDidRotatedEvent = (e: BaseEvent): e is ConnectionDidRotatedEvent =>
-  e.type === ConnectionEventTypes.ConnectionDidRotated
-const isTrustPingReceivedEvent = (e: BaseEvent): e is TrustPingReceivedEvent =>
-  e.type === TrustPingEventTypes.TrustPingReceivedEvent
+const isProofStateChangedEvent = (e: BaseEvent): e is DidCommProofStateChangedEvent =>
+  e.type === DidCommProofEventTypes.ProofStateChanged
+const isCredentialStateChangedEvent = (e: BaseEvent): e is DidCommCredentialStateChangedEvent =>
+  e.type === DidCommCredentialEventTypes.DidCommCredentialStateChanged
+const isConnectionStateChangedEvent = (e: BaseEvent): e is DidCommConnectionStateChangedEvent =>
+  e.type === DidCommConnectionEventTypes.DidCommConnectionStateChanged
+const isConnectionDidRotatedEvent = (e: BaseEvent): e is DidCommConnectionDidRotatedEvent =>
+  e.type === DidCommConnectionEventTypes.DidCommConnectionDidRotated
+const isTrustPingReceivedEvent = (e: BaseEvent): e is DidCommTrustPingReceivedEvent =>
+  e.type === DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
 const isTrustPingResponseReceivedEvent = (e: BaseEvent): e is TrustPingResponseReceivedEvent =>
-  e.type === TrustPingEventTypes.TrustPingResponseReceivedEvent
-const isAgentMessageProcessedEvent = (e: BaseEvent): e is AgentMessageProcessedEvent =>
-  e.type === AgentEventTypes.AgentMessageProcessed
+  e.type === DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
+const isAgentMessageProcessedEvent = (e: BaseEvent): e is DidCommMessageProcessedEvent =>
+  e.type === DidCommEventTypes.DidCommMessageProcessed
 
 export function waitForProofExchangeRecordSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
@@ -277,8 +277,8 @@ export function waitForProofExchangeRecordSubject(
   }: {
     threadId?: string
     parentThreadId?: string
-    state?: ProofState
-    previousState?: ProofState | null
+    state?: DidCommProofState
+    previousState?: DidCommProofState | null
     timeoutMs?: number
     count?: number
   }
@@ -294,7 +294,7 @@ export function waitForProofExchangeRecordSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `ProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
+          `DidCommProofStateChangedEvent event not emitted within specified timeout: ${timeoutMs}
           previousState: ${previousState},
           threadId: ${threadId},
           parentThreadId: ${parentThreadId},
@@ -315,7 +315,9 @@ export async function waitForTrustPingReceivedEvent(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<TrustPingReceivedEvent>(TrustPingEventTypes.TrustPingReceivedEvent)
+  const observable = agent.events.observable<DidCommTrustPingReceivedEvent>(
+    DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
+  )
 
   return waitForTrustPingReceivedEventSubject(observable, options)
 }
@@ -356,7 +358,7 @@ export async function waitForTrustPingResponseReceivedEvent(
   }
 ) {
   const observable = agent.events.observable<TrustPingResponseReceivedEvent>(
-    TrustPingEventTypes.TrustPingResponseReceivedEvent
+    DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
   )
 
   return waitForTrustPingResponseReceivedEventSubject(observable, options)
@@ -398,7 +400,7 @@ export async function waitForAgentMessageProcessedEvent(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<AgentMessageProcessedEvent>(AgentEventTypes.AgentMessageProcessed)
+  const observable = agent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
 
   return waitForAgentMessageProcessedEventSubject(observable, options)
 }
@@ -424,7 +426,7 @@ export function waitForAgentMessageProcessedEventSubject(
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `AgentMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
+          `DidCommMessageProcessedEvent event not emitted within specified timeout: ${timeoutMs}
   threadId: ${threadId}, messageType: ${messageType}
 }`
         )
@@ -443,8 +445,8 @@ export function waitForCredentialRecordSubject(
     timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
-    state?: CredentialState
-    previousState?: CredentialState | null
+    state?: DidCommCredentialState
+    previousState?: DidCommCredentialState | null
     timeoutMs?: number
   }
 ) {
@@ -454,17 +456,17 @@ export function waitForCredentialRecordSubject(
     observable.pipe(
       filter(isCredentialStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
-      filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
-      filter((e) => state === undefined || e.payload.credentialRecord.state === state),
+      filter((e) => threadId === undefined || e.payload.credentialExchangeRecord.threadId === threadId),
+      filter((e) => state === undefined || e.payload.credentialExchangeRecord.state === state),
       timeout(timeoutMs),
       catchError(() => {
-        throw new Error(`CredentialStateChanged event not emitted within specified timeout: {
+        throw new Error(`DidCommCredentialStateChanged event not emitted within specified timeout: {
   previousState: ${previousState},
   threadId: ${threadId},
   state: ${state}
 }`)
       }),
-      map((e) => e.payload.credentialRecord)
+      map((e) => e.payload.credentialExchangeRecord)
     )
   )
 }
@@ -473,12 +475,14 @@ export async function waitForCredentialRecord(
   agent: Agent,
   options: {
     threadId?: string
-    state?: CredentialState
-    previousState?: CredentialState | null
+    state?: DidCommCredentialState
+    previousState?: DidCommCredentialState | null
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged)
+  const observable = agent.events.observable<DidCommCredentialStateChangedEvent>(
+    DidCommCredentialEventTypes.DidCommCredentialStateChanged
+  )
   return waitForCredentialRecordSubject(observable, options)
 }
 
@@ -490,8 +494,8 @@ export function waitForDidRotateSubject(
     timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
-    state?: DidExchangeState
-    previousState?: DidExchangeState | null
+    state?: DidCommDidExchangeState
+    previousState?: DidCommDidExchangeState | null
     timeoutMs?: number
   }
 ) {
@@ -523,8 +527,8 @@ export function waitForConnectionRecordSubject(
     timeoutMs = 15000, // sign and store credential in W3c credential protocols take several seconds
   }: {
     threadId?: string
-    state?: DidExchangeState
-    previousState?: DidExchangeState | null
+    state?: DidCommDidExchangeState
+    previousState?: DidCommDidExchangeState | null
     timeoutMs?: number
   }
 ) {
@@ -553,12 +557,14 @@ export async function waitForConnectionRecord(
   agent: Agent,
   options: {
     threadId?: string
-    state?: DidExchangeState
-    previousState?: DidExchangeState | null
+    state?: DidCommDidExchangeState
+    previousState?: DidCommDidExchangeState | null
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged)
+  const observable = agent.events.observable<DidCommConnectionStateChangedEvent>(
+    DidCommConnectionEventTypes.DidCommConnectionStateChanged
+  )
   return waitForConnectionRecordSubject(observable, options)
 }
 
@@ -566,11 +572,13 @@ export async function waitForDidRotate(
   agent: Agent,
   options: {
     threadId?: string
-    state?: DidExchangeState
+    state?: DidCommDidExchangeState
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<ConnectionDidRotatedEvent>(ConnectionEventTypes.ConnectionDidRotated)
+  const observable = agent.events.observable<DidCommConnectionDidRotatedEvent>(
+    DidCommConnectionEventTypes.DidCommConnectionDidRotated
+  )
   return waitForDidRotateSubject(observable, options)
 }
 
@@ -579,19 +587,25 @@ export async function waitForBasicMessage(
   { content, connectionId }: { content?: string; connectionId?: string }
 ): Promise<BasicMessage> {
   return new Promise((resolve) => {
-    const listener = (event: BasicMessageStateChangedEvent) => {
+    const listener = (event: DidCommBasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
       const connectionIdMatches =
         connectionId === undefined || event.payload.basicMessageRecord.connectionId === connectionId
 
       if (contentMatches && connectionIdMatches) {
-        agent.events.off<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
+        agent.events.off<DidCommBasicMessageStateChangedEvent>(
+          DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+          listener
+        )
 
         resolve(event.payload.message)
       }
     }
 
-    agent.events.on<BasicMessageStateChangedEvent>(BasicMessageEventTypes.BasicMessageStateChanged, listener)
+    agent.events.on<DidCommBasicMessageStateChangedEvent>(
+      DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,
+      listener
+    )
   })
 }
 
@@ -602,15 +616,17 @@ export async function waitForRevocationNotification(
     timeoutMs?: number
   }
 ) {
-  const observable = agent.events.observable<RevocationNotificationReceivedEvent>(
-    CredentialEventTypes.RevocationNotificationReceived
+  const observable = agent.events.observable<DidCommRevocationNotificationReceivedEvent>(
+    DidCommCredentialEventTypes.DidCommRevocationNotificationReceived
   )
 
   return waitForRevocationNotificationSubject(observable, options)
 }
 
 export function waitForRevocationNotificationSubject(
-  subject: ReplaySubject<RevocationNotificationReceivedEvent> | Observable<RevocationNotificationReceivedEvent>,
+  subject:
+    | ReplaySubject<DidCommRevocationNotificationReceivedEvent>
+    | Observable<DidCommRevocationNotificationReceivedEvent>,
   {
     threadId,
     timeoutMs = 10000,
@@ -622,31 +638,31 @@ export function waitForRevocationNotificationSubject(
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueFrom(
     observable.pipe(
-      filter((e) => threadId === undefined || e.payload.credentialRecord.threadId === threadId),
+      filter((e) => threadId === undefined || e.payload.credentialExchangeRecord.threadId === threadId),
       timeout(timeoutMs),
       catchError(() => {
         throw new Error(
-          `RevocationNotificationReceivedEvent event not emitted within specified timeout: {
+          `DidCommRevocationNotificationReceivedEvent event not emitted within specified timeout: {
     threadId: ${threadId},
   }`
         )
       }),
-      map((e) => e.payload.credentialRecord)
+      map((e) => e.payload.credentialExchangeRecord)
     )
   )
 }
 
 export function getMockConnection({
-  state = DidExchangeState.InvitationReceived,
-  role = DidExchangeRole.Requester,
+  state = DidCommDidExchangeState.InvitationReceived,
+  role = DidCommDidExchangeRole.Requester,
   id = 'test',
   did = 'test-did',
   threadId = 'threadId',
   tags = {},
   theirLabel,
   theirDid = 'their-did',
-}: Partial<ConnectionRecordProps> = {}) {
-  return new ConnectionRecord({
+}: Partial<DidCommConnectionRecordProps> = {}) {
+  return new DidCommConnectionRecord({
     did,
     threadId,
     theirDid,
@@ -682,18 +698,18 @@ export function getMockOutOfBand({
   serviceEndpoint?: string
   mediatorId?: string
   recipientKeys?: string[]
-  role?: OutOfBandRole
-  state?: OutOfBandState
+  role?: DidCommOutOfBandRole
+  state?: DidCommOutOfBandState
   reusable?: boolean
   reuseConnectionId?: string
-  invitationInlineServiceKeys?: OutOfBandInlineServiceKey[]
+  invitationInlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
   imageUrl?: string
 } = {}) {
   const options = {
     label: label ?? 'label',
     imageUrl: imageUrl ?? undefined,
     accept: ['didcomm/aip1', 'didcomm/aip2;env=rfc19'],
-    handshakeProtocols: [HandshakeProtocol.DidExchange],
+    handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     services: [
       new OutOfBandDidCommService({
         id: '#inline-0',
@@ -704,11 +720,11 @@ export function getMockOutOfBand({
     ],
   }
   const outOfBandInvitation = new OutOfBandInvitation(options)
-  const outOfBandRecord = new OutOfBandRecord({
+  const outOfBandRecord = new DidCommOutOfBandRecord({
     mediatorId,
     invitationInlineServiceKeys,
-    role: role || OutOfBandRole.Receiver,
-    state: state || OutOfBandState.Initial,
+    role: role || DidCommOutOfBandRole.Receiver,
+    state: state || DidCommOutOfBandState.Initial,
     outOfBandInvitation: outOfBandInvitation,
     reusable,
     reuseConnectionId,
@@ -721,7 +737,7 @@ export function getMockOutOfBand({
 
 export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, agentB: Agent<DefaultAgentModulesInput>) {
   const agentAOutOfBand = await agentA.modules.oob.createInvitation({
-    handshakeProtocols: [HandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
   let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
