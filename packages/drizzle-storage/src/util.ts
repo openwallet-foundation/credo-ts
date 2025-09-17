@@ -4,11 +4,11 @@ export const rootDirectory = `${__dirname}/..`
 
 export const bundleMigrationDefinition = (bundle: string): DrizzleRecordBundle['migrations'] => ({
   postgres: {
-    schemaSourcePath: `${rootDirectory}/src/${bundle}/postgres.ts`,
+    schemaSourcePath: `${rootDirectory}/build/${bundle}/postgres.js`,
     migrationsPath: `${rootDirectory}/migrations/${bundle}/postgres`,
   },
   sqlite: {
-    schemaSourcePath: `${rootDirectory}/src/${bundle}/sqlite.ts`,
+    schemaSourcePath: `${rootDirectory}/build/${bundle}/sqlite.js`,
     migrationsPath: `${rootDirectory}/migrations/${bundle}/sqlite`,
   },
 })
