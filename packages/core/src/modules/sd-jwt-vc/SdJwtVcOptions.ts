@@ -144,4 +144,9 @@ export type SdJwtVcVerifyOptions = {
   fetchTypeMetadata?: boolean
 
   trustedCertificates?: EncodedX509Certificate[]
+
+  /**
+   * Date that should be used as the current time. If not provided, current time will be used.
+   */
+  now?: Date
 }
