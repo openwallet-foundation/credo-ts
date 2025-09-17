@@ -1,4 +1,4 @@
-import { DeviceRequest, cborEncode, parseDeviceResponse } from '@animo-id/mdoc'
+import { DeviceRequest, cborEncode, DeviceResponse, Document, DataItem } from '@animo-id/mdoc'
 
 import { Agent, X509Certificate } from '../../..'
 import { getAgentOptions } from '../../../../tests'
@@ -45,32 +45,35 @@ PQQDAgNIADBFAiAJ/Qyrl7A+ePZOdNfc7ohmjEdqCvxaos6//gfTvncuqQIhANo4
 q8mKCA9J8k/+zh//yKbN1bLAtdqPx7dnrDqV3Lg+
 -----END CERTIFICATE-----`
 
-const DEVICE_REQUEST_1 = DeviceRequest.from('1.0', [
-  {
-    itemsRequestData: {
-      docType: 'org.iso.18013.5.1.mDL',
-      nameSpaces: new Map([
-        [
-          'org.iso.18013.5.1',
-          new Map([
-            ['family_name', false],
-            ['given_name', false],
-            ['birth_date', false],
-            ['issue_date', false],
-            ['expiry_date', false],
-            ['issuing_country', false],
-            ['issuing_authority', false],
-            ['issuing_jurisdiction', false],
-            ['document_number', false],
-            ['portrait', false],
-            ['driving_privileges', false],
-            ['un_distinguishing_sign', false],
-          ]),
-        ],
-      ]),
+const DEVICE_REQUEST_1 = DeviceRequest.fromEncodedStructure({
+  version: '1.0',
+  docRequests: [
+    {
+      itemsRequest: DataItem.fromData({
+        docType: 'org.iso.18013.5.1.mDL',
+        nameSpaces: new Map([
+          [
+            'org.iso.18013.5.1',
+            new Map([
+              ['family_name', false],
+              ['given_name', false],
+              ['birth_date', false],
+              ['issue_date', false],
+              ['expiry_date', false],
+              ['issuing_country', false],
+              ['issuing_authority', false],
+              ['issuing_jurisdiction', false],
+              ['document_number', false],
+              ['portrait', false],
+              ['driving_privileges', false],
+              ['un_distinguishing_sign', false],
+            ]),
+          ],
+        ]),
+      }),
     },
-  },
-])
+  ],
+})
 
 describe('mdoc device-response proximity test', () => {
   let mdoc: Mdoc
@@ -141,8 +144,8 @@ describe('mdoc device-response proximity test', () => {
 
         documentRequests: DEVICE_REQUEST_1.docRequests.map((v) => {
           return {
-            docType: v.itemsRequest.data.docType,
-            nameSpaces: namespacesMapToRecord(v.itemsRequest.data.nameSpaces),
+            docType: v.itemsRequest.docType,
+            nameSpaces: namespacesMapToRecord(v.itemsRequest.namespaces),
           }
         }),
         sessionTranscriptOptions: {
@@ -154,13 +157,14 @@ describe('mdoc device-response proximity test', () => {
         },
       })
 
-      const parsed = parseDeviceResponse(result)
+      const parsed = DeviceResponse.fromEncodedStructure(result)
       expect(parsed.documents).toHaveLength(1)
 
-      const prepared = parsed.documents[0].prepare()
-      const docType = prepared.get('docType') as string
-      const issuerSigned = cborEncode(prepared.get('issuerSigned'))
-      const deviceSigned = cborEncode(prepared.get('deviceSigned'))
+      const prepared = parsed.documents?.[0] as Document
+      const docType = prepared.docType
+
+      const issuerSigned = prepared.issuerSigned.encode()
+      const deviceSigned = prepared.deviceSigned.encode()
       parsedDocument = Mdoc.fromDeviceSignedDocument(
         TypedArrayEncoder.toBase64URL(issuerSigned),
         TypedArrayEncoder.toBase64URL(deviceSigned),
