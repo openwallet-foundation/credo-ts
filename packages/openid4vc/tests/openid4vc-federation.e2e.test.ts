@@ -61,7 +61,6 @@ describe('OpenId4Vc-federation', () => {
     expressApp = express()
 
     issuer = (await createAgentFromModules(
-      'issuer',
       {
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
@@ -107,7 +106,6 @@ describe('OpenId4Vc-federation', () => {
     )) as unknown as typeof issuer
 
     holder = (await createAgentFromModules(
-      'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
@@ -119,7 +117,6 @@ describe('OpenId4Vc-federation', () => {
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
 
     verifier = (await createAgentFromModules(
-      'verifier',
       {
         openId4VcVerifier: new OpenId4VcVerifierModule({
           baseUrl: verificationBaseUrl,
