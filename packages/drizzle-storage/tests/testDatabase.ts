@@ -10,6 +10,7 @@ export type DrizzlePostgresTestDatabase = {
   pool: PoolType
   drizzle: DrizzlePostgresDatabase
   teardown: () => Promise<void>
+  drizzleConnectionString: string
 }
 
 export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgresTestDatabase> {
@@ -19,8 +20,10 @@ export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgr
   const pgClient = new Client({
     connectionString: 'postgresql://postgres:postgres@localhost:5432/postgres',
   })
+
+  const drizzleConnectionString = `postgresql://postgres:postgres@localhost:5432/${databaseName}`
   const drizzleClient = new Pool({
-    connectionString: `postgresql://postgres:postgres@localhost:5432/${databaseName}`,
+    connectionString: drizzleConnectionString,
   })
 
   await pgClient.connect()
@@ -29,6 +32,7 @@ export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgr
   return {
     pool: drizzleClient,
     drizzle: require('drizzle-orm/node-postgres').drizzle(drizzleClient),
+    drizzleConnectionString,
     teardown: async () => {
       await drizzleClient.end()
       await pgClient.query(`DROP DATABASE "${databaseName}";`)

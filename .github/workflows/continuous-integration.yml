@@ -208,6 +208,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # For the Drizzle ORM integration we need to build the package
+      - name: Build drizzle package
+        run: pnpm --filter @credo-ts/drizzle-storage run build
+
       # Issue with node 22 starting 22.18
       # https://github.com/nodejs/node/issues/59364
       - name: Run tests

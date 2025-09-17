@@ -9,9 +9,10 @@ interface RunMigrationsOptions {
   }
   bundles: string[]
   directory?: string
+  silent?: boolean
 }
 
-export async function runMigrations({ database, bundles }: RunMigrationsOptions): Promise<void> {
+export async function runMigrations({ database, bundles, silent }: RunMigrationsOptions): Promise<void> {
   const drizzleConfigPath = getDrizzleConfigPath()
 
   for (const bundleModule of bundles) {
@@ -36,7 +37,7 @@ export async function runMigrations({ database, bundles }: RunMigrationsOptions)
       )
     }
 
-    log(`Migrated bundle ${bundleModule} for dialect ${database.dialect}:`)
-    log(migrateResult.stdout)
+    if (!silent) log(`Migrated bundle ${bundleModule} for dialect ${database.dialect}:`)
+    if (!silent) log(migrateResult.stdout)
   }
 }

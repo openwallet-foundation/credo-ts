@@ -7,9 +7,10 @@ interface GenerateMigrationOptions {
   name?: string
   dialects: readonly Dialect[]
   bundles: string[]
+  silent?: boolean
 }
 
-export async function generateMigrations({ dialects, bundles, name }: GenerateMigrationOptions): Promise<void> {
+export async function generateMigrations({ dialects, bundles, name, silent }: GenerateMigrationOptions): Promise<void> {
   const drizzleConfigPath = getDrizzleConfigPath()
 
   for (const bundleModule of bundles) {
@@ -40,8 +41,8 @@ export async function generateMigrations({ dialects, bundles, name }: GenerateMi
         )
       }
 
-      log(`Generated migrations for ${dialectBundle.schemaPath} with dialect ${dialect}:`)
-      log(migrateResult.stdout)
+      if (!silent) log(`Generated migrations for ${dialectBundle.schemaPath} with dialect ${dialect}:`)
+      if (!silent) log(migrateResult.stdout)
     }
   }
 }
