@@ -9,7 +9,6 @@ import { DidCommMimeType } from './types'
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
   useDidSovPrefixWhereAllowed?: boolean
-  connectionImageUrl?: string
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
@@ -43,13 +42,6 @@ export class DidCommModuleConfig {
 
   public get useDidSovPrefixWhereAllowed() {
     return this.options.useDidSovPrefixWhereAllowed ?? false
-  }
-
-  /**
-   * @todo move to context configuration
-   */
-  public get connectionImageUrl() {
-    return this.options.connectionImageUrl
   }
 
   public get processDidCommMessagesConcurrently() {

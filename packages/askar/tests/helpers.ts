@@ -42,7 +42,6 @@ export function getAskarPostgresAgentOptions(
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `PostgresAgent: ${name} - ${random}`,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -75,7 +74,6 @@ export function getAskarSqliteAgentOptions(
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `SQLiteAgent: ${name} - ${random}`,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -105,13 +103,19 @@ export function getAskarSqliteAgentOptions(
  * @param senderAgent
  * @param receiverAgent
  */
-export async function e2eTest(senderAgent: Agent, receiverAgent: Agent) {
+export async function e2eTest(
+  senderAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>,
+  receiverAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+) {
   const senderReceiverOutOfBandRecord = await senderAgent.modules.oob.createInvitation({
     handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
   const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.modules.oob.receiveInvitation(
-    senderReceiverOutOfBandRecord.outOfBandInvitation
+    senderReceiverOutOfBandRecord.outOfBandInvitation,
+    {
+      label: 'receiver',
+    }
   )
   if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
 

@@ -51,7 +51,7 @@ import {
 } from './services/helpers'
 
 interface DidExchangeRequestParams {
-  label?: string
+  label: string
   alias?: string
   goal?: string
   goalCode?: string
@@ -100,7 +100,7 @@ export class DidExchangeProtocol {
     const [invitationDid] = outOfBandInvitation.invitationDids
 
     // Create message
-    const label = params.label ?? agentContext.config.label
+    const label = params.label
 
     let didDocument: DidDocument
     let keys: DidDocumentKey[] | undefined

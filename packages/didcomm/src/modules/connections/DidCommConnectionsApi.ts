@@ -91,7 +91,7 @@ export class DidCommConnectionsApi {
     outOfBandRecord: DidCommOutOfBandRecord,
     config: {
       autoAcceptConnection?: boolean
-      label?: string
+      label: string
       alias?: string
       imageUrl?: string
       protocol: DidCommHandshakeProtocol

@@ -54,9 +54,7 @@ describe('Manual Connection Flow', () => {
       {
         endpoints: ['rxjs:alice'],
       },
-      {
-        label: 'alice',
-      },
+      {},
       {
         connections: new DidCommConnectionsModule({
           autoAcceptConnections: false,
@@ -69,9 +67,7 @@ describe('Manual Connection Flow', () => {
       {
         endpoints: ['rxjs:bob'],
       },
-      {
-        label: 'bob',
-      },
+      {},
       {
         connections: new DidCommConnectionsModule({
           autoAcceptConnections: false,
@@ -105,6 +101,7 @@ describe('Manual Connection Flow', () => {
     const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
       autoAcceptConnection: false,
       multiUseInvitation: true,
+      label: 'faber',
     })
 
     const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
@@ -113,6 +110,7 @@ describe('Manual Connection Flow', () => {
     let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
+        label: 'alice',
         autoAcceptInvitation: true,
         autoAcceptConnection: false,
       }
@@ -121,6 +119,7 @@ describe('Manual Connection Flow', () => {
     let { connectionRecord: bobConnectionRecord } = await bobAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
+        label: 'bob',
         autoAcceptInvitation: true,
         autoAcceptConnection: false,
       }

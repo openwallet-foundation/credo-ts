@@ -14,7 +14,6 @@ import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinato
 import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig = {
-  label: 'Tenant Agent',
   logger: testLogger,
 } satisfies InitConfig
 

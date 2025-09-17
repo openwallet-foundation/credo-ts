@@ -58,7 +58,6 @@ const connectionImageUrl = 'https://example.com/image.png'
 const endpoint = 'http://agent.com:8080'
 const agentConfig = getAgentConfig('ConnectionServiceTest', {
   endpoints: [endpoint],
-  connectionImageUrl,
 })
 
 const outOfBandRepository = new OutOfBandRepositoryMock()
@@ -81,7 +80,7 @@ describe('DidCommConnectionService', () => {
         [DidCommOutOfBandRepository, outOfBandRepository],
         [DidCommOutOfBandService, outOfBandService],
         [DidRepository, didRepository],
-        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint], connectionImageUrl })],
+        [DidCommModuleConfig, new DidCommModuleConfig({ endpoints: [endpoint] })],
       ],
     })
     kms = agentContext.resolve(Kms.KeyManagementApi)
@@ -125,12 +124,12 @@ describe('DidCommConnectionService', () => {
       expect.assertions(5)
 
       const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
-      const config = { routing: myRouting }
+      const config = { routing: myRouting, label: 'alice', imageUrl: connectionImageUrl }
 
       const { connectionRecord, message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
       expect(connectionRecord.state).toBe(DidCommDidExchangeState.RequestSent)
-      expect(message.label).toBe(agentConfig.label)
+      expect(message.label).toBe('alice')
       expect(message.connection.did).toBe('XpwgBjsC2wh3eHcMW6ZRJT')
 
       const publicKey = new Ed25119Sig2018({
@@ -173,7 +172,7 @@ describe('DidCommConnectionService', () => {
       expect.assertions(1)
 
       const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse, imageUrl: connectionImageUrl })
-      const config = { label: 'Custom label', routing: myRouting }
+      const config = { label: 'Custom label', connectionImageUrl, routing: myRouting }
 
       const { connectionRecord } = await connectionService.createRequest(agentContext, outOfBand, config)
 
@@ -184,7 +183,7 @@ describe('DidCommConnectionService', () => {
       expect.assertions(1)
 
       const outOfBand = getMockOutOfBand({ state: DidCommOutOfBandState.PrepareResponse })
-      const config = { imageUrl: 'custom-image-url', routing: myRouting }
+      const config = { imageUrl: 'custom-image-url', label: '', routing: myRouting }
 
       const { message } = await connectionService.createRequest(agentContext, outOfBand, config)
 
@@ -194,11 +193,8 @@ describe('DidCommConnectionService', () => {
     it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Receiver}`, async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({
-        role: DidCommOutOfBandRole.Sender,
-        state: DidCommOutOfBandState.PrepareResponse,
-      })
-      const config = { routing: myRouting }
+      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state: DidCommOutOfBandState.PrepareResponse })
+      const config = { label: '', routing: myRouting }
 
       return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
         `Invalid out-of-band record role ${DidCommOutOfBandRole.Sender}, expected is ${DidCommOutOfBandRole.Receiver}.`
@@ -216,7 +212,7 @@ describe('DidCommConnectionService', () => {
         expect.assertions(1)
 
         const outOfBand = getMockOutOfBand({ state })
-        const config = { routing: myRouting }
+        const config = { label: '', routing: myRouting }
 
         return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrowError(
           `Invalid out-of-band record state ${state}, valid states are: ${DidCommOutOfBandState.PrepareResponse}.`

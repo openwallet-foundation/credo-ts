@@ -70,13 +70,12 @@ describe('OpenId4Vci (Deferred)', () => {
     expressApp = express()
 
     issuer = (await createAgentFromModules(
-      'issuer',
       {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
         openId4VcIssuer: new OpenId4VcIssuerModule({
           baseUrl: issuanceBaseUrl,
-
+          dpopRequired: true,
           credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding }) => {
             const uuid = randomUUID()
 
@@ -149,7 +148,6 @@ describe('OpenId4Vci (Deferred)', () => {
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
 
     holder = (await createAgentFromModules(
-      'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),
@@ -265,6 +263,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         await authorizationServer.createAccessTokenResponse({
           authorizationServer: 'http://localhost:4747',
           audience: 'http://localhost:1234/oid4vci/8bc91672-6a32-466c-96ec-6efca8760068',
+          refreshToken: true,
           expiresInSeconds: 5000,
           subject: 'something',
           scope: 'UniversityDegreeCredential',
@@ -302,6 +301,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         issuerState: 'dbf99eea-0131-48b0-9022-17f7ebe25ea7',
       },
       version: 'v1.draft15',
+      generateRefreshTokens: true,
     })
 
     await issuerTenant.endSession()
@@ -344,8 +344,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(credentialResponse.credentials).toHaveLength(0)
     expect(credentialResponse.deferredCredentials[0].interval).toEqual(2000)
 
+    const refreshTokenTenant = await holderTenant.modules.openId4VcHolder.refreshToken({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      authorizationServer: tokenResponseTenant.authorizationServer,
+      refreshToken: tokenResponseTenant.refreshToken as string,
+      dpop: tokenResponseTenant.dpop,
+      clientId: 'foo',
+    })
+
     const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
-      ...tokenResponseTenant,
+      ...refreshTokenTenant,
       ...credentialResponse.deferredCredentials[0],
       issuerMetadata: resolvedCredentialOffer.metadata,
     })
@@ -406,6 +414,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
       version: 'v1.draft15',
+      generateRefreshTokens: true,
     })
 
     await issuerTenant.endSession()
@@ -455,10 +464,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(tokenResponseTenant.accessToken).toBeDefined()
+    expect(tokenResponseTenant.refreshToken).toBeDefined()
     expect(tokenResponseTenant.dpop?.jwk).toBeInstanceOf(Kms.PublicJwk)
-    const { payload } = Jwt.fromSerializedJwt(tokenResponseTenant.accessToken)
+    const { payload: accessTokenPayload } = Jwt.fromSerializedJwt(tokenResponseTenant.accessToken)
 
-    expect(payload.toJson()).toEqual({
+    expect(accessTokenPayload.toJson()).toEqual({
       cnf: {
         jkt: await calculateJwkThumbprint({
           hashAlgorithm: HashAlgorithm.Sha256,
@@ -478,6 +488,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       jti: expect.any(String),
       nbf: undefined,
       sub: expect.stringContaining('credo:'),
+    })
+
+    const { payload: refreshTokenPayload } = Jwt.fromSerializedJwt(tokenResponseTenant.refreshToken as string)
+
+    expect(refreshTokenPayload.toJson()).toEqual({
+      cnf: {
+        jkt: await calculateJwkThumbprint({
+          hashAlgorithm: HashAlgorithm.Sha256,
+          hashCallback: getOid4vcCallbacks(holderTenant.context).hash,
+          jwk: tokenResponseTenant.dpop?.jwk.toJson() as Jwk,
+        }),
+      },
+      'pre-authorized_code':
+        resolvedCredentialOffer.credentialOfferPayload.grants?.[preAuthorizedCodeGrantIdentifier]?.[
+          'pre-authorized_code'
+        ],
+      aud: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
+      iss: `http://localhost:1234/oid4vci/${openIdIssuerTenant.issuerId}`,
+      exp: expect.any(Number),
     })
 
     const credentialsTenant1 = await holderTenant.modules.openId4VcHolder.requestCredentials({
@@ -512,8 +541,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(credentialsTenant1.credentials).toHaveLength(0)
     expect(credentialsTenant1.deferredCredentials[0].interval).toEqual(2000)
 
+    const refreshTokenTenant = await holderTenant.modules.openId4VcHolder.refreshToken({
+      issuerMetadata: resolvedCredentialOffer.metadata,
+      authorizationServer: tokenResponseTenant.authorizationServer,
+      refreshToken: tokenResponseTenant.refreshToken as string,
+      dpop: tokenResponseTenant.dpop,
+      clientId: 'foo',
+    })
+
     const deferredCredentialResponse = await holderTenant.modules.openId4VcHolder.requestDeferredCredentials({
-      ...tokenResponseTenant,
+      ...refreshTokenTenant,
       ...credentialsTenant1.deferredCredentials[0],
       issuerMetadata: resolvedCredentialOffer.metadata,
     })

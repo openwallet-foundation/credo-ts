@@ -121,7 +121,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       messages: [message],
       handshake: false,
     })
-    await aliceAgent.modules.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation)
+    await aliceAgent.modules.oob.receiveInvitation(outOfBandRecord.outOfBandInvitation, { label: 'alice' })
 
     testLogger.test('Alice waits for presentation request from Faber')
     let aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -241,7 +241,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: DidCommProofState.Done,
@@ -335,7 +335,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       await faberAgent.modules.didcomm.unregisterOutboundTransport(transport)
     }
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: DidCommProofState.Done,
@@ -531,7 +531,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       },
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     await waitForProofExchangeRecordSubject(aliceReplay, {
       state: DidCommProofState.Done,

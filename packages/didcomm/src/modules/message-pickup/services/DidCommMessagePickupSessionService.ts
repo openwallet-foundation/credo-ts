@@ -37,8 +37,9 @@ export class DidCommMessagePickupSessionService {
       .pipe(takeUntil(stop$))
       .subscribe({
         next: (e) => {
-          const connectionId = e.payload.session.connectionId
-          if (connectionId) this.removeLiveSession(agentContext, { connectionId })
+          // Find the live mode session that matches the transport session being removed
+          const liveModeSession = this.sessions.find((session) => session.transportSessionId === e.payload.session.id)
+          if (liveModeSession) this.removeLiveSession(agentContext, { connectionId: liveModeSession.connectionId })
         },
       })
   }
@@ -60,18 +61,24 @@ export class DidCommMessagePickupSessionService {
 
   public saveLiveSession(
     agentContext: AgentContext,
-    options: { connectionId: string; protocolVersion: string; role: DidCommMessagePickupSessionRole }
+    options: {
+      connectionId: string
+      protocolVersion: string
+      role: DidCommMessagePickupSessionRole
+      transportSessionId: string
+    }
   ) {
-    const { connectionId, protocolVersion, role } = options
+    const { connectionId, protocolVersion, role, transportSessionId } = options
 
     // First remove any live session for the given connection Id
     this.removeLiveSession(agentContext, { connectionId })
 
-    const session = {
+    const session: DidCommMessagePickupSession = {
       id: utils.uuid(),
       connectionId,
       protocolVersion,
       role,
+      transportSessionId,
     }
 
     this.sessions.push(session)

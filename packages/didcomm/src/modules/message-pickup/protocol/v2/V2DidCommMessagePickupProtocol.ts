@@ -281,7 +281,7 @@ export class V2DidCommMessagePickupProtocol extends BaseDidCommMessagePickupProt
   }
 
   public async processLiveDeliveryChange(messageContext: InboundDidCommMessageContext<V2LiveDeliveryChangeMessage>) {
-    const { agentContext, message } = messageContext
+    const { agentContext, message, sessionId } = messageContext
 
     const connection = messageContext.assertReadyConnection()
 
@@ -290,11 +290,12 @@ export class V2DidCommMessagePickupProtocol extends BaseDidCommMessagePickupProt
 
     const sessionService = messageContext.agentContext.dependencyManager.resolve(DidCommMessagePickupSessionService)
 
-    if (message.liveDelivery) {
+    if (message.liveDelivery && sessionId) {
       sessionService.saveLiveSession(agentContext, {
         connectionId: connection.id,
         protocolVersion: 'v2',
         role: DidCommMessagePickupSessionRole.MessageHolder,
+        transportSessionId: sessionId,
       })
     } else {
       sessionService.removeLiveSession(agentContext, { connectionId: connection.id })

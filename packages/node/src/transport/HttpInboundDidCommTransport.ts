@@ -12,7 +12,7 @@ import type { Express, Request, Response } from 'express'
 import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import express, { text } from 'express'
-import { ReplaySubject, filter, firstValueFrom, timeout } from 'rxjs'
+import { ReplaySubject, filter, firstValueFrom, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
@@ -86,7 +86,8 @@ export class HttpInboundDidCommTransport implements InboundDidCommTransport {
             timeout({
               first: this.processedMessageListenerTimeoutMs,
               meta: 'HttpInboundDidCommTransport.start',
-            })
+            }),
+            take(1) // automatically unsubscribe after the first matching event
           )
           .subscribe(subject)
 

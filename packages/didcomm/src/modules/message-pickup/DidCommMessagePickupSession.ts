@@ -11,4 +11,5 @@ export type DidCommMessagePickupSession<MPPs extends DidCommMessagePickupProtoco
     connectionId: string
     protocolVersion: DidCommMessagePickupProtocolVersionType<MPPs>
     role: DidCommMessagePickupSessionRole
+    transportSessionId: string
   }

@@ -147,7 +147,8 @@ export class DidCommMessagePickupApi<
         new OutboundDidCommMessageContext(createDeliveryReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
-        })
+        }),
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }
@@ -185,7 +186,8 @@ export class DidCommMessagePickupApi<
         new OutboundDidCommMessageContext(deliverMessagesReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
-        })
+        }),
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }

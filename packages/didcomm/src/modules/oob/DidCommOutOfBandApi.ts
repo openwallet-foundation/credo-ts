@@ -90,7 +90,7 @@ export interface CreateLegacyInvitationConfig {
 }
 
 interface BaseReceiveOutOfBandInvitationConfig {
-  label?: string
+  label: string
   alias?: string
   imageUrl?: string
   autoAcceptInvitation?: boolean
@@ -167,9 +167,8 @@ export class DidCommOutOfBandApi {
     const autoAcceptConnection = config.autoAcceptConnection ?? this.connectionsApi.config.autoAcceptConnections
     // We don't want to treat an empty array as messages being provided
     const messages = config.messages && config.messages.length > 0 ? config.messages : undefined
-    const label = config.label ?? this.agentContext.config.label
-    const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const imageUrl = config.imageUrl ?? didcommConfig.connectionImageUrl
+    const label = config.label
+    const imageUrl = config.imageUrl
     const appendedAttachments =
       config.appendedAttachments && config.appendedAttachments.length > 0 ? config.appendedAttachments : undefined
 
@@ -342,7 +341,7 @@ export class DidCommOutOfBandApi {
    * @param config configuration of how out-of-band invitation should be processed
    * @returns out-of-band record and connection record if one has been created
    */
-  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig = {}) {
+  public async receiveInvitationFromUrl(invitationUrl: string, config: ReceiveOutOfBandInvitationConfig) {
     const message = await this.parseInvitation(invitationUrl)
 
     return this.receiveInvitation(message, config)
@@ -380,7 +379,7 @@ export class DidCommOutOfBandApi {
    */
   public async receiveInvitation(
     invitation: OutOfBandInvitation | ConnectionInvitationMessage,
-    config: ReceiveOutOfBandInvitationConfig = {}
+    config: ReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
     return this._receiveInvitation(invitation, config)
   }
@@ -422,7 +421,7 @@ export class DidCommOutOfBandApi {
    */
   private async _receiveInvitation(
     invitation: OutOfBandInvitation | ConnectionInvitationMessage,
-    config: BaseReceiveOutOfBandInvitationConfig = {}
+    config: BaseReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
     // Convert to out of band invitation if needed
     const outOfBandInvitation =
@@ -434,10 +433,9 @@ export class DidCommOutOfBandApi {
     const autoAcceptInvitation = config.autoAcceptInvitation ?? true
     const autoAcceptConnection = config.autoAcceptConnection ?? true
     const reuseConnection = config.reuseConnection ?? false
-    const label = config.label ?? this.agentContext.config.label
+    const label = config.label
     const alias = config.alias
-    const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
-    const imageUrl = config.imageUrl ?? didcommConfig.connectionImageUrl
+    const imageUrl = config.imageUrl
 
     const messages = outOfBandInvitation.getRequests()
 
@@ -531,7 +529,7 @@ export class DidCommOutOfBandApi {
     config: {
       autoAcceptConnection?: boolean
       reuseConnection?: boolean
-      label?: string
+      label: string
       alias?: string
       imageUrl?: string
       /**

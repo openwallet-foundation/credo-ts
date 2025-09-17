@@ -39,12 +39,9 @@ const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
 jest.mock('../../../../DidCommMessageSender')
 const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
 
-const connectionImageUrl = 'https://example.com/image.png'
-
 describe('DidCommMediationRecipientService', () => {
   const config = getAgentConfig('MediationRecipientServiceTest', {
     endpoints: ['http://agent.com:8080'],
-    connectionImageUrl,
   })
 
   let mediationRepository: DidCommMediationRepository
