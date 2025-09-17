@@ -23,8 +23,7 @@ import {
   Kms,
   injectable,
 } from '@credo-ts/core'
-import { KeyManagementApi } from '@credo-ts/core/src/modules/kms'
-import { Client, PrivateKey } from '@hashgraph/sdk'
+import { Client } from '@hashgraph/sdk'
 import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
 import { HederaClientService, HederaNetwork } from '@hiero-did-sdk/client'
 import { DIDResolution, DID_ROOT_KEY_ID, Service, VerificationMethod, parseDID } from '@hiero-did-sdk/core'
@@ -44,6 +43,7 @@ import { TopicReaderHederaHcs, resolveDID } from '@hiero-did-sdk/resolver'
 import { HederaModuleConfig } from '../HederaModuleConfig'
 import { CredoCache } from './cache/CredoCache'
 import { KmsPublisher } from './publisher/KmsPublisher'
+import { KmsSigner } from './signer/KmsSigner'
 import { createOrGetKey, getMultibasePublicKey } from './utils'
 
 export interface HederaDidCreateOptions extends DidCreateOptions {
@@ -266,8 +266,8 @@ export class HederaLedgerService {
 
   async registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerPrivateKey = await this.getIssuerPrivateKey(agentContext, options.schema.issuerId)
-    return registry.registerSchema({ ...options, issuerKeyDer: issuerPrivateKey.toStringDer() })
+    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.schema.issuerId)
+    return registry.registerSchema({ ...options, issuerKeySigner })
   }
 
   getCredentialDefinition(
@@ -283,10 +283,10 @@ export class HederaLedgerService {
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerPrivateKey = await this.getIssuerPrivateKey(agentContext, options.credentialDefinition.issuerId)
+    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.credentialDefinition.issuerId)
     return await registry.registerCredentialDefinition({
       ...options,
-      issuerKeyDer: issuerPrivateKey.toStringDer(),
+      issuerKeySigner,
       options: {
         supportRevocation: !!options.options?.supportRevocation,
       },
@@ -306,10 +306,10 @@ export class HederaLedgerService {
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerPrivateKey = await this.getIssuerPrivateKey(agentContext, options.revocationRegistryDefinition.issuerId)
+    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.revocationRegistryDefinition.issuerId)
     return await registry.registerRevocationRegistryDefinition({
       ...options,
-      issuerKeyDer: issuerPrivateKey.toStringDer(),
+      issuerKeySigner,
     })
   }
 
@@ -327,10 +327,10 @@ export class HederaLedgerService {
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
-    const issuerPrivateKey = await this.getIssuerPrivateKey(agentContext, options.revocationStatusList.issuerId)
+    const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.revocationStatusList.issuerId)
     return await registry.registerRevocationStatusList({
       ...options,
-      issuerKeyDer: issuerPrivateKey.toStringDer(),
+      issuerKeySigner,
     })
   }
 
@@ -371,7 +371,7 @@ export class HederaLedgerService {
 
   private async signRequests(
     signingRequests: Record<string, { serializedPayload: Uint8Array }>,
-    kms: KeyManagementApi,
+    kms: Kms.KeyManagementApi,
     keyId: string
   ): Promise<Record<string, Uint8Array>> {
     const result: Record<string, Uint8Array> = {}
@@ -517,7 +517,7 @@ export class HederaLedgerService {
     return propertyMethods[action]
   }
 
-  private async getIssuerPrivateKey(agentContext: AgentContext, issuerId: string): Promise<PrivateKey> {
+  private async getIssuerKeySigner(agentContext: AgentContext, issuerId: string): Promise<KmsSigner> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
@@ -527,11 +527,8 @@ export class HederaLedgerService {
       throw new Error('The root key not found in the KMS')
     }
 
-    // @ts-ignore
-    const keyManagementService = kms.getKms(agentContext, 'askar')
-    // @ts-ignore
-    const keyInfo = await keyManagementService.getKeyAsserted(agentContext, rootKey.kmsKeyId)
+    const issuerKey = await createOrGetKey(kms, rootKey.kmsKeyId)
 
-    return PrivateKey.fromBytesED25519(keyInfo.key.secretBytes)
+    return new KmsSigner(kms, issuerKey)
   }
 }

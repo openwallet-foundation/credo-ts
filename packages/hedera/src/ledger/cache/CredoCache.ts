@@ -27,8 +27,4 @@ export class CredoCache implements Cache {
   async clear(): Promise<void> {
     // no-op
   }
-
-  async cleanupExpired(): Promise<void> {
-    // no-op
-  }
 }

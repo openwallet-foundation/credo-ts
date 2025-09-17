@@ -90,11 +90,4 @@ describe('CredoCache', () => {
       await expect(credoCacheInstance.clear()).resolves.not.toThrow()
     })
   })
-
-  describe('cleanupExpired', () => {
-    it('should throw error when called', async () => {
-      const credoCacheInstance = new CredoCache(mockAgentContext)
-      await expect(credoCacheInstance.cleanupExpired()).resolves.not.toThrow()
-    })
-  })
 })

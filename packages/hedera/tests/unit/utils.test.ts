@@ -1,5 +1,4 @@
 import { Kms } from '@credo-ts/core'
-import type { KeyManagementApi, KmsJwkPublicOkp, KmsJwkPublicRsa } from '@credo-ts/core/src/modules/kms'
 import { createOrGetKey, getMultibasePublicKey } from '../../src/ledger/utils'
 
 describe('getMultibasePublicKey', () => {
@@ -9,7 +8,7 @@ describe('getMultibasePublicKey', () => {
       crv: 'Ed25519',
       x: base64X,
     }
-    const multibaseKey = getMultibasePublicKey(publicJwk as KmsJwkPublicOkp & { crv: 'Ed25519' })
+    const multibaseKey = getMultibasePublicKey(publicJwk as Kms.KmsJwkPublicOkp & { crv: 'Ed25519' })
 
     expect(multibaseKey.startsWith('z')).toBe(true)
     expect(typeof multibaseKey).toBe('string')
@@ -17,18 +16,18 @@ describe('getMultibasePublicKey', () => {
 })
 
 describe('createOrGetKey', () => {
-  let kmsMock: jest.Mocked<KeyManagementApi>
+  let kmsMock: jest.Mocked<Kms.KeyManagementApi>
 
   beforeEach(() => {
     kmsMock = {
       createKey: jest.fn(),
       getPublicKey: jest.fn(),
-    } as unknown as jest.Mocked<KeyManagementApi>
+    } as unknown as jest.Mocked<Kms.KeyManagementApi>
   })
 
   it('should create a key if keyId is not provided', async () => {
     const fakeKeyId = 'key123'
-    const fakeJwk: KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
+    const fakeJwk: Kms.KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
     kmsMock.createKey.mockResolvedValue({
       keyId: fakeKeyId,
       publicJwk: fakeJwk,
@@ -45,7 +44,7 @@ describe('createOrGetKey', () => {
 
   it('should retrieve an existing key if keyId is provided', async () => {
     const keyId = 'key456'
-    const publicJwk: KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
+    const publicJwk: Kms.KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
     kmsMock.getPublicKey.mockResolvedValue(publicJwk)
 
     const result = await createOrGetKey(kmsMock, keyId)
@@ -70,7 +69,7 @@ describe('createOrGetKey', () => {
 
   it('should throw an error if key has unsupported kty or crv', async () => {
     const keyId = 'badkey'
-    const badJwk: KmsJwkPublicRsa & { kid: string } = { e: '', kid: 'key-1', n: '', kty: 'RSA' }
+    const badJwk: Kms.KmsJwkPublicRsa & { kid: string } = { e: '', kid: 'key-1', n: '', kty: 'RSA' }
 
     kmsMock.getPublicKey.mockResolvedValue(badJwk)
 

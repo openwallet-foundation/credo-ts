@@ -1,12 +1,11 @@
 import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { KeyManagementApi, KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 import { Client, PublicKey, Transaction, TransactionReceipt } from '@hashgraph/sdk'
 import { KeysUtility } from '@hiero-did-sdk/core'
 import { Publisher as ClientPublisher } from '@hiero-did-sdk/publisher-internal'
 import { createOrGetKey } from '../utils'
 
 export class KmsPublisher extends ClientPublisher {
-  private readonly kms: KeyManagementApi
+  private readonly kms: Kms.KeyManagementApi
 
   private keyId: string
   private submitPublicKey: PublicKey
@@ -14,7 +13,7 @@ export class KmsPublisher extends ClientPublisher {
   constructor(
     agentContext: AgentContext,
     client: Client,
-    key: { keyId: string; publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' } }
+    key: { keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } }
   ) {
     super(client)
 
@@ -27,10 +26,9 @@ export class KmsPublisher extends ClientPublisher {
   }
 
   async setKeyId(keyId: string) {
-    this.keyId = keyId
-
     const { publicJwk } = await createOrGetKey(this.kms, keyId)
 
+    this.keyId = keyId
     this.submitPublicKey = KeysUtility.fromBytes(
       Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))
     ).toPublicKey()

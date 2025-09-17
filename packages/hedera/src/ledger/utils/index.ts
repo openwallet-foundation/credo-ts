@@ -1,14 +1,13 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { KeyManagementApi, KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 
-export const getMultibasePublicKey = (publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }): string => {
+export const getMultibasePublicKey = (publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }): string => {
   return `z${TypedArrayEncoder.toBase58(Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x)))}`
 }
 
 export const createOrGetKey = async (
-  kms: KeyManagementApi,
+  kms: Kms.KeyManagementApi,
   keyId?: string
-): Promise<{ keyId: string; publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' } }> => {
+): Promise<{ keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } }> => {
   if (!keyId) {
     const createKeyResult = await kms.createKey({
       type: {

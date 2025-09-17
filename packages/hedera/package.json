@@ -28,13 +28,13 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@hashgraph/sdk": "^2.72.0",
-    "@hiero-did-sdk/anoncreds": "^0.1.3",
-    "@hiero-did-sdk/client": "^0.1.3",
-    "@hiero-did-sdk/core": "^0.1.3",
-    "@hiero-did-sdk/hcs": "^0.1.3",
-    "@hiero-did-sdk/publisher-internal": "^0.1.3",
-    "@hiero-did-sdk/registrar": "^0.1.3",
-    "@hiero-did-sdk/resolver": "^0.1.3"
+    "@hiero-did-sdk/anoncreds": "^0.1.4",
+    "@hiero-did-sdk/client": "^0.1.4",
+    "@hiero-did-sdk/core": "^0.1.4",
+    "@hiero-did-sdk/hcs": "^0.1.4",
+    "@hiero-did-sdk/publisher-internal": "^0.1.4",
+    "@hiero-did-sdk/registrar": "^0.1.4",
+    "@hiero-did-sdk/resolver": "^0.1.4"
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",

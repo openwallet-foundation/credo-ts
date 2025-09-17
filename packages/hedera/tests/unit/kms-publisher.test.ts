@@ -1,5 +1,4 @@
 import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 import { KeysUtility } from '@hiero-did-sdk/core'
 import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
 
@@ -68,8 +67,8 @@ describe('KmsPublisher', () => {
 
   const keyId = 'test-key-id'
   const base64X = 'base64-x'
-  const publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' } = { x: base64X, crv: 'Ed25519', kty: 'OKP' }
-  const key: { keyId: string; publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' } } = { keyId, publicJwk }
+  const publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = { x: base64X, crv: 'Ed25519', kty: 'OKP' }
+  const key: { keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } } = { keyId, publicJwk }
 
   const mockPublicKey = {
     toPublicKey: jest.fn(),
