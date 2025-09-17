@@ -1,18 +1,18 @@
 import { AnonCredsModule } from '@credo-ts/anoncreds'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, Cache, CacheModule, DidsModule, Logger, ModulesMap, utils } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
+import { HederaNetwork } from '@hiero-did-sdk/client'
+import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { InMemoryTailsFileService } from '../../../../anoncreds/tests/InMemoryTailsFileService'
 import {
   HederaAnonCredsRegistry,
   HederaDidRegistrar,
   HederaDidResolver,
   HederaModule,
   HederaModuleConfigOptions,
-} from '@credo-ts/hedera'
-import { agentDependencies } from '@credo-ts/node'
-import { HederaNetwork } from '@hiero-did-sdk/client'
-import { anoncreds } from '@hyperledger/anoncreds-nodejs'
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import { InMemoryTailsFileService } from '../../../../anoncreds/tests/InMemoryTailsFileService'
+} from '../../../src'
 
 export const getHederaModuleConfig = (props: {
   network?: HederaNetwork
@@ -62,7 +62,7 @@ export const getHederaAgent = (props: {
   }
 
   return new Agent({
-    config: { label, logger },
+    config: { logger },
     dependencies: agentDependencies,
     modules,
   })

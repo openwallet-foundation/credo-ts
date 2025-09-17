@@ -26,7 +26,7 @@ describe('CredoCache', () => {
   it('should throw CredoError if cache not found in constructor', () => {
     mockDependencyManagerResolve.mockReturnValue({ cache: null })
 
-    expect(() => new CredoCache(mockAgentContext)).toThrowError(CredoError)
+    expect(() => new CredoCache(mockAgentContext)).toThrow(CredoError)
   })
 
   it('should initialize credoCache from dependency manager', () => {

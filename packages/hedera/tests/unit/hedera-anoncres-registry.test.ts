@@ -13,8 +13,8 @@ import {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import { AgentContext } from '@credo-ts/core'
-import { HederaAnonCredsRegistry } from '@credo-ts/hedera'
 import { mockFunction } from '../../../core/tests/helpers'
+import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 const mockLedgerService = {

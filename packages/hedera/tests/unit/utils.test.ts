@@ -64,7 +64,7 @@ describe('createOrGetKey', () => {
     kmsMock.getPublicKey.mockResolvedValue(null)
 
     // Expect the function to throw an error for a missing key
-    await expect(createOrGetKey(kmsMock, 'notfound')).rejects.toThrowError("Key with key id 'notfound' not found")
+    await expect(createOrGetKey(kmsMock, 'notfound')).rejects.toThrow("Key with key id 'notfound' not found")
   })
 
   it('should throw an error if key has unsupported kty or crv', async () => {
