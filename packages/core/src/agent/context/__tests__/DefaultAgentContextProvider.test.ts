@@ -22,7 +22,7 @@ describe('DefaultAgentContextProvider', () => {
 
       await expect(
         agentContextProvider.getContextForInboundMessage(message, { contextCorrelationId: 'wrong' })
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         `Could not get agent context for contextCorrelationId 'wrong'. Only contextCorrelationId 'mock' is supported.`
       )
     })
@@ -38,7 +38,7 @@ describe('DefaultAgentContextProvider', () => {
     test('throws an error if the contextCorrelationId does not match with the contextCorrelationId from the constructor agent context', async () => {
       const agentContextProvider: AgentContextProvider = new DefaultAgentContextProvider(agentContext)
 
-      await expect(agentContextProvider.getAgentContextForContextCorrelationId('wrong')).rejects.toThrowError(
+      await expect(agentContextProvider.getAgentContextForContextCorrelationId('wrong')).rejects.toThrow(
         `Could not get agent context for contextCorrelationId 'wrong'. Only contextCorrelationId 'mock' is supported.`
       )
     })
@@ -57,7 +57,7 @@ describe('DefaultAgentContextProvider', () => {
         contextCorrelationId: 'mock2',
       })
 
-      await expect(agentContextProvider.endSessionForAgentContext(agentContext2)).rejects.toThrowError(
+      await expect(agentContextProvider.endSessionForAgentContext(agentContext2)).rejects.toThrow(
         `Could not end session for agent context with contextCorrelationId 'mock2'. Only contextCorrelationId 'mock' is provided by this provider.`
       )
     })
