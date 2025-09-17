@@ -110,7 +110,7 @@ describe('TenantAgentContextProvider', () => {
       // no routing records found
       mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(null)
 
-      await expect(tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)).rejects.toThrowError(
+      await expect(tenantAgentContextProvider.getContextForInboundMessage(inboundMessage)).rejects.toThrow(
         "Couldn't determine tenant id for inbound message. Unable to create context"
       )
     })

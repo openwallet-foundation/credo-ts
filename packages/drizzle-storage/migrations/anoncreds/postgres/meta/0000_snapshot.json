@@ -1,0 +1,842 @@
+{
+  "id": "ba2a5a56-7137-47cd-993d-7260d637f08b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.AnonCredsCredential": {
+      "name": "AnonCredsCredential",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_id": {
+          "name": "credential_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_revocation_id": {
+          "name": "credential_revocation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link_secret_id": {
+          "name": "link_secret_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential": {
+          "name": "credential",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "method_name": {
+          "name": "method_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revocation_registry_id": {
+          "name": "revocation_registry_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schema_id": {
+          "name": "schema_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_name": {
+          "name": "schema_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_issuer_id": {
+          "name": "schema_issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsCredential_fk_context": {
+          "name": "anonCredsCredential_fk_context",
+          "tableFrom": "AnonCredsCredential",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsCredential_pk": {
+          "name": "anonCredsCredential_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsCredential_credential_id_unique": {
+          "name": "AnonCredsCredential_credential_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["credential_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsCredentialDefinition": {
+      "name": "AnonCredsCredentialDefinition",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_definition": {
+          "name": "credential_definition",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "method_name": {
+          "name": "method_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_id": {
+          "name": "schema_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag": {
+          "name": "tag",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unqualified_credential_definition_id": {
+          "name": "unqualified_credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsCredentialDefinition_fk_context": {
+          "name": "anonCredsCredentialDefinition_fk_context",
+          "tableFrom": "AnonCredsCredentialDefinition",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsCredentialDefinition_pk": {
+          "name": "anonCredsCredentialDefinition_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsCredentialDefinition_credential_definition_id_unique": {
+          "name": "AnonCredsCredentialDefinition_credential_definition_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["credential_definition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsCredentialDefinitionPrivate": {
+      "name": "AnonCredsCredentialDefinitionPrivate",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsCredentialDefinitionPrivate_fk_context": {
+          "name": "anonCredsCredentialDefinitionPrivate_fk_context",
+          "tableFrom": "AnonCredsCredentialDefinitionPrivate",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsCredentialDefinitionPrivate_pk": {
+          "name": "anonCredsCredentialDefinitionPrivate_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsCredentialDefinitionPrivate_credential_definition_id_unique": {
+          "name": "AnonCredsCredentialDefinitionPrivate_credential_definition_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["credential_definition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsKeyCorrectnessProof": {
+      "name": "AnonCredsKeyCorrectnessProof",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsKeyCorrectnessProof_fk_context": {
+          "name": "anonCredsKeyCorrectnessProof_fk_context",
+          "tableFrom": "AnonCredsKeyCorrectnessProof",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsKeyCorrectnessProof_pk": {
+          "name": "anonCredsKeyCorrectnessProof_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsKeyCorrectnessProof_credential_definition_id_unique": {
+          "name": "AnonCredsKeyCorrectnessProof_credential_definition_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["credential_definition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsLinkSecret": {
+      "name": "AnonCredsLinkSecret",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link_secret_id": {
+          "name": "link_secret_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "link_secret_id_context_correlation_id_unique": {
+          "name": "link_secret_id_context_correlation_id_unique",
+          "columns": [
+            {
+              "expression": "link_secret_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "context_correlation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "anonCredsLinkSecret_fk_context": {
+          "name": "anonCredsLinkSecret_fk_context",
+          "tableFrom": "AnonCredsLinkSecret",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsLinkSecret_pk": {
+          "name": "anonCredsLinkSecret_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsRevocationRegistryDefinition": {
+      "name": "AnonCredsRevocationRegistryDefinition",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revocation_registry_definition_id": {
+          "name": "revocation_registry_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revocation_registry_definition": {
+          "name": "revocation_registry_definition",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsRevocationRegistryDefinition_fk_context": {
+          "name": "anonCredsRevocationRegistryDefinition_fk_context",
+          "tableFrom": "AnonCredsRevocationRegistryDefinition",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsRevocationRegistryDefinition_pk": {
+          "name": "anonCredsRevocationRegistryDefinition_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsRevocationRegistryDefinition_revocation_registry_definition_id_unique": {
+          "name": "AnonCredsRevocationRegistryDefinition_revocation_registry_definition_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["revocation_registry_definition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsRevocationRegistryDefinitionPrivate": {
+      "name": "AnonCredsRevocationRegistryDefinitionPrivate",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "AnonCredsRevocationRegistryState",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revocation_registry_definition_id": {
+          "name": "revocation_registry_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credential_definition_id": {
+          "name": "credential_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsRevocationRegistryDefinitionPrivate_fk_context": {
+          "name": "anonCredsRevocationRegistryDefinitionPrivate_fk_context",
+          "tableFrom": "AnonCredsRevocationRegistryDefinitionPrivate",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsRevocationRegistryDefinitionPrivate_pk": {
+          "name": "anonCredsRevocationRegistryDefinitionPrivate_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsRevocationRegistryDefinitionPrivate_revocation_registry_definition_id_unique": {
+          "name": "AnonCredsRevocationRegistryDefinitionPrivate_revocation_registry_definition_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["revocation_registry_definition_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.AnonCredsSchema": {
+      "name": "AnonCredsSchema",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "schema_id": {
+          "name": "schema_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema": {
+          "name": "schema",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_name": {
+          "name": "schema_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "method_name": {
+          "name": "method_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unqualified_schema_id": {
+          "name": "unqualified_schema_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "anonCredsSchema_fk_context": {
+          "name": "anonCredsSchema_fk_context",
+          "tableFrom": "AnonCredsSchema",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "anonCredsSchema_pk": {
+          "name": "anonCredsSchema_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "AnonCredsSchema_schema_id_unique": {
+          "name": "AnonCredsSchema_schema_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["schema_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.AnonCredsRevocationRegistryState": {
+      "name": "AnonCredsRevocationRegistryState",
+      "schema": "public",
+      "values": ["created", "active", "full"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

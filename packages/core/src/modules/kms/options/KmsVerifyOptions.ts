@@ -10,8 +10,8 @@ export const zKmsVerifyOptions = z.object({
    * The key to verify with. Either a string referring to a keyId, or a `KmsJwkPublicAssymetric` for verifying with a
    * public asymmetric JWK.
    *
-   * It is currently not possible to verify a signature with symmetric a
-   * key that is not already present in the KMS.
+   * It is currently not possible to verify a signature for a symmetric key
+   * that is not already present in the KMS.
    */
   key: z.union([
     z.object({

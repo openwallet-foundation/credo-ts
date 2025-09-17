@@ -1,0 +1,163 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "7f5e60d0-db65-4fad-b2fc-6511bff46d5b",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "DidcommQuestionAnswer": {
+      "name": "DidcommQuestionAnswer",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "question_text": {
+          "name": "question_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "question_detail": {
+          "name": "question_detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "valid_responses": {
+          "name": "valid_responses",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "signature_required": {
+          "name": "signature_required",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "response": {
+          "name": "response",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "DidcommQuestionAnswer_context_correlation_id_thread_id_unique": {
+          "name": "DidcommQuestionAnswer_context_correlation_id_thread_id_unique",
+          "columns": ["context_correlation_id", "thread_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "didcommQuestionAnswer_fk_context": {
+          "name": "didcommQuestionAnswer_fk_context",
+          "tableFrom": "DidcommQuestionAnswer",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk": {
+          "name": "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
+          "tableFrom": "DidcommQuestionAnswer",
+          "tableTo": "DidcommConnection",
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "didcommQuestionAnswer_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "didcommQuestionAnswer_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
