@@ -17,7 +17,7 @@ import { EventEmitter } from './EventEmitter'
 import { AgentContext, DefaultAgentContextProvider } from './context'
 
 interface AgentOptions<AgentModules extends AgentModulesInput> {
-  config: InitConfig
+  config?: InitConfig
   modules?: AgentModules
   dependencies: AgentDependencies
 }
@@ -26,7 +26,7 @@ interface AgentOptions<AgentModules extends AgentModulesInput> {
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export class Agent<AgentModules extends AgentModulesInput = any> extends BaseAgent<AgentModules> {
   public constructor(options: AgentOptions<AgentModules>, dependencyManager = new DependencyManager()) {
-    const agentConfig = new AgentConfig(options.config, options.dependencies)
+    const agentConfig = new AgentConfig(options.config ?? {}, options.dependencies)
     const modulesWithDefaultModules = extendModulesWithDefaultModules(options.modules)
 
     // Register internal dependencies

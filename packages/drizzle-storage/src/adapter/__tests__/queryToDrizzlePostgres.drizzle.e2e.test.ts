@@ -1,8 +1,8 @@
 import { ConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
 import { pushSchema } from 'drizzle-kit/api'
 import { DrizzlePostgresTestDatabase, createDrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
-import * as coreContextSchema from '../../core/context/postgres'
-import * as didcommConnectionSchema from '../../didcomm/connection/postgres'
+import * as coreContextSchema from '../../core/context-record/postgres'
+import * as didcommConnectionSchema from '../../didcomm/connection-record/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
 
 const { didcommConnection } = didcommConnectionSchema

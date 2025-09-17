@@ -61,9 +61,6 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
 
   const agent = new Agent({
     dependencies: agentDependencies,
-    config: {
-      label: 'Hello',
-    },
     modules: {
       storage: drizzleModule,
     },

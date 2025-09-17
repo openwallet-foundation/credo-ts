@@ -28,9 +28,6 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
 
     agent = new Agent({
       dependencies: agentDependencies,
-      config: {
-        label: 'Hello',
-      },
       modules: {
         storage: drizzleModule,
       },
