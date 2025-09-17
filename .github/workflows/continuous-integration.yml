@@ -26,7 +26,7 @@ jobs:
     name: Validate
     if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
@@ -59,10 +59,10 @@ jobs:
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
-        shard: [1, 2]
+        shard: [1, 2, 3]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
 
       - name: Setup NodeJS
@@ -88,14 +88,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Issue with node 22 starting 22.18
+      # https://github.com/nodejs/node/issues/59364
       - name: Run tests
-        run: pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/2
+        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/3
+        if: matrix.node-version == 22
+
+      - name: Run tests
+        run: pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/3
+        if: matrix.node-version != 22
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts-${{ matrix.node-version }}
+          name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
           overwrite: true
 
@@ -110,7 +117,7 @@ jobs:
         node-version: [20, 22]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # setup dependencies
       - name: Setup services
@@ -141,26 +148,94 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Issue with node 22 starting 22.18
+      # https://github.com/nodejs/node/issues/59364
+      - name: Run tests
+        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:e2e --coverage --forceExit
+        if: matrix.node-version == 22
+
       - name: Run tests
         run: pnpm test:e2e --coverage --forceExit
+        if: matrix.node-version != 22
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
       - uses: actions/upload-artifact@v4
         with:
-          name: coverage-artifacts-${{ matrix.node-version }}
+          name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
+          overwrite: true
+
+  drizzle-tests:
+    runs-on: ubuntu-24.04
+    name: Drizzle Tests
+    if: github.event_name != 'pull_request_review' ||  github.event.pull_request.head.ref == 'changeset-release/main'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # setup dependencies
+      - name: Setup services
+        run: docker compose up -d
+
+      - name: Setup NodeJS
+        id: setup-node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - uses: pnpm/action-setup@v4
+
+      # See https://github.com/actions/setup-node/issues/641#issuecomment-1358859686
+      - name: pnpm cache path
+        id: pnpm-cache-path
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pnpm-cache-path.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ steps.setup-node.outputs.node-version }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Issue with node 22 starting 22.18
+      # https://github.com/nodejs/node/issues/59364
+      - name: Run tests
+        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:drizzle --coverage --forceExit
+        if: matrix.node-version == 22
+
+      - name: Run tests
+        run: pnpm test:drizzle --coverage --forceExit
+        if: matrix.node-version != 22
+
+      # Upload coverage for e2e
+      - run: mv coverage/coverage-final.json coverage/drizzle.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-artifacts-${{ matrix.node-version }}-drizzle
+          path: coverage/drizzle.json
           overwrite: true
 
   # Upload all the coverage reports
   report-coverage:
     runs-on: ubuntu-24.04
-    needs: [e2e-tests, unit-tests]
+    needs: [e2e-tests, unit-tests, drizzle-tests]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
-          name: coverage-artifacts-20
+          pattern: coverage-artifacts-20-*
           path: coverage
+          merge-multiple: true
 
       - uses: codecov/codecov-action@v5
         with:

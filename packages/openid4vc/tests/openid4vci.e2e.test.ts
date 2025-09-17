@@ -62,7 +62,6 @@ describe('OpenId4Vc', () => {
     expressApp = express()
 
     issuer = (await createAgentFromModules(
-      'issuer',
       {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
@@ -121,7 +120,6 @@ describe('OpenId4Vc', () => {
     issuer1 = await createTenantForAgent(issuer.agent, 'iTenant1')
 
     holder = (await createAgentFromModules(
-      'holder',
       {
         openId4VcHolder: new OpenId4VcHolderModule(),
         inMemory: new InMemoryWalletModule(),

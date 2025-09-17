@@ -63,7 +63,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules('issuer', {
+    issuer = await createAgentFromModules({
       openId4VcVerifier: new OpenId4VcVerifierModule({
         baseUrl: verifierBaseUrl,
       }),
@@ -162,7 +162,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       inMemory: new InMemoryWalletModule({}),
     })
 
-    holder = await createAgentFromModules('holder', {
+    holder = await createAgentFromModules({
       openId4VcHolder: new OpenId4VcHolderModule(),
       inMemory: new InMemoryWalletModule({}),
     })
@@ -326,7 +326,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     expect(credentialResponse.credentials[0].credentials).toHaveLength(10)
     const credentials = credentialResponse.credentials[0].credentials
 
-    for (const credentialIndex in credentials) {
+    for (const credentialIndex of credentials.keys()) {
       const credential = credentials[credentialIndex]
       if (credential.claimFormat !== ClaimFormat.MsoMdoc) {
         throw new Error('Expected mdoc')

@@ -49,9 +49,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
 
     const agent = new Agent(
       {
-        config: {
-          label: 'Test Agent',
-        },
+        config: {},
         dependencies: agentDependencies,
         modules: {
           cache: new CacheModule({

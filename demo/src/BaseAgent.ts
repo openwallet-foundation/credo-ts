@@ -1,3 +1,6 @@
+import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
+
 import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
@@ -15,9 +18,7 @@ import {
   CheqdModule,
   CheqdModuleConfig,
 } from '@credo-ts/cheqd'
-import type { InitConfig } from '@credo-ts/core'
 import { Agent, DidsModule } from '@credo-ts/core'
-import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import {
   AutoAcceptCredential,
   AutoAcceptProof,
@@ -29,7 +30,6 @@ import {
   V2ProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
-import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
 import { HederaNetwork } from '@hiero-did-sdk/client'
@@ -58,21 +58,14 @@ type DemoAgent = Agent<ReturnType<typeof getAskarAnonCredsIndyModules>>
 export class BaseAgent {
   public port: number
   public name: string
-  public config: InitConfig
   public agent: DemoAgent
 
   public constructor({ port, name }: { port: number; name: string }) {
     this.name = name
     this.port = port
 
-    const config = {
-      label: name,
-    } satisfies InitConfig
-
-    this.config = config
-
     this.agent = new Agent({
-      config,
+      config: {},
       dependencies: agentDependencies,
       modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
     })
