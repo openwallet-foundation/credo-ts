@@ -55,7 +55,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [20, 22]
+        # NOTE: starting from node 22.18 there's some issues with type-stripping
+        # Fixing it breaks node 20 support, so for now pinning to node 22.17
+        # https://github.com/nodejs/node/issues/59364
+        node-version: [20, 22.17]
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
@@ -107,6 +110,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # NOTE: starting from node 22.18 there's some issues with type-stripping
+        # Fixing it breaks node 20 support, so for now pinning to node 22.17
+        # https://github.com/nodejs/node/issues/59364
         node-version: [20, 22]
 
     steps:
@@ -160,6 +166,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # NOTE: starting from node 22.18 there's some issues with type-stripping
+        # Fixing it breaks node 20 support, so for now pinning to node 22.17
+        # https://github.com/nodejs/node/issues/59364
         node-version: [20, 22]
 
     steps:
