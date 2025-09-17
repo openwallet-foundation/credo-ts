@@ -9,5 +9,5 @@
     "types": ["jest", "node"],
     "allowJs": true
   },
-  "exclude": ["node_modules", "**/build/**", "coverage", "**/cli-build/**"]
+  "exclude": ["node_modules", "**/build/**", "coverage", "**/cli-build/**", "**/bin.js"]
 }
