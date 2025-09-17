@@ -303,9 +303,7 @@ export class TenantSessionCoordinator {
 
   private async createAgentContext(tenantRecord: TenantRecord, { provisionContext }: { provisionContext: boolean }) {
     const tenantDependencyManager = this.rootAgentContext.dependencyManager.createChild()
-    const tenantConfig = this.rootAgentContext.config.extend({
-      label: tenantRecord.config.label,
-    })
+    const tenantConfig = this.rootAgentContext.config.extend({})
 
     const agentContext = new AgentContext({
       contextCorrelationId: this.getContextCorrelationIdForTenantId(tenantRecord.id),

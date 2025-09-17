@@ -1003,7 +1003,7 @@ export class OpenId4VpVerifierService {
                   }
                 : {}),
 
-              ...(dclqQueryFormats.has('jwt_vc_json')
+              ...(dclqQueryFormats.has('ldp_vc')
                 ? {
                     ldp_vc: {
                       proof_type_values: supportedProofTypes as [string, ...string[]],
@@ -1073,7 +1073,7 @@ export class OpenId4VpVerifierService {
       const mdocDeviceResponse = MdocDeviceResponse.fromBase64Url(presentation)
       return mdocDeviceResponse
     }
-    if (ClaimFormat.JwtVp) {
+    if (format === ClaimFormat.JwtVp) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }

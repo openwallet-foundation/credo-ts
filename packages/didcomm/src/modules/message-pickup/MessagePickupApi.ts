@@ -146,7 +146,8 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
         new OutboundMessageContext(createDeliveryReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
-        })
+        }),
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }
@@ -184,7 +185,8 @@ export class MessagePickupApi<MPPs extends MessagePickupProtocol[] = [V1MessageP
         new OutboundMessageContext(deliverMessagesReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
-        })
+        }),
+        { transportPriority: { schemes: ['wss', 'ws'] } }
       )
     }
   }
