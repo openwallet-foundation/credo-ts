@@ -17,8 +17,8 @@ catalog:
   zod: ^3.25.56
   nock: ^14.0.5
   express: ^4.21.2
-  "@openwallet-foundation/askar-nodejs": ^0.3.2
-  "@openwallet-foundation/askar-shared": ^0.3.2
+  "@openwallet-foundation/askar-nodejs": ^0.4.0
+  "@openwallet-foundation/askar-shared": ^0.4.0
   "@hyperledger/indy-vdr-nodejs": ^0.2.2
   "@hyperledger/indy-vdr-shared": ^0.2.2
   "@hyperledger/anoncreds-nodejs": ^0.3.1
