@@ -13,6 +13,9 @@ export class DependencyManager {
   public readonly container: DependencyContainer
   public readonly registeredModules: ModulesMap
 
+  /**
+   * @internal
+   */
   public constructor(
     container: DependencyContainer = rootContainer.createChildContainer(),
     registeredModules: ModulesMap = {}
@@ -21,6 +24,9 @@ export class DependencyManager {
     this.registeredModules = registeredModules
   }
 
+  /**
+   * @internal
+   */
   public registerModules(modules: ModulesMap) {
     for (const [moduleKey, module] of Object.entries(modules)) {
       if (this.registeredModules[moduleKey]) {
@@ -41,6 +47,9 @@ export class DependencyManager {
     }
   }
 
+  /**
+   * @internal
+   */
   public async initializeModules(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -60,6 +69,9 @@ export class DependencyManager {
     }
   }
 
+  /**
+   * @internal
+   */
   public async shutdownModules(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -79,6 +91,9 @@ export class DependencyManager {
     }
   }
 
+  /**
+   * @internal
+   */
   public async initializeAgentContext(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -98,6 +113,9 @@ export class DependencyManager {
     }
   }
 
+  /**
+   * @internal
+   */
   public async deleteAgentContext(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -121,6 +139,9 @@ export class DependencyManager {
     }
   }
 
+  /**
+   * @internal
+   */
   public async provisionAgentContext(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -142,6 +163,9 @@ export class DependencyManager {
     return agentContext
   }
 
+  /**
+   * @internal
+   */
   public async closeAgentContext(agentContext: AgentContext) {
     if (agentContext.dependencyManager.container !== this.container) {
       throw new CredoError(
@@ -198,6 +222,9 @@ export class DependencyManager {
     else this.container.register(token, token, { lifecycle: Lifecycle.ContainerScoped })
   }
 
+  /**
+   * @internal
+   */
   public createChild() {
     return new DependencyManager(this.container.createChildContainer(), this.registeredModules)
   }
