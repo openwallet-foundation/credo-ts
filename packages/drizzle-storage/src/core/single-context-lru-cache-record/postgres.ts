@@ -1,4 +1,4 @@
-import { SingleContextLruCacheItem } from '@credo-ts/core'
+import type { SingleContextLruCacheItem } from '@credo-ts/core'
 import { jsonb, pgTable } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 

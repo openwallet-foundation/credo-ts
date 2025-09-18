@@ -14,42 +14,10 @@
   "license": "Apache-2.0",
   "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
   "bin": "./bin.js",
+  "main": "src/index.ts",
   "publishConfig": {
     "access": "public",
-    "exports": {
-      ".": {
-        "types": "./build/index.d.ts",
-        "default": "./build/index.js"
-      },
-      "./*/sqlite": {
-        "default": "./build/*/sqlite.js",
-        "types": "./build/*/sqlite.d.ts"
-      },
-      "./*/postgres": {
-        "default": "./build/*/postgres.js",
-        "types": "./build/*/postgres.d.ts"
-      },
-      "./*": {
-        "default": "./build/*/bundle.js",
-        "types": "./build/*/bundle.d.ts"
-      },
-      "./*/sqlite/migrations": {
-        "default": "./migrations/*/sqlite/migrations.js",
-        "types": "./types/migrations.d.ts"
-      }
-    }
-  },
-  "exports": {
-    ".": "./src/index.ts",
-    "./*/sqlite": "./src/*/sqlite.ts",
-    "./*/sqlite/source": "./src/*/sqlite.ts",
-    "./*/postgres": "./src/*/postgres.ts",
-    "./*/postgres/source": "./src/*/postgres.ts",
-    "./*": "./src/*/bundle.ts",
-    "./*/sqlite/migrations": {
-      "default": "./migrations/*/sqlite/migrations.js",
-      "types": "./types/migrations.d.ts"
-    }
+    "main": "build/index.js"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",
   "repository": {
@@ -84,7 +52,6 @@
     "class-validator": "catalog:",
     "drizzle-kit": "^0.31.4",
     "shell": "^0.12.0",
-    "ts-node": "catalog:",
     "tsyringe": "catalog:",
     "zod": "catalog:"
   },
@@ -92,6 +59,7 @@
     "drizzle-orm": "^0.44.3"
   },
   "devDependencies": {
+    "ts-node": "catalog:",
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",

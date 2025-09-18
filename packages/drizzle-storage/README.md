@@ -160,9 +160,9 @@ import { database } from "./database";
 // Import the SQLite migrations for all modules you're using
 // If you're using custom modules consult with the documentation of that modules
 // to determine where to import the SQLite migrations from.
-import coreMigrations from "@credo-ts/drizzle-storage/core/sqlite/migrations";
-import didcommMigrations from "@credo-ts/drizzle-storage/didcomm/sqlite/migrations";
-import anoncredsMigrations from "@credo-ts/drizzle-storage/anoncreds/sqlite/migrations";
+import coreMigrations from "@credo-ts/drizzle-storage/migrations/core/sqlite/migrations";
+import didcommMigrations from "@credo-ts/drizzle-storage/migrations/didcomm/sqlite/migrations";
+import anoncredsMigrations from "@credo-ts/drizzle-storage/migrations/anoncreds/sqlite/migrations";
 
 // Execute this method in your code, before initializing the agent. You should do
 // this on every agent startup, or if you're sure the agent hasn't updated, you can

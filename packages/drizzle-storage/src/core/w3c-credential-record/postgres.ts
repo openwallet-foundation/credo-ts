@@ -1,8 +1,11 @@
-import { ClaimFormat, W3cVerifiableCredential } from '@credo-ts/core'
+import type { ClaimFormat, W3cVerifiableCredential } from '@credo-ts/core'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 
-export const w3cCredentialClaimFormat = pgEnum('W3cClaimFormat', [ClaimFormat.LdpVc, ClaimFormat.JwtVc])
+export const w3cCredentialClaimFormat = pgEnum('W3cClaimFormat', [
+  'ldp_vc' satisfies `${ClaimFormat.LdpVc}`,
+  'jwt_vc' satisfies `${ClaimFormat.JwtVc}`,
+])
 
 export const w3cCredential = pgTable(
   'W3cCredential',

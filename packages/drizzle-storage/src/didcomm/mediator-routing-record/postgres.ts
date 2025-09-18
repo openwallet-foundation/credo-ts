@@ -1,4 +1,4 @@
-import { MediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
+import type { MediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 

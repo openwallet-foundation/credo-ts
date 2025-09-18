@@ -1,9 +1,11 @@
-import { BasicMessageRole } from '@credo-ts/didcomm'
+import type { BasicMessageRole } from '@credo-ts/didcomm'
 import { foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 import { didcommConnection } from '../postgres'
 
-export const didcommBasicMessageRoleEnum = pgEnum('DidcommBasicMessageRole', BasicMessageRole)
+export const didcommBasicMessageRoles = exhaustiveArray({} as BasicMessageRole, ['sender', 'receiver'] as const)
+export const didcommBasicMessageRoleEnum = pgEnum('DidcommBasicMessageRole', didcommBasicMessageRoles)
 
 export const didcommBasicMessage = pgTable(
   'DidcommBasicMessage',

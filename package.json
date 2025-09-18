@@ -53,6 +53,7 @@
     "@types/node": "catalog:",
     "@types/supertest": "^6.0.3",
     "@types/varint": "^6.0.3",
+    "drizzle-kit": "^0.31.4",
     "@types/ws": "catalog:",
     "cors": "^2.8.5",
     "express": "catalog:",
