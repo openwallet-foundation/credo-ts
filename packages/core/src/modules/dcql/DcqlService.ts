@@ -716,7 +716,7 @@ export class DcqlService {
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSchemaIds[0],
+            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSubjectIds[0],
             verifiableCredential: [
               W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
                 presentationToCreate.credentialRecord.credential

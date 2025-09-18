@@ -114,8 +114,8 @@ export async function getVerificationMethodForJwt(
   // If the kid starts with # we assume it is a relative did url, and we resolve
   //it based on the `iss` and the `kid`
   if (kid?.startsWith('#')) {
-    if (!iss) {
-      throw new CredoError(`JWT 'kid' MUST be absolute when when no 'iss' is present in JWT payload`)
+    if (!iss || !isDid(iss)) {
+      throw new CredoError(`JWT 'iss' MUST be a did when 'kid' is a relative did url`)
     }
 
     const didDocument = await didResolver.resolveDidDocument(agentContext, iss)
