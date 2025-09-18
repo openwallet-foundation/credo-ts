@@ -714,28 +714,18 @@ export class DcqlService {
             throw new DcqlError('Cannot create presentation for credentials without subject id')
           }
 
-          // Determine a suitable verification method for the presentation
-          const verificationMethod = await this.getVerificationMethodForSubjectId(
-            agentContext,
-            presentationToCreate.subjectIds[0]
-          )
-
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
+            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSchemaIds[0],
             verifiableCredential: [
               W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
                 presentationToCreate.credentialRecord.credential
               ),
             ],
-            holder: verificationMethod.controller,
           })
-
-          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
           const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.JwtW3cVp>(agentContext, {
             format: ClaimFormat.JwtW3cVp,
-            alg: publicJwk.signatureAlgorithm,
-            verificationMethod: verificationMethod.id,
             presentation: w3cV2Presentation,
             challenge,
             domain,
@@ -748,12 +738,6 @@ export class DcqlService {
             throw new DcqlError('Cannot create presentation for credentials without subject id')
           }
 
-          // Determine a suitable verification method for the presentation
-          const verificationMethod = await this.getVerificationMethodForSubjectId(
-            agentContext,
-            presentationToCreate.subjectIds[0]
-          )
-
           const presentationFrame = buildDisclosureFrameForPayload(presentationToCreate.disclosedPayload)
           if (!domain) {
             throw new DcqlError('Missing domain property for creating SdJwtVc presentation.')
@@ -761,29 +745,20 @@ export class DcqlService {
 
           const w3cV2SdJwtCredentialService = agentContext.resolve(W3cV2SdJwtCredentialService)
           const sdJwtVc = await w3cV2SdJwtCredentialService.present(agentContext, {
-            compactSdJwtVc: presentationToCreate.credentialRecord.credential.encoded,
+            credential: presentationToCreate.credentialRecord.credential.encoded,
             presentationFrame,
-            verifierMetadata: {
-              audience: domain,
-              nonce: challenge,
-              issuedAt: Math.floor(Date.now() / 1000),
-            },
           })
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
+            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSchemaIds[0],
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
-            holder: verificationMethod.controller,
           })
-
-          const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
 
           const signedPresentation = await w3cV2CredentialService.signPresentation<ClaimFormat.SdJwtW3cVp>(
             agentContext,
             {
               format: ClaimFormat.SdJwtW3cVp,
-              alg: publicJwk.signatureAlgorithm,
-              verificationMethod: verificationMethod.id,
               presentation: w3cV2Presentation,
               challenge,
               domain,

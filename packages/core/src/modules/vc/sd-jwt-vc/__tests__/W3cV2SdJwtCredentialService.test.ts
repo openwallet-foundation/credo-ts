@@ -129,6 +129,10 @@ describe('W3cV2SdJwtCredentialService', () => {
         format: ClaimFormat.SdJwtW3cVc,
         verificationMethod: issuerDidJwk.verificationMethodId,
         credential,
+        holder: {
+          method: 'did',
+          didUrl: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+        },
         disclosureFrame: {
           credentialSubject: {
             _sd: ['achievement'],
@@ -327,11 +331,11 @@ describe('W3cV2SdJwtCredentialService', () => {
 
       const signedJwtVp = await w3cV2JwtCredentialService.signPresentation(agentContext, {
         presentation,
-        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        // alg: KnownJwaSignatureAlgorithms.EdDSA,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
         format: ClaimFormat.SdJwtW3cVp,
-        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+        // verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
       })
 
       expect(signedJwtVp.encoded).toEqual(CredoEs256DidKeyJwtVp)

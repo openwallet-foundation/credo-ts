@@ -43,14 +43,14 @@ export interface DcqlMdocPresentationToCreate {
 
 export interface DcqlJwtW3cVpPresentationToCreate {
   claimFormat: ClaimFormat.JwtW3cVp
-  subjectIds: [string]
+  subjectIds: [] // Subject is automatically extracted
   credentialRecord: W3cV2CredentialRecord
   disclosedPayload: DcqlW3cVcCredential.Claims
 }
 
 export interface DcqlSdJwtW3cVpPresentationToCreate {
   claimFormat: ClaimFormat.SdJwtW3cVp
-  subjectIds: [string]
+  subjectIds: [] // Subject is automatically extracted
   credentialRecord: W3cV2CredentialRecord
   disclosedPayload: DcqlW3cVcCredential.Claims
 }
@@ -98,7 +98,7 @@ export function dcqlGetPresentationsToCreate(
         case ClaimFormat.SdJwtW3cVc:
           presentationToCreate = {
             claimFormat: match.claimFormat === ClaimFormat.JwtW3cVc ? ClaimFormat.JwtW3cVp : ClaimFormat.SdJwtW3cVp,
-            subjectIds: [match.credentialRecord.credential.resolvedCredential.credentialSubjectIds[0]],
+            subjectIds: [],
             credentialRecord: match.credentialRecord,
             disclosedPayload: match.disclosedPayload as DcqlW3cVcCredential.Claims,
           }

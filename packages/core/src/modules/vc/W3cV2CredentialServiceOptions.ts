@@ -1,5 +1,4 @@
 import { HashName } from '../../crypto'
-import type { SingleOrArray } from '../../types'
 import { KnownJwaSignatureAlgorithm } from '../kms'
 import { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
@@ -58,11 +57,15 @@ export interface W3cV2JwtSignCredentialOptions extends W3cV2SignCredentialOption
   format: ClaimFormat.JwtW3cVc
 
   /**
-   * The alg to be used for signing the credential.
-   *
-   * Must be a valid JWA signature algorithm.
+   * The algorithm used to sign the JWT VC.
    */
   alg: KnownJwaSignatureAlgorithm
+
+  /**
+   * The holder to bind the credential to. When an holder is provided, a `cnf`
+   * claim will be added to the produced credential, binding it to the holder.
+   */
+  holder?: SdJwtVcHolderBinding
 }
 
 export interface W3cV2SdJwtSignCredentialOptions extends W3cV2SignCredentialOptionsBase {
@@ -81,8 +84,8 @@ export interface W3cV2SdJwtSignCredentialOptions extends W3cV2SignCredentialOpti
   hashingAlgorithm?: Exclude<HashName, 'sha-1'>
 
   /**
-   * The holder to bind the SD-JWT VC to. If no holder is provided, the SD-JWT
-   * VC won't be bound to the holder.
+   * The holder to bind the credential to. When an holder is provided, a `cnf`
+   * claim will be added to the produced credential, binding it to the holder.
    */
   holder?: SdJwtVcHolderBinding
 
@@ -105,12 +108,6 @@ export interface W3cV2SdJwtVerifyCredentialOptions extends W3cV2VerifyCredential
   credential: W3cV2SdJwtVerifiableCredential | string // string must be encoded VC SD-JWT
 }
 
-export interface W3cV2CreatePresentationOptions {
-  credentials: SingleOrArray<W3cV2VerifiableCredential>
-  id?: string
-  holder?: string
-}
-
 interface W3cV2SignPresentationOptionsBase {
   /**
    * The format of the presentation to be signed.
@@ -125,13 +122,6 @@ interface W3cV2SignPresentationOptionsBase {
   presentation: W3cV2Presentation
 
   /**
-   * URI of the verificationMethod to be used for signing the presentation.
-   *
-   * Must be a valid did url pointing to a key.
-   */
-  verificationMethod: string
-
-  /**
    * The challenge / nonce to be used in the proof to prevent replay attacks.
    */
   challenge: string
@@ -144,20 +134,10 @@ interface W3cV2SignPresentationOptionsBase {
 
 export interface W3cV2JwtSignPresentationOptions extends W3cV2SignPresentationOptionsBase {
   format: ClaimFormat.JwtW3cVp
-
-  /**
-   * The algorithm used to sign the SD-JWT VP.
-   */
-  alg: KnownJwaSignatureAlgorithm
 }
 
 export interface W3cV2SdJwtSignPresentationOptions extends W3cV2SignPresentationOptionsBase {
   format: ClaimFormat.SdJwtW3cVp
-
-  /**
-   * The algorithm used to sign the SD-JWT VP.
-   */
-  alg: KnownJwaSignatureAlgorithm
 
   /**
    * The hashing algorithm to use for creating digests of the disclosures.
@@ -203,27 +183,10 @@ export interface W3cV2StoreCredentialOptions {
 }
 
 export interface W3cV2SdJwtVcPresentOptions {
-  compactSdJwtVc: string
+  credential: W3cV2SdJwtVerifiableCredential | string
 
   /**
    * Use true to disclose everything
    */
   presentationFrame?: IPresentationFrame | true
-
-  /**
-   * This information is received out-of-band from the verifier.
-   * The claims will be used to create a normal JWT, used for key binding.
-   *
-   * If not defined, a KB-JWT will not be created
-   */
-  verifierMetadata?: {
-    audience: string
-    nonce: string
-    issuedAt: number
-  }
-
-  /**
-   * Additional payload to include in the KB JWT
-   */
-  additionalPayload?: Record<string, unknown>
 }

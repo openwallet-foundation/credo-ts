@@ -15,7 +15,7 @@ import { EventEmitter } from '../../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../../constants'
 import { JwsService } from '../../../../crypto'
 import { ClassValidationError, CredoError } from '../../../../error'
-import { JsonTransformer } from '../../../../utils'
+import { JsonTransformer, TypedArrayEncoder } from '../../../../utils'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
 import { DidJwk, DidKey, DidRepository, DidsApi, DidsModuleConfig } from '../../../dids'
 import { KeyManagementApi, KnownJwaSignatureAlgorithms, PublicJwk } from '../../../kms'
@@ -62,7 +62,12 @@ const agentContext = getAgentContext({
   kmsBackends: [new AskarKeyManagementService()],
   agentConfig: config,
 })
+
 const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
+
+kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = jest.fn(() => 1698151532000)
+
 const dids = agentContext.dependencyManager.resolve(DidsApi)
 const jwsService = new JwsService()
 const w3cV2JwtCredentialService = new W3cV2JwtCredentialService(jwsService)
@@ -127,6 +132,10 @@ describe('W3cV2JwtCredentialService', () => {
         alg: KnownJwaSignatureAlgorithms.ES256,
         format: ClaimFormat.JwtW3cVc,
         verificationMethod: issuerDidJwk.verificationMethodId,
+        holder: {
+          method: 'did',
+          didUrl: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+        },
         credential,
       })
 
@@ -292,7 +301,7 @@ describe('W3cV2JwtCredentialService', () => {
         },
       })
 
-      expect(result.validations.dataModel?.error?.message).toContain('JWT expired at 1577836800')
+      expect(result.validations.dataModel?.error?.message).toContain('JWT expired at 1698151532')
     })
 
     test('returns invalid result when signature is not valid', async () => {
@@ -340,11 +349,11 @@ describe('W3cV2JwtCredentialService', () => {
 
       const signedJwtVp = await w3cV2JwtCredentialService.signPresentation(agentContext, {
         presentation,
-        alg: KnownJwaSignatureAlgorithms.EdDSA,
+        // alg: KnownJwaSignatureAlgorithms.EdDSA,
         challenge: 'daf942ad-816f-45ee-a9fc-facd08e5abca',
         domain: 'example.com',
         format: ClaimFormat.JwtW3cVp,
-        verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
+        // verificationMethod: `${holderDidKey.did}#${holderDidKey.publicJwk.fingerprint}`,
       })
 
       expect(signedJwtVp.encoded).toEqual(CredoEs256DidKeyJwtVp)

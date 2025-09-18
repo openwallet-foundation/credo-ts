@@ -66,8 +66,8 @@ export class W3cV2Presentation {
   @IsNever()
   public vp?: never
 
-  public get holderId(): string | null {
-    if (!this.holder) return null
+  public get holderId(): string | undefined {
+    if (!this.holder) return undefined
 
     return this.holder instanceof W3cV2Holder ? this.holder.id : this.holder
   }
