@@ -1,4 +1,4 @@
-import { OpenId4VpVerifierClientMetadata } from '@credo-ts/openid4vc'
+import type { OpenId4VpVerifierClientMetadata } from '@credo-ts/openid4vc'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

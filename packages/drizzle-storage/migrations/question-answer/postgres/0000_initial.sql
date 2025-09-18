@@ -1,4 +1,4 @@
-CREATE TYPE "public"."DidcommQuestionAnswerState" AS ENUM('question-sent', 'question-received', 'answer-received', 'answer-sent');--> statement-breakpoint
+CREATE TYPE "public"."DidcommQuestionAnswerState" AS ENUM('question-sent', 'answer-received', 'question-received', 'answer-sent');--> statement-breakpoint
 CREATE TYPE "public"."DidcommQuestionAnswerRole" AS ENUM('questioner', 'responder');--> statement-breakpoint
 CREATE TABLE "DidcommQuestionAnswer" (
 	"context_correlation_id" text NOT NULL,

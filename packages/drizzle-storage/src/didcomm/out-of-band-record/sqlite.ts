@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
+import type { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommOutOfBand = sqliteTable(

@@ -1,5 +1,5 @@
 {
-  "id": "ba2a5a56-7137-47cd-993d-7260d637f08b",
+  "id": "9f316e00-d057-4eb0-927e-03072e93a51b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -658,6 +658,7 @@
         "state": {
           "name": "state",
           "type": "AnonCredsRevocationRegistryState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },

@@ -1,4 +1,4 @@
-import {
+import type {
   OpenId4VcVerificationSessionState,
   OpenId4VpAuthorizationRequestPayload,
   OpenId4VpAuthorizationResponsePayload,

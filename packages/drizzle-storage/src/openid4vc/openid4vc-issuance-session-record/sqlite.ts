@@ -1,4 +1,4 @@
-import {
+import type {
   OpenId4VcIssuanceSessionAuthorization,
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPresentation,

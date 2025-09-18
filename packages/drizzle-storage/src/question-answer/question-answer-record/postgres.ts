@@ -1,10 +1,20 @@
-import { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
+import type { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
 import { boolean, foreignKey, jsonb, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { didcommConnection } from '../../didcomm/connection-record/postgres'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 
-export const didcommQuestionAnswerStateEnum = pgEnum('DidcommQuestionAnswerState', QuestionAnswerState)
-export const didcommQuestionAnswerRoleEnum = pgEnum('DidcommQuestionAnswerRole', QuestionAnswerRole)
+export const didcommQuestionAnswerStates = exhaustiveArray(
+  {} as QuestionAnswerState,
+  ['question-sent', 'answer-received', 'question-received', 'answer-sent'] as const
+)
+export const didcommQuestionAnswerStateEnum = pgEnum('DidcommQuestionAnswerState', didcommQuestionAnswerStates)
+
+export const didcommQuestionAnswerRoles = exhaustiveArray(
+  {} as QuestionAnswerRole,
+  ['questioner', 'responder'] as const
+)
+export const didcommQuestionAnswerRoleEnum = pgEnum('DidcommQuestionAnswerRole', didcommQuestionAnswerRoles)
 
 export const didcommQuestionAnswer = pgTable(
   'DidcommQuestionAnswer',

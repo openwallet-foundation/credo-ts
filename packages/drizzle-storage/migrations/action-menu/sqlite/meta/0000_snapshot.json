@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6c8f96a0-0c03-449f-90ce-c0525a3ad041",
+  "id": "340715e6-f6a9-4ddb-83fd-1138d7b9abb6",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "DidcommActionMenu": {

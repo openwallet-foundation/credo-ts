@@ -1,6 +1,6 @@
 import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
+import type { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 

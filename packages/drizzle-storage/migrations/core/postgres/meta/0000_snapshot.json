@@ -1,5 +1,5 @@
 {
-  "id": "8975211a-43ac-41dc-8d7b-02b4ab00ec6b",
+  "id": "ba5e8fb9-0696-427e-8b9a-6acacbb399e8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -72,6 +72,7 @@
         "role": {
           "name": "role",
           "type": "didRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },

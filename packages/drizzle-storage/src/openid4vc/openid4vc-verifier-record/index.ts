@@ -1,4 +1,4 @@
-import { DrizzleRecord } from '../../DrizzleRecord'
+import type { DrizzleRecord } from '../../DrizzleRecord'
 import { DrizzleOpenid4vcVerifierRecordAdapter } from './DrizzleOpenid4vcVerifierRecordAdapter'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
