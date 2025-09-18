@@ -68,6 +68,7 @@ export class W3cV2SdJwtVerifiablePresentation {
     // Basic JWT validations to ensure compliance to the specification
     const sdJwt = this.sdJwt
     const header = sdJwt.header
+    const payload = sdJwt.prettyClaims
 
     if ('typ' in header && header.typ !== 'vp+sd-jwt') {
       throw new CredoError(`The provided W3C VP JWT does not have the correct 'typ' header.`)
@@ -75,6 +76,13 @@ export class W3cV2SdJwtVerifiablePresentation {
 
     if ('cyt' in header && header.cyt !== 'vp') {
       throw new CredoError(`The provided W3C VP JWT does not have the correct 'cyt' header.`)
+    }
+
+    const iss = header.iss ?? payload.iss
+    if (iss && this.resolvedPresentation.holderId) {
+      if (this.resolvedPresentation.holderId !== iss) {
+        throw new CredoError(`The provided W3C VP SD-JWT has both 'iss' and 'holder' claims, but they differ.`)
+      }
     }
   }
 }
