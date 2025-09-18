@@ -1,4 +1,4 @@
-import { AnonCredsRevocationRegistryState } from '@credo-ts/anoncreds'
+import type { AnonCredsRevocationRegistryState } from '@credo-ts/anoncreds'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

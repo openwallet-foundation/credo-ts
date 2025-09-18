@@ -1,4 +1,4 @@
-import { DrizzleRecordBundle } from '../DrizzleRecord'
+import type { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
 import { openId4VcIssuanceSessionDrizzleRecord } from './openid4vc-issuance-session-record'
 import { openid4vcIssuerDrizzleRecord } from './openid4vc-issuer-record'

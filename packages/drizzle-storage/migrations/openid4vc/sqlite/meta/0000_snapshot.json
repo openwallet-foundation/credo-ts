@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "9a80cc17-7b6c-4dfe-91fb-e53d8cf13838",
+  "id": "6c92c5d8-c679-46a8-a0bb-d89f6209edaf",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "Openid4vcIssuer": {

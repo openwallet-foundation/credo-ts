@@ -1,4 +1,4 @@
-import { DrizzleRecord } from '../../DrizzleRecord'
+import type { DrizzleRecord } from '../../DrizzleRecord'
 import { DrizzleW3cCredentialRecordAdapter } from './DrizzleW3cCredentialRecordAdapter'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'

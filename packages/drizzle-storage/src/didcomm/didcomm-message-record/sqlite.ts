@@ -1,6 +1,6 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import { DidCommMessageRole, PlaintextMessage } from '@credo-ts/didcomm'
+import type { DidCommMessageRole, PlaintextMessage } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommMessage = sqliteTable(

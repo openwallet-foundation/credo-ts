@@ -1,5 +1,5 @@
 CREATE TYPE "public"."OpenId4VcIssuanceSessionState" AS ENUM('OfferCreated', 'OfferUriRetrieved', 'AuthorizationInitiated', 'AuthorizationGranted', 'AccessTokenRequested', 'AccessTokenCreated', 'CredentialRequestReceived', 'CredentialsPartiallyIssued', 'Completed', 'Error');--> statement-breakpoint
-CREATE TYPE "public"."OpenId4VcVerificationSessionState" AS ENUM('RequestCreated', 'RequestUriRetrieved', 'ResponseVerified', 'Error');--> statement-breakpoint
+CREATE TYPE "public"."OpenId4VcVerificationSessionState" AS ENUM('Error', 'RequestCreated', 'RequestUriRetrieved', 'ResponseVerified');--> statement-breakpoint
 CREATE TABLE "Openid4vcIssuer" (
 	"context_correlation_id" text NOT NULL,
 	"id" text NOT NULL,

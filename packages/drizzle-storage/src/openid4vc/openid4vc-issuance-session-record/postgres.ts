@@ -1,4 +1,4 @@
-import {
+import type {
   OpenId4VcIssuanceSessionAuthorization,
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPkce,
@@ -10,9 +10,25 @@ import {
 } from '@credo-ts/openid4vc'
 import { boolean, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 import { openid4vcIssuer } from '../postgres'
 
-export const openId4VcIssuanceSessionStateEnum = pgEnum('OpenId4VcIssuanceSessionState', OpenId4VcIssuanceSessionState)
+export const openId4VcIssuanceSessionStates = exhaustiveArray(
+  {} as OpenId4VcIssuanceSessionState,
+  [
+    'OfferCreated',
+    'OfferUriRetrieved',
+    'AuthorizationInitiated',
+    'AuthorizationGranted',
+    'AccessTokenRequested',
+    'AccessTokenCreated',
+    'CredentialRequestReceived',
+    'CredentialsPartiallyIssued',
+    'Completed',
+    'Error',
+  ] as const
+)
+export const openId4VcIssuanceSessionStateEnum = pgEnum('OpenId4VcIssuanceSessionState', openId4VcIssuanceSessionStates)
 
 export const openId4VcIssuanceSession = pgTable(
   'OpenId4VcIssuanceSession',
