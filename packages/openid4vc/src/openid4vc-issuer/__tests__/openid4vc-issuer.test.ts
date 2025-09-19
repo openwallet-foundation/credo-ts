@@ -588,7 +588,7 @@ describe('OpenId4VcIssuer', () => {
   it('pre authorized code flow (w3c vc+sd-jwt)', async () => {
     const preAuthorizedCode = '1234567890'
 
-    const result = await issuer.modules.openId4VcIssuer.createCredentialOffer({
+    const result = await issuer.modules.openid4vc.issuer.createCredentialOffer({
       issuerId: openId4VcIssuer.issuerId,
       credentialConfigurationIds: [openBadgeCredentialSdJwtVc.id],
       preAuthorizedCodeFlowConfig: {
@@ -605,10 +605,10 @@ describe('OpenId4VcIssuer', () => {
 
     expect(result.credentialOffer).toBeDefined()
 
-    const issuerMetadata = await issuer.modules.openId4VcIssuer.getIssuerMetadata(openId4VcIssuer.issuerId)
+    const issuerMetadata = await issuer.modules.openid4vc.issuer.getIssuerMetadata(openId4VcIssuer.issuerId)
     const issuerService = issuer.context.dependencyManager.resolve(OpenId4VcIssuerService)
     const { cNonce } = await issuerService.createNonce(issuer.context, openId4VcIssuer)
-    const { credentialResponse } = await issuer.modules.openId4VcIssuer.createCredentialResponse({
+    const { credentialResponse } = await issuer.modules.openid4vc.issuer.createCredentialResponse({
       issuanceSessionId: result.issuanceSession.id,
       authorization: {
         authorizationServer: 'https://authorization.com',
