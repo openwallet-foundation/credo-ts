@@ -11,7 +11,6 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
-import { MessageHandlerRegistry } from '../../../../../../MessageHandlerRegistry'
 import { InboundMessageContext } from '../../../../../../models'
 import { DidExchangeState } from '../../../../../connections'
 import { CredentialEventTypes } from '../../../../CredentialEvents'
@@ -24,10 +23,6 @@ import { RevocationNotificationService } from '../RevocationNotificationService'
 jest.mock('../../../../repository/CredentialRepository')
 const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
 const credentialRepository = new CredentialRepositoryMock()
-
-jest.mock('../../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
-const messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
   state: DidExchangeState.Completed,
@@ -47,7 +42,6 @@ describe('RevocationNotificationService', () => {
     revocationNotificationService = new RevocationNotificationService(
       credentialRepository,
       eventEmitter,
-      messageHandlerRegistry,
       agentConfig.logger
     )
   })
