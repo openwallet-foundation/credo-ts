@@ -4,6 +4,7 @@ import { GenericRecordsApi } from '../modules/generic-records'
 import { KeyManagementApi } from '../modules/kms'
 import { MdocApi } from '../modules/mdoc'
 import { SdJwtVcApi } from '../modules/sd-jwt-vc'
+import { W3cV2CredentialsApi } from '../modules/vc'
 import { W3cCredentialsApi } from '../modules/vc/W3cCredentialsApi'
 import { X509Api } from '../modules/x509'
 import type { DependencyManager, Module } from '../plugins'
@@ -24,6 +25,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly genericRecords: GenericRecordsApi
   public readonly dids: DidsApi
   public readonly w3cCredentials: W3cCredentialsApi
+  public readonly w3cV2Credentials: W3cV2CredentialsApi
   public readonly sdJwtVc: SdJwtVcApi
   public readonly x509: X509Api
   public readonly kms: KeyManagementApi
@@ -33,6 +35,13 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
    */
   public readonly didcomm: AgentModules['didcomm'] extends Module
     ? ModuleApiInstance<AgentModules['didcomm']>
+    : undefined
+
+  /*
+   * The OpenID4VC module, only available if the openid4vc module is registered
+   */
+  public readonly openid4vc: AgentModules['openid4vc'] extends Module
+    ? ModuleApiInstance<AgentModules['openid4vc']>
     : undefined
 
   public readonly modules: AgentApi<WithoutDefaultModules<AgentModules>>
@@ -54,6 +63,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     this.genericRecords = this.dependencyManager.resolve(GenericRecordsApi)
     this.dids = this.dependencyManager.resolve(DidsApi)
     this.w3cCredentials = this.dependencyManager.resolve(W3cCredentialsApi)
+    this.w3cV2Credentials = this.dependencyManager.resolve(W3cV2CredentialsApi)
     this.sdJwtVc = this.dependencyManager.resolve(SdJwtVcApi)
     this.x509 = this.dependencyManager.resolve(X509Api)
     this.mdoc = this.dependencyManager.resolve(MdocApi)
@@ -63,6 +73,7 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
       this.genericRecords,
       this.dids,
       this.w3cCredentials,
+      this.w3cV2Credentials,
       this.sdJwtVc,
       this.x509,
       this.mdoc,
@@ -72,8 +83,9 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     // Set the api of the registered modules on the agent, excluding the default apis
     this.modules = getAgentApi(this.dependencyManager, defaultApis)
 
-    // Special case for DIDComm module, to expose it on the top-level of the agent.
+    // Special case for DIDComm and OpenID4vc modules, to expose it on the top-level of the agent.
     this.didcomm = ('didcomm' in this.modules ? this.modules.didcomm : undefined) as this['didcomm']
+    this.openid4vc = ('openid4vc' in this.modules ? this.modules.openid4vc : undefined) as this['openid4vc']
   }
 
   public get isInitialized() {

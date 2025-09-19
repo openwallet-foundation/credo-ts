@@ -1,3 +1,6 @@
 export * from './W3cJwtCredentialService'
 export * from './W3cJwtVerifiableCredential'
 export * from './W3cJwtVerifiablePresentation'
+export * from './W3cV2JwtVerifiableCredential'
+export * from './W3cV2JwtVerifiablePresentation'
+export * from './W3cV2JwtCredentialService'

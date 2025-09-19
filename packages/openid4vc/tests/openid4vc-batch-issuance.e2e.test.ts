@@ -6,9 +6,9 @@ import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
-  OpenId4VcHolderModule,
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcModule,
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
@@ -24,52 +24,54 @@ describe('OpenId4Vc Batch Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions>
   }>
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
+    openid4vc: OpenId4VcModule
   }>
 
   beforeEach(async () => {
     expressApp = express()
 
     issuer = await createAgentFromModules({
-      openId4VcIssuer: new OpenId4VcIssuerModule({
-        baseUrl: issuerBaseUrl,
-        credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
-          if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-            if (holderBinding.bindingMethod !== 'jwk') {
-              throw new CredoError('Expected jwk binding method')
-            }
-            return {
-              type: 'credentials',
-              format: OpenId4VciCredentialFormatProfile.MsoMdoc,
-              credentials: holderBinding.keys.map((holderBinding, index) => ({
-                docType: credentialRequestFormat.doctype,
-                holderKey: holderBinding.jwk,
-                issuerCertificate: issuer.certificate,
-                namespaces: {
-                  [credentialRequestFormat.doctype]: {
-                    index,
+      openid4vc: new OpenId4VcModule({
+        issuer: {
+          baseUrl: issuerBaseUrl,
+          credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
+            if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+              if (holderBinding.bindingMethod !== 'jwk') {
+                throw new CredoError('Expected jwk binding method')
+              }
+              return {
+                type: 'credentials',
+                format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+                credentials: holderBinding.keys.map((holderBinding, index) => ({
+                  docType: credentialRequestFormat.doctype,
+                  holderKey: holderBinding.jwk,
+                  issuerCertificate: issuer.certificate,
+                  namespaces: {
+                    [credentialRequestFormat.doctype]: {
+                      index,
+                    },
                   },
-                },
-                validityInfo: {
-                  validFrom: new Date('2024-01-01'),
-                  validUntil: new Date('2050-01-01'),
-                },
-              })),
+                  validityInfo: {
+                    validFrom: new Date('2024-01-01'),
+                    validUntil: new Date('2050-01-01'),
+                  },
+                })),
+              }
             }
-          }
 
-          throw new Error('not supported')
+            throw new Error('not supported')
+          },
         },
       }),
       inMemory: new InMemoryWalletModule(),
     })
 
     holder = await createAgentFromModules({
-      openId4VcHolder: new OpenId4VcHolderModule(),
+      openid4vc: new OpenId4VcModule(),
       inMemory: new InMemoryWalletModule(),
     })
 
@@ -77,7 +79,7 @@ describe('OpenId4Vc Batch Issuance', () => {
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
+    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
@@ -110,7 +112,7 @@ describe('OpenId4Vc Batch Issuance', () => {
   }
 
   it('e2e flow issuing a batch of mdoc', async () => {
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       batchCredentialIssuance: {
         batchSize: 10,
@@ -121,22 +123,22 @@ describe('OpenId4Vc Batch Issuance', () => {
     })
 
     // Create offer for university degree
-    const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
     })
 
     // Request credentials
-    const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
       credentialBindingResolver,
@@ -152,7 +154,7 @@ describe('OpenId4Vc Batch Issuance', () => {
   })
 
   it('e2e flow requesting a batch of mdoc larger than max batch size', async () => {
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       batchCredentialIssuance: {
         batchSize: 10,
@@ -162,23 +164,23 @@ describe('OpenId4Vc Batch Issuance', () => {
       },
     })
 
-    const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       preAuthorizedCodeFlowConfig: {},
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
     })
 
     // Request credentials
     await expect(
-      holder.agent.modules.openId4VcHolder.requestCredentials({
+      holder.agent.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer,
         ...tokenResponse,
         credentialBindingResolver: async ({ agentContext, proofTypes }) => {

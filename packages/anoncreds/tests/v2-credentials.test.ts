@@ -259,7 +259,7 @@ describe('IC V2 AnonCreds credentials', () => {
       holderCredentialExchangeRecord.credentials[0].credentialRecordId
     )
 
-    return expect(aliceAgent.didcomm.credentials.getById(holderCredentialExchangeRecord.id)).rejects.toThrowError(
+    return expect(aliceAgent.didcomm.credentials.getById(holderCredentialExchangeRecord.id)).rejects.toThrow(
       `CredentialRecord: record with id ${holderCredentialExchangeRecord.id} not found.`
     )
   })

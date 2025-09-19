@@ -9,6 +9,7 @@ import { agentDependencies, getAgentContext } from '../../../../../core/tests/he
 import { AgentMessage } from '../../../AgentMessage'
 import { TransportSession } from '../../../TransportService'
 import { TransportEventTypes } from '../../../transport/TransportEventTypes'
+import { MessagePickupSessionRole } from '../MessagePickupSession'
 import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
 
 describe('start listener remove live sessions', () => {
@@ -32,7 +33,44 @@ describe('start listener remove live sessions', () => {
     jest.spyOn(instance, 'removeLiveSession').mockImplementation()
   })
 
-  test('removes live session on WebSocket transport event', () => {
+  test('removes live session on related transport event', () => {
+    instance.start(agentContext)
+
+    const session: TransportSession = {
+      id: '1',
+      type: 'WebSocket',
+      keys: {
+        recipientKeys: [],
+        routingKeys: [],
+        senderKey: null,
+      },
+      inboundMessage: new AgentMessage(),
+      connectionId: 'conn-123',
+      send: jest.fn(),
+      close: jest.fn(),
+    }
+
+    // Add the session to the instance
+    instance.saveLiveSession(agentContext, {
+      connectionId: 'conn-123',
+      protocolVersion: 'v2',
+      role: MessagePickupSessionRole.MessageHolder,
+      transportSessionId: '1',
+    })
+
+    eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
+      type: TransportEventTypes.TransportSessionRemoved,
+      payload: {
+        session: session,
+      },
+    })
+
+    expect(instance.removeLiveSession).toHaveBeenCalledWith(agentContext, {
+      connectionId: 'conn-123',
+    })
+  })
+
+  test('does not remove live session on non-related transport event', () => {
     instance.start(agentContext)
 
     const session: TransportSession = {
@@ -52,42 +90,11 @@ describe('start listener remove live sessions', () => {
     eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
       type: TransportEventTypes.TransportSessionRemoved,
       payload: {
-        session: session,
+        session,
       },
     })
 
-    expect(instance.removeLiveSession).toHaveBeenCalledWith(agentContext, {
-      connectionId: 'conn-123',
-    })
-  })
-
-  test('does not remove live session on non-WebSocket transport event', () => {
-    instance.start(agentContext)
-
-    const session: TransportSession = {
-      id: '1',
-      type: 'http',
-      keys: {
-        recipientKeys: [],
-        routingKeys: [],
-        senderKey: null,
-      },
-      inboundMessage: new AgentMessage(),
-      connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
-    }
-
-    eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
-      type: TransportEventTypes.TransportSessionRemoved,
-      payload: {
-        session: session,
-      },
-    })
-
-    expect(instance.removeLiveSession).not.toHaveBeenCalledWith(agentContext, {
-      connectionId: 'conn-123',
-    })
+    expect(instance.removeLiveSession).not.toHaveBeenCalled()
   })
 
   test('stops listening when stop$ emits', () => {

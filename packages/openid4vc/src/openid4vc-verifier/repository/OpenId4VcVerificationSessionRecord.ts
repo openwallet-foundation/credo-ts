@@ -132,7 +132,7 @@ export class OpenId4VcVerificationSessionRecord extends BaseRecord<DefaultOpenId
    *
    * @since 0.6
    */
-  authorizationResponseRedirectUri?: string
+  public authorizationResponseRedirectUri?: string
 
   public constructor(props: OpenId4VcVerificationSessionRecordProps) {
     super()

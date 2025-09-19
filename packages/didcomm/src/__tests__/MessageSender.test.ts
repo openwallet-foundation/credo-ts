@@ -298,7 +298,7 @@ describe('MessageSender', () => {
         new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
       )
 
-      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrowError(
+      await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         `Unable to send message using connection 'test-123'. Unble to resolve did`
       )
 

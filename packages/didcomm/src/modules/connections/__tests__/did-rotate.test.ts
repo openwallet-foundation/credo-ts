@@ -381,7 +381,7 @@ describe('Rotation E2E tests', () => {
       expect(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after hangup')
-      ).rejects.toThrowError()
+      ).rejects.toThrow()
 
       // If Bob sends a message afterwards, Alice should still be able to receive it
       await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
