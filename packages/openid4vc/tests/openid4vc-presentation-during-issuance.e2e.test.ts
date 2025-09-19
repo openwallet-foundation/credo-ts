@@ -1,5 +1,8 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
-import type {
+import {
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcModule,
+  OpenId4VcVerifierModuleConfigOptions,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
   OpenId4VciSignSdJwtCredentials,
 } from '../src'
@@ -11,13 +14,7 @@ import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 
 import { setupNockToExpress } from '../../../tests/nockToExpress'
-import {
-  OpenId4VcHolderModule,
-  OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModule,
-  OpenId4VcVerifierModule,
-  getScopesFromCredentialConfigurationsSupported,
-} from '../src'
+import { OpenId4VcIssuanceSessionState, getScopesFromCredentialConfigurationsSupported } from '../src'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
@@ -87,15 +84,14 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   let clearNock: () => void
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
-    openId4VcVerifier: OpenId4VcVerifierModule
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
   }>
 
   const getVerificationSessionForIssuanceSessionAuthorization =
     (queryMethod: 'dcql' | 'presentationDefinition'): OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization =>
     async ({ issuanceSession, scopes }) => {
       if (scopes.includes(universityDegreeCredentialConfigurationSupported.scope)) {
-        const createRequestReturn = await issuer.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+        const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
           verifierId: issuanceSession.issuerId,
           requestSigner: {
             method: 'x5c',
@@ -127,74 +123,76 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
+    openid4vc: OpenId4VcModule
   }>
 
   beforeEach(async () => {
     expressApp = express()
 
     issuer = await createAgentFromModules({
-      openId4VcIssuer: new OpenId4VcIssuerModule({
-        baseUrl: issuerBaseUrl,
-        getVerificationSessionForIssuanceSessionAuthorization:
-          getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-        credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
-          if (!verification) {
-            throw new Error('Expected verification in credential request mapper')
-          }
-
-          let credential: SdJwtVc
-
-          if (verification.presentationExchange) {
-            const descriptor = verification.presentationExchange.descriptors.find(
-              (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
-            )
-
-            if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtDc) {
-              throw new Error('Expected descriptor with sd-jwt vc format')
-            }
-
-            credential = descriptor.credential
-          } else {
-            const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
-            if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
-              throw new Error('Expected preentation with sd-jwt vc format')
-            }
-
-            credential = presentation
-          }
-
-          const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
-
-          if (credentialRequest.format === 'vc+sd-jwt') {
-            return {
-              type: 'credentials',
-              format: 'dc+sd-jwt',
-              credentials: holderBinding.keys.map((holderBinding) => ({
-                payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
-                holder: holderBinding,
-                issuer: {
-                  method: 'x5c',
-                  x5c: [issuer.certificate],
-                  issuer: baseUrl,
-                },
-                disclosureFrame: {
-                  _sd: ['full_name'],
-                },
-              })),
-            } satisfies OpenId4VciSignSdJwtCredentials
-          }
-          throw new Error('Invalid request')
+      openid4vc: new OpenId4VcModule({
+        verifier: {
+          baseUrl: verifierBaseUrl,
         },
-      }),
-      openId4VcVerifier: new OpenId4VcVerifierModule({
-        baseUrl: verifierBaseUrl,
+        issuer: {
+          baseUrl: issuerBaseUrl,
+          getVerificationSessionForIssuanceSessionAuthorization:
+            getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
+          credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
+            if (!verification) {
+              throw new Error('Expected verification in credential request mapper')
+            }
+
+            let credential: SdJwtVc
+
+            if (verification.presentationExchange) {
+              const descriptor = verification.presentationExchange.descriptors.find(
+                (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
+              )
+
+              if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtDc) {
+                throw new Error('Expected descriptor with sd-jwt vc format')
+              }
+
+              credential = descriptor.credential
+            } else {
+              const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
+              if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
+                throw new Error('Expected preentation with sd-jwt vc format')
+              }
+
+              credential = presentation
+            }
+
+            const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
+
+            if (credentialRequest.format === 'vc+sd-jwt') {
+              return {
+                type: 'credentials',
+                format: 'dc+sd-jwt',
+                credentials: holderBinding.keys.map((holderBinding) => ({
+                  payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
+                  holder: holderBinding,
+                  issuer: {
+                    method: 'x5c',
+                    x5c: [issuer.certificate],
+                    issuer: baseUrl,
+                  },
+                  disclosureFrame: {
+                    _sd: ['full_name'],
+                  },
+                })),
+              } satisfies OpenId4VciSignSdJwtCredentials
+            }
+            throw new Error('Invalid request')
+          },
+        },
       }),
       inMemory: new InMemoryWalletModule(),
     })
 
     holder = await createAgentFromModules({
-      openId4VcHolder: new OpenId4VcHolderModule(),
+      openid4vc: new OpenId4VcModule(),
       inMemory: new InMemoryWalletModule(),
     })
 
@@ -202,8 +200,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
-    expressApp.use('/oid4vp', issuer.agent.modules.openId4VcVerifier.config.router)
+    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
+    expressApp.use('/oid4vp', issuer.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -221,7 +219,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with presentation definition', async () => {
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
@@ -234,7 +232,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
-    await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
     })
 
@@ -257,7 +255,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
 
     // Create offer for university degree
-    const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -266,8 +264,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -280,7 +278,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {
@@ -288,10 +286,10 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
     // Submit presentation
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedPresentationRequest.presentationExchange.credentialsForRequest
     )
-    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       presentationExchange: {
         credentials: selectedCredentials,
@@ -304,16 +302,14 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
     // Request authorization code
-    const { authorizationCode } = await holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation(
-      {
-        authSession: resolvedAuthorization.authSession,
-        resolvedCredentialOffer,
-        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
-      }
-    )
+    const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      authSession: resolvedAuthorization.authSession,
+      resolvedCredentialOffer,
+      presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
+    })
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
       clientId: 'foo',
@@ -321,7 +317,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Request credential
-    const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
       clientId: 'foo',
@@ -341,10 +337,10 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   })
 
   it('e2e flow with requesting presentation of credentials before issuance succeeds with dcql query', async () => {
-    issuer.agent.modules.openId4VcIssuer.config.getVerificationSessionForIssuanceSessionAuthorization =
+    issuer.agent.openid4vc.issuer.config.getVerificationSessionForIssuanceSessionAuthorization =
       getVerificationSessionForIssuanceSessionAuthorization('dcql')
 
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
@@ -357,7 +353,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
-    await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
     })
 
@@ -380,7 +376,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
 
     // Create offer for university degree
-    const { issuanceSession, credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { issuanceSession, credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -389,8 +385,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -403,7 +399,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.dcql) {
@@ -411,10 +407,10 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
     // Submit presentation
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedPresentationRequest.dcql.queryResult
     )
-    const openId4VpResult = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const openId4VpResult = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedPresentationRequest.authorizationRequestPayload,
       dcql: {
         credentials: selectedCredentials,
@@ -427,16 +423,14 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     }
 
     // Request authorization code
-    const { authorizationCode } = await holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation(
-      {
-        authSession: resolvedAuthorization.authSession,
-        resolvedCredentialOffer,
-        presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
-      }
-    )
+    const { authorizationCode } = await holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
+      authSession: resolvedAuthorization.authSession,
+      resolvedCredentialOffer,
+      presentationDuringIssuanceSession: openId4VpResult.presentationDuringIssuanceSession,
+    })
 
     // Request access token
-    const tokenResponse = await holder.agent.modules.openId4VcHolder.requestToken({
+    const tokenResponse = await holder.agent.openid4vc.holder.requestToken({
       resolvedCredentialOffer,
       code: authorizationCode,
       clientId: 'foo',
@@ -444,7 +438,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Request credential
-    const credentialResponse = await holder.agent.modules.openId4VcHolder.requestCredentials({
+    const credentialResponse = await holder.agent.openid4vc.holder.requestCredentials({
       resolvedCredentialOffer,
       ...tokenResponse,
       clientId: 'foo',
@@ -464,7 +458,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   })
 
   it('e2e flow with requesting presentation of credentials before issuance but fails because presentation not verified', async () => {
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
@@ -477,7 +471,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
       issuer: baseUrl,
     } satisfies SdJwtVcIssuer
 
-    await issuer.agent.modules.openId4VcVerifier.createVerifier({
+    await issuer.agent.openid4vc.verifier.createVerifier({
       verifierId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
     })
 
@@ -500,7 +494,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     await holder.agent.sdJwtVc.store(holderIdentityCredential.compact)
 
     // Create offer for university degree
-    const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -509,8 +503,8 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
-    const resolvedAuthorization = await holder.agent.modules.openId4VcHolder.resolveOpenId4VciAuthorizationRequest(
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
+    const resolvedAuthorization = await holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(
       resolvedCredentialOffer,
       {
         clientId: 'foo',
@@ -523,7 +517,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     if (resolvedAuthorization.authorizationFlow !== AuthorizationFlow.PresentationDuringIssuance) {
       throw new Error('Not supported')
     }
-    const resolvedPresentationRequest = await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedPresentationRequest = await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       resolvedAuthorization.openid4vpRequestUrl
     )
     if (!resolvedPresentationRequest.presentationExchange) {
@@ -532,7 +526,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     // Requesting authorization code should fail
     await expect(
-      holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation({
+      holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
         authSession: resolvedAuthorization.authSession,
         resolvedCredentialOffer,
       })
@@ -540,7 +534,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   })
 
   it('e2e flow with requesting presentation of credentials before issuance but fails because invalid auth session', async () => {
-    const issuerRecord = await issuer.agent.modules.openId4VcIssuer.createIssuer({
+    const issuerRecord = await issuer.agent.openid4vc.issuer.createIssuer({
       issuerId: '2f9c0385-7191-4c50-aa22-40cf5839d52b',
       credentialConfigurationsSupported: {
         universityDegree: universityDegreeCredentialConfigurationSupported,
@@ -548,7 +542,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Create offer for university degree
-    const { credentialOffer } = await issuer.agent.modules.openId4VcIssuer.createCredentialOffer({
+    const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
       authorizationCodeFlowConfig: {
@@ -557,10 +551,10 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     })
 
     // Resolve offer
-    const resolvedCredentialOffer = await holder.agent.modules.openId4VcHolder.resolveCredentialOffer(credentialOffer)
+    const resolvedCredentialOffer = await holder.agent.openid4vc.holder.resolveCredentialOffer(credentialOffer)
 
     await expect(
-      holder.agent.modules.openId4VcHolder.retrieveAuthorizationCodeUsingPresentation({
+      holder.agent.openid4vc.holder.retrieveAuthorizationCodeUsingPresentation({
         authSession: 'some auth session',
         resolvedCredentialOffer,
       })
