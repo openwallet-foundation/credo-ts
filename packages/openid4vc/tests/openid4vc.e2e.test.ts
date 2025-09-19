@@ -2113,7 +2113,6 @@ describe('OpenId4Vc', () => {
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
-
     const signedSdJwtVc = await issuer.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
       issuer: {

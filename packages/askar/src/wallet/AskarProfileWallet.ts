@@ -13,7 +13,7 @@ import { inject, injectable } from 'tsyringe'
 
 import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarErrorCode, isAskarError } from '../utils'
-import { Store } from '../utils/importAskar'
+import { AskarStoreSymbol, Store } from '../utils/importAskar'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
 
@@ -24,7 +24,7 @@ export class AskarProfileWallet extends AskarBaseWallet {
   public isInitialized = false
 
   public constructor(
-    store: Store,
+    @inject(AskarStoreSymbol) store: Store,
     @inject(InjectionSymbols.Logger) logger: Logger,
     signingKeyProviderRegistry: SigningProviderRegistry,
     config: AskarModuleConfig

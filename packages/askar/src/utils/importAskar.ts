@@ -50,3 +50,5 @@ export type AskarError =
 export function isOwfAskarKey(askarLibrary: AskarLibrary, key: AskarKey): key is OwfAskarKey {
   return isOwfAskarLibrary(askarLibrary)
 }
+
+export const AskarStoreSymbol = Symbol('AskarStore')

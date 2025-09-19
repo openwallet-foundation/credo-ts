@@ -6,7 +6,7 @@ import { CredoError, InjectionSymbols } from '@credo-ts/core'
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
 import { assertAskarWallet } from './utils/assertAskarWallet'
-import { importAskar } from './utils/importAskar'
+import { AskarStoreSymbol, importAskar } from './utils/importAskar'
 import { AskarProfileWallet, AskarWallet } from './wallet'
 
 export class AskarModule implements Module {
@@ -44,13 +44,11 @@ export class AskarModule implements Module {
     // We MUST use an askar wallet here
     assertAskarWallet(agentContext.wallet)
 
-    const { Store } = importAskar(this.config.ariesAskar)
-
     const wallet = agentContext.wallet
 
     // Register the Askar store instance on the dependency manager
     // This allows it to be re-used for tenants
-    agentContext.dependencyManager.registerInstance(Store, agentContext.wallet.store)
+    agentContext.dependencyManager.registerInstance(AskarStoreSymbol, agentContext.wallet.store)
 
     // If the multiWalletDatabaseScheme is set to ProfilePerWallet, we want to register the AskarProfileWallet
     // and return that as the wallet for all tenants, but not for the main agent, that should use the AskarWallet
