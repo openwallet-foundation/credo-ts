@@ -79,7 +79,7 @@ describe('OpenId4Vc-federation', () => {
               throw new Error('No verification method found')
             }
 
-            if (credentialRequest.format === 'vc+sd-jwt') {
+            if (credentialRequest.format === 'dc+sd-jwt') {
               return {
                 type: 'credentials',
                 credentialConfigurationId,
