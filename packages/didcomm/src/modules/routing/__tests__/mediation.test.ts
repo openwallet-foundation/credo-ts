@@ -202,7 +202,7 @@ describe('mediator establishment', () => {
     await e2eMediationTest(getMediatorAgentOptions(false), getRecipientAgentOptions(false))
   })
 
-  test.only('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {
+  test('restart recipient agent and create connection through mediator after recipient agent is restarted', async () => {
     const mediatorMessages = new Subject<SubjectMessage>()
     const recipientMessages = new Subject<SubjectMessage>()
     const senderMessages = new Subject<SubjectMessage>()
