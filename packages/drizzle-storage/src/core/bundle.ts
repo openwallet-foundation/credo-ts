@@ -8,6 +8,7 @@ import { sdJwtVcDrizzleRecord } from './sd-jwt-vc-record'
 import { singleContextLruCacheDrizzleRecord } from './single-context-lru-cache-record'
 import { storageVersionDrizzleRecord } from './storage-version-record'
 import { w3cCredentialDrizzleRecord } from './w3c-credential-record'
+import { w3cV2CredentialDrizzleRecord } from './w3c-v2-credential-record'
 
 export default {
   name: 'core',
@@ -19,6 +20,7 @@ export default {
     genericRecordDrizzleRecord,
     didDrizzleRecord,
     w3cCredentialDrizzleRecord,
+    w3cV2CredentialDrizzleRecord,
     singleContextLruCacheDrizzleRecord,
   ],
   migrations: bundleMigrationDefinition('core'),

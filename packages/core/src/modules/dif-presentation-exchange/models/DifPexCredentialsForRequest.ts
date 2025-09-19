@@ -114,7 +114,7 @@ export interface DifPexCredentialsForRequestSubmissionEntry {
 
 export type SubmissionEntryCredential =
   | {
-      claimFormat: ClaimFormat.SdJwtVc
+      claimFormat: ClaimFormat.SdJwtDc
       credentialRecord: SdJwtVcRecord
 
       /**

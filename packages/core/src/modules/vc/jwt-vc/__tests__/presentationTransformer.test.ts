@@ -120,7 +120,7 @@ describe('presentationTransformer', () => {
       })
 
       expect(() => getPresentationFromJwtPayload(jwtPayload)).toThrow(
-        'property type has failed the following constraints: type must be an array of strings which includes "VerifiablePresentation"'
+        'property type has failed the following constraints: type must be "VerifiablePresentation" or an array of strings which includes "VerifiablePresentation"'
       )
     })
   })
