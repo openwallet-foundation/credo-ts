@@ -1,6 +1,6 @@
 import { spawnSync } from 'child_process'
 import { Dialect } from './generate-migrations'
-import { getDrizzleConfigPath, getMigrationsDirectory, log, resolveBundle } from './utils'
+import { getDrizzleConfigPath, getDrizzleKitCliPath, getMigrationsDirectory, log, resolveBundle } from './utils'
 
 interface RunMigrationsOptions {
   database: {
@@ -14,13 +14,14 @@ interface RunMigrationsOptions {
 
 export async function runMigrations({ database, bundles, silent }: RunMigrationsOptions): Promise<void> {
   const drizzleConfigPath = getDrizzleConfigPath()
+  const drizzleKitCliPath = getDrizzleKitCliPath()
 
   for (const bundleModule of bundles) {
     const bundle = await resolveBundle(bundleModule)
     const dialectBundle = bundle.migrations[database.dialect]
     const drizzleMigrationsFolder = getMigrationsDirectory(dialectBundle.migrationsPath)
 
-    const migrateResult = spawnSync('drizzle-kit', ['migrate', '--config', drizzleConfigPath], {
+    const migrateResult = spawnSync(drizzleKitCliPath, ['migrate', '--config', drizzleConfigPath], {
       encoding: 'utf-8',
       env: {
         ...process.env,

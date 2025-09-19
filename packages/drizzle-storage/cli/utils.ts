@@ -58,6 +58,10 @@ export function getMigrationsDirectory(migrationsPath: string) {
   return schemaMigrationsDirectory
 }
 
+export function getDrizzleKitCliPath() {
+  return path.join(path.dirname(require.resolve('drizzle-kit')), 'bin.cjs')
+}
+
 export function getDrizzleConfigPath() {
   return existsSync(path.join(__dirname, 'drizzle.config.ts'))
     ? path.join(__dirname, 'drizzle.config.ts')
