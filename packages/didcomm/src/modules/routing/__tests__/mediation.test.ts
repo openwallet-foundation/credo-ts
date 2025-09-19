@@ -9,17 +9,24 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { sleep } from '../../../../../core/src/utils/sleep'
 import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
 import { ConnectionRecord, HandshakeProtocol } from '../../connections'
-import { MediationRecipientModule } from '../MediationRecipientModule'
-import { MediatorModule } from '../MediatorModule'
 import { MediatorPickupStrategy } from '../MediatorPickupStrategy'
 import { MediationState } from '../models/MediationState'
 
-const getRecipientAgentOptions = (useDidKeyInProtocols = true, inMemory = true) =>
+const getRecipientAgentOptions = (
+  useDidKeyInProtocols = true,
+  inMemory = true,
+  didCommModuleConfig: DidCommModuleConfigOptions = {}
+) =>
   getAgentOptions(
     'Mediation: Recipient',
     {
+      ...didCommModuleConfig,
       useDidKeyInProtocols,
+      mediationRecipient: {
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      },
     },
     undefined,
     undefined,
@@ -31,13 +38,10 @@ const getMediatorAgentOptions = (useDidKeyInProtocols = true) =>
     {
       endpoints: ['rxjs:mediator'],
       useDidKeyInProtocols,
+      mediator: { autoAcceptMediationRequests: true },
     },
     {},
-    {
-      mediator: new MediatorModule({
-        autoAcceptMediationRequests: true,
-      }),
-    },
+    {},
     { requireDidcomm: true }
   )
 
@@ -90,39 +94,37 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    // Initialize recipient with mediation connections invitation
-    recipientAgent = new Agent({
-      ...recipientAgentOptions,
-      modules: {
-        ...recipientAgentOptions.modules,
-        mediationRecipient: new MediationRecipientModule({
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
-        }),
-      },
-    })
+    recipientAgent = new Agent(recipientAgentOptions)
     recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     recipientAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
-    const recipientMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
+    let { connectionRecord } = await recipientAgent.didcomm.oob.receiveInvitationFromUrl(
+      mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+        domain: 'https://example.com/ssi',
+      }),
+      { label: 'wallet' }
+    )
+    if (!connectionRecord) throw new Error('expected connection record')
+    connectionRecord = await recipientAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
+    await recipientAgent.didcomm.mediationRecipient.provision(connectionRecord)
+
+    const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!recipientMediator) {
       throw new Error('expected recipientMediator')
     }
-    const recipientMediatorConnection = await recipientAgent.modules.connections.getById(recipientMediator.connectionId)
+    const recipientMediatorConnection = await recipientAgent.didcomm.connections.getById(recipientMediator.connectionId)
 
     expect(recipientMediatorConnection).toBeInstanceOf(ConnectionRecord)
     expect(recipientMediatorConnection?.isReady).toBe(true)
 
-    const [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
+    const [mediatorRecipientConnection] = await mediatorAgent.didcomm.connections.findAllByOutOfBandId(
       mediatorOutOfBandRecord.id
     )
     expect(mediatorRecipientConnection?.isReady).toBe(true)
@@ -139,14 +141,14 @@ describe('mediator establishment', () => {
     senderAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const recipientOutOfBandRecord = await recipientAgent.modules.oob.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
     const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
 
-    let { connectionRecord: senderRecipientConnection } = await senderAgent.modules.oob.receiveInvitationFromUrl(
+    let { connectionRecord: senderRecipientConnection } = await senderAgent.didcomm.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' }),
       { label: 'senderAgent' }
     )
@@ -154,11 +156,11 @@ describe('mediator establishment', () => {
     if (!senderRecipientConnection) {
       throw new Error('expected senderRecipientConnection')
     }
-    senderRecipientConnection = await senderAgent.modules.connections.returnWhenIsConnected(
+    senderRecipientConnection = await senderAgent.didcomm.connections.returnWhenIsConnected(
       senderRecipientConnection.id
     )
 
-    let [recipientSenderConnection] = await recipientAgent.modules.connections.findAllByOutOfBandId(
+    let [recipientSenderConnection] = await recipientAgent.didcomm.connections.findAllByOutOfBandId(
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
@@ -167,19 +169,19 @@ describe('mediator establishment', () => {
     expect(recipientSenderConnection?.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
 
-    recipientSenderConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
+    recipientSenderConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
       recipientSenderConnection?.id
     )
 
     const message = 'hello, world'
-    await senderAgent.modules.basicMessages.sendMessage(senderRecipientConnection.id, message)
+    await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
     })
 
     // polling interval is 100ms, so 500ms should be enough to make sure no messages are sent
-    await recipientAgent.modules.mediationRecipient.stopMessagePickup()
+    await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
     await sleep(500)
 
     expect(basicMessage.content).toBe(message)
@@ -217,39 +219,35 @@ describe('mediator establishment', () => {
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
-    const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
+    const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
 
-    const recipientAgentOptions = getRecipientAgentOptions(undefined, false)
-    // Initialize recipient with mediation connections invitation
-    recipientAgent = new Agent({
-      ...recipientAgentOptions,
-      modules: {
-        ...recipientAgentOptions.modules,
-        mediationRecipient: new MediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    const recipientAgentOptions = getRecipientAgentOptions(undefined, false, {
+      mediationRecipient: {
+        mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com/ssi',
         }),
+        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
       },
     })
+    // Initialize recipient with mediation connections invitation
+    recipientAgent = new Agent(recipientAgentOptions)
     recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     recipientAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
-    const recipientMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
+    const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!recipientMediator) {
       throw new Error('expected recipientMediator')
     }
 
-    const recipientMediatorConnection = await recipientAgent.modules.connections.getById(recipientMediator.connectionId)
+    const recipientMediatorConnection = await recipientAgent.didcomm.connections.getById(recipientMediator.connectionId)
     expect(recipientMediatorConnection.isReady).toBe(true)
 
-    const [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
+    const [mediatorRecipientConnection] = await mediatorAgent.didcomm.connections.findAllByOutOfBandId(
       mediatorOutOfBandRecord.id
     )
     expect(mediatorRecipientConnection.isReady).toBe(true)
@@ -257,7 +255,7 @@ describe('mediator establishment', () => {
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection)
     expect(recipientMediator.state).toBe(MediationState.Granted)
 
-    await recipientAgent.modules.mediationRecipient.stopMessagePickup()
+    await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
 
     // Restart recipient agent
     await recipientAgent.shutdown()
@@ -269,14 +267,14 @@ describe('mediator establishment', () => {
     senderAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
-    const recipientOutOfBandRecord = await recipientAgent.modules.oob.createInvitation({
+    const recipientOutOfBandRecord = await recipientAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
       handshakeProtocols: [HandshakeProtocol.Connections],
     })
     const recipientInvitation = recipientOutOfBandRecord.outOfBandInvitation
 
-    let { connectionRecord: senderRecipientConnection } = await senderAgent.modules.oob.receiveInvitationFromUrl(
+    let { connectionRecord: senderRecipientConnection } = await senderAgent.didcomm.oob.receiveInvitationFromUrl(
       recipientInvitation.toUrl({ domain: 'https://example.com/ssi' }),
       { label: 'alice' }
     )
@@ -284,10 +282,10 @@ describe('mediator establishment', () => {
     if (!senderRecipientConnection) {
       throw new Error('expected senderRecipientConnection')
     }
-    senderRecipientConnection = await senderAgent.modules.connections.returnWhenIsConnected(
+    senderRecipientConnection = await senderAgent.didcomm.connections.returnWhenIsConnected(
       senderRecipientConnection.id
     )
-    const [recipientSenderConnection] = await recipientAgent.modules.connections.findAllByOutOfBandId(
+    const [recipientSenderConnection] = await recipientAgent.didcomm.connections.findAllByOutOfBandId(
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
@@ -298,7 +296,7 @@ describe('mediator establishment', () => {
     expect(senderRecipientConnection.isReady).toBe(true)
 
     const message = 'hello, world'
-    await senderAgent.modules.basicMessages.sendMessage(senderRecipientConnection.id, message)
+    await senderAgent.didcomm.basicMessages.sendMessage(senderRecipientConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(recipientAgent, {
       content: message,
@@ -306,6 +304,6 @@ describe('mediator establishment', () => {
 
     expect(basicMessage.content).toBe(message)
 
-    await recipientAgent.modules.mediationRecipient.stopMessagePickup()
+    await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
   })
 })

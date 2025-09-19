@@ -10,7 +10,6 @@ import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { FeatureRegistry } from '../../../../../FeatureRegistry'
-import { MessageHandlerRegistry } from '../../../../../MessageHandlerRegistry'
 import { GoalCode, InboundMessageContext, Protocol } from '../../../../../models'
 import { DidExchangeState } from '../../../../connections'
 import { DiscoverFeaturesEventTypes } from '../../../DiscoverFeaturesEvents'
@@ -18,8 +17,6 @@ import { DiscoverFeaturesModuleConfig } from '../../../DiscoverFeaturesModuleCon
 import { V2DiscoverFeaturesService } from '../V2DiscoverFeaturesService'
 import { V2DisclosuresMessage, V2QueriesMessage } from '../messages'
 
-jest.mock('../../../../../MessageHandlerRegistry')
-const MessageHandlerRegistryMock = MessageHandlerRegistry as jest.Mock<MessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new FeatureRegistry()
 featureRegistry.register(new Protocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -38,7 +35,6 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new V2DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -250,7 +246,6 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new V2DiscoverFeaturesService(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )

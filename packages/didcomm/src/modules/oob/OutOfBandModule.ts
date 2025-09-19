@@ -3,8 +3,10 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
 
+import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { OutOfBandApi } from './OutOfBandApi'
 import { OutOfBandService } from './OutOfBandService'
+import { HandshakeReuseAcceptedHandler, HandshakeReuseHandler } from './handlers'
 import { OutOfBandRepository } from './repository'
 
 export class OutOfBandModule implements Module {
@@ -22,8 +24,12 @@ export class OutOfBandModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    // Features
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(MessageHandlerRegistry)
+    const outOfBandService = agentContext.resolve(OutOfBandService)
+
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(outOfBandService))
 
     featureRegistry.register(
       new Protocol({

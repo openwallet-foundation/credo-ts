@@ -27,13 +27,10 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
   public constructor(
     featureRegistry: FeatureRegistry,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: MessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesConfig: DiscoverFeaturesModuleConfig
   ) {
     super(featureRegistry, eventEmitter, logger, discoverFeaturesConfig)
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -41,7 +38,7 @@ export class V1DiscoverFeaturesService extends DiscoverFeaturesService {
    */
   public readonly version = 'v1'
 
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
+  public register(messageHandlerRegistry: MessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new V1DiscloseMessageHandler(this))
     messageHandlerRegistry.registerMessageHandler(new V1QueryMessageHandler(this))
   }

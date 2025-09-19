@@ -41,21 +41,21 @@ describe('out of band', () => {
 
   describe('connect with self', () => {
     test(`make a connection with self using ${HandshakeProtocol.DidExchange} protocol`, async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation()
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation()
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+        await faberAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
-      receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
+      receiverSenderConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 
-      let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
+      let [senderReceiverConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      senderReceiverConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(senderReceiverConnection.id)
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
 
@@ -65,23 +65,23 @@ describe('out of band', () => {
     })
 
     test('make a connection with self using https://didcomm.org/didexchange/1.1 protocol, but invitation using https://didcomm.org/didexchange/1.0', async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation()
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation()
 
       const { outOfBandInvitation } = outOfBandRecord
       outOfBandInvitation.handshakeProtocols = ['https://didcomm.org/didexchange/1.0']
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+        await faberAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
-      receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
+      receiverSenderConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 
-      let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
+      let [senderReceiverConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      senderReceiverConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(senderReceiverConnection.id)
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
 
@@ -91,23 +91,23 @@ describe('out of band', () => {
     })
 
     test(`make a connection with self using ${HandshakeProtocol.Connections} protocol`, async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         handshakeProtocols: [HandshakeProtocol.Connections],
       })
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+        await faberAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
       expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
 
-      receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
+      receiverSenderConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
       expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
 
-      let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
+      let [senderReceiverConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      senderReceiverConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(senderReceiverConnection.id)
       expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.Connections)
 

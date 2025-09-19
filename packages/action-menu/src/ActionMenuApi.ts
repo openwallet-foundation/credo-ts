@@ -7,15 +7,9 @@ import type {
 } from './ActionMenuApiOptions'
 
 import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageHandlerRegistry, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
+import { ConnectionService, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
 
 import { ActionMenuRole } from './ActionMenuRole'
-import {
-  ActionMenuProblemReportHandler,
-  MenuMessageHandler,
-  MenuRequestMessageHandler,
-  PerformMessageHandler,
-} from './handlers'
 import { ActionMenuService } from './services'
 
 /**
@@ -38,15 +32,6 @@ export class ActionMenuApi {
     this.messageSender = messageSender
     this.actionMenuService = actionMenuService
     this.agentContext = agentContext
-
-    this.agentContext.dependencyManager
-      .resolve(MessageHandlerRegistry)
-      .registerMessageHandlers([
-        new ActionMenuProblemReportHandler(this.actionMenuService),
-        new MenuMessageHandler(this.actionMenuService),
-        new MenuRequestMessageHandler(this.actionMenuService),
-        new PerformMessageHandler(this.actionMenuService),
-      ])
   }
 
   /**

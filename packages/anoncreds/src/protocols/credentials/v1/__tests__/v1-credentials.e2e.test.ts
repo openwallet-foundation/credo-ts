@@ -48,7 +48,7 @@ describe('V1 Credentials', () => {
 
     testLogger.test('Alice sends (v1) credential proposal to Faber')
 
-    const credentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.didcomm.credentials.proposeCredential({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       credentialFormats: {
@@ -79,7 +79,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.modules.credentials.acceptProposal({
+    await faberAgent.didcomm.credentials.acceptProposal({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Proposal',
       credentialFormats: {
@@ -150,7 +150,7 @@ describe('V1 Credentials', () => {
       credentialIds: [],
     })
 
-    const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
+    const offerCredentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -168,7 +168,7 @@ describe('V1 Credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    await faberAgent.modules.credentials.acceptRequest({
+    await faberAgent.didcomm.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V1 Indy Credential',
     })
@@ -179,7 +179,7 @@ describe('V1 Credentials', () => {
       state: CredentialState.CredentialReceived,
     })
 
-    await aliceAgent.modules.credentials.acceptCredential({
+    await aliceAgent.didcomm.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -189,17 +189,17 @@ describe('V1 Credentials', () => {
       state: CredentialState.Done,
     })
 
-    const proposalMessage = await aliceAgent.modules.credentials.findProposalMessage(aliceCredentialRecord.id)
-    const offerMessage = await aliceAgent.modules.credentials.findOfferMessage(aliceCredentialRecord.id)
-    const requestMessage = await aliceAgent.modules.credentials.findRequestMessage(aliceCredentialRecord.id)
-    const credentialMessage = await aliceAgent.modules.credentials.findCredentialMessage(aliceCredentialRecord.id)
+    const proposalMessage = await aliceAgent.didcomm.credentials.findProposalMessage(aliceCredentialRecord.id)
+    const offerMessage = await aliceAgent.didcomm.credentials.findOfferMessage(aliceCredentialRecord.id)
+    const requestMessage = await aliceAgent.didcomm.credentials.findRequestMessage(aliceCredentialRecord.id)
+    const credentialMessage = await aliceAgent.didcomm.credentials.findCredentialMessage(aliceCredentialRecord.id)
 
     expect(proposalMessage).toBeInstanceOf(V1ProposeCredentialMessage)
     expect(offerMessage).toBeInstanceOf(V1OfferCredentialMessage)
     expect(requestMessage).toBeInstanceOf(V1RequestCredentialMessage)
     expect(credentialMessage).toBeInstanceOf(V1IssueCredentialMessage)
 
-    const formatData = await aliceAgent.modules.credentials.getFormatData(aliceCredentialRecord.id)
+    const formatData = await aliceAgent.didcomm.credentials.getFormatData(aliceCredentialRecord.id)
     expect(formatData).toMatchObject({
       proposalAttributes: [
         {

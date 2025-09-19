@@ -1,6 +1,6 @@
 import type { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 
-import { FeatureRegistry, Protocol } from '@credo-ts/didcomm'
+import { FeatureRegistry, MessageHandlerRegistry, Protocol } from '@credo-ts/didcomm'
 
 import { getAgentConfig, getAgentContext } from '../../../core/tests'
 import { DrpcModule } from '../DrpcModule'
@@ -28,7 +28,18 @@ describe('DrpcModule', () => {
 
   test('registers features on the feature registry', async () => {
     const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [FeatureRegistry, featureRegistry],
+        [DrpcService, {} as DrpcService],
+        [
+          MessageHandlerRegistry,
+          {
+            registerMessageHandler: jest.fn(),
+          } as unknown as MessageHandlerRegistry,
+        ],
+      ],
+    })
     await new DrpcModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([

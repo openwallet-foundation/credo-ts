@@ -31,6 +31,13 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
   public readonly kms: KeyManagementApi
 
   /**
+   * The DIDComm module, only available if the didcomm module is registered
+   */
+  public readonly didcomm: AgentModules['didcomm'] extends Module
+    ? ModuleApiInstance<AgentModules['didcomm']>
+    : undefined
+
+  /*
    * The OpenID4VC module, only available if the openid4vc module is registered
    */
   public readonly openid4vc: AgentModules['openid4vc'] extends Module
@@ -76,7 +83,8 @@ export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap
     // Set the api of the registered modules on the agent, excluding the default apis
     this.modules = getAgentApi(this.dependencyManager, defaultApis)
 
-    // Special case for OpenID4VC module, to expose it on the top-level of the agent.
+    // Special case for DIDComm and OpenID4vc modules, to expose it on the top-level of the agent.
+    this.didcomm = ('didcomm' in this.modules ? this.modules.didcomm : undefined) as this['didcomm']
     this.openid4vc = ('openid4vc' in this.modules ? this.modules.openid4vc : undefined) as this['openid4vc']
   }
 

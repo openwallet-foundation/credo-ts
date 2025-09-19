@@ -5,8 +5,6 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-
-import { getDefaultDidcommModules } from '@credo-ts/didcomm'
 import { askarPostgresStorageConfig, e2eTest, getAskarPostgresAgentOptions } from './helpers'
 
 const alicePostgresAgentOptions = getAskarPostgresAgentOptions(
@@ -23,8 +21,8 @@ const bobPostgresAgentOptions = getAskarPostgresAgentOptions(
 )
 
 describe('Askar Postgres agents', () => {
-  let aliceAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
-  let bobAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  let aliceAgent: Agent<(typeof alicePostgresAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof bobPostgresAgentOptions)['modules']>
 
   test('Postgres Askar wallets E2E test', async () => {
     const aliceMessages = new Subject<SubjectMessage>()

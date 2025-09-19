@@ -5,10 +5,12 @@ import type { MediationRecipientModuleConfigOptions } from './MediationRecipient
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
 
+import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { ConnectionsApi } from '../connections'
 import { OutOfBandApi } from '../oob'
 import { MediationRecipientApi } from './MediationRecipientApi'
 import { MediationRecipientModuleConfig } from './MediationRecipientModuleConfig'
+import { KeylistUpdateResponseHandler, MediationDenyHandler, MediationGrantHandler } from './handlers'
 import { MediationRole } from './models'
 import { MediationRepository } from './repository'
 import { MediationRecipientService, RoutingService } from './services'
@@ -25,6 +27,10 @@ export class MediationRecipientModule implements Module {
    * Registers the dependencies of the mediator recipient module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    // Normally API is registered automatically, but because this is
+    // a submodule, we register it manually
+    dependencyManager.registerContextScoped(MediationRecipientApi)
+
     // Config
     dependencyManager.registerInstance(MediationRecipientModuleConfig, this.config)
 
@@ -37,7 +43,13 @@ export class MediationRecipientModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(MessageHandlerRegistry)
+    const mediationRecipientService = agentContext.resolve(MediationRecipientService)
+
+    messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(mediationRecipientService))
 
     featureRegistry.register(
       new Protocol({
@@ -51,7 +63,7 @@ export class MediationRecipientModule implements Module {
     // Q: Can we also just call stop for non-defult context?
     if (!agentContext.isRootAgentContext) return
 
-    const mediationRecipientApi = agentContext.dependencyManager.resolve(MediationRecipientApi)
+    const mediationRecipientApi = agentContext.resolve(MediationRecipientApi)
     await mediationRecipientApi.stopMessagePickup()
   }
 

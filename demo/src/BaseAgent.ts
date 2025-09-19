@@ -22,13 +22,10 @@ import { Agent, DidsModule } from '@credo-ts/core'
 import {
   AutoAcceptCredential,
   AutoAcceptProof,
-  ConnectionsModule,
-  CredentialsModule,
+  DidCommModule,
   HttpOutboundTransport,
-  ProofsModule,
   V2CredentialProtocol,
   V2ProofProtocol,
-  getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { HttpInboundTransport, agentDependencies } from '@credo-ts/node'
@@ -79,38 +76,40 @@ export class BaseAgent {
 }
 
 function getAskarAnonCredsIndyModules(
-  didcommConfig: DidCommModuleConfigOptions,
+  didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
 
   return {
-    ...getDefaultDidcommModules(didcommConfig),
-    connections: new ConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    credentials: new CredentialsModule({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      credentialProtocols: [
-        new V1CredentialProtocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new V2CredentialProtocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
-        }),
-      ],
-    }),
-    proofs: new ProofsModule({
-      autoAcceptProofs: AutoAcceptProof.ContentApproved,
-      proofProtocols: [
-        new V1ProofProtocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new V2ProofProtocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
-        }),
-      ],
+    didcomm: new DidCommModule({
+      ...didcommConfig,
+      connections: {
+        autoAcceptConnections: true,
+      },
+      credentials: {
+        autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+        credentialProtocols: [
+          new V1CredentialProtocol({
+            indyCredentialFormat: legacyIndyCredentialFormatService,
+          }),
+          new V2CredentialProtocol({
+            credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
+          }),
+        ],
+      },
+      proofs: {
+        autoAcceptProofs: AutoAcceptProof.ContentApproved,
+        proofProtocols: [
+          new V1ProofProtocol({
+            indyProofFormat: legacyIndyProofFormatService,
+          }),
+          new V2ProofProtocol({
+            proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
+          }),
+        ],
+      },
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],

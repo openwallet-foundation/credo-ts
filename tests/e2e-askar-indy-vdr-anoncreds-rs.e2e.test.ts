@@ -11,12 +11,7 @@ import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent } from '@credo-ts/core'
-import {
-  AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
-} from '@credo-ts/didcomm'
+import { AutoAcceptCredential, MediatorPickupStrategy } from '@credo-ts/didcomm'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Askar Subject Recipient',
@@ -25,9 +20,11 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -41,8 +38,10 @@ const mediatorAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        mediator: { autoAcceptMediationRequests: true },
+      },
     }),
-    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -55,10 +54,12 @@ const senderAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPollingInterval: 1000,
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }

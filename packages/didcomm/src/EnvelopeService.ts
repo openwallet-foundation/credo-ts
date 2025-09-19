@@ -281,6 +281,10 @@ export class EnvelopeService {
       encryptedMessage = await this.encryptDidcommV1Message(agentContext, forwardJson, [routingKey])
     }
 
+    this.logger.debug(`Packed outbound message ${message['@type']}`, {
+      routingKeys: routingKeys.map((routingKey) => routingKey.fingerprint),
+    })
+
     return encryptedMessage
   }
 

@@ -6,13 +6,7 @@ import { getAgentOptions } from '../packages/core/tests/helpers'
 import { e2eTest } from './e2e-test'
 
 import { Agent } from '@credo-ts/core'
-import {
-  AutoAcceptCredential,
-  HttpOutboundTransport,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
-} from '@credo-ts/didcomm'
+import { AutoAcceptCredential, HttpOutboundTransport, MediatorPickupStrategy } from '@credo-ts/didcomm'
 import { HttpInboundTransport } from '@credo-ts/node'
 
 const recipientAgentOptions = getAgentOptions(
@@ -22,10 +16,12 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 500,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPollingInterval: 500,
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -36,14 +32,12 @@ const mediatorAgentOptions = getAgentOptions(
   'E2E HTTP Mediator',
   {
     endpoints: [`http://localhost:${mediatorPort}`],
+    mediator: { autoAcceptMediationRequests: true },
   },
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediator: new MediatorModule({
-      autoAcceptMediationRequests: true,
     }),
   },
   { requireDidcomm: true }

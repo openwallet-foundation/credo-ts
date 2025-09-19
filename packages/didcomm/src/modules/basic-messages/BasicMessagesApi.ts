@@ -2,13 +2,9 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { BasicMessageRecord } from './repository/BasicMessageRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-
-import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MessageSender } from '../../MessageSender'
 import { OutboundMessageContext } from '../../models'
 import { ConnectionService } from '../connections/services'
-
-import { BasicMessageHandler } from './handlers'
 import { BasicMessageService } from './services'
 
 @injectable()
@@ -19,7 +15,6 @@ export class BasicMessagesApi {
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: MessageHandlerRegistry,
     basicMessageService: BasicMessageService,
     messageSender: MessageSender,
     connectionService: ConnectionService,
@@ -29,7 +24,6 @@ export class BasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -103,9 +97,5 @@ export class BasicMessagesApi {
    */
   public async deleteById(basicMessageRecordId: string) {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: MessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
   }
 }

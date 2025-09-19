@@ -6,13 +6,7 @@ import { getAgentOptions } from '../packages/core/tests/helpers'
 import { e2eTest } from './e2e-test'
 
 import { Agent } from '@credo-ts/core'
-import {
-  AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
-  WsOutboundTransport,
-} from '@credo-ts/didcomm'
+import { AutoAcceptCredential, MediatorPickupStrategy, WsOutboundTransport } from '@credo-ts/didcomm'
 import { WsInboundTransport } from '@credo-ts/node'
 
 // FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
@@ -24,9 +18,11 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -37,13 +33,13 @@ const mediatorAgentOptions = getAgentOptions(
   'E2E WS Mediator',
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
+    mediator: { autoAcceptMediationRequests: true },
   },
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
     }),
-    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -58,10 +54,12 @@ const senderAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPollingInterval: 1000,
+          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
