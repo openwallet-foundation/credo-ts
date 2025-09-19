@@ -242,7 +242,7 @@ describe('credentialTransformer', () => {
       })
 
       expect(() => getCredentialFromJwtPayload(jwtPayload)).toThrow(
-        'property type has failed the following constraints: type must be an array of strings which includes "VerifiableCredential"'
+        'property type has failed the following constraints: type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"'
       )
     })
   })

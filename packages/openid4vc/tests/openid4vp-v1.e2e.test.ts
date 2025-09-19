@@ -1,4 +1,4 @@
-import type { DcqlQuery, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
+import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
   ClaimFormat,
   DateOnly,
@@ -8,8 +8,12 @@ import {
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
+  W3cV2Credential,
+  W3cV2CredentialSubject,
+  W3cV2Issuer,
   X509Module,
   X509Service,
+  asArray,
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
@@ -319,6 +323,314 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
   })
 
+  it('e2e flow with tenants, verifier endpoints verifying a W3C V2 SD-JWT', async () => {
+    const holderTenant = await holder.agent.modules.tenants.getTenantAgent({ tenantId: holder1.tenantId })
+    const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+
+    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+
+    const signedCredential1 = await verifier.agent.w3cV2Credentials.signCredential({
+      format: ClaimFormat.SdJwtW3cVc,
+      credential: new W3cV2Credential({
+        type: ['VerifiableCredential', 'OpenBadgeCredential'],
+        issuer: new W3cV2Issuer({ id: verifier.did }),
+        credentialSubject: new W3cV2CredentialSubject({ id: holder1.did, name: 'Hello' }),
+        validFrom: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: verifier.verificationMethod.id,
+      disclosureFrame: {
+        credentialSubject: {
+          _sd: ['name'],
+        },
+      },
+      holder: { method: 'did', didUrl: holder1.kid },
+    })
+
+    const signedCredential2 = await verifier.agent.w3cV2Credentials.signCredential({
+      format: ClaimFormat.SdJwtW3cVc,
+      credential: new W3cV2Credential({
+        type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+        issuer: new W3cV2Issuer({ id: verifier.did }),
+        credentialSubject: new W3cV2CredentialSubject({ id: holder1.did, name: 'World' }),
+        issuanceDate: w3cDate(Date.now()),
+      }),
+      alg: Kms.KnownJwaSignatureAlgorithms.EdDSA,
+      verificationMethod: verifier.verificationMethod.id,
+      disclosureFrame: {
+        credentialSubject: {
+          _sd: ['name'],
+        },
+      },
+      holder: { method: 'did', didUrl: holder1.kid },
+    })
+
+    await holderTenant.w3cV2Credentials.storeCredential({ credential: signedCredential1 })
+    await holderTenant.w3cV2Credentials.storeCredential({ credential: signedCredential2 })
+
+    const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
+      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+        verifierId: openIdVerifierTenant1.verifierId,
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier1.verificationMethod.id,
+        },
+        dcql: {
+          query: {
+            credentials: [
+              {
+                id: 'OpenBadgeCredentialDescriptor',
+                format: 'vc+sd-jwt',
+                meta: {
+                  type_values: [['OpenBadgeCredential']],
+                },
+                claims: [
+                  {
+                    path: ['credentialSubject', 'name'],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        version: 'v1',
+      })
+
+    expect(authorizationRequestUri1).toEqual(
+      `openid4vp://?client_id=decentralized_identifier%3A${encodeURIComponent(verifier1.did)}&request_uri=${encodeURIComponent(
+        verificationSession1.authorizationRequestUri as string
+      )}`
+    )
+
+    const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
+      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+        requestSigner: {
+          method: 'did',
+          didUrl: verifier2.verificationMethod.id,
+        },
+        dcql: {
+          query: {
+            credentials: [
+              {
+                id: 'UniversityDegree',
+                format: 'vc+sd-jwt',
+                meta: {
+                  type_values: [['UniversityDegreeCredential']],
+                },
+                claims: [
+                  {
+                    path: ['credentialSubject', 'name'],
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        verifierId: openIdVerifierTenant2.verifierId,
+        version: 'v1',
+      })
+
+    expect(authorizationRequestUri2).toEqual(
+      `openid4vp://?client_id=decentralized_identifier%3A${encodeURIComponent(verifier2.did)}&request_uri=${encodeURIComponent(
+        verificationSession2.authorizationRequestUri as string
+      )}`
+    )
+
+    await verifierTenant1.endSession()
+    await verifierTenant2.endSession()
+
+    const resolvedProofRequest1 =
+      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
+
+    expect(resolvedProofRequest1.dcql?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      credential_matches: {
+        OpenBadgeCredentialDescriptor: {
+          success: true,
+          valid_credentials: [
+            {
+              record: {
+                credential: {
+                  resolvedCredential: {
+                    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    const resolvedProofRequest2 =
+      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+
+    expect(resolvedProofRequest2.dcql?.queryResult).toMatchObject({
+      can_be_satisfied: true,
+      credential_matches: {
+        UniversityDegree: {
+          success: true,
+          valid_credentials: [
+            {
+              record: {
+                credential: {
+                  resolvedCredential: {
+                    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    })
+
+    if (!resolvedProofRequest1.dcql || !resolvedProofRequest2.dcql) {
+      throw new Error('dcql not defined')
+    }
+
+    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+      resolvedProofRequest1.dcql.queryResult
+    )
+
+    const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
+        dcql: {
+          credentials: selectedCredentials,
+        },
+      })
+
+    expect(authorizationREsponsePayload1).toEqual({
+      state: expect.any(String),
+      vp_token: {
+        OpenBadgeCredentialDescriptor: [expect.any(String)],
+      },
+    })
+    expect(serverResponse1).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const verifierTenant1_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifierTenant1_2.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession1.id,
+    })
+
+    const { dcql } = await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+      verificationSession1.id
+    )
+    expect(dcql).toMatchObject({
+      query: {
+        credentials: [
+          {
+            format: 'vc+sd-jwt',
+            meta: {
+              type_values: [['OpenBadgeCredential']],
+            },
+            id: 'OpenBadgeCredentialDescriptor',
+          },
+        ],
+      },
+      presentations: {
+        OpenBadgeCredentialDescriptor: [
+          {
+            resolvedPresentation: {
+              verifiableCredential: [
+                {
+                  type: 'EnvelopedVerifiableCredential',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+    expect(
+      asArray(
+        (dcql?.presentations.OpenBadgeCredentialDescriptor[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+          .verifiableCredential
+      )[0].resolvedCredential
+    ).toMatchObject({
+      type: ['VerifiableCredential', 'OpenBadgeCredential'],
+      credentialSubject: {
+        id: holder1.did,
+      },
+    })
+
+    const selectedCredentials2 = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+      resolvedProofRequest2.dcql.queryResult
+    )
+
+    const { serverResponse: serverResponse2 } =
+      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+        authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
+        dcql: {
+          credentials: selectedCredentials2,
+        },
+      })
+    expect(serverResponse2).toMatchObject({
+      status: 200,
+    })
+
+    // The RP MUST validate that the aud (audience) Claim contains the value of the client_id
+    // that the RP sent in the Authorization Request as an audience.
+    // When the request has been signed, the value might be an HTTPS URL, or a Decentralized Identifier.
+    const verifierTenant2_2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
+    await waitForVerificationSessionRecordSubject(verifier.replaySubject, {
+      contextCorrelationId: verifierTenant2_2.context.contextCorrelationId,
+      state: OpenId4VcVerificationSessionState.ResponseVerified,
+      verificationSessionId: verificationSession2.id,
+    })
+    const { dcql: dcql2 } = await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+      verificationSession2.id
+    )
+
+    expect(dcql2).toMatchObject({
+      query: {
+        credentials: [
+          {
+            format: 'vc+sd-jwt',
+            meta: {
+              type_values: [['UniversityDegreeCredential']],
+            },
+            id: 'UniversityDegree',
+          },
+        ],
+      },
+      presentations: {
+        UniversityDegree: [
+          {
+            resolvedPresentation: {
+              verifiableCredential: [
+                {
+                  type: 'EnvelopedVerifiableCredential',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    })
+    expect(
+      asArray(
+        (dcql2?.presentations.UniversityDegree[0] as W3cV2SdJwtVerifiablePresentation).resolvedPresentation
+          .verifiableCredential
+      )[0].resolvedCredential
+    ).toMatchObject({
+      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+      credentialSubject: {
+        id: holder1.did,
+      },
+    })
+  })
+
   it('Invalid verifier attestation in combination with dcql', async () => {
     const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
 
@@ -579,7 +891,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -921,7 +1233,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1163,14 +1475,14 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           credentials: {
             OpenBadgeCredentialDescriptor: [
               {
-                claimFormat: ClaimFormat.SdJwtVc,
+                claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 credentialRecord: (validCredentials?.[0] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
               },
               {
-                claimFormat: ClaimFormat.SdJwtVc,
+                claimFormat: ClaimFormat.SdJwtDc,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
                 credentialRecord: (validCredentials?.[1] as any).record,
                 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -1234,7 +1546,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1280,7 +1592,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           },
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1660,7 +1972,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -1708,7 +2020,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor2: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',
@@ -2181,7 +2493,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         OpenBadgeCredentialDescriptor: [
           {
             encoded: expect.any(String),
-            claimFormat: ClaimFormat.SdJwtVc,
+            claimFormat: ClaimFormat.SdJwtDc,
             compact: expect.any(String),
             header: {
               alg: 'EdDSA',

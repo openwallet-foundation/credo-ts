@@ -60,15 +60,15 @@ describe('W3cCredential', () => {
 
   test('throws an error when type is not an array of string or does not include VerifiableCredential', () => {
     expect(() => JsonTransformer.fromJSON({ ...validCredential, type: [] }, W3cCredential)).toThrow(
-      /type must be an array of strings which includes "VerifiableCredential"/
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
 
     expect(() => JsonTransformer.fromJSON({ ...validCredential, type: ['AnotherType'] }, W3cCredential)).toThrow(
-      /type must be an array of strings which includes "VerifiableCredential"/
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
 
     expect(() => JsonTransformer.fromJSON({ ...validCredential, type: { some: 'prop' } }, W3cCredential)).toThrow(
-      /type must be an array of strings which includes "VerifiableCredential"/
+      /type must be "VerifiableCredential" or an array of strings which includes "VerifiableCredential"/
     )
   })
 

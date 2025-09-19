@@ -74,15 +74,15 @@ describe('W3cPresentation', () => {
 
   test('throws an error when type is not an array of string or does not include VerifiablePresentation', () => {
     expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: [] }, W3cPresentation)).toThrow(
-      /type must be an array of strings which includes "VerifiablePresentation"/
+      /type must be "VerifiablePresentation" or an array of strings which includes "VerifiablePresentation"/
     )
 
     expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: ['AnotherType'] }, W3cPresentation)).toThrow(
-      /type must be an array of strings which includes "VerifiablePresentation"/
+      /type must be "VerifiablePresentation" or an array of strings which includes "VerifiablePresentation"/
     )
 
     expect(() => JsonTransformer.fromJSON({ ...validPresentation, type: { some: 'prop' } }, W3cPresentation)).toThrow(
-      /type must be an array of strings which includes "VerifiablePresentation"/
+      /type must be "VerifiablePresentation" or an array of strings which includes "VerifiablePresentation"/
     )
   })
 
