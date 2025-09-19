@@ -10,4 +10,5 @@ export type MessagePickupSession<MPPs extends MessagePickupProtocol[] = MessageP
   connectionId: string
   protocolVersion: MessagePickupProtocolVersionType<MPPs>
   role: MessagePickupSessionRole
+  transportSessionId: string
 }

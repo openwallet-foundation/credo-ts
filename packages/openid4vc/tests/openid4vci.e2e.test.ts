@@ -82,7 +82,23 @@ describe('OpenId4Vc', () => {
               if (credentialRequest.format === 'vc+sd-jwt') {
                 return {
                   type: 'credentials',
-                  format: credentialRequest.format,
+                  format: 'dc+sd-jwt',
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'did',
+                      didUrl: verificationMethod.id,
+                    },
+                    disclosureFrame: { _sd: ['university', 'degree'] },
+                  })),
+                }
+              }
+
+              if (credentialRequest.format === 'vc+sd-jwt') {
+                return {
+                  type: 'credentials',
+                  format: 'dc+sd-jwt',
                   credentials: holderBinding.keys.map((holderBinding) => ({
                     payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
                     holder: holderBinding,

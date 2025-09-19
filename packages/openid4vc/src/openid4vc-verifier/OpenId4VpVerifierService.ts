@@ -12,6 +12,8 @@ import {
   Query,
   QueryOptions,
   VerifiablePresentation,
+  W3cV2CredentialService,
+  W3cV2SdJwtVerifiablePresentation,
 } from '@credo-ts/core'
 import {
   CredoError,
@@ -62,7 +64,7 @@ import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
   addSecondsToDate,
-  dcqlFormatToPresentationClaimFormat,
+  dcqlCredentialQueryToPresentationFormat,
   getSupportedJwaSignatureAlgorithms,
   requestSignerToJwtIssuer,
 } from '../shared/utils'
@@ -96,6 +98,7 @@ export class OpenId4VpVerifierService {
   public constructor(
     @inject(InjectionSymbols.Logger) private logger: Logger,
     private w3cCredentialService: W3cCredentialService,
+    private w3cV2CredentialService: W3cV2CredentialService,
     private openId4VcVerifierRepository: OpenId4VcVerifierRepository,
     private config: OpenId4VcVerifierModuleConfig,
     private openId4VcVerificationSessionRepository: OpenId4VcVerificationSessionRepository
@@ -354,7 +357,7 @@ export class OpenId4VpVerifierService {
           mapNonEmptyArray(presentations, (presentation) =>
             this.decodePresentation(agentContext, {
               presentation,
-              format: dcqlFormatToPresentationClaimFormat[queryCredential.format],
+              format: dcqlCredentialQueryToPresentationFormat(queryCredential),
             })
           ),
         ]
@@ -525,7 +528,7 @@ export class OpenId4VpVerifierService {
             const verifiedPresentations = await Promise.all(
               mapNonEmptyArray(presentations, (presentation) =>
                 this.verifyPresentation(agentContext, {
-                  format: dcqlFormatToPresentationClaimFormat[queryCredential.format],
+                  format: dcqlCredentialQueryToPresentationFormat(queryCredential),
                   nonce: authorizationRequest.nonce,
                   audience,
                   version: openid4vpVersion,
@@ -702,9 +705,9 @@ export class OpenId4VpVerifierService {
    */
   private claimFormatFromEncodedPresentation(
     presentation: string | Record<string, unknown>
-  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc {
+  ): ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc {
     if (typeof presentation === 'object') return ClaimFormat.LdpVp
-    if (presentation.includes('~')) return ClaimFormat.SdJwtVc
+    if (presentation.includes('~')) return ClaimFormat.SdJwtDc
     if (Jwt.format.test(presentation)) return ClaimFormat.JwtVp
 
     // Fallback, we tried all other formats
@@ -816,7 +819,7 @@ export class OpenId4VpVerifierService {
     for (const [credentialId, presentations] of idToCredential) {
       // Only SD-JWT VC supported for now
       const transactionDataHashes = presentations.map((presentation) =>
-        presentation.claimFormat === ClaimFormat.SdJwtVc ? getSdJwtVcTransactionDataHashes(presentation) : undefined
+        presentation.claimFormat === ClaimFormat.SdJwtDc ? getSdJwtVcTransactionDataHashes(presentation) : undefined
       )
 
       const firstHasHash = transactionDataHashes[0] !== undefined
@@ -1036,12 +1039,12 @@ export class OpenId4VpVerifierService {
     agentContext: AgentContext,
     options: {
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.JwtVp | ClaimFormat.LdpVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc | ClaimFormat.SdJwtW3cVp
     }
   ): VerifiablePresentation {
     const { presentation, format } = options
 
-    if (format === ClaimFormat.SdJwtVc) {
+    if (format === ClaimFormat.SdJwtDc) {
       if (typeof presentation !== 'string') {
         throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
       }
@@ -1063,6 +1066,12 @@ export class OpenId4VpVerifierService {
       }
       return W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
     }
+    if (format === ClaimFormat.SdJwtW3cVp) {
+      if (typeof presentation !== 'string') {
+        throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
+      }
+      return W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
+    }
 
     return JsonTransformer.fromJSON(presentation, W3cJsonLdVerifiablePresentation)
   }
@@ -1078,7 +1087,7 @@ export class OpenId4VpVerifierService {
       origin?: string
       verificationSessionId: string
       presentation: string | Record<string, unknown>
-      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtVc | ClaimFormat.MsoMdoc
+      format: ClaimFormat.LdpVp | ClaimFormat.JwtVp | ClaimFormat.SdJwtW3cVp | ClaimFormat.SdJwtDc | ClaimFormat.MsoMdoc
       version: OpenId4VpVersion
       encryptionJwk?: Kms.PublicJwk
     }
@@ -1102,7 +1111,7 @@ export class OpenId4VpVerifierService {
       let cause: Error | undefined = undefined
       let verifiablePresentation: VerifiablePresentation
 
-      if (format === ClaimFormat.SdJwtVc) {
+      if (format === ClaimFormat.SdJwtDc) {
         if (typeof presentation !== 'string') {
           throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
         }
@@ -1151,7 +1160,7 @@ export class OpenId4VpVerifierService {
 
         const deviceResponses = mdocDeviceResponse.splitIntoSingleDocumentResponses()
 
-        for (const deviceResponseIndex in deviceResponses) {
+        for (const deviceResponseIndex of deviceResponses.keys()) {
           const mdocDeviceResponse = deviceResponses[deviceResponseIndex]
 
           const document = mdocDeviceResponse.documents[0]
@@ -1228,6 +1237,20 @@ export class OpenId4VpVerifierService {
         verifiablePresentation = W3cJwtVerifiablePresentation.fromSerializedJwt(presentation)
         const verificationResult = await this.w3cCredentialService.verifyPresentation(agentContext, {
           presentation,
+          challenge: options.nonce,
+          domain: options.audience,
+        })
+
+        isValid = verificationResult.isValid
+        cause = verificationResult.error
+      } else if (format === ClaimFormat.SdJwtW3cVp) {
+        if (typeof presentation !== 'string') {
+          throw new CredoError(`Expected vp_token entry for format ${format} to be of type string`)
+        }
+
+        verifiablePresentation = W3cV2SdJwtVerifiablePresentation.fromCompact(presentation)
+        const verificationResult = await this.w3cV2CredentialService.verifyPresentation(agentContext, {
+          presentation: verifiablePresentation,
           challenge: options.nonce,
           domain: options.audience,
         })

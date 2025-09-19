@@ -122,7 +122,7 @@ function getCredentialRequestToCredentialMapper({
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
         type: 'credentials',
-        format: ClaimFormat.SdJwtVc,
+        format: ClaimFormat.SdJwtDc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
@@ -171,7 +171,7 @@ function getCredentialRequestToCredentialMapper({
     if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.SdJwtVc) {
       return {
         type: 'credentials',
-        format: ClaimFormat.SdJwtVc,
+        format: ClaimFormat.SdJwtDc,
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,

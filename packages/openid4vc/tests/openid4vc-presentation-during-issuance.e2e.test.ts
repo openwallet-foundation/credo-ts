@@ -131,6 +131,9 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     issuer = await createAgentFromModules({
       openid4vc: new OpenId4VcModule({
+        verifier: {
+          baseUrl: verifierBaseUrl,
+        },
         issuer: {
           baseUrl: issuerBaseUrl,
           getVerificationSessionForIssuanceSessionAuthorization:
@@ -147,14 +150,14 @@ describe('OpenId4Vc Presentation During Issuance', () => {
                 (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
               )
 
-              if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtVc) {
+              if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtDc) {
                 throw new Error('Expected descriptor with sd-jwt vc format')
               }
 
               credential = descriptor.credential
             } else {
               const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
-              if (presentation.claimFormat !== ClaimFormat.SdJwtVc) {
+              if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
                 throw new Error('Expected preentation with sd-jwt vc format')
               }
 
@@ -166,7 +169,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             if (credentialRequest.format === 'vc+sd-jwt') {
               return {
                 type: 'credentials',
-                format: credentialRequest.format,
+                format: 'dc+sd-jwt',
                 credentials: holderBinding.keys.map((holderBinding) => ({
                   payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
                   holder: holderBinding,
@@ -183,9 +186,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
             }
             throw new Error('Invalid request')
           },
-        },
-        verifier: {
-          baseUrl: verifierBaseUrl,
         },
       }),
       inMemory: new InMemoryWalletModule(),
