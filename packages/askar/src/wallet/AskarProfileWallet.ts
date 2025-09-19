@@ -9,10 +9,11 @@ import {
   SigningProviderRegistry,
   WalletError,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
 import { inject, injectable } from 'tsyringe'
 
+import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarErrorCode, isAskarError } from '../utils'
+import { Store } from '../utils/importAskar'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
 
@@ -25,9 +26,10 @@ export class AskarProfileWallet extends AskarBaseWallet {
   public constructor(
     store: Store,
     @inject(InjectionSymbols.Logger) logger: Logger,
-    signingKeyProviderRegistry: SigningProviderRegistry
+    signingKeyProviderRegistry: SigningProviderRegistry,
+    config: AskarModuleConfig
   ) {
-    super(logger, signingKeyProviderRegistry)
+    super(logger, signingKeyProviderRegistry, config)
 
     this.store = store
   }
@@ -59,7 +61,7 @@ export class AskarProfileWallet extends AskarBaseWallet {
     try {
       await this.store.createProfile(walletConfig.id)
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+      if (isAskarError(this.config.askarLibrary, error, AskarErrorCode.Duplicate)) {
         const errorMessage = `Wallet for profile '${walletConfig.id}' already exists`
         this.logger.debug(errorMessage)
 
@@ -98,7 +100,7 @@ export class AskarProfileWallet extends AskarBaseWallet {
       this.isInitialized = true
     } catch (error) {
       // Profile does not exist
-      if (isAskarError(error, AskarErrorCode.NotFound)) {
+      if (isAskarError(this.config.askarLibrary, error, AskarErrorCode.NotFound)) {
         const errorMessage = `Wallet for profile '${walletConfig.id}' not found`
         this.logger.debug(errorMessage)
 

@@ -1,41 +1,83 @@
+import type {
+  AskarLibrary,
+  HyperledgerAskarKey,
+  HyperledgerAskarLibrary,
+  OwfAskarKey,
+  OwfAskarLibrary,
+  AskarKey,
+} from '../utils/importAskar'
 import type { EncryptedMessage } from '@credo-ts/core'
 
 import { WalletError, JsonEncoder, JsonTransformer, Key, KeyType, TypedArrayEncoder, Buffer } from '@credo-ts/core'
-import { CryptoBox, Key as AskarKey, KeyAlgs } from '@hyperledger/aries-askar-shared'
+
+import { isOwfAskarKey, isOwfAskarLibrary } from '../utils/importAskar'
 
 import { JweEnvelope, JweRecipient } from './JweEnvelope'
 
-export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: string[], senderKey?: AskarKey) {
+export function didcommV1Pack(
+  askarLibrary: AskarLibrary,
+  payload: Record<string, unknown>,
+  recipientKeys: string[],
+  senderKey?: AskarKey
+) {
   let cek: AskarKey | undefined
   let senderExchangeKey: AskarKey | undefined
 
   try {
-    cek = AskarKey.generate(KeyAlgs.Chacha20C20P)
+    cek = isOwfAskarLibrary(askarLibrary)
+      ? askarLibrary.Key.generate(askarLibrary.KeyAlgorithm.Chacha20C20P)
+      : askarLibrary.Key.generate(askarLibrary.KeyAlgs.Chacha20C20P)
 
-    senderExchangeKey = senderKey ? senderKey.convertkey({ algorithm: KeyAlgs.X25519 }) : undefined
+    const keyAlgorithm = isOwfAskarLibrary(askarLibrary)
+      ? askarLibrary.KeyAlgorithm.X25519
+      : askarLibrary.KeyAlgs.X25519
+
+    senderExchangeKey = senderKey
+      ? isOwfAskarKey(askarLibrary, senderKey)
+        ? senderKey.convertkey({ algorithm: keyAlgorithm as OwfAskarLibrary['KeyAlgorithm']['X25519'] })
+        : senderKey.convertkey({ algorithm: keyAlgorithm as HyperledgerAskarLibrary['KeyAlgs']['X25519'] })
+      : undefined
 
     const recipients: JweRecipient[] = []
 
     for (const recipientKey of recipientKeys) {
       let targetExchangeKey: AskarKey | undefined
       try {
-        targetExchangeKey = AskarKey.fromPublicBytes({
-          publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
-          algorithm: KeyAlgs.Ed25519,
-        }).convertkey({ algorithm: KeyAlgs.X25519 })
+        targetExchangeKey = isOwfAskarLibrary(askarLibrary)
+          ? askarLibrary.Key.fromPublicBytes({
+              publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
+              algorithm: askarLibrary.KeyAlgorithm.Ed25519,
+            }).convertkey({ algorithm: askarLibrary.KeyAlgorithm.X25519 })
+          : askarLibrary.Key.fromPublicBytes({
+              publicKey: Key.fromPublicKeyBase58(recipientKey, KeyType.Ed25519).publicKey,
+              algorithm: askarLibrary.KeyAlgs.Ed25519,
+            }).convertkey({ algorithm: askarLibrary.KeyAlgs.X25519 })
 
         if (senderKey && senderExchangeKey) {
-          const encryptedSender = CryptoBox.seal({
-            recipientKey: targetExchangeKey,
-            message: TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderKey.publicBytes)),
-          })
-          const nonce = CryptoBox.randomNonce()
-          const encryptedCek = CryptoBox.cryptoBox({
-            recipientKey: targetExchangeKey,
-            senderKey: senderExchangeKey,
-            message: cek.secretBytes,
-            nonce,
-          })
+          const message = TypedArrayEncoder.fromString(TypedArrayEncoder.toBase58(senderKey.publicBytes))
+          const encryptedSender = isOwfAskarLibrary(askarLibrary)
+            ? askarLibrary.CryptoBox.seal({
+                recipientKey: targetExchangeKey as InstanceType<OwfAskarLibrary['Key']>,
+                message,
+              })
+            : askarLibrary.CryptoBox.seal({
+                recipientKey: targetExchangeKey as InstanceType<HyperledgerAskarLibrary['Key']>,
+                message,
+              })
+          const nonce = askarLibrary.CryptoBox.randomNonce()
+          const encryptedCek = isOwfAskarLibrary(askarLibrary)
+            ? askarLibrary.CryptoBox.cryptoBox({
+                recipientKey: targetExchangeKey as OwfAskarKey,
+                senderKey: senderExchangeKey as OwfAskarKey,
+                message: cek.secretBytes,
+                nonce,
+              })
+            : askarLibrary.CryptoBox.cryptoBox({
+                recipientKey: targetExchangeKey as HyperledgerAskarKey,
+                senderKey: senderExchangeKey as HyperledgerAskarKey,
+                message: cek.secretBytes,
+                nonce,
+              })
 
           recipients.push(
             new JweRecipient({
@@ -48,10 +90,15 @@ export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: s
             })
           )
         } else {
-          const encryptedCek = CryptoBox.seal({
-            recipientKey: targetExchangeKey,
-            message: cek.secretBytes,
-          })
+          const encryptedCek = isOwfAskarLibrary(askarLibrary)
+            ? askarLibrary.CryptoBox.seal({
+                recipientKey: targetExchangeKey as OwfAskarKey,
+                message: cek.secretBytes,
+              })
+            : askarLibrary.CryptoBox.seal({
+                recipientKey: targetExchangeKey as HyperledgerAskarKey,
+                message: cek.secretBytes,
+              })
           recipients.push(
             new JweRecipient({
               encryptedKey: encryptedCek,
@@ -92,7 +139,7 @@ export function didcommV1Pack(payload: Record<string, unknown>, recipientKeys: s
   }
 }
 
-export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: AskarKey) {
+export function didcommV1Unpack(askarLibrary: AskarLibrary, messagePackage: EncryptedMessage, recipientKey: AskarKey) {
   const protectedJson = JsonEncoder.fromBase64(messagePackage.protected)
 
   const alg = protectedJson.alg
@@ -125,28 +172,52 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
   let recip_x: AskarKey | undefined
 
   try {
-    recip_x = recipientKey.convertkey({ algorithm: KeyAlgs.X25519 })
+    const keyAlgorithm = isOwfAskarLibrary(askarLibrary)
+      ? askarLibrary.KeyAlgorithm.X25519
+      : askarLibrary.KeyAlgs.X25519
+    recip_x = isOwfAskarKey(askarLibrary, recipientKey)
+      ? recipientKey.convertkey({ algorithm: keyAlgorithm as OwfAskarLibrary['KeyAlgorithm']['X25519'] })
+      : recipientKey.convertkey({ algorithm: keyAlgorithm as HyperledgerAskarLibrary['KeyAlgs']['X25519'] })
 
     if (sender && iv) {
       senderKey = TypedArrayEncoder.toUtf8String(
-        CryptoBox.sealOpen({
-          recipientKey: recip_x,
-          ciphertext: sender,
-        })
+        isOwfAskarLibrary(askarLibrary)
+          ? askarLibrary.CryptoBox.sealOpen({
+              recipientKey: recip_x as OwfAskarKey,
+              ciphertext: sender,
+            })
+          : askarLibrary.CryptoBox.sealOpen({
+              recipientKey: recip_x as HyperledgerAskarKey,
+              ciphertext: sender,
+            })
       )
-      sender_x = AskarKey.fromPublicBytes({
-        algorithm: KeyAlgs.Ed25519,
-        publicKey: TypedArrayEncoder.fromBase58(senderKey),
-      }).convertkey({ algorithm: KeyAlgs.X25519 })
+      sender_x = isOwfAskarLibrary(askarLibrary)
+        ? askarLibrary.Key.fromPublicBytes({
+            algorithm: askarLibrary.KeyAlgorithm.Ed25519,
+            publicKey: TypedArrayEncoder.fromBase58(senderKey),
+          }).convertkey({ algorithm: askarLibrary.KeyAlgorithm.X25519 })
+        : askarLibrary.Key.fromPublicBytes({
+            algorithm: askarLibrary.KeyAlgs.Ed25519,
+            publicKey: TypedArrayEncoder.fromBase58(senderKey),
+          }).convertkey({ algorithm: askarLibrary.KeyAlgs.X25519 })
 
-      payloadKey = CryptoBox.open({
-        recipientKey: recip_x,
-        senderKey: sender_x,
-        message: encrypted_key,
-        nonce: iv,
-      })
+      payloadKey = isOwfAskarLibrary(askarLibrary)
+        ? askarLibrary.CryptoBox.open({
+            recipientKey: recip_x as OwfAskarKey,
+            senderKey: sender_x as OwfAskarKey,
+            message: encrypted_key,
+            nonce: iv,
+          })
+        : askarLibrary.CryptoBox.open({
+            recipientKey: recip_x as HyperledgerAskarKey,
+            senderKey: sender_x as HyperledgerAskarKey,
+            message: encrypted_key,
+            nonce: iv,
+          })
     } else {
-      payloadKey = CryptoBox.sealOpen({ ciphertext: encrypted_key, recipientKey: recip_x })
+      payloadKey = isOwfAskarLibrary(askarLibrary)
+        ? askarLibrary.CryptoBox.sealOpen({ ciphertext: encrypted_key, recipientKey: recip_x as OwfAskarKey })
+        : askarLibrary.CryptoBox.sealOpen({ ciphertext: encrypted_key, recipientKey: recip_x as HyperledgerAskarKey })
     }
   } finally {
     sender_x?.handle.free()
@@ -159,7 +230,9 @@ export function didcommV1Unpack(messagePackage: EncryptedMessage, recipientKey: 
 
   let cek: AskarKey | undefined
   try {
-    cek = AskarKey.fromSecretBytes({ algorithm: KeyAlgs.Chacha20C20P, secretKey: payloadKey })
+    cek = isOwfAskarLibrary(askarLibrary)
+      ? askarLibrary.Key.fromSecretBytes({ algorithm: askarLibrary.KeyAlgorithm.Chacha20C20P, secretKey: payloadKey })
+      : askarLibrary.Key.fromSecretBytes({ algorithm: askarLibrary.KeyAlgs.Chacha20C20P, secretKey: payloadKey })
     const message = cek.aeadDecrypt({
       ciphertext: TypedArrayEncoder.fromBase64(messagePackage.ciphertext),
       nonce: TypedArrayEncoder.fromBase64(messagePackage.iv),

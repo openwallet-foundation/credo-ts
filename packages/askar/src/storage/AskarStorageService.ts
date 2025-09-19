@@ -8,10 +8,10 @@ import type {
 } from '@credo-ts/core'
 
 import { RecordDuplicateError, WalletError, RecordNotFoundError, injectable, JsonTransformer } from '@credo-ts/core'
-import { Scan } from '@hyperledger/aries-askar-shared'
 
 import { AskarErrorCode, isAskarError } from '../utils/askarError'
 import { assertAskarWallet } from '../utils/assertAskarWallet'
+import { HyperledgerStore, isOwfAskarLibrary, OwfStore } from '../utils/importAskar'
 
 import { askarQueryFromSearchQuery, recordToInstance, transformFromRecordTagValues } from './utils'
 
@@ -31,7 +31,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         session.insert({ category: record.type, name: record.id, value, tags })
       )
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+      if (isAskarError(agentContext.wallet.config.askarLibrary, error, AskarErrorCode.Duplicate)) {
         throw new RecordDuplicateError(`Record with id ${record.id} already exists`, { recordType: record.type })
       }
 
@@ -53,7 +53,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
         session.replace({ category: record.type, name: record.id, value, tags })
       )
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.NotFound)) {
+      if (isAskarError(agentContext.wallet.config.askarLibrary, error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
           recordType: record.type,
           cause: error,
@@ -71,7 +71,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await agentContext.wallet.withSession((session) => session.remove({ category: record.type, name: record.id }))
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.NotFound)) {
+      if (isAskarError(agentContext.wallet.config.askarLibrary, error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
           recordType: record.type,
           cause: error,
@@ -92,7 +92,7 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
     try {
       await agentContext.wallet.withSession((session) => session.remove({ category: recordClass.type, name: id }))
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.NotFound)) {
+      if (isAskarError(agentContext.wallet.config.askarLibrary, error, AskarErrorCode.NotFound)) {
         throw new RecordNotFoundError(`record with id ${id} not found.`, {
           recordType: recordClass.type,
           cause: error,
@@ -147,14 +147,23 @@ export class AskarStorageService<T extends BaseRecord> implements StorageService
 
     const askarQuery = askarQueryFromSearchQuery(query)
 
-    const scan = new Scan({
-      category: recordClass.type,
-      store: wallet.store,
-      tagFilter: askarQuery,
-      profile: wallet.profile,
-      offset: queryOptions?.offset,
-      limit: queryOptions?.limit,
-    })
+    const scan = isOwfAskarLibrary(wallet.config.askarLibrary)
+      ? new wallet.config.askarLibrary.Scan({
+          category: recordClass.type,
+          store: wallet.store as OwfStore,
+          tagFilter: askarQuery,
+          profile: wallet.profile,
+          offset: queryOptions?.offset,
+          limit: queryOptions?.limit,
+        })
+      : new wallet.config.askarLibrary.Scan({
+          category: recordClass.type,
+          store: wallet.store as HyperledgerStore,
+          tagFilter: askarQuery,
+          profile: wallet.profile,
+          offset: queryOptions?.offset,
+          limit: queryOptions?.limit,
+        })
 
     const instances = []
     try {

@@ -3,7 +3,8 @@ import type { Agent, InitConfig } from '@credo-ts/core'
 
 import { ConnectionsModule, HandshakeProtocol, LogLevel, utils } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
-import { registerAriesAskar } from '@hyperledger/aries-askar-shared'
+import { registerAriesAskar as hyperledgerRegisterAriesAskar } from '@hyperledger/aries-askar-shared'
+import { registerAskar as owfRegisterAskar } from '@openwallet-foundation/askar-shared'
 import path from 'path'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
@@ -11,10 +12,15 @@ import { TestLogger } from '../../core/tests/logger'
 import { agentDependencies } from '../../node/src'
 import { AskarModule } from '../src/AskarModule'
 import { AskarModuleConfig } from '../src/AskarModuleConfig'
+import { isOwfAskarLibrary } from '../src/utils/importAskar'
 import { AskarWallet } from '../src/wallet'
 
 export const askarModuleConfig = new AskarModuleConfig({ ariesAskar })
-registerAriesAskar({ askar: askarModuleConfig.ariesAskar })
+isOwfAskarLibrary(askarModuleConfig.askarLibrary)
+  ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    owfRegisterAskar({ askar: askarModuleConfig.ariesAskar as any })
+  : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    hyperledgerRegisterAriesAskar({ askar: askarModuleConfig.ariesAskar as any })
 export const askarModule = new AskarModule(askarModuleConfig)
 export { ariesAskar }
 

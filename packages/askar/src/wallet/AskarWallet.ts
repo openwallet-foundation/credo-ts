@@ -15,10 +15,11 @@ import {
   WalletImportPathExistsError,
   WalletExportUnsupportedError,
 } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
 import { inject, injectable } from 'tsyringe'
 
+import { AskarModuleConfig } from '../AskarModuleConfig'
 import { AskarErrorCode, isAskarError, keyDerivationMethodToStoreKeyMethod, uriFromWalletConfig } from '../utils'
+import { Store } from '../utils/importAskar'
 
 import { AskarBaseWallet } from './AskarBaseWallet'
 import { isAskarWalletSqliteStorageConfig } from './AskarWalletStorageConfig'
@@ -36,9 +37,10 @@ export class AskarWallet extends AskarBaseWallet {
   public constructor(
     @inject(InjectionSymbols.Logger) logger: Logger,
     @inject(InjectionSymbols.FileSystem) fileSystem: FileSystem,
-    signingKeyProviderRegistry: SigningProviderRegistry
+    signingKeyProviderRegistry: SigningProviderRegistry,
+    config: AskarModuleConfig
   ) {
-    super(logger, signingKeyProviderRegistry)
+    super(logger, signingKeyProviderRegistry, config)
     this.fileSystem = fileSystem
   }
 
@@ -108,11 +110,13 @@ export class AskarWallet extends AskarBaseWallet {
         await this.fileSystem.createDirectory(filePath)
       }
 
-      this._store = await Store.provision({
+      this._store = await this.config.askarLibrary.Store.provision({
         recreate: false,
         uri: askarWalletConfig.uri,
         profile: askarWalletConfig.profile,
-        keyMethod: askarWalletConfig.keyMethod,
+        // Need to cast due to type mismatch between HL/OWF askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: askarWalletConfig.keyMethod as any,
         passKey: askarWalletConfig.passKey,
       })
 
@@ -124,7 +128,7 @@ export class AskarWallet extends AskarBaseWallet {
       // FIXME: Askar should throw a Duplicate error code, but is currently returning Encryption
       // And if we provide the very same wallet key, it will open it without any error
       if (
-        isAskarError(error) &&
+        isAskarError(this.config.askarLibrary, error) &&
         (error.code === AskarErrorCode.Encryption || error.code === AskarErrorCode.Duplicate)
       ) {
         const errorMessage = `Wallet '${walletConfig.id}' already exists`
@@ -193,16 +197,23 @@ export class AskarWallet extends AskarBaseWallet {
     const askarWalletConfig = await this.getAskarWalletConfig(walletConfig)
 
     try {
-      this._store = await Store.open({
+      this._store = await this.config.askarLibrary.Store.open({
         uri: askarWalletConfig.uri,
-        keyMethod: askarWalletConfig.keyMethod,
+        // Need to cast due to type mismatch between HL/OWF askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: askarWalletConfig.keyMethod as any,
         passKey: askarWalletConfig.passKey,
       })
 
       if (rekey) {
         await this._store.rekey({
           passKey: rekey,
-          keyMethod: keyDerivationMethodToStoreKeyMethod(rekeyDerivation ?? KeyDerivationMethod.Argon2IMod),
+          // Need to cast due to type mismatch between HL/OWF askar
+          keyMethod: keyDerivationMethodToStoreKeyMethod(
+            this.config.askarLibrary,
+            rekeyDerivation ?? KeyDerivationMethod.Argon2IMod
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         })
       }
 
@@ -212,7 +223,7 @@ export class AskarWallet extends AskarBaseWallet {
       this.walletConfig = walletConfig
     } catch (error) {
       if (
-        isAskarError(error) &&
+        isAskarError(this.config.askarLibrary, error) &&
         (error.code === AskarErrorCode.NotFound ||
           (error.code === AskarErrorCode.Backend &&
             isAskarWalletSqliteStorageConfig(walletConfig.storage) &&
@@ -225,7 +236,7 @@ export class AskarWallet extends AskarBaseWallet {
           walletType: 'AskarWallet',
           cause: error,
         })
-      } else if (isAskarError(error) && error.code === AskarErrorCode.Encryption) {
+      } else if (isAskarError(this.config.askarLibrary, error) && error.code === AskarErrorCode.Encryption) {
         const errorMessage = `Incorrect key for wallet '${walletConfig.id}'`
         this.logger.debug(errorMessage)
         throw new WalletInvalidKeyError(errorMessage, {
@@ -257,7 +268,7 @@ export class AskarWallet extends AskarBaseWallet {
 
     try {
       const { uri } = uriFromWalletConfig(this.walletConfig, this.fileSystem.dataPath)
-      await Store.remove(uri)
+      await this.config.askarLibrary.Store.remove(uri)
     } catch (error) {
       const errorMessage = `Error deleting wallet '${this.walletConfig.id}': ${error.message}`
       this.logger.error(errorMessage, {
@@ -306,7 +317,9 @@ export class AskarWallet extends AskarBaseWallet {
       await this.store.copyTo({
         recreate: false,
         uri: exportedWalletConfig.uri,
-        keyMethod: exportedWalletConfig.keyMethod,
+        // Need to cast due to type mismatch between HL/OWF askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: exportedWalletConfig.keyMethod as any,
         passKey: exportedWalletConfig.passKey,
       })
     } catch (error) {
@@ -342,9 +355,11 @@ export class AskarWallet extends AskarBaseWallet {
       // Make sure destination path exists
       await this.fileSystem.createDirectory(destinationPath)
       // Open imported wallet and copy to destination
-      sourceWalletStore = await Store.open({
+      sourceWalletStore = await this.config.askarLibrary.Store.open({
         uri: `sqlite://${sourcePath}`,
-        keyMethod: importWalletConfig.keyMethod,
+        // Need to cast due to type mismatch between HL/OWF askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: importWalletConfig.keyMethod as any,
         passKey: importKey,
       })
 
@@ -358,7 +373,10 @@ export class AskarWallet extends AskarBaseWallet {
       await sourceWalletStore.copyTo({
         recreate: false,
         uri: importWalletConfig.uri,
-        keyMethod: importWalletConfig.keyMethod,
+
+        // Need to cast due to type mismatch between HL/OWF askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: importWalletConfig.keyMethod as any,
         passKey: importWalletConfig.passKey,
       })
 
@@ -414,6 +432,7 @@ export class AskarWallet extends AskarBaseWallet {
       profile: walletConfig.id,
       // FIXME: Default derivation method should be set somewhere in either agent config or some constants
       keyMethod: keyDerivationMethodToStoreKeyMethod(
+        this.config.askarLibrary,
         walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
       ),
       passKey: walletConfig.key,

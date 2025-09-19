@@ -8,10 +8,17 @@ import type {
   Wallet,
 } from '@credo-ts/core'
 
-import { CryptoBox, Store, Key as AskarKey, keyAlgFromString } from '@hyperledger/aries-askar-nodejs'
+import {
+  CryptoBox,
+  Store,
+  Key as AskarKey,
+  keyAlgFromString,
+  KeyBackend as AskarKeyBackend,
+  ariesAskar,
+} from '@hyperledger/aries-askar-nodejs'
 import BigNumber from 'bn.js'
 
-import { convertToAskarKeyBackend } from '../packages/askar/src/utils/askarKeyBackend'
+import { importAskar } from '../packages/askar/src/utils/importAskar'
 import { didcommV1Pack, didcommV1Unpack } from '../packages/askar/src/wallet/didcommV1'
 
 import {
@@ -180,7 +187,7 @@ export class InMemoryWallet implements Wallet {
           ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
           : seed
           ? AskarKey.fromSeed({ seed, algorithm })
-          : AskarKey.generate(algorithm, convertToAskarKeyBackend(keyBackend))
+          : AskarKey.generate(algorithm, AskarKeyBackend.Software)
 
         const keyPublicBytes = key.publicBytes
         // Store key
@@ -295,7 +302,7 @@ export class InMemoryWallet implements Wallet {
       : undefined
 
     try {
-      const envelope = didcommV1Pack(payload, recipientKeys, askarSenderKey)
+      const envelope = didcommV1Pack(importAskar(ariesAskar), payload, recipientKeys, askarSenderKey)
       return envelope
     } finally {
       askarSenderKey?.handle.free()
@@ -323,7 +330,7 @@ export class InMemoryWallet implements Wallet {
         : undefined
       try {
         if (recipientAskarKey) {
-          const unpacked = didcommV1Unpack(messagePackage, recipientAskarKey)
+          const unpacked = didcommV1Unpack(importAskar(ariesAskar), messagePackage, recipientAskarKey)
           return unpacked
         }
       } finally {

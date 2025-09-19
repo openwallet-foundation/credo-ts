@@ -2,11 +2,11 @@ import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { CredoError, InjectionSymbols } from '@credo-ts/core'
-import { Store } from '@hyperledger/aries-askar-shared'
 
 import { AskarMultiWalletDatabaseScheme, AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStorageService } from './storage'
 import { assertAskarWallet } from './utils/assertAskarWallet'
+import { importAskar } from './utils/importAskar'
 import { AskarProfileWallet, AskarWallet } from './wallet'
 
 export class AskarModule implements Module {
@@ -18,6 +18,9 @@ export class AskarModule implements Module {
 
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerInstance(AskarModuleConfig, this.config)
+
+    // Try importing the askar library
+    importAskar(this.config.ariesAskar)
 
     if (dependencyManager.isRegistered(InjectionSymbols.Wallet)) {
       throw new CredoError('There is an instance of Wallet already registered')
@@ -40,6 +43,8 @@ export class AskarModule implements Module {
   public async initialize(agentContext: AgentContext): Promise<void> {
     // We MUST use an askar wallet here
     assertAskarWallet(agentContext.wallet)
+
+    const { Store } = importAskar(this.config.ariesAskar)
 
     const wallet = agentContext.wallet
 

@@ -1,7 +1,7 @@
+import type { AskarLibrary } from '@credo-ts/askar'
 import type { TagsBase } from '@credo-ts/core'
 
 import { KeyDerivationMethod } from '@credo-ts/core'
-import { KdfMethod, StoreKeyMethod } from '@hyperledger/aries-askar-shared'
 
 /**
  * Adopted from `AskarStorageService` implementation and should be kept in sync.
@@ -42,12 +42,15 @@ export const transformFromRecordTagValues = (tags: TagsBase): { [key: string]: s
   return transformedTags
 }
 
-export const keyDerivationMethodToStoreKeyMethod = (keyDerivationMethod: KeyDerivationMethod) => {
+export const keyDerivationMethodToStoreKeyMethod = (
+  askarLibrary: AskarLibrary,
+  keyDerivationMethod: KeyDerivationMethod
+): InstanceType<AskarLibrary['StoreKeyMethod']> => {
   const correspondenceTable = {
-    [KeyDerivationMethod.Raw]: KdfMethod.Raw,
-    [KeyDerivationMethod.Argon2IInt]: KdfMethod.Argon2IInt,
-    [KeyDerivationMethod.Argon2IMod]: KdfMethod.Argon2IMod,
+    [KeyDerivationMethod.Raw]: askarLibrary.KdfMethod.Raw,
+    [KeyDerivationMethod.Argon2IInt]: askarLibrary.KdfMethod.Argon2IInt,
+    [KeyDerivationMethod.Argon2IMod]: askarLibrary.KdfMethod.Argon2IMod,
   }
 
-  return new StoreKeyMethod(correspondenceTable[keyDerivationMethod])
+  return new askarLibrary.StoreKeyMethod(correspondenceTable[keyDerivationMethod])
 }
