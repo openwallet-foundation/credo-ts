@@ -15,8 +15,11 @@ import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpe
 import { WebvhDidResolver } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
+import { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import {
   issuerId,
+  mockCredDefResource,
+  mockRegRevEntryResource,
   mockResolvedDidDocument,
   mockRevRegDefResource,
   mockSchemaResource,
@@ -329,6 +332,45 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
+  describe('registerSchema', () => {
+    it('should register and retrieve a schema with correct resolutionMetadata', async () => {
+      const schemaId = mockSchemaResource.id
+
+      const mockResolverResponse = {
+        content: mockSchemaResource,
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      const schema = mockSchemaResource.content
+
+      const result = await registry.registerSchema(agentContext, { schema, options: {} })
+      expect(result).toMatchObject({
+        schemaState: {
+          state: 'finished',
+          schemaId,
+        },
+      })
+
+      const schemaResponse = await registry.getSchema(agentContext, schemaId)
+
+      expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
+      expect(schemaResponse).toEqual({
+        schema: {
+          attrNames: mockSchemaResource.content.attrNames,
+          name: mockSchemaResource.content.name,
+          version: mockSchemaResource.content.version,
+          issuerId: issuerId,
+        },
+        schemaId,
+        resolutionMetadata: mockResolverResponse.dereferencingMetadata,
+        schemaMetadata: mockSchemaResource.metadata,
+      })
+    })
+  })
+
   describe('getCredentialDefinition', () => {
     it('should return resolutionMetadata with error for invalid prefix (tested via helper)', async () => {
       const credDefId = 'did:web:example.com/resource/credDef123' // Invalid prefix for this registry
@@ -358,6 +400,37 @@ describe('WebVhAnonCredsRegistry', () => {
       // Expect the error propagated from the helper/resolver
       expect(result.resolutionMetadata.error).toBe('invalid')
       expect(result.resolutionMetadata.message).toContain('could not be resolved or is missing data')
+    })
+  })
+
+  describe('registerCredentialDefinition', () => {
+    it('should register and retrieve a credential definition with correct resolutionMetadata', async () => {
+      const credentialDefinition = mockCredDefResource.content as AnonCredsCredentialDefinition
+      const mockResolverResponse = {
+        content: mockCredDefResource,
+        contentMetadata: {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+
+      const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
+      const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResource.id)
+
+      expect(result).toMatchObject({
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+        },
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(credDef).toMatchObject({
+        credentialDefinition,
+        credentialDefinitionId: mockCredDefResource.id,
+        resolutionMetadata: { contentType: 'application/json' },
+        credentialDefinitionMetadata: mockCredDefResource.metadata,
+      })
     })
   })
 
@@ -395,6 +468,62 @@ describe('WebVhAnonCredsRegistry', () => {
 
     // Add more tests for error cases (invalid ID, not found, hash mismatch, invalid content etc.)
     // similar to the getSchema tests
+  })
+
+  describe('registerRevocationRegistryDefinition', () => {
+    it('should register and retrieve a RevRegDef with correct resolutionMetadata', async () => {
+      const revRegDefId = mockRevRegDefResource.id
+      const revocationRegistryDefinition = mockRevRegDefResource.content as AnonCredsRevocationRegistryDefinition
+      const mockResolverResponse = {
+        content: mockRevRegDefResource,
+        contentMetadata: mockRevRegDefResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+
+      const result = await registry.registerRevocationRegistryDefinition(agentContext, {
+        revocationRegistryDefinition,
+        options: {},
+      })
+      const revRegDef = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
+
+      expect(result).toMatchObject({
+        revocationRegistryDefinitionState: {
+          state: 'finished',
+          revocationRegistryDefinition,
+        },
+        revocationRegistryDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(revRegDef).toMatchObject({
+        revocationRegistryDefinition,
+        revocationRegistryDefinitionId: revRegDefId,
+        resolutionMetadata: { contentType: 'application/json' },
+        revocationRegistryDefinitionMetadata: mockRevRegDefResource.metadata,
+      })
+    })
+  })
+
+  describe('registerRevocationStatusList', () => {
+    it('should correctly resolve and parse a valid RevocationStatusList resource', async () => {
+      // Remove timestamp from validations
+      const { timestamp, ...revocationStatusList } = mockRegRevEntryResource.content
+
+      const result = await registry.registerRevocationStatusList(agentContext, {
+        revocationStatusList,
+        options: {},
+      })
+
+      expect(result).toMatchObject({
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList,
+        },
+        revocationStatusListMetadata: { previousVersionId: '', nextVersionId: '' },
+        registrationMetadata: {},
+      })
+    })
   })
 
   describe('verifyProof', () => {
