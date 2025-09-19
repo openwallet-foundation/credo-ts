@@ -259,8 +259,8 @@ export class OpenId4VpHolderService {
     }
 
     const credentialsToTransactionData: Record<string, ParsedTransactionDataEntry[]> = {}
-    for (const transactionDataIndex in transactionData) {
-      const transactionDataEntry = transactionData[transactionDataIndex]
+
+    transactionData.forEach((transactionDataEntry, transactionDataIndex) => {
       const { credentialId } = selectedTransactionDataCredentials[transactionDataIndex]
 
       if (!transactionDataEntry.transactionData.credential_ids.includes(credentialId)) {
@@ -276,12 +276,12 @@ export class OpenId4VpHolderService {
       }
 
       const unsupportedFormats = selectedCredentials[credentialId]
-        .filter((c) => c.claimFormat !== ClaimFormat.SdJwtVc)
+        .filter((c) => c.claimFormat !== ClaimFormat.SdJwtDc)
         .map((c) => c.claimFormat)
 
       if (unsupportedFormats.length > 0) {
         throw new CredoError(
-          `Credential id '${credentialId}' selected to sign transaction data with index '${transactionDataIndex}' unsupported format(s) ${unsupportedFormats.join(', ')}. Only '${ClaimFormat.SdJwtVc}' is supported for transaction data signing in Credo at the moment.`
+          `Credential id '${credentialId}' selected to sign transaction data with index '${transactionDataIndex}' unsupported format(s) ${unsupportedFormats.join(', ')}. Only '${ClaimFormat.SdJwtDc}' is supported for transaction data signing in Credo at the moment.`
         )
       }
 
@@ -289,7 +289,7 @@ export class OpenId4VpHolderService {
         credentialsToTransactionData[credentialId] = []
       }
       credentialsToTransactionData[credentialId].push(transactionDataEntry)
-    }
+    })
 
     const updatedCredentials = {
       ...selectedCredentials,
@@ -325,10 +325,10 @@ export class OpenId4VpHolderService {
       )
 
       updatedCredentials[credentialId] = updatedCredentials[credentialId].map((credential) => {
-        if (credential.claimFormat !== ClaimFormat.SdJwtVc) {
+        if (credential.claimFormat !== ClaimFormat.SdJwtDc) {
           // We already verified this above
           throw new CredoError(
-            `Unexpected claim format '${credential.claimFormat}' for transaction data, expected '${ClaimFormat.SdJwtVc}'`
+            `Unexpected claim format '${credential.claimFormat}' for transaction data, expected '${ClaimFormat.SdJwtDc}'`
           )
         }
 

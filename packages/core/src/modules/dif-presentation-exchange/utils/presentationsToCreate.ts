@@ -7,7 +7,7 @@ import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 
 //  - the credentials included in the presentation
 export interface SdJwtVcPresentationToCreate {
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   subjectIds: [] // subject is included in the cnf of the sd-jwt and automatically extracted by PEX
   verifiableCredentials: [
     {
@@ -71,10 +71,10 @@ export function getPresentationsToCreate(credentialsForInputDescriptor: DifPexIn
   // presentations
   for (const [inputDescriptorId, credentials] of Object.entries(credentialsForInputDescriptor)) {
     for (const credential of credentials) {
-      if (credential.claimFormat === ClaimFormat.SdJwtVc) {
+      if (credential.claimFormat === ClaimFormat.SdJwtDc) {
         // SD-JWT-VC always needs it's own presentation
         presentationsToCreate.push({
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           subjectIds: [],
           verifiableCredentials: [
             {

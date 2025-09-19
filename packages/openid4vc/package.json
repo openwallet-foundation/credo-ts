@@ -3,7 +3,9 @@
   "main": "src/index",
   "types": "src/index",
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "main": "build/index",
@@ -29,10 +31,10 @@
     "rxjs": "catalog:",
     "zod": "catalog:",
     "@openid-federation/core": "0.1.1-alpha.17",
-    "@openid4vc/openid4vci": "0.3.0-alpha-20250821080409",
-    "@openid4vc/oauth2": "0.3.0-alpha-20250821080409",
-    "@openid4vc/openid4vp": "0.3.0-alpha-20250821080409",
-    "@openid4vc/utils": "0.3.0-alpha-20250821080409"
+    "@openid4vc/openid4vci": "0.3.0-alpha-20250825150235",
+    "@openid4vc/oauth2": "0.3.0-alpha-20250825150235",
+    "@openid4vc/openid4vp": "0.3.0-alpha-20250825150235",
+    "@openid4vc/utils": "0.3.0-alpha-20250825150235"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",

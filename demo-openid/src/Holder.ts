@@ -14,6 +14,7 @@ import {
   Mdoc,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
+  W3cV2JwtVerifiableCredential,
   X509Module,
 } from '@credo-ts/core'
 import {
@@ -25,6 +26,7 @@ import {
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import { W3cV2SdJwtVerifiableCredential } from 'packages/core/src/modules/vc/sd-jwt-vc'
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText } from './OutputClass'
 
@@ -198,6 +200,12 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
         const credential = response.credentials[0]
         if (credential instanceof W3cJwtVerifiableCredential || credential instanceof W3cJsonLdVerifiableCredential) {
           return this.agent.w3cCredentials.storeCredential({ credential })
+        }
+        if (
+          credential instanceof W3cV2JwtVerifiableCredential ||
+          credential instanceof W3cV2SdJwtVerifiableCredential
+        ) {
+          return this.agent.w3cV2Credentials.storeCredential({ credential })
         }
         if (credential instanceof Mdoc) {
           return this.agent.mdoc.store(credential)
