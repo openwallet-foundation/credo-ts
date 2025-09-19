@@ -2,7 +2,8 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { AskarModuleConfig } from '../../../../../askar/src/AskarModuleConfig'
+import { ariesAskar, RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -33,6 +34,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
@@ -99,6 +101,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(

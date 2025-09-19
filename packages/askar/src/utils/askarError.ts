@@ -1,4 +1,6 @@
-import { AriesAskarError } from '@hyperledger/aries-askar-shared'
+import type { AskarError, AskarLibrary } from './importAskar'
+
+import { isOwfAskarLibrary } from './importAskar'
 
 export enum AskarErrorCode {
   Success = 0,
@@ -13,5 +15,16 @@ export enum AskarErrorCode {
   Custom = 100,
 }
 
-export const isAskarError = (error: Error, askarErrorCode?: AskarErrorCode): error is AriesAskarError =>
-  error instanceof AriesAskarError && (askarErrorCode === undefined || error.code === askarErrorCode)
+export const isAskarError = (
+  askarLibrary: AskarLibrary,
+  error: Error,
+  askarErrorCode?: AskarErrorCode
+): error is AskarError => {
+  if (isOwfAskarLibrary(askarLibrary)) {
+    return error instanceof askarLibrary.AskarError && (askarErrorCode === undefined || error.code === askarErrorCode)
+  } else {
+    return (
+      error instanceof askarLibrary.AriesAskarError && (askarErrorCode === undefined || error.code === askarErrorCode)
+    )
+  }
+}

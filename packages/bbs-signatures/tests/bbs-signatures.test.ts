@@ -20,7 +20,8 @@ import {
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 
-import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
+import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
+import { ariesAskar, RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { W3cCredentialsModuleConfig } from '../../core/src/modules/vc/W3cCredentialsModuleConfig'
 import { SignatureSuiteRegistry } from '../../core/src/modules/vc/data-integrity/SignatureSuiteRegistry'
 import { W3cJsonLdCredentialService } from '../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
@@ -74,7 +75,8 @@ describeSkipNode18('BBS W3cCredentialService', () => {
     wallet = new RegisteredAskarTestWallet(
       agentConfig.logger,
       new agentDependencies.FileSystem(),
-      signingProviderRegistry
+      signingProviderRegistry,
+      new AskarModuleConfig({ ariesAskar })
     )
     await wallet.createAndOpen(agentConfig.walletConfig)
     agentContext = getAgentContext({

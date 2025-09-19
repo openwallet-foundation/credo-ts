@@ -1,3 +1,14 @@
+import type { AskarModuleConfig } from '../AskarModuleConfig'
+import type {
+  Session,
+  Store,
+  HyperledgerAskarLibrary,
+  OwfAskarLibrary,
+  AskarKey,
+  OwfAskarKey,
+  HyperledgerAskarKey,
+  HyperledgerSession,
+} from '../utils/importAskar'
 import type {
   EncryptedMessage,
   WalletConfig,
@@ -13,7 +24,6 @@ import type {
   SigningProviderRegistry,
   WalletDirectEncryptCompactJwtEcdhEsOptions,
 } from '@credo-ts/core'
-import type { Session } from '@hyperledger/aries-askar-shared'
 
 import {
   WalletKeyExistsError,
@@ -29,15 +39,6 @@ import {
   KeyType,
   utils,
 } from '@credo-ts/core'
-import {
-  CryptoBox,
-  Store,
-  Key as AskarKey,
-  keyAlgFromString,
-  EcdhEs,
-  KeyAlgs,
-  Jwk,
-} from '@hyperledger/aries-askar-shared'
 import BigNumber from 'bn.js'
 
 import { importSecureEnvironment } from '../secureEnvironment'
@@ -48,6 +49,7 @@ import {
   isKeyTypeSupportedByAskarForPurpose,
   keyTypesSupportedByAskar,
 } from '../utils'
+import { isOwfAskarLibrary } from '../utils/importAskar'
 
 import { didcommV1Pack, didcommV1Unpack } from './didcommV1'
 
@@ -57,7 +59,11 @@ export abstract class AskarBaseWallet implements Wallet {
   protected logger: Logger
   protected signingKeyProviderRegistry: SigningProviderRegistry
 
-  public constructor(logger: Logger, signingKeyProviderRegistry: SigningProviderRegistry) {
+  public constructor(
+    logger: Logger,
+    signingKeyProviderRegistry: SigningProviderRegistry,
+    public config: AskarModuleConfig
+  ) {
     this.logger = logger
     this.signingKeyProviderRegistry = signingKeyProviderRegistry
   }
@@ -166,16 +172,34 @@ export abstract class AskarBaseWallet implements Wallet {
         isKeyTypeSupportedByAskarForPurpose(keyType, AskarKeyTypePurpose.KeyManagement) &&
         keyBackend === KeyBackend.Software
       ) {
-        const algorithm = keyAlgFromString(keyType)
+        const AskarKey = this.config.askarLibrary.Key
 
         // Create key
-        let key: AskarKey | undefined
+        let key: InstanceType<typeof AskarKey> | undefined
         try {
-          const _key = privateKey
-            ? AskarKey.fromSecretBytes({ secretKey: privateKey, algorithm })
+          const _key = isOwfAskarLibrary(this.config.askarLibrary)
+            ? privateKey
+              ? this.config.askarLibrary.Key.fromSecretBytes({
+                  secretKey: privateKey,
+                  algorithm: this.config.askarLibrary.keyAlgorithmFromString(keyType),
+                })
+              : seed
+              ? this.config.askarLibrary.Key.fromSeed({
+                  seed,
+                  algorithm: this.config.askarLibrary.keyAlgorithmFromString(keyType),
+                })
+              : this.config.askarLibrary.Key.generate(this.config.askarLibrary.keyAlgorithmFromString(keyType))
+            : privateKey
+            ? this.config.askarLibrary.Key.fromSecretBytes({
+                secretKey: privateKey,
+                algorithm: this.config.askarLibrary.keyAlgFromString(keyType),
+              })
             : seed
-            ? AskarKey.fromSeed({ seed, algorithm })
-            : AskarKey.generate(algorithm)
+            ? this.config.askarLibrary.Key.fromSeed({
+                seed,
+                algorithm: this.config.askarLibrary.keyAlgFromString(keyType),
+              })
+            : this.config.askarLibrary.Key.generate(this.config.askarLibrary.keyAlgFromString(keyType))
 
           // FIXME: we need to create a separate const '_key' so TS definitely knows _key is defined in the session callback.
           // This will be fixed once we use the new 'using' syntax
@@ -185,7 +209,10 @@ export abstract class AskarBaseWallet implements Wallet {
 
           // Store key
           await this.withSession((session) =>
-            session.insertKey({ key: _key, name: keyId ?? TypedArrayEncoder.toBase58(keyPublicBytes) })
+            (session as HyperledgerSession).insertKey({
+              key: _key as HyperledgerAskarKey,
+              name: keyId ?? TypedArrayEncoder.toBase58(keyPublicBytes),
+            })
           )
 
           key.handle.free()
@@ -193,7 +220,7 @@ export abstract class AskarBaseWallet implements Wallet {
         } catch (error) {
           key?.handle.free()
           // Handle case where key already exists
-          if (isAskarError(error, AskarErrorCode.Duplicate)) {
+          if (isAskarError(this.config.askarLibrary, error, AskarErrorCode.Duplicate)) {
             throw new WalletKeyExistsError('Key already exists')
           }
 
@@ -269,16 +296,26 @@ export abstract class AskarBaseWallet implements Wallet {
         // If we have the key stored in a custom record, but it is now supported by Askar,
         // we 'import' the key into askar storage and remove the custom key record
         if (keyPair && isKeyTypeSupportedByAskarForPurpose(keyPair.keyType, AskarKeyTypePurpose.KeyManagement)) {
-          const _askarKey = AskarKey.fromSecretBytes({
-            secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
-            algorithm: keyAlgFromString(keyPair.keyType),
-          })
+          const _askarKey = isOwfAskarLibrary(this.config.askarLibrary)
+            ? this.config.askarLibrary.Key.fromSecretBytes({
+                secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                algorithm: this.config.askarLibrary.keyAlgorithmFromString(keyPair.keyType),
+              })
+            : this.config.askarLibrary.Key.fromSecretBytes({
+                secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                algorithm: this.config.askarLibrary.keyAlgFromString(keyPair.keyType),
+              })
+
           askarKey = _askarKey
 
           await this.withSession((session) =>
-            session.insertKey({
+            (session as InstanceType<HyperledgerAskarLibrary['Session']>).insertKey({
               name: key.publicKeyBase58,
-              key: _askarKey,
+
+              // Need to cast due to key being either instance of OWF or Hyperledger askar
+              // key, but we know it's the correct instances
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              key: _askarKey as InstanceType<HyperledgerAskarLibrary['Key']>,
             })
           )
 
@@ -309,10 +346,15 @@ export abstract class AskarBaseWallet implements Wallet {
         askarKey =
           askarKey ??
           (keyPair
-            ? AskarKey.fromSecretBytes({
-                secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
-                algorithm: keyAlgFromString(keyPair.keyType),
-              })
+            ? isOwfAskarLibrary(this.config.askarLibrary)
+              ? this.config.askarLibrary.Key.fromSecretBytes({
+                  secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                  algorithm: this.config.askarLibrary.keyAlgorithmFromString(keyPair.keyType),
+                })
+              : this.config.askarLibrary.Key.fromSecretBytes({
+                  secretKey: TypedArrayEncoder.fromBase58(keyPair.privateKeyBase58),
+                  algorithm: this.config.askarLibrary.keyAlgFromString(keyPair.keyType),
+                })
             : undefined)
 
         if (!askarKey) {
@@ -375,10 +417,16 @@ export abstract class AskarBaseWallet implements Wallet {
           throw new WalletError(`Currently not supporting verification of multiple messages`)
         }
 
-        askarKey = AskarKey.fromPublicBytes({
-          algorithm: keyAlgFromString(key.keyType),
-          publicKey: key.publicKey,
-        })
+        askarKey = isOwfAskarLibrary(this.config.askarLibrary)
+          ? this.config.askarLibrary.Key.fromPublicBytes({
+              algorithm: this.config.askarLibrary.keyAlgorithmFromString(key.keyType),
+              publicKey: key.publicKey,
+            })
+          : this.config.askarLibrary.Key.fromPublicBytes({
+              algorithm: this.config.askarLibrary.keyAlgFromString(key.keyType),
+              publicKey: key.publicKey,
+            })
+
         const verified = askarKey.verifySignature({ message: data as Buffer, signature })
         askarKey.handle.free()
         return verified
@@ -428,7 +476,7 @@ export abstract class AskarBaseWallet implements Wallet {
         throw new WalletError(`Sender key not found`)
       }
 
-      const envelope = didcommV1Pack(payload, recipientKeys, senderKey?.key)
+      const envelope = didcommV1Pack(this.config.askarLibrary, payload, recipientKeys, senderKey?.key)
 
       return envelope
     } finally {
@@ -453,7 +501,7 @@ export abstract class AskarBaseWallet implements Wallet {
         const recipientKeyEntry = await session.fetchKey({ name: recipientKid })
         try {
           if (recipientKeyEntry) {
-            return didcommV1Unpack(messagePackage, recipientKeyEntry.key)
+            return didcommV1Unpack(this.config.askarLibrary, messagePackage, recipientKeyEntry.key)
           }
         } finally {
           recipientKeyEntry?.key.handle.free()
@@ -487,11 +535,10 @@ export abstract class AskarBaseWallet implements Wallet {
       throw new WalletError(`Encryption algorithm ${encryptionAlgorithm} is not supported. Only A256GCM is supported`)
     }
 
-    // Only one supported for now
-    const encAlg = KeyAlgs.AesA256Gcm
-
     // Create ephemeral key
-    const ephemeralKey = AskarKey.generate(keyAlgFromString(recipientKey.keyType))
+    const ephemeralKey = isOwfAskarLibrary(this.config.askarLibrary)
+      ? this.config.askarLibrary.Key.generate(this.config.askarLibrary.keyAlgorithmFromString(recipientKey.keyType))
+      : this.config.askarLibrary.Key.generate(this.config.askarLibrary.keyAlgFromString(recipientKey.keyType))
 
     const _header = {
       ...header,
@@ -504,23 +551,39 @@ export abstract class AskarBaseWallet implements Wallet {
 
     const encodedHeader = JsonEncoder.toBase64URL(_header)
 
-    const ecdh = new EcdhEs({
-      algId: Uint8Array.from(Buffer.from(encryptionAlgorithm)),
-      apu: apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(apu)) : Uint8Array.from([]),
-      apv: apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(apv)) : Uint8Array.from([]),
-    })
+    // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
+    const aad = Uint8Array.from(Buffer.from(encodedHeader))
 
-    const { ciphertext, tag, nonce } = ecdh.encryptDirect({
-      encAlg,
-      ephemeralKey,
-      message: Uint8Array.from(data),
-      recipientKey: AskarKey.fromPublicBytes({
-        algorithm: keyAlgFromString(recipientKey.keyType),
-        publicKey: recipientKey.publicKey,
-      }),
-      // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
-      aad: Uint8Array.from(Buffer.from(encodedHeader)),
-    })
+    const { ciphertext, tag, nonce } = isOwfAskarLibrary(this.config.askarLibrary)
+      ? new this.config.askarLibrary.EcdhEs({
+          algId: Uint8Array.from(Buffer.from(encryptionAlgorithm)),
+          apu: apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(apu)) : Uint8Array.from([]),
+          apv: apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(apv)) : Uint8Array.from([]),
+        }).encryptDirect({
+          encryptionAlgorithm: this.config.askarLibrary.KeyAlgorithm.AesA256Gcm,
+          ephemeralKey: ephemeralKey as OwfAskarKey,
+          message: Uint8Array.from(data),
+          recipientKey: this.config.askarLibrary.Key.fromPublicBytes({
+            algorithm: this.config.askarLibrary.keyAlgorithmFromString(recipientKey.keyType),
+            publicKey: recipientKey.publicKey,
+          }),
+
+          aad,
+        })
+      : new this.config.askarLibrary.EcdhEs({
+          algId: Uint8Array.from(Buffer.from(encryptionAlgorithm)),
+          apu: apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(apu)) : Uint8Array.from([]),
+          apv: apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(apv)) : Uint8Array.from([]),
+        }).encryptDirect({
+          encAlg: this.config.askarLibrary.KeyAlgs.AesA256Gcm,
+          ephemeralKey: ephemeralKey as HyperledgerAskarKey,
+          message: Uint8Array.from(data),
+          recipientKey: this.config.askarLibrary.Key.fromPublicBytes({
+            algorithm: this.config.askarLibrary.keyAlgFromString(recipientKey.keyType),
+            publicKey: recipientKey.publicKey,
+          }),
+          aad,
+        })
 
     const compactJwe = `${encodedHeader}..${TypedArrayEncoder.toBase64URL(nonce)}.${TypedArrayEncoder.toBase64URL(
       ciphertext
@@ -567,9 +630,11 @@ export abstract class AskarBaseWallet implements Wallet {
     }
 
     // Only one supported for now
-    const encAlg = KeyAlgs.AesA256Gcm
+    const encAlg = isOwfAskarLibrary(this.config.askarLibrary)
+      ? this.config.askarLibrary.KeyAlgorithm.AesA256Gcm
+      : this.config.askarLibrary.KeyAlgs.AesA256Gcm
 
-    const ecdh = new EcdhEs({
+    const ecdh = new this.config.askarLibrary.EcdhEs({
       algId: Uint8Array.from(Buffer.from(header.enc)),
       apu: header.apu ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apu)) : Uint8Array.from([]),
       apv: header.apv ? Uint8Array.from(TypedArrayEncoder.fromBase64(header.apv)) : Uint8Array.from([]),
@@ -578,9 +643,14 @@ export abstract class AskarBaseWallet implements Wallet {
     const plaintext = ecdh.decryptDirect({
       nonce: TypedArrayEncoder.fromBase64(encodedIv),
       ciphertext: TypedArrayEncoder.fromBase64(encodedCiphertext),
-      encAlg,
-      ephemeralKey: Jwk.fromJson(header.epk),
-      recipientKey: askarKey,
+      encAlg: encAlg as HyperledgerAskarLibrary['KeyAlgs']['AesA256Gcm'],
+      ephemeralKey: this.config.askarLibrary.Jwk.fromJson(header.epk),
+
+      // Typescript is complaining, since it can be two variants of key
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      recipientKey: askarKey as any,
+
+      encryptionAlgorithm: encAlg as OwfAskarLibrary['KeyAlgorithm']['AesA256Gcm'],
       tag: TypedArrayEncoder.fromBase64(encodedTag),
       // NOTE: aad is bytes of base64url encoded string. It SHOULD NOT be decoded as base64
       aad: TypedArrayEncoder.fromString(encodedHeader),
@@ -592,7 +662,7 @@ export abstract class AskarBaseWallet implements Wallet {
   public async generateNonce(): Promise<string> {
     try {
       // generate an 80-bit nonce suitable for AnonCreds proofs
-      const nonce = CryptoBox.randomNonce().slice(0, 10)
+      const nonce = this.config.askarLibrary.CryptoBox.randomNonce().slice(0, 10)
       return new BigNumber(nonce).toString()
     } catch (error) {
       if (!isError(error)) {
@@ -610,7 +680,7 @@ export abstract class AskarBaseWallet implements Wallet {
       const genCount = Math.ceil(length / CBOX_NONCE_LENGTH)
       const buf = new Uint8Array(genCount * CBOX_NONCE_LENGTH)
       for (let i = 0; i < genCount; i++) {
-        const randomBytes = CryptoBox.randomNonce()
+        const randomBytes = this.config.askarLibrary.CryptoBox.randomNonce()
         buf.set(randomBytes, CBOX_NONCE_LENGTH * i)
       }
       buffer.set(buf.subarray(0, length))
@@ -626,7 +696,7 @@ export abstract class AskarBaseWallet implements Wallet {
 
   public async generateWalletKey() {
     try {
-      return Store.generateRawKey()
+      return this.config.askarLibrary.Store.generateRawKey()
     } catch (error) {
       throw new WalletError('Error generating wallet key', { cause: error })
     }
@@ -679,7 +749,7 @@ export abstract class AskarBaseWallet implements Wallet {
         })
       )
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+      if (isAskarError(this.config.askarLibrary, error, AskarErrorCode.Duplicate)) {
         throw new WalletKeyExistsError('Key already exists')
       }
       throw new WalletError('Error saving KeyPair record', { cause: error })
@@ -703,7 +773,7 @@ export abstract class AskarBaseWallet implements Wallet {
         })
       )
     } catch (error) {
-      if (isAskarError(error, AskarErrorCode.Duplicate)) {
+      if (isAskarError(this.config.askarLibrary, error, AskarErrorCode.Duplicate)) {
         throw new WalletKeyExistsError('Key already exists')
       }
       throw new WalletError('Error saving SecureEnvironment record', { cause: error })

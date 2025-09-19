@@ -2,7 +2,8 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
+import { AskarModuleConfig } from '../../../../../askar/src/AskarModuleConfig'
+import { ariesAskar, RegisteredAskarTestWallet } from '../../../../../askar/tests/helpers'
 import { Agent, MediatorRoutingRecord } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -33,6 +34,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
@@ -103,6 +105,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const storageService = new InMemoryStorageService()
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
 
     const agent = new Agent(
@@ -152,6 +155,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
 

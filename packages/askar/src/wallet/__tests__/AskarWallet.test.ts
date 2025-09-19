@@ -22,8 +22,8 @@ import {
   Buffer,
   JsonEncoder,
 } from '@credo-ts/core'
-import { Key as AskarKey } from '@hyperledger/aries-askar-nodejs'
-import { Jwk, Store } from '@hyperledger/aries-askar-shared'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { readFileSync } from 'fs'
 import path from 'path'
 
@@ -31,25 +31,35 @@ import { KeyBackend } from '../../../../core/src/crypto/KeyBackend'
 import { encodeToBase58 } from '../../../../core/src/utils/base58'
 import { agentDependencies } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
+import { AskarModuleConfig } from '../../AskarModuleConfig'
 import { AskarWallet } from '../AskarWallet'
 
-// use raw key derivation method to speed up wallet creating / opening / closing between tests
-const walletConfig: WalletConfig = {
-  id: 'Wallet: AskarWalletTest',
-  // generated using indy.generateWalletKey
-  key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
-  keyDerivationMethod: KeyDerivationMethod.Raw,
-}
-
-describe('AskarWallet basic operations', () => {
+describe.each(['hyperledger', 'owf'] as const)('AskarWallet basic operations with %s', (askarImplementation) => {
   let askarWallet: AskarWallet
+
+  const askarConfig = new AskarModuleConfig({
+    ariesAskar: askarImplementation === 'hyperledger' ? ariesAskar : askar,
+  })
+
+  // use raw key derivation method to speed up wallet creating / opening / closing between tests
+  const walletConfig: WalletConfig = {
+    id: 'Wallet: AskarWalletTest' + askarImplementation,
+    // generated using indy.generateWalletKey
+    key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+    keyDerivationMethod: KeyDerivationMethod.Raw,
+  }
 
   const seed = TypedArrayEncoder.fromString('sample-seed-min-of-32-bytes-long')
   const privateKey = TypedArrayEncoder.fromString('2103de41b4ae37e8e28586d84a342b67')
   const message = TypedArrayEncoder.fromString('sample-message')
 
   beforeEach(async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    askarWallet = new AskarWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([]),
+      askarConfig
+    )
     await askarWallet.createAndOpen(walletConfig)
   })
 
@@ -70,7 +80,7 @@ describe('AskarWallet basic operations', () => {
   })
 
   test('Get the wallet store', () => {
-    expect(askarWallet.store).toEqual(expect.any(Store))
+    expect(askarWallet.store).toEqual(expect.any(askarConfig.askarLibrary.Store))
   })
 
   test('Generate Nonce', async () => {
@@ -231,7 +241,7 @@ describe('AskarWallet basic operations', () => {
       header: string
     }
 
-    const key = AskarKey.fromJwk({ jwk: Jwk.fromJson(privateKeyJwk) })
+    const key = askarConfig.askarLibrary.Key.fromJwk({ jwk: askarConfig.askarLibrary.Jwk.fromJson(privateKeyJwk) })
     const recipientKey = await askarWallet.createKey({
       keyType: KeyType.P256,
       privateKey: Buffer.from(key.secretBytes),
@@ -280,9 +290,15 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
       askarWallet = new AskarWallet(
         testLogger,
         new agentDependencies.FileSystem(),
-        new SigningProviderRegistry([new DummySigningProvider()])
+        new SigningProviderRegistry([new DummySigningProvider()]),
+        new AskarModuleConfig({ ariesAskar })
       )
-      await askarWallet.createAndOpen(walletConfig)
+      await askarWallet.createAndOpen({
+        id: 'Wallet: AskarWalletTest',
+        // generated using indy.generateWalletKey
+        key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+        keyDerivationMethod: KeyDerivationMethod.Raw,
+      })
     })
 
     afterEach(async () => {
@@ -326,8 +342,20 @@ describe.skip('Currently, all KeyTypes are supported by Askar natively', () => {
   })
 })
 
-describe('AskarWallet management', () => {
+describe.each(['hyperledger', 'owf'] as const)('AskarWallet management', (askarImplementation) => {
   let askarWallet: AskarWallet
+
+  const askarConfig = new AskarModuleConfig({
+    ariesAskar: askarImplementation === 'hyperledger' ? ariesAskar : askar,
+  })
+
+  // use raw key derivation method to speed up wallet creating / opening / closing between tests
+  const walletConfig: WalletConfig = {
+    id: 'Wallet: AskarWalletTest' + askarImplementation,
+    // generated using indy.generateWalletKey
+    key: 'CwNJroKHTSSj3XvE7ZAnuKiTn2C4QkFvxEqfm5rzhNrb',
+    keyDerivationMethod: KeyDerivationMethod.Raw,
+  }
 
   afterEach(async () => {
     if (askarWallet) {
@@ -336,54 +364,81 @@ describe('AskarWallet management', () => {
   })
 
   test('Create', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    askarWallet = new AskarWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([]),
+      askarConfig
+    )
 
-    const initialKey = Store.generateRawKey()
-    const anotherKey = Store.generateRawKey()
+    const initialKey = askarConfig.askarLibrary.Store.generateRawKey()
+    const anotherKey = askarConfig.askarLibrary.Store.generateRawKey()
 
     // Create and open wallet
-    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create', key: initialKey })
+    await askarWallet.createAndOpen({
+      ...walletConfig,
+      id: 'AskarWallet Create' + askarImplementation,
+      key: initialKey,
+    })
 
     // Close and try to re-create it
     await askarWallet.close()
     await expect(
-      askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create', key: anotherKey })
+      askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Create' + askarImplementation, key: anotherKey })
     ).rejects.toThrow(WalletDuplicateError)
   })
 
   test('Open', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    askarWallet = new AskarWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([]),
+      askarConfig
+    )
 
-    const initialKey = Store.generateRawKey()
-    const wrongKey = Store.generateRawKey()
+    const initialKey = askarConfig.askarLibrary.Store.generateRawKey()
+    const wrongKey = askarConfig.askarLibrary.Store.generateRawKey()
 
     // Create and open wallet
-    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Open', key: initialKey })
+    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Open' + askarImplementation, key: initialKey })
 
     // Close and try to re-opening it with a wrong key
     await askarWallet.close()
-    await expect(askarWallet.open({ ...walletConfig, id: 'AskarWallet Open', key: wrongKey })).rejects.toThrow(
-      WalletInvalidKeyError
-    )
+    await expect(
+      askarWallet.open({ ...walletConfig, id: 'AskarWallet Open' + askarImplementation, key: wrongKey })
+    ).rejects.toThrow(WalletInvalidKeyError)
 
     // Try to open a non existent wallet
     await expect(
-      askarWallet.open({ ...walletConfig, id: 'AskarWallet Open - Non existent', key: initialKey })
+      askarWallet.open({
+        ...walletConfig,
+        id: 'AskarWallet Open - Non existent' + askarImplementation,
+        key: initialKey,
+      })
     ).rejects.toThrow(WalletNotFoundError)
   })
 
   test('Rotate key', async () => {
-    askarWallet = new AskarWallet(testLogger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    askarWallet = new AskarWallet(
+      testLogger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([]),
+      askarConfig
+    )
 
-    const initialKey = Store.generateRawKey()
-    await askarWallet.createAndOpen({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })
+    const initialKey = askarConfig.askarLibrary.Store.generateRawKey()
+    await askarWallet.createAndOpen({
+      ...walletConfig,
+      id: 'AskarWallet Key Rotation' + askarImplementation,
+      key: initialKey,
+    })
 
     await askarWallet.close()
 
-    const newKey = Store.generateRawKey()
+    const newKey = askarConfig.askarLibrary.Store.generateRawKey()
     await askarWallet.rotateKey({
       ...walletConfig,
-      id: 'AskarWallet Key Rotation',
+      id: 'AskarWallet Key Rotation' + askarImplementation,
       key: initialKey,
       rekey: newKey,
       rekeyDerivationMethod: KeyDerivationMethod.Raw,
@@ -392,10 +447,10 @@ describe('AskarWallet management', () => {
     await askarWallet.close()
 
     await expect(
-      askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: initialKey })
+      askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation' + askarImplementation, key: initialKey })
     ).rejects.toThrow(WalletInvalidKeyError)
 
-    await askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation', key: newKey })
+    await askarWallet.open({ ...walletConfig, id: 'AskarWallet Key Rotation' + askarImplementation, key: newKey })
 
     await askarWallet.close()
   })

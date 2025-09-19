@@ -2,24 +2,34 @@ import type { AgentContext, TagsBase } from '@credo-ts/core'
 
 import { TypedArrayEncoder, SigningProviderRegistry, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
 import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-shared'
 
 import { TestRecord } from '../../../../core/src/storage/__tests__/TestRecord'
 import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { AskarModuleConfig } from '../../AskarModuleConfig'
 import { AskarWallet } from '../../wallet/AskarWallet'
 import { AskarStorageService } from '../AskarStorageService'
 import { askarQueryFromSearchQuery } from '../utils'
 
 const startDate = Date.now()
 
-describe('AskarStorageService', () => {
+describe.each(['hyperledger', 'owf'] as const)('AskarStorageService with %s', (askarImplementation) => {
   let wallet: AskarWallet
   let storageService: AskarStorageService<TestRecord>
   let agentContext: AgentContext
+  const askarConfig = new AskarModuleConfig({
+    ariesAskar: askarImplementation === 'hyperledger' ? ariesAskar : askar,
+  })
 
   beforeEach(async () => {
     const agentConfig = getAgentConfig('AskarStorageServiceTest')
 
-    wallet = new AskarWallet(agentConfig.logger, new agentDependencies.FileSystem(), new SigningProviderRegistry([]))
+    wallet = new AskarWallet(
+      agentConfig.logger,
+      new agentDependencies.FileSystem(),
+      new SigningProviderRegistry([]),
+      askarConfig
+    )
     agentContext = getAgentContext({
       wallet,
       agentConfig,
