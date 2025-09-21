@@ -571,7 +571,12 @@ export class DidCommConnectionsApi {
       )
     )
     messageHandlerRegistry.registerMessageHandler(
-      new DidCommConnectionResponseHandler(this.connectionService, this.outOfBandService, this.didResolverService, this.config)
+      new DidCommConnectionResponseHandler(
+        this.connectionService,
+        this.outOfBandService,
+        this.didResolverService,
+        this.config
+      )
     )
     messageHandlerRegistry.registerMessageHandler(new DidCommAckMessageHandler(this.connectionService))
     messageHandlerRegistry.registerMessageHandler(new DidCommConnectionProblemReportHandler(this.connectionService))
@@ -603,7 +608,9 @@ export class DidCommConnectionsApi {
       new DidCommDidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
     )
 
-    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateHandler(this.didRotateService, this.connectionService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommDidRotateHandler(this.didRotateService, this.connectionService)
+    )
 
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(this.didRotateService))
 

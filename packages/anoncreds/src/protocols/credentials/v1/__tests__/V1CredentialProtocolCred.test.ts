@@ -18,9 +18,9 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommDidExchangeState,
+  DidCommInboundMessageContext,
   DidCommMessageRecord,
   DidCommMessageRole,
-  DidCommInboundMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -32,16 +32,16 @@ import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyInd
 import { convertAttributesToCredentialValues } from '../../../../utils/credential'
 import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 import {
-  INDY_CREDENTIAL_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   DidCommCredentialV1AckMessage,
   DidCommCredentialV1Preview,
   DidCommCredentialV1ProblemReportMessage,
   DidCommIssueCredentialV1Message,
-  V1OfferCredentialMessage,
   DidCommProposeCredentialV1Message,
   DidCommRequestCredentialV1Message,
+  INDY_CREDENTIAL_ATTACHMENT_ID,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  V1OfferCredentialMessage,
 } from '../messages'
 
 // Mock classes

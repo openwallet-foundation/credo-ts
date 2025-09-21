@@ -16,14 +16,14 @@ import type {
 import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
 import { DidCommEventTypes } from '../../../../DidCommEvents'
-import { DidCommProtocol, DidCommOutboundMessageContext } from '../../../../models'
+import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
 import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
 import { DidCommBaseMessagePickupProtocol } from '../DidCommBaseMessagePickupProtocol'
 
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommBatchHandler, DidCommBatchPickupHandler } from './handlers'
-import { DidCommBatchMessageMessage, DidCommBatchMessage, DidCommBatchPickupMessage } from './messages'
+import { DidCommBatchMessage, DidCommBatchMessageMessage, DidCommBatchPickupMessage } from './messages'
 
 @injectable()
 export class DidCommMessagePickupV1Protocol extends DidCommBaseMessagePickupProtocol {

@@ -10,7 +10,11 @@ import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommAttachment, DidCommAttachmentData, DidCommLinkedAttachment } from '../../../../../../../didcomm'
 import { DidCommProofState } from '../../../models'
 import { DidCommProofExchangeRecord } from '../../../repository'
-import { DidCommPresentationV2Message, DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
+import {
+  DidCommPresentationV2Message,
+  DidCommProposePresentationV2Message,
+  DidCommRequestPresentationV2Message,
+} from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent

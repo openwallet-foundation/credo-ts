@@ -1,6 +1,6 @@
 import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommRouting, DidCommInboundMessageContext } from '../../../models'
+import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import type { DidCommMediationDenyMessage } from '../messages'
@@ -106,7 +106,9 @@ export class DidCommMediationRecipientService {
     return await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Granted)
   }
 
-  public async processKeylistUpdateResults(messageContext: DidCommInboundMessageContext<DidCommKeylistUpdateResponseMessage>) {
+  public async processKeylistUpdateResults(
+    messageContext: DidCommInboundMessageContext<DidCommKeylistUpdateResponseMessage>
+  ) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 

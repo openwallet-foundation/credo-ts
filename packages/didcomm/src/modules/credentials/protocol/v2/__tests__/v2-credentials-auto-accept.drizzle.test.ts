@@ -17,7 +17,6 @@ import { DidCommCredentialV2Preview } from '../messages/DidCommCredentialV2Previ
 import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
 
-
 describe('V2 Credentials Auto Accept', () => {
   let faberAgent: AnonCredsTestsAgent
   let faberReplay: EventReplaySubject

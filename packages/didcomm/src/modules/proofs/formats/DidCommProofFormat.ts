@@ -17,7 +17,10 @@
  * }
  * ```
  */
-export type DidCommProofFormatPayload<PFs extends DidCommProofFormat[], M extends keyof DidCommProofFormat['proofFormats']> = {
+export type DidCommProofFormatPayload<
+  PFs extends DidCommProofFormat[],
+  M extends keyof DidCommProofFormat['proofFormats'],
+> = {
   [ProofFormat in PFs[number] as ProofFormat['formatKey']]?: ProofFormat['proofFormats'][M]
 }
 

@@ -5,10 +5,10 @@ import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHa
 import type { DidCommProblemReportMessage } from '../../../../messages'
 import type { DidCommInboundMessageContext } from '../../../../models'
 import type {
-  ExtractProofFormats,
   DidCommProofFormat,
   DidCommProofFormatCredentialForRequestPayload,
   DidCommProofFormatPayload,
+  ExtractProofFormats,
 } from '../../formats'
 import type { DidCommProofFormatService } from '../../formats/DidCommProofFormatService'
 import type { DidCommProofFormatSpec } from '../../models/DidCommProofFormatSpec'

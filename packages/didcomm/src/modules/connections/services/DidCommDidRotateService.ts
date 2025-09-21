@@ -1,5 +1,5 @@
 import type { AgentContext, DidDocument, DidDocumentKey } from '@credo-ts/core'
-import type { DidCommRouting, DidCommInboundMessageContext } from '../../../models'
+import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 
@@ -24,7 +24,12 @@ import { DidCommOutboundMessageContext } from '../../../models'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
-import { DidCommDidRotateAckMessage, DidCommDidRotateMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
+import {
+  DidCommDidRotateAckMessage,
+  DidCommDidRotateMessage,
+  DidCommDidRotateProblemReportMessage,
+  DidCommHangupMessage,
+} from '../messages'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 import { DidCommConnectionService } from './DidCommConnectionService'

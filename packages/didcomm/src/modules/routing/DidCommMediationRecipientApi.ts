@@ -381,7 +381,11 @@ export class DidCommMediationRecipientApi {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: DidCommConnectionRecord, verkey: string, action?: DidCommKeylistUpdateAction) {
+  public async notifyKeylistUpdate(
+    connection: DidCommConnectionRecord,
+    verkey: string,
+    action?: DidCommKeylistUpdateAction
+  ) {
     // Use our useDidKey configuration unless we know the key formatting other party is using
     const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
     let useDidKey = didcommConfig.useDidKeyInProtocols
@@ -503,7 +507,9 @@ export class DidCommMediationRecipientApi {
 
   // Register handlers for the several messages for the mediator.
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseHandler(this.mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommKeylistUpdateResponseHandler(this.mediationRecipientService)
+    )
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(this.mediationRecipientService))
     messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(this.mediationRecipientService))
     //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this

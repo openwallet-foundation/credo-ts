@@ -2,7 +2,7 @@ import type { DidDocumentService, IndyAgentService } from '../../../core/src/mod
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import type { DidCommConnectionRecord } from '../modules'
-import { InMemoryQueueTransportRepository, type DidCommOutboundTransport } from '../transport'
+import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
 import type { DidCommEncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'

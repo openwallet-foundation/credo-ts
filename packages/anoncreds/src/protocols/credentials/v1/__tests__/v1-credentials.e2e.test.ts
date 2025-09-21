@@ -14,9 +14,9 @@ import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import {
   DidCommCredentialV1Preview,
   DidCommIssueCredentialV1Message,
-  V1OfferCredentialMessage,
   DidCommProposeCredentialV1Message,
   DidCommRequestCredentialV1Message,
+  V1OfferCredentialMessage,
 } from '../messages'
 
 describe('V1 Credentials', () => {

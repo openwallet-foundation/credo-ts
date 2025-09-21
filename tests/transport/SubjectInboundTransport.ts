@@ -1,9 +1,9 @@
 import type { Subscription } from 'rxjs'
 import type { AgentContext } from '../../packages/core/src'
 import type {
-  DidCommTransportSession,
   DidCommEncryptedMessage,
   DidCommInboundTransport,
+  DidCommTransportSession,
 } from '../../packages/didcomm/src'
 
 import { Subject } from 'rxjs'

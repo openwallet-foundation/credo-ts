@@ -1,5 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  DidCommProofFormatService,
   FormatCreateRequestOptions,
   ProofFormatAcceptProposalOptions,
   ProofFormatAcceptRequestOptions,
@@ -14,7 +15,6 @@ import type {
   ProofFormatProcessPresentationOptions,
   ProofFormatSelectCredentialsForRequestOptions,
   ProofFormatSelectCredentialsForRequestReturn,
-  DidCommProofFormatService,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,

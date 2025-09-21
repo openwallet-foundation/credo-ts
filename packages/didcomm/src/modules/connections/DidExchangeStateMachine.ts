@@ -5,7 +5,11 @@ import { CredoError } from '@credo-ts/core'
 
 import { canHandleMessageType } from '../../util/messageType'
 
-import { DidCommDidExchangeCompleteMessage, DidCommDidExchangeRequestMessage, DidCommDidExchangeResponseMessage } from './messages'
+import {
+  DidCommDidExchangeCompleteMessage,
+  DidCommDidExchangeRequestMessage,
+  DidCommDidExchangeResponseMessage,
+} from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from './models'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>

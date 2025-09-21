@@ -37,8 +37,9 @@ import { DidCommCredentialExchangeRepository } from '../repository'
  * Base implementation of the DidCommCredentialProtocol that can be used as a foundation for implementing
  * the DidCommCredentialProtocol interface.
  */
-export abstract class DidCommBaseCredentialProtocol<CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[]>
-  implements DidCommCredentialProtocol<CFs>
+export abstract class DidCommBaseCredentialProtocol<
+  CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[],
+> implements DidCommCredentialProtocol<CFs>
 {
   public abstract readonly version: string
 

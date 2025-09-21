@@ -8,7 +8,7 @@ import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol
 import { CredoError } from '@credo-ts/core'
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
-import { DidCommIssueCredentialV1Message as DidCommIssueCredentialV1Message } from '../messages'
+import { DidCommIssueCredentialV1Message } from '../messages'
 
 export class DidCommIssueCredentialV1Handler implements DidCommMessageHandler {
   private credentialProtocol: DidCommCredentialV1Protocol

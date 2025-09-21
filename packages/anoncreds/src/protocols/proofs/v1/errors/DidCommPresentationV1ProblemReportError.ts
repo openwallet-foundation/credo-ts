@@ -2,7 +2,7 @@ import type { DidCommPresentationProblemReportReason, DidCommProblemReportErrorO
 
 import { DidCommProblemReportError } from '@credo-ts/didcomm'
 
-import { DidCommPresentationV1ProblemReportMessage as DidCommPresentationV1ProblemReportMessage } from '../messages'
+import { DidCommPresentationV1ProblemReportMessage } from '../messages'
 
 interface DidCommPresentationV1ProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: DidCommPresentationProblemReportReason

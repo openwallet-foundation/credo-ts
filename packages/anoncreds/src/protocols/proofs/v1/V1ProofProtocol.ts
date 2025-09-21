@@ -1,12 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
   DidCommFeatureRegistry,
+  DidCommInboundMessageContext,
   DidCommMessage,
   DidCommMessageHandlerRegistry,
-  GetProofFormatDataReturn,
-  DidCommInboundMessageContext,
   DidCommProblemReportMessage,
   DidCommProofFormat,
+  GetProofFormatDataReturn,
   ProofProtocol,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
@@ -15,19 +15,19 @@ import type { LegacyIndyProofFormatService } from '../../../formats'
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   AckStatus,
-  DidCommAttachment,
   BaseProofProtocol,
+  DidCommAttachment,
   DidCommAutoAcceptProof,
   DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
+  DidCommPresentationProblemReportReason,
   DidCommProofExchangeRecord,
   DidCommProofExchangeRepository,
   DidCommProofRole,
   DidCommProofState,
   DidCommProofsModuleConfig,
   DidCommProtocol,
-  DidCommPresentationProblemReportReason,
 } from '@credo-ts/didcomm'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
@@ -42,12 +42,12 @@ import {
   DidCommRequestPresentationV1Handler,
 } from './handlers'
 import {
-  INDY_PROOF_ATTACHMENT_ID,
-  INDY_PROOF_REQUEST_ATTACHMENT_ID,
   DidCommPresentationV1AckMessage,
   DidCommPresentationV1Message,
   DidCommProposePresentationV1Message,
   DidCommRequestPresentationV1Message,
+  INDY_PROOF_ATTACHMENT_ID,
+  INDY_PROOF_REQUEST_ATTACHMENT_ID,
 } from './messages'
 import { DidCommPresentationV1ProblemReportMessage } from './messages/DidCommPresentationV1ProblemReportMessage'
 import { DidCommPresentationV1Preview } from './models/DidCommPresentationV1Preview'

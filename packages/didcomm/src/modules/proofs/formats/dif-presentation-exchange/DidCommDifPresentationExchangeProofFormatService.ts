@@ -24,8 +24,8 @@ import type {
   ProofFormatSelectCredentialsForRequestOptions,
 } from '../DidCommProofFormatServiceOptions'
 import type {
-  DifPresentationExchangePresentation,
   DidCommDifPresentationExchangeProofFormat,
+  DifPresentationExchangePresentation,
   DifPresentationExchangeProposal,
   DifPresentationExchangeRequest,
 } from './DidCommDifPresentationExchangeProofFormat'

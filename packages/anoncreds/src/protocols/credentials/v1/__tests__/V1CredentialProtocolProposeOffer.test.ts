@@ -19,7 +19,7 @@ import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/s
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, DidCommCredentialV1Preview, V1OfferCredentialMessage } from '../messages'
+import { DidCommCredentialV1Preview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')

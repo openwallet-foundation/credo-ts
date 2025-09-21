@@ -2,7 +2,11 @@ import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { DidCommCredentialFormatService } from '../../DidCommCredentialFormatService'
-import type { JsonCredential, DidCommJsonLdCredentialDetailFormat, DidCommJsonLdCredentialFormat } from '../DidCommJsonLdCredentialFormat'
+import type {
+  DidCommJsonLdCredentialDetailFormat,
+  DidCommJsonLdCredentialFormat,
+  JsonCredential,
+} from '../DidCommJsonLdCredentialFormat'
 
 import { DidDocument } from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'

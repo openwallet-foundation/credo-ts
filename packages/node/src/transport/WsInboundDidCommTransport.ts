@@ -1,9 +1,9 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
 import type {
-  DidCommMessageReceivedEvent,
-  DidCommTransportSession,
   DidCommEncryptedMessage,
   DidCommInboundTransport,
+  DidCommMessageReceivedEvent,
+  DidCommTransportSession,
 } from '@credo-ts/didcomm'
 
 import { CredoError, EventEmitter, utils } from '@credo-ts/core'

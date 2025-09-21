@@ -41,7 +41,11 @@ import { DidCommDocumentService } from '../../services'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
-import { DidCommDidExchangeCompleteMessage, DidCommDidExchangeRequestMessage, DidCommDidExchangeResponseMessage } from './messages'
+import {
+  DidCommDidExchangeCompleteMessage,
+  DidCommDidExchangeRequestMessage,
+  DidCommDidExchangeResponseMessage,
+} from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
 import { DidCommConnectionService } from './services'
 import {
@@ -468,7 +472,9 @@ export class DidExchangeProtocol {
     }
 
     await this.updateState(messageContext.agentContext, DidCommDidExchangeCompleteMessage.type, connectionRecord)
-    this.logger.debug(`Process message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} end`, { connectionRecord })
+    this.logger.debug(`Process message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} end`, {
+      connectionRecord,
+    })
     return connectionRecord
   }
 

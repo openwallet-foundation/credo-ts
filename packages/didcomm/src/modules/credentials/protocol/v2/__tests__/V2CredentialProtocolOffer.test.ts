@@ -1,6 +1,10 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type { DidCommCredentialFormat, CredentialFormatCreateOfferOptions, DidCommCredentialFormatService } from '../../../formats'
+import type {
+  CredentialFormatCreateOfferOptions,
+  DidCommCredentialFormat,
+  DidCommCredentialFormatService,
+} from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
 
 import { Subject } from 'rxjs'

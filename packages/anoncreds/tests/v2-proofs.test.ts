@@ -6,10 +6,10 @@ import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import {
   DidCommAttachment,
   DidCommAttachmentData,
-  DidCommProofExchangeRecord,
-  DidCommProofState,
   DidCommLinkedAttachment,
   DidCommPresentationV2Message,
+  DidCommProofExchangeRecord,
+  DidCommProofState,
   DidCommProposePresentationV2Message,
   DidCommRequestPresentationV2Message,
 } from '@credo-ts/didcomm'

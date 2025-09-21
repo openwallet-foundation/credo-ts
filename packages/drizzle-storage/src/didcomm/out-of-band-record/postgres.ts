@@ -1,4 +1,9 @@
-import type { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRole, DidCommOutOfBandState, DidCommPlaintextMessage } from '@credo-ts/didcomm'
+import type {
+  DidCommOutOfBandInlineServiceKey,
+  DidCommOutOfBandRole,
+  DidCommOutOfBandState,
+  DidCommPlaintextMessage,
+} from '@credo-ts/didcomm'
 import { boolean, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'

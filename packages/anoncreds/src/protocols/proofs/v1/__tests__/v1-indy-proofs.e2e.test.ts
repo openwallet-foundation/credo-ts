@@ -4,7 +4,11 @@ import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSe
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
 import { DidCommProofExchangeRecord, DidCommProofState } from '../../../../../../didcomm/src'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
-import { DidCommPresentationV1Message, DidCommProposePresentationV1Message, DidCommRequestPresentationV1Message } from '../messages'
+import {
+  DidCommPresentationV1Message,
+  DidCommProposePresentationV1Message,
+  DidCommRequestPresentationV1Message,
+} from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent

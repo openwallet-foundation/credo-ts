@@ -20,7 +20,7 @@ import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 import { DidCommEventTypes } from '../../../../DidCommEvents'
 import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import { DidCommProblemReportError } from '../../../../errors'
-import { DidCommProtocol, DidCommOutboundMessageContext } from '../../../../models'
+import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
 import { DidCommRoutingProblemReportReason } from '../../../routing/error'
 import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
 import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
@@ -34,16 +34,16 @@ import {
   DidCommLiveDeliveryChangeV2Handler,
   DidCommMessageDeliveryV2Handler,
   DidCommMessagesReceivedV2Handler,
-  DidCommStatusV2Handler,
   DidCommStatusRequestV2Handler,
+  DidCommStatusV2Handler,
 } from './handlers'
 import {
   DidCommDeliveryRequestV2Message,
   DidCommLiveDeliveryChangeV2Message,
   DidCommMessageDeliveryV2Message,
   DidCommMessagesReceivedV2Message,
-  DidCommStatusV2Message,
   DidCommStatusRequestV2Message,
+  DidCommStatusV2Message,
 } from './messages'
 
 @injectable()
@@ -280,7 +280,9 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
     return deliveryRequestMessage
   }
 
-  public async processLiveDeliveryChange(messageContext: DidCommInboundMessageContext<DidCommLiveDeliveryChangeV2Message>) {
+  public async processLiveDeliveryChange(
+    messageContext: DidCommInboundMessageContext<DidCommLiveDeliveryChangeV2Message>
+  ) {
     const { agentContext, message, sessionId } = messageContext
 
     const connection = messageContext.assertReadyConnection()

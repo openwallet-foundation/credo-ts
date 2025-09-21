@@ -28,12 +28,12 @@ import {
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
+  DidCommLinkedAttachment,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
-  DidCommLinkedAttachment,
 } from '../../../../../../src'
 
 describe('V2 Connectionless Proofs - Indy', () => {

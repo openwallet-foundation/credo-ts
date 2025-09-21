@@ -20,7 +20,11 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../DidCommDiscoverFeatur
 import { DidCommDiscoverFeaturesService } from '../../services'
 
 import { DidCommFeaturesDiscloseMessageHandler, DidCommFeaturesQueryMessageHandler } from './handlers'
-import { DidCommFeaturesDiscloseProtocol, DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from './messages'
+import {
+  DidCommFeaturesDiscloseMessage,
+  DidCommFeaturesDiscloseProtocol,
+  DidCommFeaturesQueryMessage,
+} from './messages'
 
 @injectable()
 export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesService {
@@ -120,7 +124,9 @@ export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesSer
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: DidCommInboundMessageContext<DidCommFeaturesDiscloseMessage>): Promise<void> {
+  public async processDisclosure(
+    messageContext: DidCommInboundMessageContext<DidCommFeaturesDiscloseMessage>
+  ): Promise<void> {
     const { protocols, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

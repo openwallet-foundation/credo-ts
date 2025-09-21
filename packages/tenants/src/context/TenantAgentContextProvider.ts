@@ -1,5 +1,5 @@
 import { AgentContextProvider, Kms, TypedArrayEncoder, UpdateAssistantUpdateOptions } from '@credo-ts/core'
-import type { DidCommRoutingCreatedEvent, DidCommEncryptedMessage } from '@credo-ts/didcomm'
+import type { DidCommEncryptedMessage, DidCommRoutingCreatedEvent } from '@credo-ts/didcomm'
 import type { TenantRecord } from '../repository'
 
 import {

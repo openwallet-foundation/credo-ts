@@ -518,7 +518,11 @@ describe('DidCommOutOfBandService', () => {
 
       mockFunction(outOfBandRepository.findByQuery).mockReturnValue(Promise.resolve(expected))
       const result = await outOfBandService.findAllByQuery(agentContext, { state: DidCommOutOfBandState.Initial }, {})
-      expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(agentContext, { state: DidCommOutOfBandState.Initial }, {})
+      expect(outOfBandRepository.findByQuery).toHaveBeenCalledWith(
+        agentContext,
+        { state: DidCommOutOfBandState.Initial },
+        {}
+      )
 
       expect(result).toEqual(expect.arrayContaining(expected))
     })

@@ -27,7 +27,9 @@ export class DrizzleDidcommMediatorRoutingRecordAdapter extends BaseDrizzleRecor
     )
   }
 
-  public getValues(record: DidCommMediatorRoutingRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMediatorRouting']> {
+  public getValues(
+    record: DidCommMediatorRoutingRecord
+  ): DrizzleAdapterValues<(typeof sqlite)['didcommMediatorRouting']> {
     const { routingKeyFingerprints, ...customTags } = record.getTags()
 
     return {

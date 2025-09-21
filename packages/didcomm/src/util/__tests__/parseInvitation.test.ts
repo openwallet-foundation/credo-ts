@@ -2,7 +2,7 @@ import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
 import { DidCommConnectionInvitationMessage } from '../../modules/connections'
-import { InvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
+import { DidCommOutOfBandInvitation, InvitationType } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/converters'
 import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
 

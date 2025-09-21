@@ -3,20 +3,20 @@ import type {
   CredentialProtocolOptions,
   DidCommCredentialProtocol,
   DidCommFeatureRegistry,
+  DidCommInboundMessageContext,
   DidCommMessage,
   DidCommMessageHandlerRegistry,
-  ExtractCredentialFormats,
-  DidCommInboundMessageContext,
   DidCommProblemReportMessage,
+  ExtractCredentialFormats,
 } from '@credo-ts/didcomm'
 import type { LegacyIndyCredentialFormatService } from '../../../formats'
 
 import { CredoError, JsonTransformer, utils } from '@credo-ts/core'
 import {
   AckStatus,
+  BaseDidCommCredentialProtocol,
   DidCommAttachment,
   DidCommAttachmentData,
-  BaseDidCommCredentialProtocol,
   DidCommAutoAcceptCredential,
   DidCommConnectionService,
   DidCommCredentialExchangeRecord,
@@ -43,16 +43,16 @@ import {
   DidCommRequestCredentialV1Handler,
 } from './handlers'
 import {
-  INDY_CREDENTIAL_ATTACHMENT_ID,
-  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
-  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   DidCommCredentialV1AckMessage,
   DidCommCredentialV1Preview,
   DidCommCredentialV1ProblemReportMessage,
   DidCommIssueCredentialV1Message,
-  V1OfferCredentialMessage,
   DidCommProposeCredentialV1Message,
   DidCommRequestCredentialV1Message,
+  INDY_CREDENTIAL_ATTACHMENT_ID,
+  INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
+  INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
+  V1OfferCredentialMessage,
 } from './messages'
 
 export interface DidCommCredentialV1ProtocolConfig {

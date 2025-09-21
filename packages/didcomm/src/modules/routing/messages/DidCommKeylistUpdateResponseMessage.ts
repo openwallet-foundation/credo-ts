@@ -14,7 +14,11 @@ export enum DidCommKeylistUpdateResult {
 }
 
 export class DidCommKeylistUpdated {
-  public constructor(options: { recipientKey: string; action: DidCommKeylistUpdateAction; result: DidCommKeylistUpdateResult }) {
+  public constructor(options: {
+    recipientKey: string
+    action: DidCommKeylistUpdateAction
+    result: DidCommKeylistUpdateResult
+  }) {
     if (options) {
       this.recipientKey = options.recipientKey
       this.action = options.action

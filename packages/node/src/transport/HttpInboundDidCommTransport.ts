@@ -1,11 +1,11 @@
 import type { Server } from 'http'
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  DidCommEncryptedMessage,
+  DidCommInboundTransport,
   DidCommMessageProcessedEvent,
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
-  DidCommEncryptedMessage,
-  DidCommInboundTransport,
 } from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
 

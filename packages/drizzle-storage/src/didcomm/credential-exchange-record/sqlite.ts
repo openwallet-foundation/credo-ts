@@ -1,7 +1,12 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import type { JsonObject } from '@credo-ts/core'
-import type { DidCommAutoAcceptCredential, CredentialRecordBinding, DidCommCredentialRole, DidCommCredentialState } from '@credo-ts/didcomm'
+import type {
+  CredentialRecordBinding,
+  DidCommAutoAcceptCredential,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommCredentialExchange = sqliteTable(

@@ -19,8 +19,8 @@ import {
   DidCommDeliveryRequestV2Message,
   DidCommMessageDeliveryV2Message,
   DidCommMessagesReceivedV2Message,
-  DidCommStatusV2Message,
   DidCommStatusRequestV2Message,
+  DidCommStatusV2Message,
 } from '../messages'
 
 const mockConnection = getMockConnection({
@@ -373,7 +373,9 @@ describe('V2MessagePickupProtocol', () => {
 
       const deliveryRequestMessage = await pickupProtocol.processStatus(messageContext)
       expect(deliveryRequestMessage)
-      expect(deliveryRequestMessage).toEqual(new DidCommDeliveryRequestV2Message({ id: deliveryRequestMessage?.id, limit: 1 }))
+      expect(deliveryRequestMessage).toEqual(
+        new DidCommDeliveryRequestV2Message({ id: deliveryRequestMessage?.id, limit: 1 })
+      )
     })
   })
 

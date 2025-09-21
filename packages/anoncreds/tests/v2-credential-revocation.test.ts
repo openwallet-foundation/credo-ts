@@ -6,8 +6,8 @@ import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,
   DidCommCredentialState,
-  DidCommMessageRepository,
   DidCommCredentialV2Preview,
+  DidCommMessageRepository,
   DidCommOfferCredentialV2Message,
 } from '@credo-ts/didcomm'
 

@@ -69,7 +69,9 @@ export interface DidCommCredentialV2ProtocolConfig<CredentialFormatServices exte
   credentialFormats: CredentialFormatServices
 }
 
-export class DidCommCredentialV2Protocol<CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[]>
+export class DidCommCredentialV2Protocol<
+    CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[],
+  >
   extends DidCommBaseCredentialProtocol<CFs>
   implements DidCommCredentialProtocol<CFs>
 {
@@ -1349,7 +1351,9 @@ export class DidCommCredentialV2Protocol<CFs extends DidCommCredentialFormatServ
    * @param messageFormats the format objects containing the format name (eg indy)
    * @return the credential format service objects in an array - derived from format object keys
    */
-  private getFormatServicesFromMessage(messageFormats: DidCommCredentialFormatSpec[]): DidCommCredentialFormatService[] {
+  private getFormatServicesFromMessage(
+    messageFormats: DidCommCredentialFormatSpec[]
+  ): DidCommCredentialFormatService[] {
     const formatServices = new Set<DidCommCredentialFormatService>()
 
     for (const msg of messageFormats) {

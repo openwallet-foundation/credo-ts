@@ -27,8 +27,8 @@ import { DidCommConnectionService } from '../../connections/services'
 import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
-import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
+import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateMessage,
@@ -81,7 +81,9 @@ export class DidCommMediatorService {
     throw new CredoError('Mediator has not been initialized yet.')
   }
 
-  public async processForwardMessage(messageContext: DidCommInboundMessageContext<DidCommForwardMessage>): Promise<void> {
+  public async processForwardMessage(
+    messageContext: DidCommInboundMessageContext<DidCommForwardMessage>
+  ): Promise<void> {
     const { message, agentContext } = messageContext
 
     // TODO: update to class-validator validation

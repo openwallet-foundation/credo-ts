@@ -1,7 +1,6 @@
 import { DateTransformer } from '@credo-ts/core'
 
 export class DidCommRevocationNotification {
-
   @DateTransformer()
   public revocationDate: Date
 

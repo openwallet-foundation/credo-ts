@@ -6,8 +6,8 @@ import {
   DidCommEventTypes,
   DidCommMessage,
   DidCommMessageSender,
-  IsValidMessageType,
   DidCommOutboundMessageContext,
+  IsValidMessageType,
   parseMessageType,
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'

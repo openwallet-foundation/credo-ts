@@ -5,7 +5,7 @@ import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandl
 import type { DidCommProblemReportMessage } from '../../../messages'
 import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommProofStateChangedEvent } from '../DidCommProofEvents'
-import type { ExtractProofFormats, DidCommProofFormatService } from '../formats'
+import type { DidCommProofFormatService, ExtractProofFormats } from '../formats'
 import type { DidCommProofRole } from '../models'
 import type { DidCommProofExchangeRecord } from '../repository'
 import type { DidCommProofProtocol } from './DidCommProofProtocol'

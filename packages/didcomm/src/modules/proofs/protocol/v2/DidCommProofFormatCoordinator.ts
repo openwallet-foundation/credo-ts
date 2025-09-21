@@ -1,10 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
 import type {
-  ExtractProofFormats,
   DidCommProofFormatCredentialForRequestPayload,
   DidCommProofFormatPayload,
   DidCommProofFormatService,
+  ExtractProofFormats,
 } from '../../formats'
 import type { DidCommProofFormatSpec } from '../../models/DidCommProofFormatSpec'
 import type { DidCommProofExchangeRecord } from '../../repository'
@@ -13,7 +13,11 @@ import { CredoError } from '@credo-ts/core'
 
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 
-import { DidCommPresentationV2Message, DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from './messages'
+import {
+  DidCommPresentationV2Message,
+  DidCommProposePresentationV2Message,
+  DidCommRequestPresentationV2Message,
+} from './messages'
 
 export class ProofFormatCoordinator<PFs extends DidCommProofFormatService[]> {
   /**
@@ -371,7 +375,9 @@ export class ProofFormatCoordinator<PFs extends DidCommProofFormatService[]> {
       >
       formatServices: DidCommProofFormatService[]
     }
-  ): Promise<DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'output'>> {
+  ): Promise<
+    DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'output'>
+  > {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
@@ -556,7 +562,10 @@ export class ProofFormatCoordinator<PFs extends DidCommProofFormatService[]> {
     return attachment
   }
 
-  private getAttachmentIdForService(credentialFormatService: DidCommProofFormatService, formats: DidCommProofFormatSpec[]) {
+  private getAttachmentIdForService(
+    credentialFormatService: DidCommProofFormatService,
+    formats: DidCommProofFormatSpec[]
+  ) {
     const format = formats.find((format) => credentialFormatService.supportsFormat(format.format))
 
     if (!format) throw new CredoError(`No attachment found for service ${credentialFormatService.formatKey}`)

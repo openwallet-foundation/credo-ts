@@ -18,8 +18,8 @@ import type {
   CredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
 import type {
-  JsonCredential,
   DidCommJsonLdCredentialFormat,
+  JsonCredential,
   JsonLdFormatDataCredentialDetail,
   JsonLdFormatDataVerifiableCredential,
 } from './DidCommJsonLdCredentialFormat'
@@ -46,7 +46,9 @@ import { DidCommJsonLdCredentialDetail } from './DidCommJsonLdCredentialDetail'
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@v1.0'
 
-export class DidCommJsonLdCredentialFormatService implements DidCommCredentialFormatService<DidCommJsonLdCredentialFormat> {
+export class DidCommJsonLdCredentialFormatService
+  implements DidCommCredentialFormatService<DidCommJsonLdCredentialFormat>
+{
   public readonly formatKey = 'jsonld' as const
   public readonly credentialRecordType = 'w3c' as const
 
@@ -219,7 +221,11 @@ export class DidCommJsonLdCredentialFormatService implements DidCommCredentialFo
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { credentialFormats, attachmentId, requestAttachment }: CredentialFormatAcceptRequestOptions<DidCommJsonLdCredentialFormat>
+    {
+      credentialFormats,
+      attachmentId,
+      requestAttachment,
+    }: CredentialFormatAcceptRequestOptions<DidCommJsonLdCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
 

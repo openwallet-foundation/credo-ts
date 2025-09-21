@@ -7,7 +7,7 @@ import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol
 
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
-import { DidCommProposeCredentialV1Message as DidCommProposeCredentialV1Message } from '../messages'
+import { DidCommProposeCredentialV1Message } from '../messages'
 
 export class DidCommProposeCredentialV1Handler implements DidCommMessageHandler {
   private credentialProtocol: DidCommCredentialV1Protocol

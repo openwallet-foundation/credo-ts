@@ -1,6 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import type { DidCommCredentialFormatPayload, DidCommCredentialFormatService, ExtractCredentialFormats } from '../../formats'
+import type {
+  DidCommCredentialFormatPayload,
+  DidCommCredentialFormatService,
+  ExtractCredentialFormats,
+} from '../../formats'
 import type { DidCommCredentialFormatSpec } from '../../models'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
 

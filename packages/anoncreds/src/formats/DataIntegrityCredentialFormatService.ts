@@ -22,14 +22,14 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  DidCommCredentialFormatService,
   DataIntegrityCredential,
-  DidCommDataIntegrityCredentialFormat,
   DataIntegrityCredentialRequest,
   DataIntegrityCredentialRequestBindingProof,
-  DidCommDataIntegrityOfferCredentialFormat,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
+  DidCommDataIntegrityCredentialFormat,
+  DidCommDataIntegrityOfferCredentialFormat,
   DidCommSignedAttachmentBindingMethod,
   DidCommSignedAttachmentDataIntegrityBindingProof,
   W3C_VC_DATA_MODEL_VERSION,
@@ -59,9 +59,9 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import {
+  DataIntegrityCredentialOffer,
   DidCommAttachment,
   DidCommAttachmentData,
-  DataIntegrityCredentialOffer,
   DidCommCredentialFormatSpec,
   DidCommCredentialPreviewAttribute,
   DidCommCredentialProblemReportReason,
@@ -92,7 +92,9 @@ const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL = 'didcomm/w3c-di-vc@v0.1'
 
-export class DataIntegrityCredentialFormatService implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat> {
+export class DataIntegrityCredentialFormatService
+  implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat>
+{
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */
   public readonly formatKey = 'dataIntegrity' as const
 

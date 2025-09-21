@@ -14,8 +14,8 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  DidCommCredentialFormatService,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
   DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'

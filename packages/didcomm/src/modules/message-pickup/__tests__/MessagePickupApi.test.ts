@@ -15,7 +15,7 @@ import { DidExchangeState } from '../../connections/models/DidExchangeState'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { MessagePickupApi } from '../MessagePickupApi'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
-import { V1MessagePickupProtocol, DidCommMessageDeliveryV2Message, V2MessagePickupProtocol } from '../protocol'
+import { DidCommMessageDeliveryV2Message, V1MessagePickupProtocol, V2MessagePickupProtocol } from '../protocol'
 import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
 
 const mockConnection = getMockConnection({

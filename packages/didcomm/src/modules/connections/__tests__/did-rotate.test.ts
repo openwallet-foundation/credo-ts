@@ -79,7 +79,9 @@ describe('Rotation E2E tests', () => {
       const { newDid } = await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -118,7 +120,9 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
@@ -181,7 +185,9 @@ describe('Rotation E2E tests', () => {
       })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -255,7 +261,9 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
       const [firstRotate, secondRotate] = await waitForAllDidRotate
 
       const preRotateDid = aliceBobConnection?.did

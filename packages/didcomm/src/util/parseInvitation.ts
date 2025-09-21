@@ -7,7 +7,7 @@ import { DidCommMessage } from '../DidCommMessage'
 import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
-import { InvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
+import { DidCommOutOfBandInvitation, InvitationType } from '../modules/oob/messages'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 

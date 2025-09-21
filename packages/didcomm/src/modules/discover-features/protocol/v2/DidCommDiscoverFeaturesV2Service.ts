@@ -92,7 +92,9 @@ export class DidCommDiscoverFeaturesV2Service extends DidCommDiscoverFeaturesSer
     return { message: discloseMessage }
   }
 
-  public async processDisclosure(messageContext: DidCommInboundMessageContext<DidCommFeaturesDisclosuresMessage>): Promise<void> {
+  public async processDisclosure(
+    messageContext: DidCommInboundMessageContext<DidCommFeaturesDisclosuresMessage>
+  ): Promise<void> {
     const { disclosures, threadId } = messageContext.message
 
     const connection = messageContext.assertReadyConnection()

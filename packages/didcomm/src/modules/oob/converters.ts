@@ -15,7 +15,7 @@ import {
 } from '../connections/messages/DidCommConnectionInvitationMessage'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { InvitationType, DidCommOutOfBandInvitation } from './messages/DidCommOutOfBandInvitation'
+import { DidCommOutOfBandInvitation, InvitationType } from './messages/DidCommOutOfBandInvitation'
 
 export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitationMessage) {
   let service: string | OutOfBandDidCommService

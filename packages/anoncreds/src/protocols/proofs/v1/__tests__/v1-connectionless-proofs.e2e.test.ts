@@ -20,12 +20,12 @@ import {
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
+  DidCommLinkedAttachment,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
-  DidCommLinkedAttachment,
 } from '../../../../../../didcomm/src'
 import {
   getAnonCredsIndyModules,

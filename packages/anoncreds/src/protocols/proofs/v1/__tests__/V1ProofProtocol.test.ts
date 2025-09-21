@@ -9,19 +9,19 @@ import {
   DidCommAttachment,
   DidCommAttachmentData,
   DidCommDidExchangeState,
+  DidCommInboundMessageContext,
+  DidCommPresentationProblemReportReason,
   DidCommProofEventTypes,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
-  DidCommInboundMessageContext,
-  DidCommPresentationProblemReportReason,
 } from '../../../../../../didcomm/src'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
 import { DidCommProofV1Protocol } from '../V1ProofProtocol'
-import { INDY_PROOF_REQUEST_ATTACHMENT_ID, DidCommRequestPresentationV1Message } from '../messages'
+import { DidCommRequestPresentationV1Message, INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
 
 // Mock classes

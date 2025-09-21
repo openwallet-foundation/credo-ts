@@ -1,11 +1,11 @@
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommConnectionRecord } from '../../connections'
 import type {
-  ExtractProofFormats,
   DidCommProofFormat,
   DidCommProofFormatCredentialForRequestPayload,
   DidCommProofFormatPayload,
   DidCommProofFormatService,
+  ExtractProofFormats,
 } from '../formats'
 import type { DidCommAutoAcceptProof } from '../models'
 import type { DidCommProofExchangeRecord } from '../repository'
@@ -131,11 +131,19 @@ export interface NegotiateProofRequestOptions<PFs extends DidCommProofFormatServ
 
 export interface GetCredentialsForRequestOptions<PFs extends DidCommProofFormatService[]> {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats?: DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'input'>
+  proofFormats?: DidCommProofFormatCredentialForRequestPayload<
+    ExtractProofFormats<PFs>,
+    'getCredentialsForRequest',
+    'input'
+  >
 }
 
 export interface GetCredentialsForRequestReturn<PFs extends DidCommProofFormatService[]> {
-  proofFormats: DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'output'>
+  proofFormats: DidCommProofFormatCredentialForRequestPayload<
+    ExtractProofFormats<PFs>,
+    'getCredentialsForRequest',
+    'output'
+  >
 }
 
 export interface SelectCredentialsForRequestOptions<PFs extends DidCommProofFormatService[]> {

@@ -24,7 +24,9 @@ import type {
   NegotiateCredentialProposalOptions,
 } from './DidCommCredentialProtocolOptions'
 
-export interface DidCommCredentialProtocol<CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[]> {
+export interface DidCommCredentialProtocol<
+  CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[],
+> {
   readonly version: string
 
   // methods for proposal

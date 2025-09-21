@@ -3,9 +3,9 @@ import type { GetAgentMessageOptions } from '../../../../../repository'
 import type { DidCommPlaintextMessage } from '../../../../../types'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import type {
-  DidCommCredentialFormat,
   CredentialFormatAcceptRequestOptions,
   CredentialFormatCreateOfferOptions,
+  DidCommCredentialFormat,
   DidCommCredentialFormatService,
 } from '../../../formats'
 import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'

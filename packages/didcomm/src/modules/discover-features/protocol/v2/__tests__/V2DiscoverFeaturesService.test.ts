@@ -11,7 +11,7 @@ import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
-import { DidCommGoalCode, DidCommProtocol, DidCommInboundMessageContext } from '../../../../../models'
+import { DidCommGoalCode, DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFeaturesModuleConfig'
@@ -197,9 +197,9 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
       )
       expect(outboundMessage).toBeDefined()
       expect(
-        (outboundMessage as DiscoverFeaturesProtocolMsgReturnType<DidCommFeaturesDisclosuresMessage>).message.disclosures.map(
-          (p) => p.id
-        )
+        (
+          outboundMessage as DiscoverFeaturesProtocolMsgReturnType<DidCommFeaturesDisclosuresMessage>
+        ).message.disclosures.map((p) => p.id)
       ).toStrictEqual([
         'https://didcomm.org/connections/1.0',
         'https://didcomm.org/notification/1.0',

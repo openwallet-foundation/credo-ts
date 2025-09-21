@@ -23,7 +23,7 @@ import {
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { DidCommAckMessage, AckStatus } from '../../../messages'
+import { AckStatus, DidCommAckMessage } from '../../../messages'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
@@ -193,7 +193,10 @@ describe('DidCommConnectionService', () => {
     it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Receiver}`, async () => {
       expect.assertions(1)
 
-      const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state: DidCommOutOfBandState.PrepareResponse })
+      const outOfBand = getMockOutOfBand({
+        role: DidCommOutOfBandRole.Sender,
+        state: DidCommOutOfBandState.PrepareResponse,
+      })
       const config = { label: '', routing: myRouting }
 
       return expect(connectionService.createRequest(agentContext, outOfBand, config)).rejects.toThrow(

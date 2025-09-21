@@ -1,7 +1,11 @@
 import type { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import type { DidCommProofFormatSpec } from '../models/DidCommProofFormatSpec'
 import type { DidCommProofExchangeRecord } from '../repository/DidCommProofExchangeRecord'
-import type { DidCommProofFormat, DidCommProofFormatCredentialForRequestPayload, DidCommProofFormatPayload } from './DidCommProofFormat'
+import type {
+  DidCommProofFormat,
+  DidCommProofFormatCredentialForRequestPayload,
+  DidCommProofFormatPayload,
+} from './DidCommProofFormat'
 import type { DidCommProofFormatService } from './DidCommProofFormatService'
 
 /**

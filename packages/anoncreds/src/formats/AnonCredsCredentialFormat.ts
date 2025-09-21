@@ -1,4 +1,8 @@
-import type { DidCommCredentialFormat, DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
+import type {
+  DidCommCredentialFormat,
+  DidCommCredentialPreviewAttributeOptions,
+  DidCommLinkedAttachment,
+} from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 
 export interface AnonCredsCredentialProposalFormat {
