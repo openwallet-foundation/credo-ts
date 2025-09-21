@@ -1,9 +1,9 @@
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
-  StoreCredentialOptions,
   W3cCreatePresentationOptions,
   W3cSignCredentialOptions,
   W3cSignPresentationOptions,
+  W3cStoreCredentialOptions,
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'
@@ -28,7 +28,7 @@ export class W3cCredentialsApi {
     this.w3cCredentialService = w3cCredentialService
   }
 
-  public async storeCredential(options: StoreCredentialOptions): Promise<W3cCredentialRecord> {
+  public async storeCredential(options: W3cStoreCredentialOptions): Promise<W3cCredentialRecord> {
     return this.w3cCredentialService.storeCredential(this.agentContext, options)
   }
 

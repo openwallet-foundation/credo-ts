@@ -2,7 +2,7 @@ import type { TagsBase } from '@credo-ts/core'
 import type { DidCommCredentialRole } from '../models'
 import type { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
 import type { DidCommCredentialState } from '../models/DidCommCredentialState'
-import type { DidCommRevocationNotification } from '../models/DidCommRevocationNotification'
+import { DidCommRevocationNotification } from '../models/DidCommRevocationNotification'
 
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
@@ -54,6 +54,8 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
   public state!: DidCommCredentialState
   public role!: DidCommCredentialRole
   public autoAcceptCredential?: DidCommAutoAcceptCredential
+
+  @Type(() => DidCommRevocationNotification)
   public revocationNotification?: DidCommRevocationNotification
   public errorMessage?: string
   public protocolVersion!: string

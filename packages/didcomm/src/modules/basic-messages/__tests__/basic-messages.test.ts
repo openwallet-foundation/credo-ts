@@ -148,7 +148,7 @@ describe('Basic Messages E2E', () => {
       .spyOn(aliceAgent.modules.didcomm.outboundTransports[0], 'sendMessage')
       .mockRejectedValue(new Error('any error'))
 
-    await expect(aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrowError(
+    await expect(aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrow(
       MessageSendingError
     )
     try {
@@ -173,7 +173,7 @@ describe('Basic Messages E2E', () => {
       await aliceAgent.modules.basicMessages.deleteById(storedRecord.id)
       await expect(
         aliceAgent.modules.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id)
-      ).rejects.toThrowError(RecordNotFoundError)
+      ).rejects.toThrow(RecordNotFoundError)
     }
     spy.mockClear()
   })

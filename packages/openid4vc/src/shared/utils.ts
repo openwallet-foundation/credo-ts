@@ -1,4 +1,4 @@
-import { AgentContext, ClaimFormat, DcqlCredential, DidPurpose, Kms } from '@credo-ts/core'
+import { AgentContext, ClaimFormat, DcqlQuery, DidPurpose, Kms } from '@credo-ts/core'
 import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 
@@ -133,10 +133,21 @@ export function parseIfJson<T>(input: T): T | Record<string, unknown> {
   return input
 }
 
-export const dcqlFormatToPresentationClaimFormat = {
-  'dc+sd-jwt': ClaimFormat.SdJwtVc,
-  'vc+sd-jwt': ClaimFormat.SdJwtVc,
-  jwt_vc_json: ClaimFormat.JwtVp,
-  ldp_vc: ClaimFormat.LdpVp,
-  mso_mdoc: ClaimFormat.MsoMdoc,
-} satisfies Record<DcqlCredential['credential_format'], ClaimFormat>
+export function dcqlCredentialQueryToPresentationFormat(credential: DcqlQuery['credentials'][number]) {
+  switch (credential.format) {
+    case 'dc+sd-jwt':
+      return ClaimFormat.SdJwtDc
+    case 'vc+sd-jwt':
+      if (credential.meta && 'type_values' in credential.meta) {
+        return ClaimFormat.SdJwtW3cVp
+      }
+
+      return ClaimFormat.SdJwtDc
+    case 'jwt_vc_json':
+      return ClaimFormat.JwtVp
+    case 'ldp_vc':
+      return ClaimFormat.LdpVp
+    case 'mso_mdoc':
+      return ClaimFormat.MsoMdoc
+  }
+}

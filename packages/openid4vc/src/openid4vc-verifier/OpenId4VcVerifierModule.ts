@@ -1,10 +1,7 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import type { AgentContext, DependencyManager } from '@credo-ts/core'
 import type { NextFunction } from 'express'
 import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import type { OpenId4VcVerificationRequest } from './router'
-
-import { AgentConfig } from '@credo-ts/core'
-import { setGlobalConfig } from '@openid4vc/oauth2'
 
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 
@@ -18,8 +15,7 @@ import { configureAuthorizationRequestEndpoint } from './router/authorizationReq
 /**
  * @public
  */
-export class OpenId4VcVerifierModule implements Module {
-  public readonly api = OpenId4VcVerifierApi
+export class OpenId4VcVerifierModule {
   public readonly config: OpenId4VcVerifierModuleConfig
 
   public constructor(options: OpenId4VcVerifierModuleConfigOptions) {
@@ -30,18 +26,9 @@ export class OpenId4VcVerifierModule implements Module {
    * Registers the dependencies of the openid4vc verifier module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
-    const agentConfig = dependencyManager.resolve(AgentConfig)
-
-    // Warn about experimental module
-    agentConfig.logger.warn(
-      "The '@credo-ts/openid4vc' Holder module is experimental and could have unexpected breaking changes. When using this module, make sure to use strict versions for all @credo-ts packages."
-    )
-
-    if (agentConfig.allowInsecureHttpUrls) {
-      setGlobalConfig({
-        allowInsecureUrls: true,
-      })
-    }
+    // Since the OpenID4VC module is a nested module (a module consisting of three modules) we register the API
+    // manually. In the future we may disallow resolving the sub-api, but for now it allows for a cleaner migration path
+    dependencyManager.registerContextScoped(OpenId4VcVerifierApi)
 
     // Register config
     dependencyManager.registerInstance(OpenId4VcVerifierModuleConfig, this.config)

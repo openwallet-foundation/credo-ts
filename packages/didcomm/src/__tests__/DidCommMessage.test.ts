@@ -82,7 +82,7 @@ describe('DidCommMessage', () => {
         '@type': 'https://didcomm.org/fake-protocol/2.0/message',
       }
 
-      expect(() => JsonTransformer.fromJSON(json, CustomProtocolMessage)).toThrowError(ClassValidationError)
+      expect(() => JsonTransformer.fromJSON(json, CustomProtocolMessage)).toThrow(ClassValidationError)
       try {
         JsonTransformer.fromJSON(json, CustomProtocolMessage)
       } catch (error) {

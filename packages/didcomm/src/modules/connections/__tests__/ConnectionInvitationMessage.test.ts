@@ -27,7 +27,7 @@ describe('ConnectionInvitationMessage', () => {
       label: 'test',
     }
 
-    expect(() => JsonTransformer.fromJSON(json, DidCommConnectionInvitationMessage)).toThrowError(ClassValidationError)
+    expect(() => JsonTransformer.fromJSON(json, DidCommConnectionInvitationMessage)).toThrow(ClassValidationError)
   })
 
   it('should replace legacy did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix with https://didcomm.org in message type', async () => {
@@ -119,7 +119,7 @@ describe('ConnectionInvitationMessage', () => {
     it('should throw error if url does not contain `c_i` or `d_m`', () => {
       const invitationUrl = 'https://example.com?param=123'
 
-      expect(() => DidCommConnectionInvitationMessage.fromUrl(invitationUrl)).toThrowError()
+      expect(() => DidCommConnectionInvitationMessage.fromUrl(invitationUrl)).toThrow()
     })
   })
 })

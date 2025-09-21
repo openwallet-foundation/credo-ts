@@ -638,9 +638,7 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(sdJwtVc.payload).not.toContain({
-        claim: 'some-claim',
-      })
+      expect(sdJwtVc.payload).not.toHaveProperty('claim')
     })
 
     test('Receive sd-jwt-vc from a basic payload with multiple (nested) disclosure', async () => {
@@ -677,20 +675,19 @@ describe('SdJwtVcService', () => {
         },
       })
 
-      expect(sdJwtVc.payload).not.toContain({
-        address: {
-          region: 'Anystate',
-          country: 'US',
-        },
-        family_name: 'Doe',
-        phone_number: '+1-202-555-0101',
-        email: 'johndoe@example.com',
-        given_name: 'John',
-        birthdate: '1940-01-01',
-        is_over_18: true,
-        is_over_21: true,
-        is_over_65: true,
-      })
+      const unwantedKeys = [
+        'address.region',
+        'address.country',
+        'email',
+        'given_name',
+        'birthdate',
+        'is_over_18',
+        'is_over_21',
+        'is_over_65',
+      ]
+      for (const key of unwantedKeys) {
+        expect(sdJwtVc.payload).not.toHaveProperty(key)
+      }
 
       expect(sdJwtVc.prettyClaims).toEqual({
         vct: 'IdentityCredential',
