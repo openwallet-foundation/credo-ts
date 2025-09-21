@@ -6,7 +6,7 @@ import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProofsModule } from '../DidCommProofsModule'
 import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
-import { V2DidCommProofProtocol } from '../protocol/v2/V2DidCommProofProtocol'
+import { V2DidCommProofProtocol } from '../protocol/v2/DidCommProofV2Protocol'
 import { DidCommProofExchangeRepository } from '../repository'
 
 const dependencyManager = {

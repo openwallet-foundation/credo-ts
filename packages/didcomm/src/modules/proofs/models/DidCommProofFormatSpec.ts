@@ -7,7 +7,7 @@ export interface DidCommProofFormatSpecOptions {
   format: string
 }
 
-export class ProofFormatSpec {
+export class DidCommProofFormatSpec {
   public constructor(options: DidCommProofFormatSpecOptions) {
     if (options) {
       this.attachmentId = options.attachmentId ?? utils.uuid()

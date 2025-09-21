@@ -1,4 +1,4 @@
-import type { ProofFormat } from '@credo-ts/didcomm'
+import type { DidCommProofFormat } from '@credo-ts/didcomm'
 import type {
   AnonCredsNonRevokedInterval,
   AnonCredsPredicateType,
@@ -60,7 +60,7 @@ export interface AnonCredsGetCredentialsForProofRequestOptions {
   filterByNonRevocationRequirements?: boolean
 }
 
-export interface AnonCredsProofFormat extends ProofFormat {
+export interface AnonCredsProofFormat extends DidCommProofFormat {
   formatKey: 'anoncreds'
 
   proofFormats: {

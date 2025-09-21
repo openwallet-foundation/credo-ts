@@ -1,2 +1,2 @@
-export * from './DifPresentationExchangeProofFormat'
-export * from './DifPresentationExchangeProofFormatService'
+export * from './DidCommDifPresentationExchangeProofFormat'
+export * from './DidCommDifPresentationExchangeProofFormatService'

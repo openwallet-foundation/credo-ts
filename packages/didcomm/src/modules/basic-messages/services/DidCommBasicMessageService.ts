@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '../../../models'
+import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
@@ -7,7 +7,7 @@ import { EventEmitter, injectable } from '@credo-ts/core'
 import { DidCommConnectionRecord } from '../../connections'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { BasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository } from '../repository'
 
 @injectable()
@@ -26,7 +26,7 @@ export class DidCommBasicMessageService {
     connectionRecord: DidCommConnectionRecord,
     parentThreadId?: string
   ) {
-    const basicMessage = new BasicMessage({ content: message })
+    const basicMessage = new DidCommBasicMessage({ content: message })
 
     // If no parentThreadid is defined, there is no need to explicitly send a thread decorator
     if (parentThreadId) {
@@ -52,7 +52,7 @@ export class DidCommBasicMessageService {
    * @todo use connection from message context
    */
   public async save(
-    { message, agentContext }: InboundDidCommMessageContext<BasicMessage>,
+    { message, agentContext }: DidCommInboundMessageContext<DidCommBasicMessage>,
     connection: DidCommConnectionRecord
   ) {
     const basicMessageRecord = new DidCommBasicMessageRecord({
@@ -71,7 +71,7 @@ export class DidCommBasicMessageService {
   private emitStateChangedEvent(
     agentContext: AgentContext,
     basicMessageRecord: DidCommBasicMessageRecord,
-    basicMessage: BasicMessage
+    basicMessage: DidCommBasicMessage
   ) {
     this.eventEmitter.emit<DidCommBasicMessageStateChangedEvent>(agentContext, {
       type: DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged,

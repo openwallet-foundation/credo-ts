@@ -23,8 +23,8 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../../core/tests'
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
@@ -33,7 +33,7 @@ import {
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
-  LinkedAttachment,
+  DidCommLinkedAttachment,
 } from '../../../../../../src'
 
 describe('V2 Connectionless Proofs - Indy', () => {
@@ -131,11 +131,11 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     testLogger.test('Alice accepts presentation request from Faber')
     const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       useReturnRoute: returnRoute,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
@@ -372,18 +372,18 @@ describe('V2 Connectionless Proofs - Indy', () => {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
         linkedAttachments: [
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],
@@ -631,7 +631,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     await aliceAgent.modules.proofs.declineRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       sendProblemReport: true,
     })
 

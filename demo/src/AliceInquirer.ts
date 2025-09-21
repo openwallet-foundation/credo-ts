@@ -80,12 +80,12 @@ export class AliceInquirer extends BaseInquirer {
     }
   }
 
-  public async acceptProofRequest(proofRecord: DidCommProofExchangeRecord) {
+  public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.modules.proofs.declineRequest({ proofRecordId: proofRecord.id })
+      await this.alice.agent.modules.proofs.declineRequest({ proofExchangeRecordId: proofExchangeRecord.id })
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.alice.acceptProofRequest(proofRecord)
+      await this.alice.acceptProofRequest(proofExchangeRecord)
     }
   }
 

@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
-import type { CredentialFormatService } from '../../CredentialFormatService'
-import type { JsonCredential, JsonLdCredentialDetailFormat, JsonLdCredentialFormat } from '../JsonLdCredentialFormat'
+import type { DidCommCredentialFormatService } from '../../DidCommCredentialFormatService'
+import type { JsonCredential, DidCommJsonLdCredentialDetailFormat, DidCommJsonLdCredentialFormat } from '../DidCommJsonLdCredentialFormat'
 
 import { DidDocument } from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
@@ -17,11 +17,11 @@ import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modu
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommCredentialRole, DidCommCredentialState } from '../../../models'
-import { V2CredentialPreview } from '../../../protocol/v2/messages'
+import { DidCommCredentialV2Preview } from '../../../protocol/v2/messages'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
-import { JsonLdCredentialFormatService } from '../JsonLdCredentialFormatService'
+import { DidCommJsonLdCredentialFormatService } from '../DidCommJsonLdCredentialFormatService'
 
 jest.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
 jest.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
@@ -75,22 +75,22 @@ const vcJson = {
 
 const vc = JsonTransformer.fromJSON(vcJson, W3cJsonLdVerifiableCredential)
 
-const credentialPreview = V2CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const credentialAttachment = new Attachment({
+const credentialAttachment = new DidCommAttachment({
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64(vcJson),
   }),
 })
@@ -142,7 +142,7 @@ const inputDocAsJson: JsonCredential = {
 }
 const verificationMethod = '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K#8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K'
 
-const signCredentialOptions: JsonLdCredentialDetailFormat = {
+const signCredentialOptions: DidCommJsonLdCredentialDetailFormat = {
   credential: inputDocAsJson,
   options: {
     proofPurpose: 'assertionMethod',
@@ -150,13 +150,13 @@ const signCredentialOptions: JsonLdCredentialDetailFormat = {
   },
 }
 
-const requestAttachment = new Attachment({
+const requestAttachment = new DidCommAttachment({
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64(signCredentialOptions),
   }),
 })
-let jsonLdFormatService: CredentialFormatService<JsonLdCredentialFormat>
+let jsonLdFormatService: DidCommCredentialFormatService<DidCommJsonLdCredentialFormat>
 let w3cCredentialService: W3cCredentialService
 let w3cJsonLdCredentialService: W3cJsonLdCredentialService
 let didResolver: DidResolverService
@@ -178,7 +178,7 @@ describe('JsonLd CredentialFormatService', () => {
       agentConfig,
     })
 
-    jsonLdFormatService = new JsonLdCredentialFormatService()
+    jsonLdFormatService = new DidCommJsonLdCredentialFormatService()
   })
 
   describe('Create JsonLd Credential Proposal / Offer', () => {
@@ -301,7 +301,7 @@ describe('JsonLd CredentialFormatService', () => {
 
       // biome-ignore lint/suspicious/noExplicitAny: derive verification method is private from JsonLdCredentialFormatService
       const service = jsonLdFormatService as any
-      const credentialRequest = requestAttachment.getDataAsJson<JsonLdCredentialDetailFormat>()
+      const credentialRequest = requestAttachment.getDataAsJson<DidCommJsonLdCredentialDetailFormat>()
 
       // calls private method in the format service
       const verificationMethod = await service.deriveVerificationMethod(
@@ -364,7 +364,7 @@ describe('JsonLd CredentialFormatService', () => {
       state: DidCommCredentialState.RequestSent,
     })
     let w3c: W3cCredentialRecord
-    let signCredentialOptionsWithProperty: JsonLdCredentialDetailFormat
+    let signCredentialOptionsWithProperty: DidCommJsonLdCredentialDetailFormat
     beforeEach(async () => {
       signCredentialOptionsWithProperty = signCredentialOptions
       signCredentialOptionsWithProperty.options = {
@@ -412,9 +412,9 @@ describe('JsonLd CredentialFormatService', () => {
         },
       }
 
-      const credentialAttachment = new Attachment({
+      const credentialAttachment = new DidCommAttachment({
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(vcJson),
         }),
       })
@@ -437,9 +437,9 @@ describe('JsonLd CredentialFormatService', () => {
       // this property is not supported yet by us, but could be in the credential we received
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.domain = 'https://test.com'
-      const requestAttachmentWithDomain = new Attachment({
+      const requestAttachmentWithDomain = new DidCommAttachment({
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -462,9 +462,9 @@ describe('JsonLd CredentialFormatService', () => {
       // @ts-expect-error
       signCredentialOptionsWithProperty.options.challenge = '7bf32d0b-39d4-41f3-96b6-45de52988e4c'
 
-      const requestAttachmentWithChallenge = new Attachment({
+      const requestAttachmentWithChallenge = new DidCommAttachment({
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -485,9 +485,9 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential proof type not equal to request proof type', async () => {
       signCredentialOptionsWithProperty.options.proofType = 'Ed25519Signature2016'
-      const requestAttachmentWithProofType = new Attachment({
+      const requestAttachmentWithProofType = new DidCommAttachment({
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -508,9 +508,9 @@ describe('JsonLd CredentialFormatService', () => {
 
     test('throws error if credential proof purpose not equal to request proof purpose', async () => {
       signCredentialOptionsWithProperty.options.proofPurpose = 'authentication'
-      const requestAttachmentWithProofPurpose = new Attachment({
+      const requestAttachmentWithProofPurpose = new DidCommAttachment({
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(signCredentialOptionsWithProperty),
         }),
       })
@@ -530,18 +530,18 @@ describe('JsonLd CredentialFormatService', () => {
     })
 
     test('are credentials equal', async () => {
-      const message1 = new Attachment({
+      const message1 = new DidCommAttachment({
         id: 'cdb0669b-7cd6-46bc-b1c7-7034f86083ac',
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
 
-      const message2 = new Attachment({
+      const message2 = new DidCommAttachment({
         id: '9a8ff4fb-ac86-478f-b7f9-fbf3f9cc60e6',
         mimeType: 'application/json',
-        data: new AttachmentData({
+        data: new DidCommAttachmentData({
           base64: JsonEncoder.toBase64(inputDocAsJson),
         }),
       })
@@ -557,7 +557,7 @@ describe('JsonLd CredentialFormatService', () => {
       const inputDoc2 = {
         '@context': ['https://www.w3.org/2018/credentials/v1', 'https://w3id.org/citizenship/v1'],
       }
-      message2.data = new AttachmentData({
+      message2.data = new DidCommAttachmentData({
         base64: JsonEncoder.toBase64(inputDoc2),
       })
 

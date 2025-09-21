@@ -3,7 +3,7 @@ import type { AgentContext } from '../../packages/core/src'
 import type {
   DidCommTransportSession,
   EncryptedDidCommMessage,
-  InboundDidCommTransport,
+  DidCommInboundTransport,
 } from '../../packages/didcomm/src'
 
 import { Subject } from 'rxjs'
@@ -14,7 +14,7 @@ import { DidCommMessageReceiver, DidCommTransportService } from '../../packages/
 
 export type SubjectMessage = { message: EncryptedDidCommMessage; replySubject?: Subject<SubjectMessage> }
 
-export class SubjectInboundTransport implements InboundDidCommTransport {
+export class SubjectInboundTransport implements DidCommInboundTransport {
   public readonly ourSubject: Subject<SubjectMessage>
   private subscription?: Subscription
 

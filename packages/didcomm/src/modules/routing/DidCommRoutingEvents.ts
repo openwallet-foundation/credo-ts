@@ -1,6 +1,6 @@
 import type { BaseEvent } from '@credo-ts/core'
 import type { DidCommRouting } from '../../models'
-import type { KeylistUpdate } from './messages/KeylistUpdateMessage'
+import type { DidCommKeylistUpdate } from './messages/DidCommKeylistUpdateMessage'
 import type { DidCommMediationState } from './models/DidCommMediationState'
 import type { DidCommMediationRecord } from './repository/DidCommMediationRecord'
 
@@ -29,6 +29,6 @@ export interface DidCommKeylistUpdatedEvent extends BaseEvent {
   type: typeof DidCommRoutingEventTypes.RecipientKeylistUpdated
   payload: {
     mediationRecord: DidCommMediationRecord
-    keylist: KeylistUpdate[]
+    keylist: DidCommKeylistUpdate[]
   }
 }

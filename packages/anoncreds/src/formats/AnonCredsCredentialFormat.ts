@@ -1,4 +1,4 @@
-import type { CredentialFormat, DidCommCredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
+import type { DidCommCredentialFormat, DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 
 export interface AnonCredsCredentialProposalFormat {
@@ -30,7 +30,7 @@ export interface AnonCredsProposeCredentialFormat {
   issuerId?: string
 
   attributes?: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: LinkedAttachment[]
+  linkedAttachments?: DidCommLinkedAttachment[]
 
   // Kept for backwards compatibility
   schemaIssuerDid?: string
@@ -45,7 +45,7 @@ export interface AnonCredsAcceptProposalFormat {
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
   attributes?: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: LinkedAttachment[]
+  linkedAttachments?: DidCommLinkedAttachment[]
 }
 
 /**
@@ -65,7 +65,7 @@ export interface AnonCredsOfferCredentialFormat {
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
   attributes: DidCommCredentialPreviewAttributeOptions[]
-  linkedAttachments?: LinkedAttachment[]
+  linkedAttachments?: DidCommLinkedAttachment[]
 }
 
 /**
@@ -74,7 +74,7 @@ export interface AnonCredsOfferCredentialFormat {
  */
 export type AnonCredsAcceptRequestFormat = Record<string, never>
 
-export interface AnonCredsCredentialFormat extends CredentialFormat {
+export interface AnonCredsCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'anoncreds'
   credentialRecordType: 'w3c'
   credentialFormats: {

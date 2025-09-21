@@ -2,7 +2,7 @@ import type { DidDocumentService, IndyAgentService } from '../../../core/src/mod
 import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import type { DidCommConnectionRecord } from '../modules'
-import { InMemoryQueueTransportRepository, type OutboundDidCommTransport } from '../transport'
+import { InMemoryQueueTransportRepository, type DidCommOutboundTransport } from '../transport'
 import type { EncryptedDidCommMessage } from '../types'
 
 import { Subject } from 'rxjs'
@@ -25,7 +25,7 @@ import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
-import { OutboundDidCommMessageContext, OutboundMessageSendStatus } from '../models'
+import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
 import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core'
@@ -41,7 +41,7 @@ const TransportServiceMock = DidCommTransportService as jest.MockedClass<typeof 
 const DidsApiMock = DidsApi as jest.Mock<DidsApi>
 const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
 
-class DummyHttpOutboundTransport implements OutboundDidCommTransport {
+class DummyHttpOutboundTransport implements DidCommOutboundTransport {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -57,7 +57,7 @@ class DummyHttpOutboundTransport implements OutboundDidCommTransport {
   }
 }
 
-class DummyWsOutboundTransport implements OutboundDidCommTransport {
+class DummyWsOutboundTransport implements DidCommOutboundTransport {
   public start(): Promise<void> {
     throw new Error('Method not implemented.')
   }
@@ -136,9 +136,9 @@ describe('DidCommMessageSender', () => {
   })
 
   let messageSender: DidCommMessageSender
-  let outboundTransport: OutboundDidCommTransport
+  let outboundTransport: DidCommOutboundTransport
   let connection: DidCommConnectionRecord
-  let outboundMessageContext: OutboundDidCommMessageContext
+  let outboundMessageContext: DidCommOutboundMessageContext
   const agentConfig = getAgentConfig('DidCommMessageSender')
   const agentContext = getAgentContext({
     registerInstances: [
@@ -169,7 +169,7 @@ describe('DidCommMessageSender', () => {
         theirDid: 'did:peer:1theirdid',
         theirLabel: 'Test 123',
       })
-      outboundMessageContext = new OutboundDidCommMessageContext(new TestMessage(), { agentContext, connection })
+      outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), { agentContext, connection })
 
       envelopeServicePackMessageMock.mockReturnValue(Promise.resolve(encryptedMessage))
       transportServiceHasInboundEndpoint.mockReturnValue(true)
@@ -350,7 +350,7 @@ describe('DidCommMessageSender', () => {
       // @ts-ignore
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
 
-      const contextWithSessionId = new OutboundDidCommMessageContext(outboundMessageContext.message, {
+      const contextWithSessionId = new DidCommOutboundMessageContext(outboundMessageContext.message, {
         agentContext: outboundMessageContext.agentContext,
         connection: outboundMessageContext.connection,
         sessionId: 'session-123',
@@ -535,7 +535,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('throws error when there is no outbound transport', async () => {
-      outboundMessageContext = new OutboundDidCommMessageContext(new TestMessage(), {
+      outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
         serviceParams: {
           senderKey,
@@ -562,7 +562,7 @@ describe('DidCommMessageSender', () => {
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
-      outboundMessageContext = new OutboundDidCommMessageContext(new TestMessage(), {
+      outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
         serviceParams: {
           senderKey,
@@ -598,7 +598,7 @@ describe('DidCommMessageSender', () => {
       const message = new TestMessage()
       message.setReturnRouting(ReturnRouteTypes.all)
 
-      outboundMessageContext = new OutboundDidCommMessageContext(message, {
+      outboundMessageContext = new DidCommOutboundMessageContext(message, {
         agentContext,
         serviceParams: {
           senderKey,
@@ -629,7 +629,7 @@ describe('DidCommMessageSender', () => {
 
     test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
       messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
-      outboundMessageContext = new OutboundDidCommMessageContext(new TestMessage(), {
+      outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
         serviceParams: {
           senderKey,

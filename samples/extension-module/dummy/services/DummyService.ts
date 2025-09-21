@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommConnectionRecord, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { DummyStateChangedEvent } from './DummyEvents'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
@@ -74,7 +74,7 @@ export class DummyService {
    * @returns dummy record associated with the dummy request message
    *
    */
-  public async processRequest(messageContext: InboundDidCommMessageContext<DummyRequestMessage>) {
+  public async processRequest(messageContext: DidCommInboundMessageContext<DummyRequestMessage>) {
     const connectionRecord = messageContext.assertReadyConnection()
 
     // Create record
@@ -100,7 +100,7 @@ export class DummyService {
    * @returns dummy record associated with the dummy response message
    *
    */
-  public async processResponse(messageContext: InboundDidCommMessageContext<DummyResponseMessage>) {
+  public async processResponse(messageContext: DidCommInboundMessageContext<DummyResponseMessage>) {
     const { message } = messageContext
 
     const connection = messageContext.assertReadyConnection()

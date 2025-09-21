@@ -28,7 +28,7 @@ import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
+import { getDidCommOutboundMessageContext } from '../../getDidCommOutboundMessageContext'
 import { DidCommConnectionService } from '../connections'
 
 import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
@@ -148,7 +148,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       parentThreadId: options.parentThreadId,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -192,7 +192,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     })
 
     // send the message
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -235,7 +235,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -270,7 +270,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -289,7 +289,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @returns Proof record associated with the sent presentation message
    */
   public async acceptRequest(options: AcceptProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
@@ -313,7 +313,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -325,13 +325,13 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   }
 
   public async declineRequest(options: DeclineProofRequestOptions): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
     proofRecord.assertState(DidCommProofState.RequestReceived)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
     if (options.sendProblemReport) {
       await this.sendProblemReport({
-        proofRecordId: options.proofRecordId,
+        proofExchangeRecordId: options.proofExchangeRecordId,
         description: options.problemReportDescription ?? 'Request declined',
       })
     }
@@ -350,7 +350,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @returns Proof record associated with the sent proposal message
    */
   public async negotiateRequest(options: NegotiateProofRequestOptions<PPs>): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     if (!proofRecord.connectionId) {
       throw new CredoError(
@@ -373,7 +373,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       comment: options.comment,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -440,7 +440,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     })
 
     // FIXME: returnRoute: false
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -463,7 +463,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   public async selectCredentialsForRequest(
     options: SelectCredentialsForProofRequestOptions<PPs>
   ): Promise<SelectCredentialsForProofRequestReturn<PPs>> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
@@ -481,7 +481,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   public async getCredentialsForRequest(
     options: GetCredentialsForProofRequestOptions<PPs>
   ): Promise<GetCredentialsForProofRequestReturn<PPs>> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
@@ -499,7 +499,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @returns proof record associated with the proof problem report message
    */
   public async sendProblemReport(options: SendProofProblemReportOptions): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
@@ -525,7 +525,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       }
     }
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
       associatedRecord: proofRecord,

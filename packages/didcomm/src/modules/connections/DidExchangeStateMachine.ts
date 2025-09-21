@@ -5,26 +5,26 @@ import { CredoError } from '@credo-ts/core'
 
 import { canHandleMessageType } from '../../util/messageType'
 
-import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
+import { DidCommDidExchangeCompleteMessage, DidCommDidExchangeRequestMessage, DidCommDidExchangeResponseMessage } from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from './models'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {
-      message: DidExchangeRequestMessage,
+      message: DidCommDidExchangeRequestMessage,
       state: DidCommDidExchangeState.InvitationReceived,
       role: DidCommDidExchangeRole.Requester,
       nextState: DidCommDidExchangeState.RequestSent,
     },
     {
-      message: DidExchangeResponseMessage,
+      message: DidCommDidExchangeResponseMessage,
       state: DidCommDidExchangeState.RequestReceived,
       role: DidCommDidExchangeRole.Responder,
       nextState: DidCommDidExchangeState.ResponseSent,
     },
     {
-      message: DidExchangeCompleteMessage,
+      message: DidCommDidExchangeCompleteMessage,
       state: DidCommDidExchangeState.ResponseReceived,
       role: DidCommDidExchangeRole.Requester,
       nextState: DidCommDidExchangeState.Completed,
@@ -33,19 +33,19 @@ export class DidExchangeStateMachine {
 
   private static processMessageStateRules = [
     {
-      message: DidExchangeRequestMessage,
+      message: DidCommDidExchangeRequestMessage,
       state: DidCommDidExchangeState.InvitationSent,
       role: DidCommDidExchangeRole.Responder,
       nextState: DidCommDidExchangeState.RequestReceived,
     },
     {
-      message: DidExchangeResponseMessage,
+      message: DidCommDidExchangeResponseMessage,
       state: DidCommDidExchangeState.RequestSent,
       role: DidCommDidExchangeRole.Requester,
       nextState: DidCommDidExchangeState.ResponseReceived,
     },
     {
-      message: DidExchangeCompleteMessage,
+      message: DidCommDidExchangeCompleteMessage,
       state: DidCommDidExchangeState.ResponseSent,
       role: DidCommDidExchangeRole.Responder,
       nextState: DidCommDidExchangeState.Completed,

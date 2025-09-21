@@ -7,7 +7,7 @@ import {
   DidCommConnectionService,
   DidCommMessageHandlerRegistry,
   DidCommMessageSender,
-  OutboundDidCommMessageContext,
+  DidCommOutboundMessageContext,
 } from '@credo-ts/didcomm'
 
 import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
@@ -169,7 +169,7 @@ export class DrpcApi {
     message: DrpcRequestMessage | DrpcResponseMessage,
     messageRecord: DrpcRecord
   ): Promise<void> {
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,
       associatedRecord: messageRecord,

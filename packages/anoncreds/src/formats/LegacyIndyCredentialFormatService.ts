@@ -14,10 +14,10 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  CredentialFormatService,
+  DidCommCredentialFormatService,
   DidCommCredentialExchangeRecord,
   DidCommCredentialPreviewAttributeOptions,
-  LinkedAttachment,
+  DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
@@ -26,10 +26,10 @@ import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } f
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import {
-  Attachment,
+  DidCommAttachment,
   DidCommCredentialFormatSpec,
   DidCommCredentialProblemReportReason,
-  ProblemReportError,
+  DidCommProblemReportError,
 } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
@@ -52,7 +52,7 @@ const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
 const INDY_CRED = 'hlindy/cred@v2.0'
 
-export class LegacyIndyCredentialFormatService implements CredentialFormatService<LegacyIndyCredentialFormat> {
+export class LegacyIndyCredentialFormatService implements DidCommCredentialFormatService<LegacyIndyCredentialFormat> {
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.indy */
   public readonly formatKey = 'indy' as const
 
@@ -201,7 +201,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     if (!isUnqualifiedSchemaId(credOffer.schema_id) || !isUnqualifiedCredentialDefinitionId(credOffer.cred_def_id)) {
-      throw new ProblemReportError('Invalid credential offer', {
+      throw new DidCommProblemReportError('Invalid credential offer', {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       })
     }
@@ -407,13 +407,13 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    * indy and then find the corresponding attachment (if there is one)
    * @param formats the formats object containing the attachmentId
    * @param messageAttachments the attachments containing the payload
-   * @returns The Attachment if found or undefined
+   * @returns The DidCommAttachment if found or undefined
    *
    */
   public getAttachment(
     formats: DidCommCredentialFormatSpec[],
-    messageAttachments: Attachment[]
-  ): Attachment | undefined {
+    messageAttachments: DidCommAttachment[]
+  ): DidCommAttachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
@@ -494,7 +494,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
       credentialExchangeRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
       attributes: DidCommCredentialPreviewAttributeOptions[]
-      linkedAttachments?: LinkedAttachment[]
+      linkedAttachments?: DidCommLinkedAttachment[]
     }
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
@@ -545,9 +545,9 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
    */
   private getCredentialLinkedAttachments(
     attributes?: DidCommCredentialPreviewAttributeOptions[],
-    linkedAttachments?: LinkedAttachment[]
+    linkedAttachments?: DidCommLinkedAttachment[]
   ): {
-    attachments?: Attachment[]
+    attachments?: DidCommAttachment[]
     previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
   } {
     if (!linkedAttachments && !attributes) {
@@ -555,7 +555,7 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
     }
 
     let previewAttributes = attributes ?? []
-    let attachments: Attachment[] | undefined
+    let attachments: DidCommAttachment[] | undefined
 
     if (linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
@@ -568,14 +568,14 @@ export class LegacyIndyCredentialFormatService implements CredentialFormatServic
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  public getFormatData(data: unknown, id: string): DidCommAttachment {
+    const attachment = new DidCommAttachment({
       id,
       mimeType: 'application/json',
       data: {

@@ -1,4 +1,4 @@
-import { MessageForwardingStrategy } from './MessageForwardingStrategy'
+import { DidCommMessageForwardingStrategy } from './DidCommMessageForwardingStrategy'
 
 /**
  * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.
@@ -23,7 +23,7 @@ export interface DidCommMediatorModuleConfigOptions {
    * @default MessageForwardingStrategy.DirectDelivery
    * @todo Update default to QueueAndLiveModeDelivery
    */
-  messageForwardingStrategy?: MessageForwardingStrategy
+  messageForwardingStrategy?: DidCommMessageForwardingStrategy
 }
 
 export class DidCommMediatorModuleConfig {
@@ -40,6 +40,6 @@ export class DidCommMediatorModuleConfig {
 
   /** See {@link DidCommMediatorModuleConfigOptions.messageForwardingStrategy} */
   public get messageForwardingStrategy() {
-    return this.options.messageForwardingStrategy ?? MessageForwardingStrategy.DirectDelivery
+    return this.options.messageForwardingStrategy ?? DidCommMessageForwardingStrategy.DirectDelivery
   }
 }

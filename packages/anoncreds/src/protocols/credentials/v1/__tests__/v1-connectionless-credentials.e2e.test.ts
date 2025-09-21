@@ -6,9 +6,9 @@ import { DidCommAutoAcceptCredential, DidCommCredentialExchangeRecord, DidCommCr
 
 import { testLogger, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
-import { V1CredentialPreview } from '../messages'
+import { DidCommCredentialV1Preview } from '../messages'
 
-const credentialPreview = V1CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV1Preview.fromRecord({
   name: 'John',
   age: '99',
 })

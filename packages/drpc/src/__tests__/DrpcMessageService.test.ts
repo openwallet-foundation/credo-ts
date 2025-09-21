@@ -1,6 +1,6 @@
 import type { DrpcRequestObject } from '../messages'
 
-import { DidCommDidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
@@ -70,7 +70,7 @@ describe('DrpcService', () => {
     it('stores record and emits message and basic message record', async () => {
       const drpcMessage = new DrpcRequestMessage({ request: { jsonrpc: '2.0', method: 'hello', id: 1 } })
 
-      const messageContext = new InboundDidCommMessageContext(drpcMessage, {
+      const messageContext = new DidCommInboundMessageContext(drpcMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })

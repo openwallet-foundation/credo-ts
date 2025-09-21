@@ -1,18 +1,18 @@
 import type { DidCommMessageProcessedEvent } from './DidCommEvents'
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
-import type { InboundDidCommMessageContext } from './models/InboundDidCommMessageContext'
+import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
 
 import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
-import { ProblemReportError } from './errors/problem-reports'
+import { DidCommProblemReportError } from './errors/problem-reports'
 import { DidCommMessageHandlerMiddlewareRunner } from './handlers'
-import { ProblemReportMessage } from './messages'
-import { OutboundDidCommMessageContext } from './models'
-import { ProblemReportReason } from './models/problem-reports'
+import { DidCommProblemReportMessage } from './messages'
+import { DidCommOutboundMessageContext } from './models'
+import { DidCommProblemReportReason } from './models/problem-reports'
 import { canHandleMessageType, parseMessageType } from './util/messageType'
 
 @injectable()
@@ -47,10 +47,10 @@ export class DidCommDispatcher {
     }
 
     if (!messageHandler) {
-      throw new ProblemReportError(
+      throw new DidCommProblemReportError(
         `Error handling message ${inboundMessageContext.message.id} with type ${inboundMessageContext.message.type}. The message type is not supported`,
         {
-          problemCode: ProblemReportReason.MessageParseFailure,
+          problemCode: DidCommProblemReportReason.MessageParseFailure,
         }
       )
     }
@@ -63,7 +63,7 @@ export class DidCommDispatcher {
     await next()
   }
 
-  public async dispatch(messageContext: InboundDidCommMessageContext): Promise<void> {
+  public async dispatch(messageContext: DidCommInboundMessageContext): Promise<void> {
     const { agentContext, connection, senderKey, recipientKey, message, encryptedMessage } = messageContext
 
     // Set default handler if available, middleware can still override the message handler
@@ -72,7 +72,7 @@ export class DidCommDispatcher {
       messageContext.setMessageHandler(messageHandler)
     }
 
-    let outboundMessage: OutboundDidCommMessageContext<DidCommMessage> | undefined
+    let outboundMessage: DidCommOutboundMessageContext<DidCommMessage> | undefined
 
     try {
       const messageHandlerMiddlewares =
@@ -84,9 +84,9 @@ export class DidCommDispatcher {
     } catch (error) {
       const problemReportMessage = error.problemReport
 
-      if (problemReportMessage instanceof ProblemReportMessage && messageContext.connection) {
+      if (problemReportMessage instanceof DidCommProblemReportMessage && messageContext.connection) {
         const messageType = parseMessageType(messageContext.message.type)
-        if (canHandleMessageType(ProblemReportMessage, messageType)) {
+        if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
           throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
         }
 
@@ -105,7 +105,7 @@ export class DidCommDispatcher {
           })
         }
 
-        outboundMessage = new OutboundDidCommMessageContext(problemReportMessage, {
+        outboundMessage = new DidCommOutboundMessageContext(problemReportMessage, {
           agentContext,
           connection: messageContext.connection,
           inboundMessageContext: messageContext,

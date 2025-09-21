@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { DrpcRequestStateChangedEvent } from '../DrpcRequestEvents'
 import type { DrpcResponseStateChangedEvent } from '../DrpcResponseEvents'
 import type { DrpcRequest, DrpcResponse } from '../messages'
@@ -85,7 +85,7 @@ export class DrpcService {
     }
   }
 
-  public async receiveResponse(messageContext: InboundDidCommMessageContext<DrpcResponseMessage>) {
+  public async receiveResponse(messageContext: DidCommInboundMessageContext<DrpcResponseMessage>) {
     const connection = messageContext.assertReadyConnection()
     const drpcMessageRecord = await this.findByThreadAndConnectionId(
       messageContext.agentContext,
@@ -106,7 +106,7 @@ export class DrpcService {
     return drpcMessageRecord
   }
 
-  public async receiveRequest(messageContext: InboundDidCommMessageContext<DrpcRequestMessage>) {
+  public async receiveRequest(messageContext: DidCommInboundMessageContext<DrpcRequestMessage>) {
     const connection = messageContext.assertReadyConnection()
     const record = await this.findByThreadAndConnectionId(
       messageContext.agentContext,

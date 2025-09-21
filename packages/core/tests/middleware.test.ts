@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { DidCommConnectionRecord, InboundDidCommMessageContext } from '../../didcomm'
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 
@@ -102,7 +102,7 @@ describe('Message Handler Middleware E2E', () => {
 
   test('Correctly calls the registered message handler middleware', async () => {
     aliceAgent.modules.didcomm.registerMessageHandlerMiddleware(
-      async (inboundMessageContext: InboundDidCommMessageContext, next) => {
+      async (inboundMessageContext: DidCommInboundMessageContext, next) => {
         await next()
 
         if (inboundMessageContext.responseMessage) {

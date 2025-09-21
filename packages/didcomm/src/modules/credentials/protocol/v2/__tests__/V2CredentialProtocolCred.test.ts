@@ -3,10 +3,10 @@ import type { GetAgentMessageOptions } from '../../../../../repository'
 import type { PlaintextDidCommMessage } from '../../../../../types'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import type {
-  CredentialFormat,
+  DidCommCredentialFormat,
   CredentialFormatAcceptRequestOptions,
   CredentialFormatCreateOfferOptions,
-  CredentialFormatService,
+  DidCommCredentialFormatService,
 } from '../../../formats'
 import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
@@ -23,9 +23,9 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { AckStatus } from '../../../../../messages'
-import { InboundDidCommMessageContext } from '../../../../../models'
+import { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommConnectionService } from '../../../../connections/services/DidCommConnectionService'
@@ -36,13 +36,13 @@ import { DidCommCredentialProblemReportReason } from '../../../models/DidCommCre
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
-import { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
-import { V2CredentialPreview, V2ProposeCredentialMessage } from '../messages'
-import { V2CredentialAckMessage } from '../messages/V2CredentialAckMessage'
-import { V2CredentialProblemReportMessage } from '../messages/V2CredentialProblemReportMessage'
-import { V2IssueCredentialMessage } from '../messages/V2IssueCredentialMessage'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
-import { V2RequestCredentialMessage } from '../messages/V2RequestCredentialMessage'
+import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
+import { DidCommCredentialV2Preview, DidCommProposeCredentialV2Message } from '../messages'
+import { DidCommCredentialV2AckMessage } from '../messages/DidCommCredentialV2AckMessage'
+import { DidCommCredentialV2ProblemReportMessage } from '../messages/DidCommCredentialV2ProblemReportMessage'
+import { DidCommIssueCredentialV2Message } from '../messages/DidCommIssueCredentialV2Message'
+import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
+import { DidCommRequestCredentialV2Message } from '../messages/DidCommRequestCredentialV2Message'
 // Mock classes
 
 jest.mock('../../../repository/DidCommCredentialExchangeRepository')
@@ -77,27 +77,27 @@ const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const requestAttachment = new Attachment({
+const requestAttachment = new DidCommAttachment({
   id: 'request-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64(credReq),
   }),
 })
 
-const credentialAttachment = new Attachment({
+const credentialAttachment = new DidCommAttachment({
   id: 'credential-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64({
       values: {},
     }),
@@ -109,9 +109,9 @@ const requestFormat = new DidCommCredentialFormatSpec({
   format: 'hlindy/cred-filter@v2.0',
 })
 
-const proposalAttachment = new Attachment({
+const proposalAttachment = new DidCommAttachment({
   id: 'proposal-attachment-id',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     json: {
       any: 'value',
     },
@@ -133,25 +133,25 @@ const credentialFormat = new DidCommCredentialFormatSpec({
   format: 'hlindy/cred@v2.0',
 })
 
-const credentialProposalMessage = new V2ProposeCredentialMessage({
+const credentialProposalMessage = new DidCommProposeCredentialV2Message({
   formats: [proposalFormat],
   proposalAttachments: [proposalAttachment],
 })
-const credentialRequestMessage = new V2RequestCredentialMessage({
+const credentialRequestMessage = new DidCommRequestCredentialV2Message({
   formats: [requestFormat],
   requestAttachments: [requestAttachment],
 })
 credentialRequestMessage.setThread({ threadId: 'somethreadid' })
 
-const credentialOfferMessage = new V2OfferCredentialMessage({
+const credentialOfferMessage = new DidCommOfferCredentialV2Message({
   formats: [offerFormat],
   comment: 'some comment',
-  credentialPreview: new V2CredentialPreview({
+  credentialPreview: new DidCommCredentialV2Preview({
     attributes: [],
   }),
   offerAttachments: [offerAttachment],
 })
-const credentialIssueMessage = new V2IssueCredentialMessage({
+const credentialIssueMessage = new DidCommIssueCredentialV2Message({
   credentialAttachments: [credentialAttachment],
   formats: [credentialFormat],
 })
@@ -165,16 +165,16 @@ const didCommMessageRecord = new DidCommMessageRecord({
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const getAgentMessageMock = async (_agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
-  if (options.messageClass === V2ProposeCredentialMessage) {
+  if (options.messageClass === DidCommProposeCredentialV2Message) {
     return credentialProposalMessage
   }
-  if (options.messageClass === V2OfferCredentialMessage) {
+  if (options.messageClass === DidCommOfferCredentialV2Message) {
     return credentialOfferMessage
   }
-  if (options.messageClass === V2RequestCredentialMessage) {
+  if (options.messageClass === DidCommRequestCredentialV2Message) {
     return credentialRequestMessage
   }
-  if (options.messageClass === V2IssueCredentialMessage) {
+  if (options.messageClass === DidCommIssueCredentialV2Message) {
     return credentialIssueMessage
   }
 
@@ -220,12 +220,12 @@ const mockCredentialRecord = ({
   return credentialExchangeRecord
 }
 
-interface TestCredentialFormat extends CredentialFormat {
+interface TestCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'test'
   credentialRecordType: 'test'
 }
 
-type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
+type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
@@ -250,7 +250,7 @@ export const testCredentialFormatService = {
 } as unknown as TestCredentialFormatService
 
 describe('credentialProtocol', () => {
-  let credentialProtocol: V2DidCommCredentialProtocol
+  let credentialProtocol: DidCommCredentialV2Protocol
 
   beforeEach(async () => {
     // mock function implementations
@@ -263,7 +263,7 @@ describe('credentialProtocol', () => {
       didCommMessageRecord,
     ])
 
-    credentialProtocol = new V2DidCommCredentialProtocol({
+    credentialProtocol = new DidCommCredentialV2Protocol({
       credentialFormats: [testCredentialFormatService],
     })
   })
@@ -341,7 +341,7 @@ describe('credentialProtocol', () => {
   describe('processRequest', () => {
     test(`updates state to ${DidCommCredentialState.RequestReceived}, set request and returns credential record`, async () => {
       const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
-      const messageContext = new InboundDidCommMessageContext(credentialRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
       })
@@ -363,7 +363,7 @@ describe('credentialProtocol', () => {
 
     test(`emits stateChange event from ${DidCommCredentialState.OfferSent} to ${DidCommCredentialState.RequestReceived}`, async () => {
       const credentialExchangeRecord = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
-      const messageContext = new InboundDidCommMessageContext(credentialRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
       })
@@ -390,7 +390,7 @@ describe('credentialProtocol', () => {
     const validState = DidCommCredentialState.OfferSent
     const invalidCredentialStates = Object.values(DidCommCredentialState).filter((state) => state !== validState)
     test('throws an error when state transition is invalid', async () => {
-      const messageContext = new InboundDidCommMessageContext(credentialRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(credentialRequestMessage, {
         connection,
         agentContext,
       })
@@ -503,7 +503,7 @@ describe('credentialProtocol', () => {
         state: DidCommCredentialState.RequestSent,
       })
 
-      const messageContext = new InboundDidCommMessageContext(credentialIssueMessage, {
+      const messageContext = new DidCommInboundMessageContext(credentialIssueMessage, {
         connection,
         agentContext,
       })
@@ -612,11 +612,11 @@ describe('credentialProtocol', () => {
   })
 
   describe('processAck', () => {
-    const credentialRequest = new V2CredentialAckMessage({
+    const credentialRequest = new DidCommCredentialV2AckMessage({
       status: AckStatus.OK,
       threadId: 'somethreadid',
     })
-    const messageContext = new InboundDidCommMessageContext(credentialRequest, { agentContext, connection })
+    const messageContext = new DidCommInboundMessageContext(credentialRequest, { agentContext, connection })
 
     test(`updates state to ${DidCommCredentialState.Done} and returns credential record`, async () => {
       const credentialExchangeRecord = mockCredentialRecord({
@@ -673,14 +673,14 @@ describe('credentialProtocol', () => {
   })
 
   describe('processProblemReport', () => {
-    const message = new V2CredentialProblemReportMessage({
+    const message = new DidCommCredentialV2ProblemReportMessage({
       description: {
         en: 'Indy error',
         code: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       },
     })
     message.setThread({ threadId: 'somethreadid' })
-    const messageContext = new InboundDidCommMessageContext(message, {
+    const messageContext = new DidCommInboundMessageContext(message, {
       connection,
       agentContext,
     })

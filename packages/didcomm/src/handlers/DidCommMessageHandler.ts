@@ -1,10 +1,10 @@
 import type { ConstructableAgentMessage } from '../DidCommMessage'
-import type { InboundDidCommMessageContext, OutboundDidCommMessageContext } from '../models'
+import type { DidCommInboundMessageContext, DidCommOutboundMessageContext } from '../models'
 
 export interface DidCommMessageHandler {
   readonly supportedMessages: readonly ConstructableAgentMessage[]
 
-  handle(messageContext: InboundDidCommMessageContext): Promise<OutboundDidCommMessageContext | undefined>
+  handle(messageContext: DidCommInboundMessageContext): Promise<DidCommOutboundMessageContext | undefined>
 }
 
 /**
@@ -14,6 +14,6 @@ export interface DidCommMessageHandler {
  * @example
  * async handle(messageContext: DidCommMessageHandlerInboundMessage<BasicMessageHandler>) {}
  */
-export type DidCommMessageHandlerInboundMessage<H extends DidCommMessageHandler> = InboundDidCommMessageContext<
+export type DidCommMessageHandlerInboundMessage<H extends DidCommMessageHandler> = DidCommInboundMessageContext<
   InstanceType<H['supportedMessages'][number]>
 >

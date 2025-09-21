@@ -27,7 +27,7 @@ import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable 
 
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { getOutboundDidCommMessageContext } from '../../getOutboundDidCommMessageContext'
+import { getDidCommOutboundMessageContext } from '../../getDidCommOutboundMessageContext'
 import { DidCommConnectionService } from '../connections'
 
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
@@ -158,7 +158,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
       connectionRecord,
@@ -206,7 +206,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     })
 
     // send the message
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
       connectionRecord,
@@ -251,7 +251,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       this.agentContext,
       credentialExchangeRecord.connectionId
     )
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
       connectionRecord,
@@ -284,7 +284,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     })
 
     this.logger.debug('Offer Message successfully created; message= ', message)
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
       connectionRecord,
@@ -327,7 +327,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,
@@ -383,7 +383,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       associatedRecord: credentialExchangeRecord,
       connectionRecord,
@@ -457,7 +457,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
     })
     this.logger.debug('We have a credential message (sending outbound): ', message)
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,
@@ -504,7 +504,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       credentialExchangeRecord,
     })
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,
@@ -549,7 +549,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       : undefined
     connectionRecord?.assertReady()
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,
@@ -589,7 +589,7 @@ export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> impl
       }
     }
 
-    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
+    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
       associatedRecord: credentialExchangeRecord,

@@ -5,10 +5,10 @@ import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
-import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
+import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../connections'
 import { DidCommMessagePickupApi } from '../../../message-pickup'
-import { KeylistUpdateAction, KeylistUpdateMessage, KeylistUpdateResult } from '../../messages'
+import { DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage, DidCommKeylistUpdateResult } from '../../messages'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord, DidCommMediatorRoutingRecord } from '../../repository'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
@@ -98,20 +98,20 @@ describe('MediatorService - default config', () => {
 
       mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
-      const keyListUpdate = new KeylistUpdateMessage({
+      const keyListUpdate = new DidCommKeylistUpdateMessage({
         updates: [
           {
-            action: KeylistUpdateAction.add,
+            action: DidCommKeylistUpdateAction.add,
             recipientKey: '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ',
           },
           {
-            action: KeylistUpdateAction.remove,
+            action: DidCommKeylistUpdateAction.remove,
             recipientKey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
           },
         ],
       })
 
-      const messageContext = new InboundDidCommMessageContext(keyListUpdate, {
+      const messageContext = new DidCommInboundMessageContext(keyListUpdate, {
         connection: mockConnection,
         agentContext,
       })
@@ -120,14 +120,14 @@ describe('MediatorService - default config', () => {
       expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
       expect(response.updated).toEqual([
         {
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
           recipientKey: '79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ',
-          result: KeylistUpdateResult.Success,
+          result: DidCommKeylistUpdateResult.Success,
         },
         {
-          action: KeylistUpdateAction.remove,
+          action: DidCommKeylistUpdateAction.remove,
           recipientKey: '8HH5gYEeNc3z7PYXmd54d4x6qAfCNrqQqEB3nS7Zfu7K',
-          result: KeylistUpdateResult.Success,
+          result: DidCommKeylistUpdateResult.Success,
         },
       ])
     })
@@ -144,33 +144,33 @@ describe('MediatorService - default config', () => {
 
     mockFunction(mediationRepository.getByConnectionId).mockResolvedValue(mediationRecord)
 
-    const keyListUpdate = new KeylistUpdateMessage({
+    const keyListUpdate = new DidCommKeylistUpdateMessage({
       updates: [
         {
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
           recipientKey: 'did:key:z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w',
         },
         {
-          action: KeylistUpdateAction.remove,
+          action: DidCommKeylistUpdateAction.remove,
           recipientKey: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
         },
       ],
     })
 
-    const messageContext = new InboundDidCommMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
+    const messageContext = new DidCommInboundMessageContext(keyListUpdate, { connection: mockConnection, agentContext })
     const response = await mediatorService.processKeylistUpdateRequest(messageContext)
 
     expect(mediationRecord.recipientKeys).toEqual(['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'])
     expect(response.updated).toEqual([
       {
-        action: KeylistUpdateAction.add,
+        action: DidCommKeylistUpdateAction.add,
         recipientKey: 'did:key:z6MkkbTaLstV4fwr1rNf5CSxdS2rGbwxi3V5y6NnVFTZ2V1w',
-        result: KeylistUpdateResult.Success,
+        result: DidCommKeylistUpdateResult.Success,
       },
       {
-        action: KeylistUpdateAction.remove,
+        action: DidCommKeylistUpdateAction.remove,
         recipientKey: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
-        result: KeylistUpdateResult.Success,
+        result: DidCommKeylistUpdateResult.Success,
       },
     ])
   })

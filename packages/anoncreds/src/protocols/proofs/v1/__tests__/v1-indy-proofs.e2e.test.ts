@@ -4,7 +4,7 @@ import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSe
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
 import { DidCommProofExchangeRecord, DidCommProofState } from '../../../../../../didcomm/src'
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
-import { V1PresentationMessage, V1ProposePresentationMessage, V1RequestPresentationMessage } from '../messages'
+import { DidCommPresentationV1Message, DidCommProposePresentationV1Message, DidCommRequestPresentationV1Message } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -235,9 +235,9 @@ describe('Present Proof', () => {
     const requestMessage = await aliceAgent.modules.proofs.findRequestMessage(aliceProofExchangeRecord.id)
     const presentationMessage = await aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
 
-    expect(proposalMessage).toBeInstanceOf(V1ProposePresentationMessage)
-    expect(requestMessage).toBeInstanceOf(V1RequestPresentationMessage)
-    expect(presentationMessage).toBeInstanceOf(V1PresentationMessage)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposePresentationV1Message)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestPresentationV1Message)
+    expect(presentationMessage).toBeInstanceOf(DidCommPresentationV1Message)
 
     const formatData = await aliceAgent.modules.proofs.getFormatData(aliceProofExchangeRecord.id)
 

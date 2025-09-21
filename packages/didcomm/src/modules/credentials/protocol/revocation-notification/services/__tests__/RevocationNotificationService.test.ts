@@ -12,13 +12,13 @@ import {
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
 import { DidCommMessageHandlerRegistry } from '../../../../../../DidCommMessageHandlerRegistry'
-import { InboundDidCommMessageContext } from '../../../../../../models'
+import { DidCommInboundMessageContext } from '../../../../../../models'
 import { DidCommDidExchangeState } from '../../../../../connections'
 import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
 import { DidCommCredentialRole, DidCommCredentialState } from '../../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../../repository'
 import { DidCommCredentialExchangeRepository } from '../../../../repository/DidCommCredentialExchangeRepository'
-import { V1RevocationNotificationMessage, V2RevocationNotificationMessage } from '../../messages'
+import { DidCommRevocationNotificationV1Message, DidCommRevocationNotificationV2Message } from '../../messages'
 import { DidCommRevocationNotificationService } from '../DidCommRevocationNotificationService'
 
 jest.mock('../../../../repository/DidCommCredentialExchangeRepository')
@@ -90,11 +90,11 @@ describe('RevocationNotificationService', () => {
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
 
       const revocationNotificationThreadId = `indy::${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
-      const revocationNotificationMessage = new V1RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV1Message({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, {
         connection,
         agentContext,
       })
@@ -137,11 +137,11 @@ describe('RevocationNotificationService', () => {
 
       mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
-      const revocationNotificationMessage = new V1RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV1Message({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, {
         connection,
         agentContext,
       })
@@ -160,11 +160,11 @@ describe('RevocationNotificationService', () => {
       )
 
       const revocationNotificationThreadId = 'notIndy::invalidRevRegId::invalidCredRevId'
-      const revocationNotificationMessage = new V1RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV1Message({
         issueThread: revocationNotificationThreadId,
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v1ProcessRevocationNotification(messageContext)
 
@@ -202,12 +202,12 @@ describe('RevocationNotificationService', () => {
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValueOnce(credentialRecord)
       const revocationNotificationCredentialId = `${metadata.revocationRegistryId}::${metadata.credentialRevocationId}`
 
-      const revocationNotificationMessage = new V2RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
         credentialId: revocationNotificationCredentialId,
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, {
         agentContext,
         connection,
       })
@@ -250,12 +250,12 @@ describe('RevocationNotificationService', () => {
 
       mockFunction(credentialRepository.getSingleByQuery).mockRejectedValueOnce(new Error('Could not find record'))
 
-      const revocationNotificationMessage = new V2RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
         credentialId,
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, {
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, {
         connection,
         agentContext,
       })
@@ -274,12 +274,12 @@ describe('RevocationNotificationService', () => {
       )
 
       const invalidCredentialId = 'notIndy::invalidRevRegId::invalidCredRevId'
-      const revocationNotificationMessage = new V2RevocationNotificationMessage({
+      const revocationNotificationMessage = new DidCommRevocationNotificationV2Message({
         credentialId: invalidCredentialId,
         revocationFormat: 'indy-anoncreds',
         comment: 'Credential has been revoked',
       })
-      const messageContext = new InboundDidCommMessageContext(revocationNotificationMessage, { agentContext })
+      const messageContext = new DidCommInboundMessageContext(revocationNotificationMessage, { agentContext })
 
       await revocationNotificationService.v2ProcessRevocationNotification(messageContext)
 

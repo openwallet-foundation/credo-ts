@@ -4,14 +4,14 @@ import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommProofExchangeRecord,
   DidCommProofState,
-  LinkedAttachment,
-  V2PresentationMessage,
-  V2ProposePresentationMessage,
-  V2RequestPresentationMessage,
+  DidCommLinkedAttachment,
+  DidCommPresentationV2Message,
+  DidCommProposePresentationV2Message,
+  DidCommRequestPresentationV2Message,
 } from '@credo-ts/didcomm'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -80,18 +80,18 @@ describe('PP V2 AnonCreds Proofs', () => {
           },
         ],
         linkedAttachments: [
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],
@@ -295,9 +295,9 @@ describe('PP V2 AnonCreds Proofs', () => {
     const requestMessage = await aliceAgent.modules.proofs.findRequestMessage(aliceProofExchangeRecord.id)
     const presentationMessage = await aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
 
-    expect(proposalMessage).toBeInstanceOf(V2ProposePresentationMessage)
-    expect(requestMessage).toBeInstanceOf(V2RequestPresentationMessage)
-    expect(presentationMessage).toBeInstanceOf(V2PresentationMessage)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposePresentationV2Message)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestPresentationV2Message)
+    expect(presentationMessage).toBeInstanceOf(DidCommPresentationV2Message)
 
     const formatData = await aliceAgent.modules.proofs.getFormatData(aliceProofExchangeRecord.id)
 

@@ -14,7 +14,7 @@ import type {
   ProofFormatProcessPresentationOptions,
   ProofFormatSelectCredentialsForRequestOptions,
   ProofFormatSelectCredentialsForRequestReturn,
-  ProofFormatService,
+  DidCommProofFormatService,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
@@ -36,7 +36,7 @@ import type {
 import type { LegacyIndyProofFormat } from './LegacyIndyProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { Attachment, AttachmentData, ProofFormatSpec } from '@credo-ts/didcomm'
+import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
@@ -67,7 +67,7 @@ const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
 
-export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIndyProofFormat> {
+export class LegacyIndyProofFormatService implements DidCommProofFormatService<LegacyIndyProofFormat> {
   public readonly formatKey = 'indy' as const
 
   public async createProposal(
@@ -75,7 +75,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_PROPOSAL,
       attachmentId,
     })
@@ -112,7 +112,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
       attachmentId,
     })
@@ -135,7 +135,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
       attachmentId,
     })
@@ -176,7 +176,7 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
     agentContext: AgentContext,
     { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<LegacyIndyProofFormat>
   ): Promise<ProofFormatCreateReturn> {
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION,
       attachmentId,
     })
@@ -592,17 +592,17 @@ export class LegacyIndyProofFormatService implements ProofFormatService<LegacyIn
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  private getFormatData(data: unknown, id: string): DidCommAttachment {
+    const attachment = new DidCommAttachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new DidCommAttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

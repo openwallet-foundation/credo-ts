@@ -7,17 +7,17 @@ import { DidRepository } from '../../../../../../core/src/modules/dids/repositor
 import { uuid } from '../../../../../../core/src/utils/uuid'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommMessageSender } from '../../../../DidCommMessageSender'
-import { InboundDidCommMessageContext } from '../../../../models/InboundDidCommMessageContext'
+import { DidCommInboundMessageContext } from '../../../../models/DidCommInboundMessageContext'
 import { DidCommDidExchangeState } from '../../../connections'
 import { DidCommConnectionMetadataKeys } from '../../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionRepository } from '../../../connections/repository/DidCommConnectionRepository'
 import { DidCommConnectionService } from '../../../connections/services/DidCommConnectionService'
 import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateResponseMessage,
-  KeylistUpdateResult,
-  MediationGrantMessage,
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateResponseMessage,
+  DidCommKeylistUpdateResult,
+  DidCommMediationGrantMessage,
 } from '../../messages'
 import { DidCommMediationRole, DidCommMediationState } from '../../models'
 import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
@@ -88,7 +88,7 @@ describe('DidCommMediationRecipientService', () => {
   describe('processMediationGrant', () => {
     test('should process base58 encoded routing keys', async () => {
       mediationRecord.state = DidCommMediationState.Requested
-      const mediationGrant = new MediationGrantMessage({
+      const mediationGrant = new DidCommMediationGrantMessage({
         endpoint: 'http://agent.com:8080',
         routingKeys: ['79CXkde3j8TNuMXxPdV7nLUrT2g7JAEjH5TreyVY7GEZ'],
         threadId: 'threadId',
@@ -98,7 +98,7 @@ describe('DidCommMediationRecipientService', () => {
         state: DidCommDidExchangeState.Completed,
       })
 
-      const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -110,7 +110,7 @@ describe('DidCommMediationRecipientService', () => {
 
     test('should process did:key encoded routing keys', async () => {
       mediationRecord.state = DidCommMediationState.Requested
-      const mediationGrant = new MediationGrantMessage({
+      const mediationGrant = new DidCommMediationGrantMessage({
         endpoint: 'http://agent.com:8080',
         routingKeys: ['did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th'],
         threadId: 'threadId',
@@ -120,7 +120,7 @@ describe('DidCommMediationRecipientService', () => {
         state: DidCommDidExchangeState.Completed,
       })
 
-      const messageContext = new InboundDidCommMessageContext(mediationGrant, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(mediationGrant, { connection, agentContext })
 
       await mediationRecipientService.processMediationGrant(messageContext)
 
@@ -141,18 +141,18 @@ describe('DidCommMediationRecipientService', () => {
 
       const keylist = [
         {
-          result: KeylistUpdateResult.Success,
+          result: DidCommKeylistUpdateResult.Success,
           recipientKey: 'did:key:z6MkmjY8GnV5i9YTDtPETC2uUAW6ejw3nk5mXF5yci5ab7th',
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
         },
       ]
 
-      const keyListUpdateResponse = new KeylistUpdateResponseMessage({
+      const keyListUpdateResponse = new DidCommKeylistUpdateResponseMessage({
         threadId: uuid(),
         keylist,
       })
 
-      const messageContext = new InboundDidCommMessageContext(keyListUpdateResponse, { connection, agentContext })
+      const messageContext = new DidCommInboundMessageContext(keyListUpdateResponse, { connection, agentContext })
 
       expect(connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)).toBeNull()
 

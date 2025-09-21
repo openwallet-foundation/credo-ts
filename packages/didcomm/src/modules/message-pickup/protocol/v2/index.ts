@@ -1,2 +1,2 @@
-export * from './V2DidCommMessagePickupProtocol'
+export * from './DidCommMessagePickupV2Protocol'
 export * from './messages'

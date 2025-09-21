@@ -15,8 +15,8 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../../../../../core/tests'
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommAutoAcceptProof,
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
@@ -25,7 +25,7 @@ import {
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
-  LinkedAttachment,
+  DidCommLinkedAttachment,
 } from '../../../../../../didcomm/src'
 import {
   getAnonCredsIndyModules,
@@ -33,7 +33,7 @@ import {
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
 } from '../../../../../tests/legacyAnonCredsSetup'
-import { V1CredentialPreview } from '../../../credentials/v1'
+import { DidCommCredentialV1Preview } from '../../../credentials/v1'
 
 describe('V1 Proofs - Connectionless - Indy', () => {
   let agents: Agent[]
@@ -351,7 +351,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = V1CredentialPreview.fromRecord({
+    const credentialPreview = DidCommCredentialV1Preview.fromRecord({
       name: 'John',
       age: '99',
     })
@@ -460,18 +460,18 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         credentialDefinitionId: credentialDefinition.credentialDefinitionId,
         attributes: credentialPreview.attributes,
         linkedAttachments: [
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],

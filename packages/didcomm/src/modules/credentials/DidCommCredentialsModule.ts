@@ -9,7 +9,7 @@ import { DidCommProtocol } from '../../models'
 import { DidCommCredentialsApi } from './DidCommCredentialsApi'
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
 import { DidCommRevocationNotificationService } from './protocol/revocation-notification/services'
-import { V2DidCommCredentialProtocol } from './protocol/v2'
+import { DidCommCredentialV2Protocol } from './protocol/v2'
 import { DidCommCredentialExchangeRepository } from './repository'
 
 /**
@@ -37,7 +37,7 @@ export class DidCommCredentialsModule<
       ...config,
       // NOTE: the credentialProtocols defaults are set in the CredentialsModule rather than the CredentialsModuleConfig to
       // avoid dependency cycles.
-      credentialProtocols: config?.credentialProtocols ?? [new V2DidCommCredentialProtocol({ credentialFormats: [] })],
+      credentialProtocols: config?.credentialProtocols ?? [new DidCommCredentialV2Protocol({ credentialFormats: [] })],
     }) as DidCommCredentialsModuleConfig<CredentialProtocols>
   }
 

@@ -2,7 +2,7 @@ import { JsonTransformer } from '../../../../../../core'
 import { DidCommOutOfBandRole } from '../../domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'
-import { OutOfBandInvitation } from '../../messages'
+import { DidCommOutOfBandInvitation } from '../../messages'
 import { DidCommOutOfBandRecord } from '../DidCommOutOfBandRecord'
 
 describe('DidCommOutOfBandRecord', () => {
@@ -11,7 +11,7 @@ describe('DidCommOutOfBandRecord', () => {
       const outOfBandRecord = new DidCommOutOfBandRecord({
         state: DidCommOutOfBandState.Done,
         role: DidCommOutOfBandRole.Receiver,
-        outOfBandInvitation: new OutOfBandInvitation({
+        outOfBandInvitation: new DidCommOutOfBandInvitation({
           label: 'label',
           services: [
             new OutOfBandDidCommService({

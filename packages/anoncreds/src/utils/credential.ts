@@ -1,4 +1,4 @@
-import type { DidCommCredentialPreviewAttributeOptions, LinkedAttachment } from '@credo-ts/didcomm'
+import type { DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
 import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
@@ -215,7 +215,7 @@ export function assertAttributesMatch(schema: AnonCredsSchema, attributes: DidCo
  * @returns a modified version of the credential preview with the linked credentials
  * */
 export function createAndLinkAttachmentsToPreview(
-  attachments: LinkedAttachment[],
+  attachments: DidCommLinkedAttachment[],
   previewAttributes: DidCommCredentialPreviewAttributeOptions[]
 ) {
   const credentialPreviewAttributeNames = previewAttributes.map((attribute) => attribute.name)

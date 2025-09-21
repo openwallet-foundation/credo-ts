@@ -7,7 +7,7 @@ import type { DidCommRevocationNotification } from '../models/DidCommRevocationN
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
-import { Attachment } from '../../../decorators/attachment/Attachment'
+import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import { DidCommCredentialPreviewAttribute } from '../models/DidCommCredentialPreviewAttribute'
 
 export interface DidCommCredentialExchangeRecordProps {
@@ -23,7 +23,7 @@ export interface DidCommCredentialExchangeRecordProps {
   tags?: CustomDidCommCredentialExchangeTags
   credentialAttributes?: DidCommCredentialPreviewAttribute[]
   autoAcceptCredential?: DidCommAutoAcceptCredential
-  linkedAttachments?: Attachment[]
+  linkedAttachments?: DidCommAttachment[]
   revocationNotification?: DidCommRevocationNotification
   errorMessage?: string
   credentials?: CredentialRecordBinding[]
@@ -62,8 +62,8 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
   @Type(() => DidCommCredentialPreviewAttribute)
   public credentialAttributes?: DidCommCredentialPreviewAttribute[]
 
-  @Type(() => Attachment)
-  public linkedAttachments?: Attachment[]
+  @Type(() => DidCommAttachment)
+  public linkedAttachments?: DidCommAttachment[]
 
   // Type is CredentialRecord on purpose (without Exchange) as this is how the record was initially called.
   public static readonly type = 'CredentialRecord'

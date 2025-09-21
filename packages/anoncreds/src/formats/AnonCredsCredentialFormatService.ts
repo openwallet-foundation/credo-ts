@@ -14,10 +14,10 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  CredentialFormatService,
+  DidCommCredentialFormatService,
   DidCommCredentialExchangeRecord,
   DidCommCredentialPreviewAttributeOptions,
-  LinkedAttachment,
+  DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredential,
@@ -31,10 +31,10 @@ import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } fro
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
-  Attachment,
+  DidCommAttachment,
   DidCommCredentialFormatSpec,
   DidCommCredentialProblemReportReason,
-  ProblemReportError,
+  DidCommProblemReportError,
 } from '@credo-ts/didcomm'
 
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
@@ -66,7 +66,7 @@ const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
 const ANONCREDS_CREDENTIAL_FILTER = 'anoncreds/credential-filter@v1.0'
 const ANONCREDS_CREDENTIAL = 'anoncreds/credential@v1.0'
 
-export class AnonCredsCredentialFormatService implements CredentialFormatService<AnonCredsCredentialFormat> {
+export class AnonCredsCredentialFormatService implements DidCommCredentialFormatService<AnonCredsCredentialFormat> {
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */
   public readonly formatKey = 'anoncreds' as const
 
@@ -215,7 +215,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     const credOffer = attachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     if (!credOffer.schema_id || !credOffer.cred_def_id) {
-      throw new ProblemReportError('Invalid credential offer', {
+      throw new DidCommProblemReportError('Invalid credential offer', {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       })
     }
@@ -473,13 +473,13 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    * anoncreds and then find the corresponding attachment (if there is one)
    * @param formats the formats object containing the attachmentId
    * @param messageAttachments the attachments containing the payload
-   * @returns The Attachment if found or undefined
+   * @returns The DidCommAttachment if found or undefined
    *
    */
   public getAttachment(
     formats: DidCommCredentialFormatSpec[],
-    messageAttachments: Attachment[]
-  ): Attachment | undefined {
+    messageAttachments: DidCommAttachment[]
+  ): DidCommAttachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
@@ -564,7 +564,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
       credentialExchangeRecord: DidCommCredentialExchangeRecord
       attachmentId?: string
       attributes: DidCommCredentialPreviewAttributeOptions[]
-      linkedAttachments?: LinkedAttachment[]
+      linkedAttachments?: DidCommLinkedAttachment[]
     }
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
@@ -641,9 +641,9 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
    */
   private getCredentialLinkedAttachments(
     attributes?: DidCommCredentialPreviewAttributeOptions[],
-    linkedAttachments?: LinkedAttachment[]
+    linkedAttachments?: DidCommLinkedAttachment[]
   ): {
-    attachments?: Attachment[]
+    attachments?: DidCommAttachment[]
     previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
   } {
     if (!linkedAttachments && !attributes) {
@@ -651,7 +651,7 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
     }
 
     let previewAttributes = attributes ?? []
-    let attachments: Attachment[] | undefined
+    let attachments: DidCommAttachment[] | undefined
 
     if (linkedAttachments) {
       // there are linked attachments so transform into the attribute field of the CredentialPreview object for
@@ -664,14 +664,14 @@ export class AnonCredsCredentialFormatService implements CredentialFormatService
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  public getFormatData(data: unknown, id: string): DidCommAttachment {
+    const attachment = new DidCommAttachment({
       id,
       mimeType: 'application/json',
       data: {

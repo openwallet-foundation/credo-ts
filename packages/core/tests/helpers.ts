@@ -1,6 +1,6 @@
 import type { Observable } from 'rxjs'
 import type {
-  BasicMessage,
+  DidCommBasicMessage,
   DidCommBasicMessageStateChangedEvent,
   DidCommConnectionDidRotatedEvent,
   DidCommConnectionRecordProps,
@@ -50,7 +50,7 @@ import {
 } from '../../didcomm/src'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
-import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommOutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
@@ -585,7 +585,7 @@ export async function waitForDidRotate(
 export async function waitForBasicMessage(
   agent: Agent,
   { content, connectionId }: { content?: string; connectionId?: string }
-): Promise<BasicMessage> {
+): Promise<DidCommBasicMessage> {
   return new Promise((resolve) => {
     const listener = (event: DidCommBasicMessageStateChangedEvent) => {
       const contentMatches = content === undefined || event.payload.message.content === content
@@ -719,7 +719,7 @@ export function getMockOutOfBand({
       }),
     ],
   }
-  const outOfBandInvitation = new OutOfBandInvitation(options)
+  const outOfBandInvitation = new DidCommOutOfBandInvitation(options)
   const outOfBandRecord = new DidCommOutOfBandRecord({
     mediatorId,
     invitationInlineServiceKeys,

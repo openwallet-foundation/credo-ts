@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
 
@@ -79,7 +79,7 @@ export class QuestionAnswerService {
    * @returns QuestionAnswer record
    */
   public async processReceiveQuestion(
-    messageContext: InboundDidCommMessageContext<QuestionMessage>
+    messageContext: DidCommInboundMessageContext<QuestionMessage>
   ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
@@ -144,7 +144,7 @@ export class QuestionAnswerService {
    * @returns QuestionAnswer record
    */
   public async receiveAnswer(
-    messageContext: InboundDidCommMessageContext<AnswerMessage>
+    messageContext: DidCommInboundMessageContext<AnswerMessage>
   ): Promise<QuestionAnswerRecord> {
     const { message: answerMessage } = messageContext
 

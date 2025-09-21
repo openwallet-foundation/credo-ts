@@ -4,12 +4,12 @@ import { AgentContext, injectable } from '@credo-ts/core'
 
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
 
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
-import { ForwardHandler, KeylistUpdateHandler } from './handlers'
-import { MediationRequestHandler } from './handlers/MediationRequestHandler'
+import { DidCommForwardHandler, DidCommKeylistUpdateHandler } from './handlers'
+import { DidCommMediationRequestHandler } from './handlers/DidCommMediationRequestHandler'
 import { DidCommMediatorService } from './services/DidCommMediatorService'
 
 @injectable()
@@ -45,7 +45,7 @@ export class DidCommMediatorApi {
       this.agentContext,
       record
     )
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
       associatedRecord: mediationRecord,
@@ -57,8 +57,8 @@ export class DidCommMediatorApi {
   }
 
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(this.mediatorService))
-    messageHandlerRegistry.registerMessageHandler(new ForwardHandler(this.mediatorService))
-    messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(this.mediatorService, this.config))
+    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateHandler(this.mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommForwardHandler(this.mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(this.mediatorService, this.config))
   }
 }

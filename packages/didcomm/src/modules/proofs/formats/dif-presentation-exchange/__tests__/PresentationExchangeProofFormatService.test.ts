@@ -1,6 +1,6 @@
 import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core'
-import type { ProofFormatService } from '../../ProofFormatService'
-import type { DifPresentationExchangeProofFormat } from '../DifPresentationExchangeProofFormat'
+import type { DidCommProofFormatService } from '../../DidCommProofFormatService'
+import type { DidCommDifPresentationExchangeProofFormat } from '../DidCommDifPresentationExchangeProofFormat'
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 
@@ -21,7 +21,7 @@ import { DidCommProofsModule } from '../../../DidCommProofsModule'
 import { DidCommProofRole, DidCommProofState } from '../../../models'
 import { V2DidCommProofProtocol } from '../../../protocol'
 import { DidCommProofExchangeRecord } from '../../../repository'
-import { DifPresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
+import { DidCommDifPresentationExchangeProofFormatService } from '../DidCommDifPresentationExchangeProofFormatService'
 
 const mockProofRecord = () =>
   new DidCommProofExchangeRecord({
@@ -91,7 +91,7 @@ jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockR
 })
 
 describe('Presentation Exchange ProofFormatService', () => {
-  let pexFormatService: ProofFormatService<DifPresentationExchangeProofFormat>
+  let pexFormatService: DidCommProofFormatService<DidCommDifPresentationExchangeProofFormat>
   let agent: Agent
 
   beforeAll(async () => {
@@ -104,7 +104,7 @@ describe('Presentation Exchange ProofFormatService', () => {
           pex: new DifPresentationExchangeModule(),
           proofs: new DidCommProofsModule({
             proofProtocols: [
-              new V2DidCommProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] }),
+              new V2DidCommProofProtocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
             ],
           }),
         },
@@ -114,7 +114,7 @@ describe('Presentation Exchange ProofFormatService', () => {
 
     await agent.initialize()
 
-    pexFormatService = agent.dependencyManager.resolve(DifPresentationExchangeProofFormatService)
+    pexFormatService = agent.dependencyManager.resolve(DidCommDifPresentationExchangeProofFormatService)
   })
 
   describe('Create Presentation Exchange Proof Proposal / Request', () => {

@@ -1,4 +1,4 @@
-import type { ProofFormat } from '@credo-ts/didcomm'
+import type { DidCommProofFormat } from '@credo-ts/didcomm'
 import type { AnonCredsProof, AnonCredsProofRequest, AnonCredsSelectedCredentials } from '../models'
 import type {
   AnonCredsCredentialsForProofRequest,
@@ -10,7 +10,7 @@ import type {
 // TODO: Custom restrictions to remove `_id` from restrictions?
 export type LegacyIndyProofRequest = AnonCredsProofRequest
 
-export interface LegacyIndyProofFormat extends ProofFormat {
+export interface LegacyIndyProofFormat extends DidCommProofFormat {
   formatKey: 'indy'
 
   proofFormats: {

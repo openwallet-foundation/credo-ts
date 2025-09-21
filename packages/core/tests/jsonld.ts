@@ -4,9 +4,9 @@ import {
   DidCommCredentialsModule,
   DidCommProofEventTypes,
   DidCommProofsModule,
-  DifPresentationExchangeProofFormatService,
-  JsonLdCredentialFormatService,
-  V2DidCommCredentialProtocol,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommJsonLdCredentialFormatService,
+  DidCommCredentialV2Protocol,
   V2DidCommProofProtocol,
 } from '../../didcomm/src'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
@@ -30,7 +30,7 @@ export const getJsonLdModules = (
   ({
     credentials: new DidCommCredentialsModule({
       credentialProtocols: [
-        new V2DidCommCredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] }),
+        new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
       ],
       autoAcceptCredentials,
     }),
@@ -39,7 +39,7 @@ export const getJsonLdModules = (
     }),
     proofs: new DidCommProofsModule({
       autoAcceptProofs,
-      proofProtocols: [new V2DidCommProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
+      proofProtocols: [new V2DidCommProofProtocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] })],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),

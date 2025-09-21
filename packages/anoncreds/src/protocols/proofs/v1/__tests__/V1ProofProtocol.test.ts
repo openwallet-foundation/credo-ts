@@ -6,23 +6,23 @@ import { Subject } from 'rxjs'
 import { EventEmitter } from '../../../../../../core/src'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests'
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommDidExchangeState,
   DidCommProofEventTypes,
   DidCommProofExchangeRecord,
   DidCommProofRole,
   DidCommProofState,
-  InboundDidCommMessageContext,
-  PresentationProblemReportReason,
+  DidCommInboundMessageContext,
+  DidCommPresentationProblemReportReason,
 } from '../../../../../../didcomm/src'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
-import { V1ProofProtocol } from '../V1ProofProtocol'
-import { INDY_PROOF_REQUEST_ATTACHMENT_ID, V1RequestPresentationMessage } from '../messages'
-import { V1PresentationProblemReportMessage } from '../messages/V1PresentationProblemReportMessage'
+import { DidCommProofV1Protocol } from '../V1ProofProtocol'
+import { INDY_PROOF_REQUEST_ATTACHMENT_ID, DidCommRequestPresentationV1Message } from '../messages'
+import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository')
@@ -46,10 +46,10 @@ const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
 
-const requestAttachment = new Attachment({
+const requestAttachment = new DidCommAttachment({
   id: INDY_PROOF_REQUEST_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJuYW1lIjogIlByb29mIHJlcXVlc3QiLCAibm9uX3Jldm9rZWQiOiB7ImZyb20iOiAxNjQwOTk1MTk5LCAidG8iOiAxNjQwOTk1MTk5fSwgIm5vbmNlIjogIjEiLCAicmVxdWVzdGVkX2F0dHJpYnV0ZXMiOiB7ImFkZGl0aW9uYWxQcm9wMSI6IHsibmFtZSI6ICJmYXZvdXJpdGVEcmluayIsICJub25fcmV2b2tlZCI6IHsiZnJvbSI6IDE2NDA5OTUxOTksICJ0byI6IDE2NDA5OTUxOTl9LCAicmVzdHJpY3Rpb25zIjogW3siY3JlZF9kZWZfaWQiOiAiV2dXeHF6dHJOb29HOTJSWHZ4U1RXdjozOkNMOjIwOnRhZyJ9XX19LCAicmVxdWVzdGVkX3ByZWRpY2F0ZXMiOiB7fSwgInZlcnNpb24iOiAiMS4wIn0=',
   }),
@@ -67,13 +67,13 @@ const mockProofExchangeRecord = ({
 }: {
   state?: DidCommProofState
   role?: DidCommProofRole
-  requestMessage?: V1RequestPresentationMessage
+  requestMessage?: DidCommRequestPresentationV1Message
   tags?: CustomDidCommProofExchangeTags
   threadId?: string
   connectionId?: string
   id?: string
 } = {}) => {
-  const requestPresentationMessage = new V1RequestPresentationMessage({
+  const requestPresentationMessage = new DidCommRequestPresentationV1Message({
     comment: 'some comment',
     requestAttachments: [requestAttachment],
   })
@@ -95,7 +95,7 @@ describe('V1ProofProtocol', () => {
   let eventEmitter: EventEmitter
   let agentConfig: AgentConfig
   let agentContext: AgentContext
-  let proofProtocol: V1ProofProtocol
+  let proofProtocol: DidCommProofV1Protocol
 
   beforeEach(() => {
     // real objects
@@ -111,19 +111,19 @@ describe('V1ProofProtocol', () => {
       ],
       agentConfig,
     })
-    proofProtocol = new V1ProofProtocol({ indyProofFormat: indyProofFormatService })
+    proofProtocol = new DidCommProofV1Protocol({ indyProofFormat: indyProofFormatService })
   })
 
   describe('processRequest', () => {
-    let presentationRequest: V1RequestPresentationMessage
-    let messageContext: InboundDidCommMessageContext<V1RequestPresentationMessage>
+    let presentationRequest: DidCommRequestPresentationV1Message
+    let messageContext: DidCommInboundMessageContext<DidCommRequestPresentationV1Message>
 
     beforeEach(() => {
-      presentationRequest = new V1RequestPresentationMessage({
+      presentationRequest = new DidCommRequestPresentationV1Message({
         comment: 'abcd',
         requestAttachments: [requestAttachment],
       })
-      messageContext = new InboundDidCommMessageContext(presentationRequest, {
+      messageContext = new DidCommInboundMessageContext(presentationRequest, {
         connection,
         agentContext,
       })
@@ -190,10 +190,10 @@ describe('V1ProofProtocol', () => {
       mockFunction(proofRepository.getById).mockReturnValue(Promise.resolve(proof))
 
       // when
-      const presentationProblemReportMessage = await new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = await new DidCommPresentationV1ProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: DidCommPresentationProblemReportReason.Abandoned,
         },
       })
 
@@ -211,21 +211,21 @@ describe('V1ProofProtocol', () => {
 
   describe('processProblemReport', () => {
     let proof: DidCommProofExchangeRecord
-    let messageContext: InboundDidCommMessageContext<V1PresentationProblemReportMessage>
+    let messageContext: DidCommInboundMessageContext<DidCommPresentationV1ProblemReportMessage>
 
     beforeEach(() => {
       proof = mockProofExchangeRecord({
         state: DidCommProofState.RequestReceived,
       })
 
-      const presentationProblemReportMessage = new V1PresentationProblemReportMessage({
+      const presentationProblemReportMessage = new DidCommPresentationV1ProblemReportMessage({
         description: {
           en: 'Indy error',
-          code: PresentationProblemReportReason.Abandoned,
+          code: DidCommPresentationProblemReportReason.Abandoned,
         },
       })
       presentationProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundDidCommMessageContext(presentationProblemReportMessage, {
+      messageContext = new DidCommInboundMessageContext(presentationProblemReportMessage, {
         connection,
         agentContext,
       })

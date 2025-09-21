@@ -2,10 +2,10 @@ import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommConnectionRecord } from '../../connections'
 import type {
   ExtractProofFormats,
-  ProofFormat,
-  ProofFormatCredentialForRequestPayload,
-  ProofFormatPayload,
-  ProofFormatService,
+  DidCommProofFormat,
+  DidCommProofFormatCredentialForRequestPayload,
+  DidCommProofFormatPayload,
+  DidCommProofFormatService,
 } from '../formats'
 import type { DidCommAutoAcceptProof } from '../models'
 import type { DidCommProofExchangeRecord } from '../repository'
@@ -34,14 +34,14 @@ import type { DidCommProofProtocol } from './DidCommProofProtocol'
  * ```
  */
 export type ProofFormatDataMessagePayload<
-  CFs extends ProofFormat[] = ProofFormat[],
-  M extends keyof ProofFormat['formatData'] = keyof ProofFormat['formatData'],
+  CFs extends DidCommProofFormat[] = DidCommProofFormat[],
+  M extends keyof DidCommProofFormat['formatData'] = keyof DidCommProofFormat['formatData'],
 > = {
   [ProofFormat in CFs[number] as ProofFormat['formatKey']]?: ProofFormat['formatData'][M]
 }
 
 /**
- * Infer the {@link ProofFormat} types based on an array of {@link DidCommProofProtocol} types.
+ * Infer the {@link DidCommProofFormat} types based on an array of {@link DidCommProofProtocol} types.
  *
  * It does this by extracting the `ProofFormatServices` generic from the `ProofProtocol`, and
  * then extracting the `ProofFormat` generic from each of the `ProofFormatService` types.
@@ -61,12 +61,12 @@ export type ProofFormatDataMessagePayload<
 export type ProofFormatsFromProtocols<Type extends DidCommProofProtocol[]> = Type[number] extends DidCommProofProtocol<
   infer ProofFormatServices
 >
-  ? ProofFormatServices extends ProofFormatService[]
+  ? ProofFormatServices extends DidCommProofFormatService[]
     ? ExtractProofFormats<ProofFormatServices>
     : never
   : never
 
-export type GetProofFormatDataReturn<PFs extends ProofFormat[] = ProofFormat[]> = {
+export type GetProofFormatDataReturn<PFs extends DidCommProofFormat[] = DidCommProofFormat[]> = {
   proposal?: ProofFormatDataMessagePayload<PFs, 'proposal'>
   request?: ProofFormatDataMessagePayload<PFs, 'request'>
   presentation?: ProofFormatDataMessagePayload<PFs, 'presentation'>
@@ -87,68 +87,68 @@ interface BaseOptions {
   goal?: string
 }
 
-export interface CreateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface CreateProofProposalOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   connectionRecord: DidCommConnectionRecord
-  proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
+  proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
   parentThreadId?: string
 }
 
-export interface AcceptProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface AcceptProofProposalOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptProposal'>
+  proofFormats?: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'acceptProposal'>
 
   /** @default true */
   willConfirm?: boolean
 }
 
-export interface NegotiateProofProposalOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface NegotiateProofProposalOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
+  proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
 
   /** @default true */
   willConfirm?: boolean
 }
 
-export interface CreateProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface CreateProofRequestOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   // Create request can also be used for connection-less, so connection is optional
   connectionRecord?: DidCommConnectionRecord
-  proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
+  proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createRequest'>
   parentThreadId?: string
 
   /** @default true */
   willConfirm?: boolean
 }
 
-export interface AcceptProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface AcceptProofRequestOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats?: ProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
+  proofFormats?: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'acceptRequest'>
 }
 
-export interface NegotiateProofRequestOptions<PFs extends ProofFormatService[]> extends BaseOptions {
+export interface NegotiateProofRequestOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats: ProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
+  proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
 }
 
-export interface GetCredentialsForRequestOptions<PFs extends ProofFormatService[]> {
+export interface GetCredentialsForRequestOptions<PFs extends DidCommProofFormatService[]> {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats?: ProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'input'>
+  proofFormats?: DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'input'>
 }
 
-export interface GetCredentialsForRequestReturn<PFs extends ProofFormatService[]> {
-  proofFormats: ProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'output'>
+export interface GetCredentialsForRequestReturn<PFs extends DidCommProofFormatService[]> {
+  proofFormats: DidCommProofFormatCredentialForRequestPayload<ExtractProofFormats<PFs>, 'getCredentialsForRequest', 'output'>
 }
 
-export interface SelectCredentialsForRequestOptions<PFs extends ProofFormatService[]> {
+export interface SelectCredentialsForRequestOptions<PFs extends DidCommProofFormatService[]> {
   proofRecord: DidCommProofExchangeRecord
-  proofFormats?: ProofFormatCredentialForRequestPayload<
+  proofFormats?: DidCommProofFormatCredentialForRequestPayload<
     ExtractProofFormats<PFs>,
     'selectCredentialsForRequest',
     'input'
   >
 }
 
-export interface SelectCredentialsForRequestReturn<PFs extends ProofFormatService[]> {
-  proofFormats: ProofFormatCredentialForRequestPayload<
+export interface SelectCredentialsForRequestReturn<PFs extends DidCommProofFormatService[]> {
+  proofFormats: DidCommProofFormatCredentialForRequestPayload<
     ExtractProofFormats<PFs>,
     'selectCredentialsForRequest',
     'output'

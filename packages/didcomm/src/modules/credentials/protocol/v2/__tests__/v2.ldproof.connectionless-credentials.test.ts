@@ -6,7 +6,7 @@ import { setupJsonLdTests, waitForCredentialRecordSubject } from '../../../../..
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository'
-import type { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import type { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
 const signCredentialOptions = {
   credential: {
@@ -84,7 +84,7 @@ describe('credentials', () => {
       }
     )
 
-    const offerMessage = message as V2OfferCredentialMessage
+    const offerMessage = message as DidCommOfferCredentialV2Message
     const attachment = offerMessage?.offerAttachments[0]
 
     expect(attachment?.getDataAsJson()).toMatchObject({

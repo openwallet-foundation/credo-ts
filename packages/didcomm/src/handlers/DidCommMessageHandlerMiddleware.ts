@@ -1,7 +1,7 @@
-import type { InboundDidCommMessageContext } from '../models/InboundDidCommMessageContext'
+import type { DidCommInboundMessageContext } from '../models/DidCommInboundMessageContext'
 
 export type DidCommMessageHandlerMiddleware = (
-  inboundMessageContext: InboundDidCommMessageContext,
+  inboundMessageContext: DidCommInboundMessageContext,
   next: () => Promise<void>
 ) => Promise<void>
 
@@ -9,10 +9,10 @@ export type DidCommMessageHandlerMiddleware = (
 export class DidCommMessageHandlerMiddlewareRunner {
   public static async run(
     middlewares: DidCommMessageHandlerMiddleware[],
-    inboundMessageContext: InboundDidCommMessageContext
+    inboundMessageContext: DidCommInboundMessageContext
   ) {
     const compose = (middlewares: DidCommMessageHandlerMiddleware[]) => {
-      return async (inboundMessageContext: InboundDidCommMessageContext) => {
+      return async (inboundMessageContext: DidCommInboundMessageContext) => {
         let index = -1
         async function dispatch(i: number): Promise<void> {
           if (i <= index) throw new Error('next() called multiple times')

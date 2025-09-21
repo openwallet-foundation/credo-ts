@@ -1,5 +1,5 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
-import type { InboundDidCommTransport, OutboundDidCommTransport } from './transport'
+import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
 
 import { injectable } from '@credo-ts/core'
 
@@ -32,11 +32,11 @@ export class DidCommApi {
     this.messageHandlerRegistry = messageHandlerRegistry
   }
 
-  public registerInboundTransport(inboundTransport: InboundDidCommTransport) {
+  public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
     this.messageReceiver.registerInboundTransport(inboundTransport)
   }
 
-  public async unregisterInboundTransport(inboundTransport: InboundDidCommTransport) {
+  public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
     await this.messageReceiver.unregisterInboundTransport(inboundTransport)
   }
 
@@ -44,11 +44,11 @@ export class DidCommApi {
     return this.messageReceiver.inboundTransports
   }
 
-  public registerOutboundTransport(outboundTransport: OutboundDidCommTransport) {
+  public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
     this.messageSender.registerOutboundTransport(outboundTransport)
   }
 
-  public async unregisterOutboundTransport(outboundTransport: OutboundDidCommTransport) {
+  public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
     await this.messageSender.unregisterOutboundTransport(outboundTransport)
   }
 

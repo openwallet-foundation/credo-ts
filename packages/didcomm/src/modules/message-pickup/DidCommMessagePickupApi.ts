@@ -12,14 +12,14 @@ import type {
 } from './DidCommMessagePickupApiOptions'
 import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
 import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
-import type { V1DidCommMessagePickupProtocol, V2DidCommMessagePickupProtocol } from './protocol'
+import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
 import { AgentContext, CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
 import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
 
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
 
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
@@ -42,7 +42,7 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
 @injectable()
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class DidCommMessagePickupApi<
-  MPPs extends DidCommMessagePickupProtocol[] = [V1DidCommMessagePickupProtocol, V2DidCommMessagePickupProtocol],
+  MPPs extends DidCommMessagePickupProtocol[] = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol],
 > implements DidCommMessagePickupApi<MPPs>
 {
   public config: DidCommMessagePickupModuleConfig<MPPs>
@@ -144,7 +144,7 @@ export class DidCommMessagePickupApi<
 
     if (createDeliveryReturn) {
       await this.messageSender.sendMessage(
-        new OutboundDidCommMessageContext(createDeliveryReturn.message, {
+        new DidCommOutboundMessageContext(createDeliveryReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
         }),
@@ -183,7 +183,7 @@ export class DidCommMessagePickupApi<
 
     if (deliverMessagesReturn) {
       await this.messageSender.sendMessage(
-        new OutboundDidCommMessageContext(deliverMessagesReturn.message, {
+        new DidCommOutboundMessageContext(deliverMessagesReturn.message, {
           agentContext: this.agentContext,
           connection: connectionRecord,
         }),
@@ -212,7 +212,7 @@ export class DidCommMessagePickupApi<
       recipientDid: options.recipientDid,
     })
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connectionRecord,
     })
@@ -263,7 +263,7 @@ export class DidCommMessagePickupApi<
 
     // Live mode requires a long-lived transport session, so we'll require WebSockets to send this message
     await this.messageSender.sendMessage(
-      new OutboundDidCommMessageContext(message, {
+      new DidCommOutboundMessageContext(message, {
         agentContext: this.agentContext,
         connection: connectionRecord,
       }),

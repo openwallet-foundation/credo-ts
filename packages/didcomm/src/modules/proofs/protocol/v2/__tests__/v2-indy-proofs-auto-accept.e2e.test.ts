@@ -275,7 +275,7 @@ describe('Auto accept present proof', () => {
 
       const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
       await aliceAgent.modules.proofs.acceptRequest({
-        proofRecordId: aliceProofExchangeRecord.id,
+        proofExchangeRecordId: aliceProofExchangeRecord.id,
       })
 
       await Promise.all([

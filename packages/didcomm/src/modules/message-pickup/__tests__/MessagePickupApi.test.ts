@@ -15,7 +15,7 @@ import { DidExchangeState } from '../../connections/models/DidExchangeState'
 import { ConnectionService } from '../../connections/services/ConnectionService'
 import { MessagePickupApi } from '../MessagePickupApi'
 import { MessagePickupModuleConfig } from '../MessagePickupModuleConfig'
-import { V1MessagePickupProtocol, V2MessageDeliveryMessage, V2MessagePickupProtocol } from '../protocol'
+import { V1MessagePickupProtocol, DidCommMessageDeliveryV2Message, V2MessagePickupProtocol } from '../protocol'
 import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
 
 const mockConnection = getMockConnection({
@@ -114,7 +114,7 @@ describe('MessagePickupApi', () => {
     const [outboundCtx, options] = sendMessageMock.mock.calls[0]
 
     expect(messageSender.sendMessage).toHaveBeenCalledTimes(1)
-    expect(outboundCtx.message.type).toEqual(V2MessageDeliveryMessage.type.messageTypeUri)
+    expect(outboundCtx.message.type).toEqual(DidCommMessageDeliveryV2Message.type.messageTypeUri)
     expect(outboundCtx.connection).toEqual(mockConnection)
     expect(options).toEqual({
       transportPriority: { schemes: ['wss', 'ws'] },

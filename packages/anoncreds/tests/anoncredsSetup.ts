@@ -35,8 +35,8 @@ import {
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofsModule,
-  DifPresentationExchangeProofFormatService,
-  V2DidCommCredentialProtocol,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommCredentialV2Protocol,
   V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
@@ -92,7 +92,7 @@ export const getAnonCredsModules = ({
 
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsProofFormatService()
-  const presentationExchangeProofFormatService = new DifPresentationExchangeProofFormatService()
+  const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
@@ -100,7 +100,7 @@ export const getAnonCredsModules = ({
     credentials: new DidCommCredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
-        new V2DidCommCredentialProtocol({
+        new DidCommCredentialV2Protocol({
           credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
         }),
       ],

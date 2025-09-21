@@ -7,8 +7,8 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
   DidCommMessageRepository,
-  V2CredentialPreview,
-  V2OfferCredentialMessage,
+  DidCommCredentialV2Preview,
+  DidCommOfferCredentialV2Message,
 } from '@credo-ts/didcomm'
 
 import { waitForCredentialRecordSubject } from '../../core/tests'
@@ -18,7 +18,7 @@ import testLogger from '../../core/tests/logger'
 import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from './anoncredsSetup'
 
-const credentialPreview = V2CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'some x-ray',
@@ -119,7 +119,7 @@ describe('IC v2 credential revocation', () => {
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
     const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
-      messageClass: V2OfferCredentialMessage,
+      messageClass: DidCommOfferCredentialV2Message,
     })
 
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({

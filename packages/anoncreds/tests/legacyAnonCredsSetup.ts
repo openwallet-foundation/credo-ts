@@ -23,7 +23,7 @@ import {
   DidCommProofEventTypes,
   DidCommProofState,
   DidCommProofsModule,
-  V2DidCommCredentialProtocol,
+  DidCommCredentialV2Protocol,
   V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
@@ -52,8 +52,8 @@ import {
   AnonCredsProofFormatService,
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
-  V1CredentialProtocol,
-  V1ProofProtocol,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
@@ -95,10 +95,10 @@ export const getAnonCredsIndyModules = ({
     credentials: new DidCommCredentialsModule({
       autoAcceptCredentials,
       credentialProtocols: [
-        new V1CredentialProtocol({
+        new DidCommCredentialV1Protocol({
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
-        new V2DidCommCredentialProtocol({
+        new DidCommCredentialV2Protocol({
           credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],
@@ -106,7 +106,7 @@ export const getAnonCredsIndyModules = ({
     proofs: new DidCommProofsModule({
       autoAcceptProofs,
       proofProtocols: [
-        new V1ProofProtocol({
+        new DidCommProofV1Protocol({
           indyProofFormat: legacyIndyProofFormatService,
         }),
         new V2DidCommProofProtocol({
@@ -174,7 +174,7 @@ export async function presentLegacyAnonCredsProof({
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
   const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
@@ -183,7 +183,7 @@ export async function presentLegacyAnonCredsProof({
   })
 
   await holderAgent.modules.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: { indy: selectedCredentials.proofFormats.indy },
   })
 

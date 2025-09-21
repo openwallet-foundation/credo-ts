@@ -1,8 +1,8 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '../../../models'
+import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
-import type { ForwardMessage, MediationRequestMessage } from '../messages'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
 
 import {
   CredoError,
@@ -28,14 +28,14 @@ import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
-import { MessageForwardingStrategy } from '../MessageForwardingStrategy'
+import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateMessage,
-  KeylistUpdateResponseMessage,
-  KeylistUpdateResult,
-  KeylistUpdated,
-  MediationGrantMessage,
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateMessage,
+  DidCommKeylistUpdateResponseMessage,
+  DidCommKeylistUpdateResult,
+  DidCommKeylistUpdated,
+  DidCommMediationGrantMessage,
 } from '../messages'
 import { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
@@ -81,7 +81,7 @@ export class DidCommMediatorService {
     throw new CredoError('Mediator has not been initialized yet.')
   }
 
-  public async processForwardMessage(messageContext: InboundDidCommMessageContext<ForwardMessage>): Promise<void> {
+  public async processForwardMessage(messageContext: DidCommInboundMessageContext<DidCommForwardMessage>): Promise<void> {
     const { message, agentContext } = messageContext
 
     // TODO: update to class-validator validation
@@ -103,14 +103,14 @@ export class DidCommMediatorService {
     const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
 
     switch (messageForwardingStrategy) {
-      case MessageForwardingStrategy.QueueOnly:
+      case DidCommMessageForwardingStrategy.QueueOnly:
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         break
-      case MessageForwardingStrategy.QueueAndLiveModeDelivery: {
+      case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
         await this.messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
@@ -128,7 +128,7 @@ export class DidCommMediatorService {
         }
         break
       }
-      case MessageForwardingStrategy.DirectDelivery:
+      case DidCommMessageForwardingStrategy.DirectDelivery:
         // The message inside the forward message is packed so we just send the packed
         // message to the connection associated with it
         await messageSender.sendPackage(agentContext, {
@@ -139,12 +139,12 @@ export class DidCommMediatorService {
     }
   }
 
-  public async processKeylistUpdateRequest(messageContext: InboundDidCommMessageContext<KeylistUpdateMessage>) {
+  public async processKeylistUpdateRequest(messageContext: DidCommInboundMessageContext<DidCommKeylistUpdateMessage>) {
     // Assert Ready connection
     const connection = messageContext.assertReadyConnection()
 
     const { message } = messageContext
-    const keylist: KeylistUpdated[] = []
+    const keylist: DidCommKeylistUpdated[] = []
 
     const mediationRecord = await this.mediationRepository.getByConnectionId(messageContext.agentContext, connection.id)
 
@@ -156,36 +156,36 @@ export class DidCommMediatorService {
     await this.updateUseDidKeysFlag(
       messageContext.agentContext,
       connection,
-      KeylistUpdateMessage.type.protocolUri,
+      DidCommKeylistUpdateMessage.type.protocolUri,
       connectionUsesDidKey
     )
 
     for (const update of message.updates) {
-      const updated = new KeylistUpdated({
+      const updated = new DidCommKeylistUpdated({
         action: update.action,
         recipientKey: update.recipientKey,
-        result: KeylistUpdateResult.NoChange,
+        result: DidCommKeylistUpdateResult.NoChange,
       })
 
       // According to RFC 0211 key should be a did key, but base58 encoded verkey was used before
       // RFC was accepted. This converts the key to a public key base58 if it is a did key.
       const publicKeyBase58 = didKeyToVerkey(update.recipientKey)
 
-      if (update.action === KeylistUpdateAction.add) {
+      if (update.action === DidCommKeylistUpdateAction.add) {
         mediationRecord.addRecipientKey(publicKeyBase58)
-        updated.result = KeylistUpdateResult.Success
+        updated.result = DidCommKeylistUpdateResult.Success
 
         keylist.push(updated)
-      } else if (update.action === KeylistUpdateAction.remove) {
+      } else if (update.action === DidCommKeylistUpdateAction.remove) {
         const success = mediationRecord.removeRecipientKey(publicKeyBase58)
-        updated.result = success ? KeylistUpdateResult.Success : KeylistUpdateResult.NoChange
+        updated.result = success ? DidCommKeylistUpdateResult.Success : DidCommKeylistUpdateResult.NoChange
         keylist.push(updated)
       }
     }
 
     await this.mediationRepository.update(messageContext.agentContext, mediationRecord)
 
-    return new KeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
+    return new DidCommKeylistUpdateResponseMessage({ keylist, threadId: message.threadId })
   }
 
   public async createGrantMediationMessage(agentContext: AgentContext, mediationRecord: DidCommMediationRecord) {
@@ -203,7 +203,7 @@ export class DidCommMediatorService {
       useDidKey ? new DidKey(routingKey).did : TypedArrayEncoder.toBase58(routingKey.publicKey.publicKey)
     )
 
-    const message = new MediationGrantMessage({
+    const message = new DidCommMediationGrantMessage({
       endpoint: didcommConfig.endpoints[0],
       routingKeys,
       threadId: mediationRecord.threadId,
@@ -212,7 +212,7 @@ export class DidCommMediatorService {
     return { mediationRecord, message }
   }
 
-  public async processMediationRequest(messageContext: InboundDidCommMessageContext<MediationRequestMessage>) {
+  public async processMediationRequest(messageContext: DidCommInboundMessageContext<DidCommMediationRequestMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 

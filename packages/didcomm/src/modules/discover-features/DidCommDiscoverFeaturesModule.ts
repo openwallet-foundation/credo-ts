@@ -6,8 +6,8 @@ import { DidCommProtocol } from '../../models'
 
 import { DidCommDiscoverFeaturesApi } from './DidCommDiscoverFeaturesApi'
 import { DidCommDiscoverFeaturesModuleConfig } from './DidCommDiscoverFeaturesModuleConfig'
-import { V1DidCommDiscoverFeaturesService } from './protocol/v1'
-import { V2DidCommDiscoverFeaturesService } from './protocol/v2'
+import { DidCommDiscoverFeaturesV1Service } from './protocol/v1'
+import { DidCommDiscoverFeaturesV2Service } from './protocol/v2'
 
 export class DidCommDiscoverFeaturesModule implements Module {
   public readonly api = DidCommDiscoverFeaturesApi
@@ -25,8 +25,8 @@ export class DidCommDiscoverFeaturesModule implements Module {
     dependencyManager.registerInstance(DidCommDiscoverFeaturesModuleConfig, this.config)
 
     // Services
-    dependencyManager.registerSingleton(V1DidCommDiscoverFeaturesService)
-    dependencyManager.registerSingleton(V2DidCommDiscoverFeaturesService)
+    dependencyManager.registerSingleton(DidCommDiscoverFeaturesV1Service)
+    dependencyManager.registerSingleton(DidCommDiscoverFeaturesV2Service)
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {

@@ -8,7 +8,7 @@ export enum DidCommOutOfBandEventTypes {
   HandshakeReused = 'DidCommHandshakeReused',
 }
 
-export interface OutOfBandStateChangedEvent extends BaseEvent {
+export interface DidCommOutOfBandStateChangedEvent extends BaseEvent {
   type: typeof DidCommOutOfBandEventTypes.OutOfBandStateChanged
   payload: {
     outOfBandRecord: DidCommOutOfBandRecord
@@ -16,7 +16,7 @@ export interface OutOfBandStateChangedEvent extends BaseEvent {
   }
 }
 
-export interface HandshakeReusedEvent extends BaseEvent {
+export interface DidCommHandshakeReusedEvent extends BaseEvent {
   type: typeof DidCommOutOfBandEventTypes.HandshakeReused
   payload: {
     // We need the thread id (can be multiple reuse happening at the same time)

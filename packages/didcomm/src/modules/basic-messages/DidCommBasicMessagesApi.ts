@@ -5,10 +5,10 @@ import { AgentContext, injectable } from '@credo-ts/core'
 
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
 
-import { BasicMessageHandler } from './handlers'
+import { DidCommBasicMessageHandler } from './handlers'
 import { DidCommBasicMessageService } from './services'
 
 @injectable()
@@ -50,7 +50,7 @@ export class DidCommBasicMessagesApi {
       connection,
       parentThreadId
     )
-    const outboundMessageContext = new OutboundDidCommMessageContext(basicMessage, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(basicMessage, {
       agentContext: this.agentContext,
       connection,
       associatedRecord: basicMessageRecord,
@@ -106,6 +106,6 @@ export class DidCommBasicMessagesApi {
   }
 
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new BasicMessageHandler(this.basicMessageService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(this.basicMessageService))
   }
 }

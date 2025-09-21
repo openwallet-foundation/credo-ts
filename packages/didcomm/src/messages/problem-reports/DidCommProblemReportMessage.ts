@@ -1,4 +1,4 @@
-// Create a base ProblemReportMessage message class and add it to the messages directory
+// Create a base DidCommProblemReportMessage message class and add it to the messages directory
 import { Expose } from 'class-transformer'
 import { IsEnum, IsOptional, IsString } from 'class-validator'
 
@@ -40,7 +40,7 @@ export interface FixHintOptions {
   en: string
 }
 
-export interface ProblemReportMessageOptions {
+export interface DidCommProblemReportMessageOptions {
   id?: string
   description: DescriptionOptions
   problemItems?: string[]
@@ -56,12 +56,12 @@ export interface ProblemReportMessageOptions {
 /**
  * @see https://github.com/hyperledger/aries-rfcs/blob/main/features/0035-report-problem/README.md
  */
-export class ProblemReportMessage extends DidCommMessage {
+export class DidCommProblemReportMessage extends DidCommMessage {
   /**
    * Create new ReportProblem instance.
    * @param options
    */
-  public constructor(options: ProblemReportMessageOptions) {
+  public constructor(options: DidCommProblemReportMessageOptions) {
     super()
 
     if (options) {
@@ -78,8 +78,8 @@ export class ProblemReportMessage extends DidCommMessage {
     }
   }
 
-  @IsValidMessageType(ProblemReportMessage.type)
-  public readonly type: string = ProblemReportMessage.type.messageTypeUri
+  @IsValidMessageType(DidCommProblemReportMessage.type)
+  public readonly type: string = DidCommProblemReportMessage.type.messageTypeUri
   public static readonly type = parseMessageType('https://didcomm.org/notification/1.0/problem-report')
 
   public description!: DescriptionOptions

@@ -15,9 +15,9 @@ import {
   waitForDidRotate,
 } from '../../../../../core/tests/helpers'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
-import { getOutboundDidCommMessageContext } from '../../../getOutboundDidCommMessageContext'
-import { BasicMessage } from '../../basic-messages'
-import { DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
+import { getDidCommOutboundMessageContext } from '../../../getDidCommOutboundMessageContext'
+import { DidCommBasicMessage } from '../../basic-messages'
+import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
@@ -79,7 +79,7 @@ describe('Rotation E2E tests', () => {
       const { newDid } = await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -108,8 +108,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -118,7 +118,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
 
       // Send message to previous did
       await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
@@ -181,7 +181,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -210,8 +210,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -255,7 +255,7 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.modules.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidCommDidRotateAckMessage.type.messageTypeUri })
       const [firstRotate, secondRotate] = await waitForAllDidRotate
 
       const preRotateDid = aliceBobConnection?.did
@@ -293,8 +293,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -334,7 +334,7 @@ describe('Rotation E2E tests', () => {
 
       // Wait for a problem report
       await waitForAgentMessageProcessedEvent(aliceAgent, {
-        messageType: DidRotateProblemReportMessage.type.messageTypeUri,
+        messageType: DidCommDidRotateProblemReportMessage.type.messageTypeUri,
       })
 
       // Send message to previous did
@@ -366,8 +366,8 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message before hangup' }),
+      const messageBeforeHangup = await getDidCommOutboundMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
 
@@ -376,7 +376,7 @@ describe('Rotation E2E tests', () => {
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
-        messageType: HangupMessage.type.messageTypeUri,
+        messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
@@ -403,8 +403,8 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message before hangup' }),
+      const messageBeforeHangup = await getDidCommOutboundMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
 
@@ -417,7 +417,7 @@ describe('Rotation E2E tests', () => {
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
-        messageType: HangupMessage.type.messageTypeUri,
+        messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
       // If Bob sends a message afterwards, Alice should not receive it since the connection has been deleted

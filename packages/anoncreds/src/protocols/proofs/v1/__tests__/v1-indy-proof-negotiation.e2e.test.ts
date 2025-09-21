@@ -1,6 +1,6 @@
 import type { AcceptProofProposalOptions } from '../../../../../../didcomm/src'
 import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-import type { V1RequestPresentationMessage } from '../messages'
+import type { DidCommRequestPresentationV1Message } from '../messages'
 
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
 import { DidCommProofState } from '../../../../../../didcomm/src'
@@ -268,7 +268,7 @@ describe('Present Proof', () => {
 
     const proofRequestMessage = (await aliceAgent.modules.proofs.findRequestMessage(
       aliceProofExchangeRecord.id
-    )) as V1RequestPresentationMessage
+    )) as DidCommRequestPresentationV1Message
 
     const predicateKey = Object.keys(proofRequestMessage.indyProofRequest?.requested_predicates ?? {})[0]
     expect(proofRequestMessage.indyProofRequest).toMatchObject({

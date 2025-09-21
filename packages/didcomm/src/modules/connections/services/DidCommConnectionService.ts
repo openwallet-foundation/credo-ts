@@ -1,10 +1,10 @@
 import type { AgentContext, DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../../DidCommMessage'
-import type { AckDidCommMessage } from '../../../messages'
-import type { InboundDidCommMessageContext } from '../../../models'
+import type { DidCommAckMessage } from '../../../messages'
+import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommOutOfBandRecord } from '../../oob/repository'
 import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
-import type { ConnectionProblemReportMessage } from '../messages'
+import type { DidCommConnectionProblemReportMessage } from '../messages'
 import type { DidCommConnectionType } from '../models'
 import type { DidCommConnectionRecordProps } from '../repository'
 
@@ -41,7 +41,7 @@ import { DidCommOutOfBandRepository } from '../../oob/repository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
-import { ConnectionRequestMessage, ConnectionResponseMessage, TrustPingMessage } from '../messages'
+import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
 import {
   DidCommConnection,
   DidCommDidExchangeRole,
@@ -98,8 +98,8 @@ export class DidCommConnectionService {
     agentContext: AgentContext,
     outOfBandRecord: DidCommOutOfBandRecord,
     config: ConnectionRequestParams
-  ): Promise<ConnectionProtocolMsgReturnType<ConnectionRequestMessage>> {
-    this.logger.debug(`Create message ${ConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
+  ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionRequestMessage>> {
+    this.logger.debug(`Create message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, outOfBandRecord)
     outOfBandRecord.assertRole(DidCommOutOfBandRole.Receiver)
     outOfBandRecord.assertState(DidCommOutOfBandState.PrepareResponse)
 
@@ -122,7 +122,7 @@ export class DidCommConnectionService {
 
     const { label, imageUrl } = config
 
-    const connectionRequest = new ConnectionRequestMessage({
+    const connectionRequest = new DidCommConnectionRequestMessage({
       label,
       did: didDoc.id,
       didDoc,
@@ -158,10 +158,10 @@ export class DidCommConnectionService {
   }
 
   public async processRequest(
-    messageContext: InboundDidCommMessageContext<ConnectionRequestMessage>,
+    messageContext: DidCommInboundMessageContext<DidCommConnectionRequestMessage>,
     outOfBandRecord: DidCommOutOfBandRecord
   ): Promise<DidCommConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionRequestMessage.type.messageTypeUri} start`, {
+    this.logger.debug(`Process message ${DidCommConnectionRequestMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
     outOfBandRecord.assertRole(DidCommOutOfBandRole.Sender)
@@ -198,7 +198,7 @@ export class DidCommConnectionService {
     await this.connectionRepository.update(messageContext.agentContext, connectionRecord)
     this.emitStateChangedEvent(messageContext.agentContext, connectionRecord, null)
 
-    this.logger.debug(`Process message ${ConnectionRequestMessage.type.messageTypeUri} end`, connectionRecord)
+    this.logger.debug(`Process message ${DidCommConnectionRequestMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
@@ -213,8 +213,8 @@ export class DidCommConnectionService {
     connectionRecord: DidCommConnectionRecord,
     outOfBandRecord: DidCommOutOfBandRecord,
     routing?: DidCommRouting
-  ): Promise<ConnectionProtocolMsgReturnType<ConnectionResponseMessage>> {
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
+  ): Promise<ConnectionProtocolMsgReturnType<DidCommConnectionResponseMessage>> {
+    this.logger.debug(`Create message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, connectionRecord)
     connectionRecord.assertState(DidCommDidExchangeState.RequestReceived)
     connectionRecord.assertRole(DidCommDidExchangeRole.Responder)
 
@@ -277,7 +277,7 @@ export class DidCommConnectionService {
       signingKey = service.recipientKeys[0]
     }
 
-    const connectionResponse = new ConnectionResponseMessage({
+    const connectionResponse = new DidCommConnectionResponseMessage({
       threadId: connectionRecord.threadId,
       connectionSig: await signData(agentContext, connectionJson, signingKey),
     })
@@ -285,7 +285,7 @@ export class DidCommConnectionService {
     connectionRecord.did = peerDid
     await this.updateState(agentContext, connectionRecord, DidCommDidExchangeState.ResponseSent)
 
-    this.logger.debug(`Create message ${ConnectionResponseMessage.type.messageTypeUri} end`, {
+    this.logger.debug(`Create message ${DidCommConnectionResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message: connectionResponse,
     })
@@ -305,10 +305,10 @@ export class DidCommConnectionService {
    * @returns updated connection record
    */
   public async processResponse(
-    messageContext: InboundDidCommMessageContext<ConnectionResponseMessage>,
+    messageContext: DidCommInboundMessageContext<DidCommConnectionResponseMessage>,
     outOfBandRecord: DidCommOutOfBandRecord
   ): Promise<DidCommConnectionRecord> {
-    this.logger.debug(`Process message ${ConnectionResponseMessage.type.messageTypeUri} start`, {
+    this.logger.debug(`Process message ${DidCommConnectionResponseMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
     const { connection: connectionRecord, message, recipientKey, senderKey } = messageContext
@@ -389,13 +389,13 @@ export class DidCommConnectionService {
     agentContext: AgentContext,
     connectionRecord: DidCommConnectionRecord,
     config: { responseRequested?: boolean; comment?: string } = {}
-  ): Promise<ConnectionProtocolMsgReturnType<TrustPingMessage>> {
+  ): Promise<ConnectionProtocolMsgReturnType<DidCommTrustPingMessage>> {
     connectionRecord.assertState([DidCommDidExchangeState.ResponseReceived, DidCommDidExchangeState.Completed])
 
     // TODO:
     //  - create ack message
     //  - maybe this shouldn't be in the connection service?
-    const trustPing = new TrustPingMessage(config)
+    const trustPing = new DidCommTrustPingMessage(config)
 
     // Only update connection record and emit an event if the state is not already 'Complete'
     if (connectionRecord.state !== DidCommDidExchangeState.Completed) {
@@ -416,7 +416,7 @@ export class DidCommConnectionService {
    * @returns updated connection record
    */
   public async processAck(
-    messageContext: InboundDidCommMessageContext<AckDidCommMessage>
+    messageContext: DidCommInboundMessageContext<DidCommAckMessage>
   ): Promise<DidCommConnectionRecord> {
     const { connection, recipientKey } = messageContext
 
@@ -439,14 +439,14 @@ export class DidCommConnectionService {
   }
 
   /**
-   * Process a received {@link ProblemReportMessage}.
+   * Process a received {@link DidCommProblemReportMessage}.
    *
    * @param messageContext The message context containing a connection problem report message
    * @returns connection record associated with the connection problem report message
    *
    */
   public async processProblemReport(
-    messageContext: InboundDidCommMessageContext<ConnectionProblemReportMessage>
+    messageContext: DidCommInboundMessageContext<DidCommConnectionProblemReportMessage>
   ): Promise<DidCommConnectionRecord> {
     const { message: connectionProblemReportMessage, recipientKey, senderKey } = messageContext
 
@@ -503,7 +503,7 @@ export class DidCommConnectionService {
    * @param messageContext - the inbound message context
    */
   public async assertConnectionOrOutOfBandExchange(
-    messageContext: InboundDidCommMessageContext,
+    messageContext: DidCommInboundMessageContext,
     {
       lastSentMessage,
       lastReceivedMessage,
@@ -621,7 +621,7 @@ export class DidCommConnectionService {
    *
    */
   public async matchIncomingMessageToRequestMessageInOutOfBandExchange(
-    messageContext: InboundDidCommMessageContext,
+    messageContext: DidCommInboundMessageContext,
     { expectedConnectionId }: { expectedConnectionId?: string }
   ) {
     if (expectedConnectionId && messageContext.connection?.id !== expectedConnectionId) {

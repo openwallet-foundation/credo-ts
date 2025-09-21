@@ -1,8 +1,8 @@
 import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '../../models'
+import type { DidCommInboundMessageContext } from '../../models'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
 import type { OutOfBandDidCommService } from './domain'
-import type { HandshakeReusedEvent, OutOfBandStateChangedEvent } from './domain/DidCommOutOfBandEvents'
+import type { DidCommHandshakeReusedEvent, DidCommOutOfBandStateChangedEvent } from './domain/DidCommOutOfBandEvents'
 
 import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
 
@@ -12,8 +12,8 @@ import { getResolvedDidcommServiceWithSigningKeyId } from '../connections/servic
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
-import { HandshakeReuseMessage, OutOfBandInvitation } from './messages'
-import { HandshakeReuseAcceptedMessage } from './messages/HandshakeReuseAcceptedMessage'
+import { DidCommHandshakeReuseMessage, DidCommOutOfBandInvitation } from './messages'
+import { DidCommHandshakeReuseAcceptedMessage } from './messages/DidCommHandshakeReuseAcceptedMessage'
 import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord, DidCommOutOfBandRepository } from './repository'
 
 export interface CreateFromImplicitInvitationConfig {
@@ -60,7 +60,7 @@ export class DidCommOutOfBandService {
 
     // Recreate an 'implicit invitation' matching the parameters used by the invitee when
     // initiating the flow
-    const outOfBandInvitation = new OutOfBandInvitation({
+    const outOfBandInvitation = new DidCommOutOfBandInvitation({
       id: did,
       services: [did],
       handshakeProtocols,
@@ -84,7 +84,7 @@ export class DidCommOutOfBandService {
     return outOfBandRecord
   }
 
-  public async processHandshakeReuse(messageContext: InboundDidCommMessageContext<HandshakeReuseMessage>) {
+  public async processHandshakeReuse(messageContext: DidCommInboundMessageContext<DidCommHandshakeReuseMessage>) {
     const reuseMessage = messageContext.message
     const parentThreadId = reuseMessage.thread?.parentThreadId
 
@@ -107,7 +107,7 @@ export class DidCommOutOfBandService {
     }
 
     const reusedConnection = messageContext.assertReadyConnection()
-    this.eventEmitter.emit<HandshakeReusedEvent>(messageContext.agentContext, {
+    this.eventEmitter.emit<DidCommHandshakeReusedEvent>(messageContext.agentContext, {
       type: DidCommOutOfBandEventTypes.HandshakeReused,
       payload: {
         reuseThreadId: reuseMessage.threadId,
@@ -121,7 +121,7 @@ export class DidCommOutOfBandService {
       await this.updateState(messageContext.agentContext, outOfBandRecord, DidCommOutOfBandState.Done)
     }
 
-    const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+    const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
       threadId: reuseMessage.threadId,
       parentThreadId,
     })
@@ -130,7 +130,7 @@ export class DidCommOutOfBandService {
   }
 
   public async processHandshakeReuseAccepted(
-    messageContext: InboundDidCommMessageContext<HandshakeReuseAcceptedMessage>
+    messageContext: DidCommInboundMessageContext<DidCommHandshakeReuseAcceptedMessage>
   ) {
     const reuseAcceptedMessage = messageContext.message
     const parentThreadId = reuseAcceptedMessage.thread?.parentThreadId
@@ -160,7 +160,7 @@ export class DidCommOutOfBandService {
       throw new CredoError('handshake-reuse-accepted is not in response to a handshake-reuse message.')
     }
 
-    this.eventEmitter.emit<HandshakeReusedEvent>(messageContext.agentContext, {
+    this.eventEmitter.emit<DidCommHandshakeReusedEvent>(messageContext.agentContext, {
       type: DidCommOutOfBandEventTypes.HandshakeReused,
       payload: {
         reuseThreadId: reuseAcceptedMessage.threadId,
@@ -178,7 +178,7 @@ export class DidCommOutOfBandService {
     outOfBandRecord: DidCommOutOfBandRecord,
     connectionRecord: DidCommConnectionRecord
   ) {
-    const reuseMessage = new HandshakeReuseMessage({ parentThreadId: outOfBandRecord.outOfBandInvitation.id })
+    const reuseMessage = new DidCommHandshakeReuseMessage({ parentThreadId: outOfBandRecord.outOfBandInvitation.id })
 
     // Store the reuse connection id
     outOfBandRecord.reuseConnectionId = connectionRecord.id
@@ -208,7 +208,7 @@ export class DidCommOutOfBandService {
     outOfBandRecord: DidCommOutOfBandRecord,
     previousState: DidCommOutOfBandState | null
   ) {
-    this.eventEmitter.emit<OutOfBandStateChangedEvent>(agentContext, {
+    this.eventEmitter.emit<DidCommOutOfBandStateChangedEvent>(agentContext, {
       type: DidCommOutOfBandEventTypes.OutOfBandStateChanged,
       payload: {
         outOfBandRecord: outOfBandRecord.clone(),

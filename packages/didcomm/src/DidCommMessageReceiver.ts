@@ -2,7 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import type { InboundDidCommTransport } from './transport'
+import type { DidCommInboundTransport } from './transport'
 import type { EncryptedDidCommMessage, PlaintextDidCommMessage } from './types'
 
 import {
@@ -21,9 +21,9 @@ import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommTransportService } from './DidCommTransportService'
-import { ProblemReportError } from './errors'
-import { ProblemReportMessage } from './messages'
-import { InboundDidCommMessageContext, OutboundDidCommMessageContext, ProblemReportReason } from './models'
+import { DidCommProblemReportError } from './errors'
+import { DidCommProblemReportMessage } from './messages'
+import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
 import { DidCommConnectionService } from './modules/connections/services'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
@@ -38,7 +38,7 @@ export class DidCommMessageReceiver {
   private connectionService: DidCommConnectionService
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  private _inboundTransports: InboundDidCommTransport[] = []
+  private _inboundTransports: DidCommInboundTransport[] = []
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -65,11 +65,11 @@ export class DidCommMessageReceiver {
     return this._inboundTransports
   }
 
-  public registerInboundTransport(inboundTransport: InboundDidCommTransport) {
+  public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
     this._inboundTransports.push(inboundTransport)
   }
 
-  public async unregisterInboundTransport(inboundTransport: InboundDidCommTransport) {
+  public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
     this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
     await inboundTransport.stop()
   }
@@ -122,7 +122,7 @@ export class DidCommMessageReceiver {
     receivedAt?: Date
   ) {
     const message = await this.transformAndValidate(agentContext, plaintextMessage)
-    const messageContext = new InboundDidCommMessageContext(message, { connection, agentContext, receivedAt })
+    const messageContext = new DidCommInboundMessageContext(message, { connection, agentContext, receivedAt })
     await this.dispatcher.dispatch(messageContext)
   }
 
@@ -144,7 +144,7 @@ export class DidCommMessageReceiver {
 
     const message = await this.transformAndValidate(agentContext, plaintextMessage, connection)
 
-    const messageContext = new InboundDidCommMessageContext(message, {
+    const messageContext = new DidCommInboundMessageContext(message, {
       // Only make the connection available in message context if the connection is ready
       // To prevent unwanted usage of unready connections. Connections can still be retrieved from
       // Storage if the specific protocol allows an unready connection to be used.
@@ -266,8 +266,8 @@ export class DidCommMessageReceiver {
         errors: error,
         message: JSON.stringify(message),
       })
-      throw new ProblemReportError(`Error validating message ${message['@type']}`, {
-        problemCode: ProblemReportReason.MessageParseFailure,
+      throw new DidCommProblemReportError(`Error validating message ${message['@type']}`, {
+        problemCode: DidCommProblemReportReason.MessageParseFailure,
       })
     }
     return messageTransformed
@@ -286,19 +286,19 @@ export class DidCommMessageReceiver {
     plaintextMessage: PlaintextDidCommMessage
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
-    if (canHandleMessageType(ProblemReportMessage, messageType)) {
+    if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {
       throw new CredoError(`Not sending problem report in response to problem report: ${message}`)
     }
-    const problemReportMessage = new ProblemReportMessage({
+    const problemReportMessage = new DidCommProblemReportMessage({
       description: {
         en: message,
-        code: ProblemReportReason.MessageParseFailure,
+        code: DidCommProblemReportReason.MessageParseFailure,
       },
     })
     problemReportMessage.setThread({
       parentThreadId: plaintextMessage['@id'],
     })
-    const outboundMessageContext = new OutboundDidCommMessageContext(problemReportMessage, { agentContext, connection })
+    const outboundMessageContext = new DidCommOutboundMessageContext(problemReportMessage, { agentContext, connection })
     if (outboundMessageContext) {
       await this.messageSender.sendMessage(outboundMessageContext)
     }

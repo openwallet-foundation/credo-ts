@@ -3,14 +3,14 @@ import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
   EncryptedDidCommMessage,
-  InboundDidCommTransport,
+  DidCommInboundTransport,
 } from '@credo-ts/didcomm'
 
 import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import WebSocket, { Server } from 'ws'
 
-export class WsInboundDidCommTransport implements InboundDidCommTransport {
+export class WsInboundDidCommTransport implements DidCommInboundTransport {
   private socketServer: Server
   private logger!: Logger
 

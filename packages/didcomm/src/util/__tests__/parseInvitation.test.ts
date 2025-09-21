@@ -1,8 +1,8 @@
 import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
-import { ConnectionInvitationMessage } from '../../modules/connections'
-import { InvitationType, OutOfBandInvitation } from '../../modules/oob'
+import { DidCommConnectionInvitationMessage } from '../../modules/connections'
+import { InvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/converters'
 import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
 
@@ -87,15 +87,15 @@ const mockedResponseConnectionUrl = {
   headers: dummyHeader,
 } as Response
 
-let outOfBandInvitationMock: OutOfBandInvitation
-let connectionInvitationMock: ConnectionInvitationMessage
-let connectionInvitationToNew: OutOfBandInvitation
+let outOfBandInvitationMock: DidCommOutOfBandInvitation
+let connectionInvitationMock: DidCommConnectionInvitationMessage
+let connectionInvitationToNew: DidCommOutOfBandInvitation
 
 beforeAll(async () => {
-  outOfBandInvitationMock = JsonTransformer.fromJSON(mockOobInvite, OutOfBandInvitation)
+  outOfBandInvitationMock = JsonTransformer.fromJSON(mockOobInvite, DidCommOutOfBandInvitation)
   outOfBandInvitationMock.invitationType = InvitationType.OutOfBand
   MessageValidator.validateSync(outOfBandInvitationMock)
-  connectionInvitationMock = JsonTransformer.fromJSON(mockConnectionInvite, ConnectionInvitationMessage)
+  connectionInvitationMock = JsonTransformer.fromJSON(mockConnectionInvite, DidCommConnectionInvitationMessage)
   MessageValidator.validateSync(connectionInvitationMock)
   connectionInvitationToNew = convertToNewInvitation(connectionInvitationMock)
 })
@@ -213,7 +213,7 @@ describe('shortened urls resolving to connection invitations', () => {
           imageUrl: 'https://routing.lissi.io/api/Image/demoMusterhausen',
           recipientKeys: ['DfW1o36zLns9UtiCPd2jR2KjortofCapSSY7VGcvXAzh'],
         },
-        ConnectionInvitationMessage
+        DidCommConnectionInvitationMessage
       )
     )
     const short = await oobInvitationFromShortUrl(mockedResponseConnectionInOobUrl)

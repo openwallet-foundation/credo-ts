@@ -4,8 +4,8 @@ import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
-import type { OutboundDidCommTransport } from './transport/OutboundDidCommTransport'
-import type { EncryptedDidCommMessage, OutboundDidCommPackage } from './types'
+import type { DidCommOutboundTransport } from './transport/DidCommOutboundTransport'
+import type { EncryptedDidCommMessage, DidCommOutboundPackage } from './types'
 
 import {
   AgentContext,
@@ -30,7 +30,7 @@ import { DidCommTransportService } from './DidCommTransportService'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
-import { OutboundDidCommMessageContext, OutboundMessageSendStatus } from './models'
+import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 import { DidCommQueueTransportRepository } from './transport'
 
@@ -46,7 +46,7 @@ export class DidCommMessageSender {
   private queueTransportRepository: DidCommQueueTransportRepository
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
-  private _outboundTransports: OutboundDidCommTransport[] = []
+  private _outboundTransports: DidCommOutboundTransport[] = []
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -67,11 +67,11 @@ export class DidCommMessageSender {
     return this._outboundTransports
   }
 
-  public registerOutboundTransport(outboundTransport: OutboundDidCommTransport) {
+  public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
     this._outboundTransports.push(outboundTransport)
   }
 
-  public async unregisterOutboundTransport(outboundTransport: OutboundDidCommTransport) {
+  public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
     this._outboundTransports = this.outboundTransports.filter((transport) => transport !== outboundTransport)
     await outboundTransport.stop()
   }
@@ -87,7 +87,7 @@ export class DidCommMessageSender {
       message: DidCommMessage
       endpoint: string
     }
-  ): Promise<OutboundDidCommPackage> {
+  ): Promise<DidCommOutboundPackage> {
     const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
 
     return {
@@ -207,7 +207,7 @@ export class DidCommMessageSender {
   }
 
   public async sendMessage(
-    outboundMessageContext: OutboundDidCommMessageContext,
+    outboundMessageContext: DidCommOutboundMessageContext,
     options?: {
       transportPriority?: TransportPriorityOptions
     }
@@ -333,7 +333,7 @@ export class DidCommMessageSender {
       try {
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendToService(
-          new OutboundDidCommMessageContext(message, {
+          new DidCommOutboundMessageContext(message, {
             agentContext,
             serviceParams: {
               service,
@@ -397,7 +397,7 @@ export class DidCommMessageSender {
     )
   }
 
-  private async sendMessageToService(outboundMessageContext: OutboundDidCommMessageContext) {
+  private async sendMessageToService(outboundMessageContext: DidCommOutboundMessageContext) {
     const session = this.findSessionForOutboundContext(outboundMessageContext)
 
     if (session) {
@@ -437,7 +437,7 @@ export class DidCommMessageSender {
     }
   }
 
-  private async sendToService(outboundMessageContext: OutboundDidCommMessageContext) {
+  private async sendToService(outboundMessageContext: DidCommOutboundMessageContext) {
     const { agentContext, message, serviceParams, connection } = outboundMessageContext
 
     if (!serviceParams) {
@@ -496,7 +496,7 @@ export class DidCommMessageSender {
     })
   }
 
-  private findSessionForOutboundContext(outboundContext: OutboundDidCommMessageContext) {
+  private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
     let session: DidCommTransportSession | undefined = undefined
 
     // Use session id from outbound context if present, or use the session from the inbound message context
@@ -584,7 +584,7 @@ export class DidCommMessageSender {
   }
 
   private emitMessageSentEvent(
-    outboundMessageContext: OutboundDidCommMessageContext,
+    outboundMessageContext: DidCommOutboundMessageContext,
     status: OutboundMessageSendStatus
   ) {
     const { agentContext } = outboundMessageContext

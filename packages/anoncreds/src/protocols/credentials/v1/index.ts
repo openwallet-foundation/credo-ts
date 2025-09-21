@@ -1,2 +1,2 @@
-export * from './V1DidCommCredentialProtocol'
+export * from './DidCommCredentialV1Protocol'
 export * from './messages'

@@ -1,13 +1,13 @@
-import type { InboundDidCommMessageContext } from '../../../models'
+import type { DidCommInboundMessageContext } from '../../../models'
 import type { DidCommTrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../DidCommTrustPingEvents'
-import type { TrustPingMessage } from '../messages'
+import type { DidCommTrustPingMessage } from '../messages'
 import type { DidCommConnectionRecord } from '../repository'
 
 import { EventEmitter, injectable } from '@credo-ts/core'
 
-import { OutboundDidCommMessageContext } from '../../../models'
+import { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommTrustPingEventTypes } from '../DidCommTrustPingEvents'
-import { TrustPingResponseMessage } from '../messages'
+import { DidCommTrustPingResponseMessage } from '../messages'
 
 @injectable()
 export class DidCommTrustPingService {
@@ -18,7 +18,7 @@ export class DidCommTrustPingService {
   }
 
   public processPing(
-    { message, agentContext }: InboundDidCommMessageContext<TrustPingMessage>,
+    { message, agentContext }: DidCommInboundMessageContext<DidCommTrustPingMessage>,
     connection: DidCommConnectionRecord
   ) {
     this.eventEmitter.emit<DidCommTrustPingReceivedEvent>(agentContext, {
@@ -30,15 +30,15 @@ export class DidCommTrustPingService {
     })
 
     if (message.responseRequested) {
-      const response = new TrustPingResponseMessage({
+      const response = new DidCommTrustPingResponseMessage({
         threadId: message.threadId,
       })
 
-      return new OutboundDidCommMessageContext(response, { agentContext, connection })
+      return new DidCommOutboundMessageContext(response, { agentContext, connection })
     }
   }
 
-  public processPingResponse(inboundMessage: InboundDidCommMessageContext<TrustPingResponseMessage>) {
+  public processPingResponse(inboundMessage: DidCommInboundMessageContext<DidCommTrustPingResponseMessage>) {
     const { agentContext, message } = inboundMessage
 
     const connection = inboundMessage.assertReadyConnection()

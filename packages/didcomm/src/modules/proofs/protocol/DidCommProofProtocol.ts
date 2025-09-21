@@ -2,9 +2,9 @@ import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
-import type { ProblemReportMessage } from '../../../messages'
-import type { InboundDidCommMessageContext } from '../../../models'
-import type { ExtractProofFormats, ProofFormatService } from '../formats'
+import type { DidCommProblemReportMessage } from '../../../messages'
+import type { DidCommInboundMessageContext } from '../../../models'
+import type { ExtractProofFormats, DidCommProofFormatService } from '../formats'
 import type { DidCommProofRole } from '../models'
 import type { DidCommProofState } from '../models/DidCommProofState'
 import type { DidCommProofExchangeRecord } from '../repository'
@@ -26,7 +26,7 @@ import type {
   SelectCredentialsForRequestReturn,
 } from './DidCommProofProtocolOptions'
 
-export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFormatService[]> {
+export interface DidCommProofProtocol<PFs extends DidCommProofFormatService[] = DidCommProofFormatService[]> {
   readonly version: string
 
   // methods for proposal
@@ -34,7 +34,7 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
     agentContext: AgentContext,
     options: CreateProofProposalOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  processProposal(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  processProposal(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
     options: AcceptProofProposalOptions<PFs>
@@ -49,7 +49,7 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
     agentContext: AgentContext,
     options: CreateProofRequestOptions<PFs>
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
-  processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  processRequest(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptProofRequestOptions<PFs>
@@ -70,22 +70,22 @@ export interface DidCommProofProtocol<PFs extends ProofFormatService[] = ProofFo
   ): Promise<SelectCredentialsForRequestReturn<PFs>>
 
   // methods for presentation
-  processPresentation(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  processPresentation(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
   acceptPresentation(
     agentContext: AgentContext,
     options: AcceptPresentationOptions
   ): Promise<ProofProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
+  processAck(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommProofExchangeRecord>
 
   // method for problem report
   createProblemReport(
     agentContext: AgentContext,
     options: CreateProofProblemReportOptions
-  ): Promise<ProofProtocolMsgReturnType<ProblemReportMessage>>
+  ): Promise<ProofProtocolMsgReturnType<DidCommProblemReportMessage>>
   processProblemReport(
-    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
+    messageContext: DidCommInboundMessageContext<DidCommProblemReportMessage>
   ): Promise<DidCommProofExchangeRecord>
 
   findProposalMessage(agentContext: AgentContext, proofExchangeId: string): Promise<DidCommMessage | null>

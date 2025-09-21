@@ -11,15 +11,15 @@ import {
 
 import { testLogger, waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../core/tests'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
-import { V1CredentialPreview } from '../messages'
+import { DidCommCredentialV1Preview } from '../messages'
 
-const credentialPreview = V1CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV1Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'some x-ray',
   profile_picture: 'profile picture',
 })
-const newCredentialPreview = V1CredentialPreview.fromRecord({
+const newCredentialPreview = DidCommCredentialV1Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'another x-ray value',

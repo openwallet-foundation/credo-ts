@@ -1,7 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { InboundDidCommMessageContext } from '../../../../../models'
+import type { DidCommInboundMessageContext } from '../../../../../models'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
-import type { V1RevocationNotificationMessage } from '../messages/V1RevocationNotificationMessage'
+import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
 
 import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
@@ -11,8 +11,8 @@ import { DidCommConnectionRecord } from '../../../../connections'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
-import { V1RevocationNotificationHandler, V2RevocationNotificationHandler } from '../handlers'
-import { V2RevocationNotificationMessage } from '../messages/V2RevocationNotificationMessage'
+import { DidCommRevocationNotificationV1Handler, DidCommRevocationNotificationV2Handler } from '../handlers'
+import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
 import {
   v1ThreadRegex,
   v2AnonCredsRevocationFormat,
@@ -81,13 +81,13 @@ export class DidCommRevocationNotificationService {
   }
 
   /**
-   * Process a received {@link V1RevocationNotificationMessage}. This will create a
+   * Process a received {@link DidCommRevocationNotificationV1Message}. This will create a
    * {@link DidCommRevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV1
    */
   public async v1ProcessRevocationNotification(
-    messageContext: InboundDidCommMessageContext<V1RevocationNotificationMessage>
+    messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV1Message>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v1', { message: messageContext.message })
 
@@ -124,9 +124,9 @@ export class DidCommRevocationNotificationService {
 
   public async v2CreateRevocationNotification(
     options: V2DidCommCreateRevocationNotificationMessageOptions
-  ): Promise<{ message: V2RevocationNotificationMessage }> {
+  ): Promise<{ message: DidCommRevocationNotificationV2Message }> {
     const { credentialId, revocationFormat, comment, requestAck } = options
-    const message = new V2RevocationNotificationMessage({
+    const message = new DidCommRevocationNotificationV2Message({
       credentialId,
       revocationFormat,
       comment,
@@ -139,13 +139,13 @@ export class DidCommRevocationNotificationService {
   }
 
   /**
-   * Process a received {@link V2RevocationNotificationMessage}. This will create a
+   * Process a received {@link DidCommRevocationNotificationV2Message}. This will create a
    * {@link DidCommRevocationNotification} and store it in the corresponding {@link CredentialRecord}
    *
    * @param messageContext message context of RevocationNotificationMessageV2
    */
   public async v2ProcessRevocationNotification(
-    messageContext: InboundDidCommMessageContext<V2RevocationNotificationMessage>
+    messageContext: DidCommInboundMessageContext<DidCommRevocationNotificationV2Message>
   ): Promise<void> {
     this.logger.info('Processing revocation notification v2', { message: messageContext.message })
 
@@ -182,7 +182,7 @@ export class DidCommRevocationNotificationService {
   }
 
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new V1RevocationNotificationHandler(this))
-    messageHandlerRegistry.registerMessageHandler(new V2RevocationNotificationHandler(this))
+    messageHandlerRegistry.registerMessageHandler(new DidCommRevocationNotificationV1Handler(this))
+    messageHandlerRegistry.registerMessageHandler(new DidCommRevocationNotificationV2Handler(this))
   }
 }

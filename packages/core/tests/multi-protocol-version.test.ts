@@ -7,7 +7,7 @@ import {
   DidCommMessage,
   DidCommMessageSender,
   IsValidMessageType,
-  OutboundDidCommMessageContext,
+  DidCommOutboundMessageContext,
   parseMessageType,
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
@@ -85,7 +85,7 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundDidCommMessageContext(new TestMessageV11(), {
+      new DidCommOutboundMessageContext(new TestMessageV11(), {
         agentContext: bobAgent.context,
         connection: bobConnection,
       })
@@ -105,7 +105,7 @@ describe('multi version protocols', () => {
     )
 
     await bobMessageSender.sendMessage(
-      new OutboundDidCommMessageContext(new TestMessageV15(), {
+      new DidCommOutboundMessageContext(new TestMessageV15(), {
         agentContext: bobAgent.context,
         connection: bobConnection,
       })

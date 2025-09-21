@@ -44,7 +44,7 @@ export enum DidCommMimeType {
   V1 = 'application/didcomm-envelope-enc',
 }
 
-export interface OutboundDidCommPackage {
+export interface DidCommOutboundPackage {
   payload: EncryptedDidCommMessage
   responseRequested?: boolean
   endpoint?: string

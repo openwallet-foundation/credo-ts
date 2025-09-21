@@ -4,9 +4,9 @@ import type {
   DidCommMessage,
   DidCommMessageHandlerRegistry,
   GetProofFormatDataReturn,
-  InboundDidCommMessageContext,
-  ProblemReportMessage,
-  ProofFormat,
+  DidCommInboundMessageContext,
+  DidCommProblemReportMessage,
+  DidCommProofFormat,
   ProofProtocol,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
@@ -15,7 +15,7 @@ import type { LegacyIndyProofFormatService } from '../../../formats'
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   AckStatus,
-  Attachment,
+  DidCommAttachment,
   BaseProofProtocol,
   DidCommAutoAcceptProof,
   DidCommConnectionService,
@@ -27,39 +27,39 @@ import {
   DidCommProofState,
   DidCommProofsModuleConfig,
   DidCommProtocol,
-  PresentationProblemReportReason,
+  DidCommPresentationProblemReportReason,
 } from '@credo-ts/didcomm'
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 
 import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
-import { V1PresentationProblemReportError } from './errors'
+import { DidCommPresentationV1ProblemReportError } from './errors'
 import {
-  V1PresentationAckHandler,
-  V1PresentationHandler,
-  V1PresentationProblemReportHandler,
-  V1ProposePresentationHandler,
-  V1RequestPresentationHandler,
+  DidCommPresentationV1AckHandler,
+  DidCommPresentationV1Handler,
+  DidCommPresentationV1ProblemReportHandler,
+  DidCommProposePresentationV1Handler,
+  DidCommRequestPresentationV1Handler,
 } from './handlers'
 import {
   INDY_PROOF_ATTACHMENT_ID,
   INDY_PROOF_REQUEST_ATTACHMENT_ID,
-  V1PresentationAckMessage,
-  V1PresentationMessage,
-  V1ProposePresentationMessage,
-  V1RequestPresentationMessage,
+  DidCommPresentationV1AckMessage,
+  DidCommPresentationV1Message,
+  DidCommProposePresentationV1Message,
+  DidCommRequestPresentationV1Message,
 } from './messages'
-import { V1PresentationProblemReportMessage } from './messages/V1PresentationProblemReportMessage'
-import { V1PresentationPreview } from './models/V1PresentationPreview'
+import { DidCommPresentationV1ProblemReportMessage } from './messages/DidCommPresentationV1ProblemReportMessage'
+import { DidCommPresentationV1Preview } from './models/DidCommPresentationV1Preview'
 
-export interface V1ProofProtocolConfig {
+export interface DidCommProofV1ProtocolConfig {
   indyProofFormat: LegacyIndyProofFormatService
 }
 
-export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<[LegacyIndyProofFormatService]> {
+export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofProtocol<[LegacyIndyProofFormatService]> {
   private indyProofFormat: LegacyIndyProofFormatService
 
-  public constructor({ indyProofFormat }: V1ProofProtocolConfig) {
+  public constructor({ indyProofFormat }: DidCommProofV1ProtocolConfig) {
     super()
 
     // TODO: just create a new instance of LegacyIndyProofFormatService here so it makes the setup easier
@@ -77,11 +77,11 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public register(messageHandlerRegistry: DidCommMessageHandlerRegistry, featureRegistry: DidCommFeatureRegistry) {
     // Register message handlers for the Issue Credential V1 Protocol
     messageHandlerRegistry.registerMessageHandlers([
-      new V1ProposePresentationHandler(this),
-      new V1RequestPresentationHandler(this),
-      new V1PresentationHandler(this),
-      new V1PresentationAckHandler(this),
-      new V1PresentationProblemReportHandler(this),
+      new DidCommProposePresentationV1Handler(this),
+      new DidCommRequestPresentationV1Handler(this),
+      new DidCommPresentationV1Handler(this),
+      new DidCommPresentationV1AckHandler(this),
+      new DidCommPresentationV1ProblemReportHandler(this),
     ])
 
     // Register Present Proof V1 in feature registry, with supported roles
@@ -102,7 +102,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       parentThreadId,
       autoAcceptProof,
     }: ProofProtocolOptions.CreateProofProposalOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<V1ProposePresentationMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommProposePresentationV1Message>> {
     this.assertOnlyIndyFormat(proofFormats)
 
     const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
@@ -112,7 +112,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       throw new CredoError('Missing indy proof format in v1 create proposal call.')
     }
 
-    const presentationProposal = new V1PresentationPreview({
+    const presentationProposal = new DidCommPresentationV1Preview({
       attributes: proofFormats.indy?.attributes,
       predicates: proofFormats.indy?.predicates,
     })
@@ -121,7 +121,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     MessageValidator.validateSync(presentationProposal)
 
     // Create message
-    const message = new V1ProposePresentationMessage({
+    const message = new DidCommProposePresentationV1Message({
       presentationProposal,
       comment,
     })
@@ -155,7 +155,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processProposal(
-    messageContext: InboundDidCommMessageContext<V1ProposePresentationMessage>
+    messageContext: DidCommInboundMessageContext<DidCommProposePresentationV1Message>
   ): Promise<DidCommProofExchangeRecord> {
     const { message: proposalMessage, connection, agentContext } = messageContext
 
@@ -184,12 +184,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
-        messageClass: V1ProposePresentationMessage,
+        messageClass: DidCommProposePresentationV1Message,
         role: DidCommMessageRole.Receiver,
       })
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
-        messageClass: V1RequestPresentationMessage,
+        messageClass: DidCommRequestPresentationV1Message,
         role: DidCommMessageRole.Sender,
       })
       await connectionService.assertConnectionOrOutOfBandExchange(messageContext, {
@@ -242,7 +242,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       comment,
       autoAcceptProof,
     }: ProofProtocolOptions.AcceptProofProposalOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<V1RequestPresentationMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommRequestPresentationV1Message>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
     proofRecord.assertState(DidCommProofState.ProposalReceived)
@@ -252,7 +252,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const proposalMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
 
@@ -270,7 +270,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       nonce: anonCredsHolderService.generateNonce(agentContext),
     })
 
-    const proposalAttachment = new Attachment({
+    const proposalAttachment = new DidCommAttachment({
       data: {
         json: JsonTransformer.toJSON(requestFromPreview),
       },
@@ -283,7 +283,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proposalAttachment,
     })
 
-    const requestPresentationMessage = new V1RequestPresentationMessage({
+    const requestPresentationMessage = new DidCommRequestPresentationV1Message({
       comment,
       requestAttachments: [attachment],
     })
@@ -329,7 +329,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord,
     })
 
-    const requestPresentationMessage = new V1RequestPresentationMessage({
+    const requestPresentationMessage = new DidCommRequestPresentationV1Message({
       comment,
       requestAttachments: [attachment],
     })
@@ -388,7 +388,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     })
 
     // Construct request message
-    const message = new V1RequestPresentationMessage({
+    const message = new DidCommRequestPresentationV1Message({
       id: proofRecord.threadId,
       comment,
       requestAttachments: [attachment],
@@ -412,7 +412,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processRequest(
-    messageContext: InboundDidCommMessageContext<V1RequestPresentationMessage>
+    messageContext: DidCommInboundMessageContext<DidCommRequestPresentationV1Message>
   ): Promise<DidCommProofExchangeRecord> {
     const { message: proofRequestMessage, connection, agentContext } = messageContext
 
@@ -440,12 +440,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     if (proofRecord) {
       const lastReceivedMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
-        messageClass: V1RequestPresentationMessage,
+        messageClass: DidCommRequestPresentationV1Message,
         role: DidCommMessageRole.Receiver,
       })
       const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
         associatedRecordId: proofRecord.id,
-        messageClass: V1ProposePresentationMessage,
+        messageClass: DidCommProposePresentationV1Message,
         role: DidCommMessageRole.Sender,
       })
 
@@ -528,7 +528,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       throw new CredoError('Missing indy proof format in v1 negotiate request call.')
     }
 
-    const presentationProposal = new V1PresentationPreview({
+    const presentationProposal = new DidCommPresentationV1Preview({
       attributes: proofFormats.indy?.attributes,
       predicates: proofFormats.indy?.predicates,
     })
@@ -536,7 +536,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     // validate input data from user
     MessageValidator.validateSync(presentationProposal)
 
-    const message = new V1ProposePresentationMessage({
+    const message = new DidCommProposePresentationV1Message({
       comment,
       presentationProposal,
     })
@@ -572,12 +572,12 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
       role: DidCommMessageRole.Sender,
     })
 
@@ -585,14 +585,14 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     const indyProofRequest = requestMessage.indyProofRequest
 
     if (!requestAttachment || !indyProofRequest) {
-      throw new V1PresentationProblemReportError(
+      throw new DidCommPresentationV1ProblemReportError(
         `Missing indy attachment in request message for presentation with thread id ${proofRecord.threadId}`,
-        { problemCode: PresentationProblemReportReason.Abandoned }
+        { problemCode: DidCommPresentationProblemReportReason.Abandoned }
       )
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new DidCommAttachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -615,7 +615,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord,
     })
 
-    const message = new V1PresentationMessage({
+    const message = new DidCommPresentationV1Message({
       comment,
       presentationAttachments: [attachment],
     })
@@ -644,13 +644,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
       role: DidCommMessageRole.Sender,
     })
 
@@ -664,7 +664,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new DidCommAttachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -706,13 +706,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
       role: DidCommMessageRole.Sender,
     })
 
@@ -726,7 +726,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     }
 
     const proposalAttachment = proposalMessage
-      ? new Attachment({
+      ? new DidCommAttachment({
           data: {
             json: JsonTransformer.toJSON(
               createRequestFromPreview({
@@ -756,7 +756,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processPresentation(
-    messageContext: InboundDidCommMessageContext<V1PresentationMessage>
+    messageContext: DidCommInboundMessageContext<DidCommPresentationV1Message>
   ): Promise<DidCommProofExchangeRecord> {
     const { message: presentationMessage, connection, agentContext } = messageContext
 
@@ -775,13 +775,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const proposalMessage = await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
 
     const requestMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
       role: DidCommMessageRole.Sender,
     })
 
@@ -807,8 +807,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     if (!presentationAttachment) {
       proofRecord.errorMessage = 'Missing indy proof attachment'
       await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
-      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
-        problemCode: PresentationProblemReportReason.Abandoned,
+      throw new DidCommPresentationV1ProblemReportError(proofRecord.errorMessage, {
+        problemCode: DidCommPresentationProblemReportReason.Abandoned,
       })
     }
 
@@ -816,8 +816,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     if (!requestAttachment) {
       proofRecord.errorMessage = 'Missing indy proof request attachment'
       await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
-      throw new V1PresentationProblemReportError(proofRecord.errorMessage, {
-        problemCode: PresentationProblemReportReason.Abandoned,
+      throw new DidCommPresentationV1ProblemReportError(proofRecord.errorMessage, {
+        problemCode: DidCommPresentationProblemReportReason.Abandoned,
       })
     }
 
@@ -838,8 +838,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord.errorMessage = error.message ?? 'Error verifying proof on presentation'
       proofRecord.isVerified = false
       await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
-      throw new V1PresentationProblemReportError('Error verifying proof on presentation', {
-        problemCode: PresentationProblemReportReason.Abandoned,
+      throw new DidCommPresentationV1ProblemReportError('Error verifying proof on presentation', {
+        problemCode: DidCommPresentationProblemReportReason.Abandoned,
       })
     }
 
@@ -847,8 +847,8 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord.errorMessage = 'Invalid proof'
       proofRecord.isVerified = false
       await this.updateState(agentContext, proofRecord, DidCommProofState.Abandoned)
-      throw new V1PresentationProblemReportError('Invalid proof', {
-        problemCode: PresentationProblemReportReason.Abandoned,
+      throw new DidCommPresentationV1ProblemReportError('Invalid proof', {
+        problemCode: DidCommPresentationProblemReportReason.Abandoned,
       })
     }
 
@@ -862,7 +862,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async acceptPresentation(
     agentContext: AgentContext,
     { proofRecord }: ProofProtocolOptions.AcceptPresentationOptions
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<V1PresentationAckMessage>> {
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommPresentationV1AckMessage>> {
     agentContext.config.logger.debug(`Creating presentation ack for proof record with id ${proofRecord.id}`)
 
     // Assert
@@ -870,7 +870,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     proofRecord.assertState(DidCommProofState.PresentationReceived)
 
     // Create message
-    const ackMessage = new V1PresentationAckMessage({
+    const ackMessage = new DidCommPresentationV1AckMessage({
       status: AckStatus.OK,
       threadId: proofRecord.threadId,
     })
@@ -887,7 +887,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   }
 
   public async processAck(
-    messageContext: InboundDidCommMessageContext<V1PresentationAckMessage>
+    messageContext: DidCommInboundMessageContext<DidCommPresentationV1AckMessage>
   ): Promise<DidCommProofExchangeRecord> {
     const { message: presentationAckMessage, connection, agentContext } = messageContext
 
@@ -907,13 +907,13 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     const lastReceivedMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
       role: DidCommMessageRole.Receiver,
     })
 
     const lastSentMessage = await didCommMessageRepository.getAgentMessage(agentContext, {
       associatedRecordId: proofRecord.id,
-      messageClass: V1PresentationMessage,
+      messageClass: DidCommPresentationV1Message,
       role: DidCommMessageRole.Sender,
     })
 
@@ -935,10 +935,10 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async createProblemReport(
     _agentContext: AgentContext,
     { proofRecord, description }: ProofProtocolOptions.CreateProofProblemReportOptions
-  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<ProblemReportMessage>> {
-    const message = new V1PresentationProblemReportMessage({
+  ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommProblemReportMessage>> {
+    const message = new DidCommPresentationV1ProblemReportMessage({
       description: {
-        code: PresentationProblemReportReason.Abandoned,
+        code: DidCommPresentationProblemReportReason.Abandoned,
         en: description,
       },
     })
@@ -958,7 +958,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     agentContext: AgentContext,
     options: {
       proofRecord: DidCommProofExchangeRecord
-      proposalMessage: V1ProposePresentationMessage
+      proposalMessage: DidCommProposePresentationV1Message
     }
   ): Promise<boolean> {
     const { proofRecord, proposalMessage } = options
@@ -990,7 +990,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToProposal(agentContext, {
       proofRecord,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new DidCommAttachment({
         data: {
           json: rfc0592Proposal,
         },
@@ -1003,7 +1003,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     agentContext: AgentContext,
     options: {
       proofRecord: DidCommProofExchangeRecord
-      requestMessage: V1RequestPresentationMessage
+      requestMessage: DidCommRequestPresentationV1Message
     }
   ): Promise<boolean> {
     const { proofRecord, requestMessage } = options
@@ -1035,7 +1035,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
 
     return this.indyProofFormat.shouldAutoRespondToRequest(agentContext, {
       proofRecord,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new DidCommAttachment({
         data: {
           base64: JsonEncoder.toBase64(rfc0592Proposal),
         },
@@ -1048,7 +1048,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
     agentContext: AgentContext,
     options: {
       proofRecord: DidCommProofExchangeRecord
-      presentationMessage: V1PresentationMessage
+      presentationMessage: DidCommPresentationV1Message
     }
   ): Promise<boolean> {
     const { proofRecord, presentationMessage } = options
@@ -1090,7 +1090,7 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
       proofRecord,
       requestAttachment,
       presentationAttachment,
-      proposalAttachment: new Attachment({
+      proposalAttachment: new DidCommAttachment({
         data: {
           json: rfc0592Proposal,
         },
@@ -1101,40 +1101,40 @@ export class V1ProofProtocol extends BaseProofProtocol implements ProofProtocol<
   public async findProposalMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<V1ProposePresentationMessage | null> {
+  ): Promise<DidCommProposePresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
-      messageClass: V1ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV1Message,
     })
   }
 
   public async findRequestMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<V1RequestPresentationMessage | null> {
+  ): Promise<DidCommRequestPresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
-      messageClass: V1RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV1Message,
     })
   }
 
   public async findPresentationMessage(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<V1PresentationMessage | null> {
+  ): Promise<DidCommPresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
       associatedRecordId: proofRecordId,
-      messageClass: V1PresentationMessage,
+      messageClass: DidCommPresentationV1Message,
     })
   }
 
   public async getFormatData(
     agentContext: AgentContext,
     proofRecordId: string
-  ): Promise<GetProofFormatDataReturn<ProofFormat[]>> {
+  ): Promise<GetProofFormatDataReturn<DidCommProofFormat[]>> {
     const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.

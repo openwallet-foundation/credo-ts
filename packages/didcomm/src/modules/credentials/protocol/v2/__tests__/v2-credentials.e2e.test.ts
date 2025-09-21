@@ -16,14 +16,14 @@ import { DidCommCredentialRole } from '../../../models'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import {
-  V2CredentialPreview,
-  V2IssueCredentialMessage,
-  V2OfferCredentialMessage,
-  V2ProposeCredentialMessage,
-  V2RequestCredentialMessage,
+  DidCommCredentialV2Preview,
+  DidCommIssueCredentialV2Message,
+  DidCommOfferCredentialV2Message,
+  DidCommProposeCredentialV2Message,
+  DidCommRequestCredentialV2Message,
 } from '../messages'
 
-const credentialPreview = V2CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'some x-ray',
@@ -42,7 +42,7 @@ describe('v2 credentials', () => {
 
   let indyCredentialProposal: LegacyIndyProposeCredentialFormat
 
-  const newCredentialPreview = V2CredentialPreview.fromRecord({
+  const newCredentialPreview = DidCommCredentialV2Preview.fromRecord({
     name: 'John',
     age: '99',
     'x-ray': 'another x-ray value',
@@ -133,7 +133,7 @@ describe('v2 credentials', () => {
     const didCommMessageRepository = faberAgent.dependencyManager.resolve(DidCommMessageRepository)
     const offerMessage = await didCommMessageRepository.findAgentMessage(faberAgent.context, {
       associatedRecordId: faberCredentialRecord.id,
-      messageClass: V2OfferCredentialMessage,
+      messageClass: DidCommOfferCredentialV2Message,
     })
 
     expect(JsonTransformer.toJSON(offerMessage)).toMatchObject({
@@ -530,10 +530,10 @@ describe('v2 credentials', () => {
     const requestMessage = await aliceAgent.modules.credentials.findRequestMessage(aliceCredentialRecord.id)
     const credentialMessage = await aliceAgent.modules.credentials.findCredentialMessage(aliceCredentialRecord.id)
 
-    expect(proposalMessage).toBeInstanceOf(V2ProposeCredentialMessage)
-    expect(offerMessage).toBeInstanceOf(V2OfferCredentialMessage)
-    expect(requestMessage).toBeInstanceOf(V2RequestCredentialMessage)
-    expect(credentialMessage).toBeInstanceOf(V2IssueCredentialMessage)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposeCredentialV2Message)
+    expect(offerMessage).toBeInstanceOf(DidCommOfferCredentialV2Message)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestCredentialV2Message)
+    expect(credentialMessage).toBeInstanceOf(DidCommIssueCredentialV2Message)
 
     const formatData = await aliceAgent.modules.credentials.getFormatData(aliceCredentialRecord.id)
     expect(formatData).toMatchObject({

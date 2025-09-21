@@ -3,7 +3,7 @@ import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import type { ActionMenuSelection } from '../../models'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidCommDidExchangeState, InboundDidCommMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import {
@@ -504,7 +504,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and creates record when no previous record', async () => {
-      const messageContext = new InboundDidCommMessageContext(mockMenuMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -551,7 +551,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and updates record when existing record', async () => {
-      const messageContext = new InboundDidCommMessageContext(mockMenuMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -629,7 +629,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundDidCommMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -686,7 +686,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundDidCommMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -711,7 +711,7 @@ describe('ActionMenuService', () => {
         threadId: '122',
       })
 
-      const messageContext = new InboundDidCommMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -736,7 +736,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundDidCommMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -762,7 +762,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundDidCommMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -810,7 +810,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and creates record when no previous record', async () => {
-      const messageContext = new InboundDidCommMessageContext(mockMenuRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuRequestMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -847,7 +847,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and updates record when existing record', async () => {
-      const messageContext = new InboundDidCommMessageContext(mockMenuRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuRequestMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })

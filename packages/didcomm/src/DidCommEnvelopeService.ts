@@ -18,7 +18,7 @@ import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandRepository } from './modules/oob/repository/DidCommOutOfBandRepository'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
-import { ForwardMessage } from './modules/routing/messages/ForwardMessage'
+import { DidCommForwardMessage } from './modules/routing/messages/DidCommForwardMessage'
 import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
 
@@ -265,7 +265,7 @@ export class DidCommEnvelopeService {
 
     // If the message has routing keys (mediator) pack for each mediator
     for (const routingKey of routingKeys) {
-      const forwardMessage = new ForwardMessage({
+      const forwardMessage = new DidCommForwardMessage({
         // Forward to first recipient key
         to: TypedArrayEncoder.toBase58(recipientKeys[0].publicKey.publicKey),
         message: encryptedMessage,

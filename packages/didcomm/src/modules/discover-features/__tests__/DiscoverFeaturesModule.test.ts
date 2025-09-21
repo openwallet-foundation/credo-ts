@@ -4,8 +4,8 @@ import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommProtocol } from '../../../models'
 import { DidCommDiscoverFeaturesModule } from '../DidCommDiscoverFeaturesModule'
-import { V1DidCommDiscoverFeaturesService } from '../protocol/v1'
-import { V2DidCommDiscoverFeaturesService } from '../protocol/v2'
+import { DidCommDiscoverFeaturesV1Service } from '../protocol/v1'
+import { DidCommDiscoverFeaturesV2Service } from '../protocol/v2'
 
 describe('DiscoverFeaturesModule', () => {
   test('registers dependencies on the dependency manager', () => {
@@ -18,8 +18,8 @@ describe('DiscoverFeaturesModule', () => {
     new DidCommDiscoverFeaturesModule().register(dependencyManager)
 
     expect(dependencyManager.registerSingleton).toHaveBeenCalledTimes(2)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V1DidCommDiscoverFeaturesService)
-    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(V2DidCommDiscoverFeaturesService)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDiscoverFeaturesV1Service)
+    expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommDiscoverFeaturesV2Service)
   })
 
   test('registers features on the feature registry', async () => {

@@ -1,5 +1,5 @@
 import type { AgentContext, DidDocument, DidDocumentKey } from '@credo-ts/core'
-import type { DidCommRouting, InboundDidCommMessageContext } from '../../../models'
+import type { DidCommRouting, DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import type { DidCommConnectionRecord } from '../repository'
 
@@ -20,11 +20,11 @@ import {
 } from '@credo-ts/core'
 
 import { AckStatus } from '../../../messages'
-import { OutboundDidCommMessageContext } from '../../../models'
+import { DidCommOutboundMessageContext } from '../../../models'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
-import { DidRotateAckMessage, DidRotateMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
+import { DidCommDidRotateAckMessage, DidCommDidRotateMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 import { DidCommConnectionService } from './DidCommConnectionService'
@@ -83,7 +83,7 @@ export class DidCommDidRotateService {
       mediatorId = routing.mediatorId
     }
 
-    const message = new DidRotateMessage({ toDid: resolvedDid.didDocument.id })
+    const message = new DidCommDidRotateMessage({ toDid: resolvedDid.didDocument.id })
 
     // We set new info into connection metadata for further 'sealing' it once we receive an acknowledge
     // All messages sent in-between will be using previous connection information
@@ -101,7 +101,7 @@ export class DidCommDidRotateService {
   public async createHangup(agentContext: AgentContext, options: { connection: DidCommConnectionRecord }) {
     const { connection } = options
 
-    const message = new HangupMessage({})
+    const message = new DidCommHangupMessage({})
 
     // Remove did to indicate termination status for this connection
     if (connection.did) {
@@ -124,7 +124,7 @@ export class DidCommDidRotateService {
    *
    * @param messageContext
    */
-  public async processHangup(messageContext: InboundDidCommMessageContext<HangupMessage>) {
+  public async processHangup(messageContext: DidCommInboundMessageContext<DidCommHangupMessage>) {
     const connection = messageContext.assertReadyConnection()
     const { agentContext } = messageContext
 
@@ -150,7 +150,7 @@ export class DidCommDidRotateService {
    * @param connection
    * @returns
    */
-  public async processRotate(messageContext: InboundDidCommMessageContext<DidRotateMessage>) {
+  public async processRotate(messageContext: DidCommInboundMessageContext<DidCommDidRotateMessage>) {
     const connection = messageContext.assertReadyConnection()
     const { message, agentContext } = messageContext
 
@@ -161,10 +161,10 @@ export class DidCommDidRotateService {
     if (isValidPeerDid(newDid) && getNumAlgoFromPeerDid(newDid) === PeerDidNumAlgo.GenesisDoc) {
       this.logger.error(`Unable to resolve DID Document for '${newDid}`)
 
-      const response = new DidRotateProblemReportMessage({
+      const response = new DidCommDidRotateProblemReportMessage({
         description: { en: 'DID Method Unsupported', code: 'e.did.method_unsupported' },
       })
-      return new OutboundDidCommMessageContext(response, { agentContext, connection })
+      return new DidCommOutboundMessageContext(response, { agentContext, connection })
     }
 
     const didDocument = (await this.didResolverService.resolve(agentContext, newDid)).didDocument
@@ -173,24 +173,24 @@ export class DidCommDidRotateService {
     if (!didDocument) {
       this.logger.error(`Unable to resolve DID Document for '${newDid}`)
 
-      const response = new DidRotateProblemReportMessage({
+      const response = new DidCommDidRotateProblemReportMessage({
         description: { en: 'DID Unresolvable', code: 'e.did.unresolvable' },
       })
-      return new OutboundDidCommMessageContext(response, { agentContext, connection })
+      return new DidCommOutboundMessageContext(response, { agentContext, connection })
     }
 
     // Did is resolved but no compatible DIDComm services found
     if (!didDocument.didCommServices) {
-      const response = new DidRotateProblemReportMessage({
+      const response = new DidCommDidRotateProblemReportMessage({
         description: { en: 'DID Document Unsupported', code: 'e.did.doc_unsupported' },
       })
-      return new OutboundDidCommMessageContext(response, { agentContext, connection })
+      return new DidCommOutboundMessageContext(response, { agentContext, connection })
     }
 
     // Send acknowledge to previous did and persist new did. Previous did will be stored in connection record in
     // order to still accept messages from it
-    const outboundMessageContext = new OutboundDidCommMessageContext(
-      new DidRotateAckMessage({
+    const outboundMessageContext = new DidCommOutboundMessageContext(
+      new DidCommDidRotateAckMessage({
         threadId: message.threadId,
         status: AckStatus.OK,
       }),
@@ -223,7 +223,7 @@ export class DidCommDidRotateService {
     return outboundMessageContext
   }
 
-  public async processRotateAck(inboundMessage: InboundDidCommMessageContext<DidRotateAckMessage>) {
+  public async processRotateAck(inboundMessage: DidCommInboundMessageContext<DidCommDidRotateAckMessage>) {
     const { agentContext, message } = inboundMessage
 
     const connection = inboundMessage.assertReadyConnection()
@@ -259,11 +259,11 @@ export class DidCommDidRotateService {
    * Process a problem report related to did rotate protocol, by simply deleting any temporary metadata.
    *
    * No specific event is thrown other than generic message processing
-   *InboundDidCommMessageContext
+   *DidCommInboundMessageContext
    * @param messageContext
    */
   public async processProblemReport(
-    messageContext: InboundDidCommMessageContext<DidRotateProblemReportMessage>
+    messageContext: DidCommInboundMessageContext<DidCommDidRotateProblemReportMessage>
   ): Promise<void> {
     const { message, agentContext } = messageContext
 

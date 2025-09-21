@@ -12,11 +12,11 @@ import { waitForCredentialRecord } from '../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../core/tests/logger'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 import {
-  V1CredentialPreview,
-  V1IssueCredentialMessage,
+  DidCommCredentialV1Preview,
+  DidCommIssueCredentialV1Message,
   V1OfferCredentialMessage,
-  V1ProposeCredentialMessage,
-  V1RequestCredentialMessage,
+  DidCommProposeCredentialV1Message,
+  DidCommRequestCredentialV1Message,
 } from '../messages'
 
 describe('V1 Credentials', () => {
@@ -44,7 +44,7 @@ describe('V1 Credentials', () => {
   })
 
   test('Alice starts with V1 credential proposal to Faber', async () => {
-    const credentialPreview = V1CredentialPreview.fromRecord({
+    const credentialPreview = DidCommCredentialV1Preview.fromRecord({
       name: 'John',
       age: '99',
       'x-ray': 'some x-ray',
@@ -199,10 +199,10 @@ describe('V1 Credentials', () => {
     const requestMessage = await aliceAgent.modules.credentials.findRequestMessage(aliceCredentialRecord.id)
     const credentialMessage = await aliceAgent.modules.credentials.findCredentialMessage(aliceCredentialRecord.id)
 
-    expect(proposalMessage).toBeInstanceOf(V1ProposeCredentialMessage)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposeCredentialV1Message)
     expect(offerMessage).toBeInstanceOf(V1OfferCredentialMessage)
-    expect(requestMessage).toBeInstanceOf(V1RequestCredentialMessage)
-    expect(credentialMessage).toBeInstanceOf(V1IssueCredentialMessage)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestCredentialV1Message)
+    expect(credentialMessage).toBeInstanceOf(DidCommIssueCredentialV1Message)
 
     const formatData = await aliceAgent.modules.credentials.getFormatData(aliceCredentialRecord.id)
     expect(formatData).toMatchObject({

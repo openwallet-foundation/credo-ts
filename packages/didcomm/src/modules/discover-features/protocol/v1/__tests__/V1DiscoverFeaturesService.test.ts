@@ -11,12 +11,12 @@ import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
-import { DidCommProtocol, InboundDidCommMessageContext } from '../../../../../models'
+import { DidCommProtocol, DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFeaturesModuleConfig'
-import { V1DidCommDiscoverFeaturesService } from '../V1DidCommDiscoverFeaturesService'
-import { V1DiscloseMessage, V1QueryMessage } from '../messages'
+import { DidCommDiscoverFeaturesV1Service } from '../DidCommDiscoverFeaturesV1Service'
+import { DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from '../messages'
 
 jest.mock('../../../../../DidCommMessageHandlerRegistry')
 const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
@@ -34,7 +34,7 @@ const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
 describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
 
-  const discoverFeaturesService = new V1DidCommDiscoverFeaturesService(
+  const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
     new MessageHandlerRegistryMock(),
@@ -43,7 +43,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
   )
   describe('createDisclosure', () => {
     it('should return all protocols when query is *', async () => {
-      const queryMessage = new V1QueryMessage({
+      const queryMessage = new DidCommFeaturesQueryMessage({
         query: '*',
       })
 
@@ -60,7 +60,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should return only one protocol if the query specifies a specific protocol', async () => {
-      const queryMessage = new V1QueryMessage({
+      const queryMessage = new DidCommFeaturesQueryMessage({
         query: 'https://didcomm.org/connections/1.0',
       })
 
@@ -73,7 +73,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should respect a wild card at the end of the query', async () => {
-      const queryMessage = new V1QueryMessage({
+      const queryMessage = new DidCommFeaturesQueryMessage({
         query: 'https://didcomm.org/connections/*',
       })
 
@@ -86,7 +86,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should send an empty array if no feature matches query', async () => {
-      const queryMessage = new V1QueryMessage({
+      const queryMessage = new DidCommFeaturesQueryMessage({
         query: 'not-supported',
       })
 
@@ -158,10 +158,10 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
         eventListenerMock
       )
 
-      const queryMessage = new V1QueryMessage({ query: '*' })
+      const queryMessage = new DidCommFeaturesQueryMessage({ query: '*' })
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
-      const messageContext = new InboundDidCommMessageContext(queryMessage, {
+      const messageContext = new DidCommInboundMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })
@@ -185,7 +185,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
       )
       expect(outboundMessage).toBeDefined()
       expect(
-        (outboundMessage as DiscoverFeaturesProtocolMsgReturnType<V1DiscloseMessage>).message.protocols.map(
+        (outboundMessage as DiscoverFeaturesProtocolMsgReturnType<DidCommFeaturesDiscloseMessage>).message.protocols.map(
           (p) => p.protocolId
         )
       ).toStrictEqual([
@@ -204,13 +204,13 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
         eventListenerMock
       )
 
-      const discloseMessage = new V1DiscloseMessage({
+      const discloseMessage = new DidCommFeaturesDiscloseMessage({
         protocols: [{ protocolId: 'prot1', roles: ['role1', 'role2'] }, { protocolId: 'prot2' }],
         threadId: '1234',
       })
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
-      const messageContext = new InboundDidCommMessageContext(discloseMessage, {
+      const messageContext = new DidCommInboundMessageContext(discloseMessage, {
         agentContext: getAgentContext(),
         connection,
       })
@@ -243,7 +243,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
 describe('V1DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: false })
 
-  const discoverFeaturesService = new V1DidCommDiscoverFeaturesService(
+  const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
     new DidCommMessageHandlerRegistry(),
@@ -259,10 +259,10 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
         eventListenerMock
       )
 
-      const queryMessage = new V1QueryMessage({ query: '*' })
+      const queryMessage = new DidCommFeaturesQueryMessage({ query: '*' })
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
-      const messageContext = new InboundDidCommMessageContext(queryMessage, {
+      const messageContext = new DidCommInboundMessageContext(queryMessage, {
         agentContext: getAgentContext(),
         connection,
       })

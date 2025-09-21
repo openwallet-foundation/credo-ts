@@ -8,8 +8,8 @@ import type {
 import { CredoError, EventEmitter, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import {
   AckStatus,
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommAutoAcceptCredential,
   DidCommCredentialEventTypes,
   DidCommCredentialExchangeRecord,
@@ -20,7 +20,7 @@ import {
   DidCommDidExchangeState,
   DidCommMessageRecord,
   DidCommMessageRole,
-  InboundDidCommMessageContext,
+  DidCommInboundMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -30,18 +30,18 @@ import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/s
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
 import { convertAttributesToCredentialValues } from '../../../../utils/credential'
-import { V1CredentialProtocol } from '../V1DidCommCredentialProtocol'
+import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 import {
   INDY_CREDENTIAL_ATTACHMENT_ID,
   INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
-  V1CredentialAckMessage,
-  V1CredentialPreview,
-  V1CredentialProblemReportMessage,
-  V1IssueCredentialMessage,
+  DidCommCredentialV1AckMessage,
+  DidCommCredentialV1Preview,
+  DidCommCredentialV1ProblemReportMessage,
+  DidCommIssueCredentialV1Message,
   V1OfferCredentialMessage,
-  V1ProposeCredentialMessage,
-  V1RequestCredentialMessage,
+  DidCommProposeCredentialV1Message,
+  DidCommRequestCredentialV1Message,
 } from '../messages'
 
 // Mock classes
@@ -70,43 +70,43 @@ const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
 
-const credentialPreview = V1CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV1Preview.fromRecord({
   name: 'John',
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const requestAttachment = new Attachment({
+const requestAttachment = new DidCommAttachment({
   id: INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64({}),
   }),
 })
 
-const credentialAttachment = new Attachment({
+const credentialAttachment = new DidCommAttachment({
   id: INDY_CREDENTIAL_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64: JsonEncoder.toBase64({
       values: convertAttributesToCredentialValues(credentialPreview.attributes),
     }),
   }),
 })
 
-const credentialProposalMessage = new V1ProposeCredentialMessage({
+const credentialProposalMessage = new DidCommProposeCredentialV1Message({
   comment: 'comment',
   credentialDefinitionId: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
 })
-const credentialRequestMessage = new V1RequestCredentialMessage({
+const credentialRequestMessage = new DidCommRequestCredentialV1Message({
   comment: 'abcd',
   requestAttachments: [requestAttachment],
 })
@@ -115,7 +115,7 @@ const credentialOfferMessage = new V1OfferCredentialMessage({
   credentialPreview: credentialPreview,
   offerAttachments: [offerAttachment],
 })
-const credentialIssueMessage = new V1IssueCredentialMessage({
+const credentialIssueMessage = new DidCommIssueCredentialV1Message({
   comment: 'some comment',
   credentialAttachments: [offerAttachment],
 })
@@ -128,16 +128,16 @@ const didCommMessageRecord = new DidCommMessageRecord({
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 const getAgentMessageMock = async (_agentContext: AgentContext, options: { messageClass: any }) => {
-  if (options.messageClass === V1ProposeCredentialMessage) {
+  if (options.messageClass === DidCommProposeCredentialV1Message) {
     return credentialProposalMessage
   }
   if (options.messageClass === V1OfferCredentialMessage) {
     return credentialOfferMessage
   }
-  if (options.messageClass === V1RequestCredentialMessage) {
+  if (options.messageClass === DidCommRequestCredentialV1Message) {
     return credentialRequestMessage
   }
-  if (options.messageClass === V1IssueCredentialMessage) {
+  if (options.messageClass === DidCommIssueCredentialV1Message) {
     return credentialIssueMessage
   }
 
@@ -188,7 +188,7 @@ describe('V1CredentialProtocol', () => {
   let eventEmitter: EventEmitter
   let agentConfig: AgentConfig
   let agentContext: AgentContext
-  let credentialProtocol: V1CredentialProtocol
+  let credentialProtocol: DidCommCredentialV1Protocol
 
   beforeEach(async () => {
     // real objects
@@ -215,7 +215,7 @@ describe('V1CredentialProtocol', () => {
       didCommMessageRecord,
     ])
 
-    credentialProtocol = new V1CredentialProtocol({ indyCredentialFormat: legacyIndyCredentialFormatService })
+    credentialProtocol = new DidCommCredentialV1Protocol({ indyCredentialFormat: legacyIndyCredentialFormatService })
   })
 
   afterEach(() => {
@@ -252,7 +252,7 @@ describe('V1CredentialProtocol', () => {
         state: DidCommCredentialState.RequestSent,
         autoAcceptCredential: DidCommAutoAcceptCredential.Never,
       })
-      expect(message).toBeInstanceOf(V1RequestCredentialMessage)
+      expect(message).toBeInstanceOf(DidCommRequestCredentialV1Message)
       expect(message.toJSON()).toMatchObject({
         '@id': expect.any(String),
         '@type': 'https://didcomm.org/issue-credential/1.0/request-credential',
@@ -319,16 +319,16 @@ describe('V1CredentialProtocol', () => {
 
   describe('processRequest', () => {
     let credential: DidCommCredentialExchangeRecord
-    let messageContext: InboundDidCommMessageContext<V1RequestCredentialMessage>
+    let messageContext: DidCommInboundMessageContext<DidCommRequestCredentialV1Message>
     beforeEach(() => {
       credential = mockCredentialRecord({ state: DidCommCredentialState.OfferSent })
 
-      const credentialRequest = new V1RequestCredentialMessage({
+      const credentialRequest = new DidCommRequestCredentialV1Message({
         comment: 'abcd',
         requestAttachments: [requestAttachment],
       })
       credentialRequest.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundDidCommMessageContext(credentialRequest, {
+      messageContext = new DidCommInboundMessageContext(credentialRequest, {
         agentContext,
         connection,
       })
@@ -507,12 +507,12 @@ describe('V1CredentialProtocol', () => {
       const credentialExchangeRecord = mockCredentialRecord({
         state: DidCommCredentialState.RequestSent,
       })
-      const credentialResponse = new V1IssueCredentialMessage({
+      const credentialResponse = new DidCommIssueCredentialV1Message({
         comment: 'abcd',
         credentialAttachments: [credentialAttachment],
       })
       credentialResponse.setThread({ threadId: 'somethreadid' })
-      const messageContext = new InboundDidCommMessageContext(credentialResponse, { agentContext, connection })
+      const messageContext = new DidCommInboundMessageContext(credentialResponse, { agentContext, connection })
 
       mockFunction(credentialRepository.getSingleByQuery).mockResolvedValue(credentialExchangeRecord)
 
@@ -535,8 +535,8 @@ describe('V1CredentialProtocol', () => {
       expect(legacyIndyCredentialFormatService.processCredential).toHaveBeenNthCalledWith(1, agentContext, {
         attachment: credentialAttachment,
         credentialExchangeRecord,
-        requestAttachment: expect.any(Attachment),
-        offerAttachment: expect.any(Attachment),
+        requestAttachment: expect.any(DidCommAttachment),
+        offerAttachment: expect.any(DidCommAttachment),
       })
     })
   })
@@ -633,18 +633,18 @@ describe('V1CredentialProtocol', () => {
 
   describe('processAck', () => {
     let credential: DidCommCredentialExchangeRecord
-    let messageContext: InboundDidCommMessageContext<V1CredentialAckMessage>
+    let messageContext: DidCommInboundMessageContext<DidCommCredentialV1AckMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: DidCommCredentialState.CredentialIssued,
       })
 
-      const credentialRequest = new V1CredentialAckMessage({
+      const credentialRequest = new DidCommCredentialV1AckMessage({
         status: AckStatus.OK,
         threadId: 'somethreadid',
       })
-      messageContext = new InboundDidCommMessageContext(credentialRequest, { agentContext, connection })
+      messageContext = new DidCommInboundMessageContext(credentialRequest, { agentContext, connection })
     })
 
     test(`updates state to ${DidCommCredentialState.Done} and returns credential record`, async () => {
@@ -712,21 +712,21 @@ describe('V1CredentialProtocol', () => {
 
   describe('processProblemReport', () => {
     let credential: DidCommCredentialExchangeRecord
-    let messageContext: InboundDidCommMessageContext<V1CredentialProblemReportMessage>
+    let messageContext: DidCommInboundMessageContext<DidCommCredentialV1ProblemReportMessage>
 
     beforeEach(() => {
       credential = mockCredentialRecord({
         state: DidCommCredentialState.OfferReceived,
       })
 
-      const credentialProblemReportMessage = new V1CredentialProblemReportMessage({
+      const credentialProblemReportMessage = new DidCommCredentialV1ProblemReportMessage({
         description: {
           en: 'Indy error',
           code: DidCommCredentialProblemReportReason.IssuanceAbandoned,
         },
       })
       credentialProblemReportMessage.setThread({ threadId: 'somethreadid' })
-      messageContext = new InboundDidCommMessageContext(credentialProblemReportMessage, { agentContext, connection })
+      messageContext = new DidCommInboundMessageContext(credentialProblemReportMessage, { agentContext, connection })
     })
 
     test('updates problem report error message and returns credential record', async () => {

@@ -13,8 +13,8 @@ import { DidCommCredentialRole } from '../../../models'
 import { DidCommAutoAcceptCredential } from '../../../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
-import { V2ProposeCredentialMessage } from '../messages'
-import { V2CredentialPreview } from '../messages/V2CredentialPreview'
+import { DidCommProposeCredentialV2Message } from '../messages'
+import { DidCommCredentialV2Preview } from '../messages/DidCommCredentialV2Preview'
 
 describe('V2 Credentials Auto Accept', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -26,13 +26,13 @@ describe('V2 Credentials Auto Accept', () => {
   let faberConnectionId: string
   let aliceConnectionId: string
 
-  const credentialPreview = V2CredentialPreview.fromRecord({
+  const credentialPreview = DidCommCredentialV2Preview.fromRecord({
     name: 'John',
     age: '99',
     'x-ray': 'some x-ray',
     profile_picture: 'profile picture',
   })
-  const newCredentialPreview = V2CredentialPreview.fromRecord({
+  const newCredentialPreview = DidCommCredentialV2Preview.fromRecord({
     name: 'John',
     age: '99',
     'x-ray': 'another x-ray value',
@@ -446,7 +446,7 @@ describe('V2 Credentials Auto Accept', () => {
       // So to not get errors when shutting down the agent, we wait for the message to be processed
       await waitForAgentMessageProcessedEventSubject(faberReplay, {
         threadId: aliceCredentialRecord.threadId,
-        messageType: V2ProposeCredentialMessage.type.messageTypeUri,
+        messageType: DidCommProposeCredentialV2Message.type.messageTypeUri,
       })
     })
   })

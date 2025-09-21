@@ -23,22 +23,22 @@ import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommTransportEventTypes } from '../../transport'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../connections/services'
 import { DidCommDiscoverFeaturesApi } from '../discover-features'
 import { DidCommMessagePickupApi } from '../message-pickup/DidCommMessagePickupApi'
-import { V1BatchPickupMessage } from '../message-pickup/protocol/v1'
-import { V2StatusMessage } from '../message-pickup/protocol/v2'
+import { DidCommBatchPickupMessage } from '../message-pickup/protocol/v1'
+import { DidCommStatusV2Message } from '../message-pickup/protocol/v2'
 
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import { DidCommRoutingEventTypes } from './DidCommRoutingEvents'
-import { KeylistUpdateResponseHandler } from './handlers/KeylistUpdateResponseHandler'
-import { MediationDenyHandler } from './handlers/MediationDenyHandler'
-import { MediationGrantHandler } from './handlers/MediationGrantHandler'
-import { KeylistUpdate, KeylistUpdateAction, KeylistUpdateMessage } from './messages'
+import { DidCommKeylistUpdateResponseHandler } from './handlers/DidCommKeylistUpdateResponseHandler'
+import { DidCommMediationDenyHandler } from './handlers/DidCommMediationDenyHandler'
+import { DidCommMediationGrantHandler } from './handlers/DidCommMediationGrantHandler'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './messages'
 import { DidCommMediationState } from './models/DidCommMediationState'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService } from './services/DidCommMediationRecipientService'
@@ -97,7 +97,7 @@ export class DidCommMediationRecipientApi {
   }
 
   private async sendMessage(
-    outboundMessageContext: OutboundDidCommMessageContext,
+    outboundMessageContext: DidCommOutboundMessageContext,
     pickupStrategy?: DidCommMediatorPickupStrategy
   ) {
     const mediatorPickupStrategy = pickupStrategy ?? this.config.mediatorPickupStrategy
@@ -141,7 +141,7 @@ export class DidCommMediationRecipientApi {
     }
 
     await this.messageSender.sendMessage(
-      new OutboundDidCommMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
+      new DidCommOutboundMessageContext(message, { agentContext: this.agentContext, connection: connectionRecord }),
       {
         transportPriority: {
           schemes: websocketSchemes,
@@ -330,22 +330,22 @@ export class DidCommMediationRecipientApi {
       const discloseForPickupV2 = await this.discoverFeaturesApi.queryFeatures({
         connectionId: mediator.connectionId,
         protocolVersion: 'v1',
-        queries: [{ featureType: 'protocol', match: V2StatusMessage.type.protocolUri }],
+        queries: [{ featureType: 'protocol', match: DidCommStatusV2Message.type.protocolUri }],
         awaitDisclosures: true,
       })
 
-      if (discloseForPickupV2.features?.find((item) => item.id === V2StatusMessage.type.protocolUri)) {
+      if (discloseForPickupV2.features?.find((item) => item.id === DidCommStatusV2Message.type.protocolUri)) {
         mediatorPickupStrategy = DidCommMediatorPickupStrategy.PickUpV2
       } else {
         const discloseForPickupV1 = await this.discoverFeaturesApi.queryFeatures({
           connectionId: mediator.connectionId,
           protocolVersion: 'v1',
-          queries: [{ featureType: 'protocol', match: V1BatchPickupMessage.type.protocolUri }],
+          queries: [{ featureType: 'protocol', match: DidCommBatchPickupMessage.type.protocolUri }],
           awaitDisclosures: true,
         })
         // Use explicit pickup strategy
         mediatorPickupStrategy = discloseForPickupV1.features?.find(
-          (item) => item.id === V1BatchPickupMessage.type.protocolUri
+          (item) => item.id === DidCommBatchPickupMessage.type.protocolUri
         )
           ? DidCommMediatorPickupStrategy.PickUpV1
           : DidCommMediatorPickupStrategy.Implicit
@@ -372,7 +372,7 @@ export class DidCommMediationRecipientApi {
       this.agentContext,
       connection
     )
-    const outboundMessage = new OutboundDidCommMessageContext(message, {
+    const outboundMessage = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connection,
     })
@@ -381,24 +381,24 @@ export class DidCommMediationRecipientApi {
     return mediationRecord
   }
 
-  public async notifyKeylistUpdate(connection: DidCommConnectionRecord, verkey: string, action?: KeylistUpdateAction) {
+  public async notifyKeylistUpdate(connection: DidCommConnectionRecord, verkey: string, action?: DidCommKeylistUpdateAction) {
     // Use our useDidKey configuration unless we know the key formatting other party is using
     const didcommConfig = this.agentContext.dependencyManager.resolve(DidCommModuleConfig)
     let useDidKey = didcommConfig.useDidKeyInProtocols
 
     const useDidKeysConnectionMetadata = connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)
     if (useDidKeysConnectionMetadata) {
-      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+      useDidKey = useDidKeysConnectionMetadata[DidCommKeylistUpdateMessage.type.protocolUri] ?? useDidKey
     }
 
     const message = this.mediationRecipientService.createKeylistUpdateMessage([
-      new KeylistUpdate({
-        action: action ?? KeylistUpdateAction.add,
+      new DidCommKeylistUpdate({
+        action: action ?? DidCommKeylistUpdateAction.add,
         recipientKey: useDidKey ? verkeyToDidKey(verkey) : verkey,
       }),
     ])
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection,
     })
@@ -462,7 +462,7 @@ export class DidCommMediationRecipientApi {
       .subscribe(subject)
 
     // Send mediation request message
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, {
       agentContext: this.agentContext,
       connection: connection,
       associatedRecord: mediationRecord,
@@ -503,9 +503,9 @@ export class DidCommMediationRecipientApi {
 
   // Register handlers for the several messages for the mediator.
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new KeylistUpdateResponseHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new MediationGrantHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new MediationDenyHandler(this.mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseHandler(this.mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(this.mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(this.mediationRecipientService))
     //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }

@@ -1,4 +1,4 @@
-import type { CredentialFormat } from '@credo-ts/didcomm'
+import type { DidCommCredentialFormat } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type {
   AnonCredsAcceptOfferFormat,
@@ -28,7 +28,7 @@ export interface LegacyIndyCredentialRequest extends AnonCredsCredentialRequest 
   prover_did: string
 }
 
-export interface LegacyIndyCredentialFormat extends CredentialFormat {
+export interface LegacyIndyCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'indy'
 
   credentialRecordType: 'w3c'

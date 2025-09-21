@@ -7,7 +7,7 @@ import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
 
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
-import { OutOfBandInvitation } from '../messages'
+import { DidCommOutOfBandInvitation } from '../messages'
 
 export interface DidCommOutOfBandInlineServiceKey {
   recipientKeyFingerprint: string
@@ -47,7 +47,7 @@ export interface DidCommOutOfBandRecordProps {
   createdAt?: Date
   updatedAt?: Date
   tags?: CustomDidCommOutOfBandRecordTags
-  outOfBandInvitation: OutOfBandInvitation
+  outOfBandInvitation: DidCommOutOfBandInvitation
   role: DidCommOutOfBandRole
   state: DidCommOutOfBandState
   alias?: string
@@ -68,8 +68,8 @@ export class DidCommOutOfBandRecord extends BaseRecord<
   CustomDidCommOutOfBandRecordTags,
   DidCommOutOfBandRecordMetadata
 > {
-  @Type(() => OutOfBandInvitation)
-  public outOfBandInvitation!: OutOfBandInvitation
+  @Type(() => DidCommOutOfBandInvitation)
+  public outOfBandInvitation!: DidCommOutOfBandInvitation
   public role!: DidCommOutOfBandRole
   public state!: DidCommOutOfBandState
   public alias?: string

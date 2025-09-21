@@ -1,9 +1,9 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../DidCommMessage'
-import type { Attachment } from '../../decorators/attachment/Attachment'
+import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import type { DidCommRouting } from '../../models'
 import type { PlaintextDidCommMessage } from '../../types'
-import type { HandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
+import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 
 import {
   AgentContext,
@@ -26,7 +26,7 @@ import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegist
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
 import {
   parseDidCommProtocolUri,
@@ -36,7 +36,7 @@ import {
 } from '../../util/messageType'
 import { parseInvitationShortUrl } from '../../util/parseInvitation'
 import {
-  ConnectionInvitationMessage,
+  DidCommConnectionInvitationMessage,
   DidCommConnectionRecord,
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
@@ -50,10 +50,10 @@ import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { HandshakeReuseHandler } from './handlers'
-import { HandshakeReuseAcceptedHandler } from './handlers/HandshakeReuseAcceptedHandler'
+import { DidCommHandshakeReuseHandler } from './handlers'
+import { DidCommHandshakeReuseAcceptedHandler } from './handlers/DidCommHandshakeReuseAcceptedHandler'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
-import { InvitationType, OutOfBandInvitation } from './messages'
+import { InvitationType, DidCommOutOfBandInvitation } from './messages'
 import { DidCommOutOfBandRepository } from './repository'
 import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
@@ -72,7 +72,7 @@ export interface CreateOutOfBandInvitationConfig {
   multiUseInvitation?: boolean
   autoAcceptConnection?: boolean
   routing?: DidCommRouting
-  appendedAttachments?: Attachment[]
+  appendedAttachments?: DidCommAttachment[]
 
   /**
    * Did to use in the invitation. Cannot be used in combination with `routing`.
@@ -227,7 +227,7 @@ export class DidCommOutOfBandApi {
       })
     }
 
-    const outOfBandInvitation = new OutOfBandInvitation({
+    const outOfBandInvitation = new DidCommOutOfBandInvitation({
       label,
       goal: config.goal,
       goalCode: config.goalCode,
@@ -356,7 +356,7 @@ export class DidCommOutOfBandApi {
    *
    * @returns OutOfBandInvitation
    */
-  public async parseInvitation(invitationUrl: string): Promise<OutOfBandInvitation> {
+  public async parseInvitation(invitationUrl: string): Promise<DidCommOutOfBandInvitation> {
     return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
   }
 
@@ -378,7 +378,7 @@ export class DidCommOutOfBandApi {
    * @returns out-of-band record and connection record if one has been created.
    */
   public async receiveInvitation(
-    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
+    invitation: DidCommOutOfBandInvitation | DidCommConnectionInvitationMessage,
     config: ReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
     return this._receiveInvitation(invitation, config)
@@ -406,7 +406,7 @@ export class DidCommOutOfBandApi {
       config.handshakeProtocols ?? [DidCommHandshakeProtocol.DidExchange]
     ).map((p) => p.parsedProtocolUri.protocolUri)
 
-    const invitation = new OutOfBandInvitation({
+    const invitation = new DidCommOutOfBandInvitation({
       id: config.did,
       label: config.alias ?? '',
       services: [config.did],
@@ -420,12 +420,12 @@ export class DidCommOutOfBandApi {
    * Internal receive invitation method, for both explicit and implicit OOB invitations
    */
   private async _receiveInvitation(
-    invitation: OutOfBandInvitation | ConnectionInvitationMessage,
+    invitation: DidCommOutOfBandInvitation | DidCommConnectionInvitationMessage,
     config: BaseReceiveOutOfBandInvitationConfig
   ): Promise<{ outOfBandRecord: DidCommOutOfBandRecord; connectionRecord?: DidCommConnectionRecord }> {
     // Convert to out of band invitation if needed
     const outOfBandInvitation =
-      invitation instanceof OutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
+      invitation instanceof DidCommOutOfBandInvitation ? invitation : convertToNewInvitation(invitation)
 
     const { handshakeProtocols } = outOfBandInvitation
     const { routing } = config
@@ -816,7 +816,7 @@ export class DidCommOutOfBandApi {
     return firstSupportedProtocol
   }
 
-  private async findExistingConnection(outOfBandInvitation: OutOfBandInvitation) {
+  private async findExistingConnection(outOfBandInvitation: DidCommOutOfBandInvitation) {
     this.logger.debug('Searching for an existing connection for out-of-band invitation.', { outOfBandInvitation })
 
     const invitationDids = [
@@ -948,7 +948,7 @@ export class DidCommOutOfBandApi {
     )
 
     const reuseAcceptedEventPromise = firstValueFrom(
-      this.eventEmitter.observable<HandshakeReusedEvent>(DidCommOutOfBandEventTypes.HandshakeReused).pipe(
+      this.eventEmitter.observable<DidCommHandshakeReusedEvent>(DidCommOutOfBandEventTypes.HandshakeReused).pipe(
         filterContextCorrelationId(this.agentContext.contextCorrelationId),
         // Find the first reuse event where the handshake reuse accepted matches the reuse message thread
         // TODO: Should we store the reuse state? Maybe we can keep it in memory for now
@@ -969,7 +969,7 @@ export class DidCommOutOfBandApi {
       )
     )
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(reuseMessage, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(reuseMessage, {
       agentContext: this.agentContext,
       connection: connectionRecord,
     })
@@ -978,7 +978,7 @@ export class DidCommOutOfBandApi {
     return reuseAcceptedEventPromise
   }
 
-  private async resolveInvitationRecipientKeyFingerprints(outOfBandInvitation: OutOfBandInvitation) {
+  private async resolveInvitationRecipientKeyFingerprints(outOfBandInvitation: DidCommOutOfBandInvitation) {
     const recipientKeyFingerprints: string[] = []
 
     for (const service of outOfBandInvitation.getServices()) {
@@ -1010,7 +1010,7 @@ export class DidCommOutOfBandApi {
 
   // TODO: we should probably move these to the out of band module and register the handler there
   private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseHandler(this.outOfBandService))
-    messageHandlerRegistry.registerMessageHandler(new HandshakeReuseAcceptedHandler(this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseHandler(this.outOfBandService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

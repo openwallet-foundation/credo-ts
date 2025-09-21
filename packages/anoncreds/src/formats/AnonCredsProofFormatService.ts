@@ -14,7 +14,7 @@ import type {
   ProofFormatProcessPresentationOptions,
   ProofFormatSelectCredentialsForRequestOptions,
   ProofFormatSelectCredentialsForRequestReturn,
-  ProofFormatService,
+  DidCommProofFormatService,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
@@ -27,7 +27,7 @@ import type { AnonCredsHolderService, AnonCredsVerifierService } from '../servic
 import type { AnonCredsGetCredentialsForProofRequestOptions, AnonCredsProofFormat } from './AnonCredsProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { Attachment, AttachmentData, ProofFormatSpec } from '@credo-ts/didcomm'
+import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
@@ -49,7 +49,7 @@ const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION = 'anoncreds/proof@v1.0'
 
-export class AnonCredsProofFormatService implements ProofFormatService<AnonCredsProofFormat> {
+export class AnonCredsProofFormatService implements DidCommProofFormatService<AnonCredsProofFormat> {
   public readonly formatKey = 'anoncreds' as const
 
   public async createProposal(
@@ -58,7 +58,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION_PROPOSAL,
       attachmentId,
     })
@@ -97,7 +97,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
     })
@@ -120,7 +120,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION_REQUEST,
       attachmentId,
     })
@@ -161,7 +161,7 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
     agentContext: AgentContext,
     { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<AnonCredsProofFormat>
   ): Promise<ProofFormatCreateReturn> {
-    const format = new ProofFormatSpec({
+    const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION,
       attachmentId,
     })
@@ -433,17 +433,17 @@ export class AnonCredsProofFormatService implements ProofFormatService<AnonCreds
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  private getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  private getFormatData(data: unknown, id: string): DidCommAttachment {
+    const attachment = new DidCommAttachment({
       id,
       mimeType: 'application/json',
-      data: new AttachmentData({
+      data: new DidCommAttachmentData({
         base64: JsonEncoder.toBase64(data),
       }),
     })

@@ -7,10 +7,10 @@ import {
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { Attachment, AttachmentData, LinkedAttachment } from '../../../../../../../didcomm'
+import { DidCommAttachment, DidCommAttachmentData, DidCommLinkedAttachment } from '../../../../../../../didcomm'
 import { DidCommProofState } from '../../../models'
 import { DidCommProofExchangeRecord } from '../../../repository'
-import { V2PresentationMessage, V2ProposePresentationMessage, V2RequestPresentationMessage } from '../messages'
+import { DidCommPresentationV2Message, DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -59,18 +59,18 @@ describe('Present Proof', () => {
           },
         ],
         linkedAttachments: [
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_0',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-cat.png',
-              data: new AttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
+              data: new DidCommAttachmentData({ base64: 'cGljdHVyZSBvZiBhIGNhdA==' }),
             }),
           }),
-          new LinkedAttachment({
+          new DidCommLinkedAttachment({
             name: 'image_1',
-            attachment: new Attachment({
+            attachment: new DidCommAttachment({
               filename: 'picture-of-a-dog.png',
-              data: new AttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
+              data: new DidCommAttachmentData({ base64: 'UGljdHVyZSBvZiBhIGRvZw==' }),
             }),
           }),
         ],
@@ -191,7 +191,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
@@ -200,7 +200,7 @@ describe('Present Proof', () => {
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -274,9 +274,9 @@ describe('Present Proof', () => {
     const requestMessage = await aliceAgent.modules.proofs.findRequestMessage(aliceProofExchangeRecord.id)
     const presentationMessage = await aliceAgent.modules.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
 
-    expect(proposalMessage).toBeInstanceOf(V2ProposePresentationMessage)
-    expect(requestMessage).toBeInstanceOf(V2RequestPresentationMessage)
-    expect(presentationMessage).toBeInstanceOf(V2PresentationMessage)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposePresentationV2Message)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestPresentationV2Message)
+    expect(presentationMessage).toBeInstanceOf(DidCommPresentationV2Message)
 
     const formatData = await aliceAgent.modules.proofs.getFormatData(aliceProofExchangeRecord.id)
 
@@ -444,7 +444,7 @@ describe('Present Proof', () => {
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     const faberProofExchangeRecordPromise = waitForProofExchangeRecord(faberAgent, {
@@ -453,7 +453,7 @@ describe('Present Proof', () => {
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
@@ -577,7 +577,7 @@ describe('Present Proof', () => {
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     const retrievedCredentials = await aliceAgent.modules.proofs.getCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     expect(retrievedCredentials).toMatchObject({
@@ -736,7 +736,7 @@ describe('Present Proof', () => {
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.sendProblemReport({
       description: 'Problem inside proof request',
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     faberProofExchangeRecord = await faberProofExchangeRecordPromise

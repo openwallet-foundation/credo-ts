@@ -12,12 +12,12 @@ import { ReplaySubject, Subject, firstValueFrom, of } from 'rxjs'
 import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
 
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { OutboundDidCommMessageContext } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
 
 import { DidCommDiscoverFeaturesEventTypes } from './DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesModuleConfig } from './DidCommDiscoverFeaturesModuleConfig'
-import { V1DidCommDiscoverFeaturesService, V2DidCommDiscoverFeaturesService } from './protocol'
+import { DidCommDiscoverFeaturesV1Service, DidCommDiscoverFeaturesV2Service } from './protocol'
 
 export interface QueryFeaturesReturnType {
   features?: DidCommFeature[]
@@ -30,7 +30,7 @@ export interface DidCommDiscoverFeaturesApi<DFSs extends DidCommDiscoverFeatures
 @injectable()
 // biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
 export class DidCommDiscoverFeaturesApi<
-  DFSs extends DidCommDiscoverFeaturesService[] = [V1DidCommDiscoverFeaturesService, V2DidCommDiscoverFeaturesService],
+  DFSs extends DidCommDiscoverFeaturesService[] = [DidCommDiscoverFeaturesV1Service, DidCommDiscoverFeaturesV2Service],
 > implements DidCommDiscoverFeaturesApi<DFSs>
 {
   /**
@@ -48,8 +48,8 @@ export class DidCommDiscoverFeaturesApi<
   public constructor(
     connectionService: DidCommConnectionService,
     messageSender: DidCommMessageSender,
-    v1Service: V1DidCommDiscoverFeaturesService,
-    v2Service: V2DidCommDiscoverFeaturesService,
+    v1Service: DidCommDiscoverFeaturesV1Service,
+    v2Service: DidCommDiscoverFeaturesV2Service,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Stop$) stop$: Subject<boolean>,
     agentContext: AgentContext,
@@ -103,7 +103,7 @@ export class DidCommDiscoverFeaturesApi<
       comment: options.comment,
     })
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(queryMessage, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(queryMessage, {
       agentContext: this.agentContext,
       connection,
     })
@@ -161,7 +161,7 @@ export class DidCommDiscoverFeaturesApi<
       threadId: options.threadId,
     })
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(disclosuresMessage, {
+    const outboundMessageContext = new DidCommOutboundMessageContext(disclosuresMessage, {
       agentContext: this.agentContext,
       connection,
     })

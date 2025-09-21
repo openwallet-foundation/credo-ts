@@ -1,7 +1,7 @@
 import type { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/exchange'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import type { EventReplaySubject } from '../../../../../../../core/tests'
-import type { V2ProposePresentationMessage, V2RequestPresentationMessage } from '../messages'
+import type { DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import {
@@ -119,7 +119,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments?.[0].getDataAsJson<AnonCredsProofRequest>()
 
     expect(proposalAttach).toMatchObject({
@@ -210,7 +210,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.negotiateRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -260,7 +260,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach2 = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach2).toMatchObject({
       requested_attributes: {},
@@ -351,7 +351,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     })
 
     const proposalAttach3 = (
-      proposal as V2ProposePresentationMessage
+      proposal as DidCommProposePresentationV2Message
     )?.proposalAttachments[0].getDataAsJson<AnonCredsProofRequest>()
     expect(proposalAttach3).toMatchObject({
       requested_attributes: {},
@@ -371,7 +371,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
 
     const proofRequestMessage = (await aliceAgent.modules.proofs.findRequestMessage(
       aliceProofExchangeRecord.id
-    )) as V2RequestPresentationMessage
+    )) as DidCommRequestPresentationV2Message
 
     const proofRequest = JsonTransformer.fromJSON(
       proofRequestMessage.requestAttachments[0].getDataAsJson(),

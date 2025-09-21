@@ -57,13 +57,13 @@ export class Alice extends BaseAgent {
     })
   }
 
-  public async acceptProofRequest(proofRecord: DidCommProofExchangeRecord) {
+  public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {
     const requestedCredentials = await this.agent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: proofRecord.id,
+      proofExchangeRecordId: proofExchangeRecord.id,
     })
 
     await this.agent.modules.proofs.acceptRequest({
-      proofRecordId: proofRecord.id,
+      proofExchangeRecordId: proofExchangeRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
     console.log(greenText('\nProof request accepted!\n'))

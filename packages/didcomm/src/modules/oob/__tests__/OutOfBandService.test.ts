@@ -12,14 +12,14 @@ import {
   getMockOutOfBand,
   mockFunction,
 } from '../../../../../core/tests/helpers'
-import { InboundDidCommMessageContext } from '../../../models'
+import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommDidExchangeState } from '../../connections'
 import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 import { DidCommOutOfBandEventTypes } from '../domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
-import { HandshakeReuseMessage } from '../messages'
-import { HandshakeReuseAcceptedMessage } from '../messages/HandshakeReuseAcceptedMessage'
+import { DidCommHandshakeReuseMessage } from '../messages'
+import { DidCommHandshakeReuseAcceptedMessage } from '../messages/DidCommHandshakeReuseAcceptedMessage'
 import { DidCommOutOfBandRepository } from '../repository'
 
 jest.mock('../repository/DidCommOutOfBandRepository')
@@ -48,7 +48,7 @@ describe('DidCommOutOfBandService', () => {
 
   describe('processHandshakeReuse', () => {
     test('throw error when no parentThreadId is present', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
@@ -56,7 +56,7 @@ describe('DidCommOutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -68,11 +68,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('throw error when no out of band record is found for parentThreadId', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -84,11 +84,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('throw error when role or state is incorrect ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -113,11 +113,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('throw error when the out of band record has request messages ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -136,11 +136,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test("throw error when the message context doesn't have a ready connection", async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -158,14 +158,14 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('emits handshake reused event ', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
       const reuseListener = jest.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -196,11 +196,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     it('updates state to done if out of band record is not reusable', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -227,11 +227,11 @@ describe('DidCommOutOfBandService', () => {
     })
 
     it('returns a handshake-reuse-accepted message', async () => {
-      const reuseMessage = new HandshakeReuseMessage({
+      const reuseMessage = new DidCommHandshakeReuseMessage({
         parentThreadId: 'parentThreadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -246,7 +246,7 @@ describe('DidCommOutOfBandService', () => {
 
       const reuseAcceptedMessage = await outOfBandService.processHandshakeReuse(messageContext)
 
-      expect(reuseAcceptedMessage).toBeInstanceOf(HandshakeReuseAcceptedMessage)
+      expect(reuseAcceptedMessage).toBeInstanceOf(DidCommHandshakeReuseAcceptedMessage)
       expect(reuseAcceptedMessage.thread).toMatchObject({
         threadId: reuseMessage.id,
         parentThreadId: reuseMessage.thread?.parentThreadId,
@@ -256,7 +256,7 @@ describe('DidCommOutOfBandService', () => {
 
   describe('processHandshakeReuseAccepted', () => {
     test('throw error when no parentThreadId is present', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         threadId: 'threadId',
         parentThreadId: 'parentThreadId',
       })
@@ -265,7 +265,7 @@ describe('DidCommOutOfBandService', () => {
         parentThreadId: undefined,
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -277,12 +277,12 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('throw error when no out of band record is found for parentThreadId', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -294,12 +294,12 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('throw error when role or state is incorrect ', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -324,12 +324,12 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test("throw error when the message context doesn't have a ready connection", async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -347,12 +347,12 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test("throw error when the reuseConnectionId on the oob record doesn't match with the inbound message connection id", async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -372,7 +372,7 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('emits handshake reused event ', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
@@ -380,7 +380,7 @@ describe('DidCommOutOfBandService', () => {
       const reuseListener = jest.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' })
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,
@@ -412,12 +412,12 @@ describe('DidCommOutOfBandService', () => {
     })
 
     it('updates state to done', async () => {
-      const reuseAcceptedMessage = new HandshakeReuseAcceptedMessage({
+      const reuseAcceptedMessage = new DidCommHandshakeReuseAcceptedMessage({
         parentThreadId: 'parentThreadId',
         threadId: 'threadId',
       })
 
-      const messageContext = new InboundDidCommMessageContext(reuseAcceptedMessage, {
+      const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
         agentContext,
         senderKey: key,
         recipientKey: key,

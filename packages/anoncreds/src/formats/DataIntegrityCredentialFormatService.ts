@@ -22,12 +22,12 @@ import type {
   CredentialFormatCreateReturn,
   CredentialFormatProcessCredentialOptions,
   CredentialFormatProcessOptions,
-  CredentialFormatService,
+  DidCommCredentialFormatService,
   DataIntegrityCredential,
-  DataIntegrityCredentialFormat,
+  DidCommDataIntegrityCredentialFormat,
   DataIntegrityCredentialRequest,
   DataIntegrityCredentialRequestBindingProof,
-  DataIntegrityOfferCredentialFormat,
+  DidCommDataIntegrityOfferCredentialFormat,
   DidCommCredentialExchangeRecord,
   DidCommCredentialPreviewAttributeOptions,
   DidCommSignedAttachmentBindingMethod,
@@ -59,13 +59,13 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DataIntegrityCredentialOffer,
   DidCommCredentialFormatSpec,
   DidCommCredentialPreviewAttribute,
   DidCommCredentialProblemReportReason,
-  ProblemReportError,
+  DidCommProblemReportError,
 } from '@credo-ts/didcomm'
 
 import {
@@ -92,7 +92,7 @@ const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL = 'didcomm/w3c-di-vc@v0.1'
 
-export class DataIntegrityCredentialFormatService implements CredentialFormatService<DataIntegrityCredentialFormat> {
+export class DataIntegrityCredentialFormatService implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat> {
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */
   public readonly formatKey = 'dataIntegrity' as const
 
@@ -116,7 +116,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialFormats,
       // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialExchangeRecord,
-    }: CredentialFormatCreateProposalOptions<DataIntegrityCredentialFormat>
+    }: CredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
   }
@@ -131,7 +131,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
 
   public async acceptProposal(
     _agentContext: AgentContext,
-    _input: CredentialFormatAcceptProposalOptions<DataIntegrityCredentialFormat>
+    _input: CredentialFormatAcceptProposalOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     throw new CredoError('Not defined')
   }
@@ -149,7 +149,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       credentialFormats,
       credentialExchangeRecord,
       attachmentId,
-    }: CredentialFormatCreateOfferOptions<DataIntegrityCredentialFormat>
+    }: CredentialFormatCreateOfferOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const dataIntegrityFormat = credentialFormats.dataIntegrity
     if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
@@ -216,7 +216,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       !dataIntegrityCredentialOffer.bindingMethod?.didcommSignedAttachment
 
     if (missingBindingMethod) {
-      throw new ProblemReportError('Invalid credential offer. Missing binding method.', {
+      throw new DidCommProblemReportError('Invalid credential offer. Missing binding method.', {
         problemCode: DidCommCredentialProblemReportReason.IssuanceAbandoned,
       })
     }
@@ -270,9 +270,9 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       protectedHeaderOptions: { alg: signingAlg as Kms.KnownJwaSignatureAlgorithm, kid },
     })
 
-    const signedAttach = new Attachment({
+    const signedAttach = new DidCommAttachment({
       mimeType: 'application/json',
-      data: new AttachmentData({ base64: jws.payload }),
+      data: new DidCommAttachmentData({ base64: jws.payload }),
     })
 
     signedAttach.addJws(jws)
@@ -280,7 +280,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     return signedAttach
   }
 
-  private async getSignedAttachmentPayload(agentContext: AgentContext, signedAttachment: Attachment) {
+  private async getSignedAttachmentPayload(agentContext: AgentContext, signedAttachment: DidCommAttachment) {
     const jws = signedAttachment.data.jws as JwsDetachedFormat
     if (!jws) throw new CredoError('Missing jws in signed attachment')
     if (!jws.protected) throw new CredoError('Missing protected header in signed attachment')
@@ -329,7 +329,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       attachmentId,
       offerAttachment,
       credentialFormats,
-    }: CredentialFormatAcceptOfferOptions<DataIntegrityCredentialFormat>
+    }: CredentialFormatAcceptOfferOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
 
@@ -382,7 +382,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
     }
 
     let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined = undefined
-    let didCommSignedAttachment: Attachment | undefined = undefined
+    let didCommSignedAttachment: DidCommAttachment | undefined = undefined
     if (dataIntegrityFormat?.didCommSignedAttachment) {
       if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
@@ -647,7 +647,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
       offerAttachment,
       requestAttachment,
       requestAppendAttachments,
-    }: CredentialFormatAcceptRequestOptions<DataIntegrityCredentialFormat>
+    }: CredentialFormatAcceptRequestOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
 
@@ -922,13 +922,13 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
    * anoncreds and then find the corresponding attachment (if there is one)
    * @param formats the formats object containing the attachmentId
    * @param messageAttachments the attachments containing the payload
-   * @returns The Attachment if found or undefined
+   * @returns The DidCommAttachment if found or undefined
    *
    */
   public getAttachment(
     formats: DidCommCredentialFormatSpec[],
-    messageAttachments: Attachment[]
-  ): Attachment | undefined {
+    messageAttachments: DidCommAttachment[]
+  ): DidCommAttachment | undefined {
     const supportedAttachmentIds = formats.filter((f) => this.supportsFormat(f.format)).map((f) => f.attachmentId)
     const supportedAttachment = messageAttachments.find((attachment) => supportedAttachmentIds.includes(attachment.id))
 
@@ -1015,7 +1015,7 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   private async createDataIntegrityCredentialOffer(
     agentContext: AgentContext,
     credentialExchangeRecord: DidCommCredentialExchangeRecord,
-    options: DataIntegrityOfferCredentialFormat
+    options: DidCommDataIntegrityOfferCredentialFormat
   ): Promise<{
     dataIntegrityCredentialOffer: DataIntegrityCredentialOffer
     previewAttributes: DidCommCredentialPreviewAttributeOptions[]
@@ -1160,14 +1160,14 @@ export class DataIntegrityCredentialFormatService implements CredentialFormatSer
   }
 
   /**
-   * Returns an object of type {@link Attachment} for use in credential exchange messages.
+   * Returns an object of type {@link DidCommAttachment} for use in credential exchange messages.
    * It looks up the correct format identifier and encodes the data as a base64 attachment.
    *
    * @param data The data to include in the attach object
    * @param id the attach id from the formats component of the message
    */
-  public getFormatData(data: unknown, id: string): Attachment {
-    const attachment = new Attachment({
+  public getFormatData(data: unknown, id: string): DidCommAttachment {
+    const attachment = new DidCommAttachment({
       id,
       mimeType: 'application/json',
       data: {

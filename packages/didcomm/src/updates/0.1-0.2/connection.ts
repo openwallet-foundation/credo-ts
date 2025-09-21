@@ -12,7 +12,7 @@ import {
 } from '@credo-ts/core'
 
 import {
-  ConnectionInvitationMessage,
+  DidCommConnectionInvitationMessage,
   DidCommConnectionRepository,
   DidCommConnectionRole,
   DidCommConnectionState,
@@ -321,7 +321,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
 
   // Only migrate if there is an invitation stored
   if (oldInvitationJson) {
-    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, ConnectionInvitationMessage)
+    const oldInvitation = JsonTransformer.fromJSON(oldInvitationJson, DidCommConnectionInvitationMessage)
 
     agent.config.logger.debug('Found a legacy invitation in connection record. Migrating it to an out of band record.')
 

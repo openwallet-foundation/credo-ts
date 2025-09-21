@@ -81,9 +81,9 @@ export class Listener {
     )
   }
 
-  private async newProofRequestPrompt(proofRecord: DidCommProofExchangeRecord, aliceInquirer: AliceInquirer) {
+  private async newProofRequestPrompt(proofExchangeRecord: DidCommProofExchangeRecord, aliceInquirer: AliceInquirer) {
     this.turnListenerOn()
-    await aliceInquirer.acceptProofRequest(proofRecord)
+    await aliceInquirer.acceptProofRequest(proofExchangeRecord)
     this.turnListenerOff()
     await aliceInquirer.processAnswer()
   }

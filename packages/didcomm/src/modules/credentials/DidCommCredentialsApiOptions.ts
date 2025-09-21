@@ -1,4 +1,4 @@
-import type { CredentialFormatPayload } from './formats'
+import type { DidCommCredentialFormatPayload } from './formats'
 import type { DidCommAutoAcceptCredential } from './models'
 import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
 import type {
@@ -47,7 +47,7 @@ export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[
   extends BaseOptions {
   connectionId: string
   protocolVersion: CredentialProtocolVersionType<CPs>
-  credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
+  credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
 }
 
 /**
@@ -58,7 +58,7 @@ export interface ProposeCredentialOptions<CPs extends DidCommCredentialProtocol[
 export interface AcceptCredentialProposalOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
   credentialExchangeRecordId: string
-  credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptProposal'>
+  credentialFormats?: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptProposal'>
 }
 
 /**
@@ -68,7 +68,7 @@ export interface NegotiateCredentialProposalOptions<
   CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[],
 > extends BaseOptions {
   credentialExchangeRecordId: string
-  credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
+  credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
 }
 
 /**
@@ -77,7 +77,7 @@ export interface NegotiateCredentialProposalOptions<
 export interface CreateCredentialOfferOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
   protocolVersion: CredentialProtocolVersionType<CPs>
-  credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
+  credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createOffer'>
 }
 
 /**
@@ -97,7 +97,7 @@ export interface OfferCredentialOptions<CPs extends DidCommCredentialProtocol[] 
 export interface AcceptCredentialOfferOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
   credentialExchangeRecordId: string
-  credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptOffer'>
+  credentialFormats?: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptOffer'>
 }
 
 /**
@@ -106,7 +106,7 @@ export interface AcceptCredentialOfferOptions<CPs extends DidCommCredentialProto
 export interface NegotiateCredentialOfferOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
   credentialExchangeRecordId: string
-  credentialFormats: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
+  credentialFormats: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'createProposal'>
 }
 
 /**
@@ -117,7 +117,7 @@ export interface NegotiateCredentialOfferOptions<CPs extends DidCommCredentialPr
 export interface AcceptCredentialRequestOptions<CPs extends DidCommCredentialProtocol[] = DidCommCredentialProtocol[]>
   extends BaseOptions {
   credentialExchangeRecordId: string
-  credentialFormats?: CredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptRequest'>
+  credentialFormats?: DidCommCredentialFormatPayload<CredentialFormatsFromProtocols<CPs>, 'acceptRequest'>
   autoAcceptCredential?: DidCommAutoAcceptCredential
   comment?: string
 }

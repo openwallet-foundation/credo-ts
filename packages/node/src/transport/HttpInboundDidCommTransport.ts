@@ -5,7 +5,7 @@ import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
   EncryptedDidCommMessage,
-  InboundDidCommTransport,
+  DidCommInboundTransport,
 } from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
 
@@ -16,7 +16,7 @@ import { ReplaySubject, filter, firstValueFrom, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
-export class HttpInboundDidCommTransport implements InboundDidCommTransport {
+export class HttpInboundDidCommTransport implements DidCommInboundTransport {
   public readonly app: Express
   private port: number
   private path: string

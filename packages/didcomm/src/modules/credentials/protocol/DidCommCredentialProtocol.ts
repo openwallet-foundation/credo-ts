@@ -2,9 +2,9 @@ import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
-import type { ProblemReportMessage } from '../../../messages'
-import type { InboundDidCommMessageContext } from '../../../models'
-import type { CredentialFormatService, ExtractCredentialFormats } from '../formats'
+import type { DidCommProblemReportMessage } from '../../../messages'
+import type { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommCredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { DidCommCredentialRole } from '../models'
 import type { DidCommCredentialState } from '../models/DidCommCredentialState'
 import type { DidCommCredentialExchangeRecord } from '../repository'
@@ -24,7 +24,7 @@ import type {
   NegotiateCredentialProposalOptions,
 } from './DidCommCredentialProtocolOptions'
 
-export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[] = CredentialFormatService[]> {
+export interface DidCommCredentialProtocol<CFs extends DidCommCredentialFormatService[] = DidCommCredentialFormatService[]> {
   readonly version: string
 
   // methods for proposal
@@ -33,7 +33,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
     options: CreateCredentialProposalOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
   processProposal(
-    messageContext: InboundDidCommMessageContext<DidCommMessage>
+    messageContext: DidCommInboundMessageContext<DidCommMessage>
   ): Promise<DidCommCredentialExchangeRecord>
   acceptProposal(
     agentContext: AgentContext,
@@ -49,7 +49,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
     agentContext: AgentContext,
     options: CreateCredentialOfferOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
-  processOffer(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  processOffer(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
   acceptOffer(
     agentContext: AgentContext,
     options: AcceptCredentialOfferOptions<CFs>
@@ -64,7 +64,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
     agentContext: AgentContext,
     options: CreateCredentialRequestOptions<CFs>
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
-  processRequest(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  processRequest(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
   acceptRequest(
     agentContext: AgentContext,
     options: AcceptCredentialRequestOptions<CFs>
@@ -72,7 +72,7 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
 
   // methods for issue
   processCredential(
-    messageContext: InboundDidCommMessageContext<DidCommMessage>
+    messageContext: DidCommInboundMessageContext<DidCommMessage>
   ): Promise<DidCommCredentialExchangeRecord>
   acceptCredential(
     agentContext: AgentContext,
@@ -80,15 +80,15 @@ export interface DidCommCredentialProtocol<CFs extends CredentialFormatService[]
   ): Promise<CredentialProtocolMsgReturnType<DidCommMessage>>
 
   // methods for ack
-  processAck(messageContext: InboundDidCommMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
+  processAck(messageContext: DidCommInboundMessageContext<DidCommMessage>): Promise<DidCommCredentialExchangeRecord>
 
   // methods for problem-report
   createProblemReport(
     agentContext: AgentContext,
     options: CreateCredentialProblemReportOptions
-  ): Promise<CredentialProtocolMsgReturnType<ProblemReportMessage>>
+  ): Promise<CredentialProtocolMsgReturnType<DidCommProblemReportMessage>>
   processProblemReport(
-    messageContext: InboundDidCommMessageContext<ProblemReportMessage>
+    messageContext: DidCommInboundMessageContext<DidCommProblemReportMessage>
   ): Promise<DidCommCredentialExchangeRecord>
 
   findProposalMessage(agentContext: AgentContext, credentialExchangeId: string): Promise<DidCommMessage | null>

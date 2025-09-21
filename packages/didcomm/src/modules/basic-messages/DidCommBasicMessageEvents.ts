@@ -1,5 +1,5 @@
 import type { BaseEvent } from '@credo-ts/core'
-import type { BasicMessage } from './messages'
+import type { DidCommBasicMessage } from './messages'
 import type { DidCommBasicMessageRecord } from './repository'
 
 export enum DidCommBasicMessageEventTypes {
@@ -8,7 +8,7 @@ export enum DidCommBasicMessageEventTypes {
 export interface DidCommBasicMessageStateChangedEvent extends BaseEvent {
   type: typeof DidCommBasicMessageEventTypes.DidCommBasicMessageStateChanged
   payload: {
-    message: BasicMessage
+    message: DidCommBasicMessage
     basicMessageRecord: DidCommBasicMessageRecord
   }
 }

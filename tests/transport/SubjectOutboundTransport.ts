@@ -1,5 +1,5 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { OutboundDidCommPackage, OutboundDidCommTransport } from '@credo-ts/didcomm'
+import type { DidCommOutboundPackage, DidCommOutboundTransport } from '@credo-ts/didcomm'
 import type { SubjectMessage } from './SubjectInboundTransport'
 
 import { Subject, take, takeUntil } from 'rxjs'
@@ -7,7 +7,7 @@ import { Subject, take, takeUntil } from 'rxjs'
 import { CredoError, InjectionSymbols } from '@credo-ts/core'
 import { DidCommMessageReceiver } from '@credo-ts/didcomm'
 
-export class SubjectOutboundTransport implements OutboundDidCommTransport {
+export class SubjectOutboundTransport implements DidCommOutboundTransport {
   private logger!: Logger
   private subjectMap: { [key: string]: Subject<SubjectMessage> | undefined }
   private agentContext!: AgentContext
@@ -30,7 +30,7 @@ export class SubjectOutboundTransport implements OutboundDidCommTransport {
     // No logic needed
   }
 
-  public async sendMessage(outboundPackage: OutboundDidCommPackage) {
+  public async sendMessage(outboundPackage: DidCommOutboundPackage) {
     const messageReceiver = this.agentContext.dependencyManager.resolve(DidCommMessageReceiver)
     this.logger.debug(`Sending outbound message to endpoint ${outboundPackage.endpoint}`, {
       endpoint: outboundPackage.endpoint,

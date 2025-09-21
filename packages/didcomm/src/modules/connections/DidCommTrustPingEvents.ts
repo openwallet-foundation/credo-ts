@@ -1,5 +1,5 @@
 import type { BaseEvent } from '@credo-ts/core'
-import type { TrustPingMessage, TrustPingResponseMessage } from './messages'
+import type { DidCommTrustPingMessage, DidCommTrustPingResponseMessage } from './messages'
 import type { DidCommConnectionRecord } from './repository'
 
 export enum DidCommTrustPingEventTypes {
@@ -11,7 +11,7 @@ export interface DidCommTrustPingReceivedEvent extends BaseEvent {
   type: typeof DidCommTrustPingEventTypes.DidCommTrustPingReceivedEvent
   payload: {
     connectionRecord: DidCommConnectionRecord
-    message: TrustPingMessage
+    message: DidCommTrustPingMessage
   }
 }
 
@@ -19,6 +19,6 @@ export interface TrustPingResponseReceivedEvent extends BaseEvent {
   type: typeof DidCommTrustPingEventTypes.DidCommTrustPingResponseReceivedEvent
   payload: {
     connectionRecord: DidCommConnectionRecord
-    message: TrustPingResponseMessage
+    message: DidCommTrustPingResponseMessage
   }
 }

@@ -1,4 +1,4 @@
-import type { ProofFormatCredentialForRequestPayload, ProofFormatPayload } from './formats'
+import type { DidCommProofFormatCredentialForRequestPayload, DidCommProofFormatPayload } from './formats'
 import type { DidCommAutoAcceptProof } from './models'
 import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
 import type {
@@ -46,7 +46,7 @@ interface BaseOptions {
 export interface ProposeProofOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> extends BaseOptions {
   connectionId: string
   protocolVersion: ProofsProtocolVersionType<PPs>
-  proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
+  proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
 
   parentThreadId?: string
 }
@@ -59,7 +59,7 @@ export interface ProposeProofOptions<PPs extends DidCommProofProtocol[] = DidCom
 export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
   proofRecordId: string
-  proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptProposal'>
+  proofFormats?: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptProposal'>
 
   /** @default true */
   willConfirm?: boolean
@@ -71,7 +71,7 @@ export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] =
 export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
   proofRecordId: string
-  proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
+  proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
 
   /** @default true */
   willConfirm?: boolean
@@ -83,7 +83,7 @@ export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[
 export interface CreateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
   protocolVersion: ProofsProtocolVersionType<PPs>
-  proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
+  proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
 
   parentThreadId?: string
 
@@ -105,14 +105,14 @@ export interface RequestProofOptions<PPs extends DidCommProofProtocol[] = DidCom
  */
 export interface AcceptProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
 
   /**
    * whether to enable return routing on the send presentation message. This value only
    * has an effect for connectionless exchanges.
    */
   useReturnRoute?: boolean
-  proofFormats?: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptRequest'>
+  proofFormats?: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptRequest'>
 
   /** @default true */
   willConfirm?: boolean
@@ -123,8 +123,8 @@ export interface AcceptProofRequestOptions<PPs extends DidCommProofProtocol[] = 
  */
 export interface NegotiateProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
-  proofRecordId: string
-  proofFormats: ProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
+  proofExchangeRecordId: string
+  proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
 }
 
 /**
@@ -138,8 +138,8 @@ export interface AcceptProofOptions {
  * Interface for ProofsApi.getCredentialsForRequest. Will return the credentials that match the proof request
  */
 export interface GetCredentialsForProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> {
-  proofRecordId: string
-  proofFormats?: ProofFormatCredentialForRequestPayload<
+  proofExchangeRecordId: string
+  proofFormats?: DidCommProofFormatCredentialForRequestPayload<
     ProofFormatsFromProtocols<PPs>,
     'getCredentialsForRequest',
     'input'
@@ -147,7 +147,7 @@ export interface GetCredentialsForProofRequestOptions<PPs extends DidCommProofPr
 }
 
 export interface GetCredentialsForProofRequestReturn<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> {
-  proofFormats: ProofFormatCredentialForRequestPayload<
+  proofFormats: DidCommProofFormatCredentialForRequestPayload<
     ProofFormatsFromProtocols<PPs>,
     'getCredentialsForRequest',
     'output'
@@ -159,8 +159,8 @@ export interface GetCredentialsForProofRequestReturn<PPs extends DidCommProofPro
  * credentials that match the proof request
  */
 export interface SelectCredentialsForProofRequestOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> {
-  proofRecordId: string
-  proofFormats?: ProofFormatCredentialForRequestPayload<
+  proofExchangeRecordId: string
+  proofFormats?: DidCommProofFormatCredentialForRequestPayload<
     ProofFormatsFromProtocols<PPs>,
     'getCredentialsForRequest',
     'input'
@@ -168,7 +168,7 @@ export interface SelectCredentialsForProofRequestOptions<PPs extends DidCommProo
 }
 
 export interface SelectCredentialsForProofRequestReturn<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]> {
-  proofFormats: ProofFormatCredentialForRequestPayload<
+  proofFormats: DidCommProofFormatCredentialForRequestPayload<
     ProofFormatsFromProtocols<PPs>,
     'selectCredentialsForRequest',
     'output'
@@ -179,7 +179,7 @@ export interface SelectCredentialsForProofRequestReturn<PPs extends DidCommProof
  * Interface for ProofsApi.sendProblemReport. Will send a problem-report message
  */
 export interface SendProofProblemReportOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
   description: string
 }
 
@@ -187,7 +187,7 @@ export interface SendProofProblemReportOptions {
  * Interface for ProofsApi.declineRequest. Decline a received proof request and optionally send a problem-report message to Verifier
  */
 export interface DeclineProofRequestOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
 
   /**
    * Whether to send a problem-report message to the verifier as part

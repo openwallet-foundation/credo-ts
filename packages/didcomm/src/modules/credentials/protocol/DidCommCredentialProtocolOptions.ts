@@ -1,9 +1,9 @@
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommConnectionRecord } from '../../connections'
 import type {
-  CredentialFormat,
-  CredentialFormatPayload,
-  CredentialFormatService,
+  DidCommCredentialFormat,
+  DidCommCredentialFormatPayload,
+  DidCommCredentialFormatService,
   ExtractCredentialFormats,
 } from '../formats'
 import type { DidCommCredentialPreviewAttributeOptions } from '../models'
@@ -34,14 +34,14 @@ import type { DidCommCredentialProtocol } from './DidCommCredentialProtocol'
  * ```
  */
 export type CredentialFormatDataMessagePayload<
-  CFs extends CredentialFormat[] = CredentialFormat[],
-  M extends keyof CredentialFormat['formatData'] = keyof CredentialFormat['formatData'],
+  CFs extends DidCommCredentialFormat[] = DidCommCredentialFormat[],
+  M extends keyof DidCommCredentialFormat['formatData'] = keyof DidCommCredentialFormat['formatData'],
 > = {
   [Service in CFs[number] as Service['formatKey']]?: Service['formatData'][M]
 }
 
 /**
- * Infer the {@link CredentialFormat} types based on an array of {@link DidCommCredentialProtocol} types.
+ * Infer the {@link DidCommCredentialFormat} types based on an array of {@link DidCommCredentialProtocol} types.
  *
  * It does this by extracting the `CredentialFormatServices` generic from the `DidCommCredentialProtocol`, and
  * then extracting the `CredentialFormat` generic from each of the `CredentialFormatService` types.
@@ -60,7 +60,7 @@ export type CredentialFormatDataMessagePayload<
  */
 export type CredentialFormatsFromProtocols<Type extends DidCommCredentialProtocol[]> =
   Type[number] extends DidCommCredentialProtocol<infer CredentialFormatServices>
-    ? CredentialFormatServices extends CredentialFormatService[]
+    ? CredentialFormatServices extends DidCommCredentialFormatService[]
       ? ExtractCredentialFormats<CredentialFormatServices>
       : never
     : never
@@ -79,7 +79,7 @@ export type CredentialFormatsFromProtocols<Type extends DidCommCredentialProtoco
  * }
  * ```
  */
-export type GetCredentialFormatDataReturn<CFs extends CredentialFormat[] = CredentialFormat[]> = {
+export type GetCredentialFormatDataReturn<CFs extends DidCommCredentialFormat[] = DidCommCredentialFormat[]> = {
   proposalAttributes?: DidCommCredentialPreviewAttributeOptions[]
   proposal?: CredentialFormatDataMessagePayload<CFs, 'proposal'>
   offer?: CredentialFormatDataMessagePayload<CFs, 'offer'>
@@ -103,19 +103,19 @@ interface BaseOptions {
   goal?: string
 }
 
-export interface CreateCredentialProposalOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface CreateCredentialProposalOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   connectionRecord: DidCommConnectionRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
+  credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
 }
 
-export interface AcceptCredentialProposalOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface AcceptCredentialProposalOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
-  credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
+  credentialFormats?: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptProposal'>
 }
 
-export interface NegotiateCredentialProposalOptions<CFs extends CredentialFormatService[]> {
+export interface NegotiateCredentialProposalOptions<CFs extends DidCommCredentialFormatService[]> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
+  credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
   autoAcceptCredential?: DidCommAutoAcceptCredential
   comment?: string
 
@@ -130,30 +130,30 @@ export interface NegotiateCredentialProposalOptions<CFs extends CredentialFormat
   goal?: string
 }
 
-export interface CreateCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface CreateCredentialOfferOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   // Create offer can also be used for connection-less, so connection is optional
   connectionRecord?: DidCommConnectionRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
+  credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createOffer'>
 }
 
-export interface AcceptCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface AcceptCredentialOfferOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
-  credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
+  credentialFormats?: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptOffer'>
 }
 
-export interface NegotiateCredentialOfferOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface NegotiateCredentialOfferOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
+  credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createProposal'>
 }
 
-export interface CreateCredentialRequestOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface CreateCredentialRequestOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   connectionRecord: DidCommConnectionRecord
-  credentialFormats: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createRequest'>
+  credentialFormats: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'createRequest'>
 }
 
-export interface AcceptCredentialRequestOptions<CFs extends CredentialFormatService[]> extends BaseOptions {
+export interface AcceptCredentialRequestOptions<CFs extends DidCommCredentialFormatService[]> extends BaseOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
-  credentialFormats?: CredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
+  credentialFormats?: DidCommCredentialFormatPayload<ExtractCredentialFormats<CFs>, 'acceptRequest'>
 }
 
 export interface AcceptCredentialOptions {

@@ -29,11 +29,11 @@ import {
 import { DidCommProofEventTypes, DidCommProofsModule, V2DidCommProofProtocol } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialsModule } from '../../../DidCommCredentialsModule'
-import { JsonLdCredentialFormatService } from '../../../formats'
+import { DidCommJsonLdCredentialFormatService } from '../../../formats'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
-import { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
-import { V2CredentialPreview } from '../messages'
+import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
+import { DidCommCredentialV2Preview } from '../messages'
 
 const signCredentialOptions = {
   credential: {
@@ -68,7 +68,7 @@ const signCredentialOptions = {
 }
 
 const indyCredentialFormat = new LegacyIndyCredentialFormatService()
-const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
+const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
 const indyProofFormat = new LegacyIndyProofFormatService()
 
 const getIndyJsonLdModules = () =>
@@ -77,7 +77,7 @@ const getIndyJsonLdModules = () =>
     credentials: new DidCommCredentialsModule({
       credentialProtocols: [
         new V1CredentialProtocol({ indyCredentialFormat }),
-        new V2DidCommCredentialProtocol({
+        new DidCommCredentialV2Protocol({
           credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
         }),
       ],
@@ -330,7 +330,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
   test('Multiple Formats: Alice starts with V2 (both ld and indy formats) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options - using both indy and ld credential formats here
-    const credentialPreview = V2CredentialPreview.fromRecord({
+    const credentialPreview = DidCommCredentialV2Preview.fromRecord({
       name: 'John',
       age: '99',
       'x-ray': 'some x-ray',

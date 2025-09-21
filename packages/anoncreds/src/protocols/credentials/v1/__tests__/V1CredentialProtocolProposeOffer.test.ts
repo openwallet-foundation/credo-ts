@@ -2,14 +2,14 @@ import type { CredentialProtocolOptions, DidCommCredentialStateChangedEvent } fr
 
 import { EventEmitter, JsonTransformer } from '@credo-ts/core'
 import {
-  Attachment,
-  AttachmentData,
+  DidCommAttachment,
+  DidCommAttachmentData,
   DidCommCredentialEventTypes,
   DidCommCredentialExchangeRecord,
   DidCommCredentialFormatSpec,
   DidCommCredentialState,
   DidCommDidExchangeState,
-  InboundDidCommMessageContext,
+  DidCommInboundMessageContext,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -18,8 +18,8 @@ import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/
 import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
-import { V1CredentialProtocol } from '../V1DidCommCredentialProtocol'
-import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1CredentialPreview, V1OfferCredentialMessage } from '../messages'
+import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
+import { INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, DidCommCredentialV1Preview, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
@@ -60,22 +60,22 @@ const connectionRecord = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
 
-const credentialPreview = V1CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV1Preview.fromRecord({
   name: 'John',
   age: '99',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   id: INDY_CREDENTIAL_OFFER_ATTACHMENT_ID,
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-const proposalAttachment = new Attachment({
-  data: new AttachmentData({
+const proposalAttachment = new DidCommAttachment({
+  data: new DidCommAttachmentData({
     json: {
       cred_def_id: 'Th7MpTaRZVRYnPiabds81Y:3:CL:17:TAG',
       schema_issuer_did: 'GMm4vMw8LLrLJjp81kRRLp',
@@ -88,13 +88,13 @@ const proposalAttachment = new Attachment({
 })
 
 describe('V1CredentialProtocolProposeOffer', () => {
-  let credentialProtocol: V1CredentialProtocol
+  let credentialProtocol: DidCommCredentialV1Protocol
 
   beforeEach(async () => {
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
 
-    credentialProtocol = new V1CredentialProtocol({
+    credentialProtocol = new DidCommCredentialV1Protocol({
       indyCredentialFormat: indyCredentialFormatService,
     })
   })
@@ -348,7 +348,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
       credentialPreview: credentialPreview,
       offerAttachments: [offerAttachment],
     })
-    const messageContext = new InboundDidCommMessageContext(credentialOfferMessage, {
+    const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
       agentContext,
       connection: connectionRecord,
     })

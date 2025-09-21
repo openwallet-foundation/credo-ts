@@ -22,7 +22,7 @@ import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommAutoAcceptCredential } from '../../../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
-import { V2CredentialPreview } from '../messages'
+import { DidCommCredentialV2Preview } from '../messages'
 
 const faberAgentOptions = getAgentOptions(
   'Faber connection-less Credentials V2',
@@ -44,7 +44,7 @@ const aliceAgentOptions = getAgentOptions(
   { requireDidcomm: true }
 )
 
-const credentialPreview = V2CredentialPreview.fromRecord({
+const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',
   age: '99',
   'x-ray': 'true',

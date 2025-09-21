@@ -9,7 +9,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { MessageSendingError } from '../../../errors'
-import { BasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository'
 
 const faberConfig = getAgentOptions(
@@ -160,8 +160,8 @@ describe('Basic Messages E2E', () => {
       )
       testLogger.test('Error thrown includes the outbound message and recently created record id')
       expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
-      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(BasicMessage)
-      expect((thrownError.outboundMessageContext.message as BasicMessage).content).toBe('Hello undeliverable')
+      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(DidCommBasicMessage)
+      expect((thrownError.outboundMessageContext.message as DidCommBasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
       const storedRecord = await aliceAgent.modules.basicMessages.getById(

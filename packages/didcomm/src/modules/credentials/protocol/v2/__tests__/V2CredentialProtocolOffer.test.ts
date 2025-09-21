@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
+import type { DidCommCredentialFormat, CredentialFormatCreateOfferOptions, DidCommCredentialFormatService } from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
@@ -14,8 +14,8 @@ import {
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
 import { DidCommDispatcher } from '../../../../../DidCommDispatcher'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { InboundDidCommMessageContext } from '../../../../../models'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
+import { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../../connections'
 import { DidCommRoutingService } from '../../../../routing/services/DidCommRoutingService'
@@ -24,30 +24,30 @@ import { DidCommCredentialFormatSpec } from '../../../models'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
-import { V2DidCommCredentialProtocol } from '../V2DidCommCredentialProtocol'
-import { V2CredentialPreview } from '../messages'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
+import { DidCommCredentialV2Preview } from '../messages'
+import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
 const offerFormat = new DidCommCredentialFormatSpec({
   attachmentId: 'offer-attachment-id',
   format: 'hlindy/cred-abstract@v2.0',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-interface TestCredentialFormat extends CredentialFormat {
+interface TestCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'test'
   credentialRecordType: 'test'
 }
 
-type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
+type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
@@ -122,13 +122,13 @@ const connectionRecord = getMockConnection({
 })
 
 describe('V2CredentialProtocolOffer', () => {
-  let credentialProtocol: V2DidCommCredentialProtocol
+  let credentialProtocol: DidCommCredentialV2Protocol
 
   beforeEach(async () => {
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
 
-    credentialProtocol = new V2DidCommCredentialProtocol({
+    credentialProtocol = new DidCommCredentialV2Protocol({
       credentialFormats: [testCredentialFormatService],
     })
   })
@@ -216,16 +216,16 @@ describe('V2CredentialProtocolOffer', () => {
   })
 
   describe('processOffer', () => {
-    const credentialOfferMessage = new V2OfferCredentialMessage({
+    const credentialOfferMessage = new DidCommOfferCredentialV2Message({
       formats: [offerFormat],
       comment: 'some comment',
-      credentialPreview: new V2CredentialPreview({
+      credentialPreview: new DidCommCredentialV2Preview({
         attributes: [],
       }),
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundDidCommMessageContext(credentialOfferMessage, {
+    const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
       agentContext,
       connection: connectionRecord,
     })

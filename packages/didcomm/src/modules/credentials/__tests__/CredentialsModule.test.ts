@@ -7,7 +7,7 @@ import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerReg
 import { DidCommProtocol } from '../../../models'
 import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
-import { V2DidCommCredentialProtocol } from '../protocol'
+import { DidCommCredentialV2Protocol } from '../protocol'
 import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 
@@ -44,7 +44,7 @@ describe('CredentialsModule', () => {
   test('registers V2DidCommCredentialProtocol if no credentialProtocols are configured', () => {
     const credentialsModule = new DidCommCredentialsModule()
 
-    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(V2DidCommCredentialProtocol)])
+    expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(DidCommCredentialV2Protocol)])
   })
 
   test('calls register on the provided CredentialProtocols', async () => {

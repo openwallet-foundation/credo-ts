@@ -7,9 +7,9 @@ import {
   DidCommCredentialExchangeRepository,
   DidCommCredentialRole,
   DidCommCredentialState,
-  V2OfferCredentialMessage,
-  V2ProposeCredentialMessage,
-  V2RequestCredentialMessage,
+  DidCommOfferCredentialV2Message,
+  DidCommProposeCredentialV2Message,
+  DidCommRequestCredentialV2Message,
 } from '../../modules/credentials'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 import { parseMessageType } from '../../util/messageType'
@@ -89,9 +89,9 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: DidC
     associatedRecordId: credentialRecord.id,
     $or: [
       // We can't be certain which messages will be present.
-      { messageName: V2OfferCredentialMessage.type.messageName },
-      { messageName: V2ProposeCredentialMessage.type.messageName },
-      { messageName: V2RequestCredentialMessage.type.messageName },
+      { messageName: DidCommOfferCredentialV2Message.type.messageName },
+      { messageName: DidCommProposeCredentialV2Message.type.messageName },
+      { messageName: DidCommRequestCredentialV2Message.type.messageName },
     ],
   })
 
@@ -103,15 +103,15 @@ export async function getCredentialRole(agent: BaseAgent, credentialRecord: DidC
 
   // Maps the message name and the didcomm message role to the respective credential role
   const roleStateMapping = {
-    [V2OfferCredentialMessage.type.messageName]: {
+    [DidCommOfferCredentialV2Message.type.messageName]: {
       [DidCommMessageRole.Sender]: DidCommCredentialRole.Issuer,
       [DidCommMessageRole.Receiver]: DidCommCredentialRole.Holder,
     },
-    [V2ProposeCredentialMessage.type.messageName]: {
+    [DidCommProposeCredentialV2Message.type.messageName]: {
       [DidCommMessageRole.Sender]: DidCommCredentialRole.Holder,
       [DidCommMessageRole.Receiver]: DidCommCredentialRole.Issuer,
     },
-    [V2RequestCredentialMessage.type.messageName]: {
+    [DidCommRequestCredentialV2Message.type.messageName]: {
       [DidCommMessageRole.Sender]: DidCommCredentialRole.Holder,
       [DidCommMessageRole.Receiver]: DidCommCredentialRole.Issuer,
     },

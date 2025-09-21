@@ -1,8 +1,8 @@
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
-import { InboundDidCommMessageContext } from '../../../models'
+import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-import { BasicMessage } from '../messages'
+import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageRepository } from '../repository/DidCommBasicMessageRepository'
 import { DidCommBasicMessageService } from '../services'
@@ -53,12 +53,12 @@ describe('BasicMessageService', () => {
 
   describe('save', () => {
     it('stores record and emits message and basic message record', async () => {
-      const basicMessage = new BasicMessage({
+      const basicMessage = new DidCommBasicMessage({
         id: '123',
         content: 'message',
       })
 
-      const messageContext = new InboundDidCommMessageContext(basicMessage, { agentContext })
+      const messageContext = new DidCommInboundMessageContext(basicMessage, { agentContext })
 
       await basicMessageService.save(messageContext, mockConnectionRecord)
 

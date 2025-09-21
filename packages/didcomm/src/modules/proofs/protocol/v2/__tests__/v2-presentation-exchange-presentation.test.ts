@@ -7,8 +7,8 @@ import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { DidCommAutoAcceptCredential, DidCommCredentialState } from '../../../../credentials'
 import { DidCommProofState } from '../../../models/DidCommProofState'
-import { V2PresentationMessage, V2RequestPresentationMessage } from '../messages'
-import { V2ProposePresentationMessage } from '../messages/V2ProposePresentationMessage'
+import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
+import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
 
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from './fixtures'
@@ -135,7 +135,7 @@ describe('Present Proof', () => {
 
     const proposal = await didCommMessageRepository.findAgentMessage(verifierAgent.context, {
       associatedRecordId: verifierProofExchangeRecord.id,
-      messageClass: V2ProposePresentationMessage,
+      messageClass: DidCommProposePresentationV2Message,
     })
 
     expect(proposal).toMatchObject({
@@ -208,7 +208,7 @@ describe('Present Proof', () => {
 
     const request = await didCommMessageRepository.findAgentMessage(proverAgent.context, {
       associatedRecordId: proverProofExchangeRecord.id,
-      messageClass: V2RequestPresentationMessage,
+      messageClass: DidCommRequestPresentationV2Message,
     })
 
     expect(request).toMatchObject({
@@ -295,7 +295,7 @@ describe('Present Proof', () => {
     })
 
     await proverAgent.modules.proofs.acceptRequest({
-      proofRecordId: proverProofExchangeRecord.id,
+      proofExchangeRecordId: proverProofExchangeRecord.id,
     })
 
     // Verifier waits for the presentation from the Prover
@@ -307,7 +307,7 @@ describe('Present Proof', () => {
 
     const presentation = await didCommMessageRepository.findAgentMessage(verifierAgent.context, {
       associatedRecordId: verifierProofExchangeRecord.id,
-      messageClass: V2PresentationMessage,
+      messageClass: DidCommPresentationV2Message,
     })
 
     expect(presentation).toMatchObject({
@@ -432,7 +432,7 @@ describe('Present Proof', () => {
     })
 
     await proverAgent.modules.proofs.acceptRequest({
-      proofRecordId: proverProofExchangeRecord.id,
+      proofExchangeRecordId: proverProofExchangeRecord.id,
     })
 
     // Verifier waits for the presentation from the Prover

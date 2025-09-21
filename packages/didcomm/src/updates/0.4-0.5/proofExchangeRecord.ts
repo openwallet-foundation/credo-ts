@@ -7,8 +7,8 @@ import {
   DidCommProofExchangeRepository,
   DidCommProofRole,
   DidCommProofState,
-  V2ProposePresentationMessage,
-  V2RequestPresentationMessage,
+  DidCommProposePresentationV2Message,
+  DidCommRequestPresentationV2Message,
 } from '../../modules/proofs'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 import { parseMessageType } from '../../util/messageType'
@@ -75,8 +75,8 @@ export async function getProofRole(agent: BaseAgent, proofRecord: DidCommProofEx
     associatedRecordId: proofRecord.id,
     $or: [
       // We can't be certain which messages will be present.
-      { messageName: V2ProposePresentationMessage.type.messageName },
-      { messageName: V2RequestPresentationMessage.type.messageName },
+      { messageName: DidCommProposePresentationV2Message.type.messageName },
+      { messageName: DidCommRequestPresentationV2Message.type.messageName },
     ],
   })
 
@@ -88,11 +88,11 @@ export async function getProofRole(agent: BaseAgent, proofRecord: DidCommProofEx
 
   // Maps the message name and the didcomm message role to the respective proof role
   const roleStateMapping = {
-    [V2ProposePresentationMessage.type.messageName]: {
+    [DidCommProposePresentationV2Message.type.messageName]: {
       [DidCommMessageRole.Sender]: DidCommProofRole.Prover,
       [DidCommMessageRole.Receiver]: DidCommProofRole.Verifier,
     },
-    [V2RequestPresentationMessage.type.messageName]: {
+    [DidCommRequestPresentationV2Message.type.messageName]: {
       [DidCommMessageRole.Sender]: DidCommProofRole.Verifier,
       [DidCommMessageRole.Receiver]: DidCommProofRole.Prover,
     },

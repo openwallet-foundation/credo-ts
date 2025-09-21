@@ -1,9 +1,9 @@
 import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommRouting, InboundDidCommMessageContext } from '../../../models'
+import type { DidCommRouting, DidCommInboundMessageContext } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'
 import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
-import type { MediationDenyMessage } from '../messages'
+import type { DidCommMediationDenyMessage } from '../messages'
 import type { GetRoutingOptions, RemoveRoutingOptions } from './DidCommRoutingService'
 
 import {
@@ -21,18 +21,18 @@ import { filter, first, timeout } from 'rxjs/operators'
 
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
-import { OutboundDidCommMessageContext } from '../../../models'
+import { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommConnectionType } from '../../connections/models/DidCommConnectionType'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 import {
-  KeylistUpdateAction,
-  KeylistUpdateResponseMessage,
-  MediationGrantMessage,
-  MediationRequestMessage,
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateResponseMessage,
+  DidCommMediationGrantMessage,
+  DidCommMediationRequestMessage,
 } from '../messages'
-import { KeylistUpdate, KeylistUpdateMessage } from '../messages/KeylistUpdateMessage'
+import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/DidCommKeylistUpdateMessage'
 import { DidCommMediationRole, DidCommMediationState } from '../models'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
@@ -59,8 +59,8 @@ export class DidCommMediationRecipientService {
   public async createRequest(
     agentContext: AgentContext,
     connection: DidCommConnectionRecord
-  ): Promise<MediationProtocolMsgReturnType<MediationRequestMessage>> {
-    const message = new MediationRequestMessage({})
+  ): Promise<MediationProtocolMsgReturnType<DidCommMediationRequestMessage>> {
+    const message = new DidCommMediationRequestMessage({})
 
     const mediationRecord = new DidCommMediationRecord({
       threadId: message.threadId,
@@ -77,7 +77,7 @@ export class DidCommMediationRecipientService {
     return { mediationRecord, message }
   }
 
-  public async processMediationGrant(messageContext: InboundDidCommMessageContext<MediationGrantMessage>) {
+  public async processMediationGrant(messageContext: DidCommInboundMessageContext<DidCommMediationGrantMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -96,7 +96,7 @@ export class DidCommMediationRecipientService {
     await this.updateUseDidKeysFlag(
       messageContext.agentContext,
       connection,
-      MediationGrantMessage.type.protocolUri,
+      DidCommMediationGrantMessage.type.protocolUri,
       connectionUsesDidKey
     )
 
@@ -106,7 +106,7 @@ export class DidCommMediationRecipientService {
     return await this.updateState(messageContext.agentContext, mediationRecord, DidCommMediationState.Granted)
   }
 
-  public async processKeylistUpdateResults(messageContext: InboundDidCommMessageContext<KeylistUpdateResponseMessage>) {
+  public async processKeylistUpdateResults(messageContext: DidCommInboundMessageContext<DidCommKeylistUpdateResponseMessage>) {
     // Assert ready connection
     const connection = messageContext.assertReadyConnection()
 
@@ -123,15 +123,15 @@ export class DidCommMediationRecipientService {
     await this.updateUseDidKeysFlag(
       messageContext.agentContext,
       connection,
-      KeylistUpdateResponseMessage.type.protocolUri,
+      DidCommKeylistUpdateResponseMessage.type.protocolUri,
       connectionUsesDidKey
     )
 
     // update keylist in mediationRecord
     for (const update of keylist) {
-      if (update.action === KeylistUpdateAction.add) {
+      if (update.action === DidCommKeylistUpdateAction.add) {
         mediationRecord.addRecipientKey(didKeyToVerkey(update.recipientKey))
-      } else if (update.action === KeylistUpdateAction.remove) {
+      } else if (update.action === DidCommKeylistUpdateAction.remove) {
         mediationRecord.removeRecipientKey(didKeyToVerkey(update.recipientKey))
       }
     }
@@ -149,7 +149,7 @@ export class DidCommMediationRecipientService {
   public async keylistUpdateAndAwait(
     agentContext: AgentContext,
     mediationRecord: DidCommMediationRecord,
-    updates: { recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; action: KeylistUpdateAction }[],
+    updates: { recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>; action: DidCommKeylistUpdateAction }[],
     timeoutMs = 15000 // TODO: this should be a configurable value in agent config
   ): Promise<DidCommMediationRecord> {
     const connection = await this.connectionService.getById(agentContext, mediationRecord.connectionId)
@@ -161,13 +161,13 @@ export class DidCommMediationRecipientService {
 
     const useDidKeysConnectionMetadata = connection.metadata.get(DidCommConnectionMetadataKeys.UseDidKeysForProtocol)
     if (useDidKeysConnectionMetadata) {
-      useDidKey = useDidKeysConnectionMetadata[KeylistUpdateMessage.type.protocolUri] ?? useDidKey
+      useDidKey = useDidKeysConnectionMetadata[DidCommKeylistUpdateMessage.type.protocolUri] ?? useDidKey
     }
 
     const message = this.createKeylistUpdateMessage(
       updates.map(
         (item) =>
-          new KeylistUpdate({
+          new DidCommKeylistUpdate({
             action: item.action,
             recipientKey: useDidKey
               ? new DidKey(item.recipientKey).did
@@ -201,15 +201,15 @@ export class DidCommMediationRecipientService {
       )
       .subscribe(subject)
 
-    const outboundMessageContext = new OutboundDidCommMessageContext(message, { agentContext, connection })
+    const outboundMessageContext = new DidCommOutboundMessageContext(message, { agentContext, connection })
     await this.messageSender.sendMessage(outboundMessageContext)
 
     const keylistUpdate = await firstValueFrom(subject)
     return keylistUpdate.payload.mediationRecord
   }
 
-  public createKeylistUpdateMessage(updates: KeylistUpdate[]): KeylistUpdateMessage {
-    const keylistUpdateMessage = new KeylistUpdateMessage({
+  public createKeylistUpdateMessage(updates: DidCommKeylistUpdate[]): DidCommKeylistUpdateMessage {
+    const keylistUpdateMessage = new DidCommKeylistUpdateMessage({
       updates,
     })
     return keylistUpdateMessage
@@ -237,7 +237,7 @@ export class DidCommMediationRecipientService {
     mediationRecord = await this.keylistUpdateAndAwait(agentContext, mediationRecord, [
       {
         recipientKey: routing.recipientKey,
-        action: KeylistUpdateAction.add,
+        action: DidCommKeylistUpdateAction.add,
       },
     ])
 
@@ -267,13 +267,13 @@ export class DidCommMediationRecipientService {
       recipientKeys.map((item) => {
         return {
           recipientKey: item,
-          action: KeylistUpdateAction.remove,
+          action: DidCommKeylistUpdateAction.remove,
         }
       })
     )
   }
 
-  public async processMediationDeny(messageContext: InboundDidCommMessageContext<MediationDenyMessage>) {
+  public async processMediationDeny(messageContext: DidCommInboundMessageContext<DidCommMediationDenyMessage>) {
     const connection = messageContext.assertReadyConnection()
 
     // Mediation record already exists
