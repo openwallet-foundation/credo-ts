@@ -3,7 +3,8 @@ import type { Wallet, WalletConfig } from '@credo-ts/core'
 import { KeyDerivationMethod, KeyType, TypedArrayEncoder, SigningProviderRegistry } from '@credo-ts/core'
 import { BBS_SIGNATURE_LENGTH } from '@mattrglobal/bbs-signatures'
 
-import { RegisteredAskarTestWallet } from '../../askar/tests/helpers'
+import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
+import { ariesAskar, RegisteredAskarTestWallet } from '../../askar/tests/helpers'
 import { testLogger, agentDependencies } from '../../core/tests'
 import { Bls12381g2SigningProvider } from '../src'
 
@@ -26,7 +27,8 @@ describeSkipNode18('BBS Signing Provider', () => {
     wallet = new RegisteredAskarTestWallet(
       testLogger,
       new agentDependencies.FileSystem(),
-      new SigningProviderRegistry([new Bls12381g2SigningProvider()])
+      new SigningProviderRegistry([new Bls12381g2SigningProvider()]),
+      new AskarModuleConfig({ ariesAskar })
     )
     await wallet.createAndOpen(walletConfig)
   })

@@ -1,4 +1,7 @@
 import type { AriesAskar } from '@hyperledger/aries-askar-shared'
+import type { Askar } from '@openwallet-foundation/askar-shared'
+
+import { importAskar } from './utils/importAskar'
 
 export enum AskarMultiWalletDatabaseScheme {
   /**
@@ -14,6 +17,12 @@ export enum AskarMultiWalletDatabaseScheme {
 
 export interface AskarModuleConfigOptions {
   /**
+   *
+   * The native askar implementation. The following askar implementations are supported:
+   * - `ariesAskar` from `@hyperledger/aries-askar-nodejs`
+   * - `ariesAskar` from `@hyperledger/aries-askar-react-native`
+   * - `askar` from `@openwallet-foundation/askar-nodejs`
+   * - `askar` from `@openwallet-foundation/askar-react-native`
    *
    * ## Node.JS
    *
@@ -47,7 +56,7 @@ export interface AskarModuleConfigOptions {
    * })
    * ```
    */
-  ariesAskar: AriesAskar
+  ariesAskar: AriesAskar | Askar
 
   /**
    * Determine the strategy for storing wallets if multiple wallets are used in a single agent.
@@ -64,11 +73,9 @@ export interface AskarModuleConfigOptions {
  * @public
  */
 export class AskarModuleConfig {
-  private options: AskarModuleConfigOptions
+  public askarLibrary = importAskar(this.options.ariesAskar)
 
-  public constructor(options: AskarModuleConfigOptions) {
-    this.options = options
-  }
+  public constructor(private options: AskarModuleConfigOptions) {}
 
   /** See {@link AskarModuleConfigOptions.ariesAskar} */
   public get ariesAskar() {

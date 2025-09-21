@@ -597,7 +597,7 @@ export class SdJwtVcService {
     return {
       hasher: this.hasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
-      saltGenerator: agentContext.wallet.generateNonce,
+      saltGenerator: () => agentContext.wallet.generateNonce(),
     }
   }
 

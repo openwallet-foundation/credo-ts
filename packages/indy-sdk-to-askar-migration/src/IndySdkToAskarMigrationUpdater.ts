@@ -1,11 +1,12 @@
 import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
+import type { AskarLibrary, HyperledgerAskarKey, HyperledgerSession } from '@credo-ts/askar'
 import type { Agent, FileSystem, WalletConfig } from '@credo-ts/core'
 import type { EntryObject } from '@hyperledger/aries-askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
-import { AskarWallet } from '@credo-ts/askar'
+import { AskarWallet, isOwfAskarLibrary } from '@credo-ts/askar'
 import { InjectionSymbols, KeyDerivationMethod, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
-import { Migration, Key, KeyAlgs, Store } from '@hyperledger/aries-askar-shared'
+import * as HyperledgerAskarLibrary from '@hyperledger/aries-askar-shared'
 
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
 import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } from './utils'
@@ -24,29 +25,39 @@ import { keyDerivationMethodToStoreKeyMethod, transformFromRecordTagValues } fro
  *
  */
 export class IndySdkToAskarMigrationUpdater {
-  private store?: Store
+  private store?: InstanceType<AskarWallet['config']['askarLibrary']['Store']>
   private walletConfig: WalletConfig
   private defaultLinkSecretId: string
   private agent: Agent
   private dbPath: string
   private fs: FileSystem
+  private askarLibrary: AskarLibrary
 
-  private constructor(walletConfig: WalletConfig, agent: Agent, dbPath: string, defaultLinkSecretId?: string) {
+  private constructor(
+    walletConfig: WalletConfig,
+    agent: Agent,
+    dbPath: string,
+    askarLibrary: AskarLibrary,
+    defaultLinkSecretId?: string
+  ) {
     this.walletConfig = walletConfig
     this.dbPath = dbPath
     this.agent = agent
     this.fs = this.agent.dependencyManager.resolve<FileSystem>(InjectionSymbols.FileSystem)
     this.defaultLinkSecretId = defaultLinkSecretId ?? walletConfig.id
+    this.askarLibrary = askarLibrary
   }
 
   public static async initialize({
     dbPath,
     agent,
     defaultLinkSecretId,
+    askarLibrary = HyperledgerAskarLibrary,
   }: {
     dbPath: string
     agent: Agent
     defaultLinkSecretId?: string
+    askarLibrary?: AskarLibrary
   }) {
     const {
       config: { walletConfig },
@@ -73,7 +84,7 @@ export class IndySdkToAskarMigrationUpdater {
       throw new IndySdkToAskarMigrationError("Wallet on the agent must be of instance 'AskarWallet'")
     }
 
-    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, defaultLinkSecretId)
+    return new IndySdkToAskarMigrationUpdater(walletConfig, agent, dbPath, askarLibrary, defaultLinkSecretId)
   }
 
   /**
@@ -97,7 +108,7 @@ export class IndySdkToAskarMigrationUpdater {
     }
 
     this.agent.config.logger.info('Migration indy-sdk database structure to askar')
-    await Migration.migrate({ specUri, walletKey, kdfLevel, walletName })
+    await this.askarLibrary.Migration.migrate({ specUri, walletKey, kdfLevel, walletName })
   }
 
   /*
@@ -220,9 +231,16 @@ export class IndySdkToAskarMigrationUpdater {
       await this.migrate()
 
       const keyMethod = keyDerivationMethodToStoreKeyMethod(
+        this.askarLibrary,
         this.walletConfig.keyDerivationMethod ?? KeyDerivationMethod.Argon2IMod
       )
-      this.store = await Store.open({ uri: `sqlite://${this.backupFile}`, passKey: this.walletConfig.key, keyMethod })
+      this.store = await this.askarLibrary.Store.open({
+        uri: `sqlite://${this.backupFile}`,
+        passKey: this.walletConfig.key,
+        // Need to cast due to different types from OWF/HL askar
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        keyMethod: keyMethod as any,
+      })
 
       // Update the values to reflect the new structure
       await this.updateKeys()
@@ -255,7 +273,7 @@ export class IndySdkToAskarMigrationUpdater {
     let updateCount = 0
     const session = this.store.transaction()
     for (;;) {
-      const txn = await session.open()
+      const txn = (await session.open()) as HyperledgerSession
       const keys = await txn.fetchAll({ category, limit: 50 })
       if (!keys || keys.length === 0) {
         await txn.close()
@@ -266,11 +284,16 @@ export class IndySdkToAskarMigrationUpdater {
         this.agent.config.logger.debug(`Migrating ${row.name} to the new askar format`)
         const signKey: string = JSON.parse(row.value as string).signkey
         const keySk = TypedArrayEncoder.fromBase58(signKey)
-        const key = Key.fromSecretBytes({
-          algorithm: KeyAlgs.Ed25519,
-          secretKey: new Uint8Array(keySk.slice(0, 32)),
-        })
-        await txn.insertKey({ name: row.name, key })
+        const key = isOwfAskarLibrary(this.askarLibrary)
+          ? this.askarLibrary.Key.fromSecretBytes({
+              algorithm: this.askarLibrary.KeyAlgorithm.Ed25519,
+              secretKey: new Uint8Array(keySk.slice(0, 32)),
+            })
+          : this.askarLibrary.Key.fromSecretBytes({
+              algorithm: this.askarLibrary.KeyAlgs.Ed25519,
+              secretKey: new Uint8Array(keySk.slice(0, 32)),
+            })
+        await txn.insertKey({ name: row.name, key: key as HyperledgerAskarKey })
 
         await txn.remove({ category, name: row.name })
         key.handle.free()

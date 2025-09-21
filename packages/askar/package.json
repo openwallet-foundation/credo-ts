@@ -31,12 +31,14 @@
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
     "rxjs": "^7.8.0",
-    "tsyringe": "^4.8.0"
+    "tsyringe": "^4.8.0",
+    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@openwallet-foundation/askar-shared": "^0.4.1"
   },
   "devDependencies": {
     "@animo-id/expo-secure-environment": "^0.0.1-alpha.0",
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
-    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@openwallet-foundation/askar-nodejs": "^0.4.1",
     "@types/bn.js": "^5.1.0",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
@@ -45,11 +47,26 @@
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
-    "@hyperledger/aries-askar-shared": "^0.2.3",
+    "@hyperledger/aries-askar-nodejs": "^0.2.3",
+    "@hyperledger/aries-askar-react-native": "^0.2.3",
+    "@openwallet-foundation/askar-nodejs": "^0.4.1",
+    "@openwallet-foundation/askar-react-native": "^0.4.1",
     "@animo-id/expo-secure-environment": "^0.0.1-alpha.0"
   },
   "peerDependenciesMeta": {
     "@animo-id/expo-secure-environment": {
+      "optional": true
+    },
+    "@hyperledger/aries-askar-nodejs": {
+      "optional": true
+    },
+    "@hyperledger/aries-askar-react-native": {
+      "optional": true
+    },
+    "@openwallet-foundation/askar-nodejs": {
+      "optional": true
+    },
+    "@openwallet-foundation/askar-react-native": {
       "optional": true
     }
   }

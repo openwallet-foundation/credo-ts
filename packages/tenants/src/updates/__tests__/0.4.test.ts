@@ -11,7 +11,8 @@ import { readFileSync } from 'fs'
 import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
-import { RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
+import { AskarModuleConfig } from '../../../../askar/src/AskarModuleConfig'
+import { ariesAskar, RegisteredAskarTestWallet } from '../../../../askar/tests/helpers'
 import { TenantsModule } from '../../TenantsModule'
 
 // Backup date / time is the unique identifier for a backup, needs to be unique for every test
@@ -28,6 +29,7 @@ describe('UpdateAssistant | Tenants | v0.4 - v0.5', () => {
 
     const dependencyManager = new DependencyManager()
     const storageService = new InMemoryStorageService()
+    dependencyManager.registerInstance(AskarModuleConfig, new AskarModuleConfig({ ariesAskar }))
     dependencyManager.registerInstance(InjectionSymbols.StorageService, storageService)
     // If we register the AskarModule it will register the storage service, but we use in memory storage here
     dependencyManager.registerContextScoped(InjectionSymbols.Wallet, RegisteredAskarTestWallet)

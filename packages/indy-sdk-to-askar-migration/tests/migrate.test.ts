@@ -2,20 +2,23 @@ import type { InitConfig } from '@credo-ts/core'
 
 import { KeyDerivationMethod, Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
+import { ariesAskar } from '@hyperledger/aries-askar-nodejs'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { copyFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { homedir } from 'os'
 import path from 'path'
 
+import { AskarModule } from '../../askar/src'
 import { askarModule } from '../../askar/tests/helpers'
 import { IndySdkToAskarMigrationUpdater } from '../src'
 import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'
 
-describe('Indy SDK To Askar Migration', () => {
+describe.each(['hyperledger', 'owf'] as const)('Indy SDK To Askar Migration with %s', (askarImplementation) => {
   test('indy-sdk sqlite to aries-askar sqlite successful migration', async () => {
     const indySdkAndAskarConfig: InitConfig = {
-      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration`,
+      label: `indy | indy-sdk sqlite to aries-askar sqlite successful migration` + askarImplementation,
       walletConfig: {
-        id: `indy-sdk sqlite to aries-askar sqlite successful migration`,
+        id: `indy-sdk sqlite to aries-askar sqlite successful migration` + askarImplementation,
         key: 'GfwU1DC7gEZNs3w41tjBiZYj7BNToDoFEqKY6wZXqs1A',
         keyDerivationMethod: KeyDerivationMethod.Raw,
       },
@@ -26,7 +29,11 @@ describe('Indy SDK To Askar Migration', () => {
     const indySdkWalletTestPath = path.join(__dirname, 'indy-sdk-040-wallet.db')
     const askarAgent = new Agent({
       config: indySdkAndAskarConfig,
-      modules: { askar: askarModule },
+      modules: {
+        askar: new AskarModule({
+          ariesAskar: askarImplementation === 'hyperledger' ? ariesAskar : askar,
+        }),
+      },
       dependencies: agentDependencies,
     })
     const updater = await IndySdkToAskarMigrationUpdater.initialize({ dbPath: indySdkAgentDbPath, agent: askarAgent })
