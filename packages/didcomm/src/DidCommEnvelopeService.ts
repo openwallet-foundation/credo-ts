@@ -9,7 +9,7 @@ import {
   inject,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
-import type { EncryptedDidCommMessage, PlaintextDidCommMessage } from './types'
+import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
 import { Logger, injectable } from '@credo-ts/core'
 
@@ -40,10 +40,10 @@ export class DidCommEnvelopeService {
 
   private async encryptDidcommV1Message(
     agentContext: AgentContext,
-    message: PlaintextDidCommMessage,
+    message: DidCommPlaintextMessage,
     recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[],
     senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk> | null
-  ): Promise<EncryptedDidCommMessage> {
+  ): Promise<DidCommEncryptedMessage> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     // Generally we would never generate the content encryption key outside of the KMS
     // However how DIDcommV1 is specified to calcualte the aad we need the encrypted content
@@ -141,10 +141,10 @@ export class DidCommEnvelopeService {
       iv: TypedArrayEncoder.toBase64URL(iv),
       tag: TypedArrayEncoder.toBase64URL(tag),
       protected: protectedString,
-    } satisfies EncryptedDidCommMessage
+    } satisfies DidCommEncryptedMessage
   }
 
-  private async decryptDidcommV1Message(agentContext: AgentContext, encryptedMessage: EncryptedDidCommMessage) {
+  private async decryptDidcommV1Message(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage) {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const protectedJson = JsonEncoder.fromBase64(encryptedMessage.protected)
 
@@ -250,7 +250,7 @@ export class DidCommEnvelopeService {
     agentContext: AgentContext,
     payload: DidCommMessage,
     keys: EnvelopeKeys
-  ): Promise<EncryptedDidCommMessage> {
+  ): Promise<DidCommEncryptedMessage> {
     const didcommConfig = agentContext.dependencyManager.resolve(DidCommModuleConfig)
 
     const { routingKeys, senderKey } = keys
@@ -286,7 +286,7 @@ export class DidCommEnvelopeService {
 
   public async unpackMessage(
     agentContext: AgentContext,
-    encryptedMessage: EncryptedDidCommMessage
+    encryptedMessage: DidCommEncryptedMessage
   ): Promise<DecryptedDidCommMessageContext> {
     const decryptedMessage = await this.decryptDidcommV1Message(agentContext, encryptedMessage)
     return decryptedMessage
@@ -436,7 +436,7 @@ export class DidCommEnvelopeService {
 }
 
 export interface DecryptedDidCommMessageContext {
-  plaintextMessage: PlaintextDidCommMessage
+  plaintextMessage: DidCommPlaintextMessage
   senderKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   recipientKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
 }

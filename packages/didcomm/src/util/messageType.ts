@@ -1,5 +1,5 @@
 import type { ValidationArguments, ValidationOptions } from 'class-validator'
-import type { PlaintextDidCommMessage } from '../types'
+import type { DidCommPlaintextMessage } from '../types'
 
 import { ValidateBy, buildMessage } from 'class-validator'
 
@@ -249,7 +249,7 @@ export function IsValidMessageType(
   )
 }
 
-export function replaceLegacyDidSovPrefixOnMessage(message: PlaintextDidCommMessage | Record<string, unknown>) {
+export function replaceLegacyDidSovPrefixOnMessage(message: DidCommPlaintextMessage | Record<string, unknown>) {
   message['@type'] = replaceLegacyDidSovPrefix(message['@type'] as string)
 }
 

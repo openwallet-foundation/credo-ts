@@ -1,13 +1,13 @@
-import type { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
+import type { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRole, DidCommOutOfBandState, DidCommPlaintextMessage } from '@credo-ts/didcomm'
 import { boolean, jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
-export const didcommOutOfBandRoles = exhaustiveArray({} as OutOfBandRole, ['sender', 'receiver'] as const)
+export const didcommOutOfBandRoles = exhaustiveArray({} as DidCommOutOfBandRole, ['sender', 'receiver'] as const)
 export const didcommOutOfBandRoleEnum = pgEnum('DidcommOutOfBandRole', didcommOutOfBandRoles)
 
 export const didcommOutOfBandStates = exhaustiveArray(
-  {} as OutOfBandState,
+  {} as DidCommOutOfBandState,
   ['initial', 'await-response', 'prepare-response', 'done'] as const
 )
 export const didcommOutOfBandStateEnum = pgEnum('DidcommOutOfBandState', didcommOutOfBandStates)
@@ -17,7 +17,7 @@ export const didcommOutOfBand = pgTable(
   {
     ...getPostgresBaseRecordTable(),
 
-    outOfBandInvitation: jsonb('out_of_band_invitation').$type<PlaintextMessage>().notNull(),
+    outOfBandInvitation: jsonb('out_of_band_invitation').$type<DidCommPlaintextMessage>().notNull(),
     role: didcommOutOfBandRoleEnum().notNull(),
     state: didcommOutOfBandStateEnum().notNull(),
     alias: text(),
@@ -25,7 +25,7 @@ export const didcommOutOfBand = pgTable(
     autoAcceptConnection: boolean('auto_accept_connection'),
     mediatorId: text('mediator_id'),
     reuseConnectionId: text('reuse_connection_id'),
-    invitationInlineServiceKeys: jsonb('invitation_inline_service_keys').$type<OutOfBandInlineServiceKey[]>(),
+    invitationInlineServiceKeys: jsonb('invitation_inline_service_keys').$type<DidCommOutOfBandInlineServiceKey[]>(),
 
     // Tags not on record
     threadId: text('thread_id').notNull(),

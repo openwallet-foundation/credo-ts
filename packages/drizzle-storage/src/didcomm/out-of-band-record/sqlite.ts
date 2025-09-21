@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { OutOfBandInlineServiceKey, OutOfBandRole, OutOfBandState, PlaintextMessage } from '@credo-ts/didcomm'
+import type { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRole, DidCommOutOfBandState, DidCommPlaintextMessage } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommOutOfBand = sqliteTable(
@@ -8,16 +8,16 @@ export const didcommOutOfBand = sqliteTable(
   {
     ...getSqliteBaseRecordTable(),
 
-    outOfBandInvitation: text('out_of_band_invitation', { mode: 'json' }).$type<PlaintextMessage>().notNull(),
-    role: text().$type<OutOfBandRole>().notNull(),
-    state: text().$type<OutOfBandState>().notNull(),
+    outOfBandInvitation: text('out_of_band_invitation', { mode: 'json' }).$type<DidCommPlaintextMessage>().notNull(),
+    role: text().$type<DidCommOutOfBandRole>().notNull(),
+    state: text().$type<DidCommOutOfBandState>().notNull(),
     alias: text(),
     reusable: integer({ mode: 'boolean' }).notNull(),
     autoAcceptConnection: integer('auto_accept_connection', { mode: 'boolean' }),
     mediatorId: text('mediator_id'),
     reuseConnectionId: text('reuse_connection_id'),
     invitationInlineServiceKeys: text('invitation_inline_service_keys', { mode: 'json' }).$type<
-      OutOfBandInlineServiceKey[]
+      DidCommOutOfBandInlineServiceKey[]
     >(),
 
     // Tags not in record

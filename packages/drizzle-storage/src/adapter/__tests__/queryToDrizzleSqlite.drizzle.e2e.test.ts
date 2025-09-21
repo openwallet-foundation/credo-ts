@@ -1,4 +1,4 @@
-import { ConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
+import { DidCommConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
 import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
 import { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
@@ -44,7 +44,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               invitationDid: 'some string',
             },
@@ -58,7 +58,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               invitationDid: 'some other string',
             },
@@ -74,7 +74,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one', 'three'],
               invitationDid: 'some string',
@@ -89,7 +89,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one', 'two', 'five'],
               invitationDid: 'some string',
@@ -104,7 +104,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               invitationDid: 'some string',
@@ -121,7 +121,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               anotherCustomTag: true,
               invitationDid: 'some string',
@@ -136,7 +136,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               anotherCustomTag: false,
               invitationDid: 'some string',
@@ -153,7 +153,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               myCustomTag: ['First', 'Second'],
               invitationDid: 'some string',
@@ -168,7 +168,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               myCustomTag: ['Third'],
               invitationDid: 'some string',
@@ -183,7 +183,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               myCustomTag: ['First'],
               invitationDid: 'some string',
@@ -200,7 +200,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $or: [
@@ -227,7 +227,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $or: [
@@ -259,7 +259,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $not: {
@@ -291,7 +291,7 @@ describe('queryToDrizzleSqlite', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzleSqlite<ConnectionRecord>(
+          queryToDrizzleSqlite<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $not: {

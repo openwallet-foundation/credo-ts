@@ -1,7 +1,7 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 import type { JsonObject } from '@credo-ts/core'
-import type { AutoAcceptCredential, CredentialRecordBinding, CredentialRole, CredentialState } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptCredential, CredentialRecordBinding, DidCommCredentialRole, DidCommCredentialState } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommCredentialExchange = sqliteTable(
@@ -13,9 +13,9 @@ export const didcommCredentialExchange = sqliteTable(
     threadId: text('thread_id').notNull(),
     parentThreadId: text('parent_thread_id'),
 
-    state: text().$type<CredentialState>().notNull(),
-    role: text().$type<CredentialRole>().notNull(),
-    autoAcceptCredential: text('auto_accept_credential').$type<AutoAcceptCredential>(),
+    state: text().$type<DidCommCredentialState>().notNull(),
+    role: text().$type<DidCommCredentialRole>().notNull(),
+    autoAcceptCredential: text('auto_accept_credential').$type<DidCommAutoAcceptCredential>(),
     revocationNotification: text('revocation_notification', { mode: 'json' }).$type<JsonObject>(),
     errorMessage: text('error_message'),
     protocolVersion: text('protocol_version'),

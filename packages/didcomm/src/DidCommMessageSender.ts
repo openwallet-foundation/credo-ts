@@ -5,7 +5,7 @@ import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import type { DidCommOutboundTransport } from './transport/DidCommOutboundTransport'
-import type { EncryptedDidCommMessage, DidCommOutboundPackage } from './types'
+import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 
 import {
   AgentContext,
@@ -121,7 +121,7 @@ export class DidCommMessageSender {
     }: {
       connection: DidCommConnectionRecord
       recipientKey: string
-      encryptedMessage: EncryptedDidCommMessage
+      encryptedMessage: DidCommEncryptedMessage
       options?: { transportPriority?: TransportPriorityOptions }
     }
   ) {

@@ -3,7 +3,7 @@ import type { ResolvedDidCommService } from '../../../core/src/types'
 import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import type { DidCommConnectionRecord } from '../modules'
 import { InMemoryQueueTransportRepository, type DidCommOutboundTransport } from '../transport'
-import type { EncryptedDidCommMessage } from '../types'
+import type { DidCommEncryptedMessage } from '../types'
 
 import { Subject } from 'rxjs'
 
@@ -76,7 +76,7 @@ class DummyWsOutboundTransport implements DidCommOutboundTransport {
 describe('DidCommMessageSender', () => {
   const DidCommEnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
 
-  const encryptedMessage: EncryptedDidCommMessage = {
+  const encryptedMessage: DidCommEncryptedMessage = {
     protected: 'base64url',
     iv: 'base64url',
     ciphertext: 'base64url',

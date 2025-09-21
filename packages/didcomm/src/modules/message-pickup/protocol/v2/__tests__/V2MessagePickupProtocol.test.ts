@@ -1,4 +1,4 @@
-import type { EncryptedDidCommMessage } from '../../../../../types'
+import type { DidCommEncryptedMessage } from '../../../../../types'
 
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../../../core/src/error'
@@ -60,7 +60,7 @@ const agentContext = getAgentContext({
   ],
 })
 
-const encryptedMessage: EncryptedDidCommMessage = {
+const encryptedMessage: DidCommEncryptedMessage = {
   protected: 'base64url',
   iv: 'base64url',
   ciphertext: 'base64url',

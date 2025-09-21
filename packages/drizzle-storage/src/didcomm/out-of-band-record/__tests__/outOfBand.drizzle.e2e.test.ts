@@ -1,6 +1,6 @@
 import { JsonTransformer } from '@credo-ts/core'
 
-import { OutOfBandRecord, OutOfBandRepository } from '@credo-ts/didcomm'
+import { DidCommOutOfBandRecord, DidCommOutOfBandRepository } from '@credo-ts/didcomm'
 import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommOutOfBandDrizzleRecord } from '../index'
 
@@ -45,9 +45,9 @@ describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type)
         autoAcceptConnection: true,
         reusable: false,
       },
-      OutOfBandRecord
+      DidCommOutOfBandRecord
     )
-    const outOfBandRepository = recordTest.agent.context.resolve(OutOfBandRepository)
+    const outOfBandRepository = recordTest.agent.context.resolve(DidCommOutOfBandRepository)
 
     await outOfBandRepository.save(recordTest.agent.context, outOfBand)
 

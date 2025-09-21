@@ -2,7 +2,7 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../DidCommMessage'
 import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import type { DidCommRouting } from '../../models'
-import type { PlaintextDidCommMessage } from '../../types'
+import type { DidCommPlaintextMessage } from '../../types'
 import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 
 import {
@@ -848,7 +848,7 @@ export class DidCommOutOfBandApi {
   private async emitWithConnection(
     outOfBandRecord: DidCommOutOfBandRecord,
     connectionRecord: DidCommConnectionRecord,
-    messages: PlaintextDidCommMessage[]
+    messages: DidCommPlaintextMessage[]
   ) {
     const supportedMessageTypes = this.messageHandlerRegistry.supportedMessageTypes
     const plaintextMessage = messages.find((message) => {
@@ -878,7 +878,7 @@ export class DidCommOutOfBandApi {
   private async emitWithServices(
     outOfBandRecord: DidCommOutOfBandRecord,
     services: Array<OutOfBandDidCommService | string>,
-    messages: PlaintextDidCommMessage[]
+    messages: DidCommPlaintextMessage[]
   ) {
     if (!services || services.length === 0) {
       throw new CredoError('There are no services. We can not emit messages')
@@ -908,7 +908,7 @@ export class DidCommOutOfBandApi {
     })
   }
 
-  private ensureParentThreadId(outOfBandRecord: DidCommOutOfBandRecord, plaintextMessage: PlaintextDidCommMessage) {
+  private ensureParentThreadId(outOfBandRecord: DidCommOutOfBandRecord, plaintextMessage: DidCommPlaintextMessage) {
     const legacyInvitationMetadata = outOfBandRecord.metadata.get(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation)
 
     // We need to set the parent thread id to the invitation id, according to RFC 0434.

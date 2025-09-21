@@ -1,4 +1,4 @@
-import type { PlaintextDidCommMessage } from '../../../types'
+import type { DidCommPlaintextMessage } from '../../../types'
 
 import { CredoError, IsStringOrInstance, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
@@ -59,7 +59,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
     this.requests.push(requestAttachment)
   }
 
-  public getRequests(): PlaintextDidCommMessage[] | undefined {
+  public getRequests(): DidCommPlaintextMessage[] | undefined {
     return this.requests?.map((request) => request.getDataAsJson())
   }
 

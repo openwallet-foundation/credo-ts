@@ -4,7 +4,7 @@ import type {
   DidCommMessageProcessedEvent,
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
-  EncryptedDidCommMessage,
+  DidCommEncryptedMessage,
   DidCommInboundTransport,
 } from '@credo-ts/didcomm'
 import type { Express, Request, Response } from 'express'
@@ -71,7 +71,7 @@ export class HttpInboundDidCommTransport implements DidCommInboundTransport {
 
       try {
         const message = req.body
-        const encryptedMessage = JSON.parse(message) as EncryptedDidCommMessage
+        const encryptedMessage = JSON.parse(message) as DidCommEncryptedMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
         const observable = eventEmitter.observable<DidCommMessageProcessedEvent>(
@@ -143,7 +143,7 @@ export class HttpTransportSession implements DidCommTransportSession {
     }
   }
 
-  public async send(agentContext: AgentContext, encryptedMessage: EncryptedDidCommMessage): Promise<void> {
+  public async send(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
     if (this.res.headersSent) {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }

@@ -4,11 +4,11 @@ import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-va
 
 import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { EncryptedDidCommMessage } from '../../../../../types'
+import { DidCommEncryptedMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export class DidCommBatchMessageMessage {
-  public constructor(options: { id?: string; message: EncryptedDidCommMessage }) {
+  public constructor(options: { id?: string; message: DidCommEncryptedMessage }) {
     if (options) {
       this.id = options.id || utils.uuid()
       this.message = options.message
@@ -19,7 +19,7 @@ export class DidCommBatchMessageMessage {
   public id!: string
 
   @IsObject()
-  public message!: EncryptedDidCommMessage
+  public message!: DidCommEncryptedMessage
 }
 
 export interface DidCommBatchMessageOptions {

@@ -1,6 +1,6 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { GetAgentMessageOptions } from '../../../../../repository'
-import type { PlaintextDidCommMessage } from '../../../../../types'
+import type { DidCommPlaintextMessage } from '../../../../../types'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import type {
   DidCommCredentialFormat,
@@ -159,7 +159,7 @@ credentialIssueMessage.setThread({ threadId: 'somethreadid' })
 
 const didCommMessageRecord = new DidCommMessageRecord({
   associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
-  message: {} as PlaintextDidCommMessage,
+  message: {} as DidCommPlaintextMessage,
   role: DidCommMessageRole.Receiver,
 })
 

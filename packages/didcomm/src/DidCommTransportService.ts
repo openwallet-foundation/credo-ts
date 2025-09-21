@@ -2,7 +2,7 @@ import type { DidDocument } from '@credo-ts/core'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommMessage } from './DidCommMessage'
 import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
-import type { EncryptedDidCommMessage } from './types'
+import type { DidCommEncryptedMessage } from './types'
 
 import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
 
@@ -107,7 +107,7 @@ export interface DidCommTransportSession {
   connectionId?: string
 
   // Send an encrypted message
-  send(agentContext: AgentContext, encryptedMessage: EncryptedDidCommMessage): Promise<void>
+  send(agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void>
 
   // Close the session to prevent dangling sessions.
   close(): Promise<void>

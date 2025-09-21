@@ -1,11 +1,11 @@
 import type { JsonObject } from '@credo-ts/core'
-import type { AutoAcceptCredential, CredentialRecordBinding, CredentialRole, CredentialState } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptCredential, CredentialRecordBinding, DidCommCredentialRole, DidCommCredentialState } from '@credo-ts/didcomm'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
 export const didcommCredentialExchangeStates = exhaustiveArray(
-  {} as CredentialState,
+  {} as DidCommCredentialState,
   [
     'proposal-sent',
     'proposal-received',
@@ -25,11 +25,11 @@ export const didcommCredentialExchangeStateEnum = pgEnum(
   didcommCredentialExchangeStates
 )
 
-export const didcommCredentialExchangeRoles = exhaustiveArray({} as CredentialRole, ['issuer', 'holder'] as const)
+export const didcommCredentialExchangeRoles = exhaustiveArray({} as DidCommCredentialRole, ['issuer', 'holder'] as const)
 export const didcommCredentialExchangeRoleEnum = pgEnum('DidcommCredentialExchangeRole', didcommCredentialExchangeRoles)
 
 export const didcommCredentialExchangeAutoAccepts = exhaustiveArray(
-  {} as AutoAcceptCredential,
+  {} as DidCommAutoAcceptCredential,
   ['always', 'contentApproved', 'never'] as const
 )
 export const didcommCredentialExchangeAutoAcceptEnum = pgEnum(

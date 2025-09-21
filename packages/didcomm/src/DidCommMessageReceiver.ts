@@ -3,7 +3,7 @@ import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommInboundTransport } from './transport'
-import type { EncryptedDidCommMessage, PlaintextDidCommMessage } from './types'
+import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
 import {
   AgentContextProvider,
@@ -103,7 +103,7 @@ export class DidCommMessageReceiver {
 
     try {
       if (this.isEncryptedMessage(inboundMessage)) {
-        await this.receiveEncryptedMessage(agentContext, inboundMessage as EncryptedDidCommMessage, session, receivedAt)
+        await this.receiveEncryptedMessage(agentContext, inboundMessage as DidCommEncryptedMessage, session, receivedAt)
       } else if (this.isPlaintextMessage(inboundMessage)) {
         await this.receivePlaintextMessage(agentContext, inboundMessage, connection, receivedAt)
       } else {
@@ -117,7 +117,7 @@ export class DidCommMessageReceiver {
 
   private async receivePlaintextMessage(
     agentContext: AgentContext,
-    plaintextMessage: PlaintextDidCommMessage,
+    plaintextMessage: DidCommPlaintextMessage,
     connection?: DidCommConnectionRecord,
     receivedAt?: Date
   ) {
@@ -128,7 +128,7 @@ export class DidCommMessageReceiver {
 
   private async receiveEncryptedMessage(
     agentContext: AgentContext,
-    encryptedMessage: EncryptedDidCommMessage,
+    encryptedMessage: DidCommEncryptedMessage,
     session?: DidCommTransportSession,
     receivedAt?: Date
   ) {
@@ -189,7 +189,7 @@ export class DidCommMessageReceiver {
    */
   private async decryptMessage(
     agentContext: AgentContext,
-    message: EncryptedDidCommMessage
+    message: DidCommEncryptedMessage
   ): Promise<DecryptedDidCommMessageContext> {
     try {
       return await this.envelopeService.unpackMessage(agentContext, message)
@@ -203,7 +203,7 @@ export class DidCommMessageReceiver {
     }
   }
 
-  private isPlaintextMessage(message: unknown): message is PlaintextDidCommMessage {
+  private isPlaintextMessage(message: unknown): message is DidCommPlaintextMessage {
     if (typeof message !== 'object' || message == null) {
       return false
     }
@@ -211,14 +211,14 @@ export class DidCommMessageReceiver {
     return '@type' in message
   }
 
-  private isEncryptedMessage(message: unknown): message is EncryptedDidCommMessage {
+  private isEncryptedMessage(message: unknown): message is DidCommEncryptedMessage {
     // If the message does has valid JWE structure, we can assume the message is encrypted.
     return isValidJweStructure(message)
   }
 
   private async transformAndValidate(
     agentContext: AgentContext,
-    plaintextMessage: PlaintextDidCommMessage,
+    plaintextMessage: DidCommPlaintextMessage,
     connection?: DidCommConnectionRecord | null
   ): Promise<DidCommMessage> {
     let message: DidCommMessage
@@ -250,7 +250,7 @@ export class DidCommMessageReceiver {
    *
    * @param message the plaintext message for which to transform the message in to a class instance
    */
-  private async transformMessage(message: PlaintextDidCommMessage): Promise<DidCommMessage> {
+  private async transformMessage(message: DidCommPlaintextMessage): Promise<DidCommMessage> {
     // replace did:sov:BzCbsNYhMrjHiqZDTUASHg;spec prefix for message type with https://didcomm.org
     replaceLegacyDidSovPrefixOnMessage(message)
 
@@ -283,7 +283,7 @@ export class DidCommMessageReceiver {
     agentContext: AgentContext,
     message: string,
     connection: DidCommConnectionRecord,
-    plaintextMessage: PlaintextDidCommMessage
+    plaintextMessage: DidCommPlaintextMessage
   ) {
     const messageType = parseMessageType(plaintextMessage['@type'])
     if (canHandleMessageType(DidCommProblemReportMessage, messageType)) {

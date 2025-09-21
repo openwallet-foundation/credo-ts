@@ -2,7 +2,7 @@ import type { Subscription } from 'rxjs'
 import type { AgentContext } from '../../packages/core/src'
 import type {
   DidCommTransportSession,
-  EncryptedDidCommMessage,
+  DidCommEncryptedMessage,
   DidCommInboundTransport,
 } from '../../packages/didcomm/src'
 
@@ -12,7 +12,7 @@ import { EventEmitter } from '../../packages/core/src'
 import { uuid } from '../../packages/core/src/utils/uuid'
 import { DidCommMessageReceiver, DidCommTransportService } from '../../packages/didcomm/src'
 
-export type SubjectMessage = { message: EncryptedDidCommMessage; replySubject?: Subject<SubjectMessage> }
+export type SubjectMessage = { message: DidCommEncryptedMessage; replySubject?: Subject<SubjectMessage> }
 
 export class SubjectInboundTransport implements DidCommInboundTransport {
   public readonly ourSubject: Subject<SubjectMessage>
@@ -77,7 +77,7 @@ export class SubjectTransportSession implements DidCommTransportSession {
     this.replySubject = replySubject
   }
 
-  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedDidCommMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
     this.replySubject.next({ message: encryptedMessage })
   }
 

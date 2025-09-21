@@ -2,7 +2,7 @@ import type { AgentContext, Kms } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageHandler } from '../handlers'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
-import type { EncryptedDidCommMessage } from '../types'
+import type { DidCommEncryptedMessage } from '../types'
 import type { DidCommOutboundMessageContext } from './DidCommOutboundMessageContext'
 
 import { CredoError } from '@credo-ts/core'
@@ -14,7 +14,7 @@ export interface MessageContextParams {
   recipientKey?: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   agentContext: AgentContext
   receivedAt?: Date
-  encryptedMessage?: EncryptedDidCommMessage
+  encryptedMessage?: DidCommEncryptedMessage
 }
 
 export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMessage> {
@@ -29,7 +29,7 @@ export class DidCommInboundMessageContext<T extends DidCommMessage = DidCommMess
   public message: T
   public messageHandler?: DidCommMessageHandler
   public responseMessage?: DidCommOutboundMessageContext
-  public encryptedMessage?: EncryptedDidCommMessage
+  public encryptedMessage?: DidCommEncryptedMessage
 
   public constructor(message: T, context: MessageContextParams) {
     this.message = message

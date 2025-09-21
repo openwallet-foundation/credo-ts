@@ -1,6 +1,6 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
 import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
-import type { PlaintextDidCommMessage } from '../../types'
+import type { DidCommPlaintextMessage } from '../../types'
 
 import { Metadata } from '@credo-ts/core'
 
@@ -226,7 +226,7 @@ export async function moveDidCommMessages<Agent extends BaseAgent>(
       `Starting move of ${messageKey} from credential record with id ${credentialRecord.id} to DIDCommMessageRecord`
     )
     const credentialRecordJson = credentialRecord as unknown as JsonObject
-    const message = credentialRecordJson[messageKey] as PlaintextDidCommMessage | undefined
+    const message = credentialRecordJson[messageKey] as DidCommPlaintextMessage | undefined
 
     if (message) {
       const credentialRole = getCredentialRole(credentialRecord)

@@ -2,7 +2,7 @@ import type { AgentContext, Logger } from '@credo-ts/core'
 import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
-  EncryptedDidCommMessage,
+  DidCommEncryptedMessage,
   DidCommInboundTransport,
 } from '@credo-ts/didcomm'
 
@@ -69,7 +69,7 @@ export class WsInboundDidCommTransport implements DidCommInboundTransport {
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {
-        const encryptedMessage = JSON.parse(event.data) as EncryptedDidCommMessage
+        const encryptedMessage = JSON.parse(event.data) as DidCommEncryptedMessage
 
         const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
         eventEmitter.emit<DidCommMessageReceivedEvent>(agentContext, {
@@ -98,7 +98,7 @@ export class WebSocketTransportSession implements DidCommTransportSession {
     this.logger = logger
   }
 
-  public async send(_agentContext: AgentContext, encryptedMessage: EncryptedDidCommMessage): Promise<void> {
+  public async send(_agentContext: AgentContext, encryptedMessage: DidCommEncryptedMessage): Promise<void> {
     if (this.socket.readyState !== WebSocket.OPEN) {
       throw new CredoError(`${this.type} transport session has been closed.`)
     }

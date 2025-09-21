@@ -4,7 +4,7 @@ import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommInboundMessageContext } from '../../../../models'
-import type { EncryptedDidCommMessage } from '../../../../types'
+import type { DidCommEncryptedMessage } from '../../../../types'
 import type { MessagePickupCompletedEvent } from '../../DidCommMessagePickupEvents'
 import type {
   DeliverMessagesProtocolOptions,
@@ -331,7 +331,7 @@ export class DidCommMessagePickupV2Protocol extends DidCommBaseMessagePickupProt
       eventEmitter.emit<DidCommMessageReceivedEvent>(messageContext.agentContext, {
         type: DidCommEventTypes.DidCommMessageReceived,
         payload: {
-          message: attachment.getDataAsJson<EncryptedDidCommMessage>(),
+          message: attachment.getDataAsJson<DidCommEncryptedMessage>(),
           contextCorrelationId: messageContext.agentContext.contextCorrelationId,
           receivedAt: attachment.lastmodTime,
         },

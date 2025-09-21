@@ -1,4 +1,4 @@
-import type { EncryptedDidCommMessage } from '../../types'
+import type { DidCommEncryptedMessage } from '../../types'
 
 /**
  * Basic representation of an encrypted message in a Message Pickup Queue
@@ -9,5 +9,5 @@ import type { EncryptedDidCommMessage } from '../../types'
 export type QueuedDidCommMessage = {
   id: string
   receivedAt: Date
-  encryptedMessage: EncryptedDidCommMessage
+  encryptedMessage: DidCommEncryptedMessage
 }

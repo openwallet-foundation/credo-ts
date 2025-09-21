@@ -1,4 +1,4 @@
-import { ConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
+import { DidCommConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
 import { pushSchema } from 'drizzle-kit/api'
 import { DrizzlePostgresTestDatabase, createDrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
 import * as coreContextSchema from '../../core/context-record/postgres'
@@ -50,7 +50,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               invitationDid: 'some string',
             },
@@ -64,7 +64,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               invitationDid: 'some other string',
             },
@@ -80,7 +80,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one', 'three'],
               invitationDid: 'some string',
@@ -95,7 +95,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one', 'two', 'five'],
               invitationDid: 'some string',
@@ -110,7 +110,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               invitationDid: 'some string',
@@ -127,7 +127,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               anotherCustomTag: true,
               invitationDid: 'some string',
@@ -142,7 +142,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               anotherCustomTag: false,
               invitationDid: 'some string',
@@ -159,7 +159,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               myCustomTag: ['First', 'Second'],
               invitationDid: 'some string',
@@ -174,7 +174,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               myCustomTag: ['Third'],
               invitationDid: 'some string',
@@ -189,7 +189,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               myCustomTag: ['First'],
               invitationDid: 'some string',
@@ -206,7 +206,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $or: [
@@ -233,7 +233,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $or: [
@@ -265,7 +265,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $not: {
@@ -297,7 +297,7 @@ describe('queryToDrizzlePostgres', () => {
         .select()
         .from(didcommConnection)
         .where(
-          queryToDrizzlePostgres<ConnectionRecord>(
+          queryToDrizzlePostgres<DidCommConnectionRecord>(
             {
               connectionTypes: ['one'],
               $not: {

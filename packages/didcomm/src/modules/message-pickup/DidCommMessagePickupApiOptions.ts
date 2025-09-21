@@ -1,5 +1,5 @@
 import type { QueuedDidCommMessage } from '../../transport/queue'
-import type { EncryptedDidCommMessage } from '../../types'
+import type { DidCommEncryptedMessage } from '../../types'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
 /**
@@ -11,7 +11,7 @@ export type DidCommMessagePickupProtocolVersionType<MPPs extends DidCommMessageP
 export interface QueueMessageOptions {
   connectionId: string
   recipientDids: string[]
-  message: EncryptedDidCommMessage
+  message: DidCommEncryptedMessage
 }
 
 export interface DeliverMessagesFromQueueOptions {

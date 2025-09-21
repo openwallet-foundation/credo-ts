@@ -2,13 +2,13 @@ import { Expose } from 'class-transformer'
 import { IsObject, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../DidCommMessage'
-import { EncryptedDidCommMessage } from '../../../types'
+import { DidCommEncryptedMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidCommForwardMessageOptions {
   id?: string
   to: string
-  message: EncryptedDidCommMessage
+  message: DidCommEncryptedMessage
 }
 
 /**
@@ -41,5 +41,5 @@ export class DidCommForwardMessage extends DidCommMessage {
 
   @Expose({ name: 'msg' })
   @IsObject()
-  public message!: EncryptedDidCommMessage
+  public message!: DidCommEncryptedMessage
 }

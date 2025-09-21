@@ -1,14 +1,14 @@
-import type { AutoAcceptProof, ProofRole, ProofState } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '@credo-ts/didcomm'
 import { boolean, foreignKey, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 import { didcommConnection } from '../postgres'
 
-export const didcommProofExchangeRoles = exhaustiveArray({} as ProofRole, ['verifier', 'prover'] as const)
+export const didcommProofExchangeRoles = exhaustiveArray({} as DidCommProofRole, ['verifier', 'prover'] as const)
 export const didcommProofExchangeRoleEnum = pgEnum('DidcommProofExchangeRole', didcommProofExchangeRoles)
 
 export const didcommProofExchangeStates = exhaustiveArray(
-  {} as ProofState,
+  {} as DidCommProofState,
   [
     'proposal-sent',
     'proposal-received',
@@ -24,7 +24,7 @@ export const didcommProofExchangeStates = exhaustiveArray(
 export const didcommProofExchangeStateEnum = pgEnum('DidcommProofExchangeState', didcommProofExchangeStates)
 
 export const didcommProofExchangeAutoAccepts = exhaustiveArray(
-  {} as AutoAcceptProof,
+  {} as DidCommAutoAcceptProof,
   ['always', 'contentApproved', 'never'] as const
 )
 export const didcommProofExchangeAutoAcceptEnum = pgEnum(
