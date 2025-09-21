@@ -6,10 +6,10 @@ import { Subject } from 'rxjs'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
-  BasicMessage,
+  DidCommBasicMessage,
   DidCommMessage,
   DidCommMessageSender,
-  TrustPingResponseMessage,
+  DidCommTrustPingResponseMessage,
   getOutboundDidCommMessageContext,
 } from '../../didcomm/src'
 import { Agent, JsonTransformer } from '../src'
@@ -72,7 +72,7 @@ describe('Message Handler Middleware E2E', () => {
     aliceAgent.modules.didcomm.setFallbackMessageHandler((messageContext) => {
       return getOutboundDidCommMessageContext(messageContext.agentContext, {
         connectionRecord: messageContext.connection,
-        message: new BasicMessage({
+        message: new DidCommBasicMessage({
           content: "Hey there, I'm not sure I understand the message you sent to me",
         }),
       })
@@ -115,7 +115,7 @@ describe('Message Handler Middleware E2E', () => {
 
     await faberAgent.modules.connections.sendPing(faberConnection.id, {})
     const receiveMessage = await waitForAgentMessageProcessedEvent(faberAgent, {
-      messageType: TrustPingResponseMessage.type.messageTypeUri,
+      messageType: DidCommTrustPingResponseMessage.type.messageTypeUri,
     })
 
     // Should have sent the message with the timing added in the middleware

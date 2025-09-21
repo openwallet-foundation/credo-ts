@@ -1,7 +1,7 @@
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
 /**
- * MessagePickupModuleConfigOptions defines the interface for the options of the MessagePickupModuleConfig class.
+ * MessagePickupModuleConfigOptions defines the interface for the options of the DidCommMessagePickupModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
 export interface MessagePickupModuleConfigOptions<
@@ -18,11 +18,11 @@ export interface MessagePickupModuleConfigOptions<
    * Message pickup protocols to make available to the message pickup module. Only one protocol should be registered for each
    * protocol version.
    *
-   * When not provided, V1MessagePickupProtocol and V2MessagePickupProtocol` are registered by default.
+   * When not provided, DidCommMessagePickupV1Protocol and DidCommMessagePickupV2Protocol` are registered by default.
    *
    * @default
    * ```
-   * [V1MessagePickupProtocol, V2MessagePickupProtocol]
+   * [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol]
    * ```
    */
   protocols: DidCommMessagePickupProtocols

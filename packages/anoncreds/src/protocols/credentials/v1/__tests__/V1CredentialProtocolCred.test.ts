@@ -184,7 +184,7 @@ const mockCredentialRecord = ({
   return credentialExchangeRecord
 }
 
-describe('V1CredentialProtocol', () => {
+describe('DidCommCredentialV1Protocol', () => {
   let eventEmitter: EventEmitter
   let agentConfig: AgentConfig
   let agentContext: AgentContext

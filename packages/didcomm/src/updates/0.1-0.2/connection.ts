@@ -461,7 +461,7 @@ export function didExchangeStateAndRoleFromRoleAndState(
 
   const roleStateMapping = {
     [DidCommDidExchangeRole.Requester]: {
-      // DidExchangeRole.Requester
+      // DidCommDidExchangeRole.Requester
       [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationReceived,
       [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestSent,
       [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseReceived,
@@ -469,7 +469,7 @@ export function didExchangeStateAndRoleFromRoleAndState(
       [DidCommConnectionState.Null]: DidCommDidExchangeState.Start,
     },
     [DidCommDidExchangeRole.Responder]: {
-      // DidExchangeRole.Responder
+      // DidCommDidExchangeRole.Responder
       [DidCommConnectionState.Invited]: DidCommDidExchangeState.InvitationSent,
       [DidCommConnectionState.Requested]: DidCommDidExchangeState.RequestReceived,
       [DidCommConnectionState.Responded]: DidCommDidExchangeState.ResponseSent,

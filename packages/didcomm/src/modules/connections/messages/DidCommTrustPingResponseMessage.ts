@@ -21,7 +21,7 @@ export class DidCommTrustPingResponseMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**
-   * Create new TrustPingResponseMessage instance.
+   * Create new DidCommTrustPingResponseMessage instance.
    * responseRequested will be true if not passed
    * @param options
    */

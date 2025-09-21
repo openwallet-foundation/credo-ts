@@ -1100,48 +1100,48 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
 
   public async findProposalMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommProposePresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommProposePresentationV1Message,
     })
   }
 
   public async findRequestMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommRequestPresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommRequestPresentationV1Message,
     })
   }
 
   public async findPresentationMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommPresentationV1Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommPresentationV1Message,
     })
   }
 
   public async getFormatData(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<GetProofFormatDataReturn<DidCommProofFormat[]>> {
     const anonCredsHolderService = agentContext.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
-      this.findProposalMessage(agentContext, proofRecordId),
-      this.findRequestMessage(agentContext, proofRecordId),
-      this.findPresentationMessage(agentContext, proofRecordId),
+      this.findProposalMessage(agentContext, proofExchangeRecordId),
+      this.findRequestMessage(agentContext, proofExchangeRecordId),
+      this.findPresentationMessage(agentContext, proofExchangeRecordId),
     ])
 
     let indyProposeProof = undefined

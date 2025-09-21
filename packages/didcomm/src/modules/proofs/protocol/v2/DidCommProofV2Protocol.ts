@@ -44,7 +44,7 @@ import { DidCommProofExchangeRecord, DidCommProofExchangeRepository } from '../.
 import { composeAutoAccept } from '../../utils'
 import { DidCommBaseProofProtocol } from '../DidCommBaseProofProtocol'
 
-import { ProofFormatCoordinator } from './DidCommProofFormatCoordinator'
+import { DidCommProofFormatCoordinator } from './DidCommProofFormatCoordinator'
 import { V2PresentationProblemReportError } from './errors'
 import { DidCommPresentationV2AckHandler } from './handlers/DidCommPresentationV2AckHandler'
 import { DidCommPresentationV2Handler } from './handlers/DidCommPresentationV2Handler'
@@ -56,18 +56,18 @@ import { DidCommPresentationV2Message } from './messages/DidCommPresentationV2Me
 import { DidCommPresentationV2ProblemReportMessage } from './messages/DidCommPresentationV2ProblemReportMessage'
 import { DidCommProposePresentationV2Message } from './messages/DidCommProposePresentationV2Message'
 
-export interface V2DidCommProofProtocolConfig<ProofFormatServices extends DidCommProofFormatService[]> {
+export interface DidCommProofV2ProtocolConfig<ProofFormatServices extends DidCommProofFormatService[]> {
   proofFormats: ProofFormatServices
 }
 
-export class V2DidCommProofProtocol<PFs extends DidCommProofFormatService[] = DidCommProofFormatService[]>
+export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = DidCommProofFormatService[]>
   extends DidCommBaseProofProtocol
   implements DidCommProofProtocol<PFs>
 {
-  private proofFormatCoordinator = new ProofFormatCoordinator<PFs>()
+  private proofFormatCoordinator = new DidCommProofFormatCoordinator<PFs>()
   private proofFormats: PFs
 
-  public constructor({ proofFormats }: V2DidCommProofProtocolConfig<PFs>) {
+  public constructor({ proofFormats }: DidCommProofV2ProtocolConfig<PFs>) {
     super()
 
     this.proofFormats = proofFormats
@@ -1009,46 +1009,49 @@ export class V2DidCommProofProtocol<PFs extends DidCommProofFormatService[] = Di
 
   public async findRequestMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommRequestPresentationV2Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommRequestPresentationV2Message,
     })
   }
 
   public async findPresentationMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommPresentationV2Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommPresentationV2Message,
     })
   }
 
   public async findProposalMessage(
     agentContext: AgentContext,
-    proofRecordId: string
+    proofExchangeRecordId: string
   ): Promise<DidCommProposePresentationV2Message | null> {
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
 
     return await didCommMessageRepository.findAgentMessage(agentContext, {
-      associatedRecordId: proofRecordId,
+      associatedRecordId: proofExchangeRecordId,
       messageClass: DidCommProposePresentationV2Message,
     })
   }
 
-  public async getFormatData(agentContext: AgentContext, proofRecordId: string): Promise<GetProofFormatDataReturn> {
+  public async getFormatData(
+    agentContext: AgentContext,
+    proofExchangeRecordId: string
+  ): Promise<GetProofFormatDataReturn> {
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.
     const [proposalMessage, requestMessage, presentationMessage] = await Promise.all([
-      this.findProposalMessage(agentContext, proofRecordId),
-      this.findRequestMessage(agentContext, proofRecordId),
-      this.findPresentationMessage(agentContext, proofRecordId),
+      this.findProposalMessage(agentContext, proofExchangeRecordId),
+      this.findRequestMessage(agentContext, proofExchangeRecordId),
+      this.findPresentationMessage(agentContext, proofExchangeRecordId),
     ])
 
     // Create object with the keys and the message formats/attachments. We can then loop over this in a generic

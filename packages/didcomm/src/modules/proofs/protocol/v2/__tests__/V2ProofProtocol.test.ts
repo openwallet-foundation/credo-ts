@@ -27,7 +27,7 @@ import { DidCommProofFormatSpec } from '../../../models/DidCommProofFormatSpec'
 import { DidCommProofState } from '../../../models/DidCommProofState'
 import { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
 import { DidCommProofExchangeRepository } from '../../../repository/DidCommProofExchangeRepository'
-import { V2DidCommProofProtocol } from '../DidCommProofV2Protocol'
+import { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
 import { DidCommPresentationV2ProblemReportMessage, DidCommRequestPresentationV2Message } from '../messages'
 
 // Mock classes
@@ -61,7 +61,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const proofProtocol = new V2DidCommProofProtocol({ proofFormats: [proofFormatService] })
+const proofProtocol = new DidCommProofV2Protocol({ proofFormats: [proofFormatService] })
 
 const connection = getMockConnection({
   id: '123',
@@ -107,7 +107,7 @@ const mockProofExchangeRecord = ({
   return proofRecord
 }
 
-describe('V2DidCommProofProtocol', () => {
+describe('DidCommProofV2Protocol', () => {
   describe('processProofRequest', () => {
     let presentationRequest: DidCommRequestPresentationV2Message
     let messageContext: DidCommInboundMessageContext<DidCommRequestPresentationV2Message>

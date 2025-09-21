@@ -12,17 +12,17 @@ import { setupEventReplaySubjects } from '../packages/core/tests'
 import { makeConnection } from '../packages/core/tests/helpers'
 
 import {
+  DidCommBatchMessage,
+  DidCommBatchPickupMessage,
   DidCommCredentialEventTypes,
   DidCommCredentialState,
+  DidCommCredentialV2Preview,
+  DidCommDeliveryRequestV2Message,
   DidCommEventTypes,
   DidCommMediationState,
+  DidCommMessageDeliveryV2Message,
   DidCommProofEventTypes,
   DidCommProofState,
-  V1BatchMessage,
-  V1BatchPickupMessage,
-  V2CredentialPreview,
-  V2DeliveryRequestMessage,
-  V2MessageDeliveryMessage,
 } from '@credo-ts/didcomm'
 
 export async function e2eTest({
@@ -78,7 +78,7 @@ export async function e2eTest({
     issuerHolderConnectionId: senderRecipientConnection.id,
     offer: {
       credentialDefinitionId,
-      attributes: V2CredentialPreview.fromRecord({
+      attributes: DidCommCredentialV2Preview.fromRecord({
         name: 'John',
         age: '25',
         'x-ray': 'not taken',
@@ -131,8 +131,14 @@ export async function e2eTest({
   // We want to stop the mediator polling before the agent is shutdown.
   await recipientAgent.modules.mediationRecipient.stopMessagePickup()
 
-  const pickupRequestMessages = [V2DeliveryRequestMessage.type.messageTypeUri, V1BatchPickupMessage.type.messageTypeUri]
-  const deliveryMessages = [V2MessageDeliveryMessage.type.messageTypeUri, V1BatchMessage.type.messageTypeUri]
+  const pickupRequestMessages = [
+    DidCommDeliveryRequestV2Message.type.messageTypeUri,
+    DidCommBatchPickupMessage.type.messageTypeUri,
+  ]
+  const deliveryMessages = [
+    DidCommMessageDeliveryV2Message.type.messageTypeUri,
+    DidCommBatchMessage.type.messageTypeUri,
+  ]
 
   let lastSentPickupMessageThreadId: undefined | string = undefined
   recipientReplay

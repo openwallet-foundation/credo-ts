@@ -1,7 +1,7 @@
 import type { DidDocument } from '@credo-ts/core'
 import type { EnvelopeKeys } from './DidCommEnvelopeService'
 import type { DidCommMessage } from './DidCommMessage'
-import type { TransportSessionRemovedEvent, TransportSessionSavedEvent } from './transport'
+import type { DidCommTransportSessionRemovedEvent, DidCommTransportSessionSavedEvent } from './transport'
 import type { DidCommEncryptedMessage } from './types'
 
 import { AgentContext, CredoError, EventEmitter, injectable } from '@credo-ts/core'
@@ -31,7 +31,7 @@ export class DidCommTransportService {
     }
     this.transportSessionTable[session.id] = session
 
-    this.eventEmitter.emit<TransportSessionSavedEvent>(this.agentContext, {
+    this.eventEmitter.emit<DidCommTransportSessionSavedEvent>(this.agentContext, {
       type: DidCommTransportEventTypes.DidCommTransportSessionSaved,
       payload: {
         session,
@@ -62,7 +62,7 @@ export class DidCommTransportService {
 
   public removeSession(session: DidCommTransportSession) {
     delete this.transportSessionTable[session.id]
-    this.eventEmitter.emit<TransportSessionRemovedEvent>(this.agentContext, {
+    this.eventEmitter.emit<DidCommTransportSessionRemovedEvent>(this.agentContext, {
       type: DidCommTransportEventTypes.DidCommTransportSessionRemoved,
       payload: {
         session,

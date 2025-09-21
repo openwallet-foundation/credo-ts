@@ -16,7 +16,7 @@ import { ReplaySubject, filter, firstValueFrom, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 
-export class HttpInboundDidCommTransport implements DidCommInboundTransport {
+export class DidCommHttpInboundTransport implements DidCommInboundTransport {
   public readonly app: Express
   private port: number
   private path: string
@@ -85,7 +85,7 @@ export class HttpInboundDidCommTransport implements DidCommInboundTransport {
             filter((e) => e.payload.encryptedMessage === encryptedMessage),
             timeout({
               first: this.processedMessageListenerTimeoutMs,
-              meta: 'HttpInboundDidCommTransport.start',
+              meta: 'DidCommHttpInboundTransport.start',
             }),
             take(1) // automatically unsubscribe after the first matching event
           )

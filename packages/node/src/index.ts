@@ -4,8 +4,8 @@ import { EventEmitter } from 'events'
 import { WebSocket } from 'ws'
 
 import { NodeFileSystem } from './NodeFileSystem'
-import { HttpInboundDidCommTransport } from './transport/HttpInboundDidCommTransport'
-import { WsInboundDidCommTransport } from './transport/WsInboundDidCommTransport'
+import { DidCommHttpInboundTransport } from './transport/DidCommHttpInboundTransport'
+import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport'
 
 export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagementStorage'
 export { NodeKeyManagementService } from './kms/NodeKeyManagementService'
@@ -18,4 +18,4 @@ const agentDependencies: AgentDependencies = {
   WebSocketClass: WebSocket,
 }
 
-export { agentDependencies, HttpInboundDidCommTransport, WsInboundDidCommTransport }
+export { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport }

@@ -95,7 +95,7 @@ describe('Present Proof', () => {
 
     testLogger.test('Faber sends new proof request to Alice')
     faberProofExchangeRecord = await faberAgent.modules.proofs.negotiateProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -160,7 +160,7 @@ describe('Present Proof', () => {
     })
 
     aliceProofExchangeRecord = await aliceAgent.modules.proofs.negotiateRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -209,7 +209,7 @@ describe('Present Proof', () => {
 
     // Accept Proposal
     const acceptProposalOptions: AcceptProofProposalOptions = {
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     }
 
     aliceProofExchangeRecordPromise = waitForProofExchangeRecord(aliceAgent, {

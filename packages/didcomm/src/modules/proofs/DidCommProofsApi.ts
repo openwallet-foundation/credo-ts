@@ -74,16 +74,16 @@ export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
     query: Query<DidCommProofExchangeRecord>,
     queryOptions?: QueryOptions
   ): Promise<DidCommProofExchangeRecord[]>
-  getById(proofRecordId: string): Promise<DidCommProofExchangeRecord>
-  findById(proofRecordId: string): Promise<DidCommProofExchangeRecord | null>
+  getById(proofExchangeRecordId: string): Promise<DidCommProofExchangeRecord>
+  findById(proofExchangeRecordId: string): Promise<DidCommProofExchangeRecord | null>
   deleteById(proofId: string, options?: DeleteProofOptions): Promise<void>
   update(proofRecord: DidCommProofExchangeRecord): Promise<void>
-  getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>>
+  getFormatData(proofExchangeRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>>
 
   // DidComm Message Records
-  findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PPs>>
-  findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PPs>>
-  findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PPs>>
+  findProposalMessage(proofExchangeRecordId: string): Promise<FindProofProposalMessageReturn<PPs>>
+  findRequestMessage(proofExchangeRecordId: string): Promise<FindProofRequestMessageReturn<PPs>>
+  findPresentationMessage(proofExchangeRecordId: string): Promise<FindProofPresentationMessageReturn<PPs>>
 }
 
 @injectable()
@@ -166,7 +166,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @returns Proof exchange record associated with the presentation request
    */
   public async acceptProposal(options: AcceptProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     if (!proofRecord.connectionId) {
       throw new CredoError(
@@ -211,7 +211,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * @returns Proof record associated with the sent request message
    */
   public async negotiateProposal(options: NegotiateProofProposalOptions<PPs>): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
 
     if (!proofRecord.connectionId) {
       throw new CredoError(
@@ -411,12 +411,12 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
    * Accept a presentation as prover (by sending a presentation acknowledgement message) to the connection
    * associated with the proof record.
    *
-   * @param proofRecordId The id of the proof exchange record for which to accept the presentation
+   * @param proofExchangeRecordId The id of the proof exchange record for which to accept the presentation
    * @returns Proof record associated with the sent presentation acknowledgement message
    *
    */
   public async acceptPresentation(options: AcceptProofOptions): Promise<DidCommProofExchangeRecord> {
-    const proofRecord = await this.getById(options.proofRecordId)
+    const proofRecord = await this.getById(options.proofExchangeRecordId)
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
     const requestMessage = await protocol.findRequestMessage(this.agentContext, proofRecord.id)
@@ -494,7 +494,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   /**
    * Send problem report message for a proof record
    *
-   * @param proofRecordId  The id of the proof record for which to send problem report
+   * @param proofExchangeRecordId  The id of the proof record for which to send problem report
    * @param message message to send
    * @returns proof record associated with the proof problem report message
    */
@@ -536,11 +536,13 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     return proofRecord
   }
 
-  public async getFormatData(proofRecordId: string): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>> {
-    const proofRecord = await this.getById(proofRecordId)
+  public async getFormatData(
+    proofExchangeRecordId: string
+  ): Promise<GetProofFormatDataReturn<ProofFormatsFromProtocols<PPs>>> {
+    const proofRecord = await this.getById(proofExchangeRecordId)
     const protocol = this.getProtocol(proofRecord.protocolVersion)
 
-    return protocol.getFormatData(this.agentContext, proofRecordId)
+    return protocol.getFormatData(this.agentContext, proofExchangeRecordId)
   }
 
   /**
@@ -567,24 +569,24 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
   /**
    * Retrieve a proof record by id
    *
-   * @param proofRecordId The proof record id
+   * @param proofExchangeRecordId The proof record id
    * @throws {RecordNotFoundError} If no record is found
    * @return The proof record
    *
    */
-  public async getById(proofRecordId: string): Promise<DidCommProofExchangeRecord> {
-    return await this.proofRepository.getById(this.agentContext, proofRecordId)
+  public async getById(proofExchangeRecordId: string): Promise<DidCommProofExchangeRecord> {
+    return await this.proofRepository.getById(this.agentContext, proofExchangeRecordId)
   }
 
   /**
    * Retrieve a proof record by id
    *
-   * @param proofRecordId The proof record id
+   * @param proofExchangeRecordId The proof record id
    * @return The proof record or null if not found
    *
    */
-  public async findById(proofRecordId: string): Promise<DidCommProofExchangeRecord | null> {
-    return await this.proofRepository.findById(this.agentContext, proofRecordId)
+  public async findById(proofExchangeRecordId: string): Promise<DidCommProofExchangeRecord | null> {
+    return await this.proofRepository.findById(this.agentContext, proofExchangeRecordId)
   }
 
   /**
@@ -637,21 +639,26 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     await this.proofRepository.update(this.agentContext, proofRecord)
   }
 
-  public async findProposalMessage(proofRecordId: string): Promise<FindProofProposalMessageReturn<PPs>> {
-    const record = await this.getById(proofRecordId)
+  public async findProposalMessage(proofExchangeRecordId: string): Promise<FindProofProposalMessageReturn<PPs>> {
+    const record = await this.getById(proofExchangeRecordId)
     const protocol = this.getProtocol(record.protocolVersion)
-    return protocol.findProposalMessage(this.agentContext, proofRecordId) as FindProofProposalMessageReturn<PPs>
+    return protocol.findProposalMessage(this.agentContext, proofExchangeRecordId) as FindProofProposalMessageReturn<PPs>
   }
 
-  public async findRequestMessage(proofRecordId: string): Promise<FindProofRequestMessageReturn<PPs>> {
-    const record = await this.getById(proofRecordId)
+  public async findRequestMessage(proofExchangeRecordId: string): Promise<FindProofRequestMessageReturn<PPs>> {
+    const record = await this.getById(proofExchangeRecordId)
     const protocol = this.getProtocol(record.protocolVersion)
-    return protocol.findRequestMessage(this.agentContext, proofRecordId) as FindProofRequestMessageReturn<PPs>
+    return protocol.findRequestMessage(this.agentContext, proofExchangeRecordId) as FindProofRequestMessageReturn<PPs>
   }
 
-  public async findPresentationMessage(proofRecordId: string): Promise<FindProofPresentationMessageReturn<PPs>> {
-    const record = await this.getById(proofRecordId)
+  public async findPresentationMessage(
+    proofExchangeRecordId: string
+  ): Promise<FindProofPresentationMessageReturn<PPs>> {
+    const record = await this.getById(proofExchangeRecordId)
     const protocol = this.getProtocol(record.protocolVersion)
-    return protocol.findPresentationMessage(this.agentContext, proofRecordId) as FindProofPresentationMessageReturn<PPs>
+    return protocol.findPresentationMessage(
+      this.agentContext,
+      proofExchangeRecordId
+    ) as FindProofPresentationMessageReturn<PPs>
   }
 }

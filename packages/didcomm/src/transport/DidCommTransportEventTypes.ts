@@ -24,14 +24,14 @@ export interface DidCommOutboundWebSocketOpenedEvent extends BaseEvent {
   }
 }
 
-export interface TransportSessionSavedEvent extends BaseEvent {
+export interface DidCommTransportSessionSavedEvent extends BaseEvent {
   type: typeof DidCommTransportEventTypes.DidCommTransportSessionSaved
   payload: {
     session: DidCommTransportSession
   }
 }
 
-export interface TransportSessionRemovedEvent extends BaseEvent {
+export interface DidCommTransportSessionRemovedEvent extends BaseEvent {
   type: typeof DidCommTransportEventTypes.DidCommTransportSessionRemoved
   payload: {
     session: DidCommTransportSession

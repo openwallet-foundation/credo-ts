@@ -1,4 +1,4 @@
-import type { DidCommMessageProcessedEvent, KeylistUpdate } from '../../didcomm/src'
+import type { DidCommKeylistUpdate, DidCommMessageProcessedEvent } from '../../didcomm/src'
 
 import { filter, firstValueFrom, map, timeout } from 'rxjs'
 
@@ -6,9 +6,9 @@ import {
   DidCommDidExchangeState,
   DidCommEventTypes,
   DidCommHandshakeProtocol,
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateMessage,
   DidCommMediatorModule,
-  KeylistUpdateAction,
-  KeylistUpdateMessage,
 } from '../../didcomm/src'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { Agent } from '../src/agent/Agent'
@@ -272,12 +272,12 @@ describe('connections', () => {
     const keyAddMessageObservable = mediatorAgent.events
       .observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed)
       .pipe(
-        filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
-        map((event) => event.payload.message as KeylistUpdateMessage),
+        filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
+        map((event) => event.payload.message as DidCommKeylistUpdateMessage),
         timeout(5000)
       )
 
-    const keylistAddEvents: KeylistUpdate[] = []
+    const keylistAddEvents: DidCommKeylistUpdate[] = []
     keyAddMessageObservable.subscribe((value) => {
       for (const update of value.updates) {
         keylistAddEvents.push({ action: update.action, recipientKey: didKeyToVerkey(update.recipientKey) })
@@ -335,7 +335,7 @@ describe('connections', () => {
     expect(keylistAddEvents).toEqual(
       expect.arrayContaining([
         {
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
           recipientKey: TypedArrayEncoder.toBase58(
             (
               PublicJwk.fromFingerprint(
@@ -345,14 +345,14 @@ describe('connections', () => {
           ),
         },
         {
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
           recipientKey: TypedArrayEncoder.toBase58(
             // biome-ignore lint/style/noNonNullAssertion: <explanation>
             (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0].publicKey.publicKey
           ),
         },
         {
-          action: KeylistUpdateAction.add,
+          action: DidCommKeylistUpdateAction.add,
           recipientKey: TypedArrayEncoder.toBase58(
             // biome-ignore lint/style/noNonNullAssertion: <explanation>
             (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0].publicKey.publicKey
@@ -364,8 +364,8 @@ describe('connections', () => {
     for (const connection of [faberAcmeConnection, faberAliceConnection]) {
       const keyRemoveMessagePromise = firstValueFrom(
         mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
-          filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
-          map((event) => event.payload.message as KeylistUpdateMessage),
+          filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
+          map((event) => event.payload.message as DidCommKeylistUpdateMessage),
           timeout(5000)
         )
       )
@@ -381,7 +381,7 @@ describe('connections', () => {
           recipientKey: didKeyToVerkey(update.recipientKey),
         }))[0]
       ).toEqual({
-        action: KeylistUpdateAction.remove,
+        action: DidCommKeylistUpdateAction.remove,
         recipientKey: TypedArrayEncoder.toBase58(
           // biome-ignore lint/style/noNonNullAssertion: <explanation>
           (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKey.publicKey

@@ -224,7 +224,7 @@ describe('Auto accept present proof', () => {
 
       const faberProofExchangeRecord = await faberProofExchangeRecordPromise
       await faberAgent.modules.proofs.acceptProposal({
-        proofRecordId: faberProofExchangeRecord.id,
+        proofExchangeRecordId: faberProofExchangeRecord.id,
       })
 
       await Promise.all([

@@ -23,8 +23,8 @@ import {
   DidCommEventTypes,
   DidCommProofEventTypes,
   DidCommProofState,
+  DidCommProofV2Protocol,
   DidCommProofsModule,
-  V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
 import { sleep } from '../../core/src/utils/sleep'
@@ -115,7 +115,7 @@ export const getAnonCredsIndyModules = ({
         new DidCommProofV1Protocol({
           indyProofFormat: legacyIndyProofFormatService,
         }),
-        new V2DidCommProofProtocol({
+        new DidCommProofV2Protocol({
           proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],
@@ -204,7 +204,7 @@ export async function presentLegacyAnonCredsProof({
   })
 
   verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
-    proofRecordId: verifierProofExchangeRecord.id,
+    proofExchangeRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 

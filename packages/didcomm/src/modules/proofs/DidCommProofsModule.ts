@@ -7,13 +7,13 @@ import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegist
 
 import { DidCommProofsApi } from './DidCommProofsApi'
 import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
-import { V2DidCommProofProtocol } from './protocol'
+import { DidCommProofV2Protocol } from './protocol'
 import { DidCommProofExchangeRepository } from './repository'
 
 /**
  * Default proofProtocols that will be registered if the `proofProtocols` property is not configured.
  */
-export type DefaultDidCommProofProtocols = [V2DidCommProofProtocol<[]>]
+export type DefaultDidCommProofProtocols = [DidCommProofV2Protocol<[]>]
 
 // ProofsModuleOptions makes the proofProtocols property optional from the config, as it will set it when not provided.
 export type DidCommProofsModuleOptions<ProofProtocols extends DidCommProofProtocol[]> = Optional<
@@ -33,7 +33,7 @@ export class DidCommProofsModule<ProofProtocols extends DidCommProofProtocol[] =
       ...config,
       // NOTE: the proofProtocols defaults are set in the DidCommProofsModule rather than the ProofsModuleConfig to
       // avoid dependency cycles.
-      proofProtocols: config?.proofProtocols ?? [new V2DidCommProofProtocol({ proofFormats: [] })],
+      proofProtocols: config?.proofProtocols ?? [new DidCommProofV2Protocol({ proofFormats: [] })],
     }) as DidCommProofsModuleConfig<ProofProtocols>
   }
 

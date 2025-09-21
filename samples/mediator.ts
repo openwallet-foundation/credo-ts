@@ -24,16 +24,16 @@ import { TestLogger } from '../packages/core/tests/logger'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
-  ConnectionInvitationMessage,
+  DidCommConnectionInvitationMessage,
   DidCommConnectionsModule,
+  DidCommHttpOutboundTransport,
   DidCommMediatorModule,
+  DidCommMessagePickupModule,
   DidCommModule,
   DidCommOutOfBandModule,
-  HttpOutboundDidCommTransport,
-  MessagePickupModule,
-  WsOutboundDidCommTransport,
+  DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { HttpInboundDidCommTransport, WsInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
+import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -64,7 +64,7 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({ endpoints }),
     oob: new DidCommOutOfBandModule(),
-    messagePickup: new MessagePickupModule(),
+    messagePickup: new DidCommMessagePickupModule(),
     mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
     }),
@@ -75,10 +75,10 @@ const agent = new Agent({
 })
 
 // Create all transports
-const httpInboundTransport = new HttpInboundDidCommTransport({ app, port })
-const httpOutboundTransport = new HttpOutboundDidCommTransport()
-const wsInboundTransport = new WsInboundDidCommTransport({ server: socketServer })
-const wsOutboundTransport = new WsOutboundDidCommTransport()
+const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+const httpOutboundTransport = new DidCommHttpOutboundTransport()
+const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+const wsOutboundTransport = new DidCommWsOutboundTransport()
 
 // Register all Transports
 agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
@@ -89,7 +89,7 @@ agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
-    const invitation = ConnectionInvitationMessage.fromUrl(req.url)
+    const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
     const { outOfBandInvitation } = await agent.modules.oob.createInvitation()

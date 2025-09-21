@@ -18,11 +18,11 @@ export interface DidCommCredentialsModuleConfigOptions<CredentialProtocols exten
    * Credential protocols to make available to the credentials module. Only one credential protocol should be registered for each credential
    * protocol version.
    *
-   * When not provided, the `V2DidCommCredentialProtocol` is registered by default.
+   * When not provided, the `DidCommCredentialV2Protocol` is registered by default.
    *
    * @default
    * ```
-   * [V2DidCommCredentialProtocol]
+   * [DidCommCredentialV2Protocol]
    * ```
    */
   credentialProtocols: CredentialProtocols

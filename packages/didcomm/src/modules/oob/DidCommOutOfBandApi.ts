@@ -353,7 +353,7 @@ export class DidCommOutOfBandApi {
    *
    * @param invitationUrl URL containing encoded invitation
    *
-   * @returns OutOfBandInvitation
+   * @returns DidCommOutOfBandInvitation
    */
   public async parseInvitation(invitationUrl: string): Promise<DidCommOutOfBandInvitation> {
     return parseInvitationShortUrl(invitationUrl, this.agentContext.config.agentDependencies)
@@ -371,7 +371,7 @@ export class DidCommOutOfBandApi {
    *
    * Agent role: receiver (invitee)
    *
-   * @param invitation either OutOfBandInvitation or ConnectionInvitationMessage
+   * @param invitation either DidCommOutOfBandInvitation or DidCommConnectionInvitationMessage
    * @param config config for handling of invitation
    *
    * @returns out-of-band record and connection record if one has been created.

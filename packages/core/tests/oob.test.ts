@@ -18,13 +18,13 @@ import {
   type CreateCredentialOfferOptions,
   DidCommAutoAcceptCredential,
   DidCommCredentialState,
-  type V2DidCommCredentialProtocol,
+  type DidCommCredentialV2Protocol,
 } from '../../didcomm/src/modules/credentials'
 import { DidCommOutOfBandEventTypes } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/OutOfBandDidCommService'
-import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { Agent } from '../src/agent/Agent'
 import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
 
@@ -85,7 +85,7 @@ describe('out of band', () => {
   }
 
   let credentialTemplate: CreateCredentialOfferOptions<
-    [V2DidCommCredentialProtocol<[AnonCredsCredentialFormatService]>]
+    [DidCommCredentialV2Protocol<[AnonCredsCredentialFormatService]>]
   >
 
   beforeAll(async () => {
@@ -755,7 +755,7 @@ describe('out of band', () => {
     })
 
     test('throw an error when handshake protocols are not supported', async () => {
-      const outOfBandInvitation = new OutOfBandInvitation({ label: 'test-connection', services: [] })
+      const outOfBandInvitation = new DidCommOutOfBandInvitation({ label: 'test-connection', services: [] })
       const unsupportedProtocol = 'https://didcomm.org/unsupported-connections-protocol/1.0'
       outOfBandInvitation.handshakeProtocols = [unsupportedProtocol as DidCommHandshakeProtocol]
 
@@ -769,7 +769,7 @@ describe('out of band', () => {
     })
 
     test('throw an error when the OOB message does not contain either handshake or requests', async () => {
-      const outOfBandInvitation = new OutOfBandInvitation({ label: 'test-connection', services: [] })
+      const outOfBandInvitation = new DidCommOutOfBandInvitation({ label: 'test-connection', services: [] })
 
       await expect(
         aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)

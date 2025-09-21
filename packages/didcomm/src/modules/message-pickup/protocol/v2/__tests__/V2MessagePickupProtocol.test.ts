@@ -72,7 +72,7 @@ const queuedMessages = [
   { id: '3', encryptedMessage, receivedAt: new Date() },
 ]
 
-describe('V2MessagePickupProtocol', () => {
+describe('DidCommMessagePickupV2Protocol', () => {
   let pickupProtocol: DidCommMessagePickupV2Protocol
 
   beforeEach(async () => {

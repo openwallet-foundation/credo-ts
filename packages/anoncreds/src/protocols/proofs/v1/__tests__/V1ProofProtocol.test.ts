@@ -20,7 +20,7 @@ import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/
 import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
 import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
-import { DidCommProofV1Protocol } from '../V1ProofProtocol'
+import { DidCommProofV1Protocol } from '../DidCommProofV1Protocol'
 import { DidCommRequestPresentationV1Message, INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
 
@@ -91,7 +91,7 @@ const mockProofExchangeRecord = ({
   return proofRecord
 }
 
-describe('V1ProofProtocol', () => {
+describe('DidCommProofV1Protocol', () => {
   let eventEmitter: EventEmitter
   let agentConfig: AgentConfig
   let agentContext: AgentContext

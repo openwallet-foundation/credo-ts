@@ -13,8 +13,8 @@ import type {
 } from './DidCommMessagePickupProtocolOptions'
 
 /**
- * Base implementation of the MessagePickupProtocol that can be used as a foundation for implementing
- * the MessagePickupProtocol interface.
+ * Base implementation of the DidCommMessagePickupProtocol that can be used as a foundation for implementing
+ * the DidCommMessagePickupProtocol interface.
  */
 export abstract class DidCommBaseMessagePickupProtocol implements DidCommMessagePickupProtocol {
   public abstract readonly version: string

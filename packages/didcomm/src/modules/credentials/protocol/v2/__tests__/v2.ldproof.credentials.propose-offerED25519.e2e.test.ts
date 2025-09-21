@@ -2,10 +2,10 @@ import type { EventReplaySubject } from '../../../../../../../core/tests'
 import type { DefaultAgentModulesInput } from '../../../../../../../didcomm/src/util/modules'
 
 import {
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
-  V1CredentialProtocol,
-  V1ProofProtocol,
 } from '../../../../../../../anoncreds/src'
 import {
   getAnonCredsIndyModules,
@@ -26,7 +26,7 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
-import { DidCommProofEventTypes, DidCommProofsModule, V2DidCommProofProtocol } from '../../../../proofs'
+import { DidCommProofEventTypes, DidCommProofV2Protocol, DidCommProofsModule } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialsModule } from '../../../DidCommCredentialsModule'
 import { DidCommJsonLdCredentialFormatService } from '../../../formats'
@@ -76,7 +76,7 @@ const getIndyJsonLdModules = () =>
     ...getAnonCredsIndyModules(),
     credentials: new DidCommCredentialsModule({
       credentialProtocols: [
-        new V1CredentialProtocol({ indyCredentialFormat }),
+        new DidCommCredentialV1Protocol({ indyCredentialFormat }),
         new DidCommCredentialV2Protocol({
           credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
         }),
@@ -84,8 +84,8 @@ const getIndyJsonLdModules = () =>
     }),
     proofs: new DidCommProofsModule({
       proofProtocols: [
-        new V1ProofProtocol({ indyProofFormat }),
-        new V2DidCommProofProtocol({
+        new DidCommProofV1Protocol({ indyProofFormat }),
+        new DidCommProofV2Protocol({
           proofFormats: [indyProofFormat],
         }),
       ],

@@ -36,8 +36,8 @@ import {
   DidCommDifPresentationExchangeProofFormatService,
   DidCommProofEventTypes,
   DidCommProofState,
+  DidCommProofV2Protocol,
   DidCommProofsModule,
-  V2DidCommProofProtocol,
 } from '@credo-ts/didcomm'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
@@ -108,7 +108,7 @@ export const getAnonCredsModules = ({
     proofs: new DidCommProofsModule({
       autoAcceptProofs,
       proofProtocols: [
-        new V2DidCommProofProtocol({
+        new DidCommProofV2Protocol({
           proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
         }),
       ],
@@ -267,7 +267,7 @@ export async function presentAnonCredsProof({
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
   const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
@@ -276,7 +276,7 @@ export async function presentAnonCredsProof({
   })
 
   await holderAgent.modules.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
 
@@ -291,7 +291,7 @@ export async function presentAnonCredsProof({
   })
 
   verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
-    proofRecordId: verifierProofExchangeRecord.id,
+    proofExchangeRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 

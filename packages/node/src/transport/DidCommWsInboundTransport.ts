@@ -10,7 +10,7 @@ import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import WebSocket, { Server } from 'ws'
 
-export class WsInboundDidCommTransport implements DidCommInboundTransport {
+export class DidCommWsInboundTransport implements DidCommInboundTransport {
   private socketServer: Server
   private logger!: Logger
 

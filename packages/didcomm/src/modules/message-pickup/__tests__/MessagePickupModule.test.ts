@@ -4,11 +4,11 @@ import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePic
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
-import { MessagePickupModule } from '../DidCommMessagePickupModule'
+import { DidCommMessagePickupModule } from '../DidCommMessagePickupModule'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupSessionService } from '../services'
 
-describe('MessagePickupModule', () => {
+describe('DidCommMessagePickupModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
       registerInstance: jest.fn(),
@@ -18,7 +18,7 @@ describe('MessagePickupModule', () => {
       },
     } as unknown as DependencyManager
 
-    const module = new MessagePickupModule()
+    const module = new DidCommMessagePickupModule()
     module.register(dependencyManager)
 
     expect(dependencyManager.registerInstance).toHaveBeenCalledTimes(1)
@@ -33,7 +33,7 @@ describe('MessagePickupModule', () => {
       register: jest.fn(),
     } as unknown as DidCommMessagePickupProtocol
 
-    const messagePickupModule = new MessagePickupModule({
+    const messagePickupModule = new DidCommMessagePickupModule({
       protocols: [messagePickupProtocol],
     })
 

@@ -232,7 +232,7 @@ export class DidCommMessagePickupApi<
           // If we don't receive all messages within timeoutMs miliseconds (no response, not supported, etc...) error
           timeout({
             first: options.awaitCompletionTimeoutMs ?? 10000,
-            meta: 'MessagePickupApi.pickupMessages',
+            meta: 'DidCommMessagePickupApi.pickupMessages',
           })
         )
         .subscribe(replaySubject)

@@ -9,7 +9,7 @@ export class DidCommBasicMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**
-   * Create new BasicMessage instance.
+   * Create new DidCommBasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */

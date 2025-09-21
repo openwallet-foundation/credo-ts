@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
-import { V1CredentialPreview } from '../../../../../../../anoncreds/src'
+import { DidCommCredentialV1Preview } from '../../../../../../../anoncreds/src'
 import {
   getAnonCredsIndyModules,
   issueLegacyAnonCredsCredential,
@@ -152,7 +152,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     expect(faberProofExchangeRecord.isVerified).toBe(true)
 
     // Faber accepts presentation
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.modules.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until it receives presentation ack
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
@@ -262,7 +262,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
   test('Faber starts with connection-less proof requests to Alice with auto-accept enabled and both agents having a mediator', async () => {
     testLogger.test('Faber sends presentation request to Alice')
 
-    const credentialPreview = V1CredentialPreview.fromRecord({
+    const credentialPreview = DidCommCredentialV1Preview.fromRecord({
       name: 'John',
       age: '99',
     })

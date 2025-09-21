@@ -58,7 +58,7 @@ export interface ProposeProofOptions<PPs extends DidCommProofProtocol[] = DidCom
  */
 export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
   proofFormats?: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'acceptProposal'>
 
   /** @default true */
@@ -70,7 +70,7 @@ export interface AcceptProofProposalOptions<PPs extends DidCommProofProtocol[] =
  */
 export interface NegotiateProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
   extends BaseOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
   proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createRequest'>
 
   /** @default true */
@@ -131,7 +131,7 @@ export interface NegotiateProofRequestOptions<PPs extends DidCommProofProtocol[]
  * Interface for ProofsApi.acceptPresentation. Will send an ack message
  */
 export interface AcceptProofOptions {
-  proofRecordId: string
+  proofExchangeRecordId: string
 }
 
 /**

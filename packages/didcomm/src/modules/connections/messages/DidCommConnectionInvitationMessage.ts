@@ -37,7 +37,7 @@ export class DidCommConnectionInvitationMessage extends DidCommMessage {
   public readonly allowDidSovPrefix = true
 
   /**
-   * Create new ConnectionInvitationMessage instance.
+   * Create new DidCommConnectionInvitationMessage instance.
    * @param options
    */
   public constructor(options: DidCommConnectionInvitationMessageOptions) {
@@ -125,11 +125,11 @@ export class DidCommConnectionInvitationMessage extends DidCommMessage {
   }
 
   /**
-   * Create a `ConnectionInvitationMessage` instance from the `c_i` or `d_m` parameter of an URL
+   * Create a `DidCommConnectionInvitationMessage` instance from the `c_i` or `d_m` parameter of an URL
    *
    * @param invitationUrl invitation url containing c_i or d_m parameter
    *
-   * @throws Error when the url can not be decoded to JSON, or decoded message is not a valid 'ConnectionInvitationMessage'
+   * @throws Error when the url can not be decoded to JSON, or decoded message is not a valid 'DidCommConnectionInvitationMessage'
    */
   public static fromUrl(invitationUrl: string) {
     const parsedUrl = parseUrl(invitationUrl).query

@@ -1,5 +1,5 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { DidCommProofV1Protocol } from '../V1ProofProtocol'
+import type { DidCommProofV1Protocol } from '../DidCommProofV1Protocol'
 
 import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
 

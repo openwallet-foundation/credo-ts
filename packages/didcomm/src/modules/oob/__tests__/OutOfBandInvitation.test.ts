@@ -78,7 +78,7 @@ describe('validation', () => {
 })
 
 describe('fromUrl', () => {
-  test('decode the URL containing the base64 encoded invitation as the oob parameter into an `OutOfBandInvitation`', () => {
+  test('decode the URL containing the base64 encoded invitation as the oob parameter into an `DidCommOutOfBandInvitation`', () => {
     const invitationUrl =
       'http://example.com/ssi?oob=eyJAdHlwZSI6Imh0dHBzOi8vZGlkY29tbS5vcmcvb3V0LW9mLWJhbmQvMS4xL2ludml0YXRpb24iLCJAaWQiOiI2OTIxMmEzYS1kMDY4LTRmOWQtYTJkZC00NzQxYmNhODlhZjMiLCJsYWJlbCI6IkZhYmVyIENvbGxlZ2UiLCJnb2FsX2NvZGUiOiJpc3N1ZS12YyIsImdvYWwiOiJUbyBpc3N1ZSBhIEZhYmVyIENvbGxlZ2UgR3JhZHVhdGUgY3JlZGVudGlhbCIsImhhbmRzaGFrZV9wcm90b2NvbHMiOlsiaHR0cHM6Ly9kaWRjb21tLm9yZy9kaWRleGNoYW5nZS8xLjAiLCJodHRwczovL2RpZGNvbW0ub3JnL2Nvbm5lY3Rpb25zLzEuMCJdLCJzZXJ2aWNlcyI6WyJkaWQ6c292OkxqZ3BTVDJyanNveFllZ1FEUm03RUwiXX0K'
 
@@ -97,7 +97,7 @@ describe('fromUrl', () => {
 })
 
 describe('fromJson', () => {
-  test('create an instance of `OutOfBandInvitation` from JSON object', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -114,7 +114,7 @@ describe('fromJson', () => {
     expect(invitation).toBeInstanceOf(DidCommOutOfBandInvitation)
   })
 
-  test('create an instance of `OutOfBandInvitation` from JSON object with inline service', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object with inline service', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',
@@ -137,7 +137,7 @@ describe('fromJson', () => {
     expect(invitation).toBeInstanceOf(DidCommOutOfBandInvitation)
   })
 
-  test('create an instance of `OutOfBandInvitation` from JSON object with appended attachments', () => {
+  test('create an instance of `DidCommOutOfBandInvitation` from JSON object with appended attachments', () => {
     const json = {
       '@type': 'https://didcomm.org/out-of-band/1.1/invitation',
       '@id': '69212a3a-d068-4f9d-a2dd-4741bca89af3',

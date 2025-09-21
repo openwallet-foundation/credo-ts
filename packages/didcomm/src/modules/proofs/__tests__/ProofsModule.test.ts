@@ -6,7 +6,7 @@ import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProofsModule } from '../DidCommProofsModule'
 import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
-import { V2DidCommProofProtocol } from '../protocol/v2/DidCommProofV2Protocol'
+import { DidCommProofV2Protocol } from '../protocol/v2/DidCommProofV2Protocol'
 import { DidCommProofExchangeRepository } from '../repository'
 
 const dependencyManager = {
@@ -29,10 +29,10 @@ describe('DidCommProofsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommProofExchangeRepository)
   })
 
-  test('registers V2DidCommProofProtocol if no proofProtocols are configured', () => {
+  test('registers DidCommProofV2Protocol if no proofProtocols are configured', () => {
     const proofsModule = new DidCommProofsModule()
 
-    expect(proofsModule.config.proofProtocols).toEqual([expect.any(V2DidCommProofProtocol)])
+    expect(proofsModule.config.proofProtocols).toEqual([expect.any(DidCommProofV2Protocol)])
   })
 
   test('calls register on the provided ProofProtocols', async () => {

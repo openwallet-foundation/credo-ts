@@ -1,4 +1,4 @@
-import { DidCommConnectionRecord, DidExchangeRole, DidExchangeState } from '@credo-ts/didcomm'
+import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
 import { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
@@ -27,8 +27,8 @@ describe('queryToDrizzleSqlite', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       id: 'something',
-      role: DidExchangeRole.Requester,
-      state: DidExchangeState.Abandoned,
+      role: DidCommDidExchangeRole.Requester,
+      state: DidCommDidExchangeState.Abandoned,
       connectionTypes: ['one', 'three', 'four'],
       invitationDid: 'some string',
       customTags: {

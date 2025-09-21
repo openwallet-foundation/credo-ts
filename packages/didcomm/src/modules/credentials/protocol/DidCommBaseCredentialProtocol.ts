@@ -260,10 +260,13 @@ export abstract class DidCommBaseCredentialProtocol<
    * @param credentialRecordId the credential record id
    * @returns The credential record or null if not found
    */
-  public findById(agentContext: AgentContext, proofRecordId: string): Promise<DidCommCredentialExchangeRecord | null> {
+  public findById(
+    agentContext: AgentContext,
+    proofExchangeRecordId: string
+  ): Promise<DidCommCredentialExchangeRecord | null> {
     const credentialRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
 
-    return credentialRepository.findById(agentContext, proofRecordId)
+    return credentialRepository.findById(agentContext, proofExchangeRecordId)
   }
 
   public async delete(

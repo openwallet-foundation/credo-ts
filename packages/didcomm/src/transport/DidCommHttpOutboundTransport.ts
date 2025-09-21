@@ -37,20 +37,20 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
 
     if (this.outboundSessionCount === 0) {
       this.agentContext.config.logger.debug(
-        'No open outbound HTTP sessions. Immediately stopping HttpOutboundDidCommTransport'
+        'No open outbound HTTP sessions. Immediately stopping DidCommHttpOutboundTransport'
       )
       return
     }
 
     this.agentContext.config.logger.debug(
-      `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping HttpOutboundDidCommTransport`
+      `Still ${this.outboundSessionCount} open outbound HTTP sessions. Waiting for sessions to close before stopping DidCommHttpOutboundTransport`
     )
     // Track all 'closed' sessions
     // TODO: add timeout? -> we have a timeout on the request
     return new Promise((resolve) =>
       this.outboundSessionsObservable.subscribe(() => {
         this.agentContext.config.logger.debug(
-          `${this.outboundSessionCount} HttpOutboundDidCommTransport sessions still active`
+          `${this.outboundSessionCount} DidCommHttpOutboundTransport sessions still active`
         )
         if (this.outboundSessionCount === 0) resolve()
       })
@@ -110,7 +110,7 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
         // This should not happen
         if (!this.isActive) {
           this.logger.error(
-            'Received response message over HttpOutboundDidCommTransport while transport was not active.'
+            'Received response message over DidCommHttpOutboundTransport while transport was not active.'
           )
         }
 

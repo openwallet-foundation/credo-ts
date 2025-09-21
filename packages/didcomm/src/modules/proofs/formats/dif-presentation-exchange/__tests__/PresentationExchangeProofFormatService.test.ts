@@ -19,7 +19,7 @@ import {
 import { getAgentOptions } from '../../../../../../../core/tests'
 import { DidCommProofsModule } from '../../../DidCommProofsModule'
 import { DidCommProofRole, DidCommProofState } from '../../../models'
-import { V2DidCommProofProtocol } from '../../../protocol'
+import { DidCommProofV2Protocol } from '../../../protocol'
 import { DidCommProofExchangeRecord } from '../../../repository'
 import { DidCommDifPresentationExchangeProofFormatService } from '../DidCommDifPresentationExchangeProofFormatService'
 
@@ -104,7 +104,7 @@ describe('Presentation Exchange ProofFormatService', () => {
           pex: new DifPresentationExchangeModule(),
           proofs: new DidCommProofsModule({
             proofProtocols: [
-              new V2DidCommProofProtocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+              new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
             ],
           }),
         },

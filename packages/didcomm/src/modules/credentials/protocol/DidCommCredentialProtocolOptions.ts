@@ -49,12 +49,12 @@ export type CredentialFormatDataMessagePayload<
  * @example
  * ```
  * // TheCredentialFormatServices is now equal to [IndyCredentialFormatService]
- * type TheCredentialFormatServices = CredentialFormatsFromProtocols<[V1CredentialProtocol]>
+ * type TheCredentialFormatServices = CredentialFormatsFromProtocols<[DidCommCredentialV1Protocol]>
  * ```
  *
- * Because the `V1CredentialProtocol` is defined as follows:
+ * Because the `DidCommCredentialV1Protocol` is defined as follows:
  * ```
- * class V1CredentialProtocol implements DidCommCredentialProtocol<[IndyCredentialFormatService]> {
+ * class DidCommCredentialV1Protocol implements DidCommCredentialProtocol<[IndyCredentialFormatService]> {
  * }
  * ```
  */

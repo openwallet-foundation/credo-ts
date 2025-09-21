@@ -1,16 +1,16 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommProofExchangeRecord } from '../../../repository'
-import type { V2DidCommProofProtocol } from '../DidCommProofV2Protocol'
+import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
 
 import { getDidCommOutboundMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 export class DidCommPresentationV2Handler implements DidCommMessageHandler {
-  private proofProtocol: V2DidCommProofProtocol
+  private proofProtocol: DidCommProofV2Protocol
   public supportedMessages = [DidCommPresentationV2Message]
 
-  public constructor(proofProtocol: V2DidCommProofProtocol) {
+  public constructor(proofProtocol: DidCommProofV2Protocol) {
     this.proofProtocol = proofProtocol
   }
 

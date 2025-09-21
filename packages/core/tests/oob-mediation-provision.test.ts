@@ -1,4 +1,4 @@
-import type { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
@@ -57,7 +57,7 @@ describe('out of band with mediation set up with provision method', () => {
   let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let mediatorAgent: Agent<(typeof mediatorAgentOptions)['modules']>
 
-  let mediatorOutOfBandInvitation: OutOfBandInvitation
+  let mediatorOutOfBandInvitation: DidCommOutOfBandInvitation
 
   beforeAll(async () => {
     mediatorAgent = new Agent(mediatorAgentOptions)

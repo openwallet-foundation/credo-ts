@@ -5,10 +5,10 @@ import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
   AnonCredsProofFormatService,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,
   LegacyIndyProofFormatService,
-  V1CredentialProtocol,
-  V1ProofProtocol,
 } from '@credo-ts/anoncreds'
 import { AskarModule } from '@credo-ts/askar'
 import {
@@ -23,15 +23,15 @@ import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
   DidCommConnectionsModule,
+  DidCommCredentialV2Protocol,
   DidCommCredentialsModule,
+  DidCommHttpOutboundTransport,
+  DidCommProofV2Protocol,
   DidCommProofsModule,
-  HttpOutboundDidCommTransport,
-  V2DidCommCredentialProtocol,
-  V2DidCommProofProtocol,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
-import { HttpInboundDidCommTransport, agentDependencies } from '@credo-ts/node'
+import { DidCommHttpInboundTransport, agentDependencies } from '@credo-ts/node'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -67,8 +67,8 @@ export class BaseAgent {
       dependencies: agentDependencies,
       modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
     })
-    this.agent.modules.didcomm.registerInboundTransport(new HttpInboundDidCommTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new HttpOutboundDidCommTransport())
+    this.agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+    this.agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
   }
 
   public async initializeAgent() {
@@ -93,10 +93,10 @@ function getAskarAnonCredsIndyModules(
     credentials: new DidCommCredentialsModule({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
       credentialProtocols: [
-        new V1CredentialProtocol({
+        new DidCommCredentialV1Protocol({
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
-        new V2DidCommCredentialProtocol({
+        new DidCommCredentialV2Protocol({
           credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
         }),
       ],
@@ -104,10 +104,10 @@ function getAskarAnonCredsIndyModules(
     proofs: new DidCommProofsModule({
       autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
       proofProtocols: [
-        new V1ProofProtocol({
+        new DidCommProofV1Protocol({
           indyProofFormat: legacyIndyProofFormatService,
         }),
-        new V2DidCommProofProtocol({
+        new DidCommProofV2Protocol({
           proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
         }),
       ],

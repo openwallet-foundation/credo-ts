@@ -15,7 +15,7 @@ export interface DidCommMediationRequestMessageOptions {
  */
 export class DidCommMediationRequestMessage extends DidCommMessage {
   /**
-   * Create new BasicMessage instance.
+   * Create new DidCommBasicMessage instance.
    * sentTime will be assigned to new Date if not passed, id will be assigned to uuid/v4 if not passed
    * @param options
    */

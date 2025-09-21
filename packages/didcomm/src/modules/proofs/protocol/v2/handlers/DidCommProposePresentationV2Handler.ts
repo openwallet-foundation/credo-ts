@@ -1,15 +1,15 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
-import type { V2DidCommProofProtocol } from '../DidCommProofV2Protocol'
+import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
 
 import { DidCommOutboundMessageContext } from '../../../../../models'
 import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
 
 export class DidCommProposePresentationV2Handler implements DidCommMessageHandler {
-  private proofProtocol: V2DidCommProofProtocol
+  private proofProtocol: DidCommProofV2Protocol
   public supportedMessages = [DidCommProposePresentationV2Message]
 
-  public constructor(proofProtocol: V2DidCommProofProtocol) {
+  public constructor(proofProtocol: DidCommProofV2Protocol) {
     this.proofProtocol = proofProtocol
   }
 

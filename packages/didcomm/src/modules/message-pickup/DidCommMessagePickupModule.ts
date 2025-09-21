@@ -21,7 +21,7 @@ export type MessagePickupModuleOptions<MessagePickupProtocols extends DidCommMes
   'protocols'
 >
 
-export class MessagePickupModule<
+export class DidCommMessagePickupModule<
   MessagePickupProtocols extends DidCommMessagePickupProtocol[] = DefaultMessagePickupProtocols,
 > implements ApiModule
 {

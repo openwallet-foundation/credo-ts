@@ -146,7 +146,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
 
     testLogger.test('Faber sends new proof request to Alice')
     faberProofExchangeRecord = await faberAgent.modules.proofs.negotiateProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
       proofFormats: {
         indy: {
           name: 'proof-request',
@@ -287,7 +287,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
     faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')

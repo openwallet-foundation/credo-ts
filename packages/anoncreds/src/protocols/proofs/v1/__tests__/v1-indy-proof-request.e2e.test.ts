@@ -4,7 +4,7 @@ import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/t
 import { DidCommProofState } from '../../../../../../didcomm/src'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
-describe('Present Proof | V1ProofProtocol', () => {
+describe('Present Proof | DidCommProofV1Protocol', () => {
   let faberAgent: AnonCredsTestsAgent
   let aliceAgent: AnonCredsTestsAgent
   let aliceConnectionId: string
@@ -108,7 +108,7 @@ describe('Present Proof | V1ProofProtocol', () => {
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
     faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')

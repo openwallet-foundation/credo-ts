@@ -4,11 +4,11 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionsModule,
+  DidCommHttpOutboundTransport,
+  DidCommMessagePickupModule,
   DidCommModule,
   DidCommOutOfBandModule,
-  HttpOutboundDidCommTransport,
-  MessagePickupModule,
-  WsOutboundDidCommTransport,
+  DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -19,8 +19,8 @@ import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
-  const wsOutboundTransport = new WsOutboundDidCommTransport()
-  const httpOutboundTransport = new HttpOutboundDidCommTransport()
+  const wsOutboundTransport = new DidCommWsOutboundTransport()
+  const httpOutboundTransport = new DidCommHttpOutboundTransport()
 
   // Setup the agent
   const agent = new Agent({
@@ -37,7 +37,7 @@ const run = async () => {
       }),
       didcomm: new DidCommModule(),
       oob: new DidCommOutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
+      messagePickup: new DidCommMessagePickupModule(),
       dummy: new DummyModule(),
       connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,

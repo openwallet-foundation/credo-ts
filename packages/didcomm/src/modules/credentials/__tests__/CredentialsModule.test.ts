@@ -41,7 +41,7 @@ describe('CredentialsModule', () => {
     expect(dependencyManager.registerSingleton).toHaveBeenCalledWith(DidCommCredentialExchangeRepository)
   })
 
-  test('registers V2DidCommCredentialProtocol if no credentialProtocols are configured', () => {
+  test('registers DidCommCredentialV2Protocol if no credentialProtocols are configured', () => {
     const credentialsModule = new DidCommCredentialsModule()
 
     expect(credentialsModule.config.credentialProtocols).toEqual([expect.any(DidCommCredentialV2Protocol)])

@@ -1,5 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { TransportSessionRemovedEvent } from '../../../transport'
+import type { DidCommTransportSessionRemovedEvent } from '../../../transport'
 import type {
   DidCommMessagePickupLiveSessionSavedEvent,
   MessagePickupLiveSessionRemovedEvent,
@@ -33,7 +33,7 @@ export class DidCommMessagePickupSessionService {
     this.sessions = []
 
     eventEmitter
-      .observable<TransportSessionRemovedEvent>(DidCommTransportEventTypes.DidCommTransportSessionRemoved)
+      .observable<DidCommTransportSessionRemovedEvent>(DidCommTransportEventTypes.DidCommTransportSessionRemoved)
       .pipe(takeUntil(stop$))
       .subscribe({
         next: (e) => {

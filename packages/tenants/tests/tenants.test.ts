@@ -5,10 +5,10 @@ import type { TenantAgent } from '../src/TenantAgent'
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import {
   DidCommConnectionsModule,
+  DidCommMessagePickupModule,
   DidCommModule,
   DidCommOutOfBandModule,
   DidCommOutOfBandRecord,
-  MessagePickupModule,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
@@ -40,7 +40,7 @@ const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
   ({
     didcomm: new DidCommModule(didcommConfig),
     oob: new DidCommOutOfBandModule(),
-    messagePickup: new MessagePickupModule(),
+    messagePickup: new DidCommMessagePickupModule(),
     tenants: new TenantsModule(),
     inMemory: new InMemoryWalletModule({ enableKms: false }),
     connections: new DidCommConnectionsModule({

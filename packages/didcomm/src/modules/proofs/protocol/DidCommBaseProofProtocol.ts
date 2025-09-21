@@ -203,15 +203,15 @@ export abstract class DidCommBaseProofProtocol<PFs extends DidCommProofFormatSer
   /**
    * Retrieve a proof record by id
    *
-   * @param proofRecordId The proof record id
+   * @param proofExchangeRecordId The proof record id
    * @throws {RecordNotFoundError} If no record is found
    * @return The proof record
    *
    */
-  public getById(agentContext: AgentContext, proofRecordId: string): Promise<DidCommProofExchangeRecord> {
+  public getById(agentContext: AgentContext, proofExchangeRecordId: string): Promise<DidCommProofExchangeRecord> {
     const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
-    return proofRepository.getById(agentContext, proofRecordId)
+    return proofRepository.getById(agentContext, proofExchangeRecordId)
   }
 
   /**
@@ -238,13 +238,16 @@ export abstract class DidCommBaseProofProtocol<PFs extends DidCommProofFormatSer
   /**
    * Find a proof record by id
    *
-   * @param proofRecordId the proof record id
+   * @param proofExchangeRecordId the proof record id
    * @returns The proof record or null if not found
    */
-  public findById(agentContext: AgentContext, proofRecordId: string): Promise<DidCommProofExchangeRecord | null> {
+  public findById(
+    agentContext: AgentContext,
+    proofExchangeRecordId: string
+  ): Promise<DidCommProofExchangeRecord | null> {
     const proofRepository = agentContext.dependencyManager.resolve(DidCommProofExchangeRepository)
 
-    return proofRepository.findById(agentContext, proofRecordId)
+    return proofRepository.findById(agentContext, proofExchangeRecordId)
   }
 
   public async delete(

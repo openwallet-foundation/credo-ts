@@ -19,7 +19,7 @@ import {
   DidCommRequestPresentationV2Message,
 } from './messages'
 
-export class ProofFormatCoordinator<PFs extends DidCommProofFormatService[]> {
+export class DidCommProofFormatCoordinator<PFs extends DidCommProofFormatService[]> {
   /**
    * Create a {@link DidCommProposePresentationV2Message}.
    *

@@ -18,11 +18,11 @@ export interface DidCommProofsModuleConfigOptions<ProofProtocols extends DidComm
    * Proof protocols to make available to the proofs module. Only one proof protocol should be registered for each proof
    * protocol version.
    *
-   * When not provided, the `V2DidCommProofProtocol` is registered by default.
+   * When not provided, the `DidCommProofV2Protocol` is registered by default.
    *
    * @default
    * ```
-   * [V2DidCommProofProtocol]
+   * [DidCommProofV2Protocol]
    * ```
    */
   proofProtocols: ProofProtocols

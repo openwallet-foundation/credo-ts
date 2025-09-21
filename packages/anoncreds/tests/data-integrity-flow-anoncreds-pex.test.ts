@@ -265,13 +265,13 @@ async function anonCredsFlowTest(options: {
   })
 
   issuerProofExchangeRecord = await issuer.modules.proofs.acceptProposal({
-    proofRecordId: issuerProofExchangeRecord.id,
+    proofExchangeRecordId: issuerProofExchangeRecord.id,
   })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
   const requestedCredentials = await holder.modules.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
   const selectedCredentials = requestedCredentials.proofFormats.presentationExchange?.credentials
@@ -285,7 +285,7 @@ async function anonCredsFlowTest(options: {
   })
 
   await holder.modules.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: {
       presentationExchange: {
         credentials: selectedCredentials,
@@ -299,7 +299,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommProofState.Done,
   })
 
-  await issuer.modules.proofs.acceptPresentation({ proofRecordId: issuerProofExchangeRecord.id })
+  await issuer.modules.proofs.acceptPresentation({ proofExchangeRecordId: issuerProofExchangeRecord.id })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 }

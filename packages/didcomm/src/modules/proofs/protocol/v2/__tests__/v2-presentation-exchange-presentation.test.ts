@@ -197,7 +197,7 @@ describe('Present Proof', () => {
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierPresentationRecordPromise
     verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -280,7 +280,7 @@ describe('Present Proof', () => {
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
     verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -417,7 +417,7 @@ describe('Present Proof', () => {
     testLogger.test('Verifier accepts presentation proposal from the Prover')
     let verifierProofExchangeRecord = await verifierProposalReceivedPresentationRecordPromise
     verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptProposal({
-      proofRecordId: verifierProofExchangeRecord.id,
+      proofExchangeRecordId: verifierProofExchangeRecord.id,
     })
 
     testLogger.test('Prover waits for proof request from the Verifier')
@@ -446,7 +446,7 @@ describe('Present Proof', () => {
 
     // Verifier accepts the presentation provided by by the Prover
     testLogger.test('Verifier accepts the presentation provided by the Prover')
-    await verifierAgent.modules.proofs.acceptPresentation({ proofRecordId: verifierProofExchangeRecord.id })
+    await verifierAgent.modules.proofs.acceptPresentation({ proofExchangeRecordId: verifierProofExchangeRecord.id })
 
     // Prover waits until she received a presentation acknowledgement
     testLogger.test('Prover waits until she receives a presentation acknowledgement')

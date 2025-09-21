@@ -16,11 +16,11 @@ export interface DidCommMediatorModuleConfigOptions {
    * Strategy to use when a Forward message is received.
    *
    *
-   * - `MessageForwardingStrategy.QueueOnly` - simply queue encrypted message into QueueTransportRepository. It will be in charge of manually trigering MessagePickupApi.deliver() afterwards.
-   * - `MessageForwardingStrategy.QueueAndLiveModeDelivery` - Queue message into QueueTransportRepository and deliver it (along any other queued message).
-   * - `MessageForwardingStrategy.DirectDelivery` - Deliver message directly. Do not add into queue (it might be manually added after, e.g. in case of failure)
+   * - `DidCommMessageForwardingStrategy.QueueOnly` - simply queue encrypted message into QueueTransportRepository. It will be in charge of manually trigering DidCommMessagePickupApi.deliver() afterwards.
+   * - `DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery` - Queue message into QueueTransportRepository and deliver it (along any other queued message).
+   * - `DidCommMessageForwardingStrategy.DirectDelivery` - Deliver message directly. Do not add into queue (it might be manually added after, e.g. in case of failure)
    *
-   * @default MessageForwardingStrategy.DirectDelivery
+   * @default DidCommMessageForwardingStrategy.DirectDelivery
    * @todo Update default to QueueAndLiveModeDelivery
    */
   messageForwardingStrategy?: DidCommMessageForwardingStrategy

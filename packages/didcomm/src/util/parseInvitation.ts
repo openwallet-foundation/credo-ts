@@ -31,10 +31,10 @@ const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependenc
 }
 
 /**
- * Parses a JSON containing an invitation message and returns an OutOfBandInvitation instance
+ * Parses a JSON containing an invitation message and returns an DidCommOutOfBandInvitation instance
  *
  * @param invitationJson JSON object containing message
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationJson = (invitationJson: Record<string, unknown>): DidCommOutOfBandInvitation => {
   const messageType = invitationJson['@type'] as string
@@ -69,7 +69,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
  *
  * @param invitationUrl URL containing encoded invitation
  *
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
   const parsedUrl = parseUrl(invitationUrl).query
@@ -137,7 +137,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
  *
  * @param dependencies Agent dependencies containing fetch
  *
- * @returns OutOfBandInvitation
+ * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationShortUrl = async (
   invitationUrl: string,

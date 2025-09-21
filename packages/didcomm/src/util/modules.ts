@@ -9,9 +9,9 @@ import {
   DidCommDiscoverFeaturesModule,
   DidCommMediationRecipientModule,
   DidCommMediatorModule,
+  DidCommMessagePickupModule,
   DidCommOutOfBandModule,
   DidCommProofsModule,
-  MessagePickupModule,
 } from '../modules'
 
 /**
@@ -55,7 +55,7 @@ export function getDefaultDidcommModules(didcommModuleConfig?: DidCommModuleConf
     mediator: new DidCommMediatorModule(),
     discovery: new DidCommDiscoverFeaturesModule(),
     mediationRecipient: new DidCommMediationRecipientModule(),
-    messagePickup: new MessagePickupModule(),
+    messagePickup: new DidCommMessagePickupModule(),
     basicMessages: new DidCommBasicMessagesModule(),
     oob: new DidCommOutOfBandModule(),
   } as const

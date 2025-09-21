@@ -13,12 +13,12 @@ import {
   DidCommHandshakeProtocol,
 } from '../../didcomm/src/modules/connections'
 import {
+  DidCommKeylistUpdateAction,
+  DidCommKeylistUpdateMessage,
   DidCommMediationRecipientModule,
   DidCommMediationState,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
-  KeylistUpdateAction,
-  KeylistUpdateMessage,
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
@@ -178,8 +178,8 @@ describe('out of band with mediation', () => {
 
     const keyAddMessagePromise = firstValueFrom(
       mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
-        filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
-        map((event) => event.payload.message as KeylistUpdateMessage),
+        filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
+        map((event) => event.payload.message as DidCommKeylistUpdateMessage),
         timeout(5000)
       )
     )
@@ -196,14 +196,14 @@ describe('out of band with mediation', () => {
         recipientKey: didKeyToVerkey(update.recipientKey),
       }))[0]
     ).toEqual({
-      action: KeylistUpdateAction.add,
+      action: DidCommKeylistUpdateAction.add,
       recipientKey: didKeyToVerkey((outOfBandInvitation.getServices()[0] as OutOfBandDidCommService).recipientKeys[0]),
     })
 
     const keyRemoveMessagePromise = firstValueFrom(
       mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
-        filter((event) => event.payload.message.type === KeylistUpdateMessage.type.messageTypeUri),
-        map((event) => event.payload.message as KeylistUpdateMessage),
+        filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
+        map((event) => event.payload.message as DidCommKeylistUpdateMessage),
         timeout(5000)
       )
     )
@@ -218,7 +218,7 @@ describe('out of band with mediation', () => {
         recipientKey: didKeyToVerkey(update.recipientKey),
       }))[0]
     ).toEqual({
-      action: KeylistUpdateAction.remove,
+      action: DidCommKeylistUpdateAction.remove,
       recipientKey: didKeyToVerkey((outOfBandInvitation.getServices()[0] as OutOfBandDidCommService).recipientKeys[0]),
     })
   })
