@@ -37,6 +37,8 @@ export interface OpenId4VciCredentialRequestAuthorization {
   }
 }
 
+export type OpenId4VciVersion = 'v1.draft11-14' | 'v1.draft15'
+
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
 
@@ -100,9 +102,9 @@ interface OpenId4VciCreateCredentialOfferOptionsBase {
   baseUri?: string
 
   /**
-   * @default v1.draft11-14
+   * @default v1.draft15
    */
-  version?: 'v1.draft11-14' | 'v1.draft15'
+  version?: OpenId4VciVersion
 }
 
 export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {

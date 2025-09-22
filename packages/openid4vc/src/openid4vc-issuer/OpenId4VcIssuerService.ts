@@ -167,7 +167,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft11-14',
+      version = 'v1.draft15',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -260,6 +260,7 @@ export class OpenId4VcIssuerService {
         : undefined,
       generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
+      openId4VciVersion: version,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
@@ -435,8 +436,7 @@ export class OpenId4VcIssuerService {
       credentialResponse = vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
         credentials: credentialRequest.proofs
-          ? issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
-            issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
+          ? issuanceSession.openId4VciVersion === 'v1.draft15'
             ? credentials.credentials.map((c) => ({ credential: c }))
             : credentials.credentials
           : undefined,
@@ -477,7 +477,6 @@ export class OpenId4VcIssuerService {
 
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
-    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
 
     const credentialConfigurationId = transaction.credentialConfigurationId
@@ -520,11 +519,7 @@ export class OpenId4VcIssuerService {
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials:
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
-            ? credentials.credentials.map((c) => ({ credential: c }))
-            : credentials.credentials,
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
       })
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)

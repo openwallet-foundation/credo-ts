@@ -1069,9 +1069,13 @@ export class OpenId4VciHolderService {
     const { verifyCredentialStatus, credentialConfigurationId, credentialConfiguration } = options
     this.logger.debug('Credential response', credentialResponse)
 
-    const credentials =
-      credentialResponse.credentials?.map((c) => (typeof c === 'object' && 'credential' in c ? c.credential : c)) ??
-      (credentialResponse.credential ? [credentialResponse.credential as CredentialResponse['credential']] : undefined)
+    const credentials = credentialResponse.credentials
+      ? credentialResponse.credentials.every((c) => typeof c === 'object' && c !== null && 'credential' in c)
+        ? credentialResponse.credentials.map((c) => (c as { credential: string | Record<string, unknown> }).credential)
+        : (credentialResponse.credentials as (string | Record<string, unknown>)[])
+      : credentialResponse.credential
+        ? [credentialResponse.credential as CredentialResponse['credential']]
+        : undefined
 
     if (!credentials) {
       throw new CredoError(`Credential response returned neither 'credentials' nor 'credential' parameter.`)
