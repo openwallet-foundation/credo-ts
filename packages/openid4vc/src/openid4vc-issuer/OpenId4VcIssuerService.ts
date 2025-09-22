@@ -167,7 +167,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft11-15',
+      version = 'v1.draft15',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -216,7 +216,7 @@ export class OpenId4VcIssuerService {
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
         originalDraftVersion:
-          version === 'v1.draft11-15' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
+          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
         ...issuerMetadata,
       },
     })
@@ -260,6 +260,7 @@ export class OpenId4VcIssuerService {
         : undefined,
       generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
+      openId4VciVersion: version,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
@@ -434,7 +435,11 @@ export class OpenId4VcIssuerService {
 
       credentialResponse = vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs ? credentials.credentials : undefined,
+        credentials: credentialRequest.proofs
+          ? issuanceSession.openId4VciVersion === 'v1.draft15'
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
         cNonce,
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
@@ -514,7 +519,7 @@ export class OpenId4VcIssuerService {
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials,
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
       })
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
