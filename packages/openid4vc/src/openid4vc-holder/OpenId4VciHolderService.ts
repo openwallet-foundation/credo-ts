@@ -1070,7 +1070,7 @@ export class OpenId4VciHolderService {
     this.logger.debug('Credential response', credentialResponse)
 
     const credentials =
-      credentialResponse.credentials ??
+      credentialResponse.credentials?.map((c) => (typeof c === 'object' && 'credential' in c ? c.credential : c)) ??
       (credentialResponse.credential ? [credentialResponse.credential as CredentialResponse['credential']] : undefined)
 
     if (!credentials) {

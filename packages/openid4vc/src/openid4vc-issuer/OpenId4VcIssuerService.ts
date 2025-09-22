@@ -167,7 +167,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft11-15',
+      version = 'v1.draft11-14',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -216,7 +216,7 @@ export class OpenId4VcIssuerService {
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
         originalDraftVersion:
-          version === 'v1.draft11-15' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
+          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
         ...issuerMetadata,
       },
     })
@@ -434,7 +434,12 @@ export class OpenId4VcIssuerService {
 
       credentialResponse = vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs ? credentials.credentials : undefined,
+        credentials: credentialRequest.proofs
+          ? issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
+            issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
         cNonce,
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
@@ -472,6 +477,7 @@ export class OpenId4VcIssuerService {
 
     const { issuanceSession } = options
     const issuer = await this.getIssuerByIssuerId(agentContext, options.issuanceSession.issuerId)
+    const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
 
     const credentialConfigurationId = transaction.credentialConfigurationId
@@ -514,7 +520,11 @@ export class OpenId4VcIssuerService {
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials,
+        credentials:
+          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
+          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials,
       })
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)

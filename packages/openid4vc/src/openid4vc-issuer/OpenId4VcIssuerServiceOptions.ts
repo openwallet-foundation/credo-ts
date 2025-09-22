@@ -100,12 +100,9 @@ interface OpenId4VciCreateCredentialOfferOptionsBase {
   baseUri?: string
 
   /**
-   * @default v1.draft11-15
-   *
-   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
-   * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
+   * @default v1.draft11-14
    */
-  version?: 'v1.draft11-15' | 'v1.draft15'
+  version?: 'v1.draft11-14' | 'v1.draft15'
 }
 
 export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
