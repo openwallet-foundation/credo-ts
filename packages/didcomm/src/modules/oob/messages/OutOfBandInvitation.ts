@@ -99,6 +99,7 @@ export class OutOfBandInvitation extends AgentMessage {
   }
 
   // shorthand for services without the need to deal with the String DIDs
+
   public getServices(): Array<OutOfBandDidCommService | string> {
     return this.services.map((service) => {
       if (service instanceof String) return service.toString()
@@ -108,6 +109,7 @@ export class OutOfBandInvitation extends AgentMessage {
   public getDidServices(): Array<string> {
     return this.getServices().filter((service): service is string => typeof service === 'string')
   }
+
   public getInlineServices(): Array<OutOfBandDidCommService> {
     return this.getServices().filter((service): service is OutOfBandDidCommService => typeof service !== 'string')
   }

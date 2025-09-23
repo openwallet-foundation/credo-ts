@@ -5,6 +5,7 @@ import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@c
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
@@ -74,6 +75,11 @@ export interface OpenId4VcIssuanceSessionPresentation {
    * The id of the `OpenId4VcVerificationSessionRecord` record this issuance session is linked to
    */
   openId4VcVerificationSessionId?: string
+}
+
+export interface OpenId4VcIssuanceSessionPkce {
+  codeChallengeMethod: PkceCodeChallengeMethod
+  codeChallenge: string
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
@@ -157,6 +163,11 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   errorMessage?: string
 
   generateRefreshTokens?: boolean
+
+  /**
+   * The version of openid4ci used for the request
+   */
+  openId4VciVersion: OpenId4VciVersion
 }
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
@@ -219,10 +230,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   /**
    * Proof Key Code Exchange
    */
-  public pkce?: {
-    codeChallengeMethod: PkceCodeChallengeMethod
-    codeChallenge: string
-  }
+  public pkce?: OpenId4VcIssuanceSessionPkce
 
   walletAttestation?: OpenId4VcIssuanceSessionWalletAttestation
   dpop?: OpenId4VcIssuanceSessionDpop
@@ -293,6 +301,13 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public generateRefreshTokens?: boolean
 
   /**
+   * The version of openid4ci used for the request
+   *
+   * @since 0.6
+   */
+  public openId4VciVersion?: OpenId4VciVersion
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -321,6 +336,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.state = props.state
       this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
+      this.transactions = props.transactions ?? []
+      this.openId4VciVersion = props.openId4VciVersion
     }
   }
 

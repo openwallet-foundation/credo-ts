@@ -91,7 +91,7 @@ export class ConnectionsApi {
     outOfBandRecord: OutOfBandRecord,
     config: {
       autoAcceptConnection?: boolean
-      label?: string
+      label: string
       alias?: string
       imageUrl?: string
       protocol: HandshakeProtocol

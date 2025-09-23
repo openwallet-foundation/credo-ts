@@ -32,6 +32,7 @@ import {
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
+  W3cV2CredentialService,
   injectable,
   joinUriParts,
   utils,
@@ -94,17 +95,20 @@ import { generateTxCode } from './util/txCode'
 @injectable()
 export class OpenId4VcIssuerService {
   private w3cCredentialService: W3cCredentialService
+  private w3cV2CredentialService: W3cV2CredentialService
   private openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig
   private openId4VcIssuerRepository: OpenId4VcIssuerRepository
   private openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
 
   public constructor(
     w3cCredentialService: W3cCredentialService,
+    w3cV2CredentialService: W3cV2CredentialService,
     openId4VcIssuerConfig: OpenId4VcIssuerModuleConfig,
     openId4VcIssuerRepository: OpenId4VcIssuerRepository,
     openId4VcIssuanceSessionRepository: OpenId4VcIssuanceSessionRepository
   ) {
     this.w3cCredentialService = w3cCredentialService
+    this.w3cV2CredentialService = w3cV2CredentialService
     this.openId4VcIssuerConfig = openId4VcIssuerConfig
     this.openId4VcIssuerRepository = openId4VcIssuerRepository
     this.openId4VcIssuanceSessionRepository = openId4VcIssuanceSessionRepository
@@ -163,7 +167,7 @@ export class OpenId4VcIssuerService {
       authorizationCodeFlowConfig,
       issuer,
       credentialConfigurationIds,
-      version = 'v1.draft11-15',
+      version = 'v1.draft15',
       authorization,
     } = options
     if (!preAuthorizedCodeFlowConfig && !authorizationCodeFlowConfig) {
@@ -212,7 +216,7 @@ export class OpenId4VcIssuerService {
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
         originalDraftVersion:
-          version === 'v1.draft11-15' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
+          version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
         ...issuerMetadata,
       },
     })
@@ -256,6 +260,7 @@ export class OpenId4VcIssuerService {
         : undefined,
       generateRefreshTokens: options.generateRefreshTokens,
       issuanceMetadata: options.issuanceMetadata,
+      openId4VciVersion: version,
     })
     await issuanceSessionRepository.save(agentContext, issuanceSession)
     this.emitStateChangedEvent(agentContext, issuanceSession, null)
@@ -430,7 +435,11 @@ export class OpenId4VcIssuerService {
 
       credentialResponse = vcIssuer.createCredentialResponse({
         credential: credentialRequest.proof ? credentials.credentials[0] : undefined,
-        credentials: credentialRequest.proofs ? credentials.credentials : undefined,
+        credentials: credentialRequest.proofs
+          ? issuanceSession.openId4VciVersion === 'v1.draft15'
+            ? credentials.credentials.map((c) => ({ credential: c }))
+            : credentials.credentials
+          : undefined,
         cNonce,
         cNonceExpiresInSeconds,
         credentialRequest: parsedCredentialRequest,
@@ -510,7 +519,7 @@ export class OpenId4VcIssuerService {
       })
 
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
-        credentials: credentials.credentials,
+        credentials: credentials.credentials.map((c) => ({ credential: c })),
       })
 
       issuanceSession.issuedCredentials.push(credentialConfigurationId)
@@ -1499,13 +1508,13 @@ export class OpenId4VcIssuerService {
         )) as string[] | Record<string, unknown>[],
       }
     }
-    if (signOptions.format === ClaimFormat.SdJwtVc) {
+    if (signOptions.format === ClaimFormat.SdJwtDc) {
       if (
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtVc &&
         credentialConfiguration.format !== OpenId4VciCredentialFormatProfile.SdJwtDc
       ) {
         throw new CredoError(
-          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtVc}', received '${signOptions.format}'.`
+          `Invalid credential format returned by sign options. Expected '${ClaimFormat.SdJwtDc}', received '${signOptions.format}'.`
         )
       }
 
@@ -1553,6 +1562,21 @@ export class OpenId4VcIssuerService {
         credentials: await Promise.all(
           signOptions.credentials.map((credential) => mdocApi.sign(credential).then((signed) => signed.base64Url))
         ),
+      }
+    }
+    if (signOptions.format === ClaimFormat.SdJwtW3cVc) {
+      return {
+        format: credentialConfiguration.format,
+        credentials: (await Promise.all(
+          signOptions.credentials.map((credential) =>
+            this.w3cV2CredentialService
+              .signCredential(agentContext, {
+                format: ClaimFormat.SdJwtW3cVc,
+                ...credential,
+              })
+              .then((signed) => signed.encoded)
+          )
+        )) as string[] | Record<string, unknown>[],
       }
     }
     throw new CredoError(`Unsupported credential format ${signOptions.format}`)

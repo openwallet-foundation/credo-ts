@@ -19,6 +19,8 @@ import type {
 } from '../../didcomm/src/modules/connections/TrustPingEvents'
 import type { ProofState } from '../../didcomm/src/modules/proofs'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
+import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
+import didcommDrizzleBundle from '../../drizzle-storage/src/didcomm/bundle'
 import type {
   Agent,
   AgentDependencies,
@@ -53,6 +55,7 @@ import { OutOfBandState } from '../../didcomm/src/modules/oob/domain/OutOfBandSt
 import { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { OutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
+import { DrizzleStorageModule } from '../../drizzle-storage/src'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
 import { DidKey } from '../src/modules/dids/methods/key'
@@ -64,6 +67,7 @@ import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { AskarModule } from '../../askar/src/AskarModule'
 import { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
 import { KeyManagementApi, KeyManagementService, PublicJwk } from '../src/modules/kms'
 import testLogger, { TestLogger } from './logger'
 
@@ -105,16 +109,19 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
   didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
-  { requireDidcomm = false, inMemory = true }: { requireDidcomm?: boolean; inMemory?: boolean } = {}
+  {
+    requireDidcomm = false,
+    inMemory = true,
+    drizzle,
+  }: { requireDidcomm?: boolean; inMemory?: boolean; drizzle?: AnyDrizzleDatabase } = {}
 ): {
   config: InitConfig
-  modules: AgentModules & DefaultAgentModulesInput
+  modules: AgentModules & DefaultAgentModulesInput & { drizzle?: DrizzleStorageModule }
   dependencies: AgentDependencies
   inMemory?: boolean
 } {
-  const random = uuid().slice(0, 4)
+  const _random = uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `Agent: ${name} - ${random}`,
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
     logger: TestLogger.fromLogger(testLogger, name),
@@ -123,19 +130,20 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
   const m = (inputModules ?? {}) as AgentModulesInput
 
-  const _kmsModules =
-    requireDidcomm || !inMemory
-      ? {
-          askar: new AskarModule({
-            askar,
-            store: getAskarStoreConfig(name, { inMemory }),
-          }),
-        }
-      : {
-          inMemory: new InMemoryWalletModule(),
-        }
+  const kms = requireDidcomm ? 'askar' : 'in-memory'
+  const storage = drizzle ? 'drizzle' : kms
+
+  const drizzleModules = drizzle
+    ? {
+        drizzle: new DrizzleStorageModule({
+          database: drizzle,
+          bundles: [didcommDrizzleBundle, anoncredsDrizzleBundle],
+        }),
+      }
+    : {}
 
   const modules = {
+    ...(storage === 'drizzle' ? drizzleModules : {}),
     ...(requireDidcomm
       ? {
           ...getDefaultDidcommModules(didcommConfig),
@@ -148,7 +156,25 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
         }
       : {}),
     ...m,
-    ..._kmsModules,
+
+    ...(kms === 'askar' || storage === 'askar'
+      ? {
+          askar: new AskarModule({
+            askar,
+            enableKms: kms === 'askar',
+            enableStorage: storage === 'askar',
+            store: getAskarStoreConfig(name, { inMemory }),
+          }),
+        }
+      : {}),
+    ...(kms === 'in-memory' || storage === 'in-memory'
+      ? {
+          inMemory: new InMemoryWalletModule({
+            enableKms: kms === 'in-memory',
+            enableStorage: storage === 'in-memory',
+          }),
+        }
+      : {}),
   }
 
   return {
@@ -726,7 +752,8 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
   })
 
   let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
-    agentAOutOfBand.outOfBandInvitation
+    agentAOutOfBand.outOfBandInvitation,
+    { label: '' }
   )
 
   // biome-ignore lint/style/noNonNullAssertion: <explanation>

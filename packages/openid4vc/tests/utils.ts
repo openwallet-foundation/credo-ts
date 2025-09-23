@@ -18,17 +18,15 @@ import {
   createX509Certificate,
   setupEventReplaySubjects,
 } from '../../core/tests'
-import { OpenId4VcIssuerEvents, OpenId4VcIssuerModule, OpenId4VcVerifierEvents, OpenId4VcVerifierModule } from '../src'
+import { OpenId4VcIssuerEvents, OpenId4VcModule, OpenId4VcVerifierEvents } from '../src'
 
 export async function createAgentFromModules<MM extends ModulesMap>(
-  label: string,
   modulesMap: MM,
   secretKey?: string,
   customFetch?: typeof global.fetch
 ) {
   const agent = new Agent<MM>({
     config: {
-      label,
       allowInsecureHttpUrls: true,
       logger: new TestLogger(LogLevel.off),
     },
@@ -40,10 +38,11 @@ export async function createAgentFromModules<MM extends ModulesMap>(
   })
 
   let dns = 'localhost'
-  if (modulesMap.openId4VcIssuer instanceof OpenId4VcIssuerModule) {
-    dns = getDomainFromUrl(modulesMap.openId4VcIssuer.config.baseUrl)
-  } else if (modulesMap.openId4VcVerifier instanceof OpenId4VcVerifierModule) {
-    dns = getDomainFromUrl(modulesMap.openId4VcVerifier.config.baseUrl)
+  if (modulesMap.openid4vc instanceof OpenId4VcModule) {
+    const baseUrl = modulesMap.openid4vc.issuer?.config.baseUrl ?? modulesMap.openid4vc.verifier?.config.baseUrl
+    if (baseUrl) {
+      dns = getDomainFromUrl(baseUrl)
+    }
   }
 
   await agent.initialize()
