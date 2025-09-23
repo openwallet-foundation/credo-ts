@@ -1,4 +1,4 @@
-import { type AgentContext, Kms } from '@credo-ts/core'
+import { type AgentContext, Buffer, Kms } from '@credo-ts/core'
 import {
   MultibaseEncoding,
   Signer,

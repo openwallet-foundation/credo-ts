@@ -17,3 +17,7 @@ export interface SecuredDocument {
   [key: string]: string | object
   proof: Proof
 }
+
+export interface unsecuredDocument {
+  [key: string]: string | object
+}
