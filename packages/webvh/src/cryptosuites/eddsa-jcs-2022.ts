@@ -1,8 +1,18 @@
-import type { ProofOptions } from './types'
+import type { Proof, ProofOptions, unsecuredDocument } from './types'
 import type { WebVhResource } from '../anoncreds/utils/transform'
 
-import { type AgentContext, CredoError, Key } from '@credo-ts/core'
-import { DidsApi, Hasher, MultiBaseEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  type AgentContext,
+  Buffer,
+  CredoError,
+  DidsApi,
+  Hasher,
+  Key,
+  KeyType,
+  MultiBaseEncoder,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
+import { multibaseEncode, MultibaseEncoding } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
 
 import { WebvhDidCrypto } from '../dids'
@@ -97,5 +107,35 @@ export class EddsaJcs2022Cryptosuite {
       verifiedDocument: unsecuredDocument,
     }
     return verificationResult
+  }
+
+  public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
+    const publicKey = await this._publicKeyFromId(options.verificationMethod)
+    if (!publicKey) {
+      const err = `Could not resolve public key for verificationMethod "${options.verificationMethod}`
+      this._logError(err)
+      throw new CredoError(err)
+    }
+    const key = Key.fromPublicKey(Buffer.from(publicKey.slice(2).slice(0, 32)), KeyType.Ed25519)
+    const proofBytes = await this.agentContext.wallet.sign({
+      key,
+      data: Buffer.from(hashData),
+    })
+    return proofBytes
+  }
+
+  public async createProof(unsecuredDocument: unsecuredDocument, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    const proof: Proof = {
+      ...options,
+      proofValue: '',
+    }
+    const proofConfig = this.proofConfiguration(options)
+    const transformedData = this.transformation(unsecuredDocument, options)
+    const hashData = this.hashing(transformedData, proofConfig)
+    const proofBytes = await this.proofSerialization(hashData, options)
+    proof.proofValue = multibaseEncode(proofBytes, MultibaseEncoding.BASE58_BTC)
+    return proof
   }
 }
