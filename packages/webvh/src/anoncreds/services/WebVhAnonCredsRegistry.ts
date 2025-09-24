@@ -545,7 +545,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     const { proof, ...restMetadata } = registrationMetadata
 
     const vm = proof?.verificationMethod
-    if (!vm) throw new Error('verificationMethod not found in proof')
+    if (!vm) throw new CredoError('verificationMethod not found in proof')
     const verificationMethod = typeof vm === 'string' ? vm : vm.id
 
     const updatedMetadata = { ...restMetadata, ...extraInfo }
