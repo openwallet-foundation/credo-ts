@@ -28,7 +28,7 @@ import { DidCommMessageRepository, DidCommMessageRole } from './repository'
  * Get the outbound message context for a message. Will use the connection record if available,
  * and otherwise try to create a connectionless message context.
  */
-export async function getDidCommOutboundMessageContext(
+export async function getOutboundDidCommMessageContext(
   agentContext: AgentContext,
   {
     message,

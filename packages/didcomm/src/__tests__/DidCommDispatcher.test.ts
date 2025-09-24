@@ -6,7 +6,7 @@ import { DidCommDispatcher } from '../DidCommDispatcher'
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
-import { getDidCommOutboundMessageContext } from '../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../getDidCommOutboundMessageContext'
 import { DidCommInboundMessageContext } from '../models'
 import { type DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
@@ -298,7 +298,7 @@ describe('DidCommDispatcher', () => {
         .fn()
         .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext) => {
           // We do not call next
-          inboundMessageContext.responseMessage = await getDidCommOutboundMessageContext(
+          inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
             inboundMessageContext.agentContext,
             {
               message: new CustomProtocolMessage({

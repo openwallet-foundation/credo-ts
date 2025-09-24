@@ -1,17 +1,17 @@
 import type { DidCommCredentialFormat } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type {
-  AnonCredsAcceptOfferFormat,
-  AnonCredsAcceptProposalFormat,
-  AnonCredsAcceptRequestFormat,
-  AnonCredsCredentialProposalFormat,
-  AnonCredsOfferCredentialFormat,
-  AnonCredsProposeCredentialFormat,
-} from './AnonCredsCredentialFormat'
+  AnonCredsDidCommAcceptOfferFormat,
+  AnonCredsDidCommAcceptProposalFormat,
+  AnonCredsDidCommAcceptRequestFormat,
+  AnonCredsDidCommCredentialProposalFormat,
+  AnonCredsDidCommOfferCredentialFormat,
+  AnonCredsDidCommProposeCredentialFormat,
+} from './AnonCredsDidCommCredentialFormat'
 
 // Legacy indy credential proposal doesn't support _id properties
-export type LegacyIndyCredentialProposalFormat = Omit<
-  AnonCredsCredentialProposalFormat,
+export type LegacyIndyDidCommCredentialProposalFormat = Omit<
+  AnonCredsDidCommCredentialProposalFormat,
   'schema_issuer_id' | 'issuer_id'
 >
 
@@ -21,7 +21,10 @@ export type LegacyIndyCredentialProposalFormat = Omit<
  *
  * NOTE: This doesn't include the `issuerId` and `schemaIssuerId` properties that are present in the newer format.
  */
-export type LegacyIndyProposeCredentialFormat = Omit<AnonCredsProposeCredentialFormat, 'schemaIssuerId' | 'issuerId'>
+export type LegacyIndyDidCommProposeCredentialFormat = Omit<
+  AnonCredsDidCommProposeCredentialFormat,
+  'schemaIssuerId' | 'issuerId'
+>
 
 export interface LegacyIndyCredentialRequest extends AnonCredsCredentialRequest {
   // prover_did is optional in AnonCreds credential request, but required in legacy format
@@ -36,18 +39,18 @@ export interface LegacyIndyCredentialFormat extends DidCommCredentialFormat {
   // credential formats are the same as the AnonCreds credential format
   credentialFormats: {
     // The createProposal interface is different between the interfaces
-    createProposal: LegacyIndyProposeCredentialFormat
-    acceptProposal: AnonCredsAcceptProposalFormat
-    createOffer: AnonCredsOfferCredentialFormat
-    acceptOffer: AnonCredsAcceptOfferFormat
+    createProposal: LegacyIndyDidCommProposeCredentialFormat
+    acceptProposal: AnonCredsDidCommAcceptProposalFormat
+    createOffer: AnonCredsDidCommOfferCredentialFormat
+    acceptOffer: AnonCredsDidCommAcceptOfferFormat
     createRequest: never // cannot start from createRequest
-    acceptRequest: AnonCredsAcceptRequestFormat
+    acceptRequest: AnonCredsDidCommAcceptRequestFormat
   }
 
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
   formatData: {
-    proposal: LegacyIndyCredentialProposalFormat
+    proposal: LegacyIndyDidCommCredentialProposalFormat
     offer: AnonCredsCredentialOffer
     request: LegacyIndyCredentialRequest
     credential: AnonCredsCredential

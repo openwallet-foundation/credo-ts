@@ -3,7 +3,7 @@ import type { DidCommInboundMessageContext } from '../../../../../models'
 import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
 
-import { getDidCommOutboundMessageContext } from '../../../../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
 export class DidCommOfferCredentialV2Handler implements DidCommMessageHandler {
@@ -37,7 +37,7 @@ export class DidCommOfferCredentialV2Handler implements DidCommMessageHandler {
       credentialExchangeRecord,
     })
 
-    return getDidCommOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialExchangeRecord,

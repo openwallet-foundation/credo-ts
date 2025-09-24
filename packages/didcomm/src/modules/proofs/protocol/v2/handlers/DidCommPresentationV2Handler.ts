@@ -2,7 +2,7 @@ import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from 
 import type { DidCommProofExchangeRecord } from '../../../repository'
 import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
 
-import { getDidCommOutboundMessageContext } from '../../../../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
@@ -44,7 +44,7 @@ export class DidCommPresentationV2Handler implements DidCommMessageHandler {
       role: DidCommMessageRole.Sender,
     })
 
-    return getDidCommOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: proofRecord,

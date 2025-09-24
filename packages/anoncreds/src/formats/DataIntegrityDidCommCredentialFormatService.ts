@@ -92,7 +92,7 @@ const W3C_DATA_INTEGRITY_CREDENTIAL_OFFER = 'didcomm/w3c-di-vc-offer@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL_REQUEST = 'didcomm/w3c-di-vc-request@v0.1'
 const W3C_DATA_INTEGRITY_CREDENTIAL = 'didcomm/w3c-di-vc@v0.1'
 
-export class DataIntegrityCredentialFormatService
+export class DataIntegrityDidCommCredentialFormatService
   implements DidCommCredentialFormatService<DidCommDataIntegrityCredentialFormat>
 {
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */

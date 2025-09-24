@@ -28,7 +28,7 @@ import { AgentContext, CredoError, injectable } from '@credo-ts/core'
 
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { getDidCommOutboundMessageContext } from '../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
 import { DidCommConnectionService } from '../connections'
 
 import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
@@ -148,7 +148,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       parentThreadId: options.parentThreadId,
     })
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -192,7 +192,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     })
 
     // send the message
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -235,7 +235,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -270,7 +270,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       willConfirm: options.willConfirm,
     })
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       associatedRecord: proofRecord,
       connectionRecord,
@@ -313,7 +313,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       goal: options.goal,
     })
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -373,7 +373,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       comment: options.comment,
     })
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -440,7 +440,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
     })
 
     // FIXME: returnRoute: false
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message,
       connectionRecord,
       associatedRecord: proofRecord,
@@ -525,7 +525,7 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
       }
     }
 
-    const outboundMessageContext = await getDidCommOutboundMessageContext(this.agentContext, {
+    const outboundMessageContext = await getOutboundDidCommMessageContext(this.agentContext, {
       message: problemReport,
       connectionRecord,
       associatedRecord: proofRecord,

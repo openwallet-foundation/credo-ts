@@ -27,7 +27,10 @@ import type {
 } from '../models'
 import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import type { AnonCredsCredentialFormat, AnonCredsCredentialProposalFormat } from './AnonCredsCredentialFormat'
+import type {
+  AnonCredsDidCommCredentialFormat,
+  AnonCredsDidCommCredentialProposalFormat,
+} from './AnonCredsDidCommCredentialFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
@@ -66,7 +69,9 @@ const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
 const ANONCREDS_CREDENTIAL_FILTER = 'anoncreds/credential-filter@v1.0'
 const ANONCREDS_CREDENTIAL = 'anoncreds/credential@v1.0'
 
-export class AnonCredsCredentialFormatService implements DidCommCredentialFormatService<AnonCredsCredentialFormat> {
+export class AnonCredsCredentialFormatService
+  implements DidCommCredentialFormatService<AnonCredsDidCommCredentialFormat>
+{
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.anoncreds */
   public readonly formatKey = 'anoncreds' as const
 
@@ -85,7 +90,10 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
    */
   public async createProposal(
     _agentContext: AgentContext,
-    { credentialFormats, credentialExchangeRecord }: CredentialFormatCreateProposalOptions<AnonCredsCredentialFormat>
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+    }: CredentialFormatCreateProposalOptions<AnonCredsDidCommCredentialFormat>
   ): Promise<CredentialFormatCreateProposalReturn> {
     const format = new DidCommCredentialFormatSpec({
       format: ANONCREDS_CREDENTIAL_FILTER,
@@ -140,11 +148,11 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
       credentialFormats,
       credentialExchangeRecord,
       proposalAttachment,
-    }: CredentialFormatAcceptProposalOptions<AnonCredsCredentialFormat>
+    }: CredentialFormatAcceptProposalOptions<AnonCredsDidCommCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anoncredsFormat = credentialFormats?.anoncreds
 
-    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsDidCommCredentialProposalFormat>()
     const credentialDefinitionId = anoncredsFormat?.credentialDefinitionId ?? proposalJson.cred_def_id
 
     const attributes = anoncredsFormat?.attributes ?? credentialExchangeRecord.credentialAttributes
@@ -183,7 +191,7 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
       credentialFormats,
       credentialExchangeRecord,
       attachmentId,
-    }: CredentialFormatCreateOfferOptions<AnonCredsCredentialFormat>
+    }: CredentialFormatCreateOfferOptions<AnonCredsDidCommCredentialFormat>
   ): Promise<CredentialFormatCreateOfferReturn> {
     const anoncredsFormat = credentialFormats.anoncreds
 
@@ -228,7 +236,7 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
       attachmentId,
       offerAttachment,
       credentialFormats,
-    }: CredentialFormatAcceptOfferOptions<AnonCredsCredentialFormat>
+    }: CredentialFormatAcceptOfferOptions<AnonCredsDidCommCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
@@ -282,7 +290,7 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
       attachmentId,
       offerAttachment,
       requestAttachment,
-    }: CredentialFormatAcceptRequestOptions<AnonCredsCredentialFormat>
+    }: CredentialFormatAcceptRequestOptions<AnonCredsDidCommCredentialFormat>
   ): Promise<CredentialFormatCreateReturn> {
     // Assert credential attributes
     const credentialAttributes = credentialExchangeRecord.credentialAttributes
@@ -497,7 +505,7 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
     _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
-    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.
@@ -510,7 +518,7 @@ export class AnonCredsCredentialFormatService implements DidCommCredentialFormat
     _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
-    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<AnonCredsDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.

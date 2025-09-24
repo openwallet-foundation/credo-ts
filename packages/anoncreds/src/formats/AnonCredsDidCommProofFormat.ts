@@ -60,7 +60,7 @@ export interface AnonCredsGetCredentialsForProofRequestOptions {
   filterByNonRevocationRequirements?: boolean
 }
 
-export interface AnonCredsProofFormat extends DidCommProofFormat {
+export interface AnonCredsDidCommProofFormat extends DidCommProofFormat {
   formatKey: 'anoncreds'
 
   proofFormats: {

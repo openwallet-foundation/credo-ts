@@ -15,7 +15,7 @@ import {
   waitForDidRotate,
 } from '../../../../../core/tests/helpers'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
-import { getDidCommOutboundMessageContext } from '../../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
 import { DidCommBasicMessage } from '../../basic-messages'
 import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
 import { DidCommConnectionRecord } from '../repository'
@@ -110,7 +110,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -216,7 +216,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -301,7 +301,7 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getDidCommOutboundMessageContext(bobAgent.context, {
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
@@ -374,7 +374,7 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getDidCommOutboundMessageContext(bobAgent.context, {
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
@@ -411,7 +411,7 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getDidCommOutboundMessageContext(bobAgent.context, {
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
         message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })

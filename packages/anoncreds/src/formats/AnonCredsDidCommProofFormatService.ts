@@ -24,7 +24,10 @@ import type {
   AnonCredsSelectedCredentials,
 } from '../models'
 import type { AnonCredsHolderService, AnonCredsVerifierService } from '../services'
-import type { AnonCredsGetCredentialsForProofRequestOptions, AnonCredsProofFormat } from './AnonCredsProofFormat'
+import type {
+  AnonCredsDidCommProofFormat,
+  AnonCredsGetCredentialsForProofRequestOptions,
+} from './AnonCredsDidCommProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
@@ -49,12 +52,12 @@ const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION = 'anoncreds/proof@v1.0'
 
-export class AnonCredsProofFormatService implements DidCommProofFormatService<AnonCredsProofFormat> {
+export class AnonCredsDidCommProofFormatService implements DidCommProofFormatService<AnonCredsDidCommProofFormat> {
   public readonly formatKey = 'anoncreds' as const
 
   public async createProposal(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<AnonCredsProofFormat>
+    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<AnonCredsDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
@@ -93,7 +96,7 @@ export class AnonCredsProofFormatService implements DidCommProofFormatService<An
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<AnonCredsProofFormat>
+    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<AnonCredsDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
@@ -117,7 +120,7 @@ export class AnonCredsProofFormatService implements DidCommProofFormatService<An
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsProofFormat>
+    { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
@@ -159,7 +162,7 @@ export class AnonCredsProofFormatService implements DidCommProofFormatService<An
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<AnonCredsProofFormat>
+    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<AnonCredsDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION,
@@ -242,8 +245,8 @@ export class AnonCredsProofFormatService implements DidCommProofFormatService<An
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<AnonCredsProofFormat>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<AnonCredsProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<ProofFormatGetCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -258,8 +261,8 @@ export class AnonCredsProofFormatService implements DidCommProofFormatService<An
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<AnonCredsProofFormat>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<AnonCredsProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<ProofFormatSelectCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values

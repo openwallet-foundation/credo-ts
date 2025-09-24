@@ -56,7 +56,7 @@ import {
   parseIndySchemaId,
 } from '../../utils/indyIdentifiers'
 import { LegacyIndyCredentialFormatService } from '../LegacyIndyCredentialFormatService'
-import { LegacyIndyProofFormatService } from '../LegacyIndyProofFormatService'
+import { LegacyIndyDidCommProofFormatService } from '../LegacyIndyDidCommProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
@@ -117,7 +117,7 @@ const agentContext = getAgentContext({
 })
 
 const indyCredentialFormatService = new LegacyIndyCredentialFormatService()
-const indyProofFormatService = new LegacyIndyProofFormatService()
+const indyProofFormatService = new LegacyIndyDidCommProofFormatService()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 // We can split up these tests when we can use AnonCredsRS as a backend, but currently

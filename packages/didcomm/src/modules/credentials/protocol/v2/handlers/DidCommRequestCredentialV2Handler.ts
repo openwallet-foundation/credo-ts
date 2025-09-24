@@ -5,7 +5,7 @@ import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol
 
 import { CredoError } from '@credo-ts/core'
 
-import { getDidCommOutboundMessageContext } from '../../../../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommRequestCredentialV2Message } from '../messages/DidCommRequestCredentialV2Message'
 
 export class DidCommRequestCredentialV2Handler implements DidCommMessageHandler {
@@ -48,7 +48,7 @@ export class DidCommRequestCredentialV2Handler implements DidCommMessageHandler 
       credentialExchangeRecord,
     })
 
-    return getDidCommOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialExchangeRecord,

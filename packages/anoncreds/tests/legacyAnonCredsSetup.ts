@@ -2,7 +2,7 @@ import type { DidCommAutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/
 import type { DefaultAgentModulesInput } from '../..//didcomm/src/util/modules'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
-  AnonCredsOfferCredentialFormat,
+  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRequestedAttribute,
   AnonCredsRequestedPredicate,
@@ -231,7 +231,7 @@ export async function issueLegacyAnonCredsCredential({
   holderReplay: EventReplaySubject
 
   issuerHolderConnectionId: string
-  offer: AnonCredsOfferCredentialFormat
+  offer: AnonCredsDidCommOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
     comment: 'some comment about credential',

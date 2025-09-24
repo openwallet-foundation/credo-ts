@@ -3,7 +3,7 @@ import type { DidCommAutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/
 import type { EventReplaySubject } from '../../core/tests'
 import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import type {
-  AnonCredsOfferCredentialFormat,
+  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
   AnonCredsRegisterRevocationStatusListOptions,
@@ -52,7 +52,7 @@ import {
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService } from '../src'
-import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
@@ -78,7 +78,7 @@ export const getAnonCredsModules = ({
     seed?: string
   }
 } = {}) => {
-  const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
+  const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
     existingCredentialDefinitions: {
@@ -149,7 +149,7 @@ export async function issueAnonCredsCredential({
 
   issuerHolderConnectionId: string
   revocationRegistryDefinitionId: string | null
-  offer: AnonCredsOfferCredentialFormat
+  offer: AnonCredsDidCommOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
     comment: 'some comment about credential',

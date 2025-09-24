@@ -1,6 +1,6 @@
 import type { EventReplaySubject } from '@credo-ts/core/tests'
 import type { AnonCredsHolderService } from '../../../../../../../anoncreds/src'
-import type { LegacyIndyProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyCredentialFormat'
+import type { LegacyIndyDidCommProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyDidCommCredentialFormat'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 
 import { JsonTransformer } from '@credo-ts/core/src/utils'
@@ -41,7 +41,7 @@ describe('v2 credentials', () => {
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
 
-  let indyCredentialProposal: LegacyIndyProposeCredentialFormat
+  let indyCredentialProposal: LegacyIndyDidCommProposeCredentialFormat
 
   const newCredentialPreview = DidCommCredentialV2Preview.fromRecord({
     name: 'John',

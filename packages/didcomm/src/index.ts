@@ -28,7 +28,7 @@ export { DidCommApi } from './DidCommApi'
 export { DidCommModule } from './DidCommModule'
 export { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
 
-export { getDidCommOutboundMessageContext as getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
+export { getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
 
 export { getDefaultDidcommModules } from './util/modules'
 export {

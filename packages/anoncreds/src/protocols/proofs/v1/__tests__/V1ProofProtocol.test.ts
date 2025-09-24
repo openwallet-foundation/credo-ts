@@ -19,7 +19,7 @@ import {
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommProofExchangeRepository } from '../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
-import { LegacyIndyProofFormatService } from '../../../../formats/LegacyIndyProofFormatService'
+import { LegacyIndyDidCommProofFormatService } from '../../../../formats/LegacyIndyDidCommProofFormatService'
 import { DidCommProofV1Protocol } from '../DidCommProofV1Protocol'
 import { DidCommRequestPresentationV1Message, INDY_PROOF_REQUEST_ATTACHMENT_ID } from '../messages'
 import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
@@ -34,7 +34,7 @@ jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommCon
 const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
 const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const indyProofFormatServiceMock = LegacyIndyProofFormatService as jest.Mock<LegacyIndyProofFormatService>
+const indyProofFormatServiceMock = LegacyIndyDidCommProofFormatService as jest.Mock<LegacyIndyDidCommProofFormatService>
 
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()

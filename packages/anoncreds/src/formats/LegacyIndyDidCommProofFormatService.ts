@@ -32,8 +32,8 @@ import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsFo
 import type {
   AnonCredsCredentialsForProofRequest,
   AnonCredsGetCredentialsForProofRequestOptions,
-} from './AnonCredsProofFormat'
-import type { LegacyIndyProofFormat } from './LegacyIndyProofFormat'
+} from './AnonCredsDidCommProofFormat'
+import type { LegacyIndyDidCommProofFormat } from './LegacyIndyDidCommProofFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
@@ -67,12 +67,12 @@ const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION = 'hlindy/proof@v2.0'
 
-export class LegacyIndyProofFormatService implements DidCommProofFormatService<LegacyIndyProofFormat> {
+export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatService<LegacyIndyDidCommProofFormat> {
   public readonly formatKey = 'indy' as const
 
   public async createProposal(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyProofFormat>
+    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
@@ -109,7 +109,7 @@ export class LegacyIndyProofFormatService implements DidCommProofFormatService<L
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyProofFormat>
+    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
@@ -132,7 +132,7 @@ export class LegacyIndyProofFormatService implements DidCommProofFormatService<L
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyProofFormat>
+    { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
@@ -174,7 +174,7 @@ export class LegacyIndyProofFormatService implements DidCommProofFormatService<L
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<LegacyIndyProofFormat>
+    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<LegacyIndyDidCommProofFormat>
   ): Promise<ProofFormatCreateReturn> {
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION,
@@ -259,8 +259,8 @@ export class LegacyIndyProofFormatService implements DidCommProofFormatService<L
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<LegacyIndyProofFormat>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<LegacyIndyProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<ProofFormatGetCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -275,8 +275,8 @@ export class LegacyIndyProofFormatService implements DidCommProofFormatService<L
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<LegacyIndyProofFormat>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<LegacyIndyProofFormat>> {
+    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<ProofFormatSelectCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values

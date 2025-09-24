@@ -5,7 +5,7 @@ import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol
 
 import { CredoError } from '@credo-ts/core'
 
-import { getDidCommOutboundMessageContext } from '../../../../../getDidCommOutboundMessageContext'
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommIssueCredentialV2Message } from '../messages/DidCommIssueCredentialV2Message'
 
 export class DidCommIssueCredentialV2Handler implements DidCommMessageHandler {
@@ -46,7 +46,7 @@ export class DidCommIssueCredentialV2Handler implements DidCommMessageHandler {
       throw new CredoError(`No request message found for credential record with id '${credentialExchangeRecord.id}'`)
     }
 
-    return getDidCommOutboundMessageContext(messageContext.agentContext, {
+    return getOutboundDidCommMessageContext(messageContext.agentContext, {
       connectionRecord: messageContext.connection,
       message,
       associatedRecord: credentialExchangeRecord,

@@ -5,7 +5,7 @@ import type {
 } from '@credo-ts/didcomm'
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 
-export interface AnonCredsCredentialProposalFormat {
+export interface AnonCredsDidCommCredentialProposalFormat {
   schema_issuer_id?: string
   schema_name?: string
   schema_version?: string
@@ -24,7 +24,7 @@ export interface AnonCredsCredentialProposalFormat {
  * This defines the module payload for calling CredentialsApi.createProposal
  * or CredentialsApi.negotiateOffer
  */
-export interface AnonCredsProposeCredentialFormat {
+export interface AnonCredsDidCommProposeCredentialFormat {
   schemaIssuerId?: string
   schemaId?: string
   schemaName?: string
@@ -44,7 +44,7 @@ export interface AnonCredsProposeCredentialFormat {
 /**
  * This defines the module payload for calling CredentialsApi.acceptProposal
  */
-export interface AnonCredsAcceptProposalFormat {
+export interface AnonCredsDidCommAcceptProposalFormat {
   credentialDefinitionId?: string
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
@@ -56,7 +56,7 @@ export interface AnonCredsAcceptProposalFormat {
  * This defines the module payload for calling CredentialsApi.acceptOffer. No options are available for this
  * method, so it's an empty object
  */
-export interface AnonCredsAcceptOfferFormat {
+export interface AnonCredsDidCommAcceptOfferFormat {
   linkSecretId?: string
 }
 
@@ -64,7 +64,7 @@ export interface AnonCredsAcceptOfferFormat {
  * This defines the module payload for calling CredentialsApi.offerCredential
  * or CredentialsApi.negotiateProposal
  */
-export interface AnonCredsOfferCredentialFormat {
+export interface AnonCredsDidCommOfferCredentialFormat {
   credentialDefinitionId: string
   revocationRegistryDefinitionId?: string
   revocationRegistryIndex?: number
@@ -76,24 +76,24 @@ export interface AnonCredsOfferCredentialFormat {
  * This defines the module payload for calling CredentialsApi.acceptRequest. No options are available for this
  * method, so it's an empty object
  */
-export type AnonCredsAcceptRequestFormat = Record<string, never>
+export type AnonCredsDidCommAcceptRequestFormat = Record<string, never>
 
-export interface AnonCredsCredentialFormat extends DidCommCredentialFormat {
+export interface AnonCredsDidCommCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'anoncreds'
   credentialRecordType: 'w3c'
   credentialFormats: {
-    createProposal: AnonCredsProposeCredentialFormat
-    acceptProposal: AnonCredsAcceptProposalFormat
-    createOffer: AnonCredsOfferCredentialFormat
-    acceptOffer: AnonCredsAcceptOfferFormat
+    createProposal: AnonCredsDidCommProposeCredentialFormat
+    acceptProposal: AnonCredsDidCommAcceptProposalFormat
+    createOffer: AnonCredsDidCommOfferCredentialFormat
+    acceptOffer: AnonCredsDidCommAcceptOfferFormat
     createRequest: never // cannot start from createRequest
-    acceptRequest: AnonCredsAcceptRequestFormat
+    acceptRequest: AnonCredsDidCommAcceptRequestFormat
   }
   // TODO: update to new RFC once available
   // Format data is based on RFC 0592
   // https://github.com/hyperledger/aries-rfcs/tree/main/features/0592-indy-attachments
   formatData: {
-    proposal: AnonCredsCredentialProposalFormat
+    proposal: AnonCredsDidCommCredentialProposalFormat
     offer: AnonCredsCredentialOffer
     request: AnonCredsCredentialRequest
     credential: AnonCredsCredential

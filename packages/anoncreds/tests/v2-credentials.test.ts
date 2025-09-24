@@ -1,4 +1,4 @@
-import type { AnonCredsHolderService, AnonCredsProposeCredentialFormat } from '@credo-ts/anoncreds'
+import type { AnonCredsDidCommProposeCredentialFormat, AnonCredsHolderService } from '@credo-ts/anoncreds'
 import type { EventReplaySubject } from '../../core/tests'
 import type { AnonCredsTestsAgent } from './anoncredsSetup'
 
@@ -40,7 +40,7 @@ describe('IC V2 AnonCreds credentials', () => {
   let faberReplay: EventReplaySubject
   let aliceReplay: EventReplaySubject
 
-  let anonCredsCredentialProposal: AnonCredsProposeCredentialFormat
+  let anonCredsCredentialProposal: AnonCredsDidCommProposeCredentialFormat
 
   const inMemoryRegistry = new InMemoryAnonCredsRegistry()
 

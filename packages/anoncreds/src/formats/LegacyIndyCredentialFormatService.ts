@@ -22,7 +22,10 @@ import type {
 import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import type { LegacyIndyCredentialFormat, LegacyIndyCredentialProposalFormat } from './LegacyIndyCredentialFormat'
+import type {
+  LegacyIndyCredentialFormat,
+  LegacyIndyDidCommCredentialProposalFormat,
+} from './LegacyIndyDidCommCredentialFormat'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import {
@@ -130,7 +133,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
   ): Promise<CredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats?.indy
 
-    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
     const credentialDefinitionId = indyFormat?.credentialDefinitionId ?? proposalJson.cred_def_id
 
     const attributes = indyFormat?.attributes ?? credentialExchangeRecord.credentialAttributes
@@ -431,7 +434,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
     _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
   ) {
-    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.
@@ -444,7 +447,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
     _agentContext: AgentContext,
     { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
   ) {
-    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyCredentialProposalFormat>()
+    const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
 
     // We want to make sure the credential definition matches.

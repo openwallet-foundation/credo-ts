@@ -5,12 +5,12 @@ import type {
   AnonCredsGetCredentialsForProofRequestOptions,
   AnonCredsProposeProofFormat,
   AnonCredsRequestProofFormat,
-} from './AnonCredsProofFormat'
+} from './AnonCredsDidCommProofFormat'
 
 // TODO: Custom restrictions to remove `_id` from restrictions?
 export type LegacyIndyProofRequest = AnonCredsProofRequest
 
-export interface LegacyIndyProofFormat extends DidCommProofFormat {
+export interface LegacyIndyDidCommProofFormat extends DidCommProofFormat {
   formatKey: 'indy'
 
   proofFormats: {
