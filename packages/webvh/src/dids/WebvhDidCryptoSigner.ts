@@ -53,13 +53,13 @@ export class WebvhDidCryptoSigner implements Signer {
         crv: 'Ed25519',
         publicKey: Buffer.from(decoded.slice(2).slice(0, 32)),
       })
-      const signature = await kms.sign({
+      const { signature } = await kms.sign({
         keyId: publicJwk.keyId,
         algorithm: 'EdDSA',
         data: Buffer.from(data),
       })
       return {
-        proofValue: multibaseEncode(signature.signature, MultibaseEncoding.BASE58_BTC),
+        proofValue: multibaseEncode(signature, MultibaseEncoding.BASE58_BTC),
       }
     } catch (error) {
       this.agentContext.config.logger.error('KMS signing error:', error)

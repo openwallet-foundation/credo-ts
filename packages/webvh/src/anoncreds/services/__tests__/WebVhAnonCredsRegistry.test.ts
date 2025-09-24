@@ -346,7 +346,7 @@ describe('WebVhAnonCredsRegistry', () => {
       mockResolveResource.mockResolvedValue(mockResolverResponse)
       const schema = mockSchemaResource.content
 
-      const result = await registry.registerSchema(agentContext, { schema, options: {} })
+      const result = await registry.registerSchema(agentContext, { schema })
       expect(result).toMatchObject({
         schemaState: {
           state: 'finished',
