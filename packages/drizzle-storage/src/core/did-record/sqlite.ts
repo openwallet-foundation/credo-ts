@@ -1,4 +1,4 @@
-import { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
+import type { DidDocumentKey, DidDocumentRole } from '@credo-ts/core'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

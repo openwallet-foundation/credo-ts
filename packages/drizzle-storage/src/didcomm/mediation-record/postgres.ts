@@ -1,11 +1,23 @@
-import { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
+import type { MediationRole, MediationState, MediatorPickupStrategy } from '@credo-ts/didcomm'
 import { boolean, foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 import { didcommConnection } from '../postgres'
 
-export const didcommMediationStateEnum = pgEnum('DidcommMediationState', MediationState)
-export const didcommMediationRoleEnum = pgEnum('DidcommMediationRole', MediationRole)
-export const didcommMediationPickupStrategyEnum = pgEnum('DidcommMediationPickupStrategry', MediatorPickupStrategy)
+export const didcommMediationStates = exhaustiveArray({} as MediationState, ['requested', 'granted', 'denied'] as const)
+export const didcommMediationStateEnum = pgEnum('DidcommMediationState', didcommMediationStates)
+
+export const didcommMediationRoles = exhaustiveArray({} as MediationRole, ['MEDIATOR', 'RECIPIENT'] as const)
+export const didcommMediationRoleEnum = pgEnum('DidcommMediationRole', didcommMediationRoles)
+
+export const didcommMediationPickupStrategies = exhaustiveArray(
+  {} as MediatorPickupStrategy,
+  ['PickUpV1', 'PickUpV2', 'PickUpV2LiveMode', 'Implicit', 'None'] as const
+)
+export const didcommMediationPickupStrategyEnum = pgEnum(
+  'DidcommMediationPickupStrategry',
+  didcommMediationPickupStrategies
+)
 
 export const didcommMediation = pgTable(
   'DidcommMediation',

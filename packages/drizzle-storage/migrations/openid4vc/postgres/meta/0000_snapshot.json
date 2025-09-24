@@ -1,5 +1,5 @@
 {
-  "id": "f239d3c6-e677-4fef-8891-e9515c215177",
+  "id": "630eb54d-46cf-4d95-ae74-1da41d91291e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -177,6 +177,7 @@
         "state": {
           "name": "state",
           "type": "OpenId4VcIssuanceSessionState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -440,6 +441,7 @@
         "state": {
           "name": "state",
           "type": "OpenId4VcVerificationSessionState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
@@ -563,7 +565,7 @@
     "public.OpenId4VcVerificationSessionState": {
       "name": "OpenId4VcVerificationSessionState",
       "schema": "public",
-      "values": ["RequestCreated", "RequestUriRetrieved", "ResponseVerified", "Error"]
+      "values": ["Error", "RequestCreated", "RequestUriRetrieved", "ResponseVerified"]
     }
   },
   "schemas": {},

@@ -1,4 +1,4 @@
-import { Kms } from '@credo-ts/core'
+import type { Kms } from '@credo-ts/core'
 import {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciBatchCredentialIssuanceOptions,

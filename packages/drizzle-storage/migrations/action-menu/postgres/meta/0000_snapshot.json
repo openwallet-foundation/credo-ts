@@ -1,5 +1,5 @@
 {
-  "id": "f4cb330d-7da2-4d44-83c3-6dcc04a0d672",
+  "id": "730ed0f0-328c-4bf6-beb9-14037d838ec7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -47,12 +47,14 @@
         "state": {
           "name": "state",
           "type": "DidcommActionMenuState",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
         "role": {
           "name": "role",
           "type": "DidcommActionMenuRole",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },

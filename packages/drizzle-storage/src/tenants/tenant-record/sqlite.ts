@@ -1,5 +1,5 @@
-import { VersionString } from '@credo-ts/core'
-import { TenantRecord } from '@credo-ts/tenants'
+import type { VersionString } from '@credo-ts/core'
+import type { TenantRecord } from '@credo-ts/tenants'
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

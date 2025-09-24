@@ -1,4 +1,4 @@
-import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
+import type { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 
 export interface DrizzleRecordBundle {
   /**
@@ -23,12 +23,8 @@ export interface DrizzleRecordBundle {
     sqlite: {
       /**
        * A resolvable module that contains the drizzle SQLite schema definition for the complete bundle.
-       *
-       * NOTE: this MUST resolve to the TypeScript schema file, it cannot point to the built files. This
-       * file will only be resolved during generation of migrations, and thus it's not needed to publish
-       * the source files in your NPM package, as long as the module resolves during migration generation.
        */
-      schemaSourcePath: string
+      schemaPath: string
 
       /**
        * The migrations path where the migrations should be generated and retrieved. Note that the contents
@@ -41,12 +37,8 @@ export interface DrizzleRecordBundle {
     postgres: {
       /**
        * A resolvable path that contains the drizzle Postgres schema definition for the complete bundle.
-       *
-       * NOTE: this MUST resolve to the TypeScript schema file, it cannot point to the built files. This
-       * file will only be resolved during generation of migrations, and thus it's not needed to publish
-       * the source files in your NPM package, as long as the module resolves during migration generation.
        */
-      schemaSourcePath: string
+      schemaPath: string
 
       /**
        * The migrations path where the migrations should be generated and retrieved. Note that the contents

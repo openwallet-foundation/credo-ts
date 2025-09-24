@@ -30,11 +30,11 @@ export async function resolveBundle(bundle: string) {
       name: string
       migrations: {
         sqlite: {
-          schemaSourcePath: string
+          schemaPath: string
           migrationsPath: string
         }
         postgres: {
-          schemaSourcePath: string
+          schemaPath: string
           migrationsPath: string
         }
       }
@@ -58,18 +58,14 @@ export function getMigrationsDirectory(migrationsPath: string) {
   return schemaMigrationsDirectory
 }
 
-export function getDrizzleConfigPath() {
-  return existsSync(path.join(__dirname, 'drizzle.config.ts'))
-    ? path.join(__dirname, 'drizzle.config.ts')
-    : path.join(__dirname, 'drizzle.config.js')
-}
-
 export function getDrizzleKitCliPath() {
   return path.join(path.dirname(require.resolve('drizzle-kit')), 'bin.cjs')
 }
 
-export function getTsNodeCliPath() {
-  return path.join(path.dirname(require.resolve('ts-node')), 'bin.js')
+export function getDrizzleConfigPath() {
+  return existsSync(path.join(__dirname, 'drizzle.config.ts'))
+    ? path.join(__dirname, 'drizzle.config.ts')
+    : path.join(__dirname, 'drizzle.config.js')
 }
 
 export function log(message: string, ...optionalParams: unknown[]) {

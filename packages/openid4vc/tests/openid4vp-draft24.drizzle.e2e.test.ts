@@ -14,7 +14,6 @@ import {
   parseDid,
   w3cDate,
 } from '@credo-ts/core'
-import { TenantsModule } from '@credo-ts/tenants'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
@@ -26,7 +25,9 @@ import {
   DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
 } from '../../drizzle-storage/tests/testDatabase'
-import { OpenId4VcHolderModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModule } from '../src'
+import { TenantsModule } from '../../tenants/src'
+import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { OpenId4VcVerificationSessionState } from '../src'
 
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
@@ -43,14 +44,14 @@ describe('OpenID4VP Draft 24', () => {
   let holderPostgresDatabase: DrizzlePostgresTestDatabase
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
   let holder1: TenantType
 
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
-    tenants: TenantsModule<{ openId4VcVerifier: OpenId4VcVerifierModule }>
+    openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions>
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule<undefined, OpenId4VcVerifierModuleConfigOptions> }>
   }>
   let verifier1: TenantType
   let verifier2: TenantType
@@ -78,7 +79,7 @@ describe('OpenID4VP Draft 24', () => {
 
     holder = (await createAgentFromModules(
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule({ enableStorage: false }),
         holderDrizzleModule,
         tenants: new TenantsModule(),
@@ -104,8 +105,10 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
 
     verifier = (await createAgentFromModules(
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verificationBaseUrl,
+          },
         }),
         inMemory: new InMemoryWalletModule({ enableStorage: false }),
         verifierDrizzleModule,
@@ -118,7 +121,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
+    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -143,8 +146,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await verifier.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -174,7 +177,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'did',
@@ -193,7 +196,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'did',
           didUrl: verifier2.verificationMethod.id,
@@ -220,8 +223,8 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await verifier.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -252,7 +255,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     const authorizationResponseRedirectUri = `https://my-website.com/${randomUUID()}`
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'did',
@@ -272,7 +275,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'did',
           didUrl: verifier2.verificationMethod.id,
@@ -294,7 +297,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     await verifierTenant2.endSession()
 
     const resolvedProofRequest1 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1)
 
     expect(resolvedProofRequest1.presentationExchange?.credentialsForRequest).toMatchObject({
       areRequirementsSatisfied: true,
@@ -319,7 +322,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const resolvedProofRequest2 =
-      await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+      await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
 
     expect(resolvedProofRequest2.presentationExchange?.credentialsForRequest).toMatchObject({
       areRequirementsSatisfied: true,
@@ -347,12 +350,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedProofRequest1.presentationExchange.credentialsForRequest
     )
 
     const { authorizationResponsePayload: authorizationREsponsePayload1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -397,7 +400,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const { presentationExchange: presentationExchange1 } =
-      await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
+      await verifierTenant1_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
@@ -415,17 +418,18 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       ],
     })
 
-    const selectedCredentials2 = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials2 = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedProofRequest2.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const { serverResponse: serverResponse2 } = await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest(
+      {
         authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
-      })
+      }
+    )
     expect(serverResponse2).toMatchObject({
       status: 200,
     })
@@ -440,7 +444,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession2.id,
     })
     const { presentationExchange: presentationExchange2 } =
-      await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
+      await verifierTenant2_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession2.id)
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -460,7 +464,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow (jarm) with verifier endpoints verifying a sd-jwt-vc with selective disclosure (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -523,7 +527,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         responseMode: 'direct_post.jwt',
         requestSigner: {
@@ -551,7 +555,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
     expect(resolvedAuthorizationRequest.authorizationRequestPayload.response_mode).toEqual('direct_post.jwt')
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
@@ -570,7 +574,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -597,12 +601,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -640,7 +644,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { presentationExchange, transactionData: _transactionData } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     const presentation = presentationExchange?.presentations[0] as SdJwtVc
     expect(_transactionData).toEqual([
@@ -694,7 +698,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -744,7 +748,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a sd-jwt-vc with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -808,7 +812,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
           method: 'x5c',
@@ -834,7 +838,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -852,7 +856,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -879,12 +883,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -921,7 +925,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { presentationExchange } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { presentationExchange } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -956,7 +960,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1006,7 +1010,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1110,7 +1114,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
 
         requestSigner: {
@@ -1134,7 +1138,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.transactionData).toEqual([
       {
@@ -1177,7 +1181,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1208,7 +1212,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -1234,12 +1238,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -1289,7 +1293,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
     const { presentationExchange, transactionData: tdResult } =
-      await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession.id)
+      await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession.id)
 
     expect(tdResult).toEqual([
       {
@@ -1369,7 +1373,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1415,7 +1419,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1464,7 +1468,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc fails without direct_post.jwt', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const issuerCertificate = await X509Service.createCertificate(verifier.agent.context, {
       authorityKey: Kms.PublicJwk.fromPublicJwk(
@@ -1540,7 +1544,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       ],
     } satisfies DifPresentationExchangeDefinitionV2
 
-    const { authorizationRequest } = await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+    const { authorizationRequest } = await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
       responseMode: 'direct_post.jwt',
       verifierId: openIdVerifier.verifierId,
       requestSigner: {
@@ -1552,13 +1556,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     if (!resolvedAuthorizationRequest.presentationExchange) {
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
@@ -1566,7 +1570,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     // setting this to direct_post to simulate the result of sending a non encrypted response to an authorization request that requires enryption
     requestPayload.response_mode = 'direct_post'
 
-    const result = await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const result = await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
       authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
       presentationExchange: {
         credentials: selectedCredentials,
@@ -1581,7 +1585,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -1705,7 +1709,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -1725,7 +1729,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -1771,7 +1775,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -1798,12 +1802,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -1844,7 +1848,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { presentationExchange } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { presentationExchange } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -1898,7 +1902,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -1946,7 +1950,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying two sd-jwt-vcs with selective disclosure', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -2050,7 +2054,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DifPresentationExchangeDefinitionV2
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifier.verifierId,
 
         requestSigner: {
@@ -2070,7 +2074,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.presentationExchange?.credentialsForRequest).toEqual({
       areRequirementsSatisfied: true,
@@ -2088,7 +2092,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc.compact,
                   }),
@@ -2119,7 +2123,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               inputDescriptorId: 'OpenBadgeCredentialDescriptor2',
               verifiableCredentials: [
                 {
-                  claimFormat: ClaimFormat.SdJwtVc,
+                  claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
                     compactSdJwtVc: signedSdJwtVc2.compact,
                   }),
@@ -2145,12 +2149,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Presentation exchange not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForPresentationExchangeRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForPresentationExchangeRequest(
       resolvedAuthorizationRequest.presentationExchange.credentialsForRequest
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -2191,7 +2195,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       state: OpenId4VcVerificationSessionState.ResponseVerified,
       verificationSessionId: verificationSession.id,
     })
-    const { presentationExchange } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { presentationExchange } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 
@@ -2225,7 +2229,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       presentations: [
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -2269,7 +2273,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
         },
         {
           encoded: expect.any(String),
-          claimFormat: ClaimFormat.SdJwtVc,
+          claimFormat: ClaimFormat.SdJwtDc,
           compact: expect.any(String),
           header: {
             alg: 'EdDSA',
@@ -2316,7 +2320,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
   })
 
   it('e2e flow with verifier endpoints verifying a mdoc and sd-jwt (jarm) (dcql) (transaction data)', async () => {
-    const openIdVerifier = await verifier.agent.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifier = await verifier.agent.openid4vc.verifier.createVerifier()
 
     const signedSdJwtVc = await verifier.agent.sdJwtVc.sign({
       holder: { method: 'did', didUrl: holder.kid },
@@ -2420,7 +2424,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     } satisfies DcqlQuery
 
     const { authorizationRequest, verificationSession } =
-      await verifier.agent.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifier.agent.openid4vc.verifier.createAuthorizationRequest({
         responseMode: 'direct_post.jwt',
         verifierId: openIdVerifier.verifierId,
         requestSigner: {
@@ -2441,7 +2445,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       })
 
     const resolvedAuthorizationRequest =
-      await holder.agent.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
+      await holder.agent.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequest)
 
     expect(resolvedAuthorizationRequest.dcql).toEqual({
       queryResult: {
@@ -2575,12 +2579,12 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       throw new Error('Dcql not defined')
     }
 
-    const selectedCredentials = holder.agent.modules.openId4VcHolder.selectCredentialsForDcqlRequest(
+    const selectedCredentials = holder.agent.openid4vc.holder.selectCredentialsForDcqlRequest(
       resolvedAuthorizationRequest.dcql.queryResult
     )
 
     const { serverResponse, authorizationResponsePayload } =
-      await holder.agent.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holder.agent.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedAuthorizationRequest.authorizationRequestPayload,
         dcql: {
           credentials: selectedCredentials,
@@ -2602,7 +2606,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       verificationSessionId: verificationSession.id,
     })
 
-    const { dcql, transactionData } = await verifier.agent.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(
+    const { dcql, transactionData } = await verifier.agent.openid4vc.verifier.getVerifiedAuthorizationResponse(
       verificationSession.id
     )
 

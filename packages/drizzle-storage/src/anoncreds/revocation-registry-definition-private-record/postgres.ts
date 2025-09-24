@@ -1,10 +1,15 @@
-import { AnonCredsRevocationRegistryState } from '@credo-ts/anoncreds'
+import type { AnonCredsRevocationRegistryState } from '@credo-ts/anoncreds'
 import { jsonb, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
+import { exhaustiveArray } from '../../util'
 
+const anonCredsRevocationRegistryStates = exhaustiveArray(
+  {} as AnonCredsRevocationRegistryState,
+  ['created', 'active', 'full'] as const
+)
 export const anonCredsRevocationRegistryStateEnum = pgEnum(
   'AnonCredsRevocationRegistryState',
-  AnonCredsRevocationRegistryState
+  anonCredsRevocationRegistryStates
 )
 
 export const anonCredsRevocationRegistryDefinitionPrivate = pgTable(

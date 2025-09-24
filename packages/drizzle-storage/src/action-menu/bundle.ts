@@ -1,4 +1,4 @@
-import { DrizzleRecordBundle } from '../DrizzleRecord'
+import type { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
 import { didcommActionMenuDrizzleRecord } from './action-menu-record'
 

@@ -1,5 +1,4 @@
 import type { JwtPayloadOptions } from '../../../crypto/jose/jwt'
-import type { W3cJsonCredential } from '../models/credential/W3cJsonCredential'
 
 import { isObject } from 'class-validator'
 
@@ -11,7 +10,7 @@ import { W3cCredential } from '../models/credential/W3cCredential'
 import { w3cDate } from '../util'
 
 export function getJwtPayloadFromCredential(credential: W3cCredential) {
-  const vc = JsonTransformer.toJSON(credential) as Partial<W3cJsonCredential>
+  const vc = JsonTransformer.toJSON(credential)
 
   const payloadOptions: JwtPayloadOptions = {
     additionalClaims: {
