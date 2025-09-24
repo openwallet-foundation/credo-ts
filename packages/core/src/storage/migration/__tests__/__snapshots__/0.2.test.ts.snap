@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update proof records and create didcomm records 1`] = `
 {
