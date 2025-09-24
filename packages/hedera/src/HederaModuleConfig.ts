@@ -1,6 +1,9 @@
-import { HederaAnoncredsRegistryConfiguration } from '@hiero-did-sdk/anoncreds'
+import { Cache } from '@hiero-did-sdk/core'
+import { HederaHcsServiceConfiguration } from '@hiero-did-sdk/hcs'
 
-export interface HederaModuleConfigOptions extends HederaAnoncredsRegistryConfiguration {}
+export interface HederaModuleConfigOptions extends HederaHcsServiceConfiguration {
+  cache?: Cache
+}
 
 export class HederaModuleConfig {
   public readonly options: HederaModuleConfigOptions

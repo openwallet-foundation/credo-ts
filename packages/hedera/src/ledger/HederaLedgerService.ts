@@ -25,8 +25,9 @@ import {
 } from '@credo-ts/core'
 import { Client } from '@hashgraph/sdk'
 import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
+import { LRUMemoryCache } from '@hiero-did-sdk/cache'
 import { HederaClientService, HederaNetwork } from '@hiero-did-sdk/client'
-import { DIDResolution, DID_ROOT_KEY_ID, Service, VerificationMethod, parseDID } from '@hiero-did-sdk/core'
+import { Cache, DIDResolution, DID_ROOT_KEY_ID, Service, VerificationMethod, parseDID } from '@hiero-did-sdk/core'
 import {
   CreateDIDResult,
   DIDUpdateBuilder,
@@ -41,7 +42,6 @@ import {
 } from '@hiero-did-sdk/registrar'
 import { TopicReaderHederaHcs, resolveDID } from '@hiero-did-sdk/resolver'
 import { HederaModuleConfig } from '../HederaModuleConfig'
-import { CredoCache } from './cache/CredoCache'
 import { KmsPublisher } from './publisher/KmsPublisher'
 import { KmsSigner } from './signer/KmsSigner'
 import { createOrGetKey, getMultibasePublicKey } from './utils'
@@ -76,9 +76,11 @@ export interface HederaDidDeactivateOptions extends DidDeactivateOptions {
 @injectable()
 export class HederaLedgerService {
   private readonly clientService: HederaClientService
+  private readonly cache: Cache
 
   public constructor(private readonly config: HederaModuleConfig) {
     this.clientService = new HederaClientService(config.options)
+    this.cache = this.config.options.cache ?? new LRUMemoryCache(50)
   }
 
   public async resolveDid(agentContext: AgentContext, did: string): Promise<DIDResolution> {
@@ -334,9 +336,8 @@ export class HederaLedgerService {
     })
   }
 
-  private getHederaHcsTopicReader(agentContext: AgentContext): TopicReaderHederaHcs {
-    const cache = this.config.options.cache ?? new CredoCache(agentContext)
-    return new TopicReaderHederaHcs({ ...this.config.options, cache })
+  private getHederaHcsTopicReader(_agentContext: AgentContext): TopicReaderHederaHcs {
+    return new TopicReaderHederaHcs({ ...this.config.options, cache: this.cache })
   }
 
   private async getPublisher(agentContext: AgentContext, client: Client, keyId: string): Promise<KmsPublisher> {
@@ -345,9 +346,8 @@ export class HederaLedgerService {
     return new KmsPublisher(agentContext, client, key)
   }
 
-  private getHederaAnonCredsRegistry(agentContext: AgentContext): HederaAnoncredsRegistry {
-    const cache = this.config.options.cache ?? new CredoCache(agentContext)
-    return new HederaAnoncredsRegistry({ ...this.config.options, cache })
+  private getHederaAnonCredsRegistry(_agentContext: AgentContext): HederaAnoncredsRegistry {
+    return new HederaAnoncredsRegistry({ ...this.config.options, cache: this.cache })
   }
 
   private getDidDocumentEntryId(item: { id: string } | string): string {
