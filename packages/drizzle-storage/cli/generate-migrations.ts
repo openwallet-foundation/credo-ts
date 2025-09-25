@@ -1,5 +1,12 @@
 import { spawnSync } from 'child_process'
-import { getDrizzleConfigPath, getMigrationsDirectory, log, resolveBundle, resolveSchemaFile } from './utils'
+import {
+  getDrizzleConfigPath,
+  getDrizzleKitCliPath,
+  getMigrationsDirectory,
+  log,
+  resolveBundle,
+  resolveSchemaFile,
+} from './utils'
 
 export type Dialect = 'sqlite' | 'postgres'
 
@@ -12,6 +19,7 @@ interface GenerateMigrationOptions {
 
 export async function generateMigrations({ dialects, bundles, name, silent }: GenerateMigrationOptions): Promise<void> {
   const drizzleConfigPath = getDrizzleConfigPath()
+  const drizzleKitCliPath = getDrizzleKitCliPath()
 
   for (const bundleModule of bundles) {
     const bundle = await resolveBundle(bundleModule)
@@ -22,7 +30,7 @@ export async function generateMigrations({ dialects, bundles, name, silent }: Ge
       const drizzleMigrationsFolder = getMigrationsDirectory(dialectBundle.migrationsPath)
 
       const migrateResult = spawnSync(
-        'drizzle-kit',
+        drizzleKitCliPath,
         ['generate', '--config', drizzleConfigPath, ...(name ? ['--name', name] : [])],
         {
           encoding: 'utf-8',
