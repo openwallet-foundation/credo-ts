@@ -10,7 +10,7 @@ import type {
   ProofProtocol,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
-import type { LegacyIndyProofFormatService } from '../../../formats'
+import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
@@ -53,16 +53,16 @@ import { DidCommPresentationV1ProblemReportMessage } from './messages/DidCommPre
 import { DidCommPresentationV1Preview } from './models/DidCommPresentationV1Preview'
 
 export interface DidCommProofV1ProtocolConfig {
-  indyProofFormat: LegacyIndyProofFormatService
+  indyProofFormat: LegacyIndyDidCommProofFormatService
 }
 
-export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofProtocol<[LegacyIndyProofFormatService]> {
-  private indyProofFormat: LegacyIndyProofFormatService
+export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofProtocol<[LegacyIndyDidCommProofFormatService]> {
+  private indyProofFormat: LegacyIndyDidCommProofFormatService
 
   public constructor({ indyProofFormat }: DidCommProofV1ProtocolConfig) {
     super()
 
-    // TODO: just create a new instance of LegacyIndyProofFormatService here so it makes the setup easier
+    // TODO: just create a new instance of LegacyIndyDidCommProofFormatService here so it makes the setup easier
     this.indyProofFormat = indyProofFormat
   }
 
@@ -101,7 +101,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       comment,
       parentThreadId,
       autoAcceptProof,
-    }: ProofProtocolOptions.CreateProofProposalOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.CreateProofProposalOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommProposePresentationV1Message>> {
     this.assertOnlyIndyFormat(proofFormats)
 
@@ -241,7 +241,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       proofFormats,
       comment,
       autoAcceptProof,
-    }: ProofProtocolOptions.AcceptProofProposalOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.AcceptProofProposalOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommRequestPresentationV1Message>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
@@ -313,7 +313,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       proofRecord,
       comment,
       autoAcceptProof,
-    }: ProofProtocolOptions.NegotiateProofProposalOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.NegotiateProofProposalOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
@@ -358,7 +358,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       comment,
       parentThreadId,
       autoAcceptProof,
-    }: ProofProtocolOptions.CreateProofRequestOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.CreateProofRequestOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(proofFormats)
 
@@ -509,7 +509,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       proofRecord,
       comment,
       autoAcceptProof,
-    }: ProofProtocolOptions.NegotiateProofRequestOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.NegotiateProofRequestOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
@@ -562,7 +562,7 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
       proofFormats,
       autoAcceptProof,
       comment,
-    }: ProofProtocolOptions.AcceptProofRequestOptions<[LegacyIndyProofFormatService]>
+    }: ProofProtocolOptions.AcceptProofRequestOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.ProofProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     proofRecord.assertProtocolVersion('v1')
@@ -636,8 +636,8 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { proofRecord, proofFormats }: ProofProtocolOptions.GetCredentialsForRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.GetCredentialsForRequestReturn<[LegacyIndyProofFormatService]>> {
+    { proofRecord, proofFormats }: ProofProtocolOptions.GetCredentialsForRequestOptions<[LegacyIndyDidCommProofFormatService]>
+  ): Promise<ProofProtocolOptions.GetCredentialsForRequestReturn<[LegacyIndyDidCommProofFormatService]>> {
     if (proofFormats) this.assertOnlyIndyFormat(proofFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)
@@ -698,8 +698,8 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
     {
       proofRecord,
       proofFormats,
-    }: ProofProtocolOptions.SelectCredentialsForRequestOptions<[LegacyIndyProofFormatService]>
-  ): Promise<ProofProtocolOptions.SelectCredentialsForRequestReturn<[LegacyIndyProofFormatService]>> {
+    }: ProofProtocolOptions.SelectCredentialsForRequestOptions<[LegacyIndyDidCommProofFormatService]>
+  ): Promise<ProofProtocolOptions.SelectCredentialsForRequestReturn<[LegacyIndyDidCommProofFormatService]>> {
     if (proofFormats) this.assertOnlyIndyFormat(proofFormats)
 
     const didCommMessageRepository = agentContext.dependencyManager.resolve(DidCommMessageRepository)

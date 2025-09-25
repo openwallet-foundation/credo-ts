@@ -49,11 +49,11 @@ import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
-  AnonCredsProofFormatService,
+  AnonCredsDidCommProofFormatService,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
+  LegacyIndyDidCommProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
@@ -95,7 +95,7 @@ export const getAnonCredsIndyModules = ({
   })
 
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   const modules = {
     credentials: new DidCommCredentialsModule({
@@ -116,7 +116,7 @@ export const getAnonCredsIndyModules = ({
           indyProofFormat: legacyIndyProofFormatService,
         }),
         new DidCommProofV2Protocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
+          proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
         }),
       ],
     }),

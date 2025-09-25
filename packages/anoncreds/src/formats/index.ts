@@ -1,10 +1,10 @@
 export * from './AnonCredsDidCommCredentialFormat'
 export * from './LegacyIndyDidCommCredentialFormat'
 export { AnonCredsCredentialFormatService } from './AnonCredsCredentialFormatService'
-export { DataIntegrityDidCommCredentialFormatService as DataIntegrityCredentialFormatService } from './DataIntegrityDidCommCredentialFormatService'
+export { DataIntegrityDidCommCredentialFormatService } from './DataIntegrityDidCommCredentialFormatService'
 export { LegacyIndyCredentialFormatService } from './LegacyIndyCredentialFormatService'
 
 export * from './AnonCredsDidCommProofFormat'
 export * from './LegacyIndyDidCommProofFormat'
-export { AnonCredsDidCommProofFormatService as AnonCredsProofFormatService } from './AnonCredsDidCommProofFormatService'
-export { LegacyIndyDidCommProofFormatService as LegacyIndyProofFormatService } from './LegacyIndyDidCommProofFormatService'
+export { AnonCredsDidCommProofFormatService } from './AnonCredsDidCommProofFormatService'
+export { LegacyIndyDidCommProofFormatService } from './LegacyIndyDidCommProofFormatService'

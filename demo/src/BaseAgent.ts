@@ -4,11 +4,11 @@ import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 import {
   AnonCredsCredentialFormatService,
   AnonCredsModule,
-  AnonCredsProofFormatService,
+  AnonCredsDidCommProofFormatService,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
+  LegacyIndyDidCommProofFormatService,
 } from '@credo-ts/anoncreds'
 import { AskarModule } from '@credo-ts/askar'
 import {
@@ -83,7 +83,7 @@ function getAskarAnonCredsIndyModules(
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
   const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-  const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+  const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   return {
     ...getDefaultDidcommModules(didcommConfig),
@@ -108,7 +108,7 @@ function getAskarAnonCredsIndyModules(
           indyProofFormat: legacyIndyProofFormatService,
         }),
         new DidCommProofV2Protocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsProofFormatService()],
+          proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
         }),
       ],
     }),

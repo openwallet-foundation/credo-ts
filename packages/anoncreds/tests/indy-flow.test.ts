@@ -45,7 +45,7 @@ import {
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
   LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
+  LegacyIndyDidCommProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
   parseIndyCredentialDefinitionId,
@@ -89,7 +89,7 @@ const agentContext = getAgentContext({
 })
 
 const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
-const legacyIndyProofFormatService = new LegacyIndyProofFormatService()
+const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
 // This is just so we don't have to register an actually indy did (as we don't have the indy did registrar configured)
 const indyDid = 'did:indy:bcovrin:test:LjgpST2rjsoxYegQDRm7EL'

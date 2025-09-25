@@ -51,7 +51,7 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService } from '../src'
+import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsDidCommProofFormatService } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
@@ -91,7 +91,7 @@ export const getAnonCredsModules = ({
   })
 
   const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
-  const anonCredsProofFormatService = new AnonCredsProofFormatService()
+  const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined

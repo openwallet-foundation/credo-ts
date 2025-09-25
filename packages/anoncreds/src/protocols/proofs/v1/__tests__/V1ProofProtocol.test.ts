@@ -26,7 +26,7 @@ import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPr
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository')
-jest.mock('../../../../formats/LegacyIndyProofFormatService')
+jest.mock('../../../../formats/LegacyIndyDidCommProofFormatService')
 jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
 jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 

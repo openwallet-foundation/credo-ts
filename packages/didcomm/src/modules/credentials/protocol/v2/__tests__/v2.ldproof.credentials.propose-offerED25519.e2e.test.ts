@@ -5,7 +5,7 @@ import {
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
+  LegacyIndyDidCommProofFormatService,
 } from '../../../../../../../anoncreds/src'
 import {
   getAnonCredsIndyModules,
@@ -69,7 +69,7 @@ const signCredentialOptions = {
 
 const indyCredentialFormat = new LegacyIndyCredentialFormatService()
 const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
-const indyProofFormat = new LegacyIndyProofFormatService()
+const indyProofFormat = new LegacyIndyDidCommProofFormatService()
 
 const getIndyJsonLdModules = () =>
   ({

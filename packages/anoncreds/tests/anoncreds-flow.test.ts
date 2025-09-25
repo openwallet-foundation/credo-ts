@@ -44,7 +44,7 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsModuleConfig,
-  AnonCredsProofFormatService,
+  AnonCredsDidCommProofFormatService,
   AnonCredsRevocationRegistryDefinitionPrivateRecord,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
@@ -96,7 +96,7 @@ const agentContext = getAgentContext({
 })
 
 const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
-const anoncredsProofFormatService = new AnonCredsProofFormatService()
+const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
