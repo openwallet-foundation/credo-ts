@@ -2,7 +2,7 @@ export * from './AnonCredsDidCommCredentialFormat'
 export * from './LegacyIndyDidCommCredentialFormat'
 export { AnonCredsDidCommCredentialFormatService } from './AnonCredsDidCommCredentialFormatService'
 export { DataIntegrityDidCommCredentialFormatService } from './DataIntegrityDidCommCredentialFormatService'
-export { LegacyIndyCredentialFormatService } from './LegacyIndyCredentialFormatService'
+export { LegacyIndyDidCommCredentialFormatService } from './LegacyIndyDidCommCredentialFormatService'
 
 export * from './AnonCredsDidCommProofFormat'
 export * from './LegacyIndyDidCommProofFormat'

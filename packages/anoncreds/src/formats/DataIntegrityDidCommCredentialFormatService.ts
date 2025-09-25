@@ -1011,10 +1011,12 @@ export class DataIntegrityDidCommCredentialFormatService
 
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
-    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
     {
+      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialExchangeRecord,
+      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       requestAttachment,
+      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialAttachment,
     }: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {

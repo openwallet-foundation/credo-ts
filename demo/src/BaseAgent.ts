@@ -7,7 +7,7 @@ import {
   AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
-  LegacyIndyCredentialFormatService,
+  LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
 } from '@credo-ts/anoncreds'
 import { AskarModule } from '@credo-ts/askar'
@@ -82,7 +82,7 @@ function getAskarAnonCredsIndyModules(
   didcommConfig: DidCommModuleConfigOptions,
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+  const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   return {

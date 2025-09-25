@@ -52,7 +52,7 @@ import {
   AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
-  LegacyIndyCredentialFormatService,
+  LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
@@ -94,7 +94,7 @@ export const getAnonCredsIndyModules = ({
     },
   })
 
-  const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatService()
+  const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   const modules = {

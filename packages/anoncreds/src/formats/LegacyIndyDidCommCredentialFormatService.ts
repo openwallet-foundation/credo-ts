@@ -55,7 +55,9 @@ const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
 const INDY_CRED_FILTER = 'hlindy/cred-filter@v2.0'
 const INDY_CRED = 'hlindy/cred@v2.0'
 
-export class LegacyIndyCredentialFormatService implements DidCommCredentialFormatService<LegacyIndyCredentialFormat> {
+export class LegacyIndyDidCommCredentialFormatService
+  implements DidCommCredentialFormatService<LegacyIndyCredentialFormat>
+{
   /** formatKey is the key used when calling agent.credentials.xxx with credentialFormats.indy */
   public readonly formatKey = 'indy' as const
 

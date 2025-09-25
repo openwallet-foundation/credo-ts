@@ -28,7 +28,7 @@ import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
-import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
+import { LegacyIndyDidCommCredentialFormatService } from '../../../../formats/LegacyIndyDidCommCredentialFormatService'
 import { convertAttributesToCredentialValues } from '../../../../utils/credential'
 import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 import {
@@ -46,14 +46,14 @@ import {
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
-jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
+jest.mock('../../../../formats/LegacyIndyDidCommCredentialFormatService')
 jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
 jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
 // Mock typed object
 const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
 const LegacyIndyCredentialFormatServiceMock =
-  LegacyIndyCredentialFormatService as jest.Mock<LegacyIndyCredentialFormatService>
+  LegacyIndyDidCommCredentialFormatService as jest.Mock<LegacyIndyDidCommCredentialFormatService>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 

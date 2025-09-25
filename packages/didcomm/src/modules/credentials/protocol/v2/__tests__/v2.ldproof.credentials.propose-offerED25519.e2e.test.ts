@@ -4,7 +4,7 @@ import type { DefaultAgentModulesInput } from '../../../../../../../didcomm/src/
 import {
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
-  LegacyIndyCredentialFormatService,
+  LegacyIndyDidCommCredentialFormatService,
   LegacyIndyDidCommProofFormatService,
 } from '../../../../../../../anoncreds/src'
 import {
@@ -67,7 +67,7 @@ const signCredentialOptions = {
   },
 }
 
-const indyCredentialFormat = new LegacyIndyCredentialFormatService()
+const indyCredentialFormat = new LegacyIndyDidCommCredentialFormatService()
 const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
 const indyProofFormat = new LegacyIndyDidCommProofFormatService()
 

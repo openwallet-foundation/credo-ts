@@ -9,7 +9,7 @@ import type {
   DidCommProblemReportMessage,
   ExtractCredentialFormats,
 } from '@credo-ts/didcomm'
-import type { LegacyIndyCredentialFormatService } from '../../../formats'
+import type { LegacyIndyDidCommCredentialFormatService } from '../../../formats'
 
 import { CredoError, JsonTransformer, utils } from '@credo-ts/core'
 import {
@@ -56,19 +56,19 @@ import {
 } from './messages'
 
 export interface DidCommCredentialV1ProtocolConfig {
-  indyCredentialFormat: LegacyIndyCredentialFormatService
+  indyCredentialFormat: LegacyIndyDidCommCredentialFormatService
 }
 
 export class DidCommCredentialV1Protocol
-  extends BaseDidCommCredentialProtocol<[LegacyIndyCredentialFormatService]>
-  implements DidCommCredentialProtocol<[LegacyIndyCredentialFormatService]>
+  extends BaseDidCommCredentialProtocol<[LegacyIndyDidCommCredentialFormatService]>
+  implements DidCommCredentialProtocol<[LegacyIndyDidCommCredentialFormatService]>
 {
-  private indyCredentialFormat: LegacyIndyCredentialFormatService
+  private indyCredentialFormat: LegacyIndyDidCommCredentialFormatService
 
   public constructor({ indyCredentialFormat }: DidCommCredentialV1ProtocolConfig) {
     super()
 
-    // TODO: just create a new instance of LegacyIndyCredentialFormatService here so it makes the setup easier
+    // TODO: just create a new instance of LegacyIndyDidCommCredentialFormatService here so it makes the setup easier
     this.indyCredentialFormat = indyCredentialFormat
   }
 
@@ -115,7 +115,7 @@ export class DidCommCredentialV1Protocol
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: CredentialProtocolOptions.CreateCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.CreateCredentialProposalOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommMessage>> {
     this.assertOnlyIndyFormat(credentialFormats)
 
@@ -291,7 +291,7 @@ export class DidCommCredentialV1Protocol
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: CredentialProtocolOptions.AcceptCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.AcceptCredentialProposalOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
     credentialExchangeRecord.assertProtocolVersion('v1')
@@ -369,7 +369,7 @@ export class DidCommCredentialV1Protocol
       credentialExchangeRecord,
       comment,
       autoAcceptCredential,
-    }: CredentialProtocolOptions.NegotiateCredentialProposalOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.NegotiateCredentialProposalOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
     credentialExchangeRecord.assertProtocolVersion('v1')
@@ -430,7 +430,7 @@ export class DidCommCredentialV1Protocol
       autoAcceptCredential,
       comment,
       connectionRecord,
-    }: CredentialProtocolOptions.CreateCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.CreateCredentialOfferOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<V1OfferCredentialMessage>> {
     // Assert
     this.assertOnlyIndyFormat(credentialFormats)
@@ -607,7 +607,7 @@ export class DidCommCredentialV1Protocol
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: CredentialProtocolOptions.AcceptCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.AcceptCredentialOfferOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommRequestCredentialV1Message>> {
     // Assert credential
     credentialExchangeRecord.assertProtocolVersion('v1')
@@ -677,7 +677,7 @@ export class DidCommCredentialV1Protocol
       credentialExchangeRecord,
       autoAcceptCredential,
       comment,
-    }: CredentialProtocolOptions.NegotiateCredentialOfferOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.NegotiateCredentialOfferOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommMessage>> {
     // Assert
     credentialExchangeRecord.assertProtocolVersion('v1')
@@ -844,7 +844,7 @@ export class DidCommCredentialV1Protocol
       credentialFormats,
       comment,
       autoAcceptCredential,
-    }: CredentialProtocolOptions.AcceptCredentialRequestOptions<[LegacyIndyCredentialFormatService]>
+    }: CredentialProtocolOptions.AcceptCredentialRequestOptions<[LegacyIndyDidCommCredentialFormatService]>
   ): Promise<CredentialProtocolOptions.CredentialProtocolMsgReturnType<DidCommIssueCredentialV1Message>> {
     // Assert
     credentialExchangeRecord.assertProtocolVersion('v1')
@@ -1287,7 +1287,7 @@ export class DidCommCredentialV1Protocol
     credentialExchangeId: string
   ): Promise<
     CredentialProtocolOptions.GetCredentialFormatDataReturn<
-      ExtractCredentialFormats<[LegacyIndyCredentialFormatService]>
+      ExtractCredentialFormats<[LegacyIndyDidCommCredentialFormatService]>
     >
   > {
     // TODO: we could looking at fetching all record using a single query and then filtering based on the type of the message.

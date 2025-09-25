@@ -17,13 +17,13 @@ import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRepository } from '../../../../../../didcomm/src/repository/DidCommMessageRepository'
-import { LegacyIndyCredentialFormatService } from '../../../../formats/LegacyIndyCredentialFormatService'
+import { LegacyIndyDidCommCredentialFormatService } from '../../../../formats/LegacyIndyDidCommCredentialFormatService'
 import { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 import { DidCommCredentialV1Preview, INDY_CREDENTIAL_OFFER_ATTACHMENT_ID, V1OfferCredentialMessage } from '../messages'
 
 // Mock classes
 jest.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
-jest.mock('../../../../formats/LegacyIndyCredentialFormatService')
+jest.mock('../../../../formats/LegacyIndyDidCommCredentialFormatService')
 jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
 jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
@@ -32,7 +32,7 @@ const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Moc
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
 const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
 const LegacyIndyCredentialFormatServiceMock =
-  LegacyIndyCredentialFormatService as jest.Mock<LegacyIndyCredentialFormatService>
+  LegacyIndyDidCommCredentialFormatService as jest.Mock<LegacyIndyDidCommCredentialFormatService>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
@@ -105,7 +105,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
 
   describe('createProposal', () => {
     const proposeOptions: CredentialProtocolOptions.CreateCredentialProposalOptions<
-      [LegacyIndyCredentialFormatService]
+      [LegacyIndyDidCommCredentialFormatService]
     > = {
       connectionRecord: connectionRecord,
       credentialFormats: {
@@ -222,7 +222,9 @@ describe('V1CredentialProtocolProposeOffer', () => {
   })
 
   describe('createOffer', () => {
-    const offerOptions: CredentialProtocolOptions.CreateCredentialOfferOptions<[LegacyIndyCredentialFormatService]> = {
+    const offerOptions: CredentialProtocolOptions.CreateCredentialOfferOptions<
+      [LegacyIndyDidCommCredentialFormatService]
+    > = {
       comment: 'some comment',
       connectionRecord,
       credentialFormats: {

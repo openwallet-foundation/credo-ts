@@ -55,7 +55,7 @@ import {
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '../../utils/indyIdentifiers'
-import { LegacyIndyCredentialFormatService } from '../LegacyIndyCredentialFormatService'
+import { LegacyIndyDidCommCredentialFormatService } from '../LegacyIndyDidCommCredentialFormatService'
 import { LegacyIndyDidCommProofFormatService } from '../LegacyIndyDidCommProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
@@ -116,7 +116,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const indyCredentialFormatService = new LegacyIndyCredentialFormatService()
+const indyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
 const indyProofFormatService = new LegacyIndyDidCommProofFormatService()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 
