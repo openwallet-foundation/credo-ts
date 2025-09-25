@@ -37,6 +37,12 @@ export const mockResolvedDidDocument = {
   ],
 }
 
+export const mockResolvedDidRecord = {
+  did: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01',
+  role: 'created',
+  didDocument: mockResolvedDidDocument,
+}
+
 export const mockSchemaResource = {
   '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
