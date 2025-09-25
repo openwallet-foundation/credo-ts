@@ -1,20 +1,20 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DidCommProofFormat } from './DidCommProofFormat'
 import type {
-  FormatCreateRequestOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatCreateReturn,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatProcessOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
+  DidCommFormatCreateRequestOptions,
+  DidCommProofFormatAcceptProposalOptions,
+  DidCommProofFormatAcceptRequestOptions,
+  DidCommProofFormatAutoRespondPresentationOptions,
+  DidCommProofFormatAutoRespondProposalOptions,
+  DidCommProofFormatAutoRespondRequestOptions,
+  DidCommProofFormatCreateProposalOptions,
+  DidCommProofFormatCreateReturn,
+  DidCommProofFormatGetCredentialsForRequestOptions,
+  DidCommProofFormatGetCredentialsForRequestReturn,
+  DidCommProofFormatProcessOptions,
+  DidCommProofFormatProcessPresentationOptions,
+  DidCommProofFormatSelectCredentialsForRequestOptions,
+  DidCommProofFormatSelectCredentialsForRequestReturn,
 } from './DidCommProofFormatServiceOptions'
 
 export interface DidCommProofFormatService<PF extends DidCommProofFormat = DidCommProofFormat> {
@@ -23,47 +23,53 @@ export interface DidCommProofFormatService<PF extends DidCommProofFormat = DidCo
   // proposal methods
   createProposal(
     agentContext: AgentContext,
-    options: ProofFormatCreateProposalOptions<PF>
-  ): Promise<ProofFormatCreateReturn>
-  processProposal(agentContext: AgentContext, options: ProofFormatProcessOptions): Promise<void>
+    options: DidCommProofFormatCreateProposalOptions<PF>
+  ): Promise<DidCommProofFormatCreateReturn>
+  processProposal(agentContext: AgentContext, options: DidCommProofFormatProcessOptions): Promise<void>
   acceptProposal(
     agentContext: AgentContext,
-    options: ProofFormatAcceptProposalOptions<PF>
-  ): Promise<ProofFormatCreateReturn>
+    options: DidCommProofFormatAcceptProposalOptions<PF>
+  ): Promise<DidCommProofFormatCreateReturn>
 
   // request methods
-  createRequest(agentContext: AgentContext, options: FormatCreateRequestOptions<PF>): Promise<ProofFormatCreateReturn>
-  processRequest(agentContext: AgentContext, options: ProofFormatProcessOptions): Promise<void>
+  createRequest(
+    agentContext: AgentContext,
+    options: DidCommFormatCreateRequestOptions<PF>
+  ): Promise<DidCommProofFormatCreateReturn>
+  processRequest(agentContext: AgentContext, options: DidCommProofFormatProcessOptions): Promise<void>
   acceptRequest(
     agentContext: AgentContext,
-    options: ProofFormatAcceptRequestOptions<PF>
-  ): Promise<ProofFormatCreateReturn>
+    options: DidCommProofFormatAcceptRequestOptions<PF>
+  ): Promise<DidCommProofFormatCreateReturn>
 
   // presentation methods
-  processPresentation(agentContext: AgentContext, options: ProofFormatProcessPresentationOptions): Promise<boolean>
+  processPresentation(
+    agentContext: AgentContext,
+    options: DidCommProofFormatProcessPresentationOptions
+  ): Promise<boolean>
 
   // credentials for request
   getCredentialsForRequest(
     agentContext: AgentContext,
-    options: ProofFormatGetCredentialsForRequestOptions<PF>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<PF>>
+    options: DidCommProofFormatGetCredentialsForRequestOptions<PF>
+  ): Promise<DidCommProofFormatGetCredentialsForRequestReturn<PF>>
   selectCredentialsForRequest(
     agentContext: AgentContext,
-    options: ProofFormatSelectCredentialsForRequestOptions<PF>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<PF>>
+    options: DidCommProofFormatSelectCredentialsForRequestOptions<PF>
+  ): Promise<DidCommProofFormatSelectCredentialsForRequestReturn<PF>>
 
   // auto accept methods
   shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    options: ProofFormatAutoRespondProposalOptions
+    options: DidCommProofFormatAutoRespondProposalOptions
   ): Promise<boolean>
   shouldAutoRespondToRequest(
     agentContext: AgentContext,
-    options: ProofFormatAutoRespondRequestOptions
+    options: DidCommProofFormatAutoRespondRequestOptions
   ): Promise<boolean>
   shouldAutoRespondToPresentation(
     agentContext: AgentContext,
-    options: ProofFormatAutoRespondPresentationOptions
+    options: DidCommProofFormatAutoRespondPresentationOptions
   ): Promise<boolean>
 
   supportsFormat(formatIdentifier: string): boolean

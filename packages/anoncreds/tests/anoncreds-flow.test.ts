@@ -36,7 +36,7 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsCredentialFormatService,
+  AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
@@ -95,7 +95,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
+const anoncredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'

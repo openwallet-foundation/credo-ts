@@ -1,20 +1,20 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  DidCommFormatCreateRequestOptions,
+  DidCommProofFormatAcceptProposalOptions,
+  DidCommProofFormatAcceptRequestOptions,
+  DidCommProofFormatAutoRespondPresentationOptions,
+  DidCommProofFormatAutoRespondProposalOptions,
+  DidCommProofFormatAutoRespondRequestOptions,
+  DidCommProofFormatCreateProposalOptions,
+  DidCommProofFormatCreateReturn,
+  DidCommProofFormatGetCredentialsForRequestOptions,
+  DidCommProofFormatGetCredentialsForRequestReturn,
+  DidCommProofFormatProcessOptions,
+  DidCommProofFormatProcessPresentationOptions,
+  DidCommProofFormatSelectCredentialsForRequestOptions,
+  DidCommProofFormatSelectCredentialsForRequestReturn,
   DidCommProofFormatService,
-  FormatCreateRequestOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatCreateReturn,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatProcessOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
@@ -72,8 +72,8 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async createProposal(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { attachmentId, proofFormats }: DidCommProofFormatCreateProposalOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_PROPOSAL,
@@ -97,7 +97,10 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     return { attachment, format }
   }
 
-  public async processProposal(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processProposal(
+    _agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const proposalJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -109,8 +112,8 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { proposalAttachment, attachmentId }: DidCommProofFormatAcceptProposalOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
@@ -132,8 +135,8 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { attachmentId, proofFormats }: DidCommFormatCreateRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION_REQUEST,
@@ -162,7 +165,10 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     return { attachment, format }
   }
 
-  public async processRequest(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processRequest(
+    _agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const requestJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -174,8 +180,12 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    {
+      proofFormats,
+      requestAttachment,
+      attachmentId,
+    }: DidCommProofFormatAcceptRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const format = new DidCommProofFormatSpec({
       format: V2_INDY_PRESENTATION,
       attachmentId,
@@ -201,7 +211,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async processPresentation(
     agentContext: AgentContext,
-    { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
+    { requestAttachment, attachment }: DidCommProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const verifierService =
       agentContext.dependencyManager.resolve<AnonCredsVerifierService>(AnonCredsVerifierServiceSymbol)
@@ -259,8 +269,8 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
+    { requestAttachment, proofFormats }: DidCommProofFormatGetCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatGetCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -275,8 +285,11 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
+    {
+      requestAttachment,
+      proofFormats,
+    }: DidCommProofFormatSelectCredentialsForRequestOptions<LegacyIndyDidCommProofFormat>
+  ): Promise<DidCommProofFormatSelectCredentialsForRequestReturn<LegacyIndyDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -291,7 +304,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    { proposalAttachment, requestAttachment }: ProofFormatAutoRespondProposalOptions
+    { proposalAttachment, requestAttachment }: DidCommProofFormatAutoRespondProposalOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
@@ -307,7 +320,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { proposalAttachment, requestAttachment }: ProofFormatAutoRespondRequestOptions
+    { proposalAttachment, requestAttachment }: DidCommProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
@@ -317,7 +330,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
 
   public async shouldAutoRespondToPresentation(
     _agentContext: AgentContext,
-    _options: ProofFormatAutoRespondPresentationOptions
+    _options: DidCommProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     // The presentation is already verified in processPresentation, so we can just return true here.
     // It's only an ack, so it's just that we received the presentation.

@@ -49,7 +49,7 @@ import {
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
 import { getUnqualifiedCredentialDefinitionId, parseIndyCredentialDefinitionId } from '../../utils/indyIdentifiers'
-import { AnonCredsCredentialFormatService } from '../AnonCredsCredentialFormatService'
+import { AnonCredsDidCommCredentialFormatService } from '../AnonCredsDidCommCredentialFormatService'
 import { AnonCredsDidCommProofFormatService } from '../AnonCredsDidCommProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
@@ -111,7 +111,7 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
+const anoncredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
 const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 

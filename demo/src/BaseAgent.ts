@@ -2,7 +2,7 @@ import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import {
-  AnonCredsCredentialFormatService,
+  AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
   AnonCredsModule,
   DidCommCredentialV1Protocol,
@@ -97,7 +97,7 @@ function getAskarAnonCredsIndyModules(
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
         new DidCommCredentialV2Protocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
+          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
         }),
       ],
     }),

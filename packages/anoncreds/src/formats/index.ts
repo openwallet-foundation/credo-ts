@@ -1,6 +1,6 @@
 export * from './AnonCredsDidCommCredentialFormat'
 export * from './LegacyIndyDidCommCredentialFormat'
-export { AnonCredsCredentialFormatService } from './AnonCredsCredentialFormatService'
+export { AnonCredsDidCommCredentialFormatService } from './AnonCredsDidCommCredentialFormatService'
 export { DataIntegrityDidCommCredentialFormatService } from './DataIntegrityDidCommCredentialFormatService'
 export { LegacyIndyCredentialFormatService } from './LegacyIndyCredentialFormatService'
 

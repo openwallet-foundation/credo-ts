@@ -1,20 +1,20 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
+  DidCommFormatCreateRequestOptions,
+  DidCommProofFormatAcceptProposalOptions,
+  DidCommProofFormatAcceptRequestOptions,
+  DidCommProofFormatAutoRespondPresentationOptions,
+  DidCommProofFormatAutoRespondProposalOptions,
+  DidCommProofFormatAutoRespondRequestOptions,
+  DidCommProofFormatCreateProposalOptions,
+  DidCommProofFormatCreateReturn,
+  DidCommProofFormatGetCredentialsForRequestOptions,
+  DidCommProofFormatGetCredentialsForRequestReturn,
+  DidCommProofFormatProcessOptions,
+  DidCommProofFormatProcessPresentationOptions,
+  DidCommProofFormatSelectCredentialsForRequestOptions,
+  DidCommProofFormatSelectCredentialsForRequestReturn,
   DidCommProofFormatService,
-  FormatCreateRequestOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatCreateReturn,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatGetCredentialsForRequestReturn,
-  ProofFormatProcessOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatSelectCredentialsForRequestOptions,
-  ProofFormatSelectCredentialsForRequestReturn,
 } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
@@ -57,8 +57,8 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async createProposal(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: ProofFormatCreateProposalOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { attachmentId, proofFormats }: DidCommProofFormatCreateProposalOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const format = new DidCommProofFormatSpec({
@@ -84,7 +84,10 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
     return { attachment, format }
   }
 
-  public async processProposal(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processProposal(
+    _agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const proposalJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -96,8 +99,8 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async acceptProposal(
     agentContext: AgentContext,
-    { proposalAttachment, attachmentId }: ProofFormatAcceptProposalOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { proposalAttachment, attachmentId }: DidCommProofFormatAcceptProposalOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const format = new DidCommProofFormatSpec({
@@ -120,8 +123,8 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { attachmentId, proofFormats }: DidCommFormatCreateRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
     const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION_REQUEST,
@@ -150,7 +153,10 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
     return { attachment, format }
   }
 
-  public async processRequest(_agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processRequest(
+    _agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const requestJson = attachment.getDataAsJson<AnonCredsProofRequest>()
 
     // fromJson also validates
@@ -162,8 +168,12 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async acceptRequest(
     agentContext: AgentContext,
-    { proofFormats, requestAttachment, attachmentId }: ProofFormatAcceptRequestOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    {
+      proofFormats,
+      requestAttachment,
+      attachmentId,
+    }: DidCommProofFormatAcceptRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const format = new DidCommProofFormatSpec({
       format: ANONCREDS_PRESENTATION,
       attachmentId,
@@ -189,7 +199,7 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async processPresentation(
     agentContext: AgentContext,
-    { requestAttachment, attachment }: ProofFormatProcessPresentationOptions
+    { requestAttachment, attachment }: DidCommProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const verifierService =
       agentContext.dependencyManager.resolve<AnonCredsVerifierService>(AnonCredsVerifierServiceSymbol)
@@ -245,8 +255,8 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatGetCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatGetCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
+    { requestAttachment, proofFormats }: DidCommProofFormatGetCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatGetCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -261,8 +271,11 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment, proofFormats }: ProofFormatSelectCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
-  ): Promise<ProofFormatSelectCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
+    {
+      requestAttachment,
+      proofFormats,
+    }: DidCommProofFormatSelectCredentialsForRequestOptions<AnonCredsDidCommProofFormat>
+  ): Promise<DidCommProofFormatSelectCredentialsForRequestReturn<AnonCredsDidCommProofFormat>> {
     const proofRequestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
 
     // Set default values
@@ -277,7 +290,7 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    { proposalAttachment, requestAttachment }: ProofFormatAutoRespondProposalOptions
+    { proposalAttachment, requestAttachment }: DidCommProofFormatAutoRespondProposalOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
@@ -293,7 +306,7 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { proposalAttachment, requestAttachment }: ProofFormatAutoRespondRequestOptions
+    { proposalAttachment, requestAttachment }: DidCommProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalJson = proposalAttachment.getDataAsJson<AnonCredsProofRequest>()
     const requestJson = requestAttachment.getDataAsJson<AnonCredsProofRequest>()
@@ -303,7 +316,7 @@ export class AnonCredsDidCommProofFormatService implements DidCommProofFormatSer
 
   public async shouldAutoRespondToPresentation(
     _agentContext: AgentContext,
-    _options: ProofFormatAutoRespondPresentationOptions
+    _options: DidCommProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     // The presentation is already verified in processPresentation, so we can just return true here.
     // It's only an ack, so it's just that we received the presentation.

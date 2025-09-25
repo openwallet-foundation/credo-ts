@@ -3,9 +3,9 @@ import type { GetAgentMessageOptions } from '../../../../../repository'
 import type { DidCommPlaintextMessage } from '../../../../../types'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import type {
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatCreateOfferOptions,
   DidCommCredentialFormat,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
   DidCommCredentialFormatService,
 } from '../../../formats'
 import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
@@ -234,14 +234,14 @@ export const testCredentialFormatService = {
   supportsFormat: (_format: string) => true,
   createOffer: async (
     _agentContext: AgentContext,
-    _options: CredentialFormatCreateOfferOptions<TestCredentialFormat>
+    _options: DidCommCredentialFormatCreateOfferOptions<TestCredentialFormat>
   ) => ({
     attachment: offerAttachment,
     format: offerFormat,
   }),
   acceptRequest: async (
     _agentContext: AgentContext,
-    _options: CredentialFormatAcceptRequestOptions<TestCredentialFormat>
+    _options: DidCommCredentialFormatAcceptRequestOptions<TestCredentialFormat>
   ) => ({ attachment: credentialAttachment, format: credentialFormat }),
   deleteCredentialById: jest.fn(),
   processCredential: jest.fn(),

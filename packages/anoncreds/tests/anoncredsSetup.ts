@@ -51,7 +51,7 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
@@ -90,7 +90,7 @@ export const getAnonCredsModules = ({
     },
   })
 
-  const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
+  const anonCredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
   const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
   const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 

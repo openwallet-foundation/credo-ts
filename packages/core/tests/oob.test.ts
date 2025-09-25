@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AnonCredsCredentialFormatService } from '../../anoncreds/src'
+import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src'
 import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
 import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
 
@@ -85,7 +85,7 @@ describe('out of band', () => {
   }
 
   let credentialTemplate: CreateCredentialOfferOptions<
-    [DidCommCredentialV2Protocol<[AnonCredsCredentialFormatService]>]
+    [DidCommCredentialV2Protocol<[AnonCredsDidCommCredentialFormatService]>]
   >
 
   beforeAll(async () => {

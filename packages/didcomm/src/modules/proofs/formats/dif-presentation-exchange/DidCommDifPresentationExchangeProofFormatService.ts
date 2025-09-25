@@ -10,18 +10,18 @@ import type {
 } from '@credo-ts/core'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
 import type {
-  FormatCreateRequestOptions,
-  ProofFormatAcceptProposalOptions,
-  ProofFormatAcceptRequestOptions,
-  ProofFormatAutoRespondPresentationOptions,
-  ProofFormatAutoRespondProposalOptions,
-  ProofFormatAutoRespondRequestOptions,
-  ProofFormatCreateProposalOptions,
-  ProofFormatCreateReturn,
-  ProofFormatGetCredentialsForRequestOptions,
-  ProofFormatProcessOptions,
-  ProofFormatProcessPresentationOptions,
-  ProofFormatSelectCredentialsForRequestOptions,
+  DidCommFormatCreateRequestOptions,
+  DidCommProofFormatAcceptProposalOptions,
+  DidCommProofFormatAcceptRequestOptions,
+  DidCommProofFormatAutoRespondPresentationOptions,
+  DidCommProofFormatAutoRespondProposalOptions,
+  DidCommProofFormatAutoRespondRequestOptions,
+  DidCommProofFormatCreateProposalOptions,
+  DidCommProofFormatCreateReturn,
+  DidCommProofFormatGetCredentialsForRequestOptions,
+  DidCommProofFormatProcessOptions,
+  DidCommProofFormatProcessPresentationOptions,
+  DidCommProofFormatSelectCredentialsForRequestOptions,
 } from '../DidCommProofFormatServiceOptions'
 import type {
   DidCommDifPresentationExchangeProofFormat,
@@ -75,8 +75,8 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async createProposal(
     agentContext: AgentContext,
-    { proofFormats, attachmentId }: ProofFormatCreateProposalOptions<DidCommDifPresentationExchangeProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { proofFormats, attachmentId }: DidCommProofFormatCreateProposalOptions<DidCommDifPresentationExchangeProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
     const pexFormat = proofFormats.presentationExchange
@@ -95,7 +95,10 @@ export class DidCommDifPresentationExchangeProofFormatService
     return { format, attachment }
   }
 
-  public async processProposal(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processProposal(
+    agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const ps = this.presentationExchangeService(agentContext)
     const proposal = attachment.getDataAsJson<DifPresentationExchangeProposal>()
     ps.validatePresentationDefinition(proposal)
@@ -107,8 +110,8 @@ export class DidCommDifPresentationExchangeProofFormatService
       attachmentId,
       proposalAttachment,
       proofFormats,
-    }: ProofFormatAcceptProposalOptions<DidCommDifPresentationExchangeProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    }: DidCommProofFormatAcceptProposalOptions<DidCommDifPresentationExchangeProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
     const presentationExchangeFormat = proofFormats?.presentationExchange
@@ -141,8 +144,8 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async createRequest(
     agentContext: AgentContext,
-    { attachmentId, proofFormats }: FormatCreateRequestOptions<DidCommDifPresentationExchangeProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    { attachmentId, proofFormats }: DidCommFormatCreateRequestOptions<DidCommDifPresentationExchangeProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
     const presentationExchangeFormat = proofFormats.presentationExchange
@@ -175,7 +178,10 @@ export class DidCommDifPresentationExchangeProofFormatService
     return { attachment, format }
   }
 
-  public async processRequest(agentContext: AgentContext, { attachment }: ProofFormatProcessOptions): Promise<void> {
+  public async processRequest(
+    agentContext: AgentContext,
+    { attachment }: DidCommProofFormatProcessOptions
+  ): Promise<void> {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
       attachment.getDataAsJson<DifPresentationExchangeRequest>()
@@ -188,8 +194,8 @@ export class DidCommDifPresentationExchangeProofFormatService
       attachmentId,
       requestAttachment,
       proofFormats,
-    }: ProofFormatAcceptRequestOptions<DidCommDifPresentationExchangeProofFormat>
-  ): Promise<ProofFormatCreateReturn> {
+    }: DidCommProofFormatAcceptRequestOptions<DidCommDifPresentationExchangeProofFormat>
+  ): Promise<DidCommProofFormatCreateReturn> {
     const ps = this.presentationExchangeService(agentContext)
 
     const format = new DidCommProofFormatSpec({
@@ -258,7 +264,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async processPresentation(
     agentContext: AgentContext,
-    { requestAttachment, attachment, proofRecord }: ProofFormatProcessPresentationOptions
+    { requestAttachment, attachment, proofRecord }: DidCommProofFormatProcessPresentationOptions
   ): Promise<boolean> {
     const ps = this.presentationExchangeService(agentContext)
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
@@ -392,7 +398,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatGetCredentialsForRequestOptions<DidCommDifPresentationExchangeProofFormat>
+    { requestAttachment }: DidCommProofFormatGetCredentialsForRequestOptions<DidCommDifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
@@ -406,7 +412,9 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async selectCredentialsForRequest(
     agentContext: AgentContext,
-    { requestAttachment }: ProofFormatSelectCredentialsForRequestOptions<DidCommDifPresentationExchangeProofFormat>
+    {
+      requestAttachment,
+    }: DidCommProofFormatSelectCredentialsForRequestOptions<DidCommDifPresentationExchangeProofFormat>
   ) {
     const ps = this.presentationExchangeService(agentContext)
     const { presentation_definition: presentationDefinition } =
@@ -418,7 +426,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext,
-    { requestAttachment, proposalAttachment }: ProofFormatAutoRespondProposalOptions
+    { requestAttachment, proposalAttachment }: DidCommProofFormatAutoRespondProposalOptions
   ): Promise<boolean> {
     const proposalData = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
     const requestData = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
@@ -428,7 +436,7 @@ export class DidCommDifPresentationExchangeProofFormatService
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { requestAttachment, proposalAttachment }: ProofFormatAutoRespondRequestOptions
+    { requestAttachment, proposalAttachment }: DidCommProofFormatAutoRespondRequestOptions
   ): Promise<boolean> {
     const proposalData = proposalAttachment.getDataAsJson<DifPresentationExchangeProposal>()
     const requestData = requestAttachment.getDataAsJson<DifPresentationExchangeRequest>()
@@ -444,7 +452,7 @@ export class DidCommDifPresentationExchangeProofFormatService
    */
   public async shouldAutoRespondToPresentation(
     _agentContext: AgentContext,
-    _options: ProofFormatAutoRespondPresentationOptions
+    _options: DidCommProofFormatAutoRespondPresentationOptions
   ): Promise<boolean> {
     return true
   }

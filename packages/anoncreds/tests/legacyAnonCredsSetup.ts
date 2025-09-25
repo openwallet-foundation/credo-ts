@@ -47,7 +47,7 @@ import {
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
-  AnonCredsCredentialFormatService,
+  AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
   AnonCredsModule,
   DidCommCredentialV1Protocol,
@@ -105,7 +105,7 @@ export const getAnonCredsIndyModules = ({
           indyCredentialFormat: legacyIndyCredentialFormatService,
         }),
         new DidCommCredentialV2Protocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsCredentialFormatService()],
+          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
         }),
       ],
     }),

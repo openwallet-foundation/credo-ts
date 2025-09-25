@@ -41,7 +41,7 @@ export type ExtractProofFormats<PFs extends DidCommProofFormatService[]> = {
  *
  * It requires an attachment and a format to be returned.
  */
-export interface ProofFormatCreateReturn {
+export interface DidCommProofFormatCreateReturn {
   format: DidCommProofFormatSpec
   attachment: DidCommAttachment
 }
@@ -49,22 +49,22 @@ export interface ProofFormatCreateReturn {
 /**
  * Base type for all proof process methods.
  */
-export interface ProofFormatProcessOptions {
+export interface DidCommProofFormatProcessOptions {
   attachment: DidCommAttachment
   proofRecord: DidCommProofExchangeRecord
 }
 
-export interface ProofFormatProcessPresentationOptions extends ProofFormatProcessOptions {
+export interface DidCommProofFormatProcessPresentationOptions extends DidCommProofFormatProcessOptions {
   requestAttachment: DidCommAttachment
 }
 
-export interface ProofFormatCreateProposalOptions<PF extends DidCommProofFormat> {
+export interface DidCommProofFormatCreateProposalOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats: DidCommProofFormatPayload<[PF], 'createProposal'>
   attachmentId?: string
 }
 
-export interface ProofFormatAcceptProposalOptions<PF extends DidCommProofFormat> {
+export interface DidCommProofFormatAcceptProposalOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats?: DidCommProofFormatPayload<[PF], 'acceptProposal'>
   attachmentId?: string
@@ -72,13 +72,13 @@ export interface ProofFormatAcceptProposalOptions<PF extends DidCommProofFormat>
   proposalAttachment: DidCommAttachment
 }
 
-export interface FormatCreateRequestOptions<PF extends DidCommProofFormat> {
+export interface DidCommFormatCreateRequestOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats: DidCommProofFormatPayload<[PF], 'createRequest'>
   attachmentId?: string
 }
 
-export interface ProofFormatAcceptRequestOptions<PF extends DidCommProofFormat> {
+export interface DidCommProofFormatAcceptRequestOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats?: DidCommProofFormatPayload<[PF], 'acceptRequest'>
   attachmentId?: string
@@ -87,7 +87,7 @@ export interface ProofFormatAcceptRequestOptions<PF extends DidCommProofFormat> 
   proposalAttachment?: DidCommAttachment
 }
 
-export interface ProofFormatGetCredentialsForRequestOptions<PF extends DidCommProofFormat> {
+export interface DidCommProofFormatGetCredentialsForRequestOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats?: DidCommProofFormatCredentialForRequestPayload<[PF], 'getCredentialsForRequest', 'input'>
 
@@ -95,10 +95,10 @@ export interface ProofFormatGetCredentialsForRequestOptions<PF extends DidCommPr
   proposalAttachment?: DidCommAttachment
 }
 
-export type ProofFormatGetCredentialsForRequestReturn<PF extends DidCommProofFormat> =
+export type DidCommProofFormatGetCredentialsForRequestReturn<PF extends DidCommProofFormat> =
   PF['proofFormats']['getCredentialsForRequest']['output']
 
-export interface ProofFormatSelectCredentialsForRequestOptions<PF extends DidCommProofFormat> {
+export interface DidCommProofFormatSelectCredentialsForRequestOptions<PF extends DidCommProofFormat> {
   proofRecord: DidCommProofExchangeRecord
   proofFormats?: DidCommProofFormatCredentialForRequestPayload<[PF], 'selectCredentialsForRequest', 'input'>
 
@@ -106,22 +106,22 @@ export interface ProofFormatSelectCredentialsForRequestOptions<PF extends DidCom
   proposalAttachment?: DidCommAttachment
 }
 
-export type ProofFormatSelectCredentialsForRequestReturn<PF extends DidCommProofFormat> =
+export type DidCommProofFormatSelectCredentialsForRequestReturn<PF extends DidCommProofFormat> =
   PF['proofFormats']['selectCredentialsForRequest']['output']
 
-export interface ProofFormatAutoRespondProposalOptions {
+export interface DidCommProofFormatAutoRespondProposalOptions {
   proofRecord: DidCommProofExchangeRecord
   proposalAttachment: DidCommAttachment
   requestAttachment: DidCommAttachment
 }
 
-export interface ProofFormatAutoRespondRequestOptions {
+export interface DidCommProofFormatAutoRespondRequestOptions {
   proofRecord: DidCommProofExchangeRecord
   requestAttachment: DidCommAttachment
   proposalAttachment: DidCommAttachment
 }
 
-export interface ProofFormatAutoRespondPresentationOptions {
+export interface DidCommProofFormatAutoRespondPresentationOptions {
   proofRecord: DidCommProofExchangeRecord
   proposalAttachment?: DidCommAttachment
   requestAttachment: DidCommAttachment

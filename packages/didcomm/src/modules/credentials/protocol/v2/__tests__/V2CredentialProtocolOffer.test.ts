@@ -1,8 +1,8 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
 import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import type {
-  CredentialFormatCreateOfferOptions,
   DidCommCredentialFormat,
+  DidCommCredentialFormatCreateOfferOptions,
   DidCommCredentialFormatService,
 } from '../../../formats'
 import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
@@ -60,7 +60,7 @@ export const testCredentialFormatService = {
   supportsFormat: (_format: string) => true,
   createOffer: async (
     _agentContext: AgentContext,
-    _options: CredentialFormatCreateOfferOptions<TestCredentialFormat>
+    _options: DidCommCredentialFormatCreateOfferOptions<TestCredentialFormat>
   ) => ({
     attachment: offerAttachment,
     format: offerFormat,

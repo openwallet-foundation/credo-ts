@@ -8,24 +8,24 @@ import type {
 import type {
   AnonCredsLinkSecretBindingMethod,
   AnonCredsLinkSecretDataIntegrityBindingProof,
-  CredentialFormatAcceptOfferOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateProposalOptions,
-  CredentialFormatCreateProposalReturn,
-  CredentialFormatCreateReturn,
-  CredentialFormatProcessCredentialOptions,
-  CredentialFormatProcessOptions,
   DataIntegrityCredential,
   DataIntegrityCredentialRequest,
   DataIntegrityCredentialRequestBindingProof,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialFormatAcceptOfferOptions,
+  DidCommCredentialFormatAcceptProposalOptions,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatAutoRespondCredentialOptions,
+  DidCommCredentialFormatAutoRespondOfferOptions,
+  DidCommCredentialFormatAutoRespondProposalOptions,
+  DidCommCredentialFormatAutoRespondRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatCreateOfferReturn,
+  DidCommCredentialFormatCreateProposalOptions,
+  DidCommCredentialFormatCreateProposalReturn,
+  DidCommCredentialFormatCreateReturn,
+  DidCommCredentialFormatProcessCredentialOptions,
+  DidCommCredentialFormatProcessOptions,
   DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
   DidCommDataIntegrityCredentialFormat,
@@ -118,23 +118,23 @@ export class DataIntegrityDidCommCredentialFormatService
       credentialFormats,
       // biome-ignore lint/correctness/noUnusedVariables: <explanation>
       credentialExchangeRecord,
-    }: CredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
-  ): Promise<CredentialFormatCreateProposalReturn> {
+    }: DidCommCredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
   }
 
   public async processProposal(
     _agentContext: AgentContext,
     // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { attachment }: CredentialFormatProcessOptions
+    { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
     throw new CredoError('Not defined')
   }
 
   public async acceptProposal(
     _agentContext: AgentContext,
-    _input: CredentialFormatAcceptProposalOptions<DidCommDataIntegrityCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    _input: DidCommCredentialFormatAcceptProposalOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     throw new CredoError('Not defined')
   }
 
@@ -151,8 +151,8 @@ export class DataIntegrityDidCommCredentialFormatService
       credentialFormats,
       credentialExchangeRecord,
       attachmentId,
-    }: CredentialFormatCreateOfferOptions<DidCommDataIntegrityCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    }: DidCommCredentialFormatCreateOfferOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const dataIntegrityFormat = credentialFormats.dataIntegrity
     if (!dataIntegrityFormat) throw new CredoError('Missing data integrity credential format data')
 
@@ -188,7 +188,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
   public async processOffer(
     agentContext: AgentContext,
-    { attachment, credentialExchangeRecord }: CredentialFormatProcessOptions
+    { attachment, credentialExchangeRecord }: DidCommCredentialFormatProcessOptions
   ) {
     agentContext.config.logger.debug(
       `Processing data integrity credential offer for credential record ${credentialExchangeRecord.id}`
@@ -331,8 +331,8 @@ export class DataIntegrityDidCommCredentialFormatService
       attachmentId,
       offerAttachment,
       credentialFormats,
-    }: CredentialFormatAcceptOfferOptions<DidCommDataIntegrityCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    }: DidCommCredentialFormatAcceptOfferOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
 
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
@@ -432,14 +432,17 @@ export class DataIntegrityDidCommCredentialFormatService
   /**
    * Starting from a request is not supported for anoncreds credentials, this method only throws an error.
    */
-  public async createRequest(): Promise<CredentialFormatCreateReturn> {
+  public async createRequest(): Promise<DidCommCredentialFormatCreateReturn> {
     throw new CredoError('Starting from a request is not supported for w3c credentials')
   }
 
   /**
    * We don't have any models to validate an anoncreds request object, for now this method does nothing
    */
-  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(
+    _agentContext: AgentContext,
+    _options: DidCommCredentialFormatProcessOptions
+  ): Promise<void> {
     // not needed for dataIntegrity
   }
 
@@ -649,8 +652,8 @@ export class DataIntegrityDidCommCredentialFormatService
       offerAttachment,
       requestAttachment,
       requestAppendAttachments,
-    }: CredentialFormatAcceptRequestOptions<DidCommDataIntegrityCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    }: DidCommCredentialFormatAcceptRequestOptions<DidCommDataIntegrityCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const dataIntegrityFormat = credentialFormats?.dataIntegrity
 
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
@@ -809,7 +812,7 @@ export class DataIntegrityDidCommCredentialFormatService
       attachment,
       requestAttachment,
       offerAttachment,
-    }: CredentialFormatProcessCredentialOptions
+    }: DidCommCredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
     const offeredCredentialJson = credentialOffer.credential
@@ -946,14 +949,14 @@ export class DataIntegrityDidCommCredentialFormatService
 
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext, // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondProposalOptions
   ): Promise<boolean> {
     throw new CredoError('Not implemented')
   }
 
   public async shouldAutoRespondToOffer(
     _agentContext: AgentContext,
-    { offerAttachment }: CredentialFormatAutoRespondOfferOptions
+    { offerAttachment }: DidCommCredentialFormatAutoRespondOfferOptions
   ) {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
     if (!credentialOffer.bindingRequired) return true
@@ -962,7 +965,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: DidCommCredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment?.getDataAsJson(), DataIntegrityCredentialOffer)
     const credentialRequest = requestAttachment.getDataAsJson<DataIntegrityCredentialRequest>()
@@ -1009,7 +1012,11 @@ export class DataIntegrityDidCommCredentialFormatService
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
     // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { credentialExchangeRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
+    {
+      credentialExchangeRecord,
+      requestAttachment,
+      credentialAttachment,
+    }: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {
     return true
   }

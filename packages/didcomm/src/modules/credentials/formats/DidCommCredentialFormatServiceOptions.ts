@@ -40,7 +40,7 @@ export type ExtractCredentialFormats<CFs extends DidCommCredentialFormatService[
  *
  * It requires an attachment and a format to be returned.
  */
-export interface CredentialFormatCreateReturn {
+export interface DidCommCredentialFormatCreateReturn {
   format: DidCommCredentialFormatSpec
   attachment: DidCommAttachment
   appendAttachments?: DidCommAttachment[]
@@ -49,24 +49,24 @@ export interface CredentialFormatCreateReturn {
 /**
  * Base return type for all credential process methods.
  */
-export interface CredentialFormatProcessOptions {
+export interface DidCommCredentialFormatProcessOptions {
   attachment: DidCommAttachment
   credentialExchangeRecord: DidCommCredentialExchangeRecord
 }
 
-export interface CredentialFormatProcessCredentialOptions extends CredentialFormatProcessOptions {
+export interface DidCommCredentialFormatProcessCredentialOptions extends DidCommCredentialFormatProcessOptions {
   offerAttachment: DidCommAttachment
   requestAttachment: DidCommAttachment
   requestAppendAttachments?: DidCommAttachment[]
 }
 
-export interface CredentialFormatCreateProposalOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatCreateProposalOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: DidCommCredentialFormatPayload<[CF], 'createProposal'>
   attachmentId?: string
 }
 
-export interface CredentialFormatAcceptProposalOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatAcceptProposalOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: DidCommCredentialFormatPayload<[CF], 'acceptProposal'>
   attachmentId?: string
@@ -74,33 +74,33 @@ export interface CredentialFormatAcceptProposalOptions<CF extends DidCommCredent
   proposalAttachment: DidCommAttachment
 }
 
-export interface CredentialFormatCreateProposalReturn extends CredentialFormatCreateReturn {
+export interface DidCommCredentialFormatCreateProposalReturn extends DidCommCredentialFormatCreateReturn {
   previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
 }
 
-export interface CredentialFormatCreateOfferOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatCreateOfferOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: DidCommCredentialFormatPayload<[CF], 'createOffer'>
   attachmentId?: string
 }
 
-export interface CredentialFormatAcceptOfferOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatAcceptOfferOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: DidCommCredentialFormatPayload<[CF], 'acceptOffer'>
   attachmentId?: string
   offerAttachment: DidCommAttachment
 }
 
-export interface CredentialFormatCreateOfferReturn extends CredentialFormatCreateReturn {
+export interface DidCommCredentialFormatCreateOfferReturn extends DidCommCredentialFormatCreateReturn {
   previewAttributes?: DidCommCredentialPreviewAttributeOptions[]
 }
 
-export interface CredentialFormatCreateRequestOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatCreateRequestOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats: DidCommCredentialFormatPayload<[CF], 'createRequest'>
 }
 
-export interface CredentialFormatAcceptRequestOptions<CF extends DidCommCredentialFormat> {
+export interface DidCommCredentialFormatAcceptRequestOptions<CF extends DidCommCredentialFormat> {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   credentialFormats?: DidCommCredentialFormatPayload<[CF], 'acceptRequest'>
   attachmentId?: string
@@ -110,26 +110,26 @@ export interface CredentialFormatAcceptRequestOptions<CF extends DidCommCredenti
 }
 
 // Auto accept method interfaces
-export interface CredentialFormatAutoRespondProposalOptions {
+export interface DidCommCredentialFormatAutoRespondProposalOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment: DidCommAttachment
   offerAttachment: DidCommAttachment
 }
 
-export interface CredentialFormatAutoRespondOfferOptions {
+export interface DidCommCredentialFormatAutoRespondOfferOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment: DidCommAttachment
   offerAttachment: DidCommAttachment
 }
 
-export interface CredentialFormatAutoRespondRequestOptions {
+export interface DidCommCredentialFormatAutoRespondRequestOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment?: DidCommAttachment
   offerAttachment: DidCommAttachment
   requestAttachment: DidCommAttachment
 }
 
-export interface CredentialFormatAutoRespondCredentialOptions {
+export interface DidCommCredentialFormatAutoRespondCredentialOptions {
   credentialExchangeRecord: DidCommCredentialExchangeRecord
   proposalAttachment?: DidCommAttachment
   offerAttachment?: DidCommAttachment

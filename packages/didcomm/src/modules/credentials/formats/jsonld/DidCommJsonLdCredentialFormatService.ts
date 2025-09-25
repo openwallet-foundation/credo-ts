@@ -1,21 +1,21 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
-  CredentialFormatAcceptOfferOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateProposalOptions,
-  CredentialFormatCreateProposalReturn,
-  CredentialFormatCreateRequestOptions,
-  CredentialFormatCreateReturn,
-  CredentialFormatProcessCredentialOptions,
-  CredentialFormatProcessOptions,
+  DidCommCredentialFormatAcceptOfferOptions,
+  DidCommCredentialFormatAcceptProposalOptions,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatAutoRespondCredentialOptions,
+  DidCommCredentialFormatAutoRespondOfferOptions,
+  DidCommCredentialFormatAutoRespondProposalOptions,
+  DidCommCredentialFormatAutoRespondRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatCreateOfferReturn,
+  DidCommCredentialFormatCreateProposalOptions,
+  DidCommCredentialFormatCreateProposalReturn,
+  DidCommCredentialFormatCreateRequestOptions,
+  DidCommCredentialFormatCreateReturn,
+  DidCommCredentialFormatProcessCredentialOptions,
+  DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
 import type {
   DidCommJsonLdCredentialFormat,
@@ -61,8 +61,8 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async createProposal(
     _agentContext: AgentContext,
-    { credentialFormats }: CredentialFormatCreateProposalOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateProposalReturn> {
+    { credentialFormats }: DidCommCredentialFormatCreateProposalOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateProposalReturn> {
     const format = new DidCommCredentialFormatSpec({
       format: JSONLD_VC_DETAIL,
     })
@@ -86,7 +86,7 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async processProposal(
     _agentContext: AgentContext,
-    { attachment }: CredentialFormatProcessOptions
+    { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
     const credProposalJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
@@ -100,8 +100,8 @@ export class DidCommJsonLdCredentialFormatService
 
   public async acceptProposal(
     _agentContext: AgentContext,
-    { attachmentId, proposalAttachment }: CredentialFormatAcceptProposalOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    { attachmentId, proposalAttachment }: DidCommCredentialFormatAcceptProposalOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new DidCommCredentialFormatSpec({
       attachmentId,
@@ -127,8 +127,8 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async createOffer(
     _agentContext: AgentContext,
-    { credentialFormats, attachmentId }: CredentialFormatCreateOfferOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    { credentialFormats, attachmentId }: DidCommCredentialFormatCreateOfferOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     // if the offer has an attachment Id use that, otherwise the generated id of the formats object
     const format = new DidCommCredentialFormatSpec({
       attachmentId,
@@ -148,7 +148,7 @@ export class DidCommJsonLdCredentialFormatService
     return { format, attachment }
   }
 
-  public async processOffer(_agentContext: AgentContext, { attachment }: CredentialFormatProcessOptions) {
+  public async processOffer(_agentContext: AgentContext, { attachment }: DidCommCredentialFormatProcessOptions) {
     const credentialOfferJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     if (!credentialOfferJson) {
@@ -160,8 +160,8 @@ export class DidCommJsonLdCredentialFormatService
 
   public async acceptOffer(
     _agentContext: AgentContext,
-    { attachmentId, offerAttachment }: CredentialFormatAcceptOfferOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    { attachmentId, offerAttachment }: DidCommCredentialFormatAcceptOfferOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const credentialOffer = offerAttachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
     // validate
@@ -185,8 +185,8 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async createRequest(
     _agentContext: AgentContext,
-    { credentialFormats }: CredentialFormatCreateRequestOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    { credentialFormats }: DidCommCredentialFormatCreateRequestOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const jsonLdFormat = credentialFormats?.jsonld
 
     const format = new DidCommCredentialFormatSpec({
@@ -207,7 +207,7 @@ export class DidCommJsonLdCredentialFormatService
 
   public async processRequest(
     _agentContext: AgentContext,
-    { attachment }: CredentialFormatProcessOptions
+    { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
     const requestJson = attachment.getDataAsJson<JsonLdFormatDataCredentialDetail>()
 
@@ -225,8 +225,8 @@ export class DidCommJsonLdCredentialFormatService
       credentialFormats,
       attachmentId,
       requestAttachment,
-    }: CredentialFormatAcceptRequestOptions<DidCommJsonLdCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    }: DidCommCredentialFormatAcceptRequestOptions<DidCommJsonLdCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const w3cJsonLdCredentialService = agentContext.dependencyManager.resolve(W3cJsonLdCredentialService)
 
     // sign credential here. credential to be signed is received as the request attachment
@@ -316,7 +316,7 @@ export class DidCommJsonLdCredentialFormatService
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialExchangeRecord, attachment, requestAttachment }: CredentialFormatProcessCredentialOptions
+    { credentialExchangeRecord, attachment, requestAttachment }: DidCommCredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
 
@@ -401,28 +401,28 @@ export class DidCommJsonLdCredentialFormatService
 
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondProposalOptions
   ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
   public async shouldAutoRespondToOffer(
     _agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
+    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondOfferOptions
   ) {
     return this.areCredentialsEqual(proposalAttachment, offerAttachment)
   }
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: DidCommCredentialFormatAutoRespondRequestOptions
   ) {
     return this.areCredentialsEqual(offerAttachment, requestAttachment)
   }
 
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
-    { requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
+    { requestAttachment, credentialAttachment }: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<JsonLdFormatDataVerifiableCredential>()
     const w3cCredential = JsonTransformer.fromJSON(credentialJson, W3cJsonLdVerifiableCredential)

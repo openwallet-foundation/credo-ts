@@ -1,21 +1,21 @@
 import type { AgentContext } from '@credo-ts/core'
 import type { DidCommCredentialFormat } from './DidCommCredentialFormat'
 import type {
-  CredentialFormatAcceptOfferOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateProposalOptions,
-  CredentialFormatCreateProposalReturn,
-  CredentialFormatCreateRequestOptions,
-  CredentialFormatCreateReturn,
-  CredentialFormatProcessCredentialOptions,
-  CredentialFormatProcessOptions,
+  DidCommCredentialFormatAcceptOfferOptions,
+  DidCommCredentialFormatAcceptProposalOptions,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatAutoRespondCredentialOptions,
+  DidCommCredentialFormatAutoRespondOfferOptions,
+  DidCommCredentialFormatAutoRespondProposalOptions,
+  DidCommCredentialFormatAutoRespondRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatCreateOfferReturn,
+  DidCommCredentialFormatCreateProposalOptions,
+  DidCommCredentialFormatCreateProposalReturn,
+  DidCommCredentialFormatCreateRequestOptions,
+  DidCommCredentialFormatCreateReturn,
+  DidCommCredentialFormatProcessCredentialOptions,
+  DidCommCredentialFormatProcessOptions,
 } from './DidCommCredentialFormatServiceOptions'
 
 export interface DidCommCredentialFormatService<CF extends DidCommCredentialFormat = DidCommCredentialFormat> {
@@ -25,55 +25,55 @@ export interface DidCommCredentialFormatService<CF extends DidCommCredentialForm
   // proposal methods
   createProposal(
     agentContext: AgentContext,
-    options: CredentialFormatCreateProposalOptions<CF>
-  ): Promise<CredentialFormatCreateProposalReturn>
-  processProposal(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
+    options: DidCommCredentialFormatCreateProposalOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateProposalReturn>
+  processProposal(agentContext: AgentContext, options: DidCommCredentialFormatProcessOptions): Promise<void>
   acceptProposal(
     agentContext: AgentContext,
-    options: CredentialFormatAcceptProposalOptions<CF>
-  ): Promise<CredentialFormatCreateOfferReturn>
+    options: DidCommCredentialFormatAcceptProposalOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn>
 
   // offer methods
   createOffer(
     agentContext: AgentContext,
-    options: CredentialFormatCreateOfferOptions<CF>
-  ): Promise<CredentialFormatCreateOfferReturn>
-  processOffer(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
+    options: DidCommCredentialFormatCreateOfferOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn>
+  processOffer(agentContext: AgentContext, options: DidCommCredentialFormatProcessOptions): Promise<void>
   acceptOffer(
     agentContext: AgentContext,
-    options: CredentialFormatAcceptOfferOptions<CF>
-  ): Promise<CredentialFormatCreateReturn>
+    options: DidCommCredentialFormatAcceptOfferOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateReturn>
 
   // request methods
   createRequest(
     agentContext: AgentContext,
-    options: CredentialFormatCreateRequestOptions<CF>
-  ): Promise<CredentialFormatCreateReturn>
-  processRequest(agentContext: AgentContext, options: CredentialFormatProcessOptions): Promise<void>
+    options: DidCommCredentialFormatCreateRequestOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateReturn>
+  processRequest(agentContext: AgentContext, options: DidCommCredentialFormatProcessOptions): Promise<void>
   acceptRequest(
     agentContext: AgentContext,
-    options: CredentialFormatAcceptRequestOptions<CF>
-  ): Promise<CredentialFormatCreateReturn>
+    options: DidCommCredentialFormatAcceptRequestOptions<CF>
+  ): Promise<DidCommCredentialFormatCreateReturn>
 
   // credential methods
-  processCredential(agentContext: AgentContext, options: CredentialFormatProcessCredentialOptions): Promise<void>
+  processCredential(agentContext: AgentContext, options: DidCommCredentialFormatProcessCredentialOptions): Promise<void>
 
   // auto accept methods
   shouldAutoRespondToProposal(
     agentContext: AgentContext,
-    options: CredentialFormatAutoRespondProposalOptions
+    options: DidCommCredentialFormatAutoRespondProposalOptions
   ): Promise<boolean>
   shouldAutoRespondToOffer(
     agentContext: AgentContext,
-    options: CredentialFormatAutoRespondOfferOptions
+    options: DidCommCredentialFormatAutoRespondOfferOptions
   ): Promise<boolean>
   shouldAutoRespondToRequest(
     agentContext: AgentContext,
-    options: CredentialFormatAutoRespondRequestOptions
+    options: DidCommCredentialFormatAutoRespondRequestOptions
   ): Promise<boolean>
   shouldAutoRespondToCredential(
     agentContext: AgentContext,
-    options: CredentialFormatAutoRespondCredentialOptions
+    options: DidCommCredentialFormatAutoRespondCredentialOptions
   ): Promise<boolean>
 
   deleteCredentialById(agentContext: AgentContext, credentialId: string): Promise<void>

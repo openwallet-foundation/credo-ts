@@ -1,20 +1,20 @@
 import type { AgentContext } from '@credo-ts/core'
 import type {
-  CredentialFormatAcceptOfferOptions,
-  CredentialFormatAcceptProposalOptions,
-  CredentialFormatAcceptRequestOptions,
-  CredentialFormatAutoRespondCredentialOptions,
-  CredentialFormatAutoRespondOfferOptions,
-  CredentialFormatAutoRespondProposalOptions,
-  CredentialFormatAutoRespondRequestOptions,
-  CredentialFormatCreateOfferOptions,
-  CredentialFormatCreateOfferReturn,
-  CredentialFormatCreateProposalOptions,
-  CredentialFormatCreateProposalReturn,
-  CredentialFormatCreateReturn,
-  CredentialFormatProcessCredentialOptions,
-  CredentialFormatProcessOptions,
   DidCommCredentialExchangeRecord,
+  DidCommCredentialFormatAcceptOfferOptions,
+  DidCommCredentialFormatAcceptProposalOptions,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatAutoRespondCredentialOptions,
+  DidCommCredentialFormatAutoRespondOfferOptions,
+  DidCommCredentialFormatAutoRespondProposalOptions,
+  DidCommCredentialFormatAutoRespondRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatCreateOfferReturn,
+  DidCommCredentialFormatCreateProposalOptions,
+  DidCommCredentialFormatCreateProposalReturn,
+  DidCommCredentialFormatCreateReturn,
+  DidCommCredentialFormatProcessCredentialOptions,
+  DidCommCredentialFormatProcessOptions,
   DidCommCredentialFormatService,
   DidCommCredentialPreviewAttributeOptions,
   DidCommLinkedAttachment,
@@ -74,8 +74,11 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
    */
   public async createProposal(
     _agentContext: AgentContext,
-    { credentialFormats, credentialExchangeRecord }: CredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
-  ): Promise<CredentialFormatCreateProposalReturn> {
+    {
+      credentialFormats,
+      credentialExchangeRecord,
+    }: DidCommCredentialFormatCreateProposalOptions<LegacyIndyCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateProposalReturn> {
     const format = new DidCommCredentialFormatSpec({
       format: INDY_CRED_FILTER,
     })
@@ -115,7 +118,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async processProposal(
     _agentContext: AgentContext,
-    { attachment }: CredentialFormatProcessOptions
+    { attachment }: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
     const proposalJson = attachment.getDataAsJson()
 
@@ -129,8 +132,8 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
       credentialFormats,
       credentialExchangeRecord,
       proposalAttachment,
-    }: CredentialFormatAcceptProposalOptions<LegacyIndyCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    }: DidCommCredentialFormatAcceptProposalOptions<LegacyIndyCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats?.indy
 
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
@@ -174,8 +177,8 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
       credentialFormats,
       credentialExchangeRecord,
       attachmentId,
-    }: CredentialFormatCreateOfferOptions<LegacyIndyCredentialFormat>
-  ): Promise<CredentialFormatCreateOfferReturn> {
+    }: DidCommCredentialFormatCreateOfferOptions<LegacyIndyCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const indyFormat = credentialFormats.indy
 
     if (!indyFormat) {
@@ -195,7 +198,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async processOffer(
     agentContext: AgentContext,
-    { attachment, credentialExchangeRecord }: CredentialFormatProcessOptions
+    { attachment, credentialExchangeRecord }: DidCommCredentialFormatProcessOptions
   ) {
     agentContext.config.logger.debug(
       `Processing indy credential offer for credential record ${credentialExchangeRecord.id}`
@@ -217,8 +220,8 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
       attachmentId,
       offerAttachment,
       credentialFormats,
-    }: CredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    }: DidCommCredentialFormatAcceptOfferOptions<LegacyIndyCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     const holderService = agentContext.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
     const credentialOffer = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -263,14 +266,17 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
   /**
    * Starting from a request is not supported for indy credentials, this method only throws an error.
    */
-  public async createRequest(): Promise<CredentialFormatCreateReturn> {
+  public async createRequest(): Promise<DidCommCredentialFormatCreateReturn> {
     throw new CredoError('Starting from a request is not supported for indy credentials')
   }
 
   /**
    * We don't have any models to validate an indy request object, for now this method does nothing
    */
-  public async processRequest(_agentContext: AgentContext, _options: CredentialFormatProcessOptions): Promise<void> {
+  public async processRequest(
+    _agentContext: AgentContext,
+    _options: DidCommCredentialFormatProcessOptions
+  ): Promise<void> {
     // not needed for Indy
   }
 
@@ -281,8 +287,8 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
       attachmentId,
       offerAttachment,
       requestAttachment,
-    }: CredentialFormatAcceptRequestOptions<LegacyIndyCredentialFormat>
-  ): Promise<CredentialFormatCreateReturn> {
+    }: DidCommCredentialFormatAcceptRequestOptions<LegacyIndyCredentialFormat>
+  ): Promise<DidCommCredentialFormatCreateReturn> {
     // Assert credential attributes
     const credentialAttributes = credentialExchangeRecord.credentialAttributes
     if (!credentialAttributes) {
@@ -322,7 +328,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
    */
   public async processCredential(
     agentContext: AgentContext,
-    { credentialExchangeRecord, attachment }: CredentialFormatProcessCredentialOptions
+    { credentialExchangeRecord, attachment }: DidCommCredentialFormatProcessCredentialOptions
   ): Promise<void> {
     const credentialRequestMetadata = credentialExchangeRecord.metadata.get<AnonCredsCredentialRequestMetadata>(
       AnonCredsCredentialRequestMetadataKey
@@ -432,7 +438,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async shouldAutoRespondToProposal(
     _agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondProposalOptions
+    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondProposalOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -445,7 +451,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async shouldAutoRespondToOffer(
     _agentContext: AgentContext,
-    { offerAttachment, proposalAttachment }: CredentialFormatAutoRespondOfferOptions
+    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondOfferOptions
   ) {
     const proposalJson = proposalAttachment.getDataAsJson<LegacyIndyDidCommCredentialProposalFormat>()
     const offerJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
@@ -458,7 +464,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async shouldAutoRespondToRequest(
     _agentContext: AgentContext,
-    { offerAttachment, requestAttachment }: CredentialFormatAutoRespondRequestOptions
+    { offerAttachment, requestAttachment }: DidCommCredentialFormatAutoRespondRequestOptions
   ) {
     const credentialOfferJson = offerAttachment.getDataAsJson<AnonCredsCredentialOffer>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
@@ -468,7 +474,11 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
 
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
-    { credentialExchangeRecord, requestAttachment, credentialAttachment }: CredentialFormatAutoRespondCredentialOptions
+    {
+      credentialExchangeRecord,
+      requestAttachment,
+      credentialAttachment,
+    }: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {
     const credentialJson = credentialAttachment.getDataAsJson<AnonCredsCredential>()
     const credentialRequestJson = requestAttachment.getDataAsJson<AnonCredsCredentialRequest>()
@@ -499,7 +509,7 @@ export class LegacyIndyCredentialFormatService implements DidCommCredentialForma
       attributes: DidCommCredentialPreviewAttributeOptions[]
       linkedAttachments?: DidCommLinkedAttachment[]
     }
-  ): Promise<CredentialFormatCreateOfferReturn> {
+  ): Promise<DidCommCredentialFormatCreateOfferReturn> {
     const anonCredsIssuerService =
       agentContext.dependencyManager.resolve<AnonCredsIssuerService>(AnonCredsIssuerServiceSymbol)
 
