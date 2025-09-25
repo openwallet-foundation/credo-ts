@@ -8,7 +8,6 @@ import {
   DidsApi,
   Hasher,
   Key,
-  KeyType,
   MultiBaseEncoder,
   TypedArrayEncoder,
 } from '@credo-ts/core'
@@ -30,11 +29,11 @@ export class EddsaJcs2022Cryptosuite {
     this.agentContext.config.logger.error(error)
   }
 
-  public async _publicKeyFromId(verificationMethodId: string): Promise<Uint8Array | null> {
+  public async _publicKeyFromId(verificationMethodId: string): Promise<Key | null> {
     const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-      return Key.fromFingerprint(verificationMethod.publicKeyMultibase).publicKey
+      return Key.fromFingerprint(verificationMethod.publicKeyMultibase)
     }
     return null
   }
@@ -84,10 +83,10 @@ export class EddsaJcs2022Cryptosuite {
 
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
-    const publicKey = await this._publicKeyFromId(options.verificationMethod)
-    if (!publicKey) return false
+    const key = await this._publicKeyFromId(options.verificationMethod)
+    if (!key) return false
     const crypto = new WebvhDidCrypto(this.agentContext)
-    const verified = await crypto.verify(proofBytes, hashData, publicKey)
+    const verified = await crypto.verify(proofBytes, hashData, key.publicKey)
     return verified
   }
 
@@ -111,13 +110,12 @@ export class EddsaJcs2022Cryptosuite {
 
   public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
-    const publicKey = await this._publicKeyFromId(options.verificationMethod)
-    if (!publicKey) {
+    const key = await this._publicKeyFromId(options.verificationMethod)
+    if (!key) {
       const err = `Could not resolve public key for verificationMethod "${options.verificationMethod}`
       this._logError(err)
       throw new CredoError(err)
     }
-    const key = Key.fromPublicKey(Buffer.from(publicKey.slice(2).slice(0, 32)), KeyType.Ed25519)
     const proofBytes = await this.agentContext.wallet.sign({
       key,
       data: Buffer.from(hashData),

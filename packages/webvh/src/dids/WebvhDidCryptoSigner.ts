@@ -1,10 +1,9 @@
-import { type AgentContext, Buffer, Key, KeyType } from '@credo-ts/core'
+import { type AgentContext, Buffer, Key } from '@credo-ts/core'
 import {
   MultibaseEncoding,
   type Signer,
   type SigningInput,
   type SigningOutput,
-  multibaseDecode,
   multibaseEncode,
   prepareDataForSigning,
 } from 'didwebvh-ts'
@@ -44,8 +43,7 @@ export class WebvhDidCryptoSigner implements Signer {
    */
   public async sign(input: SigningInput): Promise<SigningOutput> {
     try {
-      const decoded = multibaseDecode(this.publicKeyMultibase).bytes
-      const key = Key.fromPublicKey(Buffer.from(decoded.slice(2).slice(0, 32)), KeyType.Ed25519)
+      const key = Key.fromFingerprint(this.publicKeyMultibase)
       const data = await prepareDataForSigning(input.document, input.proof)
       const signature = await this.agentContext.wallet.sign({
         key,
@@ -55,7 +53,7 @@ export class WebvhDidCryptoSigner implements Signer {
         proofValue: multibaseEncode(signature, MultibaseEncoding.BASE58_BTC),
       }
     } catch (error) {
-      this.agentContext.config.logger.error('KMS signing error:', error)
+      this.agentContext.config.logger.error('Ed25519 signing error:', error)
       throw error
     }
   }
