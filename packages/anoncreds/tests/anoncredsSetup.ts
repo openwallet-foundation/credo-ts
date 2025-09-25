@@ -51,7 +51,7 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsDidCommProofFormatService } from '../src'
+import { AnonCredsCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 

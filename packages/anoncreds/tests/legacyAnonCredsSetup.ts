@@ -48,8 +48,8 @@ import {
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
 import {
   AnonCredsCredentialFormatService,
-  AnonCredsModule,
   AnonCredsDidCommProofFormatService,
+  AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,

@@ -3,8 +3,8 @@ import type { IndyVdrPoolConfig } from '@credo-ts/indy-vdr'
 
 import {
   AnonCredsCredentialFormatService,
-  AnonCredsModule,
   AnonCredsDidCommProofFormatService,
+  AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
   LegacyIndyCredentialFormatService,

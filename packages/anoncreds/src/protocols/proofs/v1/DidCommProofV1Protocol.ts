@@ -56,7 +56,10 @@ export interface DidCommProofV1ProtocolConfig {
   indyProofFormat: LegacyIndyDidCommProofFormatService
 }
 
-export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofProtocol<[LegacyIndyDidCommProofFormatService]> {
+export class DidCommProofV1Protocol
+  extends BaseProofProtocol
+  implements ProofProtocol<[LegacyIndyDidCommProofFormatService]>
+{
   private indyProofFormat: LegacyIndyDidCommProofFormatService
 
   public constructor({ indyProofFormat }: DidCommProofV1ProtocolConfig) {
@@ -636,7 +639,10 @@ export class DidCommProofV1Protocol extends BaseProofProtocol implements ProofPr
 
   public async getCredentialsForRequest(
     agentContext: AgentContext,
-    { proofRecord, proofFormats }: ProofProtocolOptions.GetCredentialsForRequestOptions<[LegacyIndyDidCommProofFormatService]>
+    {
+      proofRecord,
+      proofFormats,
+    }: ProofProtocolOptions.GetCredentialsForRequestOptions<[LegacyIndyDidCommProofFormatService]>
   ): Promise<ProofProtocolOptions.GetCredentialsForRequestReturn<[LegacyIndyDidCommProofFormatService]>> {
     if (proofFormats) this.assertOnlyIndyFormat(proofFormats)
 
