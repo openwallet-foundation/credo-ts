@@ -74,7 +74,6 @@ export class WebVhDidRegistrar implements DidRegistrar {
         verifier,
       })
 
-      // Save didRegistry
       const didDocument = JsonTransformer.fromJSON(doc, DidDocument)
       const didRecord = new DidRecord({
         did,
