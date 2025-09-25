@@ -1,8 +1,12 @@
+import { DidRepository, DidResolverService } from '@credo-ts/core'
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { FeatureRegistry } from '../../../FeatureRegistry'
+import { MessageHandlerRegistry } from '../../../MessageHandlerRegistry'
 import { Protocol } from '../../../models'
+import { OutOfBandService } from '../../oob'
+import { RoutingService } from '../../routing'
 import { ConnectionsModule } from '../ConnectionsModule'
 import { ConnectionsModuleConfig } from '../ConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
@@ -35,7 +39,21 @@ describe('ConnectionsModule', () => {
 
   test('registers features on the feature registry', async () => {
     const featureRegistry = new FeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[FeatureRegistry, featureRegistry]] })
+    const messageHandlerRegistry = new MessageHandlerRegistry()
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [FeatureRegistry, featureRegistry],
+        [MessageHandlerRegistry, messageHandlerRegistry],
+        [ConnectionService, {} as ConnectionService],
+        [OutOfBandService, {} as OutOfBandService],
+        [RoutingService, {} as RoutingService],
+        [DidRepository, {} as DidRepository],
+        [DidResolverService, {} as DidResolverService],
+        [TrustPingService, {} as TrustPingService],
+        [DidExchangeProtocol, {} as DidExchangeProtocol],
+        [DidRotateService, {} as DidRotateService],
+      ],
+    })
     await new ConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([

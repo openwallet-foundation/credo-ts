@@ -7,6 +7,7 @@ import {
   BasicMessageRepository,
   BasicMessageService,
   ConnectionService,
+  DidCommModule,
   DidRotateService,
   Dispatcher,
   EnvelopeService,
@@ -23,13 +24,11 @@ import { MessagePickupApi } from '../../../../didcomm/src/modules/message-pickup
 import { ProofRepository, ProofsApi } from '../../../../didcomm/src/modules/proofs'
 import {
   MediationRecipientApi,
-  MediationRecipientModule,
   MediationRecipientService,
   MediationRepository,
   MediatorApi,
   MediatorService,
 } from '../../../../didcomm/src/modules/routing'
-import { getDefaultDidcommModules } from '../../../../didcomm/src/util/modules'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
 import { Agent } from '../Agent'
@@ -80,17 +79,18 @@ describe('Agent', () => {
       const agent = new Agent({
         ...agentOptions,
         modules: {
-          ...getDefaultDidcommModules(),
-          myModule: new MyModule(),
-          mediationRecipient: new MediationRecipientModule({
-            maximumMessagePickup: 42,
+          didcomm: new DidCommModule({
+            mediationRecipient: {
+              maximumMessagePickup: 42,
+            },
           }),
+          myModule: new MyModule(),
           inMemory: new InMemoryWalletModule(),
         },
       })
 
       // Should be custom module config property, not the default value
-      expect(agent.modules.mediationRecipient.config.maximumMessagePickup).toBe(42)
+      expect(agent.didcomm.mediationRecipient.config.maximumMessagePickup).toBe(42)
       expect(agent.modules.myModule).toEqual(expect.any(MyApi))
     })
   })

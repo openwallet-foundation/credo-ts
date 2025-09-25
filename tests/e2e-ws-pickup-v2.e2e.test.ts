@@ -4,8 +4,6 @@ import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
   AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
   MediatorPickupStrategy,
   MessageForwardingStrategy,
   WsOutboundTransport,
@@ -25,15 +23,15 @@ const mediatorOptions = getAgentOptions(
   'E2E WS Pickup V2 Mediator',
   {
     endpoints: [`ws://localhost:${mediatorPort}`],
+    mediator: {
+      autoAcceptMediationRequests: true,
+      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+    },
   },
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-    }),
-    mediator: new MediatorModule({
-      autoAcceptMediationRequests: true,
-      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
   },
   { requireDidcomm: true }
@@ -80,10 +78,12 @@ describe('E2E WS Pickup V2 tests', () => {
       {
         ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-        }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
-          mediatorPollingInterval: 500,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2,
+              mediatorPollingInterval: 500,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -120,9 +120,11 @@ describe('E2E WS Pickup V2 tests', () => {
       {
         ...getAnonCredsModules({
           autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-        }),
-        mediationRecipient: new MediationRecipientModule({
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2LiveMode,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorPickupStrategy: MediatorPickupStrategy.PickUpV2LiveMode,
+            },
+          },
         }),
       },
       { requireDidcomm: true }

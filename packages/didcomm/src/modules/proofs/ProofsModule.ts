@@ -39,6 +39,10 @@ export class ProofsModule<ProofProtocols extends ProofProtocol[] = DefaultProofP
    * Registers the dependencies of the proofs module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
+    // Normally API is registered automatically, but because this is
+    // a submodule, we register it manually
+    dependencyManager.registerContextScoped(ProofsApi)
+
     // Config
     dependencyManager.registerInstance(ProofsModuleConfig, this.config)
 

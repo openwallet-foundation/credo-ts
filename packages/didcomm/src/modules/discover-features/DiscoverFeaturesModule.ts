@@ -4,6 +4,7 @@ import type { DiscoverFeaturesModuleConfigOptions } from './DiscoverFeaturesModu
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
 
+import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { DiscoverFeaturesApi } from './DiscoverFeaturesApi'
 import { DiscoverFeaturesModuleConfig } from './DiscoverFeaturesModuleConfig'
 import { V1DiscoverFeaturesService } from './protocol/v1'
@@ -30,8 +31,14 @@ export class DiscoverFeaturesModule implements Module {
   }
 
   public async initialize(agentContext: AgentContext): Promise<void> {
-    // Features
-    const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const featureRegistry = agentContext.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(MessageHandlerRegistry)
+
+    const v1DiscoverFeatureService = agentContext.resolve(V1DiscoverFeaturesService)
+    const v2DiscoverFeatureService = agentContext.resolve(V2DiscoverFeaturesService)
+
+    v1DiscoverFeatureService.register(messageHandlerRegistry)
+    v2DiscoverFeatureService.register(messageHandlerRegistry)
 
     featureRegistry.register(
       new Protocol({

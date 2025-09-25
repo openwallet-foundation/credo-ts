@@ -7,14 +7,7 @@ const config: Config.InitialOptions = {
   // update that match as well when changing this one
   testMatch: ['**/?(*.)test.ts'],
   transform: {
-    '\\.(t|j)sx?$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          isolatedModules: true,
-        },
-      },
-    ],
+    '\\.tsx?$': 'ts-jest',
   },
 }
 

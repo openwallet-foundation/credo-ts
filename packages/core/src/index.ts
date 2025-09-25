@@ -4,7 +4,7 @@ import 'reflect-metadata'
 export { Agent } from './agent/Agent'
 export { BaseAgent } from './agent/BaseAgent'
 export * from './agent'
-export type { ModulesMap, DefaultAgentModules, EmptyModuleMap } from './agent/AgentModules'
+export type { ModulesMap, DefaultAgentModules, EmptyModuleMap, AgentApi } from './agent/AgentModules'
 export { EventEmitter } from './agent/EventEmitter'
 export { AgentConfig } from './agent/AgentConfig'
 

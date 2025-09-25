@@ -74,7 +74,7 @@ describe('credentials', () => {
   test('Faber starts with V2 W3C connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer({
+    let { message, credentialRecord: faberCredentialRecord } = await faberAgent.didcomm.credentials.createOffer({
       comment: 'V2 Out of Band offer (W3C)',
       credentialFormats: {
         jsonld: signCredentialOptions,
@@ -104,13 +104,13 @@ describe('credentials', () => {
       },
     })
 
-    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -119,7 +119,7 @@ describe('credentials', () => {
 
     testLogger.test('Alice sends credential request to Faber')
 
-    const credentialRecord = await aliceAgent.modules.credentials.acceptOffer({
+    const credentialRecord = await aliceAgent.didcomm.credentials.acceptOffer({
       credentialRecordId: aliceCredentialRecord.id,
     })
 
@@ -130,7 +130,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest({
+    faberCredentialRecord = await faberAgent.didcomm.credentials.acceptRequest({
       credentialRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
@@ -142,7 +142,7 @@ describe('credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
+    aliceCredentialRecord = await aliceAgent.didcomm.credentials.acceptCredential({
       credentialRecordId: aliceCredentialRecord.id,
     })
 

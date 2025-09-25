@@ -22,11 +22,11 @@ export class Alice extends BaseAgent {
     if (!this.connectionRecordFaberId) {
       throw Error(redText(Output.MissingConnectionRecord))
     }
-    return await this.agent.modules.connections.getById(this.connectionRecordFaberId)
+    return await this.agent.didcomm.connections.getById(this.connectionRecordFaberId)
   }
 
   private async receiveConnectionRequest(invitationUrl: string) {
-    const { connectionRecord } = await this.agent.modules.oob.receiveInvitationFromUrl(invitationUrl, {
+    const { connectionRecord } = await this.agent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
       label: 'alice',
     })
     if (!connectionRecord) {
@@ -36,7 +36,7 @@ export class Alice extends BaseAgent {
   }
 
   private async waitForConnection(connectionRecord: ConnectionRecord) {
-    const record = await this.agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
+    const record = await this.agent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
     this.connected = true
     console.log(greenText(Output.ConnectionEstablished))
     return record.id
@@ -48,17 +48,17 @@ export class Alice extends BaseAgent {
   }
 
   public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
-    await this.agent.modules.credentials.acceptOffer({
+    await this.agent.didcomm.credentials.acceptOffer({
       credentialRecordId: credentialRecord.id,
     })
   }
 
   public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
-    const requestedCredentials = await this.agent.modules.proofs.selectCredentialsForRequest({
+    const requestedCredentials = await this.agent.didcomm.proofs.selectCredentialsForRequest({
       proofRecordId: proofRecord.id,
     })
 
-    await this.agent.modules.proofs.acceptRequest({
+    await this.agent.didcomm.proofs.acceptRequest({
       proofRecordId: proofRecord.id,
       proofFormats: requestedCredentials.proofFormats,
     })
@@ -67,7 +67,7 @@ export class Alice extends BaseAgent {
 
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
-    await this.agent.modules.basicMessages.sendMessage(connectionRecord.id, message)
+    await this.agent.didcomm.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
   public async exit() {

@@ -5,7 +5,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
-import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
+import { DidCommModule } from '../../../../../didcomm/src'
 import { Agent, utils } from '../../../../src'
 import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -34,7 +34,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
         dependencies,
         modules: {
           inMemory: new InMemoryWalletModule(),
-          ...getDefaultDidcommModules(),
+          didcomm: new DidCommModule(),
         },
       })
 
@@ -92,7 +92,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
     })
 
@@ -150,7 +150,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       dependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
     })
 
@@ -209,7 +209,7 @@ describe('UpdateAssistant | v0.1 - v0.2', () => {
       },
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
       dependencies,
     })

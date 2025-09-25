@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
-import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
+import { DidCommModule } from '../../../../../didcomm/src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { InjectionSymbols } from '../../../constants'
@@ -88,7 +88,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // We need core DIDComm modules for this update to fully work
     const agent = new Agent({
       config: {},
-      modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
+      modules: { didcomm: new DidCommModule(), inMemory: new InMemoryWalletModule() },
       dependencies: agentDependencies,
     })
 
@@ -141,7 +141,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
     // We need core DIDComm modules for this update to fully work
     const agent = new Agent({
       config: {},
-      modules: { ...getDefaultDidcommModules(), inMemory: new InMemoryWalletModule() },
+      modules: { didcomm: new DidCommModule(), inMemory: new InMemoryWalletModule() },
       dependencies: agentDependencies,
     })
 

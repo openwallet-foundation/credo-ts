@@ -4,8 +4,10 @@ import type { MediatorModuleConfigOptions } from './MediatorModuleConfig'
 import { FeatureRegistry } from '../../FeatureRegistry'
 import { Protocol } from '../../models'
 
+import { MessageHandlerRegistry } from '../../MessageHandlerRegistry'
 import { MediatorApi } from './MediatorApi'
 import { MediatorModuleConfig } from './MediatorModuleConfig'
+import { ForwardHandler, KeylistUpdateHandler, MediationRequestHandler } from './handlers'
 import { MediationRole } from './models'
 import { MediationRepository, MediatorRoutingRepository } from './repository'
 import { MediatorService } from './services'
@@ -35,6 +37,13 @@ export class MediatorModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(FeatureRegistry)
+    const messageHandlerRegistry = agentContext.dependencyManager.resolve(MessageHandlerRegistry)
+    const mediatorService = agentContext.dependencyManager.resolve(MediatorService)
+
+    // Should we use dependency injection for the message handlers as well?
+    messageHandlerRegistry.registerMessageHandler(new KeylistUpdateHandler(mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new ForwardHandler(mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new MediationRequestHandler(mediatorService, this.config))
 
     featureRegistry.register(
       new Protocol({

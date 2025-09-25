@@ -3,8 +3,8 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
+import { DidCommModule } from '../../../../../didcomm/src'
 import { MediatorRoutingRecord } from '../../../../../didcomm/src/modules'
-import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
 import { Agent } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
@@ -30,7 +30,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
     })
 
@@ -93,7 +93,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       },
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
       dependencies: agentDependencies,
     })
@@ -131,7 +131,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
-        ...getDefaultDidcommModules(),
+        didcomm: new DidCommModule(),
       },
     })
     const storageService = agent.context.resolve<InMemoryStorageService>(InjectionSymbols.StorageService)
