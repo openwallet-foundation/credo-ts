@@ -15,7 +15,7 @@ const mockDidsRepository = {
 const wallet = new InMemoryWallet()
 
 describe('WebVhDidRegistrar Integration Tests', () => {
-  let registar: WebVhDidRegistrar
+  let registrar: WebVhDidRegistrar
   let agentContext: ReturnType<typeof getAgentContext>
 
   beforeEach(async () => {
@@ -47,7 +47,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       mockDidsRepository.findSingleByQuery.mockResolvedValue(null)
       mockDidsRepository.save.mockResolvedValue(undefined)
 
-      const result = await registar.create(agentContext, { domain: 'id.test-suite.app' })
+      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
 
       expect(result).toEqual({
         didDocumentMetadata: {},
@@ -76,7 +76,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       mockDidsRepository.findSingleByQuery.mockResolvedValue(mockResolvedDidRecord)
 
       const domain = 'id.test-suite.app'
-      const result = await registar.create(agentContext, { domain })
+      const result = await registrar.create(agentContext, { domain })
 
       expect(result).toEqual({
         didDocumentMetadata: {},
@@ -96,7 +96,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
     it('should fail if DID record already exists', async () => {
       mockDidsRepository.getSingleByQuery.mockResolvedValue(undefined)
 
-      const result = await registar.update(agentContext, { did, didDocument })
+      const result = await registrar.update(agentContext, { did, didDocument })
 
       expect(result).toEqual({
         didDocumentMetadata: {},
