@@ -18,6 +18,6 @@ export interface SecuredDocument {
   proof: Proof
 }
 
-export interface unsecuredDocument {
+export interface UnsecuredDocument {
   [key: string]: string | object
 }
