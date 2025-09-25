@@ -9,10 +9,9 @@ import type {
   DidUpdateResult,
   VerificationMethod,
 } from '@credo-ts/core'
-import type { DIDLog } from 'didwebvh-ts'
 
 import { DidRepository, KeyType, DidDocument, DidRecord, DidDocumentRole, JsonTransformer } from '@credo-ts/core'
-import { createDID, multibaseEncode, MultibaseEncoding, updateDID } from 'didwebvh-ts'
+import { type DIDLog, createDID, multibaseEncode, MultibaseEncoding, updateDID } from 'didwebvh-ts'
 
 import { WebvhDidCrypto } from './WebvhDidCrypto'
 import { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
