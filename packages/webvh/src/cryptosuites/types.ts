@@ -13,11 +13,10 @@ export interface Proof {
   proofValue: string
 }
 
-export interface SecuredDocument {
-  [key: string]: string | object
-  proof: Proof
-}
-
 export interface UnsecuredDocument {
   [key: string]: string | object
+}
+
+export interface SecuredDocument extends UnsecuredDocument {
+  proof: Proof
 }
