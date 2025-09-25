@@ -23,7 +23,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
     jest.clearAllMocks()
 
     // Create a real resolver instance
-    registar = new WebVhDidRegistrar()
+    registrar = new WebVhDidRegistrar()
 
     // Create a fresh agent context
     const agentConfig = getAgentConfig('WebVhDidRegistrarIntegrationTest')
