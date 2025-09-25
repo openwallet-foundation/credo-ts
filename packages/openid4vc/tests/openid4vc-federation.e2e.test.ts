@@ -1,5 +1,9 @@
 import type { Server } from 'http'
-import type { OpenId4VcVerifierModuleConfig } from '../src'
+import type {
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcVerifierModuleConfig,
+  OpenId4VcVerifierModuleConfigOptions,
+} from '../src'
 import type { AgentType, TenantType } from './utils'
 
 import {
@@ -15,12 +19,7 @@ import {
 import express, { type Express } from 'express'
 
 import { TenantsModule } from '../../tenants/src'
-import {
-  OpenId4VcHolderModule,
-  OpenId4VcIssuerModule,
-  OpenId4VcVerificationSessionState,
-  OpenId4VcVerifierModule,
-} from '../src'
+import { OpenId4VcIssuerModule, OpenId4VcModule, OpenId4VcVerificationSessionState } from '../src'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
@@ -36,21 +35,23 @@ describe('OpenId4Vc-federation', () => {
   let expressServer: Server
 
   let issuer: AgentType<{
-    openId4VcIssuer: OpenId4VcIssuerModule
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
     tenants: TenantsModule<{ openId4VcIssuer: OpenId4VcIssuerModule }>
   }>
   // let issuer1: TenantType
   // let issuer2: TenantType
 
   let holder: AgentType<{
-    openId4VcHolder: OpenId4VcHolderModule
-    tenants: TenantsModule<{ openId4VcHolder: OpenId4VcHolderModule }>
+    openid4vc: OpenId4VcModule
+    tenants: TenantsModule<{ openid4vc: OpenId4VcModule }>
   }>
   let holder1: TenantType
 
   let verifier: AgentType<{
-    openId4VcVerifier: OpenId4VcVerifierModule
-    tenants: TenantsModule<{ openId4VcVerifier: OpenId4VcVerifierModule }>
+    openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
+    tenants: TenantsModule<{
+      openid4vc: OpenId4VcModule<OpenId4VcIssuerModuleConfigOptions, OpenId4VcVerifierModuleConfigOptions>
+    }>
   }>
   let verifier1: TenantType
   let verifier2: TenantType
@@ -62,54 +63,54 @@ describe('OpenId4Vc-federation', () => {
 
     issuer = (await createAgentFromModules(
       {
-        openId4VcIssuer: new OpenId4VcIssuerModule({
-          baseUrl: issuanceBaseUrl,
-          credentialRequestToCredentialMapper: async ({
-            agentContext,
-            credentialRequest,
-            holderBinding,
-            credentialConfigurationId,
-          }) => {
-            // We sign the request with the first did:key did we have
-            const didsApi = agentContext.dependencyManager.resolve(DidsApi)
-            const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
-            const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
-            const verificationMethod = didDocument.verificationMethod?.[0]
-            if (!verificationMethod) {
-              throw new Error('No verification method found')
-            }
-
-            if (credentialRequest.format === 'dc+sd-jwt') {
-              return {
-                type: 'credentials',
-                credentialConfigurationId,
-                format: credentialRequest.format,
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
-                  holder: holderBinding,
-                  issuer: {
-                    method: 'did',
-                    didUrl: verificationMethod.id,
-                  },
-                  disclosureFrame: { _sd: ['university', 'degree'] },
-                })),
+        inMemory: new InMemoryWalletModule(),
+        tenants: new TenantsModule(),
+        openid4vc: new OpenId4VcModule({
+          issuer: {
+            baseUrl: issuanceBaseUrl,
+            credentialRequestToCredentialMapper: async ({
+              agentContext,
+              credentialRequest,
+              holderBinding,
+              credentialConfigurationId,
+            }) => {
+              // We sign the request with the first did:key did we have
+              const didsApi = agentContext.dependencyManager.resolve(DidsApi)
+              const [firstDidKeyDid] = await didsApi.getCreatedDids({ method: 'key' })
+              const didDocument = await didsApi.resolveDidDocument(firstDidKeyDid.did)
+              const verificationMethod = didDocument.verificationMethod?.[0]
+              if (!verificationMethod) {
+                throw new Error('No verification method found')
               }
-            }
-            throw new Error('Invalid request')
+
+              if (credentialRequest.format === 'dc+sd-jwt') {
+                return {
+                  type: 'credentials',
+                  credentialConfigurationId,
+                  format: credentialRequest.format,
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    payload: { vct: credentialRequest.vct, university: 'innsbruck', degree: 'bachelor' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'did',
+                      didUrl: verificationMethod.id,
+                    },
+                    disclosureFrame: { _sd: ['university', 'degree'] },
+                  })),
+                }
+              }
+              throw new Error('Invalid request')
+            },
           },
         }),
-        inMemory: new InMemoryWalletModule(),
-
-        tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598g'
     )) as unknown as typeof issuer
 
     holder = (await createAgentFromModules(
       {
-        openId4VcHolder: new OpenId4VcHolderModule(),
+        openid4vc: new OpenId4VcModule(),
         inMemory: new InMemoryWalletModule(),
-
         tenants: new TenantsModule(),
       },
       '96213c3d7fc8d4d6754c7a0fd969598e'
@@ -118,20 +119,22 @@ describe('OpenId4Vc-federation', () => {
 
     verifier = (await createAgentFromModules(
       {
-        openId4VcVerifier: new OpenId4VcVerifierModule({
-          baseUrl: verificationBaseUrl,
-          federation: {
-            async isSubordinateEntity(agentContext, options) {
-              if (federationConfig?.isSubordinateEntity) {
-                return federationConfig.isSubordinateEntity(agentContext, options)
-              }
-              return false
-            },
-            async getAuthorityHints(agentContext, options) {
-              if (federationConfig?.getAuthorityHints) {
-                return federationConfig.getAuthorityHints(agentContext, options)
-              }
-              return undefined
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verificationBaseUrl,
+            federation: {
+              async isSubordinateEntity(agentContext, options) {
+                if (federationConfig?.isSubordinateEntity) {
+                  return federationConfig.isSubordinateEntity(agentContext, options)
+                }
+                return false
+              },
+              async getAuthorityHints(agentContext, options) {
+                if (federationConfig?.getAuthorityHints) {
+                  return federationConfig.getAuthorityHints(agentContext, options)
+                }
+                return undefined
+              },
             },
           },
         }),
@@ -144,8 +147,8 @@ describe('OpenId4Vc-federation', () => {
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
 
     // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.modules.openId4VcIssuer.config.router)
-    expressApp.use('/oid4vp', verifier.agent.modules.openId4VcVerifier.config.router)
+    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
+    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     expressServer = expressApp.listen(serverPort)
   })
@@ -165,8 +168,8 @@ describe('OpenId4Vc-federation', () => {
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -196,7 +199,7 @@ describe('OpenId4Vc-federation', () => {
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier
+      await verifierTenant1.openid4vc.verifier
         .createAuthorizationRequest({
           verifierId: openIdVerifierTenant1.verifierId,
           requestSigner: {
@@ -218,7 +221,7 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'federation',
         },
@@ -238,7 +241,7 @@ describe('OpenId4Vc-federation', () => {
     await verifierTenant1.endSession()
     await verifierTenant2.endSession()
 
-    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedProofRequest1 = await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri1,
       {
         trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant1.verifierId}`],
@@ -267,7 +270,7 @@ describe('OpenId4Vc-federation', () => {
       ],
     })
 
-    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedProofRequest2 = await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri2,
       {
         trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
@@ -306,7 +309,7 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { authorizationResponsePayload: submittedResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -348,7 +351,7 @@ describe('OpenId4Vc-federation', () => {
     })
 
     const { presentationExchange: presentationExchange1 } =
-      await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
+      await verifierTenant1_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
@@ -370,13 +373,14 @@ describe('OpenId4Vc-federation', () => {
       resolvedProofRequest2.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const { serverResponse: serverResponse2 } = await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest(
+      {
         authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
-      })
+      }
+    )
     expect(serverResponse2).toMatchObject({
       status: 200,
     })
@@ -391,7 +395,7 @@ describe('OpenId4Vc-federation', () => {
       verificationSessionId: verificationSession2.id,
     })
     const { presentationExchange: presentationExchange2 } =
-      await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
+      await verifierTenant2_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession2.id)
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -415,8 +419,8 @@ describe('OpenId4Vc-federation', () => {
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -446,7 +450,7 @@ describe('OpenId4Vc-federation', () => {
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'federation',
@@ -464,7 +468,7 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'federation',
         },
@@ -498,7 +502,7 @@ describe('OpenId4Vc-federation', () => {
     }
 
     // Gets a request from verifier 1 but we trust verifier 2 so if the verifier 1 is in the subordinate entity list of verifier 2 it should succeed
-    const resolvedProofRequest1 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedProofRequest1 = await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri1,
       {
         trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
@@ -527,7 +531,7 @@ describe('OpenId4Vc-federation', () => {
       ],
     })
 
-    const resolvedProofRequest2 = await holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(
+    const resolvedProofRequest2 = await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(
       authorizationRequestUri2,
       {
         trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
@@ -566,7 +570,7 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { authorizationResponsePayload: submittedResponse1, serverResponse: serverResponse1 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+      await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest({
         authorizationRequestPayload: resolvedProofRequest1.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials,
@@ -608,7 +612,7 @@ describe('OpenId4Vc-federation', () => {
     })
 
     const { presentationExchange: presentationExchange1 } =
-      await verifierTenant1_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession1.id)
+      await verifierTenant1_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession1.id)
 
     expect(presentationExchange1).toMatchObject({
       definition: openBadgePresentationDefinition,
@@ -630,13 +634,14 @@ describe('OpenId4Vc-federation', () => {
       resolvedProofRequest2.presentationExchange.credentialsForRequest
     )
 
-    const { serverResponse: serverResponse2 } =
-      await holderTenant.modules.openId4VcHolder.acceptOpenId4VpAuthorizationRequest({
+    const { serverResponse: serverResponse2 } = await holderTenant.openid4vc.holder.acceptOpenId4VpAuthorizationRequest(
+      {
         authorizationRequestPayload: resolvedProofRequest2.authorizationRequestPayload,
         presentationExchange: {
           credentials: selectedCredentials2,
         },
-      })
+      }
+    )
     expect(serverResponse2).toMatchObject({
       status: 200,
     })
@@ -651,7 +656,7 @@ describe('OpenId4Vc-federation', () => {
       verificationSessionId: verificationSession2.id,
     })
     const { presentationExchange: presentationExchange2 } =
-      await verifierTenant2_2.modules.openId4VcVerifier.getVerifiedAuthorizationResponse(verificationSession2.id)
+      await verifierTenant2_2.openid4vc.verifier.getVerifiedAuthorizationResponse(verificationSession2.id)
 
     expect(presentationExchange2).toMatchObject({
       definition: universityDegreePresentationDefinition,
@@ -675,8 +680,8 @@ describe('OpenId4Vc-federation', () => {
     const verifierTenant1 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier1.tenantId })
     const verifierTenant2 = await verifier.agent.modules.tenants.getTenantAgent({ tenantId: verifier2.tenantId })
 
-    const openIdVerifierTenant1 = await verifierTenant1.modules.openId4VcVerifier.createVerifier()
-    const openIdVerifierTenant2 = await verifierTenant2.modules.openId4VcVerifier.createVerifier()
+    const openIdVerifierTenant1 = await verifierTenant1.openid4vc.verifier.createVerifier()
+    const openIdVerifierTenant2 = await verifierTenant2.openid4vc.verifier.createVerifier()
 
     const signedCredential1 = await issuer.agent.w3cCredentials.signCredential({
       format: ClaimFormat.JwtVc,
@@ -706,7 +711,7 @@ describe('OpenId4Vc-federation', () => {
     await holderTenant.w3cCredentials.storeCredential({ credential: signedCredential2 })
 
     const { authorizationRequest: authorizationRequestUri1, verificationSession: verificationSession1 } =
-      await verifierTenant1.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant1.openid4vc.verifier.createAuthorizationRequest({
         verifierId: openIdVerifierTenant1.verifierId,
         requestSigner: {
           method: 'federation',
@@ -724,7 +729,7 @@ describe('OpenId4Vc-federation', () => {
     )
 
     const { authorizationRequest: authorizationRequestUri2, verificationSession: verificationSession2 } =
-      await verifierTenant2.modules.openId4VcVerifier.createAuthorizationRequest({
+      await verifierTenant2.openid4vc.verifier.createAuthorizationRequest({
         requestSigner: {
           method: 'federation',
         },
@@ -745,7 +750,7 @@ describe('OpenId4Vc-federation', () => {
     await verifierTenant2.endSession()
 
     const resolvedProofRequestWithFederationPromise =
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
+      holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri1, {
         // This will look for a whole different trusted entity
         trustedFederationEntityIds: [`http://localhost:1234/oid4vp/${openIdVerifierTenant2.verifierId}`],
       })
@@ -754,7 +759,7 @@ describe('OpenId4Vc-federation', () => {
     await expect(resolvedProofRequestWithFederationPromise).rejects.toThrow('Error during verification of jwt.')
 
     const resolvedProofRequestWithoutFederationPromise =
-      holderTenant.modules.openId4VcHolder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
+      holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
     await expect(resolvedProofRequestWithoutFederationPromise).rejects.toThrow('Error during verification of jwt.')
   })
 })
