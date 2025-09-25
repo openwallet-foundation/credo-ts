@@ -5,6 +5,7 @@ import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@c
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
@@ -162,6 +163,11 @@ export interface OpenId4VcIssuanceSessionRecordProps {
   errorMessage?: string
 
   generateRefreshTokens?: boolean
+
+  /**
+   * The version of openid4ci used for the request
+   */
+  openId4VciVersion: OpenId4VciVersion
 }
 
 export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcIssuanceSessionRecordTags> {
@@ -295,6 +301,13 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public generateRefreshTokens?: boolean
 
   /**
+   * The version of openid4ci used for the request
+   *
+   * @since 0.6
+   */
+  public openId4VciVersion?: OpenId4VciVersion
+
+  /**
    * Optional error message of the error that occurred during the issuance session. Will be set when state is {@link OpenId4VcIssuanceSessionState.Error}
    */
   public errorMessage?: string
@@ -324,6 +337,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.generateRefreshTokens = props.generateRefreshTokens
       this.errorMessage = props.errorMessage
       this.transactions = props.transactions ?? []
+      this.openId4VciVersion = props.openId4VciVersion
     }
   }
 
