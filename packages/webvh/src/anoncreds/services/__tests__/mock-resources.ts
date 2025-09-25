@@ -41,6 +41,17 @@ export const mockResolvedDidRecord = {
   did: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01',
   role: 'created',
   didDocument: mockResolvedDidDocument,
+  metadata: {
+    get: (key: string) => {
+      if (key === 'log') return mockResolvedLog
+      return undefined
+    },
+    set: jest.fn(),
+  },
+  getTag: (key: string) => {
+    if (key === 'domain') return 'id.test-suite.app/credo/01'
+    return undefined
+  },
 }
 
 export const mockSchemaResource = {
