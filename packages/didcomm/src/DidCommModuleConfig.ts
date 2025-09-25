@@ -1,5 +1,10 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
+import {
+  InMemoryQueueTransportRepository,
+  InMemoryTransportSessionRepository,
+  QueueTransportRepository,
+  TransportSessionRepository,
+} from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -12,17 +17,24 @@ export interface DidCommModuleConfigOptions {
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
+  /**
+   * Allows to specify a custom transport session repository. It defaults to an in-memory transport session table
+   *
+   */
+  transportSessionRepository?: TransportSessionRepository
   queueTransportRepository?: QueueTransportRepository
 }
 
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
+  private _transportSessionRepository: TransportSessionRepository
   private _queueTransportRepository: QueueTransportRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
     this._endpoints = options?.endpoints
+    this._transportSessionRepository = options?.transportSessionRepository ?? new InMemoryTransportSessionRepository()
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
   }
 
@@ -60,6 +72,11 @@ export class DidCommModuleConfig {
    */
   public get useDidKeyInProtocols() {
     return this.options.useDidKeyInProtocols ?? true
+  }
+
+  /** See {@link DidCommModuleConfig.transportSessionRepository} */
+  public get transportSessionRepository() {
+    return this._transportSessionRepository
   }
 
   /**
