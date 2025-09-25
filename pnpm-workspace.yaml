@@ -44,3 +44,5 @@ onlyBuiltDependencies:
   - "@hyperledger/anoncreds-nodejs"
   - "@hyperledger/indy-vdr-nodejs"
   - "@openwallet-foundation/askar-nodejs"
+  - "zstd-napi"
+  - "cbor-extract"

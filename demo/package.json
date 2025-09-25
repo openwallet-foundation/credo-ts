@@ -13,19 +13,21 @@
     "faber": "ts-node src/FaberInquirer.ts"
   },
   "dependencies": {
-    "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@hyperledger/anoncreds-nodejs": "catalog:",
+    "@hyperledger/indy-vdr-nodejs": "catalog:",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "inquirer": "^8.2.5"
   },
   "devDependencies": {
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
+    "@credo-ts/cheqd": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
+    "@credo-ts/hedera": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
-    "@credo-ts/cheqd": "workspace:*",
     "@credo-ts/node": "workspace:*",
+    "@hiero-did-sdk/client": "0.1.5",
     "@types/figlet": "^1.5.4",
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",

@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`UpdateAssistant | Tenants | v0.4 - v0.5 should correctly update the tenant records 1`] = `
 {
