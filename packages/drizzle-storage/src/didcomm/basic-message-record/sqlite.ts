@@ -1,6 +1,6 @@
 import { foreignKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { BasicMessageRole } from '@credo-ts/didcomm'
+import type { DidCommBasicMessageRole } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 
@@ -15,7 +15,7 @@ export const didcommBasicMessage = sqliteTable(
     sentTime: text('sent_time').notNull(),
 
     connectionId: text('connection_id'),
-    role: text().$type<BasicMessageRole>().notNull(),
+    role: text().$type<DidCommBasicMessageRole>().notNull(),
     threadId: text('thread_id'),
     parentThreadId: text('parent_thread_id'),
   },

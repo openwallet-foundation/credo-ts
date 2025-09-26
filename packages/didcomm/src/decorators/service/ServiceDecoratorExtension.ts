@@ -1,4 +1,4 @@
-import type { BaseMessageConstructor } from '../../BaseMessage'
+import type { BaseMessageConstructor } from '../../BaseDidCommMessage'
 import type { ServiceDecoratorOptions } from './ServiceDecorator'
 
 import { Expose, Type } from 'class-transformer'

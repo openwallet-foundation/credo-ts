@@ -4,11 +4,11 @@ import type { TenantAgent } from '../src/TenantAgent'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import {
-  ConnectionsModule,
+  DidCommConnectionsModule,
+  DidCommMessagePickupModule,
   DidCommModule,
-  MessagePickupModule,
-  OutOfBandModule,
-  OutOfBandRecord,
+  DidCommOutOfBandModule,
+  DidCommOutOfBandRecord,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
@@ -39,11 +39,11 @@ const agent2DidcommConfig: DidCommModuleConfigOptions = {
 const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
   ({
     didcomm: new DidCommModule(didcommConfig),
-    oob: new OutOfBandModule(),
-    messagePickup: new MessagePickupModule(),
+    oob: new DidCommOutOfBandModule(),
+    messagePickup: new DidCommMessagePickupModule(),
     tenants: new TenantsModule(),
     inMemory: new InMemoryWalletModule({ enableKms: false }),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       autoAcceptConnections: true,
     }),
     cache: new CacheModule({
@@ -276,7 +276,7 @@ describe('Tenants E2E', () => {
         tenantAgent as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
       ).modules.oob.createInvitation()
 
-      expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
+      expect(outOfBandRecord).toBeInstanceOf(DidCommOutOfBandRecord)
       expect(tenantAgent.context.contextCorrelationId).toBe(`tenant-${tenantRecord.id}`)
     })
 

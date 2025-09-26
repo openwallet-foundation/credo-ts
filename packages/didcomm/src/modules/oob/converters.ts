@@ -1,4 +1,4 @@
-import type { OutOfBandInvitationOptions } from './messages'
+import type { DidCommOutOfBandInvitationOptions } from './messages'
 
 import {
   DidCommV1Service,
@@ -10,14 +10,14 @@ import {
 } from '@credo-ts/core'
 
 import {
-  ConnectionInvitationMessage,
-  ConnectionInvitationMessageOptions,
-} from '../connections/messages/ConnectionInvitationMessage'
+  DidCommConnectionInvitationMessage,
+  DidCommConnectionInvitationMessageOptions,
+} from '../connections/messages/DidCommConnectionInvitationMessage'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { InvitationType, OutOfBandInvitation } from './messages/OutOfBandInvitation'
+import { DidCommOutOfBandInvitation, InvitationType } from './messages/DidCommOutOfBandInvitation'
 
-export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessage) {
+export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitationMessage) {
   let service: string | OutOfBandDidCommService
 
   if (oldInvitation.did) {
@@ -33,7 +33,7 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     throw new Error('Missing required serviceEndpoint, routingKeys and/or did fields in connection invitation')
   }
 
-  const options: OutOfBandInvitationOptions = {
+  const options: DidCommOutOfBandInvitationOptions = {
     id: oldInvitation.id,
     label: oldInvitation.label,
     imageUrl: oldInvitation.imageUrl,
@@ -45,16 +45,16 @@ export function convertToNewInvitation(oldInvitation: ConnectionInvitationMessag
     handshakeProtocols: ['https://didcomm.org/connections/1.0'],
   }
 
-  const outOfBandInvitation = new OutOfBandInvitation(options)
+  const outOfBandInvitation = new DidCommOutOfBandInvitation(options)
   outOfBandInvitation.invitationType = InvitationType.Connection
   return outOfBandInvitation
 }
 
-export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
+export function convertToOldInvitation(newInvitation: DidCommOutOfBandInvitation) {
   // Taking first service, as we can only include one service in a legacy invitation.
   const [service] = newInvitation.getServices()
 
-  let options: ConnectionInvitationMessageOptions
+  let options: DidCommConnectionInvitationMessageOptions
   if (typeof service === 'string') {
     options = {
       id: newInvitation.id,
@@ -77,7 +77,7 @@ export function convertToOldInvitation(newInvitation: OutOfBandInvitation) {
     }
   }
 
-  const connectionInvitationMessage = new ConnectionInvitationMessage(options)
+  const connectionInvitationMessage = new DidCommConnectionInvitationMessage(options)
   return connectionInvitationMessage
 }
 

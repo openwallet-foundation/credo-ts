@@ -1,11 +1,11 @@
-import type { OutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
+import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
-import { DidExchangeState, HandshakeProtocol } from '../../didcomm/src/modules/connections'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
-  MediationRecipientModule,
-  MediationState,
-  MediatorModule,
-  MediatorPickupStrategy,
+  DidCommMediationRecipientModule,
+  DidCommMediationState,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
@@ -28,8 +28,8 @@ const aliceAgentOptions = getAgentOptions(
   },
   {},
   {
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    mediationRecipient: new DidCommMediationRecipientModule({
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -40,7 +40,7 @@ const mediatorAgentOptions = getAgentOptions(
     endpoints: ['rxjs:mediator'],
   },
   {},
-  { mediator: new MediatorModule({ autoAcceptMediationRequests: true }) },
+  { mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }) },
   { requireDidcomm: true }
 )
 
@@ -57,7 +57,7 @@ describe('out of band with mediation set up with provision method', () => {
   let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
   let mediatorAgent: Agent<(typeof mediatorAgentOptions)['modules']>
 
-  let mediatorOutOfBandInvitation: OutOfBandInvitation
+  let mediatorOutOfBandInvitation: DidCommOutOfBandInvitation
 
   beforeAll(async () => {
     mediatorAgent = new Agent(mediatorAgentOptions)
@@ -88,11 +88,11 @@ describe('out of band with mediation set up with provision method', () => {
     await mediatorAgent.shutdown()
   })
 
-  test(`make a connection with ${HandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
+  test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
     // Check if mediation between Alice and Mediator has been set
     const defaultMediator = await aliceAgent.modules.mediationRecipient.findDefaultMediator()
     expect(defaultMediator).not.toBeNull()
-    expect(defaultMediator?.state).toBe(MediationState.Granted)
+    expect(defaultMediator?.state).toBe(DidCommMediationState.Granted)
 
     // Make a connection between Alice and Faber
     const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
@@ -105,11 +105,11 @@ describe('out of band with mediation set up with provision method', () => {
 
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)

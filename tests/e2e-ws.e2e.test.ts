@@ -7,13 +7,13 @@ import { e2eTest } from './e2e-test'
 
 import { Agent } from '@credo-ts/core'
 import {
-  AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
-  WsOutboundTransport,
+  DidCommAutoAcceptCredential,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
+  DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { WsInboundTransport } from '@credo-ts/node'
+import { DidCommWsInboundTransport } from '@credo-ts/node'
 
 // FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
 // but it succeeds with Askar. We should look into this at some point
@@ -23,10 +23,10 @@ const recipientAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    mediationRecipient: new DidCommMediationRecipientModule({
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -41,9 +41,9 @@ const mediatorAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -57,11 +57,11 @@ const senderAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new MediationRecipientModule({
+    mediationRecipient: new DidCommMediationRecipientModule({
       mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -86,17 +86,17 @@ describe('E2E WS tests', () => {
 
   test('Full WS flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    recipientAgent.modules.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.modules.didcomm.registerInboundTransport(new WsInboundTransport({ port: mediatorPort }))
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    mediatorAgent.modules.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: mediatorPort }))
+    mediatorAgent.modules.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.modules.didcomm.registerInboundTransport(new WsInboundTransport({ port: senderPort }))
-    senderAgent.modules.didcomm.registerOutboundTransport(new WsOutboundTransport())
+    senderAgent.modules.didcomm.registerInboundTransport(new DidCommWsInboundTransport({ port: senderPort }))
+    senderAgent.modules.didcomm.registerOutboundTransport(new DidCommWsOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

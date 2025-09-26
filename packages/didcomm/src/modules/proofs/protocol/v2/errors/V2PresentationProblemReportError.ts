@@ -1,22 +1,22 @@
-import type { ProblemReportErrorOptions } from '../../../../../errors'
-import type { PresentationProblemReportReason } from '../../../errors/PresentationProblemReportReason'
+import type { DidCommProblemReportErrorOptions } from '../../../../../errors'
+import type { DidCommPresentationProblemReportReason } from '../../../errors/DidCommPresentationProblemReportReason'
 
-import { ProblemReportError } from '../../../../../errors'
-import { V2PresentationProblemReportMessage } from '../messages'
+import { DidCommProblemReportError } from '../../../../../errors'
+import { DidCommPresentationV2ProblemReportMessage } from '../messages'
 
-interface V2PresentationProblemReportErrorOptions extends ProblemReportErrorOptions {
-  problemCode: PresentationProblemReportReason
+interface V2PresentationProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
+  problemCode: DidCommPresentationProblemReportReason
 }
 
-export class V2PresentationProblemReportError extends ProblemReportError {
-  public problemReport: V2PresentationProblemReportMessage
+export class V2PresentationProblemReportError extends DidCommProblemReportError {
+  public problemReport: DidCommPresentationV2ProblemReportMessage
 
   public constructor(
     public message: string,
     { problemCode }: V2PresentationProblemReportErrorOptions
   ) {
     super(message, { problemCode })
-    this.problemReport = new V2PresentationProblemReportMessage({
+    this.problemReport = new DidCommPresentationV2ProblemReportMessage({
       description: {
         en: message,
         code: problemCode,

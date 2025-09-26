@@ -2,14 +2,14 @@ import { JsonTransformer, TagsBase } from '@credo-ts/core'
 
 import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { ConnectionRecord } from '@credo-ts/didcomm'
+import { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommConnectionAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommConnection']>
 export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdapter<
-  ConnectionRecord,
+  DidCommConnectionRecord,
   typeof postgres.didcommConnection,
   typeof postgres,
   typeof sqlite.didcommConnection,
@@ -19,7 +19,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
     super(database, { postgres: postgres.didcommConnection, sqlite: sqlite.didcommConnection }, 'ConnectionRecord')
   }
 
-  public getValues(record: ConnectionRecord) {
+  public getValues(record: DidCommConnectionRecord) {
     const {
       state,
       role,
@@ -59,10 +59,10 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
     }
   }
 
-  public toRecord(values: DrizzleDidcommConnectionAdapterValues): ConnectionRecord {
+  public toRecord(values: DrizzleDidcommConnectionAdapterValues): DidCommConnectionRecord {
     const { customTags, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, ConnectionRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommConnectionRecord)
     record.setTags(customTags as TagsBase)
 
     return record

@@ -1,7 +1,7 @@
 import { Expose, Transform } from 'class-transformer'
 import { IsString, Matches } from 'class-validator'
 
-import { MessageTypeRegExp } from '../../BaseMessage'
+import { MessageTypeRegExp } from '../../BaseDidCommMessage'
 import { replaceLegacyDidSovPrefix } from '../../util/messageType'
 
 /**

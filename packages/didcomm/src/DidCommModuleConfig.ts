@@ -1,5 +1,5 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
+import { DidCommQueueTransportRepository, InMemoryQueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -12,13 +12,13 @@ export interface DidCommModuleConfigOptions {
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
-  queueTransportRepository?: QueueTransportRepository
+  queueTransportRepository?: DidCommQueueTransportRepository
 }
 
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
-  private _queueTransportRepository: QueueTransportRepository
+  private _queueTransportRepository: DidCommQueueTransportRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}

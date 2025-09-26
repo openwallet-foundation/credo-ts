@@ -6,14 +6,14 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { MediatorRoutingRecord } from '@credo-ts/didcomm'
+import { DidCommMediatorRoutingRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommMediatorRoutingAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommMediatorRouting']>
 export class DrizzleDidcommMediatorRoutingRecordAdapter extends BaseDrizzleRecordAdapter<
-  MediatorRoutingRecord,
+  DidCommMediatorRoutingRecord,
   typeof postgres.didcommMediatorRouting,
   typeof postgres,
   typeof sqlite.didcommMediatorRouting,
@@ -27,7 +27,9 @@ export class DrizzleDidcommMediatorRoutingRecordAdapter extends BaseDrizzleRecor
     )
   }
 
-  public getValues(record: MediatorRoutingRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMediatorRouting']> {
+  public getValues(
+    record: DidCommMediatorRoutingRecord
+  ): DrizzleAdapterValues<(typeof sqlite)['didcommMediatorRouting']> {
     const { routingKeyFingerprints, ...customTags } = record.getTags()
 
     return {
@@ -38,10 +40,10 @@ export class DrizzleDidcommMediatorRoutingRecordAdapter extends BaseDrizzleRecor
     }
   }
 
-  public toRecord(values: DrizzleDidcommMediatorRoutingAdapterValues): MediatorRoutingRecord {
+  public toRecord(values: DrizzleDidcommMediatorRoutingAdapterValues): DidCommMediatorRoutingRecord {
     const { customTags, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, MediatorRoutingRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommMediatorRoutingRecord)
     record.setTags(customTags as TagsBase)
 
     return record

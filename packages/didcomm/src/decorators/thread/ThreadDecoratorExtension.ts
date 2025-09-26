@@ -1,4 +1,4 @@
-import type { BaseMessageConstructor } from '../../BaseMessage'
+import type { BaseMessageConstructor } from '../../BaseDidCommMessage'
 
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, ValidateNested } from 'class-validator'
