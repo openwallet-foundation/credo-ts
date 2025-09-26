@@ -4,6 +4,7 @@
 "@credo-ts/question-answer": minor
 "@credo-ts/cheqd": minor
 "@credo-ts/drpc": minor
+"@credo-ts/didcomm": minor
 
 ---
 
