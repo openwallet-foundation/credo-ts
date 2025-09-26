@@ -78,7 +78,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
     })
 
     it('should correctly create a new did webvh with path', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app', paths: ['credo', '01'] })
+      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app', path: 'credo/01' })
 
       expect(result).toEqual({
         didDocumentMetadata: {},
