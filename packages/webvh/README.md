@@ -62,7 +62,8 @@ await agent.initialize()
 
 #### Creating and Updating a `did:webvh` DID
 
-You can create and update a `did:webvh` DID using the agent's DID API:
+You can create and update a `did:webvh` DID using the agent's DID API.
+When creating a DID, you should also store the resulting record along with its metadata and tags for easier retrieval later.
 
 ```typescript
 const { didState } = await agent.dids.create({ method: 'webvh', domain })
@@ -73,25 +74,57 @@ if (!publicDid || !didDocument) {
     agent.config.logger.error(`Failed to create did:webvh record: ${didState.reason}`)
   }
 }
-
-const result = await agent.dids.update({ did: publicDid, didDocument })
 ```
 
-#### Registering AnonCreds Objects
+#### Persisting the DID Record
+Internally, every created or updated DID is persisted as a record.
+This involves storing both the DID document and its metadata so that consumers can later retrieve the associated artifacts.
 
-Register a schema using the AnonCreds module:
+For example, when a did:webvh DID is created, the following structure is saved:
+```typescript
+const didRecord = new DidRecord({
+  did: publicDid,
+  didDocument,
+  role: DidDocumentRole.Created,
+})
+
+didRecord.metadata.set('log', log)
+didRecord.setTags({ domain })
+```
+
+#### Locating `did:webvh` Artifacts
+
+The artifacts associated with the DID (such as the `did.jsonl`) are stored in the record metadata under the key `log`.
+This means that after creation or update, consumers of the record must retrieve the artifact from the metadata instead of expecting it to be directly attached to the `didDocument`.
+
+The following example demonstrates how to expose the did.jsonl through an API endpoint.
+The endpoint retrieves the artifact from the DID record metadata and serves it to the client:
+```typescript
+@Get('/.well-known/did.jsonl')
+async getDidLog(@Res() res: Response) {
+  const agent = await this.agentService.getAgent()
+  const [didRecord] = await agent.dids.getCreatedDids({ did: agent.did })
+  const didLog = didRecord.metadata.get('log') as DIDLog[] | null
+
+  if (didLog) {
+    res.setHeader('Content-Type', 'application/jsonl; charset=utf-8')
+    res.setHeader('Cache-Control', 'no-cache')
+    res.send(didLog?.map(entry => JSON.stringify(entry)).join('\n'))
+  } else {
+    throw new HttpException('DID Log not found', HttpStatus.NOT_FOUND)
+  }
+}
+```
+
+#### Querying for Existing Records
+
+To retrieve an existing `did:webvh` record, you can query the repository by its domain and method:
 
 ```typescript
-const { schemaState, registrationMetadata: schemaMetadata } =
-  await agent.modules.anoncreds.registerSchema({
-    schema: {
-      attrNames: options.attributes,
-      name: options.name,
-      version: options.version,
-      issuerId,
-    },
-    options: {},
-  })
+const webVhdDidRecord = await didRepository.findSingleByQuery(agentContext, {
+  domain: parsed.id,
+  method: 'webvh',
+})
 ```
 
 #### Resolving Resources
