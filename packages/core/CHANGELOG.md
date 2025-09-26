@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.18
+
+### Patch Changes
+
+- 6f7912a: fix: allow selecting proof purpose for Verifiable Presentations
+- 8c5f6f6: feat(core): support sha-512 in Hasher
+
 ## 0.5.17
 
 ### Patch Changes

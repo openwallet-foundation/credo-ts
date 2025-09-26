@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.18
+
+### Patch Changes
+
+- Updated dependencies [6f7912a]
+- Updated dependencies [8c5f6f6]
+  - @credo-ts/core@0.5.18
+  - @credo-ts/anoncreds@0.5.18
+
 ## 0.5.17
 
 ### Patch Changes
