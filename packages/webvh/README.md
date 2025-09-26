@@ -127,6 +127,34 @@ const webVhdDidRecord = await didRepository.findSingleByQuery(agentContext, {
 })
 ```
 
+### Registering AnonCreds Objects
+
+The AnonCreds module allows registering schemas, credential definitions, revocation registry definitions, and revocation status lists. 
+At present, all AnonCreds-related resources are placed under the `resources` subpath. While this convention is illustrated in the examples, it is not explicitly defined in the DID Web AnonCreds method specification. It is therefore important to be aware that this is the current implementation detail, and future revisions may further clarify or expand this structure.
+
+#### Example
+
+```typescript
+const { schemaState, registrationMetadata: schemaMetadata } =
+  await agent.modules.anoncreds.registerSchema({
+    schema: {
+      attrNames: options.attributes,
+      name: options.name,
+      version: options.version,
+      issuerId,
+    },
+    options: {},
+  })
+```
+
+#### Returned Metadata
+
+The `registerSchema` method returns three key components:
+
+* **schemaState** - Includes the schema and its unique identifier (`{issuerId}/resources/{resourceId}`).
+* **registrationMetadata** - Contains the attestedResource, which must be hosted under `/resources/{resourceId}` for verification and interoperability.
+* **schemaMetadata** - Currently empty, reserved for future use.
+
 #### Resolving Resources
 
 In order to expose attested resources associated with a `did:webvh` DID, it is necessary to serve them through a REST endpoint such as:
