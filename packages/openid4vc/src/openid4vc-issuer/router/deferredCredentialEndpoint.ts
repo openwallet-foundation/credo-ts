@@ -166,11 +166,16 @@ export function configureDeferredCredentialEndpoint(router: Router, config: Open
       if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
         await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
-        throw new Oauth2ServerErrorResponseError({
-          // What is the best error here?
-          error: Oauth2ErrorCodes.CredentialRequestDenied,
-          error_description: 'Session expired',
-        })
+        return sendOauth2ErrorResponse(
+          response,
+          next,
+          agentContext.config.logger,
+          new Oauth2ServerErrorResponseError({
+            // What is the best error here?
+            error: Oauth2ErrorCodes.CredentialRequestDenied,
+            error_description: 'Session expired',
+          })
+        )
       }
 
       try {

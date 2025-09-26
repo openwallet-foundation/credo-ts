@@ -26,6 +26,7 @@ import {
   clientAuthenticationNone,
   getAuthorizationServerMetadataFromList,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
   DeferredCredentialResponse,
@@ -1310,6 +1311,12 @@ export class OpenId4VciHolderService {
           url === authorizationServerMetadata.token_endpoint &&
           body.grant_type === preAuthorizedCodeGrantIdentifier
         ) {
+          return clientAuthenticationAnonymous()(options)
+        }
+
+        // Refresh token flow defaults to anonymous auth if there is neither a client attestation or client id
+        // is present.
+        if (body.grant_type === refreshTokenGrantIdentifier) {
           return clientAuthenticationAnonymous()(options)
         }
 
