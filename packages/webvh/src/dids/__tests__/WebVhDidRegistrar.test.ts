@@ -1,38 +1,44 @@
-import { DidDocument, DidRepository } from '@credo-ts/core'
+import {
+  DidDocument,
+  DidDocumentRole,
+  DidDocumentService,
+  DidRecord,
+  DidRepository,
+  InjectionSymbols,
+} from '@credo-ts/core'
+import { Subject } from 'rxjs'
 
+import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { InMemoryWallet } from '../../../../../tests/InMemoryWallet'
-import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
+import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { mockResolvedDidDocument, mockResolvedDidRecord } from '../../anoncreds/services/__tests__/mock-resources'
 import { WebVhDidRegistrar } from '../WebVhDidRegistrar'
 
-// Mock DidsApi
-const mockDidsRepository = {
-  findSingleByQuery: jest.fn(),
-  getSingleByQuery: jest.fn(),
-  save: jest.fn(),
-  update: jest.fn(),
-}
 const wallet = new InMemoryWallet()
+const inMemoryStorageService = new InMemoryStorageService()
 
 describe('WebVhDidRegistrar Integration Tests', () => {
   let registrar: WebVhDidRegistrar
   let agentContext: ReturnType<typeof getAgentContext>
+  let repository: DidRepository
 
   beforeEach(async () => {
-    // Reset only the storage (DidRepository) mocks before each test
-    jest.clearAllMocks()
-
     // Create a real resolver instance
     registrar = new WebVhDidRegistrar()
 
     // Create a fresh agent context
-    const agentConfig = getAgentConfig('WebVhDidRegistrarIntegrationTest')
+    const agentConfig = getAgentConfig('WebVhDidRegistrarTest')
     agentContext = getAgentContext({
       agentConfig,
-      registerInstances: [[DidRepository, mockDidsRepository]],
+      registerInstances: [
+        [InjectionSymbols.Stop$, new Subject<boolean>()],
+        [InjectionSymbols.AgentDependencies, agentDependencies],
+        [InjectionSymbols.StorageService, inMemoryStorageService],
+      ],
       wallet,
     })
     await wallet.createAndOpen(agentConfig.walletConfig)
+    repository = agentContext.dependencyManager.resolve(DidRepository)
   })
 
   afterEach(async () => {
@@ -44,9 +50,6 @@ describe('WebVhDidRegistrar Integration Tests', () => {
 
   describe('DID WebVH creation', () => {
     it('should correctly create a new did webvh', async () => {
-      mockDidsRepository.findSingleByQuery.mockResolvedValue(null)
-      mockDidsRepository.save.mockResolvedValue(undefined)
-
       const result = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
 
       expect(result).toEqual({
@@ -73,9 +76,13 @@ describe('WebVhDidRegistrar Integration Tests', () => {
     })
 
     it('should fail if DID record already exists', async () => {
-      mockDidsRepository.findSingleByQuery.mockResolvedValue(mockResolvedDidRecord)
-
       const domain = 'id.test-suite.app'
+      const didRecord = new DidRecord({
+        did: mockResolvedDidDocument.id,
+        role: DidDocumentRole.Created,
+      })
+      didRecord.setTags({ domain })
+      await repository.save(agentContext, didRecord)
       const result = await registrar.create(agentContext, { domain })
 
       expect(result).toEqual({
@@ -90,11 +97,26 @@ describe('WebVhDidRegistrar Integration Tests', () => {
   })
 
   describe('DID WebVH update', () => {
-    const did = mockResolvedDidDocument.id
-    const didDocument = new DidDocument(mockResolvedDidDocument as unknown as DidDocument)
+    it('should correctly update a did webvh', async () => {
+      const {
+        didState: { did, didDocument },
+      } = await registrar.create(agentContext, { domain: 'id.test-suite.app' })
+      if (did && didDocument) {
+        didDocument.service = mockResolvedDidDocument.service.map((service) => new DidDocumentService(service))
+        const result = await registrar.update(agentContext, { did, didDocument })
 
-    it('should fail if DID record already exists', async () => {
-      mockDidsRepository.getSingleByQuery.mockResolvedValue(undefined)
+        expect(result.didState.did).toMatch(did)
+        expect(result.didState.didDocument?.context).toEqual([
+          'https://www.w3.org/ns/did/v1',
+          'https://w3id.org/security/multikey/v1',
+        ])
+        expect(result.didState.didDocument?.service).toEqual(didDocument.service)
+      }
+    })
+
+    it('should fail if DID record not exists', async () => {
+      const did = mockResolvedDidRecord.did
+      const didDocument = new DidDocument(mockResolvedDidRecord.didDocument as unknown as DidDocument)
 
       const result = await registrar.update(agentContext, { did, didDocument })
 

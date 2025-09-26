@@ -109,7 +109,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
     try {
       const { did, didDocument: inputDidDocument } = options
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-      const didRecord = await didRepository.getSingleByQuery(agentContext, {
+      const didRecord = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
         did,
         method: 'webvh',
