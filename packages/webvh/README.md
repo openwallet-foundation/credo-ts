@@ -129,7 +129,15 @@ const webVhdDidRecord = await didRepository.findSingleByQuery(agentContext, {
 
 #### Resolving Resources
 
-To resolve a resource associated with a `did:webvh` DID:
+In order to expose attested resources associated with a `did:webvh` DID, it is necessary to serve them through a REST endpoint such as:
+
+```
+GET /resources/:resourceId
+```
+
+This allows external parties to retrieve the resource using its identifier.
+
+The following example demonstrates how such an endpoint could be implemented. Note that in this case the attested resources are stored in **generic records** for the sake of simplicity. This is not a requirement: implementers may use their own persistence layer as appropriate.
 
 ```typescript
 @Get('/resources/:resourceId')
@@ -156,4 +164,21 @@ async getWebVhResources(@Param('resourceId') resourceId: string, @Res() res: Res
 
   res.send(record.content)
 }
+```
+
+#### Registering Attested Resources
+
+When registering an attested resource, the resulting metadata (`registrationMetadata`) should also be persisted so that it can later be resolved through the `/resources/:resourceId` endpoint.
+
+Again, this example stores the information in **generic records** purely for demonstration purposes. Implementers are free to adopt different storage mechanisms.
+
+```typescript
+await agent.genericRecords.save({
+  id: utils.uuid(),
+  content: registrationMetadata,
+  tags: { 
+    attestedResourceId: registrationMetadata.id as string, 
+    type: 'AttestedResource' 
+  },
+})
 ```
