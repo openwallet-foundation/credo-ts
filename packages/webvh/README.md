@@ -107,7 +107,7 @@ async getDidLog(@Res() res: Response) {
   const didLog = didRecord.metadata.get('log') as DIDLog[] | null
 
   if (didLog) {
-    res.setHeader('Content-Type', 'application/jsonl; charset=utf-8')
+    res.setHeader('Content-Type', 'text/jsonl; charset=utf-8')
     res.setHeader('Cache-Control', 'no-cache')
     res.send(didLog?.map(entry => JSON.stringify(entry)).join('\n'))
   } else {
@@ -149,11 +149,11 @@ const { schemaState, registrationMetadata: schemaMetadata } =
 
 #### Returned Metadata
 
-The `registerSchema` method returns three key components:
+Object registration methods return three key components:
 
-* **schemaState** - Includes the schema and its unique identifier (`{issuerId}/resources/{resourceId}`).
-* **registrationMetadata** - Contains the attestedResource, which must be hosted under `/resources/{resourceId}` for verification and interoperability.
-* **schemaMetadata** - Currently empty, reserved for future use.
+* **objectState** - Includes the registered object and its unique identifier (`{issuerId}/resources/{resourceId}`).
+* **objectMetadata** - Contains the attestedResource, which must be hosted under `/resources/{resourceId}` for verification and interoperability.
+* **objectAdditionalMetadata** - Currently empty, reserved for future use.
 
 #### Resolving Resources
 
