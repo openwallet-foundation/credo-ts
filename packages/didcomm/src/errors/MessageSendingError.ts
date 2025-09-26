@@ -1,12 +1,12 @@
-import type { OutboundMessageContext } from '../models'
+import type { DidCommOutboundMessageContext } from '../models'
 
 import { CredoError } from '@credo-ts/core'
 
 export class MessageSendingError extends CredoError {
-  public outboundMessageContext: OutboundMessageContext
+  public outboundMessageContext: DidCommOutboundMessageContext
   public constructor(
     message: string,
-    { outboundMessageContext, cause }: { outboundMessageContext: OutboundMessageContext; cause?: Error }
+    { outboundMessageContext, cause }: { outboundMessageContext: DidCommOutboundMessageContext; cause?: Error }
   ) {
     super(message, { cause })
     this.outboundMessageContext = outboundMessageContext

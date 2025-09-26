@@ -1,5 +1,5 @@
-import type { ConstructableAgentMessage } from '../AgentMessage'
-import type { PlaintextMessage } from '../types'
+import type { ConstructableAgentMessage } from '../DidCommMessage'
+import type { DidCommPlaintextMessage } from '../types'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
 import { BaseRecord, CredoError, JsonTransformer, isJsonObject, utils } from '@credo-ts/core'
@@ -22,14 +22,14 @@ export type DefaultDidCommMessageTags = {
 
 export interface DidCommMessageRecordProps {
   role: DidCommMessageRole
-  message: PlaintextMessage
+  message: DidCommPlaintextMessage
   id?: string
   createdAt?: Date
   associatedRecordId?: string
 }
 
 export class DidCommMessageRecord extends BaseRecord<DefaultDidCommMessageTags> {
-  public message!: PlaintextMessage
+  public message!: DidCommPlaintextMessage
   public role!: DidCommMessageRole
 
   /**

@@ -5,7 +5,7 @@ import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests'
-import { ConnectionInvitationMessage } from '../../modules'
+import { DidCommConnectionInvitationMessage } from '../../modules'
 import { DidCommMessageRecord } from '../DidCommMessageRecord'
 import { DidCommMessageRepository } from '../DidCommMessageRepository'
 import { DidCommMessageRole } from '../DidCommMessageRole'
@@ -60,7 +60,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: ConnectionInvitationMessage,
+        messageClass: DidCommConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -75,7 +75,7 @@ describe('DidCommMessageRepository', () => {
         },
         undefined
       )
-      expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
+      expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
     })
   })
   describe('findAgentMessage()', () => {
@@ -84,7 +84,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: ConnectionInvitationMessage,
+        messageClass: DidCommConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -99,14 +99,14 @@ describe('DidCommMessageRepository', () => {
         },
         undefined
       )
-      expect(invitation).toBeInstanceOf(ConnectionInvitationMessage)
+      expect(invitation).toBeInstanceOf(DidCommConnectionInvitationMessage)
     })
 
     it("should return null because the record doesn't exist", async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
       const invitation = await repository.findAgentMessage(agentContext, {
-        messageClass: ConnectionInvitationMessage,
+        messageClass: DidCommConnectionInvitationMessage,
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -129,7 +129,7 @@ describe('DidCommMessageRepository', () => {
     it('should transform and save the agent message', async () => {
       await repository.saveAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -149,7 +149,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
       await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 
@@ -168,7 +168,7 @@ describe('DidCommMessageRepository', () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record]))
       await repository.saveOrUpdateAgentMessage(agentContext, {
         role: DidCommMessageRole.Receiver,
-        agentMessage: JsonTransformer.fromJSON(invitationJson, ConnectionInvitationMessage),
+        agentMessage: JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage),
         associatedRecordId: '04a2c382-999e-4de9-a1d2-9dec0b2fa5e4',
       })
 

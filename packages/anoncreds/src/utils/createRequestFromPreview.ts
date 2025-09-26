@@ -1,7 +1,7 @@
 import type {
   AnonCredsPresentationPreviewAttribute,
   AnonCredsPresentationPreviewPredicate,
-} from '../formats/AnonCredsProofFormat'
+} from '../formats/AnonCredsDidCommProofFormat'
 import type { AnonCredsNonRevokedInterval, AnonCredsProofRequest } from '../models'
 
 import { utils } from '@credo-ts/core'

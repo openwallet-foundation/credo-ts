@@ -1,7 +1,11 @@
 import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { CredentialStateChangedEvent } from '../../../CredentialEvents'
-import type { CredentialFormat, CredentialFormatCreateOfferOptions, CredentialFormatService } from '../../../formats'
-import type { CreateCredentialOfferOptions } from '../../CredentialProtocolOptions'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
+import type {
+  DidCommCredentialFormat,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatService,
+} from '../../../formats'
+import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
 
 import { Subject } from 'rxjs'
 
@@ -13,41 +17,41 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../core/tests/helpers'
-import { Dispatcher } from '../../../../../Dispatcher'
-import { Attachment, AttachmentData } from '../../../../../decorators/attachment/Attachment'
-import { InboundMessageContext } from '../../../../../models'
+import { DidCommDispatcher } from '../../../../../DidCommDispatcher'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
+import { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommMessageRepository } from '../../../../../repository'
-import { ConnectionService, DidExchangeState } from '../../../../connections'
-import { RoutingService } from '../../../../routing/services/RoutingService'
-import { CredentialEventTypes } from '../../../CredentialEvents'
-import { CredentialFormatSpec } from '../../../models'
-import { CredentialState } from '../../../models/CredentialState'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { CredentialRepository } from '../../../repository/CredentialRepository'
-import { V2CredentialProtocol } from '../V2CredentialProtocol'
-import { V2CredentialPreview } from '../messages'
-import { V2OfferCredentialMessage } from '../messages/V2OfferCredentialMessage'
+import { DidCommConnectionService, DidCommDidExchangeState } from '../../../../connections'
+import { DidCommRoutingService } from '../../../../routing/services/DidCommRoutingService'
+import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialFormatSpec } from '../../../models'
+import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
+import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
+import { DidCommCredentialV2Preview } from '../messages'
+import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
-const offerFormat = new CredentialFormatSpec({
+const offerFormat = new DidCommCredentialFormatSpec({
   attachmentId: 'offer-attachment-id',
   format: 'hlindy/cred-abstract@v2.0',
 })
 
-const offerAttachment = new Attachment({
+const offerAttachment = new DidCommAttachment({
   id: 'offer-attachment-id',
   mimeType: 'application/json',
-  data: new AttachmentData({
+  data: new DidCommAttachmentData({
     base64:
       'eyJzY2hlbWFfaWQiOiJhYWEiLCJjcmVkX2RlZl9pZCI6IlRoN01wVGFSWlZSWW5QaWFiZHM4MVk6MzpDTDoxNzpUQUciLCJub25jZSI6Im5vbmNlIiwia2V5X2NvcnJlY3RuZXNzX3Byb29mIjp7fX0',
   }),
 })
 
-interface TestCredentialFormat extends CredentialFormat {
+interface TestCredentialFormat extends DidCommCredentialFormat {
   formatKey: 'test'
   credentialRecordType: 'test'
 }
 
-type TestCredentialFormatService = CredentialFormatService<TestCredentialFormat>
+type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
@@ -56,7 +60,7 @@ export const testCredentialFormatService = {
   supportsFormat: (_format: string) => true,
   createOffer: async (
     _agentContext: AgentContext,
-    _options: CredentialFormatCreateOfferOptions<TestCredentialFormat>
+    _options: DidCommCredentialFormatCreateOfferOptions<TestCredentialFormat>
   ) => ({
     attachment: offerAttachment,
     format: offerFormat,
@@ -82,18 +86,18 @@ export const testCredentialFormatService = {
 } as unknown as TestCredentialFormatService
 
 // Mock classes
-jest.mock('../../../repository/CredentialRepository')
+jest.mock('../../../repository/DidCommCredentialExchangeRepository')
 jest.mock('../../../../../repository/DidCommMessageRepository')
-jest.mock('../../../../routing/services/RoutingService')
-jest.mock('../../../../connections/services/ConnectionService')
-jest.mock('../../../../../Dispatcher')
+jest.mock('../../../../routing/services/DidCommRoutingService')
+jest.mock('../../../../connections/services/DidCommConnectionService')
+jest.mock('../../../../../DidCommDispatcher')
 
 // Mock typed object
-const CredentialRepositoryMock = CredentialRepository as jest.Mock<CredentialRepository>
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
 const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = RoutingService as jest.Mock<RoutingService>
-const ConnectionServiceMock = ConnectionService as jest.Mock<ConnectionService>
-const DispatcherMock = Dispatcher as jest.Mock<Dispatcher>
+const RoutingServiceMock = DidCommRoutingService as jest.Mock<DidCommRoutingService>
+const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
+const DispatcherMock = DidCommDispatcher as jest.Mock<DidCommDispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
@@ -106,11 +110,11 @@ const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject
 
 const agentContext = getAgentContext({
   registerInstances: [
-    [CredentialRepository, credentialRepository],
+    [DidCommCredentialExchangeRepository, credentialRepository],
     [DidCommMessageRepository, didCommMessageRepository],
-    [RoutingService, routingService],
-    [Dispatcher, dispatcher],
-    [ConnectionService, connectionService],
+    [DidCommRoutingService, routingService],
+    [DidCommDispatcher, dispatcher],
+    [DidCommConnectionService, connectionService],
     [EventEmitter, eventEmitter],
   ],
   agentConfig,
@@ -118,17 +122,17 @@ const agentContext = getAgentContext({
 
 const connectionRecord = getMockConnection({
   id: '123',
-  state: DidExchangeState.Completed,
+  state: DidCommDidExchangeState.Completed,
 })
 
 describe('V2CredentialProtocolOffer', () => {
-  let credentialProtocol: V2CredentialProtocol
+  let credentialProtocol: DidCommCredentialV2Protocol
 
   beforeEach(async () => {
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
 
-    credentialProtocol = new V2CredentialProtocol({
+    credentialProtocol = new DidCommCredentialV2Protocol({
       credentialFormats: [testCredentialFormatService],
     })
   })
@@ -146,7 +150,7 @@ describe('V2CredentialProtocolOffer', () => {
       },
     }
 
-    test(`creates credential record in ${CredentialState.OfferSent} state with offer, thread ID`, async () => {
+    test(`creates credential record in ${DidCommCredentialState.OfferSent} state with offer, thread ID`, async () => {
       // when
       await credentialProtocol.createOffer(agentContext, offerOptions)
 
@@ -155,30 +159,33 @@ describe('V2CredentialProtocolOffer', () => {
         1,
         agentContext,
         expect.objectContaining({
-          type: CredentialExchangeRecord.type,
+          type: DidCommCredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
-          state: CredentialState.OfferSent,
+          state: DidCommCredentialState.OfferSent,
           connectionId: connectionRecord.id,
         })
       )
     })
 
-    test(`emits stateChange event with a new credential in ${CredentialState.OfferSent} state`, async () => {
+    test(`emits stateChange event with a new credential in ${DidCommCredentialState.OfferSent} state`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       await credentialProtocol.createOffer(agentContext, offerOptions)
 
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'CredentialStateChanged',
+        type: 'DidCommCredentialStateChanged',
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
           previousState: null,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.OfferSent,
+          credentialExchangeRecord: expect.objectContaining({
+            state: DidCommCredentialState.OfferSent,
           }),
         },
       })
@@ -213,21 +220,21 @@ describe('V2CredentialProtocolOffer', () => {
   })
 
   describe('processOffer', () => {
-    const credentialOfferMessage = new V2OfferCredentialMessage({
+    const credentialOfferMessage = new DidCommOfferCredentialV2Message({
       formats: [offerFormat],
       comment: 'some comment',
-      credentialPreview: new V2CredentialPreview({
+      credentialPreview: new DidCommCredentialV2Preview({
         attributes: [],
       }),
       offerAttachments: [offerAttachment],
     })
 
-    const messageContext = new InboundMessageContext(credentialOfferMessage, {
+    const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
       agentContext,
       connection: connectionRecord,
     })
 
-    test(`creates and return credential record in ${CredentialState.OfferReceived} state with offer, thread ID`, async () => {
+    test(`creates and return credential record in ${DidCommCredentialState.OfferReceived} state with offer, thread ID`, async () => {
       // when
       await credentialProtocol.processOffer(messageContext)
 
@@ -236,33 +243,36 @@ describe('V2CredentialProtocolOffer', () => {
         1,
         agentContext,
         expect.objectContaining({
-          type: CredentialExchangeRecord.type,
+          type: DidCommCredentialExchangeRecord.type,
           id: expect.any(String),
           createdAt: expect.any(Date),
           threadId: credentialOfferMessage.id,
           connectionId: connectionRecord.id,
-          state: CredentialState.OfferReceived,
+          state: DidCommCredentialState.OfferReceived,
         })
       )
     })
 
-    test(`emits stateChange event with ${CredentialState.OfferReceived}`, async () => {
+    test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
       const eventListenerMock = jest.fn()
-      eventEmitter.on<CredentialStateChangedEvent>(CredentialEventTypes.CredentialStateChanged, eventListenerMock)
+      eventEmitter.on<DidCommCredentialStateChangedEvent>(
+        DidCommCredentialEventTypes.DidCommCredentialStateChanged,
+        eventListenerMock
+      )
 
       // when
       await credentialProtocol.processOffer(messageContext)
 
       // then
       expect(eventListenerMock).toHaveBeenCalledWith({
-        type: 'CredentialStateChanged',
+        type: 'DidCommCredentialStateChanged',
         metadata: {
           contextCorrelationId: 'mock',
         },
         payload: {
           previousState: null,
-          credentialRecord: expect.objectContaining({
-            state: CredentialState.OfferReceived,
+          credentialExchangeRecord: expect.objectContaining({
+            state: DidCommCredentialState.OfferReceived,
           }),
         },
       })

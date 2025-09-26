@@ -2,7 +2,7 @@ import { tmpdir } from 'os'
 import path from 'path'
 import { Agent, utils } from '@credo-ts/core'
 
-import { BasicMessageRecord, BasicMessageRepository, BasicMessageRole } from '../../didcomm/src'
+import { DidCommBasicMessageRecord, DidCommBasicMessageRepository, DidCommBasicMessageRole } from '../../didcomm/src'
 
 import { AskarStoreDuplicateError, AskarStoreInvalidKeyError, AskarStoreNotFoundError } from '../src/error'
 import { getAskarSqliteAgentOptions } from './helpers'
@@ -73,13 +73,13 @@ describe('Askar SQLite agents', () => {
 
   test('when exporting and importing a store, content is copied', async () => {
     await bobAgent.initialize()
-    const bobBasicMessageRepository = bobAgent.dependencyManager.resolve(BasicMessageRepository)
+    const bobBasicMessageRepository = bobAgent.dependencyManager.resolve(DidCommBasicMessageRepository)
 
-    const basicMessageRecord = new BasicMessageRecord({
+    const basicMessageRecord = new DidCommBasicMessageRecord({
       id: 'some-id',
       connectionId: 'connId',
       content: 'hello',
-      role: BasicMessageRole.Receiver,
+      role: DidCommBasicMessageRole.Receiver,
       sentTime: 'sentIt',
     })
 

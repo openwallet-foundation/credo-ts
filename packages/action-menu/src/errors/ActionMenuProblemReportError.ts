@@ -1,21 +1,21 @@
-import type { ProblemReportErrorOptions } from '@credo-ts/didcomm'
+import type { DidCommProblemReportErrorOptions } from '@credo-ts/didcomm'
 import type { ActionMenuProblemReportReason } from './ActionMenuProblemReportReason'
 
-import { ProblemReportError } from '@credo-ts/didcomm'
+import { DidCommProblemReportError } from '@credo-ts/didcomm'
 
 import { ActionMenuProblemReportMessage } from '../messages'
 
 /**
  * @internal
  */
-interface ActionMenuProblemReportErrorOptions extends ProblemReportErrorOptions {
+interface ActionMenuProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: ActionMenuProblemReportReason
 }
 
 /**
  * @internal
  */
-export class ActionMenuProblemReportError extends ProblemReportError {
+export class ActionMenuProblemReportError extends DidCommProblemReportError {
   public problemReport: ActionMenuProblemReportMessage
 
   public constructor(

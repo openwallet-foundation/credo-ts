@@ -1,7 +1,7 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { FeatureRegistry } from '@credo-ts/didcomm'
+import type { DidCommFeatureRegistry } from '@credo-ts/didcomm'
 
-import { Protocol } from '@credo-ts/didcomm'
+import { DidCommProtocol } from '@credo-ts/didcomm'
 
 import { getAgentContext } from '../../../core/tests'
 
@@ -14,7 +14,7 @@ import {
 
 const featureRegistry = {
   register: jest.fn(),
-} as unknown as FeatureRegistry
+} as unknown as DidCommFeatureRegistry
 
 const dependencyManager = {
   registerInstance: jest.fn(),
@@ -37,7 +37,7 @@ describe('QuestionAnswerModule', () => {
     await questionAnswerModule.initialize(getAgentContext({ dependencyManager }))
     expect(featureRegistry.register).toHaveBeenCalledTimes(1)
     expect(featureRegistry.register).toHaveBeenCalledWith(
-      new Protocol({
+      new DidCommProtocol({
         id: 'https://didcomm.org/questionanswer/1.0',
         roles: [QuestionAnswerRole.Questioner, QuestionAnswerRole.Responder],
       })

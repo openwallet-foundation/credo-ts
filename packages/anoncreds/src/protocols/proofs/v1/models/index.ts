@@ -1,1 +1,1 @@
-export * from './V1PresentationPreview'
+export * from './DidCommPresentationV1Preview'

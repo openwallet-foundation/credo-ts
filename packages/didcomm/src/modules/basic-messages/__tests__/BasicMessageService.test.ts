@@ -1,14 +1,14 @@
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
-import { InboundMessageContext } from '../../../models'
-import { BasicMessageRole } from '../BasicMessageRole'
-import { BasicMessage } from '../messages'
-import { BasicMessageRecord } from '../repository/BasicMessageRecord'
-import { BasicMessageRepository } from '../repository/BasicMessageRepository'
-import { BasicMessageService } from '../services'
+import { DidCommInboundMessageContext } from '../../../models'
+import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
+import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessageRecord } from '../repository/DidCommBasicMessageRecord'
+import { DidCommBasicMessageRepository } from '../repository/DidCommBasicMessageRepository'
+import { DidCommBasicMessageService } from '../services'
 
-jest.mock('../repository/BasicMessageRepository')
-const BasicMessageRepositoryMock = BasicMessageRepository as jest.Mock<BasicMessageRepository>
+jest.mock('../repository/DidCommBasicMessageRepository')
+const BasicMessageRepositoryMock = DidCommBasicMessageRepository as jest.Mock<DidCommBasicMessageRepository>
 const basicMessageRepository = new BasicMessageRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/EventEmitter')
@@ -18,14 +18,14 @@ const eventEmitter = new EventEmitterMock()
 const agentContext = getAgentContext()
 
 describe('BasicMessageService', () => {
-  let basicMessageService: BasicMessageService
+  let basicMessageService: DidCommBasicMessageService
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
   })
 
   beforeEach(() => {
-    basicMessageService = new BasicMessageService(basicMessageRepository, eventEmitter)
+    basicMessageService = new DidCommBasicMessageService(basicMessageRepository, eventEmitter)
   })
 
   describe('createMessage', () => {
@@ -34,16 +34,16 @@ describe('BasicMessageService', () => {
 
       expect(message.content).toBe('hello')
 
-      expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(BasicMessageRecord))
+      expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DidCommBasicMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
-        type: 'BasicMessageStateChanged',
+        type: 'DidCommBasicMessageStateChanged',
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
             id: expect.any(String),
             sentTime: expect.any(String),
             content: 'hello',
-            role: BasicMessageRole.Sender,
+            role: DidCommBasicMessageRole.Sender,
           }),
           message,
         },
@@ -53,25 +53,25 @@ describe('BasicMessageService', () => {
 
   describe('save', () => {
     it('stores record and emits message and basic message record', async () => {
-      const basicMessage = new BasicMessage({
+      const basicMessage = new DidCommBasicMessage({
         id: '123',
         content: 'message',
       })
 
-      const messageContext = new InboundMessageContext(basicMessage, { agentContext })
+      const messageContext = new DidCommInboundMessageContext(basicMessage, { agentContext })
 
       await basicMessageService.save(messageContext, mockConnectionRecord)
 
-      expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(BasicMessageRecord))
+      expect(basicMessageRepository.save).toHaveBeenCalledWith(agentContext, expect.any(DidCommBasicMessageRecord))
       expect(eventEmitter.emit).toHaveBeenCalledWith(agentContext, {
-        type: 'BasicMessageStateChanged',
+        type: 'DidCommBasicMessageStateChanged',
         payload: {
           basicMessageRecord: expect.objectContaining({
             connectionId: mockConnectionRecord.id,
             id: expect.any(String),
             sentTime: basicMessage.sentTime.toISOString(),
             content: basicMessage.content,
-            role: BasicMessageRole.Receiver,
+            role: DidCommBasicMessageRole.Receiver,
           }),
           message: messageContext.message,
         },
