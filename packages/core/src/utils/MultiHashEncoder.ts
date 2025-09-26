@@ -16,6 +16,7 @@ type MultiHashCodeMap = {
 const multiHashNameMap: MultiHashNameMap = {
   'sha-1': 0x11,
   'sha-256': 0x12,
+  'sha-512': 0x13,
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
