@@ -18,6 +18,7 @@ import { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
 
 interface WebVhDidCreateOptions extends DidCreateOptions {
   domain: string
+  paths?: string[]
 }
 
 interface WebVhDidUpdateOptions extends DidUpdateOptions {
@@ -36,15 +37,16 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
   /**
    * Creates a new DID document and saves it in the repository.
-   * Handles crypto instance setup, DID creation, and error handling.
-   * If services are provided, updates the DID document with those services.
+   * Handles crypto setup, DID generation, and persistence.
+   * The `paths` option (string with `/` or array of segments) allows adding sub-identifiers
+   * after the domain, joined with `:` in the resulting DID.
    * @param agentContext The agent context.
-   * @param options The creation options, including domain, endpoints, controller, signer, and verifier.
+   * @param options The creation options, including domain, optional paths, endpoints, controller, signer, and verifier.
    * @returns The result of the DID creation, with error handling.
    */
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
     try {
-      const { domain } = options
+      const { domain, paths } = options
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const record = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
@@ -62,6 +64,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       // Create DID
       const { did, doc, log } = await createDID({
         domain,
+        paths,
         signer,
         updateKeys: [publicKeyMultibase],
         verificationMethods: [
@@ -131,8 +134,8 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const verificationMethods =
         inputVerificationMethod ?? (log[log.length - 1].state.verificationMethod as VerificationMethod[])
       const { updateKeys } = log[log.length - 1].parameters
-      const verificationMethod = verificationMethods?.find(vm => vm.publicKeyMultibase)
-      if (!verificationMethod?.publicKeyMultibase) 
+      const verificationMethod = verificationMethods?.find((vm) => vm.publicKeyMultibase)
+      if (!verificationMethod?.publicKeyMultibase)
         return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier

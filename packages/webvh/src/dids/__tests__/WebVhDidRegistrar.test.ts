@@ -70,9 +70,36 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       expect(result.didState.didDocument?.controller).toMatch(/^did:webvh:.+/)
       expect(result.didState.didDocument?.authentication?.[0]).toMatch(/^did:webvh:.+/)
 
+      const authentication = result.didState.didDocument?.authentication?.[0]
       const verification = result.didState.didDocument?.verificationMethod?.[0]
       expect(verification?.id).toMatch(/^did:webvh:.+/)
       expect(verification?.controller).toMatch(/^did:webvh:.+/)
+      expect(authentication).toEqual(verification?.id)
+    })
+
+    it('should correctly create a new did webvh with path', async () => {
+      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app', paths: ['credo', '01'] })
+
+      expect(result).toEqual({
+        didDocumentMetadata: {},
+        didRegistrationMetadata: {},
+        didState: expect.objectContaining({
+          state: 'finished',
+          didDocument: expect.any(Object),
+        }),
+      })
+
+      expect(result.didState.did).toMatch(/:credo:01$/)
+      expect(result.didState.didDocument?.context).toEqual([
+        'https://www.w3.org/ns/did/v1',
+        'https://w3id.org/security/multikey/v1',
+      ])
+      expect(result.didState.didDocument?.id).toMatch(/:credo:01$/)
+      expect(result.didState.didDocument?.controller).toMatch(/:credo:01$/)
+
+      const authentication = result.didState.didDocument?.authentication?.[0]
+      const verification = result.didState.didDocument?.verificationMethod?.[0]
+      expect(authentication).toEqual(verification?.id)
     })
 
     it('should fail if DID record already exists', async () => {
