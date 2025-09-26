@@ -47,7 +47,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
     try {
       const { domain, path } = options
-      const paths = path?.split("/")
+      const paths = path?.split('/')
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const record = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,

@@ -77,8 +77,8 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       expect(authentication).toEqual(verification?.id)
     })
 
-    it('should correctly create a new did webvh with path', async () => {
-      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app', path: 'credo/01' })
+    it('should correctly create a new did webvh with path and port', async () => {
+      const result = await registrar.create(agentContext, { domain: 'id.test-suite.app:80', path: 'credo/01' })
 
       expect(result).toEqual({
         didDocumentMetadata: {},
@@ -89,13 +89,13 @@ describe('WebVhDidRegistrar Integration Tests', () => {
         }),
       })
 
-      expect(result.didState.did).toMatch(/:credo:01$/)
+      expect(result.didState.did).toMatch(/%3A80:credo:01$/)
       expect(result.didState.didDocument?.context).toEqual([
         'https://www.w3.org/ns/did/v1',
         'https://w3id.org/security/multikey/v1',
       ])
-      expect(result.didState.didDocument?.id).toMatch(/:credo:01$/)
-      expect(result.didState.didDocument?.controller).toMatch(/:credo:01$/)
+      expect(result.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
+      expect(result.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
 
       const authentication = result.didState.didDocument?.authentication?.[0]
       const verification = result.didState.didDocument?.verificationMethod?.[0]
