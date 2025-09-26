@@ -131,11 +131,12 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const verificationMethods =
         inputVerificationMethod ?? (log[log.length - 1].state.verificationMethod as VerificationMethod[])
       const { updateKeys } = log[log.length - 1].parameters
-      if (!verificationMethods?.length || !verificationMethods[0].publicKeyMultibase)
-        return this.handleError('At least one verification method must be provided.')
+      const verificationMethod = verificationMethods?.find(vm => vm.publicKeyMultibase)
+      if (!verificationMethod?.publicKeyMultibase) 
+        return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier
-      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethods[0].publicKeyMultibase)
+      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase)
       const verifier = new WebvhDidCrypto(agentContext)
 
       const { log: logResult, doc } = await updateDID({
