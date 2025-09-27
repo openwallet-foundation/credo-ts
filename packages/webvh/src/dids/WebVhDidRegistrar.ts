@@ -47,11 +47,12 @@ export class WebVhDidRegistrar implements DidRegistrar {
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
     try {
       const { domain, path } = options
-      const paths = path?.split('/')
+      const paths = path?.replace(/^\/|\/$/g, '').split('/')
+      const domainKey = paths?.length ? [domain, ...paths].join(':') : domain
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const record = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
-        domain,
+        domain: domainKey,
         method: 'webvh',
       })
       if (record) return this.handleError(`A record with domain "${domain}" already exists.`)
@@ -85,7 +86,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         role: DidDocumentRole.Created,
       })
       didRecord.metadata.set('log', log)
-      didRecord.setTags({ domain })
+      didRecord.setTags({ domain: domainKey })
       await didRepository.save(agentContext, didRecord)
 
       return {

@@ -77,6 +77,18 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       expect(authentication).toEqual(verification?.id)
     })
 
+    it('should correctly create two dids, each one with differents path and port', async () => {
+      const didResult = await registrar.create(agentContext, { domain: 'id.test-suite.app:80', path: 'credo/01' })
+      expect(didResult.didState.did).toMatch(/%3A80:credo:01$/)
+      expect(didResult.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
+      expect(didResult.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
+      
+      const did2Result = await registrar.create(agentContext, { domain: 'id.test-suite.app:88', path: '/credo/02/' })
+      expect(did2Result.didState.did).toMatch(/%3A88:credo:02$/)
+      expect(did2Result.didState.didDocument?.id).toMatch(/%3A88:credo:02$/)
+      expect(did2Result.didState.didDocument?.controller).toMatch(/%3A88:credo:02$/)
+    })
+
     it('should correctly create a new did webvh with path and port', async () => {
       const result = await registrar.create(agentContext, { domain: 'id.test-suite.app:80', path: 'credo/01' })
 

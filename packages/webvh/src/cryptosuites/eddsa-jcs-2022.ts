@@ -1,4 +1,4 @@
-import type { Proof, ProofOptions, unsecuredDocument } from './types'
+import type { Proof, ProofOptions, UnsecuredDocument } from './types'
 import type { WebVhResource } from '../anoncreds/utils/transform'
 
 import {
@@ -123,7 +123,7 @@ export class EddsaJcs2022Cryptosuite {
     return proofBytes
   }
 
-  public async createProof(unsecuredDocument: unsecuredDocument, options: ProofOptions) {
+  public async createProof(unsecuredDocument: UnsecuredDocument, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
     const proof: Proof = {
       ...options,
