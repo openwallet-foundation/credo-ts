@@ -16,7 +16,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommConnection, sqlite: sqlite.didcommConnection }, 'ConnectionRecord')
+    super(database, { postgres: postgres.didcommConnection, sqlite: sqlite.didcommConnection }, ConnectionRecord)
   }
 
   public getValues(record: ConnectionRecord) {

@@ -20,7 +20,7 @@ export class DrizzleDidcommMediationRecordAdapter extends BaseDrizzleRecordAdapt
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommMediation, sqlite: sqlite.didcommMediation }, 'MediationRecord')
+    super(database, { postgres: postgres.didcommMediation, sqlite: sqlite.didcommMediation }, MediationRecord)
   }
 
   public getValues(record: MediationRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMediation']> {

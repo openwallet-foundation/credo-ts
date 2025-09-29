@@ -25,7 +25,7 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
     super(
       database,
       { postgres: postgres.didcommCredentialExchange, sqlite: sqlite.didcommCredentialExchange },
-      'CredentialRecord'
+      CredentialExchangeRecord
     )
   }
 

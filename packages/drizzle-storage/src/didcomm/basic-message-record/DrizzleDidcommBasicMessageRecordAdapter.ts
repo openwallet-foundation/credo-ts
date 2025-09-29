@@ -20,11 +20,7 @@ export class DrizzleDidcommBasicMessageRecordAdapter extends BaseDrizzleRecordAd
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(
-      database,
-      { postgres: postgres.didcommBasicMessage, sqlite: sqlite.didcommBasicMessage },
-      'BasicMessageRecord'
-    )
+    super(database, { postgres: postgres.didcommBasicMessage, sqlite: sqlite.didcommBasicMessage }, BasicMessageRecord)
   }
 
   public getValues(record: BasicMessageRecord): DrizzleAdapterValues<(typeof sqlite)['didcommBasicMessage']> {

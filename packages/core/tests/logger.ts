@@ -106,6 +106,6 @@ export class TestLogger extends BaseLogger {
   }
 }
 
-const testLogger = new TestLogger(LogLevel.off)
+const testLogger = new TestLogger(LogLevel.trace)
 
 export default testLogger

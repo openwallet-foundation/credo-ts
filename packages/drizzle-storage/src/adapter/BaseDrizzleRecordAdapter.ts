@@ -1,11 +1,26 @@
-import { AgentContext, BaseRecord, CredoError, Query, QueryOptions, RecordNotFoundError } from '@credo-ts/core'
-import { Simplify, and, eq } from 'drizzle-orm'
+import {
+  AgentContext,
+  BaseRecord,
+  BaseRecordConstructor,
+  CredoError,
+  Query,
+  QueryOptions,
+  RecordDuplicateError,
+  RecordNotFoundError,
+} from '@credo-ts/core'
+import { DrizzleQueryError, Simplify, and, eq } from 'drizzle-orm'
 import { PgTable, pgTable } from 'drizzle-orm/pg-core'
 import { SQLiteTable as _SQLiteTable, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
 import { getSqliteBaseRecordTable } from '../sqlite'
+import {
+  DrizzlePostgresErrorCode,
+  DrizzleSqliteErrorCode,
+  extractPostgresErrorCode,
+  extractSqliteErrorCode,
+} from './drizzleError'
 import { DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
 import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
@@ -34,7 +49,7 @@ export abstract class BaseDrizzleRecordAdapter<
   SQLiteTable extends ReturnType<typeof sqliteTable<string, ReturnType<typeof getSqliteBaseRecordTable>>>,
   SQLiteSchema extends Record<string, unknown>,
 > {
-  public recordType: CredoRecord['type']
+  public recordClass: BaseRecordConstructor<CredoRecord>
 
   public table: {
     postgres: PostgresTable
@@ -54,10 +69,10 @@ export abstract class BaseDrizzleRecordAdapter<
       postgres: PostgresTable
       sqlite: SQLiteTable
     },
-    recordType: CredoRecord['type']
+    recordClass: BaseRecordConstructor<CredoRecord>
   ) {
     this.table = table
-    this.recordType = recordType
+    this.recordClass = recordClass
   }
 
   public abstract getValues(record: CredoRecord): DrizzleAdapterValues<SQLiteTable>
@@ -86,125 +101,158 @@ export abstract class BaseDrizzleRecordAdapter<
   public abstract toRecord(values: DrizzleAdapterRecordValues<SQLiteTable>): CredoRecord
 
   public async query(agentContext: AgentContext, query?: Query<CredoRecord>, queryOptions?: QueryOptions) {
-    if (isDrizzlePostgresDatabase(this.database)) {
-      let queryResult = this.database.select().from(this.table.postgres as PgTable)
-
-      if (query) {
-        queryResult = queryResult.where(
-          and(
-            // Always filter based on context correlation id
-            eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
-            queryToDrizzlePostgres(query ?? {}, this.table.postgres, this.tagKeyMapping)
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        let queryResult = this.database
+          .select()
+          .from(this.table.postgres as PgTable)
+          .where(
+            and(
+              // Always filter based on context correlation id
+              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId),
+              query ? queryToDrizzlePostgres(query, this.table.postgres, this.tagKeyMapping) : undefined
+            )
           )
-        ) as typeof queryResult
+
+        if (queryOptions?.limit !== undefined) {
+          queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
+        }
+
+        if (queryOptions?.offset !== undefined) {
+          queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
+        }
+
+        const result = await queryResult
+        return result.map(({ contextCorrelationId, ...item }) =>
+          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+        )
       }
 
-      if (queryOptions?.limit !== undefined) {
-        queryResult = queryResult.limit(queryOptions.limit) as typeof queryResult
-      }
+      if (isDrizzleSqliteDatabase(this.database)) {
+        let queryResult = this.database
+          .select()
+          .from(this.table.sqlite as SQLiteTable)
+          .where(
+            and(
+              // Always filter based on context correlation id
+              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
+              query ? queryToDrizzleSqlite(query, this.table.sqlite, this.tagKeyMapping) : undefined
+            )
+          )
 
-      if (queryOptions?.offset !== undefined) {
-        queryResult = queryResult.offset(queryOptions.offset ?? 0) as typeof queryResult
-      }
+        if (queryOptions?.limit !== undefined) {
+          queryResult = queryResult.limit(queryOptions.limit) as unknown as typeof queryResult
+        }
 
-      const result = await queryResult
-      return result.map(({ contextCorrelationId, ...item }) =>
-        this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
-      )
+        if (queryOptions?.offset !== undefined) {
+          queryResult = queryResult.offset(queryOptions.offset ?? 0) as unknown as typeof queryResult
+        }
+
+        const result = await queryResult
+        return result.map(({ contextCorrelationId, ...item }) =>
+          this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+        )
+      }
+    } catch (error) {
+      if (error instanceof CredoError) throw error
+
+      throw new CredoDrizzleStorageError(`Error querying '${this.recordClass.type}' record with query`)
     }
 
-    if (isDrizzleSqliteDatabase(this.database)) {
-      let queryResult = this.database.select().from(this.table.sqlite as SQLiteTable)
-
-      if (query) {
-        queryResult = queryResult.where(
-          and(
-            // Always filter based on context correlation id
-            eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId),
-            queryToDrizzleSqlite(query ?? {}, this.table.sqlite, this.tagKeyMapping)
-          )
-        ) as unknown as typeof queryResult
-      }
-
-      if (queryOptions?.limit !== undefined) {
-        queryResult = queryResult.limit(queryOptions.limit) as unknown as typeof queryResult
-      }
-
-      if (queryOptions?.offset !== undefined) {
-        queryResult = queryResult.offset(queryOptions.offset ?? 0) as unknown as typeof queryResult
-      }
-
-      const result = await queryResult
-      return result.map(({ contextCorrelationId, ...item }) =>
-        this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
-      )
-    }
-
-    throw new CredoError('Unsupported database type')
+    throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
   public async getById(agentContext: AgentContext, id: string) {
-    if (isDrizzlePostgresDatabase(this.database)) {
-      const [result] = await this.database
-        .select()
-        .from(this.table.postgres as PgTable)
-        .where(
-          and(
-            eq(this.table.postgres.id, id),
-            eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        const [result] = await this.database
+          .select()
+          .from(this.table.postgres as PgTable)
+          .where(
+            and(
+              eq(this.table.postgres.id, id),
+              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .limit(1)
+          .limit(1)
 
-      if (!result) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (!result) {
+          throw new RecordNotFoundError(`record with id ${id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        const { contextCorrelationId, ...item } = result
+        return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
 
-      const { contextCorrelationId, ...item } = result
-      return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
-    }
-
-    if (isDrizzleSqliteDatabase(this.database)) {
-      const [result] = await this.database
-        .select()
-        .from(this.table.sqlite)
-        .where(
-          and(
-            eq(this.table.sqlite.id, id),
-            eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+      if (isDrizzleSqliteDatabase(this.database)) {
+        const [result] = await this.database
+          .select()
+          .from(this.table.sqlite)
+          .where(
+            and(
+              eq(this.table.sqlite.id, id),
+              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .limit(1)
+          .limit(1)
 
-      if (!result) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (!result) {
+          throw new RecordNotFoundError(`record with id ${id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        const { contextCorrelationId, ...item } = result
+        return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
+    } catch (error) {
+      if (error instanceof CredoError) throw error
 
-      const { contextCorrelationId, ...item } = result
-      return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
+      throw new CredoDrizzleStorageError(`Error retrieving '${this.recordClass.type}' record with id '${id}'`, {
+        cause: error,
+      })
     }
 
-    throw new CredoError('Unsupported database type')
+    throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
   public async insert(agentContext: AgentContext, record: CredoRecord) {
-    if (isDrizzlePostgresDatabase(this.database)) {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      await this.database.insert(this.table.postgres).values(this.getValuesWithBase(agentContext, record) as any)
-      return
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        await this.database.insert(this.table.postgres).values(this.getValuesWithBase(agentContext, record) as any)
+        return
+      }
+
+      if (isDrizzleSqliteDatabase(this.database)) {
+        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        await this.database.insert(this.table.sqlite).values(this.getValuesWithBase(agentContext, record) as any)
+        return
+      }
+    } catch (error) {
+      if (error instanceof DrizzleQueryError) {
+        const sqliteErrorCode = extractSqliteErrorCode(error)
+        const postgresErrorCode = extractPostgresErrorCode(error)
+
+        if (
+          sqliteErrorCode === DrizzleSqliteErrorCode.SQLITE_CONSTRAINT_PRIMARYKEY ||
+          postgresErrorCode === DrizzlePostgresErrorCode.CONSTRAINT_UNIQUE_KEY
+        ) {
+          throw new RecordDuplicateError(`Record with id '${record.id}' already exists`, {
+            recordType: record.type,
+            cause: error,
+          })
+        }
+      }
+
+      throw new CredoDrizzleStorageError(`Error saving '${record.type}' record with id '${record.id}'`, {
+        cause: error,
+      })
     }
 
-    if (isDrizzleSqliteDatabase(this.database)) {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      await this.database.insert(this.table.sqlite).values(this.getValuesWithBase(agentContext, record) as any)
-      return
-    }
-
-    throw new CredoError('Unsupported database type')
+    throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
   public async update(agentContext: AgentContext, record: CredoRecord) {
@@ -213,53 +261,61 @@ export abstract class BaseDrizzleRecordAdapter<
       throw new CredoDrizzleStorageError(`Record of type ${record.type}' is missing 'id' column.`)
     }
 
-    if (isDrizzlePostgresDatabase(this.database)) {
-      const updated = await this.database
-        .update(this.table.postgres)
-        // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
-        .set(this.getValuesWithBase(agentContext, record) as any)
-        .where(
-          and(
-            eq(this.table.postgres.id, record.id),
-            eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        const updated = await this.database
+          .update(this.table.postgres)
+          // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
+          .set(this.getValuesWithBase(agentContext, record) as any)
+          .where(
+            and(
+              eq(this.table.postgres.id, record.id),
+              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .returning({ id: this.table.postgres.id })
+          .returning({ id: this.table.postgres.id })
 
-      if (updated.length === 0) {
-        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (updated.length === 0) {
+          throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        return
       }
 
-      return
-    }
-
-    if (isDrizzleSqliteDatabase(this.database)) {
-      const updated = await this.database
-        .update(this.table.sqlite)
-        // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
-        .set(this.getValuesWithBase(agentContext, record) as any)
-        .where(
-          and(
-            eq(this.table.sqlite.id, record.id),
-            eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+      if (isDrizzleSqliteDatabase(this.database)) {
+        const updated = await this.database
+          .update(this.table.sqlite)
+          // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
+          .set(this.getValuesWithBase(agentContext, record) as any)
+          .where(
+            and(
+              eq(this.table.sqlite.id, record.id),
+              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .returning({
-          id: this.table.sqlite.id,
-        })
+          .returning({
+            id: this.table.sqlite.id,
+          })
 
-      if (updated.length === 0) {
-        throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (updated.length === 0) {
+          throw new RecordNotFoundError(`record with id ${record.id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        return
       }
+    } catch (error) {
+      if (error instanceof CredoError) throw error
 
-      return
+      throw new CredoDrizzleStorageError(`Error updating '${record.type}' record with id '${record.id}'`, {
+        cause: error,
+      })
     }
 
-    throw new CredoError('Unsupported database type')
+    throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
   public async delete(agentContext: AgentContext, id: string) {
@@ -268,51 +324,58 @@ export abstract class BaseDrizzleRecordAdapter<
       throw new CredoDrizzleStorageError(`Missing required 'id' for delete.`)
     }
 
-    if (isDrizzlePostgresDatabase(this.database)) {
-      const deleted = await this.database
-        .delete(this.table.postgres)
-        .where(
-          and(
-            eq(this.table.postgres.id, id),
-            eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+    try {
+      if (isDrizzlePostgresDatabase(this.database)) {
+        const deleted = await this.database
+          .delete(this.table.postgres)
+          .where(
+            and(
+              eq(this.table.postgres.id, id),
+              eq(this.table.postgres.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .returning({
-          id: this.table.postgres.id,
-        })
+          .returning({
+            id: this.table.postgres.id,
+          })
 
-      if (deleted.length === 0) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (deleted.length === 0) {
+          throw new RecordNotFoundError(`record with id ${id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        return
       }
 
-      return
-    }
-
-    if (isDrizzleSqliteDatabase(this.database)) {
-      const deleted = await this.database
-        .delete(this.table.sqlite)
-        .where(
-          and(
-            eq(this.table.sqlite.id, id),
-            eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+      if (isDrizzleSqliteDatabase(this.database)) {
+        const deleted = await this.database
+          .delete(this.table.sqlite)
+          .where(
+            and(
+              eq(this.table.sqlite.id, id),
+              eq(this.table.sqlite.contextCorrelationId, agentContext.contextCorrelationId)
+            )
           )
-        )
-        .returning({
-          id: this.table.sqlite.id,
-        })
+          .returning({
+            id: this.table.sqlite.id,
+          })
 
-      if (deleted.length === 0) {
-        throw new RecordNotFoundError(`record with id ${id} not found.`, {
-          recordType: this.recordType,
-        })
+        if (deleted.length === 0) {
+          throw new RecordNotFoundError(`record with id ${id} not found.`, {
+            recordType: this.recordClass.type,
+          })
+        }
+
+        return
       }
+    } catch (error) {
+      if (error instanceof CredoError) throw error
 
-      return
+      throw new CredoDrizzleStorageError(`Error deleting record '${this.recordClass.type}' with id '${id}'`, {
+        cause: error,
+      })
     }
 
-    // @ts-expect-error
-    throw new CredoError(`Unsupported database type '${database.type}'`)
+    throw new CredoDrizzleStorageError('Unsupported database type')
   }
 }

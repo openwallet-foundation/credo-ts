@@ -21,7 +21,7 @@ export class DrizzleAnonCredsCredentialDefinitionPrivateRecordAdapter extends Ba
     super(
       database,
       { postgres: postgres.anonCredsCredentialDefinitionPrivate, sqlite: sqlite.anonCredsCredentialDefinitionPrivate },
-      'AnonCredsCredentialDefinitionPrivateRecord'
+      AnonCredsCredentialDefinitionPrivateRecord
     )
   }
 

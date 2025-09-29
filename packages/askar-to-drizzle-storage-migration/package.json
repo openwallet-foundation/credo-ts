@@ -1,0 +1,36 @@
+{
+  "name": "@credo-ts/askar-to-drizzle-storage-migration",
+  "main": "src/index",
+  "types": "src/index",
+  "version": "0.5.13",
+  "files": ["build"],
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "main": "build/index",
+    "types": "build/index",
+    "access": "public"
+  },
+  "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/askar-to-drizzle-storage-migration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/openwallet-foundation/credo-ts",
+    "directory": "packages/askar-to-drizzle-storage-migration"
+  },
+  "scripts": {
+    "build": "pnpm run clean && pnpm run compile",
+    "clean": "rimraf ./build",
+    "compile": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "pnpm run build",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@credo-ts/askar": "workspace:*",
+    "@credo-ts/drizzle-storage": "workspace:*",
+    "@credo-ts/core": "workspace:*",
+    "@openwallet-foundation/askar-shared": "catalog:"
+  },
+  "devDependencies": {
+    "rimraf": "catalog:",
+    "typescript": "catalog:"
+  }
+}
