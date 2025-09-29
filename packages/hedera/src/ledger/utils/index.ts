@@ -1,24 +1,24 @@
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { PublicKey } from '@hashgraph/sdk'
+import { KeysUtility } from '@hiero-did-sdk/core'
 
-export const getMultibasePublicKey = (publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }): string => {
-  return `z${TypedArrayEncoder.toBase58(Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x)))}`
+export function getMultibasePublicKey(publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>): string {
+  return `z${TypedArrayEncoder.toBase58(publicJwk.publicKey.publicKey)}`
 }
 
-export const createOrGetKey = async (
+export async function createOrGetKey(
   kms: Kms.KeyManagementApi,
   keyId?: string
-): Promise<{ keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } }> => {
+): Promise<Kms.PublicJwk<Kms.Ed25519PublicJwk>> {
   if (!keyId) {
-    const createKeyResult = await kms.createKey({
+    const { publicJwk } = await kms.createKey({
       type: {
         crv: 'Ed25519',
         kty: 'OKP',
       },
     })
-    return {
-      publicJwk: createKeyResult.publicJwk,
-      keyId: createKeyResult.keyId,
-    }
+
+    return Kms.PublicJwk.fromPublicJwk(publicJwk)
   }
 
   const publicJwk = await kms.getPublicKey({ keyId })
@@ -30,11 +30,10 @@ export const createOrGetKey = async (
       `Key with key id '${keyId}' uses unsupported ${Kms.getJwkHumanDescription(publicJwk)} for did:hedera`
     )
   }
-  return {
-    keyId,
-    publicJwk: {
-      ...publicJwk,
-      crv: publicJwk.crv,
-    },
-  }
+
+  return Kms.PublicJwk.fromPublicJwk(publicJwk) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+}
+
+export function hederaPublicKeyFromPublicJwk(publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>): PublicKey {
+  return KeysUtility.fromBytes(publicJwk.publicKey.publicKey).toPublicKey()
 }

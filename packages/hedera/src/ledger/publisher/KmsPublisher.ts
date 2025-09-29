@@ -1,8 +1,7 @@
-import { AgentContext, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { AgentContext, Kms } from '@credo-ts/core'
 import { Client, PublicKey, Transaction, TransactionReceipt } from '@hashgraph/sdk'
-import { KeysUtility } from '@hiero-did-sdk/core'
 import { Publisher as ClientPublisher } from '@hiero-did-sdk/publisher-internal'
-import { createOrGetKey } from '../utils'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../utils'
 
 export class KmsPublisher extends ClientPublisher {
   private readonly kms: Kms.KeyManagementApi
@@ -10,28 +9,20 @@ export class KmsPublisher extends ClientPublisher {
   private keyId: string
   private submitPublicKey: PublicKey
 
-  constructor(
-    agentContext: AgentContext,
-    client: Client,
-    key: { keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } }
-  ) {
+  constructor(agentContext: AgentContext, client: Client, publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>) {
     super(client)
 
     this.kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-    this.keyId = key.keyId
-    this.submitPublicKey = KeysUtility.fromBytes(
-      Uint8Array.from(TypedArrayEncoder.fromBase64(key.publicJwk.x))
-    ).toPublicKey()
+    this.keyId = publicJwk.keyId
+    this.submitPublicKey = hederaPublicKeyFromPublicJwk(publicJwk)
   }
 
   async setKeyId(keyId: string) {
-    const { publicJwk } = await createOrGetKey(this.kms, keyId)
+    const publicJwk = await createOrGetKey(this.kms, keyId)
 
     this.keyId = keyId
-    this.submitPublicKey = KeysUtility.fromBytes(
-      Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))
-    ).toPublicKey()
+    this.submitPublicKey = hederaPublicKeyFromPublicJwk(publicJwk)
   }
 
   publicKey(): PublicKey {

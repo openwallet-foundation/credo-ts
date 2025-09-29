@@ -1,7 +1,7 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Kms } from '@credo-ts/core'
 import { PublicKey } from '@hashgraph/sdk'
-import { KeysUtility, Signer } from '@hiero-did-sdk/core'
-import { createOrGetKey } from '../utils'
+import { Signer } from '@hiero-did-sdk/core'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../utils'
 
 export class KmsSigner extends Signer {
   private keyId: string
@@ -9,21 +9,19 @@ export class KmsSigner extends Signer {
 
   constructor(
     private readonly kms: Kms.KeyManagementApi,
-    key: { keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } }
+    publicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk>
   ) {
     super()
 
-    const { keyId, publicJwk } = key
-
-    this.keyId = keyId
-    this._publicKey = KeysUtility.fromBytes(Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))).toPublicKey()
+    this.keyId = publicJwk.keyId
+    this._publicKey = hederaPublicKeyFromPublicJwk(publicJwk)
   }
 
   async setKeyId(keyId: string): Promise<void> {
-    const { publicJwk } = await createOrGetKey(this.kms, keyId)
+    const publicJwk = await createOrGetKey(this.kms, keyId)
 
     this.keyId = keyId
-    this._publicKey = KeysUtility.fromBytes(Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))).toPublicKey()
+    this._publicKey = hederaPublicKeyFromPublicJwk(publicJwk)
   }
 
   publicKey(): Promise<string> {

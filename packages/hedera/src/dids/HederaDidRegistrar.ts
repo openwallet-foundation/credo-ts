@@ -5,7 +5,6 @@ import {
   DidDocument,
   DidDocumentKey,
   DidDocumentRole,
-  DidDocumentService,
   DidRecord,
   DidRegistrar,
   DidRepository,
@@ -29,10 +28,7 @@ export class HederaDidRegistrar implements DidRegistrar {
 
       const { did, didDocument, rootKey } = await ledgerService.createDid(agentContext, options)
 
-      const credoDidDocument = new DidDocument({
-        ...didDocument,
-        service: didDocument.service?.map((s) => new DidDocumentService(s)),
-      })
+      const credoDidDocument = DidDocument.fromJSON(didDocument)
 
       await didRepository.save(
         agentContext,
@@ -94,7 +90,7 @@ export class HederaDidRegistrar implements DidRegistrar {
       })
 
       didRecord.didDocument = JsonTransformer.fromJSON(updatedDidDocument, DidDocument)
-      didRecord.keys = keys
+      didRecord.keys = this.filterRelevantDidDocumentKeys(didRecord.didDocument, keys)
       await didRepository.update(agentContext, didRecord)
 
       return {
@@ -178,5 +174,15 @@ export class HederaDidRegistrar implements DidRegistrar {
       ...keys1,
       ...keys2.filter((k2) => !keys1.some((k1) => k1.didDocumentRelativeKeyId === k2.didDocumentRelativeKeyId)),
     ]
+  }
+
+  private filterRelevantDidDocumentKeys(didDocument: DidDocument, keys: DidDocumentKey[]): DidDocumentKey[] {
+    if (!didDocument.verificationMethod?.length) return []
+
+    return keys.filter(({ didDocumentRelativeKeyId }) =>
+      didDocument.verificationMethod?.some((verificationMethod) =>
+        verificationMethod.id.endsWith(didDocumentRelativeKeyId)
+      )
+    )
   }
 }

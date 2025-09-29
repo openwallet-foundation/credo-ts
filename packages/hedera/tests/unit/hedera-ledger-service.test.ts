@@ -69,6 +69,7 @@ const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
   crv: 'Ed25519',
   kty: 'OKP',
   x: TypedArrayEncoder.toBase64URL(privateKey.publicKey.toBytesRaw()),
+  kid: 'test-key-id',
 }
 
 const mockKms = {
@@ -511,8 +512,6 @@ describe('HederaLedgerService', () => {
 
   describe('getIssuerKeySigner', () => {
     it('should return Signer when rootKey exists', async () => {
-      const _secretBytes = PrivateKey.generate().toBytes()
-
       const didRecord = {
         keys: [{ didDocumentRelativeKeyId: DID_ROOT_KEY_ID, kmsKeyId: 'kms-key-id' }],
       } as unknown as DidRecord

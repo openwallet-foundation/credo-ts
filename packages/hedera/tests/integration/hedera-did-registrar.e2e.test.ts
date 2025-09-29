@@ -4,6 +4,7 @@ import {
   DidDocument,
   DidDocumentKey,
   DidDocumentService,
+  Kms,
   LogLevel,
   VerificationMethod,
 } from '@credo-ts/core'
@@ -80,7 +81,7 @@ describe('Hedera DID registrar', () => {
         kty: 'OKP',
       },
     })
-    const multibasePublicKey = getMultibasePublicKey(publicJwk)
+    const multibasePublicKey = getMultibasePublicKey(Kms.PublicJwk.fromPublicJwk(publicJwk))
     const keys: DidDocumentKey[] = [
       {
         kmsKeyId: keyId,
@@ -188,13 +189,12 @@ describe('Hedera DID registrar', () => {
         kty: 'OKP',
       },
     })
-    const multibasePublicKey = getMultibasePublicKey(publicJwk)
-    const keys: DidDocumentKey[] = [
-      {
-        kmsKeyId: keyId,
-        didDocumentRelativeKeyId: '#key-1',
-      },
-    ]
+    const multibasePublicKey = getMultibasePublicKey(Kms.PublicJwk.fromPublicJwk(publicJwk))
+    const didDocumentKey = {
+      kmsKeyId: keyId,
+      didDocumentRelativeKeyId: '#key-1',
+    }
+    const keys: DidDocumentKey[] = [didDocumentKey]
 
     const didResult = await agent.dids.create<HederaDidCreateOptions>({
       method: 'hedera',
@@ -235,6 +235,11 @@ describe('Hedera DID registrar', () => {
       ])
     )
 
+    // Check that added verification method key is referenced in DID record
+    let didRecords = await agent.dids.getCreatedDids({ method: 'hedera', did })
+    expect(didRecords).toHaveLength(1)
+    expect(didRecords[0].keys).toContainEqual(didDocumentKey)
+
     const removeUpdateResult = await agent.dids.update<HederaDidUpdateOptions>({
       did,
       didDocument,
@@ -251,7 +256,22 @@ describe('Hedera DID registrar', () => {
     })
 
     expect(removeResolvedDocument.didDocument?.id).toEqual(did)
-    expect(removeResolvedDocument.didDocument?.service ?? []).toHaveLength(0)
+    expect(removeResolvedDocument.didDocument?.verificationMethod ?? []).toHaveLength(1)
+    expect(removeResolvedDocument.didDocument?.verificationMethod).toEqual(
+      expect.not.arrayContaining([
+        expect.objectContaining({
+          id: expect.stringContaining(validVerificationMethod.id),
+          type: validVerificationMethod.type,
+          controller: validVerificationMethod.controller,
+          publicKeyMultibase: validVerificationMethod.publicKeyMultibase,
+        }),
+      ])
+    )
+
+    // Check that removed verification method key is not referenced in DID record
+    didRecords = await agent.dids.getCreatedDids({ method: 'hedera', did })
+    expect(didRecords).toHaveLength(1)
+    expect(didRecords[0].keys).not.toContainEqual(didDocumentKey)
   })
 
   it('should create a did:hedera did document, but should not add verification method without required keys', async () => {
@@ -261,7 +281,7 @@ describe('Hedera DID registrar', () => {
         kty: 'OKP',
       },
     })
-    const multibasePublicKey = getMultibasePublicKey(publicJwk)
+    const multibasePublicKey = getMultibasePublicKey(Kms.PublicJwk.fromPublicJwk(publicJwk))
 
     const didResult = await agent.dids.create<HederaDidCreateOptions>({
       method: 'hedera',

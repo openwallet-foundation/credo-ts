@@ -1,14 +1,22 @@
 import { Kms } from '@credo-ts/core'
-import { createOrGetKey, getMultibasePublicKey } from '../../src/ledger/utils'
+import { PublicKey } from '@hashgraph/sdk'
+import { KeysUtility } from '@hiero-did-sdk/core'
+import { mockFunction } from '../../../core/tests/helpers'
+import { createOrGetKey, getMultibasePublicKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
+
+jest.mock('@hiero-did-sdk/core', () => ({
+  KeysUtility: {
+    fromBytes: jest.fn(),
+  },
+}))
 
 describe('getMultibasePublicKey', () => {
   it('should return a base58 key string prefixed with "z"', () => {
-    const base64X = 'dGVzdGtleQ==' // base64 for 'testkey'
     const publicJwk = {
-      crv: 'Ed25519',
-      x: base64X,
-    }
-    const multibaseKey = getMultibasePublicKey(publicJwk as Kms.KmsJwkPublicOkp & { crv: 'Ed25519' })
+      keyId: 'test-key-id',
+      publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
+    } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+    const multibaseKey = getMultibasePublicKey(publicJwk)
 
     expect(multibaseKey.startsWith('z')).toBe(true)
     expect(typeof multibaseKey).toBe('string')
@@ -26,20 +34,17 @@ describe('createOrGetKey', () => {
   })
 
   it('should create a key if keyId is not provided', async () => {
-    const fakeKeyId = 'key123'
-    const fakeJwk: Kms.KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
+    const keyId = 'key123'
+    const publicJwk: Kms.KmsJwkPublicOkp & { kid: string } = { kty: 'OKP', crv: 'Ed25519', x: 'xxx', kid: 'key123' }
     kmsMock.createKey.mockResolvedValue({
-      keyId: fakeKeyId,
-      publicJwk: fakeJwk,
+      keyId,
+      publicJwk,
     })
 
     const result = await createOrGetKey(kmsMock, undefined)
 
     expect(kmsMock.createKey).toHaveBeenCalledWith({ type: { crv: 'Ed25519', kty: 'OKP' } })
-    expect(result).toEqual({
-      keyId: fakeKeyId,
-      publicJwk: fakeJwk,
-    })
+    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk(publicJwk))
   })
 
   it('should retrieve an existing key if keyId is provided', async () => {
@@ -50,13 +55,7 @@ describe('createOrGetKey', () => {
     const result = await createOrGetKey(kmsMock, keyId)
 
     expect(kmsMock.getPublicKey).toHaveBeenCalledWith({ keyId })
-    expect(result).toEqual({
-      keyId,
-      publicJwk: {
-        ...publicJwk,
-        crv: publicJwk.crv,
-      },
-    })
+    expect(result).toEqual(Kms.PublicJwk.fromPublicJwk(publicJwk))
   })
 
   it('should throw an error if key with given keyId is not found', async () => {
@@ -80,5 +79,30 @@ describe('createOrGetKey', () => {
     )
 
     spyDesc.mockRestore()
+  })
+})
+
+describe('hederaPublicKeyFromPublicJwk', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
+
+  it('should convert a public JWK to a Hedera PublicKey', () => {
+    const mockPublicKey = { toPublicKey: jest.fn() } as unknown as ReturnType<typeof KeysUtility.fromBytes>
+    const mockHederaPublicKey = {} as PublicKey
+
+    mockFunction(mockPublicKey.toPublicKey).mockReturnValue(mockHederaPublicKey)
+    mockFunction(KeysUtility.fromBytes).mockReturnValue(mockPublicKey)
+
+    const publicJwk = {
+      keyId: 'test-key-id',
+      publicKey: { publicKey: new Uint8Array([1, 2, 3, 4, 5]) },
+    } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+    const result = hederaPublicKeyFromPublicJwk(publicJwk)
+
+    expect(KeysUtility.fromBytes).toHaveBeenCalledWith(publicJwk.publicKey.publicKey)
+    expect(mockPublicKey.toPublicKey).toHaveBeenCalled()
+    expect(result).toBe(mockHederaPublicKey)
   })
 })

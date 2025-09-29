@@ -57,7 +57,7 @@ export interface HederaDidCreateOptions extends DidCreateOptions {
   }
 }
 
-export interface HederaCreateDIDResult extends CreateDIDResult {
+export interface HederaCreateDidResult extends CreateDIDResult {
   rootKey: DidDocumentKey
 }
 
@@ -88,7 +88,7 @@ export class HederaLedgerService {
     return await resolveDID(did, 'application/ld+json;profile="https://w3id.org/did-resolution"', { topicReader })
   }
 
-  public async createDid(agentContext: AgentContext, props: HederaDidCreateOptions): Promise<HederaCreateDIDResult> {
+  public async createDid(agentContext: AgentContext, props: HederaDidCreateOptions): Promise<HederaCreateDidResult> {
     const { options, secret, didDocument } = props
     return this.clientService.withClient({ networkName: options?.network }, async (client: Client) => {
       const topicReader = this.getHederaHcsTopicReader(agentContext)
@@ -102,10 +102,10 @@ export class HederaLedgerService {
 
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-      const { keyId, publicJwk } = await createOrGetKey(kms, secret?.rootKeyId)
-      const rootKey = { kmsKeyId: keyId, didDocumentRelativeKeyId: DID_ROOT_KEY_ID }
+      const publicJwk = await createOrGetKey(kms, secret?.rootKeyId)
+      const rootKey = { kmsKeyId: publicJwk.keyId, didDocumentRelativeKeyId: DID_ROOT_KEY_ID }
 
-      const publisher = await this.getPublisher(agentContext, client, keyId)
+      const publisher = await this.getPublisher(agentContext, client, publicJwk.keyId)
 
       const { state, signingRequest } = await generateCreateDIDRequest(
         {
@@ -119,7 +119,11 @@ export class HederaLedgerService {
         }
       )
 
-      const signatureResult = await kms.sign({ keyId, data: signingRequest.serializedPayload, algorithm: 'EdDSA' })
+      const signatureResult = await kms.sign({
+        keyId: publicJwk.keyId,
+        data: signingRequest.serializedPayload,
+        algorithm: 'EdDSA',
+      })
       const createDidDocumentResult = await submitCreateDIDRequest(
         { state, signature: signatureResult.signature, topicReader },
         {
@@ -342,8 +346,8 @@ export class HederaLedgerService {
 
   private async getPublisher(agentContext: AgentContext, client: Client, keyId: string): Promise<KmsPublisher> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-    const key = await createOrGetKey(kms, keyId)
-    return new KmsPublisher(agentContext, client, key)
+    const publicJwk = await createOrGetKey(kms, keyId)
+    return new KmsPublisher(agentContext, client, publicJwk)
   }
 
   private getHederaAnonCredsRegistry(_agentContext: AgentContext): HederaAnoncredsRegistry {
@@ -527,8 +531,8 @@ export class HederaLedgerService {
       throw new Error('The root key not found in the KMS')
     }
 
-    const issuerKey = await createOrGetKey(kms, rootKey.kmsKeyId)
+    const issuerPublicJwk = await createOrGetKey(kms, rootKey.kmsKeyId)
 
-    return new KmsSigner(kms, issuerKey)
+    return new KmsSigner(kms, issuerPublicJwk)
   }
 }

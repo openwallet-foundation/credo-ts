@@ -1,32 +1,31 @@
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { KeysUtility } from '@hiero-did-sdk/core'
 import { KmsSigner } from '../../src/ledger/signer/KmsSigner'
 
-jest.mock('@hiero-did-sdk/core', () => ({
-  KeysUtility: {
-    fromBytes: jest.fn(),
-  },
-  DIDError: class DIDError extends Error {},
-  Signer: class Signer {},
-}))
+const mockKeyId = 'test-key-id'
+const mockPublicJwk = {
+  keyId: mockKeyId,
+  publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
+} as Kms.PublicJwk<Kms.Ed25519PublicJwk>
+
+import { Kms } from '@credo-ts/core'
+import { mockFunction } from '../../../core/tests/helpers'
 
 jest.mock('@credo-ts/core', () => ({
-  TypedArrayEncoder: {
-    fromBase64: jest.fn(),
-  },
+  ...jest.requireActual('@credo-ts/core'),
   Kms: {
-    KeyManagementApi: jest.fn().mockImplementation(() => ({})),
+    KeyManagementApi: jest.fn().mockReturnValue({}),
+    PublicJwk: {
+      fromFingerprint: jest.fn().mockReturnValue(mockPublicJwk),
+    },
   },
 }))
 
 jest.mock('../../src/ledger/utils', () => ({
   createOrGetKey: jest.fn(),
+  hederaPublicKeyFromPublicJwk: jest.fn(),
 }))
-import { createOrGetKey } from '../../src/ledger/utils'
 
-jest.mock('@hashgraph/sdk', () => ({
-  PublicKey: jest.fn(),
-}))
+import { PublicKey } from '@hashgraph/sdk'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 describe('KmsSigner', () => {
   const signMock = jest.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })
@@ -37,48 +36,30 @@ describe('KmsSigner', () => {
     verify: verifyMock,
   }
 
-  const keyId = 'test-key-id'
-  const base64X = 'base64-x'
-  const publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = { x: base64X, crv: 'Ed25519', kty: 'OKP' }
-  const key: { keyId: string; publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } } = { keyId, publicJwk }
-
   const mockPublicKey = {
     toStringDer: jest.fn().mockReturnValue('mock-der-string'),
   }
 
-  const mockKeysUtility = {
-    toPublicKey: jest.fn().mockReturnValue(mockPublicKey),
-  }
-
   beforeEach(() => {
     jest.clearAllMocks()
-    ;(TypedArrayEncoder.fromBase64 as jest.Mock).mockReturnValue(new Uint8Array([1, 2, 3]))
-    ;(KeysUtility.fromBytes as jest.Mock).mockReturnValue(mockKeysUtility)
+    mockFunction(hederaPublicKeyFromPublicJwk).mockReturnValue(mockPublicKey as unknown as PublicKey)
   })
 
   it('should correctly create an instance via constructor', () => {
-    const _signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, key)
-
-    expect(TypedArrayEncoder.fromBase64).toHaveBeenCalledWith(base64X)
-    expect(KeysUtility.fromBytes).toHaveBeenCalledWith(expect.any(Uint8Array))
-    expect(mockKeysUtility.toPublicKey).toHaveBeenCalled()
+    const _signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, mockPublicJwk)
+    expect(hederaPublicKeyFromPublicJwk).toHaveBeenCalledWith(mockPublicJwk)
   })
 
   it('should correctly update key in setKeyId', async () => {
-    ;(createOrGetKey as jest.Mock).mockResolvedValue({
-      publicJwk: { x: base64X, crv: 'Ed25519' },
-    })
-
-    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, key)
+    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, mockPublicJwk)
     await signer.setKeyId('new-key-id')
 
     expect(createOrGetKey).toHaveBeenCalledWith(kmsMock, 'new-key-id')
-    expect(KeysUtility.fromBytes).toHaveBeenCalledTimes(2)
-    expect(mockKeysUtility.toPublicKey).toHaveBeenCalledTimes(2)
+    expect(hederaPublicKeyFromPublicJwk).toHaveBeenCalledTimes(2)
   })
 
   it('should return correct publicKey', async () => {
-    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, key)
+    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, mockPublicJwk)
     const publicKey = await signer.publicKey()
 
     expect(publicKey).toBe('mock-der-string')
@@ -86,13 +67,13 @@ describe('KmsSigner', () => {
   })
 
   it('should sign data with KMS', async () => {
-    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, key)
+    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, mockPublicJwk)
     const data = new Uint8Array([4, 5, 6])
 
     const signature = await signer.sign(data)
 
     expect(kmsMock.sign).toHaveBeenCalledWith({
-      keyId,
+      keyId: mockKeyId,
       data,
       algorithm: 'EdDSA',
     })
@@ -100,7 +81,7 @@ describe('KmsSigner', () => {
   })
 
   it('should verify signature with KMS', async () => {
-    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, key)
+    const signer = new KmsSigner(kmsMock as unknown as Kms.KeyManagementApi, mockPublicJwk)
     const message = new Uint8Array([4, 5, 6])
     const signature = new Uint8Array([7, 8, 9])
 
@@ -109,7 +90,7 @@ describe('KmsSigner', () => {
     expect(kmsMock.verify).toHaveBeenCalledWith({
       data: message,
       signature,
-      key: { keyId },
+      key: { keyId: mockKeyId },
       algorithm: 'EdDSA',
     })
     expect(result).toBe(true)
