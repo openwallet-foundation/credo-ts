@@ -28,10 +28,10 @@
     "class-transformer": "catalog:",
     "rxjs": "catalog:",
     "zod": "catalog:",
-    "@openid4vc/openid4vci": "0.3.0-alpha-20250825150235",
-    "@openid4vc/oauth2": "0.3.0-alpha-20250825150235",
-    "@openid4vc/openid4vp": "0.3.0-alpha-20250825150235",
-    "@openid4vc/utils": "0.3.0-alpha-20250825150235"
+    "@openid4vc/openid4vci": "0.3.0-alpha-20250922085649",
+    "@openid4vc/oauth2": "0.3.0-alpha-20250922085649",
+    "@openid4vc/openid4vp": "0.3.0-alpha-20250922085649",
+    "@openid4vc/utils": "0.3.0-alpha-20250922085649"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",

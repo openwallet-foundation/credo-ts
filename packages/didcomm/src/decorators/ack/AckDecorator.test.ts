@@ -2,13 +2,13 @@ import { ClassValidationError } from '../../../../core/src/error/ClassValidation
 import { JsonTransformer } from '../../../../core/src/utils/JsonTransformer'
 import { MessageValidator } from '../../../../core/src/utils/MessageValidator'
 import { Compose } from '../../../../core/src/utils/mixins'
-import { BaseMessage } from '../../BaseMessage'
+import { BaseDidCommMessage } from '../../BaseDidCommMessage'
 
 import { AckValues } from './AckDecorator'
 import { AckDecorated } from './AckDecoratorExtension'
 
 describe('Decorators | AckDecoratorExtension', () => {
-  class TestMessage extends Compose(BaseMessage, [AckDecorated]) {
+  class TestMessage extends Compose(BaseDidCommMessage, [AckDecorated]) {
     public toJSON(): Record<string, unknown> {
       return JsonTransformer.toJSON(this)
     }

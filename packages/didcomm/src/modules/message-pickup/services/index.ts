@@ -1,1 +1,1 @@
-export * from './MessagePickupSessionService'
+export * from './DidCommMessagePickupSessionService'

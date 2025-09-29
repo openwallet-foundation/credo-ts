@@ -1,6 +1,6 @@
 import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 
-import type { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
+import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommConnection = sqliteTable(
@@ -8,8 +8,8 @@ export const didcommConnection = sqliteTable(
   {
     ...getSqliteBaseRecordTable(),
 
-    state: text('state').$type<DidExchangeState>().notNull(),
-    role: text('role').$type<DidExchangeRole>().notNull(),
+    state: text('state').$type<DidCommDidExchangeState>().notNull(),
+    role: text('role').$type<DidCommDidExchangeRole>().notNull(),
 
     did: text('did'),
     theirDid: text('their_did'),
@@ -25,7 +25,7 @@ export const didcommConnection = sqliteTable(
     outOfBandId: text('out_of_band_id'),
 
     errorMessage: text('error_message'),
-    protocol: text('protocol').$type<HandshakeProtocol>(),
+    protocol: text('protocol').$type<DidCommHandshakeProtocol>(),
 
     // Using JSON for array storage
     connectionTypes: text('connection_types', { mode: 'json' }).$type<string[]>(),

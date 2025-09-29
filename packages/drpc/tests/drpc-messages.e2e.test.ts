@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 
 import { Agent } from '../../core/src/agent/Agent'
@@ -50,7 +50,7 @@ const handleMessageOrError = async (
 const sendAndRecieve = async (
   sender: Agent,
   receiver: Agent,
-  connectionRecord: ConnectionRecord,
+  connectionRecord: DidCommConnectionRecord,
   message: DrpcRequestObject,
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
@@ -66,7 +66,7 @@ const sendAndRecieve = async (
 const sendAndRecieveBatch = async (
   sender: Agent,
   receiver: Agent,
-  connectionRecord: ConnectionRecord,
+  connectionRecord: DidCommConnectionRecord,
   message: DrpcRequestObject[],
   messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 ) => {
@@ -85,7 +85,7 @@ const sendAndRecieveBatch = async (
 describe('Drpc Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
   let messageHandlers: Map<string, (message: DrpcRequestObject) => Promise<DrpcResponseObject | Record<string, never>>>
 
   beforeEach(async () => {

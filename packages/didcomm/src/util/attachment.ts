@@ -1,5 +1,5 @@
 import type { BaseName, HashName } from '@credo-ts/core'
-import type { Attachment } from '../decorators/attachment/Attachment'
+import type { DidCommAttachment } from '../decorators/attachment/DidCommAttachment'
 
 import { CredoError, HashlinkEncoder, TypedArrayEncoder } from '@credo-ts/core'
 
@@ -12,7 +12,7 @@ import { CredoError, HashlinkEncoder, TypedArrayEncoder } from '@credo-ts/core'
  * @returns A hashlink based on the attachment data
  */
 export function encodeAttachment(
-  attachment: Attachment,
+  attachment: DidCommAttachment,
   hashAlgorithm: HashName = 'sha-256',
   baseName: BaseName = 'base58btc'
 ) {
@@ -34,6 +34,6 @@ export function encodeAttachment(
  * @param attachment the attachment that has to be validated
  * @returns a boolean whether the attachment is a linkedAttachment
  */
-export function isLinkedAttachment(attachment: Attachment) {
+export function isLinkedAttachment(attachment: DidCommAttachment) {
   return HashlinkEncoder.isValid(`hl:${attachment.id}`)
 }

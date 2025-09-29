@@ -1,13 +1,13 @@
 import { JsonTransformer } from '../../../../../core/src/utils'
-import { Attachment } from '../../../decorators/attachment/Attachment'
-import { ConnectionInvitationMessage } from '../../connections'
+import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
+import { DidCommConnectionInvitationMessage } from '../../connections'
 import { convertToNewInvitation, convertToOldInvitation } from '../converters'
 import { OutOfBandDidCommService } from '../domain'
-import { OutOfBandInvitation } from '../messages'
+import { DidCommOutOfBandInvitation } from '../messages'
 
 describe('convertToNewInvitation', () => {
   it('should convert a connection invitation with service to an out of band invitation', () => {
-    const connectionInvitation = new ConnectionInvitationMessage({
+    const connectionInvitation = new DidCommConnectionInvitationMessage({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',
@@ -15,7 +15,7 @@ describe('convertToNewInvitation', () => {
       serviceEndpoint: 'https://my-agent.com',
       routingKeys: ['6fioC1zcDPyPEL19pXRS2E4iJ46zH7xP6uSgAaPdwDrx'],
       appendedAttachments: [
-        new Attachment({
+        new DidCommAttachment({
           id: 'attachment-1',
           mimeType: 'text/plain',
           description: 'attachment description',
@@ -56,13 +56,13 @@ describe('convertToNewInvitation', () => {
   })
 
   it('should convert a connection invitation with public did to an out of band invitation', () => {
-    const connectionInvitation = new ConnectionInvitationMessage({
+    const connectionInvitation = new DidCommConnectionInvitationMessage({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',
       did: 'did:sov:a-did',
       appendedAttachments: [
-        new Attachment({
+        new DidCommAttachment({
           id: 'attachment-1',
           mimeType: 'text/plain',
           description: 'attachment description',
@@ -104,7 +104,7 @@ describe('convertToNewInvitation', () => {
         label: 'a-label',
         imageUrl: 'https://my-image.com',
       },
-      ConnectionInvitationMessage,
+      DidCommConnectionInvitationMessage,
       // Don't validate because we want this to be mal-formatted
       { validate: false }
     )
@@ -115,7 +115,7 @@ describe('convertToNewInvitation', () => {
 
 describe('convertToOldInvitation', () => {
   it('should convert an out of band invitation with inline service to a connection invitation', () => {
-    const oobInvitation = new OutOfBandInvitation({
+    const oobInvitation = new DidCommOutOfBandInvitation({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',
@@ -142,7 +142,7 @@ describe('convertToOldInvitation', () => {
   })
 
   it('should convert an out of band invitation with did service to a connection invitation', () => {
-    const oobInvitation = new OutOfBandInvitation({
+    const oobInvitation = new DidCommOutOfBandInvitation({
       id: 'd88ff8fd-6c43-4683-969e-11a87a572cf2',
       imageUrl: 'https://my-image.com',
       label: 'a-label',

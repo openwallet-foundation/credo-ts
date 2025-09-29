@@ -6,28 +6,28 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { OutOfBandRecord } from '@credo-ts/didcomm'
+import { DidCommOutOfBandRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommOutOfBandAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommOutOfBand']>
 export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapter<
-  OutOfBandRecord,
+  DidCommOutOfBandRecord,
   typeof postgres.didcommOutOfBand,
   typeof postgres,
   typeof sqlite.didcommOutOfBand,
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommOutOfBand, sqlite: sqlite.didcommOutOfBand }, OutOfBandRecord)
+    super(database, { postgres: postgres.didcommOutOfBand, sqlite: sqlite.didcommOutOfBand }, DidCommOutOfBandRecord)
   }
 
   public tagKeyMapping = {
     invitationId: ['outOfBandInvitation', '@id'],
   } as const
 
-  public getValues(record: OutOfBandRecord): DrizzleAdapterValues<(typeof sqlite)['didcommOutOfBand']> {
+  public getValues(record: DidCommOutOfBandRecord): DrizzleAdapterValues<(typeof sqlite)['didcommOutOfBand']> {
     const {
       invitationRequestsThreadIds,
       recipientKeyFingerprints,
@@ -63,7 +63,7 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
     }
   }
 
-  public toRecord(values: DrizzleDidcommOutOfBandAdapterValues): OutOfBandRecord {
+  public toRecord(values: DrizzleDidcommOutOfBandAdapterValues): DidCommOutOfBandRecord {
     const {
       customTags,
       recipientKeyFingerprints,
@@ -73,7 +73,7 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
       ...remainingValues
     } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, OutOfBandRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommOutOfBandRecord)
     record.setTags({
       ...customTags,
       recipientKeyFingerprints: recipientKeyFingerprints ?? undefined,
