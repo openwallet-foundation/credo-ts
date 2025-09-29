@@ -82,7 +82,7 @@ describe('WebVhDidRegistrar Integration Tests', () => {
       expect(didResult.didState.did).toMatch(/%3A80:credo:01$/)
       expect(didResult.didState.didDocument?.id).toMatch(/%3A80:credo:01$/)
       expect(didResult.didState.didDocument?.controller).toMatch(/%3A80:credo:01$/)
-      
+
       const did2Result = await registrar.create(agentContext, { domain: 'id.test-suite.app:88', path: '/credo/02/' })
       expect(did2Result.didState.did).toMatch(/%3A88:credo:02$/)
       expect(did2Result.didState.didDocument?.id).toMatch(/%3A88:credo:02$/)
