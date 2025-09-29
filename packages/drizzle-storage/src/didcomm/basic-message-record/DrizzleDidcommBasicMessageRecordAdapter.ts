@@ -7,7 +7,7 @@ import {
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { BasicMessageRecord } from '@credo-ts/didcomm'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 

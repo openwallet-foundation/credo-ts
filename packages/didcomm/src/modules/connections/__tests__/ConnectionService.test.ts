@@ -1,4 +1,4 @@
-import type { AgentContext } from '@credo-ts/core/src/agent'
+import type { AgentContext } from '../../../../../core/src/agent'
 import type { Routing } from '../../../models'
 
 import { Subject } from 'rxjs'

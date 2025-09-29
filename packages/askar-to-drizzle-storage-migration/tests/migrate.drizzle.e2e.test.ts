@@ -9,27 +9,27 @@ import {
 import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '@credo-ts/askar'
-import { askar, askarPostgresStorageConfig } from '@credo-ts/askar/tests/helpers'
-import testLogger from '@credo-ts/core/tests/logger'
+import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
-import actionMenuDrizzleBundle from '@credo-ts/drizzle-storage/src/action-menu/bundle'
-import anoncredsDrizzleBundle from '@credo-ts/drizzle-storage/src/anoncreds/bundle'
-import coreDrizzleBundle from '@credo-ts/drizzle-storage/src/core/bundle'
-import didcommDrizzleBundle from '@credo-ts/drizzle-storage/src/didcomm/bundle'
-import tenantsDrizzleBundle from '@credo-ts/drizzle-storage/src/tenants/bundle'
+import actionMenuDrizzleBundle from '../../drizzle-storage/src/action-menu/bundle'
+import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
+import coreDrizzleBundle from '../../drizzle-storage/src/core/bundle'
+import didcommDrizzleBundle from '../../drizzle-storage/src/didcomm/bundle'
+import tenantsDrizzleBundle from '../../drizzle-storage/src/tenants/bundle'
 import {
   createDrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
-} from '@credo-ts/drizzle-storage/tests/testDatabase'
+} from '../../drizzle-storage/tests/testDatabase'
 import { AskarToDrizzleStorageMigrator } from '../src'
 
-import didKeyP256 from '@credo-ts/core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
-import { sprindFunkeTestVectorBase64Url } from '@credo-ts/core/src/modules/mdoc/__tests__/mdoc.fixtures'
-import { sdJwtVcWithSingleDisclosure } from '@credo-ts/core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
-import { Ed25519Signature2018Fixtures } from '@credo-ts/core/src/modules/vc/data-integrity/__tests__/fixtures'
-import { CredoEs256DidJwkJwtVc } from '@credo-ts/core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
-import { TenantAgent, TenantsModule } from '@credo-ts/tenants'
+import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
+import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
+import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
+import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
+import { TenantAgent, TenantsModule } from '../../tenants'
 
 async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
   await agent.genericRecords.save({

@@ -1,11 +1,11 @@
-import type { EventReplaySubject } from '@credo-ts/core/tests'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import type { AnonCredsHolderService } from '../../../../../../../anoncreds/src'
 import type { LegacyIndyProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyCredentialFormat'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 
-import { JsonTransformer } from '@credo-ts/core/src/utils'
-import { waitForCredentialRecord, waitForCredentialRecordSubject } from '@credo-ts/core/tests'
-import testLogger from '@credo-ts/core/tests/logger'
+import { JsonTransformer } from '../../../../../../../core/src/utils'
+import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
+import testLogger from '../../../../../../../core/tests/logger'
 import { AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
 import {
   issueLegacyAnonCredsCredential,

@@ -152,6 +152,9 @@ importers:
       '@credo-ts/tenants':
         specifier: workspace:*
         version: link:packages/tenants
+      '@credo-ts/webvh':
+        specifier: workspace:*
+        version: link:packages/webvh
       '@jest/types':
         specifier: ^29.6.3
         version: 29.6.3
