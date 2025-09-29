@@ -12,13 +12,13 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 import type { AnonCredsCredentialRequest } from '../../models'
@@ -49,8 +49,8 @@ import {
 } from '../../services'
 import { AnonCredsRegistryService } from '../../services/registry/AnonCredsRegistryService'
 import { getUnqualifiedCredentialDefinitionId, parseIndyCredentialDefinitionId } from '../../utils/indyIdentifiers'
-import { AnonCredsCredentialFormatService } from '../AnonCredsCredentialFormatService'
-import { AnonCredsProofFormatService } from '../AnonCredsProofFormatService'
+import { AnonCredsDidCommCredentialFormatService } from '../AnonCredsDidCommCredentialFormatService'
+import { AnonCredsDidCommProofFormatService } from '../AnonCredsDidCommProofFormatService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const anonCredsModuleConfig = new AnonCredsModuleConfig({
@@ -111,8 +111,8 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
-const anoncredsProofFormatService = new AnonCredsProofFormatService()
+const anoncredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 const kms = agentContext.resolve(Kms.KeyManagementApi)
 
 describe('Anoncreds format services', () => {
@@ -199,26 +199,26 @@ describe('Anoncreds format services', () => {
       })
     )
 
-    const holderCredentialRecord = new CredentialExchangeRecord({
+    const holderCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v2',
-      state: CredentialState.ProposalSent,
-      role: CredentialRole.Holder,
+      state: DidCommCredentialState.ProposalSent,
+      role: DidCommCredentialRole.Holder,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
-    const issuerCredentialRecord = new CredentialExchangeRecord({
+    const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
       protocolVersion: 'v2',
-      state: CredentialState.ProposalReceived,
-      role: CredentialRole.Issuer,
+      state: DidCommCredentialState.ProposalReceived,
+      role: DidCommCredentialRole.Issuer,
       threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
     })
 
     const credentialAttributes = [
-      new CredentialPreviewAttribute({
+      new DidCommCredentialPreviewAttribute({
         name: 'name',
         value: 'John',
       }),
-      new CredentialPreviewAttribute({
+      new DidCommCredentialPreviewAttribute({
         name: 'age',
         value: '25',
       }),
@@ -227,7 +227,7 @@ describe('Anoncreds format services', () => {
     // Holder creates proposal
     holderCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: proposalAttachment } = await anoncredsCredentialFormatService.createProposal(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       credentialFormats: {
         anoncreds: {
           attributes: credentialAttributes,
@@ -238,23 +238,23 @@ describe('Anoncreds format services', () => {
 
     // Issuer processes and accepts proposal
     await anoncredsCredentialFormatService.processProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: proposalAttachment,
     })
     // Set attributes on the credential record, this is normally done by the protocol service
     issuerCredentialRecord.credentialAttributes = credentialAttributes
     const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       proposalAttachment: proposalAttachment,
     })
 
     // Holder processes and accepts offer
     await anoncredsCredentialFormatService.processOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: offerAttachment,
     })
     const { attachment: requestAttachment } = await anoncredsCredentialFormatService.acceptOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
     })
 
@@ -263,11 +263,11 @@ describe('Anoncreds format services', () => {
 
     // Issuer processes and accepts request
     await anoncredsCredentialFormatService.processRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       attachment: requestAttachment,
     })
     const { attachment: credentialAttachment } = await anoncredsCredentialFormatService.acceptRequest(agentContext, {
-      credentialRecord: issuerCredentialRecord,
+      credentialExchangeRecord: issuerCredentialRecord,
       requestAttachment,
       offerAttachment,
     })
@@ -275,7 +275,7 @@ describe('Anoncreds format services', () => {
     // Holder processes and accepts credential
     await anoncredsCredentialFormatService.processCredential(agentContext, {
       offerAttachment,
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       attachment: credentialAttachment,
       requestAttachment,
     })
@@ -324,16 +324,16 @@ describe('Anoncreds format services', () => {
       },
     })
 
-    const holderProofRecord = new ProofExchangeRecord({
+    const holderProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v2',
-      state: ProofState.ProposalSent,
-      role: ProofRole.Prover,
+      state: DidCommProofState.ProposalSent,
+      role: DidCommProofRole.Prover,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
-    const verifierProofRecord = new ProofExchangeRecord({
+    const verifierProofRecord = new DidCommProofExchangeRecord({
       protocolVersion: 'v2',
-      state: ProofState.ProposalReceived,
-      role: ProofRole.Verifier,
+      state: DidCommProofState.ProposalReceived,
+      role: DidCommProofRole.Verifier,
       threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
     })
 

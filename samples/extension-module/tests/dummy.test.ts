@@ -1,4 +1,4 @@
-import type { ConnectionRecord } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { Agent } from '@credo-ts/core'
@@ -40,7 +40,7 @@ const aliceAgentOptions = getAgentOptions(
 describe('Dummy extension module test', () => {
   let bobAgent: Agent<typeof bobAgentOptions.modules>
   let aliceAgent: Agent<typeof aliceAgentOptions.modules>
-  let aliceConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const bobMessages = new Subject<SubjectMessage>()

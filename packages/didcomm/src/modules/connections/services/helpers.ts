@@ -1,5 +1,5 @@
 import { AgentContext, DidDocumentKey, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
-import type { Routing } from '../../../models'
+import type { DidCommRouting } from '../../../models'
 import type { DidDoc, PublicKey } from '../models'
 
 import {
@@ -16,7 +16,7 @@ import {
   getEd25519VerificationKey2018,
 } from '@credo-ts/core'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
-import { OutOfBandInlineServiceKey } from '../../oob/repository/OutOfBandRecord'
+import { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
 import { EmbeddedAuthentication } from '../models'
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {
@@ -133,7 +133,7 @@ function convertPublicKeyToVerificationMethod(publicKey: PublicKey) {
   })
 }
 
-export function routingToServices(routing: Routing): ResolvedDidCommService[] {
+export function routingToServices(routing: DidCommRouting): ResolvedDidCommService[] {
   return routing.endpoints.map((endpoint, index) => ({
     id: `#inline-${index}`,
     serviceEndpoint: endpoint,
@@ -208,7 +208,7 @@ export function getResolvedDidcommServiceWithSigningKeyId(
   /**
    * Optional keys for the inline services
    */
-  inlineServiceKeys?: OutOfBandInlineServiceKey[]
+  inlineServiceKeys?: DidCommOutOfBandInlineServiceKey[]
 ) {
   const resolvedService = outOfBandDidcommService.resolvedDidCommService
 

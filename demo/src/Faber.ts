@@ -1,10 +1,10 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
-import type { ConnectionRecord, ConnectionStateChangedEvent } from '@credo-ts/didcomm'
+import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
 import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
 import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 
 import { TypedArrayEncoder, utils } from '@credo-ts/core'
-import { ConnectionEventTypes } from '@credo-ts/didcomm'
+import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
 
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
@@ -115,17 +115,20 @@ export class Faber extends BaseAgent {
     console.log('Waiting for Alice to finish connection...')
 
     const getConnectionRecord = (outOfBandId: string) =>
-      new Promise<ConnectionRecord>((resolve, reject) => {
+      new Promise<DidCommConnectionRecord>((resolve, reject) => {
         // Timeout of 20 seconds
         const timeoutId = setTimeout(() => reject(new Error(redText(Output.MissingConnectionRecord))), 20000)
 
         // Start listener
-        this.agent.events.on<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged, (e) => {
-          if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
+        this.agent.events.on<DidCommConnectionStateChangedEvent>(
+          DidCommConnectionEventTypes.DidCommConnectionStateChanged,
+          (e) => {
+            if (e.payload.connectionRecord.outOfBandId !== outOfBandId) return
 
-          clearTimeout(timeoutId)
-          resolve(e.payload.connectionRecord)
-        })
+            clearTimeout(timeoutId)
+            resolve(e.payload.connectionRecord)
+          }
+        )
 
         // Also retrieve the connection record by invitation if the event has already fired
         void this.agent.modules.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {

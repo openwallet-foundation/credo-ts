@@ -34,19 +34,19 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
-> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `OutOfBandModule`, `ConnectionsModule` and `MessagePickupModule`
+> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `DidCommOutOfBandModule`, `DidCommConnectionsModule` and `MessagePickupModule`
 
 ### Example of usage
 
 ```ts
 import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 
-import { agentDependencies, HttpInboundTransport } from '@credo-ts/node'
+import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
 import {
-  ConnectionsModule,
-  ProofsModule,
-  CredentialsModule,
-  HttpOutboundTransport,
+  DidCommConnectionsModule,
+  DidCommProofsModule,
+  DidCommCredentialsModule,
+  DidCommHttpOutboundTransport,
   getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 
@@ -57,13 +57,13 @@ const agent = new Agent({
   dependencies: agentDependencies,
   modules: {
     ...getDefaultDidcommModules(didcommConfig),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       /* Custom module settings */
     }),
-    credentials: new CredentialsModule({
+    credentials: new DidCommCredentialsModule({
       /* Custom module settings */
     }),
-    proofs: new ProofsModule({
+    proofs: new DidCommProofsModule({
       /* Custom module settings */
     }),
     /* */
@@ -72,8 +72,8 @@ const agent = new Agent({
 })
 
 // Register inbound and outbound transports for DIDComm
-agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
 
 await agent.initialize()
 

@@ -1,11 +1,11 @@
 import { JsonTransformer } from '@credo-ts/core'
 
 import {
-  AutoAcceptCredential,
-  CredentialExchangeRecord,
-  CredentialRepository,
-  CredentialRole,
-  CredentialState,
+  DidCommAutoAcceptCredential,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialExchangeRepository,
+  DidCommCredentialRole,
+  DidCommCredentialState,
 } from '@credo-ts/didcomm'
 import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommCredentialExchangeDrizzleRecord } from '../index'
@@ -28,9 +28,9 @@ describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s
         connectionId: '1eb24dc2-1d81-4249-baf9-783e03176fd3',
         threadId: '1c92f4ff-e859-4086-bb09-ad979c63d6e5',
         parentThreadId: '4b99cdca-847c-4083-8ea0-8880f2c410ff',
-        state: CredentialState.Abandoned,
-        role: CredentialRole.Holder,
-        autoAcceptCredential: AutoAcceptCredential.Always,
+        state: DidCommCredentialState.Abandoned,
+        role: DidCommCredentialRole.Holder,
+        autoAcceptCredential: DidCommAutoAcceptCredential.Always,
         revocationNotification: {
           revocationDate: new Date(),
           comment: 'hello',
@@ -60,9 +60,9 @@ describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s
           },
         ],
       },
-      CredentialExchangeRecord
+      DidCommCredentialExchangeRecord
     )
-    const credentialExchangeRepository = recordTest.agent.context.resolve(CredentialRepository)
+    const credentialExchangeRepository = recordTest.agent.context.resolve(DidCommCredentialExchangeRepository)
 
     await credentialExchangeRepository.save(recordTest.agent.context, credentialExchange)
 

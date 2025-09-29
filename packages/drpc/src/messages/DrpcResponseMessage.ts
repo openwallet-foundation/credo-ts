@@ -1,6 +1,6 @@
 import type { DrpcErrorCode } from '../models'
 
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
 
 import { IsValidDrpcResponse } from '../models'
@@ -22,7 +22,7 @@ export interface DrpcResponseObject {
   id: string | number | null
 }
 
-export class DrpcResponseMessage extends AgentMessage {
+export class DrpcResponseMessage extends DidCommMessage {
   public constructor(options: { response: DrpcResponse; threadId: string }) {
     super()
     if (options) {

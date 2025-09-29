@@ -1,12 +1,12 @@
-import type { CredentialPreviewAttribute } from '../models'
+import type { DidCommCredentialPreviewAttribute } from '../models'
 
 export function arePreviewAttributesEqual(
-  firstAttributes: CredentialPreviewAttribute[],
-  secondAttributes: CredentialPreviewAttribute[]
+  firstAttributes: DidCommCredentialPreviewAttribute[],
+  secondAttributes: DidCommCredentialPreviewAttribute[]
 ) {
   if (firstAttributes.length !== secondAttributes.length) return false
 
-  const secondAttributeMap = secondAttributes.reduce<Record<string, CredentialPreviewAttribute>>(
+  const secondAttributeMap = secondAttributes.reduce<Record<string, DidCommCredentialPreviewAttribute>>(
     (attributeMap, attribute) => {
       attributeMap[attribute.name] = attribute
       return attributeMap

@@ -1,30 +1,44 @@
-import { ConnectionState, rfc0160StateFromDidExchangeState } from '../ConnectionState'
-import { DidExchangeState } from '../DidExchangeState'
+import { DidCommConnectionState, rfc0160StateFromDidExchangeState } from '../DidCommConnectionState'
+import { DidCommDidExchangeState } from '../DidCommDidExchangeState'
 
 describe('ConnectionState', () => {
   test('state matches Connection 1.0 (RFC 0160) state value', () => {
-    expect(ConnectionState.Null).toBe('null')
-    expect(ConnectionState.Invited).toBe('invited')
-    expect(ConnectionState.Requested).toBe('requested')
-    expect(ConnectionState.Responded).toBe('responded')
-    expect(ConnectionState.Complete).toBe('complete')
+    expect(DidCommConnectionState.Null).toBe('null')
+    expect(DidCommConnectionState.Invited).toBe('invited')
+    expect(DidCommConnectionState.Requested).toBe('requested')
+    expect(DidCommConnectionState.Responded).toBe('responded')
+    expect(DidCommConnectionState.Complete).toBe('complete')
   })
 
   describe('rfc0160StateFromDidExchangeState', () => {
     it('should return the connection state for all did exchanges states', () => {
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.Abandoned)).toEqual(ConnectionState.Null)
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.Start)).toEqual(ConnectionState.Null)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Abandoned)).toEqual(DidCommConnectionState.Null)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Start)).toEqual(DidCommConnectionState.Null)
 
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.InvitationReceived)).toEqual(ConnectionState.Invited)
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.InvitationSent)).toEqual(ConnectionState.Invited)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationReceived)).toEqual(
+        DidCommConnectionState.Invited
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.InvitationSent)).toEqual(
+        DidCommConnectionState.Invited
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.RequestReceived)).toEqual(ConnectionState.Requested)
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.RequestSent)).toEqual(ConnectionState.Requested)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestReceived)).toEqual(
+        DidCommConnectionState.Requested
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.RequestSent)).toEqual(
+        DidCommConnectionState.Requested
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.ResponseReceived)).toEqual(ConnectionState.Responded)
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.ResponseReceived)).toEqual(ConnectionState.Responded)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(
+        DidCommConnectionState.Responded
+      )
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.ResponseReceived)).toEqual(
+        DidCommConnectionState.Responded
+      )
 
-      expect(rfc0160StateFromDidExchangeState(DidExchangeState.Completed)).toEqual(ConnectionState.Complete)
+      expect(rfc0160StateFromDidExchangeState(DidCommDidExchangeState.Completed)).toEqual(
+        DidCommConnectionState.Complete
+      )
     })
   })
 })
