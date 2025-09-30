@@ -8,10 +8,10 @@ import {
   TypedArrayEncoder,
   getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
-import { MultibaseEncoding, multibaseDecode, multibaseEncode } from 'didwebvh-ts'
+import { MultibaseEncoding, multibaseEncode } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
-import { Proof, ProofOptions, unsecuredDocument } from './types'
+import type { Proof, ProofOptions, UnsecuredDocument } from './types'
 
 export class EddsaJcs2022Cryptosuite {
   didApi: DidsApi
@@ -36,18 +36,6 @@ export class EddsaJcs2022Cryptosuite {
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
     return publicJwk
-  }
-
-  public async _publicKeyFromId(verificationMethodId: string) {
-    const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
-    const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
-    if (!verificationMethod.publicKeyMultibase) {
-      const err = `Public key not found for ${verificationMethodId}`
-      this._logError(err)
-      throw new CredoError(err)
-    }
-    const decoded = multibaseDecode(verificationMethod.publicKeyMultibase).bytes
-    return decoded
   }
 
   public transformation(unsecuredDocument: object, options: ProofOptions) {
@@ -122,12 +110,7 @@ export class EddsaJcs2022Cryptosuite {
   }
   public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
-    const decoded = await this._publicKeyFromId(options.verificationMethod)
-    const publicJwk = Kms.PublicJwk.fromPublicKey({
-      kty: 'OKP',
-      crv: 'Ed25519',
-      publicKey: Buffer.from(decoded.slice(2).slice(0, 32)),
-    })
+    const publicJwk = await this._publicJwkFromId(options.verificationMethod)
     const proofBytes = await this.keyApi.sign({
       keyId: publicJwk.keyId,
       algorithm: 'EdDSA',
@@ -136,7 +119,7 @@ export class EddsaJcs2022Cryptosuite {
     return proofBytes.signature
   }
 
-  async createProof(unsecuredDocument: unsecuredDocument, options: ProofOptions) {
+  async createProof(unsecuredDocument: UnsecuredDocument, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
     const proof: Proof = {
       ...options,

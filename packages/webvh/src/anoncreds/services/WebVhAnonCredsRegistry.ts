@@ -30,7 +30,7 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
-import { EddsaJcs2022Cryptosuite, unsecuredDocument } from '../../cryptosuites'
+import { EddsaJcs2022Cryptosuite, UnsecuredDocument } from '../../cryptosuites'
 import { WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
@@ -609,7 +609,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
 
   public async createProof(
     agentContext: AgentContext,
-    unsecuredDocument: unsecuredDocument,
+    unsecuredDocument: UnsecuredDocument,
     verificationMethod: string
   ) {
     const cryptosuite = new EddsaJcs2022Cryptosuite(agentContext)
