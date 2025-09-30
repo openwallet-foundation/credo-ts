@@ -21,7 +21,7 @@ export class DrizzleAnonCredsKeyCorrectnessProofRecordAdapter extends BaseDrizzl
     super(
       database,
       { postgres: postgres.anonCredsKeyCorrectnessProof, sqlite: sqlite.anonCredsKeyCorrectnessProof },
-      'AnonCredsKeyCorrectnessProofRecord'
+      AnonCredsKeyCorrectnessProofRecord
     )
   }
 

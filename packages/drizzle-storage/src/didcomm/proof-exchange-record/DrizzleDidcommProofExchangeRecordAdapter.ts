@@ -20,7 +20,11 @@ export class DrizzleDidcommProofExchangeRecordAdapter extends BaseDrizzleRecordA
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommProofExchange, sqlite: sqlite.didcommProofExchange }, 'ProofRecord')
+    super(
+      database,
+      { postgres: postgres.didcommProofExchange, sqlite: sqlite.didcommProofExchange },
+      DidCommProofExchangeRecord
+    )
   }
 
   public getValues(record: DidCommProofExchangeRecord): DrizzleAdapterValues<(typeof sqlite)['didcommProofExchange']> {

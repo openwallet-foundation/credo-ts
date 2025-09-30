@@ -25,11 +25,11 @@ catalogs:
       specifier: ^0.2.2
       version: 0.2.2
     '@openwallet-foundation/askar-nodejs':
-      specifier: ^0.4.0
-      version: 0.4.0
+      specifier: ^0.4.1
+      version: 0.4.1
     '@openwallet-foundation/askar-shared':
-      specifier: ^0.4.0
-      version: 0.4.0
+      specifier: ^0.4.1
+      version: 0.4.1
     '@sphereon/pex-models':
       specifier: ^2.3.2
       version: 2.3.2
@@ -110,6 +110,9 @@ importers:
       '@credo-ts/askar':
         specifier: workspace:*
         version: link:packages/askar
+      '@credo-ts/askar-to-drizzle-storage-migration':
+        specifier: workspace:*
+        version: link:packages/askar-to-drizzle-storage-migration
       '@credo-ts/cheqd':
         specifier: workspace:*
         version: link:packages/cheqd
@@ -149,12 +152,15 @@ importers:
       '@credo-ts/tenants':
         specifier: workspace:*
         version: link:packages/tenants
+      '@credo-ts/webvh':
+        specifier: workspace:*
+        version: link:packages/webvh
       '@jest/types':
         specifier: ^29.6.3
         version: 29.6.3
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -226,7 +232,7 @@ importers:
         version: 0.2.2
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       inquirer:
         specifier: ^8.2.5
         version: 8.2.6
@@ -281,7 +287,7 @@ importers:
         version: 5.1.1(koa@2.16.0)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       express:
         specifier: 'catalog:'
         version: 4.21.2
@@ -426,10 +432,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -439,6 +445,28 @@ importers:
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
+      typescript:
+        specifier: 'catalog:'
+        version: 5.8.3
+
+  packages/askar-to-drizzle-storage-migration:
+    dependencies:
+      '@credo-ts/askar':
+        specifier: workspace:*
+        version: link:../askar
+      '@credo-ts/core':
+        specifier: workspace:*
+        version: link:../core
+      '@credo-ts/drizzle-storage':
+        specifier: workspace:*
+        version: link:../drizzle-storage
+      '@openwallet-foundation/askar-shared':
+        specifier: 'catalog:'
+        version: 0.4.1
+    devDependencies:
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -741,8 +769,8 @@ importers:
         specifier: ^17.0.33
         version: 17.0.33
       drizzle-orm:
-        specifier: ^0.44.3
-        version: 0.44.3(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3)
+        specifier: ^0.44.5
+        version: 0.44.5(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3)
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -801,10 +829,10 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -1085,7 +1113,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.0
+        version: 0.4.1
       class-validator:
         specifier: 'catalog:'
         version: 0.14.1
@@ -3025,12 +3053,12 @@ packages:
   '@openid4vc/utils@0.3.0-alpha-20250922085649':
     resolution: {integrity: sha512-WU6Y1Fz3U6glxYtB8H7qsRPcNJVkCsJPUUpsKHwvSK1jUEu2YPijEvQLNE/33sHr1fs3ZvpAZ18DkO4NXD6IPQ==}
 
-  '@openwallet-foundation/askar-nodejs@0.4.0':
-    resolution: {integrity: sha512-6cez6EjiNTZ7xluCp493hF/uuDm7m0wlALHNHy6s5eTEG9ha2WR2fHIGRP0zoDPEE/K2k1ivpfS7gdEDFNSjPw==}
+  '@openwallet-foundation/askar-nodejs@0.4.1':
+    resolution: {integrity: sha512-2tAGBl+Yg59w0XDwD/pdBOiN5CGR73+MImFYcP0TSq167i3D/hv5RnGwp5tgjn9h2UepNJVsmYGrdQjrNUs0kA==}
     engines: {node: '>= 18'}
 
-  '@openwallet-foundation/askar-shared@0.4.0':
-    resolution: {integrity: sha512-25gKI+zak8CjDaGNSTNtDM5P1eUtf3jEOaN6koUMIO8MmF59amgA5602wnn40ylnKQnJnbjUbkXyHaRpPu/K/A==}
+  '@openwallet-foundation/askar-shared@0.4.1':
+    resolution: {integrity: sha512-r9xF68R+xYkalG0+6L+fcywo/87l29RuU1AtCSLFj3w0nKlzmxaK0HbJ4zvJjfVqvd+qglvn3HTFdUuKC/Pwrg==}
 
   '@paralleldrive/cuid2@2.2.2':
     resolution: {integrity: sha512-ZOBkgDwEdoYVlSeRbYYXs0S9MejQofiVYoTbKzy/6GQa39/q5tQU2IX46+shYnUkpEl3wc+J6wRlar7r2EK2xA==}
@@ -4727,8 +4755,8 @@ packages:
     resolution: {integrity: sha512-tCPWVZWZqWVx2XUsVpJRnH9Mx0ClVOf5YUHerZ5so1OKSlqww4zy1R5ksEdGRcO3tM3zj0PYN6V48TbQCL1RfA==}
     hasBin: true
 
-  drizzle-orm@0.44.3:
-    resolution: {integrity: sha512-8nIiYQxOpgUicEL04YFojJmvC4DNO4KoyXsEIqN44+g6gNBr6hmVpWk3uyAt4CaTiRGDwoU+alfqNNeonLAFOQ==}
+  drizzle-orm@0.44.5:
+    resolution: {integrity: sha512-jBe37K7d8ZSKptdKfakQFdeljtu3P2Cbo7tJoJSVZADzIKOBo9IAJPOmMsH2bZl90bZgh8FQlD8BjxXA/zuBkQ==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -11341,17 +11369,17 @@ snapshots:
       buffer: 6.0.3
       zod: 3.25.67
 
-  '@openwallet-foundation/askar-nodejs@0.4.0':
+  '@openwallet-foundation/askar-nodejs@0.4.1':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.4.0
+      '@openwallet-foundation/askar-shared': 0.4.1
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  '@openwallet-foundation/askar-shared@0.4.0':
+  '@openwallet-foundation/askar-shared@0.4.1':
     dependencies:
       buffer: 6.0.3
       tar: 7.4.3
@@ -13507,7 +13535,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.3(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3):
+  drizzle-orm@0.44.5(@electric-sql/pglite@0.3.3)(@libsql/client@0.15.9)(@types/pg@8.15.4)(pg@8.16.3):
     optionalDependencies:
       '@electric-sql/pglite': 0.3.3
       '@libsql/client': 0.15.9

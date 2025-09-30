@@ -23,7 +23,7 @@ export class DrizzleDidcommMediatorRoutingRecordAdapter extends BaseDrizzleRecor
     super(
       database,
       { postgres: postgres.didcommMediatorRouting, sqlite: sqlite.didcommMediatorRouting },
-      'MediatorRoutingRecord'
+      DidCommMediatorRoutingRecord
     )
   }
 

@@ -16,7 +16,7 @@ export class DrizzleDidcommDrpcRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommDrpc, sqlite: sqlite.didcommDrpc }, 'DrpcRecord')
+    super(database, { postgres: postgres.didcommDrpc, sqlite: sqlite.didcommDrpc }, DrpcRecord)
   }
 
   public getValues(record: DrpcRecord) {
