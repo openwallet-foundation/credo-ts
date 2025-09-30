@@ -9,9 +9,9 @@ import {
 import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '@credo-ts/askar'
+import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
 import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
 import actionMenuDrizzleBundle from '../../drizzle-storage/src/action-menu/bundle'
 import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
 import coreDrizzleBundle from '../../drizzle-storage/src/core/bundle'
