@@ -1,8 +1,17 @@
-import type { ProofOptions } from './types'
+import type { Proof, ProofOptions, UnsecuredDocument } from './types'
 import type { WebVhResource } from '../anoncreds/utils/transform'
 
-import { type AgentContext, CredoError, Key } from '@credo-ts/core'
-import { DidsApi, Hasher, MultiBaseEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  type AgentContext,
+  Buffer,
+  CredoError,
+  DidsApi,
+  Hasher,
+  Key,
+  MultiBaseEncoder,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
+import { multibaseEncode, MultibaseEncoding } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
 
 import { WebvhDidCrypto } from '../dids'
@@ -20,11 +29,11 @@ export class EddsaJcs2022Cryptosuite {
     this.agentContext.config.logger.error(error)
   }
 
-  public async _publicKeyFromId(verificationMethodId: string): Promise<Uint8Array | null> {
+  public async _publicKeyFromId(verificationMethodId: string): Promise<Key | null> {
     const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     if ('publicKeyMultibase' in verificationMethod && verificationMethod.publicKeyMultibase) {
-      return Key.fromFingerprint(verificationMethod.publicKeyMultibase).publicKey
+      return Key.fromFingerprint(verificationMethod.publicKeyMultibase)
     }
     return null
   }
@@ -74,10 +83,10 @@ export class EddsaJcs2022Cryptosuite {
 
   public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
-    const publicKey = await this._publicKeyFromId(options.verificationMethod)
-    if (!publicKey) return false
+    const key = await this._publicKeyFromId(options.verificationMethod)
+    if (!key) return false
     const crypto = new WebvhDidCrypto(this.agentContext)
-    const verified = await crypto.verify(proofBytes, hashData, publicKey)
+    const verified = await crypto.verify(proofBytes, hashData, key.publicKey)
     return verified
   }
 
@@ -97,5 +106,34 @@ export class EddsaJcs2022Cryptosuite {
       verifiedDocument: unsecuredDocument,
     }
     return verificationResult
+  }
+
+  public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
+    const key = await this._publicKeyFromId(options.verificationMethod)
+    if (!key) {
+      const err = `Could not resolve public key for verificationMethod "${options.verificationMethod}`
+      this._logError(err)
+      throw new CredoError(err)
+    }
+    const proofBytes = await this.agentContext.wallet.sign({
+      key,
+      data: Buffer.from(hashData),
+    })
+    return proofBytes
+  }
+
+  public async createProof(unsecuredDocument: UnsecuredDocument, options: ProofOptions) {
+    // https://www.w3.org/TR/vc-di-eddsa/#create-proof-eddsa-jcs-2022
+    const proof: Proof = {
+      ...options,
+      proofValue: '',
+    }
+    const proofConfig = this.proofConfiguration(options)
+    const transformedData = this.transformation(unsecuredDocument, options)
+    const hashData = this.hashing(transformedData, proofConfig)
+    const proofBytes = await this.proofSerialization(hashData, options)
+    proof.proofValue = multibaseEncode(proofBytes, MultibaseEncoding.BASE58_BTC)
+    return proof
   }
 }
