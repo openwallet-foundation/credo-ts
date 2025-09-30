@@ -16,7 +16,7 @@ export class DrizzleDidcommActionMenuRecordAdapter extends BaseDrizzleRecordAdap
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommActionMenu, sqlite: sqlite.didcommActionMenu }, 'ActionMenuRecord')
+    super(database, { postgres: postgres.didcommActionMenu, sqlite: sqlite.didcommActionMenu }, ActionMenuRecord)
   }
 
   public getValues(record: ActionMenuRecord) {

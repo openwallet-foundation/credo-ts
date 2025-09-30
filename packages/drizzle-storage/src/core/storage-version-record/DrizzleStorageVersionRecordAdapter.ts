@@ -15,7 +15,7 @@ export class DrizzleStorageVersionRecordAdapter extends BaseDrizzleRecordAdapter
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.storageVersion, sqlite: sqlite.storageVersion }, 'StorageVersionRecord')
+    super(database, { postgres: postgres.storageVersion, sqlite: sqlite.storageVersion }, StorageVersionRecord)
   }
 
   public getValues(record: StorageVersionRecord) {

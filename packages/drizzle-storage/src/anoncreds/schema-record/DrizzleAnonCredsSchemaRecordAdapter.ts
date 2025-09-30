@@ -16,7 +16,7 @@ export class DrizzleAnonCredsSchemaRecordAdapter extends BaseDrizzleRecordAdapte
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.anonCredsSchema, sqlite: sqlite.anonCredsSchema }, 'AnonCredsSchemaRecord')
+    super(database, { postgres: postgres.anonCredsSchema, sqlite: sqlite.anonCredsSchema }, AnonCredsSchemaRecord)
   }
 
   public getValues(record: AnonCredsSchemaRecord) {

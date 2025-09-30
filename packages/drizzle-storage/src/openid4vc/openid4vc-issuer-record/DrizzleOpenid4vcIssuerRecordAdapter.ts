@@ -19,7 +19,7 @@ export class DrizzleOpenid4vcIssuerRecordAdapter extends BaseDrizzleRecordAdapte
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.openid4vcIssuer, sqlite: sqlite.openid4vcIssuer }, 'OpenId4VcIssuerRecord')
+    super(database, { postgres: postgres.openid4vcIssuer, sqlite: sqlite.openid4vcIssuer }, OpenId4VcIssuerRecord)
   }
 
   public getValues(record: OpenId4VcIssuerRecord): DrizzleAdapterValues<(typeof sqlite)['openid4vcIssuer']> {

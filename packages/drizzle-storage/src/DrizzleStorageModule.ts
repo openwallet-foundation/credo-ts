@@ -50,7 +50,7 @@ export class DrizzleStorageModule implements Module {
 
   public async onProvisionContext(agentContext: AgentContext): Promise<void> {
     // This method is never called for root agent context
-    // but to be sure if that changesin the future
+    // but to be sure if that changes in the future
     if (agentContext.isRootAgentContext) return
 
     await this.createNewContextInDatabase(agentContext)

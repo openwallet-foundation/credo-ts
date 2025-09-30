@@ -20,7 +20,7 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommOutOfBand, sqlite: sqlite.didcommOutOfBand }, 'OutOfBandRecord')
+    super(database, { postgres: postgres.didcommOutOfBand, sqlite: sqlite.didcommOutOfBand }, DidCommOutOfBandRecord)
   }
 
   public tagKeyMapping = {

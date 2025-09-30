@@ -18,7 +18,7 @@ export class DrizzleDidcommQuestionAnswerRecordAdapter extends BaseDrizzleRecord
     super(
       database,
       { postgres: postgres.didcommQuestionAnswer, sqlite: sqlite.didcommQuestionAnswer },
-      'QuestionAnswerRecord'
+      QuestionAnswerRecord
     )
   }
 

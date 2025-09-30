@@ -15,7 +15,7 @@ export class DrizzleW3cCredentialRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.w3cCredential, sqlite: sqlite.w3cCredential }, 'W3cCredentialRecord')
+    super(database, { postgres: postgres.w3cCredential, sqlite: sqlite.w3cCredential }, W3cCredentialRecord)
   }
 
   public getValues(record: W3cCredentialRecord) {
