@@ -4,7 +4,6 @@ import {
   Signer,
   SigningInput,
   SigningOutput,
-  multibaseDecode,
   multibaseEncode,
   prepareDataForSigning,
 } from 'didwebvh-ts'
@@ -44,15 +43,11 @@ export class WebvhDidCryptoSigner implements Signer {
    */
   async sign(input: SigningInput): Promise<SigningOutput> {
     try {
-      const decoded = multibaseDecode(this.publicKeyMultibase).bytes
-      const data = await prepareDataForSigning(input.document, input.proof)
       const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-      const publicJwk = Kms.PublicJwk.fromPublicKey({
-        kty: 'OKP',
-        crv: 'Ed25519',
-        publicKey: Buffer.from(decoded.slice(2).slice(0, 32)),
-      })
+      const publicJwk = Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase)
+      const data = await prepareDataForSigning(input.document, input.proof)
+
       const { signature } = await kms.sign({
         keyId: publicJwk.keyId,
         algorithm: 'EdDSA',
@@ -62,7 +57,7 @@ export class WebvhDidCryptoSigner implements Signer {
         proofValue: multibaseEncode(signature, MultibaseEncoding.BASE58_BTC),
       }
     } catch (error) {
-      this.agentContext.config.logger.error('KMS signing error:', error)
+      this.agentContext.config.logger.error('Ed25519 signing error:', error)
       throw error
     }
   }
