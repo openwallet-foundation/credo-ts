@@ -26,11 +26,14 @@
   "dependencies": {
     "@credo-ts/askar": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
-    "@credo-ts/core": "workspace:*",
+    "@credo-ts/core": "workspace:*"
+  },
+  "peerDependencies": {
     "@openwallet-foundation/askar-shared": "catalog:"
   },
   "devDependencies": {
     "rimraf": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "@openwallet-foundation/askar-shared": "catalog:"
   }
 }
