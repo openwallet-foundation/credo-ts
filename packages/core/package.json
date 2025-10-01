@@ -64,7 +64,7 @@
     "tsyringe": "catalog:",
     "uuid": "^11.1.0",
     "varint": "^6.0.0",
-    "web-did-resolver": "^2.0.21",
+    "web-did-resolver": "^2.0.30",
     "webcrypto-core": "^1.8.1",
     "zod": "catalog:"
   },
