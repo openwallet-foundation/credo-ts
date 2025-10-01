@@ -9,10 +9,10 @@ import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommS
 import { convertToNewInvitation } from '../modules/oob/helpers'
 import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
 
-import { fetchWithTimeout } from './fetch'
 import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
+import { fetchWithTimeout } from './fetch'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {

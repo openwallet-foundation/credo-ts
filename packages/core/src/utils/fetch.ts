@@ -18,7 +18,7 @@ export async function fetchWithTimeout(
   try {
     return await fetch(url, {
       ...init,
-      signal: abortController.signal,
+      signal: abortController.signal as NonNullable<RequestInit['signal']>,
     })
   } finally {
     clearTimeout(timeout)
