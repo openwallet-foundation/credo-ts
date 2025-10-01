@@ -1065,6 +1065,9 @@ importers:
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
+      rxjs:
+        specifier: 'catalog:'
+        version: 7.8.2
       typescript:
         specifier: ~5.5.2
         version: 5.5.4
