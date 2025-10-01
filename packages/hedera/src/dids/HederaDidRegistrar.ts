@@ -16,7 +16,7 @@ import {
   HederaDidDeactivateOptions,
   HederaDidUpdateOptions,
   HederaLedgerService,
-} from '../ledger/HederaLedgerService'
+} from '../ledger'
 
 export class HederaDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['hedera']

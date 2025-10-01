@@ -8,7 +8,7 @@ import {
   LogLevel,
   VerificationMethod,
 } from '@credo-ts/core'
-import { HederaDidCreateOptions, HederaDidUpdateOptions } from '../../src/ledger/HederaLedgerService'
+import { HederaDidCreateOptions, HederaDidUpdateOptions } from '../../src'
 import { getMultibasePublicKey } from '../../src/ledger/utils'
 import { getHederaAgent } from './utils'
 

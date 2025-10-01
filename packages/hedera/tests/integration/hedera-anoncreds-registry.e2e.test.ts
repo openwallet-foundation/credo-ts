@@ -1,5 +1,5 @@
 import { Agent, ConsoleLogger, InMemoryLruCache, LogLevel, utils } from '@credo-ts/core'
-import { HederaDidCreateOptions } from '../../src/ledger/HederaLedgerService'
+import { HederaDidCreateOptions } from '../../src'
 import { getHederaAgent } from './utils'
 
 describe('Hedera AnonCreds support', () => {
