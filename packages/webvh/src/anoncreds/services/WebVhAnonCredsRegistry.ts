@@ -19,18 +19,19 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import type { AgentContext, Proof } from '@credo-ts/core'
 
 import {
+  type AgentContext,
   CredoError,
   DidRepository,
   JsonTransformer,
   MultiBaseEncoder,
   MultiHashEncoder,
+  type Proof,
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
-import { EddsaJcs2022Cryptosuite, UnsecuredDocument } from '../../cryptosuites'
+import { EddsaJcs2022Cryptosuite, type UnsecuredDocument } from '../../cryptosuites'
 import { WebvhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
