@@ -100,6 +100,10 @@ export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
   }
 }
 
+export function drizzleSqliteDatabase(path: string): AnyDrizzleDatabase {
+  return require('drizzle-orm/libsql').drizzle(path)
+}
+
 export function inMemoryDrizzleSqliteDatabase(): AnyDrizzleDatabase {
   return require('drizzle-orm/libsql').drizzle(':memory:')
 }

@@ -24,7 +24,7 @@ export class DrizzleOpenId4VcVerificationSessionRecordAdapter extends BaseDrizzl
     super(
       database,
       { postgres: postgres.openId4VcVerificationSession, sqlite: sqlite.openId4VcVerificationSession },
-      'OpenId4VcVerificationSessionRecord'
+      OpenId4VcVerificationSessionRecord
     )
   }
 

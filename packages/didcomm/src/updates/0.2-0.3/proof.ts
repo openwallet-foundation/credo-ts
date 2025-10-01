@@ -1,11 +1,15 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { PlaintextMessage } from '../../types'
+import type { DidCommPlaintextMessage } from '../../types'
 
-import { type ProofExchangeRecord, ProofRepository, ProofState } from '../../modules/proofs'
+import {
+  type DidCommProofExchangeRecord,
+  DidCommProofExchangeRepository,
+  DidCommProofState,
+} from '../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
 
 /**
- * Migrates the {@link ProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage
+ * Migrates the {@link DidCommProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage
  * and applies the needed updates to the records. After a record has been transformed, it is updated
  * in storage and the next record will be transformed.
  *
@@ -15,7 +19,7 @@ import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } fr
  */
 export async function migrateProofExchangeRecordToV0_3<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating proof records to storage version 0.3')
-  const proofRepository = agent.dependencyManager.resolve(ProofRepository)
+  const proofRepository = agent.dependencyManager.resolve(DidCommProofExchangeRepository)
 
   agent.config.logger.debug('Fetching all proof records from storage')
   const allProofs = await proofRepository.getAll(agent.context)
@@ -39,11 +43,11 @@ export enum V02_03MigrationProofRole {
 }
 
 const proverProofStates = [
-  ProofState.Declined,
-  ProofState.ProposalSent,
-  ProofState.RequestReceived,
-  ProofState.PresentationSent,
-  ProofState.Done,
+  DidCommProofState.Declined,
+  DidCommProofState.ProposalSent,
+  DidCommProofState.RequestReceived,
+  DidCommProofState.PresentationSent,
+  DidCommProofState.Done,
 ]
 
 const didCommMessageRoleMapping = {
@@ -61,13 +65,13 @@ const didCommMessageRoleMapping = {
 
 const proofRecordMessageKeys = ['proposalMessage', 'requestMessage', 'presentationMessage'] as const
 
-export function getProofRole(proofRecord: ProofExchangeRecord) {
+export function getProofRole(proofRecord: DidCommProofExchangeRecord) {
   // Proofs will only have an isVerified value when a presentation is verified, meaning we're the verifier
   if (proofRecord.isVerified !== undefined) {
     return V02_03MigrationProofRole.Verifier
   }
   // If proofRecord.isVerified doesn't have any value, and we're also not in state done it means we're the prover.
-  if (proofRecord.state === ProofState.Done) {
+  if (proofRecord.state === DidCommProofState.Done) {
     return V02_03MigrationProofRole.Prover
   }
   // For these states we know for certain that we're the prover
@@ -99,7 +103,7 @@ export function getProofRole(proofRecord: ProofExchangeRecord) {
  */
 export async function migrateInternalProofExchangeRecordProperties<Agent extends BaseAgent>(
   agent: Agent,
-  proofRecord: ProofExchangeRecord
+  proofRecord: DidCommProofExchangeRecord
 ) {
   agent.config.logger.debug(`Migrating internal proof record ${proofRecord.id} properties to storage version 0.3`)
 
@@ -118,7 +122,10 @@ export async function migrateInternalProofExchangeRecordProperties<Agent extends
  * This migration scripts extracts all message (proposalMessage, requestMessage, presentationMessage) and moves
  * them into the DidCommMessageRepository.
  */
-export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent, proofRecord: ProofExchangeRecord) {
+export async function moveDidCommMessages<Agent extends BaseAgent>(
+  agent: Agent,
+  proofRecord: DidCommProofExchangeRecord
+) {
   agent.config.logger.debug(
     `Moving didcomm messages from proof record with id ${proofRecord.id} to DidCommMessageRecord`
   )
@@ -129,7 +136,7 @@ export async function moveDidCommMessages<Agent extends BaseAgent>(agent: Agent,
       `Starting move of ${messageKey} from proof record with id ${proofRecord.id} to DIDCommMessageRecord`
     )
     const proofRecordJson = proofRecord as unknown as JsonObject
-    const message = proofRecordJson[messageKey] as PlaintextMessage | undefined
+    const message = proofRecordJson[messageKey] as DidCommPlaintextMessage | undefined
 
     if (message) {
       const proofRole = getProofRole(proofRecord)

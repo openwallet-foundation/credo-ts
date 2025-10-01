@@ -1,21 +1,21 @@
-import type { ProblemReportErrorOptions } from '../../../errors'
+import type { DidCommProblemReportErrorOptions } from '../../../errors'
 import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
 
-import { ProblemReportError } from '../../../errors'
-import { ConnectionProblemReportMessage } from '../messages'
+import { DidCommProblemReportError } from '../../../errors'
+import { DidCommConnectionProblemReportMessage } from '../messages'
 
-interface ConnectionProblemReportErrorOptions extends ProblemReportErrorOptions {
+interface ConnectionProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: ConnectionProblemReportReason
 }
-export class ConnectionProblemReportError extends ProblemReportError {
-  public problemReport: ConnectionProblemReportMessage
+export class ConnectionProblemReportError extends DidCommProblemReportError {
+  public problemReport: DidCommConnectionProblemReportMessage
 
   public constructor(
     public message: string,
     { problemCode }: ConnectionProblemReportErrorOptions
   ) {
     super(message, { problemCode })
-    this.problemReport = new ConnectionProblemReportMessage({
+    this.problemReport = new DidCommConnectionProblemReportMessage({
       description: {
         en: message,
         code: problemCode,

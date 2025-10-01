@@ -1,11 +1,11 @@
-import { AgentMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
+import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 
 export interface DummyResponseMessageOptions {
   id?: string
   threadId: string
 }
 
-export class DummyResponseMessage extends AgentMessage {
+export class DummyResponseMessage extends DidCommMessage {
   public constructor(options: DummyResponseMessageOptions) {
     super()
 

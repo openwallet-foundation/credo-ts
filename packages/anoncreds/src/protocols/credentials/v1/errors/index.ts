@@ -1,1 +1,4 @@
-export { V1CredentialProblemReportError, V1CredentialProblemReportErrorOptions } from './V1CredentialProblemReportError'
+export {
+  DidCommCredentialV1ProblemReportError,
+  DidCommCredentialV1ProblemReportErrorOptions,
+} from './DidCommCredentialV1ProblemReportError'

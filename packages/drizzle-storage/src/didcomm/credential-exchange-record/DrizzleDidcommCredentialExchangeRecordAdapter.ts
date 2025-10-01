@@ -6,7 +6,7 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { CredentialExchangeRecord } from '@credo-ts/didcomm'
+import { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
@@ -15,7 +15,7 @@ type DrizzleDidcommCredentialExchangeAdapterValues = DrizzleAdapterRecordValues<
   (typeof sqlite)['didcommCredentialExchange']
 >
 export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRecordAdapter<
-  CredentialExchangeRecord,
+  DidCommCredentialExchangeRecord,
   typeof postgres.didcommCredentialExchange,
   typeof postgres,
   typeof sqlite.didcommCredentialExchange,
@@ -25,12 +25,12 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
     super(
       database,
       { postgres: postgres.didcommCredentialExchange, sqlite: sqlite.didcommCredentialExchange },
-      'CredentialRecord'
+      DidCommCredentialExchangeRecord
     )
   }
 
   public getValues(
-    record: CredentialExchangeRecord
+    record: DidCommCredentialExchangeRecord
   ): DrizzleAdapterValues<(typeof sqlite)['didcommCredentialExchange']> {
     const { connectionId, threadId, parentThreadId, state, role, credentialIds, ...customTags } = record.getTags()
 
@@ -53,10 +53,10 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
     }
   }
 
-  public toRecord(values: DrizzleDidcommCredentialExchangeAdapterValues): CredentialExchangeRecord {
+  public toRecord(values: DrizzleDidcommCredentialExchangeAdapterValues): DidCommCredentialExchangeRecord {
     const { customTags, credentialIds, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, CredentialExchangeRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommCredentialExchangeRecord)
     record.setTags(customTags as TagsBase)
 
     return record

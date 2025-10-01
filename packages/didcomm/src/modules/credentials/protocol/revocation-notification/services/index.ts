@@ -1,2 +1,2 @@
-export * from './RevocationNotificationService'
-export * from './RevocationNotificationServiceOptions'
+export * from './DidCommRevocationNotificationService'
+export * from './DidCommRevocationNotificationServiceOptions'

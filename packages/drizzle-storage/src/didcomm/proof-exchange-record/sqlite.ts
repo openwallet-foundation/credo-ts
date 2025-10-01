@@ -1,6 +1,6 @@
 import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { AutoAcceptProof, ProofRole, ProofState } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../sqlite'
 
@@ -14,9 +14,9 @@ export const didcommProofExchange = sqliteTable(
     protocolVersion: text('protocol_version').notNull(),
     parentThreadId: text('parent_thread_id'),
     isVerified: integer('is_verified', { mode: 'boolean' }),
-    state: text().$type<ProofState>().notNull(),
-    role: text().$type<ProofRole>().notNull(),
-    autoAcceptProof: text('auto_accept_proof').$type<AutoAcceptProof>(),
+    state: text().$type<DidCommProofState>().notNull(),
+    role: text().$type<DidCommProofRole>().notNull(),
+    autoAcceptProof: text('auto_accept_proof').$type<DidCommAutoAcceptProof>(),
     errorMessage: text('error_message'),
   },
   (table) => [

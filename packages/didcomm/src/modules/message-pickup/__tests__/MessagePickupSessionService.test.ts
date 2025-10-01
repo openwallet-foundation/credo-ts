@@ -1,4 +1,4 @@
-import type { TransportSessionRemovedEvent } from '../../../transport'
+import type { DidCommTransportSessionRemovedEvent } from '../../../transport'
 
 import { Subject } from 'rxjs'
 
@@ -6,14 +6,14 @@ import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { AgentContext } from '../../../../../core/src/agent/context/AgentContext'
 import { InjectionSymbols } from '../../../../../core/src/constants'
 import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers'
-import { AgentMessage } from '../../../AgentMessage'
-import { TransportSession } from '../../../TransportService'
-import { TransportEventTypes } from '../../../transport/TransportEventTypes'
-import { MessagePickupSessionRole } from '../MessagePickupSession'
-import { MessagePickupSessionService } from '../services/MessagePickupSessionService'
+import { DidCommMessage } from '../../../DidCommMessage'
+import { DidCommTransportSession } from '../../../DidCommTransportService'
+import { DidCommTransportEventTypes } from '../../../transport/DidCommTransportEventTypes'
+import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
+import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 describe('start listener remove live sessions', () => {
-  let instance: MessagePickupSessionService
+  let instance: DidCommMessagePickupSessionService
   let agentContext: AgentContext
   let stop$: Subject<boolean>
   let eventEmitter: EventEmitter
@@ -29,14 +29,14 @@ describe('start listener remove live sessions', () => {
         [InjectionSymbols.Stop$, stop$],
       ],
     })
-    instance = new MessagePickupSessionService()
+    instance = new DidCommMessagePickupSessionService()
     jest.spyOn(instance, 'removeLiveSession').mockImplementation()
   })
 
   test('removes live session on related transport event', () => {
     instance.start(agentContext)
 
-    const session: TransportSession = {
+    const session: DidCommTransportSession = {
       id: '1',
       type: 'WebSocket',
       keys: {
@@ -44,7 +44,7 @@ describe('start listener remove live sessions', () => {
         routingKeys: [],
         senderKey: null,
       },
-      inboundMessage: new AgentMessage(),
+      inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
       send: jest.fn(),
       close: jest.fn(),
@@ -54,12 +54,12 @@ describe('start listener remove live sessions', () => {
     instance.saveLiveSession(agentContext, {
       connectionId: 'conn-123',
       protocolVersion: 'v2',
-      role: MessagePickupSessionRole.MessageHolder,
+      role: DidCommMessagePickupSessionRole.MessageHolder,
       transportSessionId: '1',
     })
 
-    eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
-      type: TransportEventTypes.TransportSessionRemoved,
+    eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {
+      type: DidCommTransportEventTypes.DidCommTransportSessionRemoved,
       payload: {
         session: session,
       },
@@ -73,7 +73,7 @@ describe('start listener remove live sessions', () => {
   test('does not remove live session on non-related transport event', () => {
     instance.start(agentContext)
 
-    const session: TransportSession = {
+    const session: DidCommTransportSession = {
       id: '1',
       type: 'WebSocket',
       keys: {
@@ -81,14 +81,14 @@ describe('start listener remove live sessions', () => {
         routingKeys: [],
         senderKey: null,
       },
-      inboundMessage: new AgentMessage(),
+      inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
       send: jest.fn(),
       close: jest.fn(),
     }
 
-    eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
-      type: TransportEventTypes.TransportSessionRemoved,
+    eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {
+      type: DidCommTransportEventTypes.DidCommTransportSessionRemoved,
       payload: {
         session,
       },
@@ -102,7 +102,7 @@ describe('start listener remove live sessions', () => {
 
     stop$.next(true)
 
-    const session: TransportSession = {
+    const session: DidCommTransportSession = {
       id: '1',
       type: 'WebSocket',
       keys: {
@@ -110,14 +110,14 @@ describe('start listener remove live sessions', () => {
         routingKeys: [],
         senderKey: null,
       },
-      inboundMessage: new AgentMessage(),
+      inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
       send: jest.fn(),
       close: jest.fn(),
     }
 
-    eventEmitter.emit<TransportSessionRemovedEvent>(agentContext, {
-      type: TransportEventTypes.TransportSessionRemoved,
+    eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {
+      type: DidCommTransportEventTypes.DidCommTransportSessionRemoved,
       payload: {
         session: session,
       },

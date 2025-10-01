@@ -6,24 +6,28 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { ProofExchangeRecord } from '@credo-ts/didcomm'
+import { DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommProofExchangeAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommProofExchange']>
 export class DrizzleDidcommProofExchangeRecordAdapter extends BaseDrizzleRecordAdapter<
-  ProofExchangeRecord,
+  DidCommProofExchangeRecord,
   typeof postgres.didcommProofExchange,
   typeof postgres,
   typeof sqlite.didcommProofExchange,
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommProofExchange, sqlite: sqlite.didcommProofExchange }, 'ProofRecord')
+    super(
+      database,
+      { postgres: postgres.didcommProofExchange, sqlite: sqlite.didcommProofExchange },
+      DidCommProofExchangeRecord
+    )
   }
 
-  public getValues(record: ProofExchangeRecord): DrizzleAdapterValues<(typeof sqlite)['didcommProofExchange']> {
+  public getValues(record: DidCommProofExchangeRecord): DrizzleAdapterValues<(typeof sqlite)['didcommProofExchange']> {
     const { role, connectionId, parentThreadId, threadId, state, ...customTags } = record.getTags()
 
     return {
@@ -40,10 +44,10 @@ export class DrizzleDidcommProofExchangeRecordAdapter extends BaseDrizzleRecordA
     }
   }
 
-  public toRecord(values: DrizzleDidcommProofExchangeAdapterValues): ProofExchangeRecord {
+  public toRecord(values: DrizzleDidcommProofExchangeAdapterValues): DidCommProofExchangeRecord {
     const { customTags, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, ProofExchangeRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommProofExchangeRecord)
     record.setTags(customTags as TagsBase)
 
     return record

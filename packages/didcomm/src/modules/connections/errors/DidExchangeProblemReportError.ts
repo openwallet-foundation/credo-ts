@@ -1,21 +1,21 @@
-import type { ProblemReportErrorOptions } from '../../../errors'
+import type { DidCommProblemReportErrorOptions } from '../../../errors'
 import type { DidExchangeProblemReportReason } from './DidExchangeProblemReportReason'
 
-import { ProblemReportError } from '../../../errors'
-import { DidExchangeProblemReportMessage } from '../messages'
+import { DidCommProblemReportError } from '../../../errors'
+import { DidCommDidExchangeProblemReportMessage } from '../messages'
 
-interface DidExchangeProblemReportErrorOptions extends ProblemReportErrorOptions {
+interface DidExchangeProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: DidExchangeProblemReportReason
 }
-export class DidExchangeProblemReportError extends ProblemReportError {
-  public problemReport: DidExchangeProblemReportMessage
+export class DidExchangeProblemReportError extends DidCommProblemReportError {
+  public problemReport: DidCommDidExchangeProblemReportMessage
 
   public constructor(
     public message: string,
     { problemCode }: DidExchangeProblemReportErrorOptions
   ) {
     super(message, { problemCode })
-    this.problemReport = new DidExchangeProblemReportMessage({
+    this.problemReport = new DidCommDidExchangeProblemReportMessage({
       description: {
         en: message,
         code: problemCode,

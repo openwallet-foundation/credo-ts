@@ -1,1 +1,1 @@
-export * from './ProblemReportMessage'
+export * from './DidCommProblemReportMessage'

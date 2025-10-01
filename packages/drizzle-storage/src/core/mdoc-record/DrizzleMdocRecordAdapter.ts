@@ -15,7 +15,7 @@ export class DrizzleMdocRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.mdoc, sqlite: sqlite.mdoc }, 'MdocRecord')
+    super(database, { postgres: postgres.mdoc, sqlite: sqlite.mdoc }, MdocRecord)
   }
 
   public getValues(record: MdocRecord) {

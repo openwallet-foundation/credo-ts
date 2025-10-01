@@ -1,4 +1,4 @@
-import { EncryptedMessage } from '../../types'
+import { DidCommEncryptedMessage } from '../../types'
 
 export interface GetAvailableMessageCountOptions {
   connectionId: string
@@ -15,7 +15,7 @@ export interface TakeFromQueueOptions {
 export interface AddMessageOptions {
   connectionId: string
   recipientDids: string[]
-  payload: EncryptedMessage
+  payload: DidCommEncryptedMessage
   receivedAt?: Date
 }
 

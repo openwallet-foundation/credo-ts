@@ -25,7 +25,7 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
     super(
       database,
       { postgres: postgres.openId4VcIssuanceSession, sqlite: sqlite.openId4VcIssuanceSession },
-      'OpenId4VcIssuanceSessionRecord'
+      OpenId4VcIssuanceSessionRecord
     )
   }
 

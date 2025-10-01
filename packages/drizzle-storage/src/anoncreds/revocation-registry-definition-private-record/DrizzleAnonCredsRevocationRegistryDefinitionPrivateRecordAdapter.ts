@@ -24,7 +24,7 @@ export class DrizzleAnonCredsRevocationRegistryDefinitionPrivateRecordAdapter ex
         postgres: postgres.anonCredsRevocationRegistryDefinitionPrivate,
         sqlite: sqlite.anonCredsRevocationRegistryDefinitionPrivate,
       },
-      'AnonCredsRevocationRegistryDefinitionPrivateRecord'
+      AnonCredsRevocationRegistryDefinitionPrivateRecord
     )
   }
 

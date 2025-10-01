@@ -2,22 +2,22 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { DummyRecord } from './repository/DummyRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-import { ConnectionService, MessageSender, getOutboundMessageContext } from '@credo-ts/didcomm'
+import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { DummyState } from './repository'
 import { DummyService } from './services'
 
 @injectable()
 export class DummyApi {
-  private messageSender: MessageSender
+  private messageSender: DidCommMessageSender
   private dummyService: DummyService
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private agentContext: AgentContext
 
   public constructor(
-    messageSender: MessageSender,
+    messageSender: DidCommMessageSender,
     dummyService: DummyService,
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     agentContext: AgentContext
   ) {
     this.messageSender = messageSender
@@ -37,7 +37,7 @@ export class DummyApi {
     const { record, message } = await this.dummyService.createRequest(this.agentContext, connection)
 
     await this.messageSender.sendMessage(
-      await getOutboundMessageContext(this.agentContext, {
+      await getOutboundDidCommMessageContext(this.agentContext, {
         message,
         associatedRecord: record,
         connectionRecord: connection,
@@ -62,7 +62,7 @@ export class DummyApi {
     const message = await this.dummyService.createResponse(this.agentContext, record)
 
     await this.messageSender.sendMessage(
-      await getOutboundMessageContext(this.agentContext, {
+      await getOutboundDidCommMessageContext(this.agentContext, {
         message,
         associatedRecord: record,
         connectionRecord: connection,

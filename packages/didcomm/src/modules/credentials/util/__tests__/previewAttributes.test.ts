@@ -1,16 +1,16 @@
-import { CredentialPreviewAttribute } from '../../models'
+import { DidCommCredentialPreviewAttribute } from '../../models'
 import { arePreviewAttributesEqual } from '../previewAttributes'
 
 describe('previewAttributes', () => {
   describe('arePreviewAttributesEqual', () => {
     test('returns true if the attributes are equal', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'firstName',
           value: 'firstValue',
           mimeType: 'text/grass',
         }),
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -18,12 +18,12 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'firstName',
           value: 'firstValue',
           mimeType: 'text/grass',
         }),
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -35,7 +35,7 @@ describe('previewAttributes', () => {
 
     test('returns false if the attribute name and value are equal but the mime type is different', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -43,7 +43,7 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/notGrass',
@@ -55,7 +55,7 @@ describe('previewAttributes', () => {
 
     test('returns false if the attribute name and mime type are equal but the value is different', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -63,7 +63,7 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'thirdValue',
           mimeType: 'text/grass',
@@ -75,7 +75,7 @@ describe('previewAttributes', () => {
 
     test('returns false if the value and mime type are equal but the name is different', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -83,7 +83,7 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'thirdName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -95,7 +95,7 @@ describe('previewAttributes', () => {
 
     test('returns false if the length of the attributes does not match', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -103,12 +103,12 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'thirdName',
           value: 'secondValue',
           mimeType: 'text/grass',
         }),
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'fourthName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -120,12 +120,12 @@ describe('previewAttributes', () => {
 
     test('returns false if duplicate key names exist', () => {
       const firstAttributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
         }),
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
@@ -133,7 +133,7 @@ describe('previewAttributes', () => {
       ]
 
       const secondAttribute = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'secondName',
           value: 'secondValue',
           mimeType: 'text/grass',
