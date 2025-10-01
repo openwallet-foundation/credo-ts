@@ -12,6 +12,7 @@ import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 export enum RegistryOptions {
   indy = 'did:indy',
   cheqd = 'did:cheqd',
+  hedera = 'did:hedera',
 }
 
 export class Faber extends BaseAgent {
@@ -36,10 +37,15 @@ export class Faber extends BaseAgent {
     // and store the existing did in the wallet
     // indy did is based on private key (seed)
     const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
-    const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
-    const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
 
-    const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
+    const Dids: Record<string, string> = {
+      [RegistryOptions.indy]: `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`,
+      [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
+      [RegistryOptions.hedera]: 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6231121',
+    }
+
+    const did = Dids[registry]
+
     await this.agent.dids.import({
       did,
       overwrite: true,
@@ -111,7 +117,7 @@ export class Faber extends BaseAgent {
 
     try {
       await this.agent.connections.returnWhenIsConnected(connectionRecord.id)
-    } catch (e) {
+    } catch (_e) {
       console.log(redText(`\nTimeout of 20 seconds reached.. Returning to home screen.\n`))
       return
     }
