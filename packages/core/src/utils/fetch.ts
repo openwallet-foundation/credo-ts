@@ -1,7 +1,5 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
 
-import { AbortController } from 'abort-controller'
-
 export async function fetchWithTimeout(
   fetch: AgentDependencies['fetch'],
   url: string,
@@ -20,7 +18,7 @@ export async function fetchWithTimeout(
   try {
     return await fetch(url, {
       ...init,
-      signal: abortController.signal as NonNullable<RequestInit['signal']>,
+      signal: abortController.signal,
     })
   } finally {
     clearTimeout(timeout)

@@ -4,12 +4,11 @@ import type { AgentMessageReceivedEvent } from '../agent/Events'
 import type { Logger } from '../logger'
 import type { OutboundPackage } from '../types'
 
-import { AbortController } from 'abort-controller'
 import { Subject } from 'rxjs'
 
 import { AgentEventTypes } from '../agent/Events'
 import { CredoError } from '../error/CredoError'
-import { isValidJweStructure, JsonEncoder } from '../utils'
+import { isValidJweStructure, JsonEncoder, fetchWithTimeout } from '../utils'
 
 export class HttpOutboundTransport implements OutboundTransport {
   private agent!: Agent
@@ -70,20 +69,17 @@ export class HttpOutboundTransport implements OutboundTransport {
     })
 
     try {
-      const abortController = new AbortController()
-      const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
       let response
       let responseMessage
       try {
-        response = await this.fetch(endpoint, {
+        response = await fetchWithTimeout(this.fetch, endpoint, {
           method: 'POST',
           body: JSON.stringify(payload),
           headers: { 'Content-Type': this.agent.config.didCommMimeType },
-          signal: abortController.signal as NonNullable<RequestInit['signal']>,
+          timeoutMs: 15000,
         })
-        clearTimeout(id)
         responseMessage = await response.text()
       } catch (error) {
         // Request is aborted after 15 seconds, but that doesn't necessarily mean the request
