@@ -1,27 +1,24 @@
-import {
+import type {
   AgentContext,
   DidCreateOptions,
   DidCreateResult,
   DidDeactivateOptions,
   DidDeactivateResult,
-  DidDocument,
-  DidDocumentRole,
-  DidRecord,
   DidRegistrar,
-  DidRepository,
   DidUpdateOptions,
   DidUpdateResult,
-  JsonTransformer,
-  Kms,
   VerificationMethod,
 } from '@credo-ts/core'
-import { DIDLog, MultibaseEncoding, createDID, multibaseEncode, updateDID } from 'didwebvh-ts'
+
+import { DidRepository, DidDocument, DidRecord, DidDocumentRole, JsonTransformer, Kms } from '@credo-ts/core'
+import { type DIDLog, createDID, multibaseEncode, MultibaseEncoding, updateDID } from 'didwebvh-ts'
 
 import { WebvhDidCrypto } from './WebvhDidCrypto'
 import { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
 
 interface WebVhDidCreateOptions extends DidCreateOptions {
   domain: string
+  path?: string
 }
 
 interface WebVhDidUpdateOptions extends DidUpdateOptions {
@@ -36,23 +33,26 @@ const normalizeMethodArray = (arr?: (string | { id: string })[]) =>
  * Handles creation, update, and (future) deactivation of DIDs using the webvh method.
  */
 export class WebVhDidRegistrar implements DidRegistrar {
-  supportedMethods: string[] = ['webvh']
+  public readonly supportedMethods: string[] = ['webvh']
 
   /**
    * Creates a new DID document and saves it in the repository.
-   * Handles crypto instance setup, DID creation, and error handling.
-   * If services are provided, updates the DID document with those services.
+   * Handles crypto setup, DID generation, and persistence.
+   * The `paths` option (string with `/` or array of segments) allows adding sub-identifiers
+   * after the domain, joined with `:` in the resulting DID.
    * @param agentContext The agent context.
-   * @param options The creation options, including domain, endpoints, controller, signer, and verifier.
+   * @param options The creation options, including domain, optional paths, endpoints, controller, signer, and verifier.
    * @returns The result of the DID creation, with error handling.
    */
   public async create(agentContext: AgentContext, options: WebVhDidCreateOptions): Promise<DidCreateResult> {
     try {
-      const { domain } = options
+      const { domain, path } = options
+      const paths = path?.replace(/^\/|\/$/g, '').split('/')
+      const domainKey = paths?.length ? [domain, ...paths].join(':') : domain
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const record = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
-        domain,
+        domain: domainKey,
         method: 'webvh',
       })
       if (record) return this.handleError(`A record with domain "${domain}" already exists.`)
@@ -66,6 +66,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       // Create DID
       const { did, doc, log } = await createDID({
         domain,
+        paths,
         signer,
         updateKeys: [publicKeyMultibase],
         verificationMethods: [
@@ -78,7 +79,6 @@ export class WebVhDidRegistrar implements DidRegistrar {
         verifier,
       })
 
-      // Save didRegistry
       const didDocument = JsonTransformer.fromJSON(doc, DidDocument)
       const didRecord = new DidRecord({
         did,
@@ -86,7 +86,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         role: DidDocumentRole.Created,
       })
       didRecord.metadata.set('log', log)
-      didRecord.setTags({ domain })
+      didRecord.setTags({ domain: domainKey })
       await didRepository.save(agentContext, didRecord)
 
       return {
@@ -114,7 +114,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
     try {
       const { did, didDocument: inputDidDocument } = options
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
-      const didRecord = await didRepository.getSingleByQuery(agentContext, {
+      const didRecord = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
         did,
         method: 'webvh',
@@ -136,11 +136,12 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const verificationMethods =
         inputVerificationMethod ?? (log[log.length - 1].state.verificationMethod as VerificationMethod[])
       const { updateKeys } = log[log.length - 1].parameters
-      if (!verificationMethods?.length || !verificationMethods[0].publicKeyMultibase)
-        return this.handleError('At least one verification method must be provided.')
+      const verificationMethod = verificationMethods?.find((vm) => vm.publicKeyMultibase)
+      if (!verificationMethod?.publicKeyMultibase)
+        return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier
-      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethods[0].publicKeyMultibase)
+      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase)
       const verifier = new WebvhDidCrypto(agentContext)
 
       const { log: logResult, doc } = await updateDID({
@@ -150,15 +151,10 @@ export class WebVhDidRegistrar implements DidRegistrar {
         domain,
         updateKeys,
         ...inputDidDocument,
-        verificationMethods: verificationMethods.map((vm) => {
-          if (!vm.publicKeyMultibase) {
-            throw new Error('Missing publicKeyMultibase')
-          }
-          return {
-            ...vm,
-            publicKeyMultibase: vm.publicKeyMultibase,
-          }
-        }),
+        verificationMethods: verificationMethods.map((vm) => ({
+          ...vm,
+          publicKeyMultibase: vm.publicKeyMultibase ?? '',
+        })),
         controller: Array.isArray(controller) ? controller[0] : controller,
         authentication: normalizeMethodArray(authentication),
         assertionMethod: normalizeMethodArray(assertionMethod),
@@ -184,7 +180,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  deactivate(_agentContext: AgentContext, _options: DidDeactivateOptions): Promise<DidDeactivateResult> {
+  public deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
     throw new Error('Method not implemented.')
   }
 
