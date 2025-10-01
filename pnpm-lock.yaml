@@ -463,10 +463,10 @@ importers:
       '@credo-ts/drizzle-storage':
         specifier: workspace:*
         version: link:../drizzle-storage
+    devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
         version: 0.4.1
-    devDependencies:
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -6547,7 +6547,6 @@ packages:
 
   metro-react-native-babel-preset@0.73.10:
     resolution: {integrity: sha512-1/dnH4EHwFb2RKEKx34vVDpUS3urt2WEeR8FYim+ogqALg4sTpG7yeQPxWpbgKATezt4rNfqAANpIyH19MS4BQ==}
-    deprecated: Use @react-native/babel-preset instead
     peerDependencies:
       '@babel/core': '*'
 
