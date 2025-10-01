@@ -10,8 +10,8 @@ import type {
   VerificationMethod,
 } from '@credo-ts/core'
 
-import { DidRepository, DidDocument, DidRecord, DidDocumentRole, JsonTransformer, Kms } from '@credo-ts/core'
-import { type DIDLog, createDID, multibaseEncode, MultibaseEncoding, updateDID } from 'didwebvh-ts'
+import { DidDocument, DidDocumentRole, DidRecord, DidRepository, JsonTransformer, Kms } from '@credo-ts/core'
+import { type DIDLog, MultibaseEncoding, createDID, multibaseEncode, updateDID } from 'didwebvh-ts'
 
 import { WebvhDidCrypto } from './WebvhDidCrypto'
 import { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
@@ -58,8 +58,8 @@ export class WebVhDidRegistrar implements DidRegistrar {
       if (record) return this.handleError(`A record with domain "${domain}" already exists.`)
 
       // Create crypto instance
-      const publicKeyMultibase = await this.generatePublicKey(agentContext)
-      const signer = new WebvhDidCryptoSigner(agentContext, publicKeyMultibase)
+      const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
+      const signer = new WebvhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
       const verifier = new WebvhDidCrypto(agentContext)
       const baseDid = `did:webvh:{SCID}:${domain}`
 
@@ -87,6 +87,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       })
       didRecord.metadata.set('log', log)
       didRecord.setTags({ domain: domainKey })
+      didRecord.setTags({ keyId })
       await didRepository.save(agentContext, didRecord)
 
       return {
@@ -123,6 +124,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       const log = didRecord.metadata.get('log') as DIDLog
       const domain = didRecord.getTag('domain') as string
+      const keyId = didRecord.getTag('keyId') as string
       if (!log) return this.handleError('The log registry must be created before it can be edited.')
 
       const {
@@ -141,7 +143,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier
-      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase)
+      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase, keyId)
       const verifier = new WebvhDidCrypto(agentContext)
 
       const { log: logResult, doc } = await updateDID({
@@ -180,7 +182,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  public deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
+  public deactivate(_agentContext: AgentContext, _options: DidDeactivateOptions): Promise<DidDeactivateResult> {
     throw new Error('Method not implemented.')
   }
 
@@ -189,12 +191,18 @@ export class WebVhDidRegistrar implements DidRegistrar {
    * @param agentContext The agent context.
    * @returns The public key in multibase format.
    */
-  private async generatePublicKey(agentContext: AgentContext): Promise<string> {
+  private async generatePublicKey(agentContext: AgentContext): Promise<{ publicKeyMultibase: string; keyId: string }> {
     const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
     const key = await kms.createKey({ type: { kty: 'OKP', crv: 'Ed25519' } })
     const publicKeyBytes = Kms.PublicJwk.fromPublicJwk(key.publicJwk).publicKey.publicKey
 
-    return multibaseEncode(new Uint8Array([0xed, 0x01, ...publicKeyBytes]), MultibaseEncoding.BASE58_BTC)
+    return {
+      publicKeyMultibase: multibaseEncode(
+        new Uint8Array([0xed, 0x01, ...publicKeyBytes]),
+        MultibaseEncoding.BASE58_BTC
+      ),
+      keyId: key.keyId,
+    }
   }
 
   private handleError(reason: string): DidUpdateResult | DidCreateResult {

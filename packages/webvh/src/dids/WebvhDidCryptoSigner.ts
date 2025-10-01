@@ -14,6 +14,7 @@ import {
  */
 export class WebvhDidCryptoSigner implements Signer {
   private publicKeyMultibase: string
+  private keyId: string
   private agentContext: AgentContext
   public readonly supportedMethods: string[] = ['webvh']
 
@@ -22,9 +23,10 @@ export class WebvhDidCryptoSigner implements Signer {
    * @param agentContext - The agent context containing wallet and configuration.
    * @param publicKeyMultibase - The public key encoded in multibase format.
    */
-  constructor(agentContext: AgentContext, publicKeyMultibase: string) {
+  constructor(agentContext: AgentContext, publicKeyMultibase: string, keyId: string) {
     this.agentContext = agentContext
     this.publicKeyMultibase = publicKeyMultibase
+    this.keyId = keyId
   }
 
   /**
@@ -45,11 +47,11 @@ export class WebvhDidCryptoSigner implements Signer {
     try {
       const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-      const publicJwk = Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase)
+      const _publicJwk = Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase)
       const data = await prepareDataForSigning(input.document, input.proof)
 
       const { signature } = await kms.sign({
-        keyId: publicJwk.keyId,
+        keyId: this.keyId,
         algorithm: 'EdDSA',
         data: Buffer.from(data),
       })
