@@ -46,8 +46,6 @@ export class WebvhDidCryptoSigner implements Signer {
   async sign(input: SigningInput): Promise<SigningOutput> {
     try {
       const kms = this.agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
-
-      const _publicJwk = Kms.PublicJwk.fromFingerprint(this.publicKeyMultibase)
       const data = await prepareDataForSigning(input.document, input.proof)
 
       const { signature } = await kms.sign({
