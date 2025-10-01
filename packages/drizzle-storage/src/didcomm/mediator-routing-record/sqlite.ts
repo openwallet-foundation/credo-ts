@@ -1,6 +1,6 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-import type { MediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
+import type { DidCommMediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommMediatorRouting = sqliteTable(
@@ -9,7 +9,7 @@ export const didcommMediatorRouting = sqliteTable(
     ...getSqliteBaseRecordTable(),
 
     routingKeys: text('routing_keys', { mode: 'json' })
-      .$type<Array<string | MediatorRoutingRecordRoutingKey>>()
+      .$type<Array<string | DidCommMediatorRoutingRecordRoutingKey>>()
       .notNull(),
     routingKeyFingerprints: text('routing_key_fingerprints', { mode: 'json' }).$type<string[]>().notNull(),
   },

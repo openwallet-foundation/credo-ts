@@ -1,7 +1,10 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
-import { CredentialExchangeRecord, CredentialRepository } from '../../../../../didcomm/src/modules/credentials'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialExchangeRepository,
+} from '../../../../../didcomm/src/modules/credentials'
 import { getAgentOptions } from '../../../../tests/helpers'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
@@ -44,13 +47,13 @@ describe('UpdateAssistant | Aries Askar', () => {
 
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
-      const record = JsonTransformer.fromJSON(data.value, CredentialExchangeRecord)
+      const record = JsonTransformer.fromJSON(data.value, DidCommCredentialExchangeRecord)
 
       record.setTags(data.tags)
       return record
     })
 
-    const credentialRepository = agent.dependencyManager.resolve(CredentialRepository)
+    const credentialRepository = agent.dependencyManager.resolve(DidCommCredentialExchangeRepository)
     const storageUpdateService = agent.dependencyManager.resolve(StorageUpdateService)
 
     // Add 0.1 data and set version to 0.1

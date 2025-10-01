@@ -15,11 +15,7 @@ export class DrizzleOpenid4vcVerifierRecordAdapter extends BaseDrizzleRecordAdap
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(
-      database,
-      { postgres: postgres.openid4vcVerifier, sqlite: sqlite.openid4vcVerifier },
-      'OpenId4VcVerifierRecord'
-    )
+    super(database, { postgres: postgres.openid4vcVerifier, sqlite: sqlite.openid4vcVerifier }, OpenId4VcVerifierRecord)
   }
 
   public getValues(record: OpenId4VcVerifierRecord) {

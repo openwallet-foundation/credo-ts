@@ -32,85 +32,86 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
     const requestContext = getRequestContext(request)
     const { agentContext, issuer } = requestContext
 
-    const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
-    const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
-    const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-    const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
-    let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
-
-    const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
-      config.accessTokenEndpointPath,
-    ])
-    const requestLike = {
-      headers: new Headers(request.headers as Record<string, string>),
-      method: request.method as HttpMethod,
-      url: fullRequestUrl,
-    } as const
-
-    const { accessTokenRequest, grant, dpop, clientAttestation, pkceCodeVerifier } =
-      oauth2AuthorizationServer.parseAccessTokenRequest({
-        accessTokenRequest: request.body,
-        request: requestLike,
-      })
-
-    let allowedStates: OpenId4VcIssuanceSessionState[]
-    let query: Query<OpenId4VcIssuanceSessionRecord>
-    let parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']> | undefined
-
-    switch (grant.grantType) {
-      case preAuthorizedCodeGrantIdentifier:
-        allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
-        query = { preAuthorizedCode: grant.preAuthorizedCode }
-        break
-      case authorizationCodeGrantIdentifier:
-        allowedStates = [OpenId4VcIssuanceSessionState.AuthorizationGranted]
-        query = { authorizationCode: grant.code }
-        break
-      case refreshTokenGrantIdentifier:
-        allowedStates = [
-          OpenId4VcIssuanceSessionState.CredentialRequestReceived,
-          OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
-        ]
-        parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(grant.refreshToken)
-        query = {
-          preAuthorizedCode: parsedRefreshToken.preAuthorizedCode,
-          authorizationCode: parsedRefreshToken.issuerState,
-        }
-        break
-      default:
-        throw new Oauth2ServerErrorResponseError({
-          error: Oauth2ErrorCodes.UnsupportedGrantType,
-          error_description: 'Unsupported grant type',
-        })
-    }
-
-    const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
-    if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
-      throw new Oauth2ServerErrorResponseError({
-        error: Oauth2ErrorCodes.InvalidGrant,
-        error_description: 'Invalid authorization code',
-      })
-    }
-
-    const expiresAt =
-      issuanceSession.expiresAt ??
-      addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
-
-    if (Date.now() > expiresAt.getTime()) {
-      issuanceSession.errorMessage = 'Credential offer has expired'
-      await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
-      throw new Oauth2ServerErrorResponseError({
-        // What is the best error here?
-        error: Oauth2ErrorCodes.InvalidGrant,
-        error_description: 'Session expired',
-      })
-    }
-
-    oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-      issuanceSessionId: issuanceSession.id,
-    })
-    let verificationResult: VerifyAccessTokenRequestReturn
     try {
+      const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
+      const issuanceSessionRepository = agentContext.dependencyManager.resolve(OpenId4VcIssuanceSessionRepository)
+      const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
+      const accessTokenSigningKey = issuer.resolvedAccessTokenPublicJwk
+      let oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext)
+
+      const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
+        config.accessTokenEndpointPath,
+      ])
+      const requestLike = {
+        headers: new Headers(request.headers as Record<string, string>),
+        method: request.method as HttpMethod,
+        url: fullRequestUrl,
+      } as const
+
+      const { accessTokenRequest, grant, dpop, clientAttestation, pkceCodeVerifier } =
+        oauth2AuthorizationServer.parseAccessTokenRequest({
+          accessTokenRequest: request.body,
+          request: requestLike,
+        })
+
+      let allowedStates: OpenId4VcIssuanceSessionState[]
+      let query: Query<OpenId4VcIssuanceSessionRecord>
+      let parsedRefreshToken: ReturnType<OpenId4VcIssuerService['parseRefreshToken']> | undefined
+
+      switch (grant.grantType) {
+        case preAuthorizedCodeGrantIdentifier:
+          allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
+          query = { preAuthorizedCode: grant.preAuthorizedCode }
+          break
+        case authorizationCodeGrantIdentifier:
+          allowedStates = [OpenId4VcIssuanceSessionState.AuthorizationGranted]
+          query = { authorizationCode: grant.code }
+          break
+        case refreshTokenGrantIdentifier:
+          allowedStates = [
+            OpenId4VcIssuanceSessionState.CredentialRequestReceived,
+            OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,
+          ]
+          parsedRefreshToken = openId4VcIssuerService.parseRefreshToken(grant.refreshToken)
+          query = {
+            preAuthorizedCode: parsedRefreshToken.preAuthorizedCode,
+            authorizationCode: parsedRefreshToken.issuerState,
+          }
+          break
+        default:
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.UnsupportedGrantType,
+            error_description: 'Unsupported grant type',
+          })
+      }
+
+      const issuanceSession = await issuanceSessionRepository.findSingleByQuery(agentContext, query)
+      if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
+        throw new Oauth2ServerErrorResponseError({
+          error: Oauth2ErrorCodes.InvalidGrant,
+          error_description: 'Invalid authorization code',
+        })
+      }
+
+      const expiresAt =
+        issuanceSession.expiresAt ??
+        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+
+      if (Date.now() > expiresAt.getTime()) {
+        issuanceSession.errorMessage = 'Credential offer has expired'
+        await openId4VcIssuerService.updateState(agentContext, issuanceSession, OpenId4VcIssuanceSessionState.Error)
+        throw new Oauth2ServerErrorResponseError({
+          // What is the best error here?
+          error: Oauth2ErrorCodes.InvalidGrant,
+          error_description: 'Session expired',
+        })
+      }
+
+      oauth2AuthorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
+        issuanceSessionId: issuanceSession.id,
+      })
+      let verificationResult: VerifyAccessTokenRequestReturn
+
       if (grant.grantType === preAuthorizedCodeGrantIdentifier) {
         if (!issuanceSession.preAuthorizedCode) {
           throw new Oauth2ServerErrorResponseError(

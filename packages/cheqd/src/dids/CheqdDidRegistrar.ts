@@ -37,7 +37,6 @@ import {
 } from '../anoncreds/utils/identifiers'
 import { CheqdLedgerService } from '../ledger'
 
-import { KmsJwkPublicOkp } from '@credo-ts/core/src/modules/kms'
 import {
   createMsgCreateDidDocPayloadToSign,
   createMsgDeactivateDidDocPayloadToSign,
@@ -148,7 +147,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const methodSpecificIdAlgo = options.options.methodSpecificIdAlgo
         const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 
-        let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+        let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
         if (options.options.createKey) {
           const createKeyResult = await kms.createKey(options.options.createKey)
           publicJwk = createKeyResult.publicJwk
@@ -318,7 +317,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
           const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
           let createdKey: DidDocumentKey
 
-          let publicJwk: KmsJwkPublicOkp & { crv: 'Ed25519' }
+          let publicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' }
           if (options.options.createKey) {
             const createKeyResult = await kms.createKey(options.options.createKey)
             publicJwk = createKeyResult.publicJwk
@@ -649,7 +648,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
 
         const { signature } = await kms.sign({
-          data: payload,
+          data: payload as Uint8Array<ArrayBuffer>,
           algorithm: publicJwk.signatureAlgorithm,
           keyId: kmsKeyId,
         })

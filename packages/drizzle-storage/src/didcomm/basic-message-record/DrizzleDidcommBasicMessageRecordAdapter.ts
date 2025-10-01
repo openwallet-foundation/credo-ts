@@ -6,14 +6,14 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { BasicMessageRecord } from '@credo-ts/didcomm'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
+import { DidCommBasicMessageRecord } from '@credo-ts/didcomm'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommBasicMessageAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommBasicMessage']>
 export class DrizzleDidcommBasicMessageRecordAdapter extends BaseDrizzleRecordAdapter<
-  BasicMessageRecord,
+  DidCommBasicMessageRecord,
   typeof postgres.didcommBasicMessage,
   typeof postgres,
   typeof sqlite.didcommBasicMessage,
@@ -23,11 +23,11 @@ export class DrizzleDidcommBasicMessageRecordAdapter extends BaseDrizzleRecordAd
     super(
       database,
       { postgres: postgres.didcommBasicMessage, sqlite: sqlite.didcommBasicMessage },
-      'BasicMessageRecord'
+      DidCommBasicMessageRecord
     )
   }
 
-  public getValues(record: BasicMessageRecord): DrizzleAdapterValues<(typeof sqlite)['didcommBasicMessage']> {
+  public getValues(record: DidCommBasicMessageRecord): DrizzleAdapterValues<(typeof sqlite)['didcommBasicMessage']> {
     const { role, connectionId, parentThreadId, threadId, ...customTags } = record.getTags()
 
     return {
@@ -43,10 +43,10 @@ export class DrizzleDidcommBasicMessageRecordAdapter extends BaseDrizzleRecordAd
     }
   }
 
-  public toRecord(values: DrizzleDidcommBasicMessageAdapterValues): BasicMessageRecord {
+  public toRecord(values: DrizzleDidcommBasicMessageAdapterValues): DidCommBasicMessageRecord {
     const { customTags, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, BasicMessageRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommBasicMessageRecord)
     record.setTags(customTags as TagsBase)
 
     return record

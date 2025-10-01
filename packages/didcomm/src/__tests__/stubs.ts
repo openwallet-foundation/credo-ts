@@ -1,12 +1,12 @@
-import type { AgentMessage } from '../AgentMessage'
-import type { EnvelopeKeys } from '../EnvelopeService'
-import type { TransportSession } from '../TransportService'
+import type { EnvelopeKeys } from '../DidCommEnvelopeService'
+import type { DidCommMessage } from '../DidCommMessage'
+import type { DidCommTransportSession } from '../DidCommTransportService'
 
-export class DummyTransportSession implements TransportSession {
+export class DummyTransportSession implements DidCommTransportSession {
   public id: string
   public readonly type = 'http'
   public keys?: EnvelopeKeys
-  public inboundMessage?: AgentMessage
+  public inboundMessage?: DidCommMessage
   public connectionId?: string
 
   public constructor(id: string) {

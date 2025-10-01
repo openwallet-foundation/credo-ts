@@ -20,7 +20,7 @@ export class DrizzleTenantRoutingRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.tenantRouting, sqlite: sqlite.tenantRouting }, 'TenantRoutingRecord')
+    super(database, { postgres: postgres.tenantRouting, sqlite: sqlite.tenantRouting }, TenantRoutingRecord)
   }
 
   public getValues(record: TenantRoutingRecord): DrizzleAdapterValues<(typeof sqlite)['tenantRouting']> {

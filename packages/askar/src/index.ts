@@ -9,6 +9,7 @@ export { AskarKeyManagementService } from './kms/AskarKeyManagementService'
 
 // Storage
 export { AskarStorageService } from './storage'
+export { recordToInstance } from './storage/utils'
 
 // Module
 export { AskarModule } from './AskarModule'
@@ -20,3 +21,5 @@ export {
 } from './AskarModuleConfig'
 
 export { transformPrivateKeyToPrivateJwk, transformSeedToPrivateJwk } from './utils'
+
+export { AskarStoreManager } from './AskarStoreManager'

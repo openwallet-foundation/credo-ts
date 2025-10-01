@@ -11,13 +11,13 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
@@ -36,7 +36,8 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
-  AnonCredsCredentialFormatService,
+  AnonCredsDidCommCredentialFormatService,
+  AnonCredsDidCommProofFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
@@ -44,7 +45,6 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsModuleConfig,
-  AnonCredsProofFormatService,
   AnonCredsRevocationRegistryDefinitionPrivateRecord,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
@@ -95,8 +95,8 @@ const agentContext = getAgentContext({
   agentConfig,
 })
 
-const anoncredsCredentialFormatService = new AnonCredsCredentialFormatService()
-const anoncredsProofFormatService = new AnonCredsProofFormatService()
+const anoncredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
@@ -265,26 +265,26 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     })
   )
 
-  const holderCredentialRecord = new CredentialExchangeRecord({
+  const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalSent,
+    state: DidCommCredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Holder,
+    role: DidCommCredentialRole.Holder,
   })
 
-  const issuerCredentialRecord = new CredentialExchangeRecord({
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalReceived,
+    state: DidCommCredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Issuer,
+    role: DidCommCredentialRole.Issuer,
   })
 
   const credentialAttributes = [
-    new CredentialPreviewAttribute({
+    new DidCommCredentialPreviewAttribute({
       name: 'name',
       value: 'John',
     }),
-    new CredentialPreviewAttribute({
+    new DidCommCredentialPreviewAttribute({
       name: 'age',
       value: '25',
     }),
@@ -293,7 +293,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   // Holder creates proposal
   holderCredentialRecord.credentialAttributes = credentialAttributes
   const { attachment: proposalAttachment } = await anoncredsCredentialFormatService.createProposal(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     credentialFormats: {
       anoncreds: {
         attributes: credentialAttributes,
@@ -304,7 +304,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Issuer processes and accepts proposal
   await anoncredsCredentialFormatService.processProposal(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: proposalAttachment,
   })
   // Set attributes on the credential record, this is normally done by the protocol service
@@ -316,18 +316,18 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     : undefined
 
   const { attachment: offerAttachment } = await anoncredsCredentialFormatService.acceptProposal(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     proposalAttachment: proposalAttachment,
     credentialFormats,
   })
 
   // Holder processes and accepts offer
   await anoncredsCredentialFormatService.processOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: offerAttachment,
   })
   const { attachment: requestAttachment } = await anoncredsCredentialFormatService.acceptOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     offerAttachment,
     credentialFormats: {
       anoncreds: {
@@ -342,11 +342,11 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Issuer processes and accepts request
   await anoncredsCredentialFormatService.processRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
   })
   const { attachment: credentialAttachment } = await anoncredsCredentialFormatService.acceptRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     requestAttachment,
     offerAttachment,
   })
@@ -354,7 +354,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   // Holder processes and accepts credential
   await anoncredsCredentialFormatService.processCredential(agentContext, {
     offerAttachment,
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
   })
@@ -408,17 +408,17 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     '_anoncreds/credential': expectedCredentialMetadata,
   })
 
-  const holderProofRecord = new ProofExchangeRecord({
+  const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalSent,
+    state: DidCommProofState.ProposalSent,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
-    role: ProofRole.Prover,
+    role: DidCommProofRole.Prover,
   })
-  const verifierProofRecord = new ProofExchangeRecord({
+  const verifierProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalReceived,
+    state: DidCommProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
-    role: ProofRole.Verifier,
+    role: DidCommProofRole.Verifier,
   })
 
   const nrpRequestedTime = dateToTimestamp(new Date())

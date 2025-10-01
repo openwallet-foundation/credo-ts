@@ -1,6 +1,6 @@
 import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core'
-import type { ProofFormatService } from '../../ProofFormatService'
-import type { DifPresentationExchangeProofFormat } from '../DifPresentationExchangeProofFormat'
+import type { DidCommProofFormatService } from '../../DidCommProofFormatService'
+import type { DidCommDifPresentationExchangeProofFormat } from '../DidCommDifPresentationExchangeProofFormat'
 
 import { PresentationSubmissionLocation } from '@animo-id/pex'
 
@@ -17,18 +17,18 @@ import {
   W3cJsonLdVerifiablePresentation,
 } from '../../../../../../../core/src/modules/vc'
 import { getAgentOptions } from '../../../../../../../core/tests'
-import { ProofsModule } from '../../../ProofsModule'
-import { ProofRole, ProofState } from '../../../models'
-import { V2ProofProtocol } from '../../../protocol'
-import { ProofExchangeRecord } from '../../../repository'
-import { DifPresentationExchangeProofFormatService } from '../DifPresentationExchangeProofFormatService'
+import { DidCommProofsModule } from '../../../DidCommProofsModule'
+import { DidCommProofRole, DidCommProofState } from '../../../models'
+import { DidCommProofV2Protocol } from '../../../protocol'
+import { DidCommProofExchangeRecord } from '../../../repository'
+import { DidCommDifPresentationExchangeProofFormatService } from '../DidCommDifPresentationExchangeProofFormatService'
 
 const mockProofRecord = () =>
-  new ProofExchangeRecord({
-    state: ProofState.ProposalSent,
+  new DidCommProofExchangeRecord({
+    state: DidCommProofState.ProposalSent,
     threadId: 'add7e1a0-109e-4f37-9caa-cfd0fcdfe540',
     protocolVersion: 'v2',
-    role: ProofRole.Prover,
+    role: DidCommProofRole.Prover,
   })
 
 const mockPresentationDefinition = (): DifPresentationExchangeDefinitionV1 => ({
@@ -91,7 +91,7 @@ jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockR
 })
 
 describe('Presentation Exchange ProofFormatService', () => {
-  let pexFormatService: ProofFormatService<DifPresentationExchangeProofFormat>
+  let pexFormatService: DidCommProofFormatService<DidCommDifPresentationExchangeProofFormat>
   let agent: Agent
 
   beforeAll(async () => {
@@ -102,8 +102,10 @@ describe('Presentation Exchange ProofFormatService', () => {
         {},
         {
           pex: new DifPresentationExchangeModule(),
-          proofs: new ProofsModule({
-            proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
+          proofs: new DidCommProofsModule({
+            proofProtocols: [
+              new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+            ],
           }),
         },
         { requireDidcomm: true }
@@ -112,7 +114,7 @@ describe('Presentation Exchange ProofFormatService', () => {
 
     await agent.initialize()
 
-    pexFormatService = agent.dependencyManager.resolve(DifPresentationExchangeProofFormatService)
+    pexFormatService = agent.dependencyManager.resolve(DidCommDifPresentationExchangeProofFormatService)
   })
 
   describe('Create Presentation Exchange Proof Proposal / Request', () => {
