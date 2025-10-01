@@ -21,7 +21,7 @@ export class DrizzleAnonCredsCredentialDefinitionRecordAdapter extends BaseDrizz
     super(
       database,
       { postgres: postgres.anonCredsCredentialDefinition, sqlite: sqlite.anonCredsCredentialDefinition },
-      'AnonCredsCredentialDefinitionRecord'
+      AnonCredsCredentialDefinitionRecord
     )
   }
 

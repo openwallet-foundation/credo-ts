@@ -52,7 +52,7 @@
     "cli:dev:migrate:postgres": "pnpm cli:dev migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
     "cli:dev:migrate:sqlite": "pnpm cli:dev migrate --dialect sqlite --database-url \"file:local.db\"",
     "cli:dev:studio:postgres": "pnpm cli:dev studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
-    "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:local.db\"",
+    "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:../../db.db\"",
     "test": "jest"
   },
   "dependencies": {
@@ -72,14 +72,14 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.3"
+    "drizzle-orm": "^0.44.5"
   },
   "devDependencies": {
     "ts-node": "catalog:",
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",
-    "drizzle-orm": "^0.44.3",
+    "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
     "rimraf": "catalog:",
     "typescript": "catalog:"
