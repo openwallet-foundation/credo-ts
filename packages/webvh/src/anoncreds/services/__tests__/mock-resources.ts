@@ -48,7 +48,7 @@ export const mockResolvedDidRecord = {
 }
 
 export const mockSchemaResource = {
-  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+  '@context': ['https://identity.foundation/did-attested-resources/context/v0.1', 'https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmSmhgCkiknv5HpLWiiNjgcurgQvwhUqiu8MSGMDVJt3xK',
   content: {
