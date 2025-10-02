@@ -4,6 +4,7 @@ import type {
   DidCreateResult,
   DidDeactivateOptions,
   DidDeactivateResult,
+  DidDocumentKey,
   DidRegistrar,
   DidUpdateOptions,
   DidUpdateResult,
@@ -49,6 +50,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
       const { domain, path } = options
       const paths = path?.replace(/^\/|\/$/g, '').split('/')
       const domainKey = paths?.length ? [domain, ...paths].join(':') : domain
+      const keys: DidDocumentKey[] = []
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const record = await didRepository.findSingleByQuery(agentContext, {
         role: DidDocumentRole.Created,
@@ -80,14 +82,19 @@ export class WebVhDidRegistrar implements DidRegistrar {
       })
 
       const didDocument = JsonTransformer.fromJSON(doc, DidDocument)
+
+      keys.push({
+        kmsKeyId: keyId,
+        didDocumentRelativeKeyId: '#key-1',
+      })
       const didRecord = new DidRecord({
         did,
         didDocument,
         role: DidDocumentRole.Created,
+        keys,
       })
       didRecord.metadata.set('log', log)
       didRecord.setTags({ domain: domainKey })
-      didRecord.setTags({ keyId })
       await didRepository.save(agentContext, didRecord)
 
       return {
@@ -124,8 +131,10 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       const log = didRecord.metadata.get('log') as DIDLog
       const domain = didRecord.getTag('domain') as string
-      const keyId = didRecord.getTag('keyId') as string
+      const keyId = didRecord.keys?.[0].kmsKeyId
+
       if (!log) return this.handleError('The log registry must be created before it can be edited.')
+      if (!keyId) return this.handleError('The key ID must be present before the log can be edited.')
 
       const {
         controller,
