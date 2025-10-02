@@ -66,7 +66,7 @@ export const mockSchemaResource = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
-    proofValue: 'z3GX11cP7ifC88JLyFsBLp3STm7tJ478E3EAYGTcmbsSUyuiT7CLpZKDwD7homyd54Rc3W1LmjBnBdFvanLRxaCWF',
+    proofValue: 'z7T11v6ebMHtvhkgpeZRkjQcbMTPmeTBYS7VMCydX2XUN8ygV44xHDckNpf4P9kczTFJHA9g3UzEGcJ2cQsD7Y3B',
     verificationMethod:
       'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
   },
@@ -123,7 +123,7 @@ export const mockCredDefResource = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
-    proofValue: 'z5xHCi2T8kVALFmdzK4wt5peWJjvmpUWPoY1DP7KU2YpnmSM7ugBWjHeUmd8kJg3zQBSTgMYmMAY78ZSJUMRGwQuV',
+    proofValue: 'z237iFL6DctCx5LfjmzpZZM41F5pFLFALZrCViZH7Q2BmU6xbKD6MVufCXFGJEsW6UTL4wHYepAPTHzasAvpasNEb',
     verificationMethod:
       'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
   },
@@ -166,7 +166,7 @@ export const mockRevRegDefResource = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
-    proofValue: 'z4fNyraQm2LQXoNqT92uTMcyxL9U91jCQ5KRTCvX6zXp8XbRy3rQaDt8DRzfDWAwThUsXJREuTYaeHzHxfTdpPunm',
+    proofValue: 'z5B1mYRxRpJsJERpvThZpbM827563AMPfcX4wSPxNZc3ZBRA7Xu1hHN86fCz3wDb31KN4Pe2fKTBGvhhnKyR9NZ4P',
     verificationMethod:
       'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
   },
@@ -194,7 +194,7 @@ export const mockRegRevEntryResource = {
     type: 'DataIntegrityProof',
     cryptosuite: 'eddsa-jcs-2022',
     proofPurpose: 'assertionMethod',
-    proofValue: 'z61QBjKEqDXYDFZnFfrCMgocTLEWjng8NjdQGe9ejK2dRj9EZky2BGhL73Rhd3ifwxDc5XguT6dxhLAcDnn4VUCDt',
+    proofValue: 'z31XZjX4Zp75NBfo8Dena19Fw8c45ABBzkixP2DC1trcCC61xmqnDRPjzJapGaFpeo9VnJPeXBm9G9MP4WcNd7gNy',
     verificationMethod:
       'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
   },
