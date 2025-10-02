@@ -72,7 +72,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         verificationMethods: [
           {
             controller: baseDid,
-            type: 'Ed25519VerificationKey2020',
+            type: 'Multikey',
             publicKeyMultibase,
           },
         ],
