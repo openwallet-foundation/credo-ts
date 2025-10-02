@@ -1,8 +1,10 @@
+import { validate } from 'class-validator'
+
 import { JsonTransformer } from '../../utils/JsonTransformer'
 
 import { ThreadDecorator } from './ThreadDecorator'
 
-describe('Decorators | ThreadDecorator', () => {
+describe.only('Decorators | ThreadDecorator', () => {
   it('should correctly transform Json to ThreadDecorator class', () => {
     const json = {
       thid: 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -44,5 +46,86 @@ describe('Decorators | ThreadDecorator', () => {
     }
 
     expect(json).toEqual(transformed)
+  })
+
+  describe('PthidRegExp validation', () => {
+    it('should accept valid message IDs for parentThreadId', async () => {
+      const decorator = new ThreadDecorator({
+        parentThreadId: 'ceffce22-6471-43e4-8945-b604091981c9',
+      })
+      const validationErrors = await validate(decorator)
+      expect(validationErrors).toHaveLength(0)
+    })
+
+    it('should accept valid DIDs for parentThreadId', async () => {
+      const validDids = [
+        'did:example:123456789abcdefghi',
+        'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
+        'did:web:example.com',
+        'did:sov:3ecf688c-cb3f-467b-8636-6b0c7f1d9022',
+        'did:indy:sovrin:staging:3ecf688c-cb3f-467b-8636-6b0c7f1d9022',
+        'did:peer:1zQmNbr8L7xqgCN7aQWG4TgH8xrp9Z3nR2vY6CqK8uDx',
+      ]
+
+      for (const did of validDids) {
+        const decorator = new ThreadDecorator({
+          parentThreadId: did,
+        })
+        const validationErrors = await validate(decorator)
+        expect(validationErrors).toHaveLength(0)
+      }
+    })
+
+    it('should accept valid DID URLs with query and fragment for parentThreadId', async () => {
+      const validDidUrls = [
+        'did:example:123456789abcdefghi?service=agent&relativeRef=my%20ref',
+        'did:example:123456789abcdefghi#keys-1',
+        'did:example:123456789abcdefghi?query=value#fragment',
+      ]
+
+      for (const didUrl of validDidUrls) {
+        const decorator = new ThreadDecorator({
+          parentThreadId: didUrl,
+        })
+        const validationErrors = await validate(decorator)
+        expect(validationErrors).toHaveLength(0)
+      }
+    })
+
+    it('should reject invalid formats for parentThreadId', async () => {
+      const invalidValues = [
+        'short', // too short for message ID format
+        'invalid-did:format', // invalid DID format
+        'did:', // incomplete DID
+        'did:method', // incomplete DID
+        '12345678901234567890123456789012345678901234567890123456789012345', // too long for message ID
+        'invalid!@#$%^&*()format', // invalid characters
+      ]
+
+      for (const invalidValue of invalidValues) {
+        const decorator = new ThreadDecorator({
+          parentThreadId: invalidValue,
+        })
+        const validationErrors = await validate(decorator)
+        expect(validationErrors.length).toBeGreaterThan(0) // expect to fail on each invalid value
+        expect(validationErrors[0].property).toBe('parentThreadId')
+      }
+    })
+
+    it('should accept valid message IDs for threadId', async () => {
+      const decorator = new ThreadDecorator({
+        threadId: 'ceffce22-6471-43e4-8945-b604091981c9',
+      })
+      const validationErrors = await validate(decorator)
+      expect(validationErrors).toHaveLength(0)
+    })
+
+    it('should accept valid DIDs for threadId', async () => {
+      const decorator = new ThreadDecorator({
+        threadId: 'did:example:123456789abcdefghi',
+      })
+      const validationErrors = await validate(decorator)
+      expect(validationErrors).toHaveLength(0)
+    })
   })
 })
