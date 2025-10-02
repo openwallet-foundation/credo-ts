@@ -483,9 +483,6 @@ importers:
       '@types/ws':
         specifier: ^8.5.4
         version: 8.18.1
-      abort-controller:
-        specifier: ^3.0.0
-        version: 3.0.0
       big-integer:
         specifier: ^1.6.51
         version: 1.6.52

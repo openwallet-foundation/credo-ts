@@ -1,6 +1,5 @@
 import type { AgentDependencies } from '../agent/AgentDependencies'
 
-import { AbortController } from 'abort-controller'
 import { parseUrl } from 'query-string'
 
 import { AgentMessage } from '../agent/AgentMessage'
@@ -13,25 +12,23 @@ import { InvitationType, OutOfBandInvitation } from '../modules/oob/messages'
 import { JsonEncoder } from './JsonEncoder'
 import { JsonTransformer } from './JsonTransformer'
 import { MessageValidator } from './MessageValidator'
+import { fetchWithTimeout } from './fetch'
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
 const fetchShortUrl = async (invitationUrl: string, dependencies: AgentDependencies) => {
-  const abortController = new AbortController()
-  const id = setTimeout(() => abortController.abort(), 15000)
-  let response
   try {
-    response = await dependencies.fetch(invitationUrl, {
+    const response = await fetchWithTimeout(dependencies.fetch, invitationUrl, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
+      timeoutMs: 15000,
     })
+    return response
   } catch (error) {
     throw new CredoError(`Get request failed on provided url: ${error.message}`, { cause: error })
   }
-  clearTimeout(id)
-  return response
 }
 
 /**
