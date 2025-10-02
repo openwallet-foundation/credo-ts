@@ -1,16 +1,15 @@
 import { Expose } from 'class-transformer'
 import { IsInt, IsOptional, Matches } from 'class-validator'
 
-import { MessageIdRegExp } from '../../agent/BaseMessage'
-
-
 // ^did:[a-z0-9]+:(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9.-])+  # domain (no ':', allows %XX)
 // (?::(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)*  # extra colon-separated segments
 // (?:\?(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?  # optional query
 // (?:#(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?   # optional fragment
 // $
 
-const PthidRegExp = /^([-_./A-Za-z0-9]{8,64}|did:[a-z0-9]+:(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9.-])+(?::(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)*(?:\?(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?(?:#(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?)$/
+const PthidRegExp =
+  /^([-_./A-Za-z0-9]{8,64}|did:[a-z0-9]+:(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9.-])+(?::(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)*(?:\?(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?(?:#(?:%[0-9A-Fa-f]{2}|[A-Za-z0-9._~!$&'()*+,;=:@/?-])*)?)$/
+
 /**
  * Represents `~thread` decorator
  * @see https://github.com/hyperledger/aries-rfcs/blob/master/concepts/0008-message-id-and-threading/README.md
