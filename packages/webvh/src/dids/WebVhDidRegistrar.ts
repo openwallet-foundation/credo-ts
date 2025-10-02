@@ -85,7 +85,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       keys.push({
         kmsKeyId: keyId,
-        didDocumentRelativeKeyId: '#key-1',
+        didDocumentRelativeKeyId: `#${publicKeyMultibase}`,
       })
       const didRecord = new DidRecord({
         did,

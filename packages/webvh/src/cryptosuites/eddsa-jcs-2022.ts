@@ -33,8 +33,15 @@ export class EddsaJcs2022Cryptosuite {
 
   public async _publicJwkFromId(verificationMethodId: string): Promise<Kms.PublicJwk> {
     const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
+    const [didRecord] = await this.didApi.getCreatedDids({ did: didDocument.id })
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    if (didRecord) {
+      publicJwk.keyId =
+        didRecord.keys?.find(
+          ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${verificationMethod.publicKeyMultibase}`
+        )?.kmsKeyId ?? publicJwk.legacyKeyId
+    }
     return publicJwk
   }
 
