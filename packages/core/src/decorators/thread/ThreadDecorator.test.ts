@@ -4,7 +4,7 @@ import { JsonTransformer } from '../../utils/JsonTransformer'
 
 import { ThreadDecorator } from './ThreadDecorator'
 
-describe.only('Decorators | ThreadDecorator', () => {
+describe('Decorators | ThreadDecorator', () => {
   it('should correctly transform Json to ThreadDecorator class', () => {
     const json = {
       thid: 'ceffce22-6471-43e4-8945-b604091981c9',
@@ -94,11 +94,11 @@ describe.only('Decorators | ThreadDecorator', () => {
 
     it('should reject invalid formats for parentThreadId', async () => {
       const invalidValues = [
-        'short', // too short for message ID format
+        'short', // too short
         'invalid-did:format', // invalid DID format
         'did:', // incomplete DID
         'did:method', // incomplete DID
-        '12345678901234567890123456789012345678901234567890123456789012345', // too long for message ID
+        '12345678901234567890123456789012345678901234567890123456789012345', // too long
         'invalid!@#$%^&*()format', // invalid characters
       ]
 
