@@ -33,16 +33,19 @@ export class EddsaJcs2022Cryptosuite {
 
   public async _publicJwkFromId(verificationMethodId: string): Promise<Kms.PublicJwk> {
     const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
+    const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
+    const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
+    return publicJwk
+  }
+
+  public async _publicKeyIdFromId(verificationMethodId: string): Promise<string> {
+    const didDocument = await this.didApi.resolveDidDocument(verificationMethodId)
     const [didRecord] = await this.didApi.getCreatedDids({ did: didDocument.id })
     const verificationMethod = didDocument.dereferenceVerificationMethod(verificationMethodId)
     const publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-    if (didRecord) {
-      publicJwk.keyId =
-        didRecord.keys?.find(
+    return didRecord.keys?.find(
           ({ didDocumentRelativeKeyId }) => didDocumentRelativeKeyId === `#${verificationMethod.publicKeyMultibase}`
         )?.kmsKeyId ?? publicJwk.legacyKeyId
-    }
-    return publicJwk
   }
 
   public transformation(unsecuredDocument: object, options: ProofOptions) {
@@ -117,9 +120,9 @@ export class EddsaJcs2022Cryptosuite {
   }
   public async proofSerialization(hashData: Uint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-serialization-eddsa-jcs-2022
-    const publicJwk = await this._publicJwkFromId(options.verificationMethod)
+    const keyId = await this._publicKeyIdFromId(options.verificationMethod)
     const proofBytes = await this.keyApi.sign({
-      keyId: publicJwk.keyId,
+      keyId,
       algorithm: 'EdDSA',
       data: Buffer.from(hashData),
     })
