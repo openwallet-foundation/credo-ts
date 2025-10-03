@@ -9,6 +9,7 @@ import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
+import { DidCommModule } from '@credo-ts/didcomm'
 
 const backupDate = new Date('2023-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)

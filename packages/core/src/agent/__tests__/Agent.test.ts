@@ -13,6 +13,7 @@ import {
   DidCommFeatureRegistry,
   DidCommMessageReceiver,
   DidCommMessageSender,
+  DidCommModule,
   DidCommTrustPingService,
 } from '../../../../didcomm/src'
 import { DidCommBasicMessagesApi } from '../../../../didcomm/src/modules/basic-messages/DidCommBasicMessagesApi'
@@ -23,7 +24,6 @@ import { DidCommMessagePickupApi } from '../../../../didcomm/src/modules/message
 import { DidCommProofExchangeRepository, DidCommProofsApi } from '../../../../didcomm/src/modules/proofs'
 import {
   DidCommMediationRecipientApi,
-  DidCommMediationRecipientModule,
   DidCommMediationRecipientService,
   DidCommMediationRepository,
   DidCommMediatorApi,
@@ -79,9 +79,10 @@ describe('Agent', () => {
       const agent = new Agent({
         ...agentOptions,
         modules: {
-          ...getDefaultDidcommModules(),
-          mediationRecipient: new DidCommMediationRecipientModule({
-            maximumMessagePickup: 42,
+          didcomm: new DidCommModule({
+            mediationRecipient: {
+              maximumMessagePickup: 42,
+            },
           }),
           myModule: new MyModule(),
           inMemory: new InMemoryWalletModule(),

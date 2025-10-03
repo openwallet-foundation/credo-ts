@@ -39,7 +39,7 @@ const aliceAgentOptions = getAgentOptions(
   {
     endpoints: ['rxjs:alice'],
     mediationRecipient: {
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     },
   },
   {},
