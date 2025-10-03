@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "rimraf": "^4.4.0",
+    "rxjs": "catalog:",
     "typescript": "~5.5.2"
   }
 }

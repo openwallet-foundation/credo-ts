@@ -1,6 +1,6 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
 
-import { WebvhDidResolver } from './dids/WebvhDidResolver'
+import { WebVhDidRegistrar, WebvhDidResolver } from './dids'
 
 export class WebvhModule implements Module {
   /**
@@ -8,5 +8,6 @@ export class WebvhModule implements Module {
    */
   public register(dependencyManager: DependencyManager) {
     dependencyManager.registerSingleton(WebvhDidResolver)
+    dependencyManager.registerSingleton(WebVhDidRegistrar)
   }
 }

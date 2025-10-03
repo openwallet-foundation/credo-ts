@@ -27,7 +27,7 @@ describe('WebVhTransform', () => {
     const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
 
     expect(resource).toBeInstanceOf(WebVhResource)
-    expect(resource['@context']).toContain('https://opsecid.github.io/attested-resource/v1')
+    expect(resource['@context']).toContain('https://identity.foundation/did-attested-resources/context/v0.1')
     expect(resource.type).toEqual(['AttestedResource'])
 
     // Type guard to check if content is a credential definition
