@@ -37,21 +37,8 @@ export const mockResolvedDidDocument = {
   ],
 }
 
-export const mockResolvedDidRecord = {
-  did: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01',
-  role: 'created',
-  didDocument: mockResolvedDidDocument,
-  getTag: (key: string) => {
-    if (key === 'domain') return 'id.test-suite.app/credo/01'
-    return undefined
-  },
-}
-
 export const mockSchemaResource = {
-  '@context': [
-    'https://identity.foundation/did-attested-resources/context/v0.1',
-    'https://w3id.org/security/data-integrity/v2',
-  ],
+  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmSmhgCkiknv5HpLWiiNjgcurgQvwhUqiu8MSGMDVJt3xK',
   content: {
@@ -72,6 +59,16 @@ export const mockSchemaResource = {
     proofValue: 'z7T11v6ebMHtvhkgpeZRkjQcbMTPmeTBYS7VMCydX2XUN8ygV44xHDckNpf4P9kczTFJHA9g3UzEGcJ2cQsD7Y3B',
     verificationMethod:
       'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01#z6MkukEa8GPVCEPy7EzRSbeHPXD1vsuPy3eD13CkDKQsoCGS',
+  },
+}
+
+export const mockResolvedDidRecord = {
+  did: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01',
+  role: 'created',
+  didDocument: mockResolvedDidDocument,
+  getTag: (key: string) => {
+    if (key === 'domain') return 'id.test-suite.app/credo/01'
+    return undefined
   },
 }
 
