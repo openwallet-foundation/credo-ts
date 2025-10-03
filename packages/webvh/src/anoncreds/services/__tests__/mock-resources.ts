@@ -48,7 +48,10 @@ export const mockResolvedDidRecord = {
 }
 
 export const mockSchemaResource = {
-  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+  '@context': [
+    'https://identity.foundation/did-attested-resources/context/v0.1',
+    'https://w3id.org/security/data-integrity/v2',
+  ],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmSmhgCkiknv5HpLWiiNjgcurgQvwhUqiu8MSGMDVJt3xK',
   content: {
@@ -73,7 +76,10 @@ export const mockSchemaResource = {
 }
 
 export const mockCredDefResource = {
-  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+  '@context': [
+    'https://identity.foundation/did-attested-resources/context/v0.1',
+    'https://w3id.org/security/data-integrity/v2',
+  ],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmedeFDzpfN3o3vmWBKWygVYg4uB74qwYPhU3TNW1bh1uq',
   content: {
@@ -130,7 +136,10 @@ export const mockCredDefResource = {
 }
 
 export const mockRevRegDefResource = {
-  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+  '@context': [
+    'https://identity.foundation/did-attested-resources/context/v0.1',
+    'https://w3id.org/security/data-integrity/v2',
+  ],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmePh8MmoGB415uy6ChYnzVCGTH7y4LSkDfpauUyeqQtvS',
   content: {
@@ -173,7 +182,10 @@ export const mockRevRegDefResource = {
 }
 
 export const mockRegRevEntryResource = {
-  '@context': ['https://opsecid.github.io/attested-resource/v1', 'https://w3id.org/security/data-integrity/v2'],
+  '@context': [
+    'https://identity.foundation/did-attested-resources/context/v0.1',
+    'https://w3id.org/security/data-integrity/v2',
+  ],
   type: ['AttestedResource'],
   id: 'did:webvh:QmXysm9EF3kPH4fdCWf48YqCzREgiAe5nFXG3RCXaCShFX:id.test-suite.app:credo:01/resources/zQmNtsRpmUaeDAbtNSrL1Jjz5bAx5vok2bGWHoGYmKUwfsX',
   content: {
