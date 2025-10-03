@@ -62,6 +62,7 @@ describe('Decorators | ThreadDecorator', () => {
         'did:example:123456789abcdefghi',
         'did:key:z6MkpTHR8VNsBxYAAWHut2Geadd9jSwuBV8xRoAnwWsdvktH',
         'did:web:example.com',
+        'did:web:example%3Acom',
         'did:sov:3ecf688c-cb3f-467b-8636-6b0c7f1d9022',
         'did:indy:sovrin:staging:3ecf688c-cb3f-467b-8636-6b0c7f1d9022',
         'did:peer:1zQmNbr8L7xqgCN7aQWG4TgH8xrp9Z3nR2vY6CqK8uDx',
@@ -100,12 +101,14 @@ describe('Decorators | ThreadDecorator', () => {
         'did:method', // incomplete DID
         '12345678901234567890123456789012345678901234567890123456789012345', // too long
         'invalid!@#$%^&*()format', // invalid characters
+        'did:example:incomplete%ZZencoding', // invalid percent-encoding
       ]
 
       for (const invalidValue of invalidValues) {
         const decorator = new ThreadDecorator({
           parentThreadId: invalidValue,
         })
+        console.log('Testing invalid value:', invalidValue)
         const validationErrors = await validate(decorator)
         expect(validationErrors.length).toBeGreaterThan(0) // expect to fail on each invalid value
         expect(validationErrors[0].property).toBe('parentThreadId')
