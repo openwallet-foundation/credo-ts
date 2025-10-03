@@ -107,7 +107,6 @@ describe("Decorators | ThreadDecorator", () => {
         const decorator = new ThreadDecorator({
           parentThreadId: invalidValue,
         });
-        console.log("Testing invalid value:", invalidValue);
         const validationErrors = await validate(decorator);
         expect(validationErrors.length).toBeGreaterThan(0); // expect to fail on each invalid value
         expect(validationErrors[0].property).toBe("parentThreadId");
