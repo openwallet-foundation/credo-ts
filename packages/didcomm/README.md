@@ -34,27 +34,21 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
-> **Note**: By the default when the `DidCommModule` is enabled, the following modules are enabled:
->
-> - `OutOfBandModule`
-> - `ConnectionsModule`
-> - `DiscoverFeaturesModule`
-> - `MessagePickupModule`
-> - `MediatorModule`
-> - `MediationRecipientModule`
-> - `BasicMessagesModule`
-> - `CredentialsModule`
-> - `ProofsModule`
->
-> The `OutOfBandModule`, `ConnectionsModule` and `DiscoveryFeaturesModule` are always enabled, the other modules can be disabled by providing `false` for the module in the didcomm module config
+> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `DidCommOutOfBandModule`, `DidCommConnectionsModule` and `MessagePickupModule`
 
 ### Example of usage
 
 ```ts
 import type { DidCommModuleConfigOptions } from "@credo-ts/didcomm";
 
-import { agentDependencies, HttpInboundTransport } from "@credo-ts/node";
-import { DidCommModule, HttpOutboundTransport } from "@credo-ts/didcomm";
+import { agentDependencies, DidCommHttpInboundTransport } from "@credo-ts/node";
+import {
+  DidCommConnectionsModule,
+  DidCommProofsModule,
+  DidCommCredentialsModule,
+  DidCommHttpOutboundTransport,
+  getDefaultDidcommModules,
+} from "@credo-ts/didcomm";
 
 const agent = new Agent({
   config: {
@@ -62,29 +56,26 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    didcomm: new DidCommModule({
-      connections: {
-        /* Custom module settings */
-      },
-      credentials: {
-        /* Custom module settings */
-      }
-      proofs: {
-        /* Custom module settings */
-      },
-
-      // same for `mediationRecipient`, `mediator`, `messagePickup`
-      // `discovery`
-    })
+    ...getDefaultDidcommModules(didcommConfig),
+    connections: new DidCommConnectionsModule({
+      /* Custom module settings */
+    }),
+    credentials: new DidCommCredentialsModule({
+      /* Custom module settings */
+    }),
+    proofs: new DidCommProofsModule({
+      /* Custom module settings */
+    }),
+    /* */
     /* other custom modules */
   },
 });
 
 // Register inbound and outbound transports for DIDComm
-agent.modules.didcomm.registerInboundTransport(
-  new HttpInboundTransport({ port })
+agent.didcomm.registerInboundTransport(
+  new DidCommHttpInboundTransport({ port })
 );
-agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport());
+agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport());
 
 await agent.initialize();
 

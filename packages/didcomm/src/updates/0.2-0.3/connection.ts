@@ -1,18 +1,18 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { ConnectionRecord } from '../../modules/connections'
+import type { DidCommConnectionRecord } from '../../modules/connections'
 
-import { ConnectionRepository, ConnectionType } from '../../modules/connections'
-import { MediationRepository } from '../../modules/routing'
+import { DidCommConnectionRepository, DidCommConnectionType } from '../../modules/connections'
+import { DidCommMediationRepository } from '../../modules/routing'
 
 /**
- * Migrate the {@link ConnectionRecord} to a 0.3 compatible format.
+ * Migrate the {@link DidCommConnectionRecord} to a 0.3 compatible format.
  *
  * @param agent
  */
 export async function migrateConnectionRecordToV0_3<Agent extends BaseAgent>(agent: Agent) {
   agent.config.logger.info('Migrating connection records to storage version 0.3')
-  const connectionRepository = agent.dependencyManager.resolve(ConnectionRepository)
-  const mediationRepository = agent.dependencyManager.resolve(MediationRepository)
+  const connectionRepository = agent.dependencyManager.resolve(DidCommConnectionRepository)
+  const mediationRepository = agent.dependencyManager.resolve(DidCommMediationRepository)
 
   agent.config.logger.debug('Fetching all connection records from storage')
   const allConnections = await connectionRepository.getAll(agent.context)
@@ -43,7 +43,7 @@ export async function migrateConnectionRecordToV0_3<Agent extends BaseAgent>(age
  */
 export async function migrateConnectionRecordTags<Agent extends BaseAgent>(
   agent: Agent,
-  connectionRecord: ConnectionRecord,
+  connectionRecord: DidCommConnectionRecord,
   mediatorConnectionIds: Set<string> = new Set()
 ) {
   agent.config.logger.debug(
@@ -54,8 +54,8 @@ export async function migrateConnectionRecordTags<Agent extends BaseAgent>(
   const connectionTypeTags = (connectionRecord.getTags().connectionType || []) as [string]
   const connectionTypes = [...connectionTypeTags]
 
-  if (mediatorConnectionIds.has(connectionRecord.id) && !connectionTypes.includes(ConnectionType.Mediator)) {
-    connectionTypes.push(ConnectionType.Mediator)
+  if (mediatorConnectionIds.has(connectionRecord.id) && !connectionTypes.includes(DidCommConnectionType.Mediator)) {
+    connectionTypes.push(DidCommConnectionType.Mediator)
   }
 
   connectionRecord.connectionTypes = connectionTypes

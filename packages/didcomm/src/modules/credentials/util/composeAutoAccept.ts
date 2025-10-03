@@ -1,14 +1,14 @@
-import { AutoAcceptCredential } from '../models/CredentialAutoAcceptType'
+import { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
 
 /**
  * Returns the credential auto accept config based on priority:
  *	- The record config takes first priority
  *	- Otherwise the agent config
- *	- Otherwise {@link AutoAcceptCredential.Never} is returned
+ *	- Otherwise {@link DidCommAutoAcceptCredential.Never} is returned
  */
 export function composeAutoAccept(
-  recordConfig: AutoAcceptCredential | undefined,
-  agentConfig: AutoAcceptCredential | undefined
+  recordConfig: DidCommAutoAcceptCredential | undefined,
+  agentConfig: DidCommAutoAcceptCredential | undefined
 ) {
-  return recordConfig ?? agentConfig ?? AutoAcceptCredential.Never
+  return recordConfig ?? agentConfig ?? DidCommAutoAcceptCredential.Never
 }

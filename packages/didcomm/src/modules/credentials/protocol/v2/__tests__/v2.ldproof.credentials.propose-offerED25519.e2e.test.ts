@@ -1,10 +1,10 @@
 import type { EventReplaySubject } from '../../../../../../../core/tests'
 
 import {
-  LegacyIndyCredentialFormatService,
-  LegacyIndyProofFormatService,
-  V1CredentialProtocol,
-  V1ProofProtocol,
+  DidCommCredentialV1Protocol,
+  DidCommProofV1Protocol,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
 } from '../../../../../../../anoncreds/src'
 import {
   getAnonCredsIndyModules,
@@ -25,15 +25,14 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
-import { DidCommModule } from '../../../../../DidCommModule'
-import { DidCommModuleConfigOptions } from '../../../../../DidCommModuleConfig'
-import { ProofEventTypes, V2ProofProtocol } from '../../../../proofs'
-import { CredentialEventTypes } from '../../../CredentialEvents'
-import { JsonLdCredentialFormatService } from '../../../formats'
-import { CredentialState } from '../../../models'
-import { CredentialExchangeRecord } from '../../../repository/CredentialExchangeRecord'
-import { V2CredentialProtocol } from '../V2CredentialProtocol'
-import { V2CredentialPreview } from '../messages'
+import { DidCommProofEventTypes, DidCommProofV2Protocol, DidCommProofsModule } from '../../../../proofs'
+import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialsModule } from '../../../DidCommCredentialsModule'
+import { DidCommJsonLdCredentialFormatService } from '../../../formats'
+import { DidCommCredentialState } from '../../../models'
+import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
+import { DidCommCredentialV2Preview } from '../messages'
 
 const signCredentialOptions = {
   credential: {
@@ -67,9 +66,9 @@ const signCredentialOptions = {
   },
 }
 
-const indyCredentialFormat = new LegacyIndyCredentialFormatService()
-const jsonLdCredentialFormat = new JsonLdCredentialFormatService()
-const indyProofFormat = new LegacyIndyProofFormatService()
+const indyCredentialFormat = new LegacyIndyDidCommCredentialFormatService()
+const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
+const indyProofFormat = new LegacyIndyDidCommProofFormatService()
 
 const didcommModuleConfig = {
   credentials: {
@@ -93,7 +92,22 @@ const didcommModuleConfig = {
 const getIndyJsonLdModules = () =>
   ({
     ...getAnonCredsIndyModules(),
-    didcomm: new DidCommModule(didcommModuleConfig),
+    credentials: new DidCommCredentialsModule({
+      credentialProtocols: [
+        new DidCommCredentialV1Protocol({ indyCredentialFormat }),
+        new DidCommCredentialV2Protocol({
+          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
+        }),
+      ],
+    }),
+    proofs: new DidCommProofsModule({
+      proofProtocols: [
+        new DidCommProofV1Protocol({ indyProofFormat }),
+        new DidCommProofV2Protocol({
+          proofFormats: [indyProofFormat],
+        }),
+      ],
+    }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
     }),
@@ -140,7 +154,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     setupSubjectTransports([faberAgent, aliceAgent])
     ;[faberReplay, aliceReplay] = setupEventReplaySubjects(
       [faberAgent, aliceAgent],
-      [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+      [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
     )
     await faberAgent.initialize()
     await aliceAgent.initialize()
@@ -191,25 +205,25 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     expect(credentialExchangeRecord.connectionId).toEqual(aliceConnectionId)
     expect(credentialExchangeRecord.protocolVersion).toEqual('v2')
-    expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
+    expect(credentialExchangeRecord.state).toEqual(DidCommCredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialExchangeRecord.threadId,
-      state: CredentialState.ProposalReceived,
+      state: DidCommCredentialState.ProposalReceived,
     })
 
     testLogger.test('Faber sends credential offer to Alice')
     await faberAgent.didcomm.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C Offer',
     })
 
     testLogger.test('Alice waits for credential offer from Faber')
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     const offerMessage = await aliceAgent.didcomm.credentials.findOfferMessage(aliceCredentialRecord.id)
@@ -248,10 +262,10 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       replacement_id: undefined,
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
+    expect(aliceCredentialRecord.type).toBe(DidCommCredentialExchangeRecord.type)
 
     const offerCredentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
       credentialFormats: {
         jsonld: {},
       },
@@ -259,43 +273,43 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnectionId)
     expect(offerCredentialExchangeRecord.protocolVersion).toEqual('v2')
-    expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
+    expect(offerCredentialExchangeRecord.state).toEqual(DidCommCredentialState.RequestSent)
     expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential request from Alice')
     await waitForCredentialRecordSubject(faberReplay, {
       threadId: aliceCredentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
 
     await faberAgent.didcomm.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.didcomm.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
+    await aliceAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: expect.any(String),
       connectionId: expect.any(String),
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     const credentialMessage = await faberAgent.didcomm.credentials.findCredentialMessage(faberCredentialRecord.id)
@@ -336,7 +350,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
   test('Multiple Formats: Alice starts with V2 (both ld and indy formats) credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2 jsonld) credential proposal to Faber')
     // set the propose options - using both indy and ld credential formats here
-    const credentialPreview = V2CredentialPreview.fromRecord({
+    const credentialPreview = DidCommCredentialV2Preview.fromRecord({
       name: 'John',
       age: '99',
       'x-ray': 'some x-ray',
@@ -365,19 +379,19 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
 
     expect(credentialExchangeRecord.connectionId).toEqual(aliceConnectionId)
     expect(credentialExchangeRecord.protocolVersion).toEqual('v2')
-    expect(credentialExchangeRecord.state).toEqual(CredentialState.ProposalSent)
+    expect(credentialExchangeRecord.state).toEqual(DidCommCredentialState.ProposalSent)
     expect(credentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential proposal from Alice')
     let faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: credentialExchangeRecord.threadId,
-      state: CredentialState.ProposalReceived,
+      state: DidCommCredentialState.ProposalReceived,
     })
 
     testLogger.test('Faber sends credential offer to Alice')
 
     await faberAgent.didcomm.credentials.acceptProposal({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 W3C & INDY Proposals',
       credentialFormats: {
         indy: {
@@ -391,7 +405,7 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     testLogger.test('Alice waits for credential offer from Faber')
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.OfferReceived,
+      state: DidCommCredentialState.OfferReceived,
     })
 
     const offerMessage = await faberAgent.didcomm.credentials.findOfferMessage(faberCredentialRecord.id)
@@ -476,51 +490,51 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
       replacement_id: undefined,
     })
     expect(aliceCredentialRecord.id).not.toBeNull()
-    expect(aliceCredentialRecord.type).toBe(CredentialExchangeRecord.type)
+    expect(aliceCredentialRecord.type).toBe(DidCommCredentialExchangeRecord.type)
 
     const offerCredentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer({
-      credentialRecordId: aliceCredentialRecord.id,
+      credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
     expect(offerCredentialExchangeRecord.connectionId).toEqual(aliceConnectionId)
     expect(offerCredentialExchangeRecord.protocolVersion).toEqual('v2')
-    expect(offerCredentialExchangeRecord.state).toEqual(CredentialState.RequestSent)
+    expect(offerCredentialExchangeRecord.state).toEqual(DidCommCredentialState.RequestSent)
     expect(offerCredentialExchangeRecord.threadId).not.toBeNull()
 
     testLogger.test('Faber waits for credential request from Alice')
     await waitForCredentialRecordSubject(faberReplay, {
       threadId: aliceCredentialRecord.threadId,
-      state: CredentialState.RequestReceived,
+      state: DidCommCredentialState.RequestReceived,
     })
 
     testLogger.test('Faber sends credential to Alice')
 
     await faberAgent.didcomm.credentials.acceptRequest({
-      credentialRecordId: faberCredentialRecord.id,
+      credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     })
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    await aliceAgent.didcomm.credentials.acceptCredential({ credentialRecordId: aliceCredentialRecord.id })
+    await aliceAgent.didcomm.credentials.acceptCredential({ credentialExchangeRecordId: aliceCredentialRecord.id })
 
     testLogger.test('Faber waits for credential ack from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
       threadId: faberCredentialRecord.threadId,
-      state: CredentialState.Done,
+      state: DidCommCredentialState.Done,
     })
     expect(aliceCredentialRecord).toMatchObject({
-      type: CredentialExchangeRecord.type,
+      type: DidCommCredentialExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: expect.any(String),
       connectionId: expect.any(String),
-      state: CredentialState.CredentialReceived,
+      state: DidCommCredentialState.CredentialReceived,
     })
 
     const credentialMessage = await faberAgent.didcomm.credentials.findCredentialMessage(faberCredentialRecord.id)

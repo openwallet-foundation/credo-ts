@@ -54,11 +54,13 @@ const agent = new Agent({
 
 ### Database
 
-The database instance provides a connection to the actual database. Credo supports any of the supported PostgreSQL and SQLite database drivers supported by Drizzle itself.
+The database instance provides a connection to the actual database. Credo currenlty supports a limited set of the supported PostgreSQL and SQLite database drivers supported by Drizzle.
 
-For this reason you need to instantiate your own database instance. You can read installation and setup instructions for all the Drizzle database dirvers in the [Drizzle documentation](https://orm.drizzle.team/docs/get-started).
+Because multiple drivers are supported, you need to instantiate your own database instance. You can read installation and setup instructions for all the Drizzle database dirvers in the [Drizzle documentation](https://orm.drizzle.team/docs/get-started).
 
-#### PostgreSQL example using `pg`
+If you want to use a custom driver that is compatible with Drizzle, please open an issue. Adding new drivers to Credo's Drizzle integration, and mainly requires us to extract the native PostgreSQL or SQLite error code from the driver-specific error class (e.g. `libsql` uses `error.rawCode`, while `pg` uses `error.code`).
+
+#### PostgreSQL using `pg`
 
 ```ts
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -68,7 +70,7 @@ const database = drizzle(
 );
 ```
 
-#### SQLite example using `libsql`
+#### SQLite using `libsql`
 
 ```ts
 import { drizzle } from "drizzle-orm/libsql";
@@ -76,7 +78,7 @@ import { drizzle } from "drizzle-orm/libsql";
 const database = drizzle("file:./database.db");
 ```
 
-#### SQLite example using `expo-sqlite`
+#### SQLite using `expo-sqlite`
 
 ```ts
 import { drizzle } from "drizzle-orm/expo-sqlite";
@@ -85,6 +87,8 @@ import { openDatabaseSync } from "expo-sqlite/next";
 const expo = openDatabaseSync("database.db");
 const database = drizzle(expo);
 ```
+
+You can configure `expo-sqlite` to use `SQLCipher` as the SQLite implementation, which is an open source variant of SQLite supporting encryption of the database.
 
 ### Bundles
 

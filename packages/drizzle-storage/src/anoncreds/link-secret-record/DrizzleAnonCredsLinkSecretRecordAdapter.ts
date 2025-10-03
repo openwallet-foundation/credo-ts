@@ -19,7 +19,7 @@ export class DrizzleAnonCredsLinkSecretRecordAdapter extends BaseDrizzleRecordAd
     super(
       database,
       { postgres: postgres.anonCredsLinkSecret, sqlite: sqlite.anonCredsLinkSecret },
-      'AnonCredsLinkSecretRecord'
+      AnonCredsLinkSecretRecord
     )
   }
 

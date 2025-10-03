@@ -1,7 +1,7 @@
 import type { InitConfig } from '@credo-ts/core'
 
 import { Agent } from '@credo-ts/core'
-import { DidCommModule } from '@credo-ts/didcomm'
+import { DidCommConnectionsModule, DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -26,6 +26,10 @@ const agent = new Agent({
     }),
     tenants: new TenantsModule({ sessionAcquireTimeout: 10000 }),
     inMemory: new InMemoryWalletModule(),
+
+    connections: new DidCommConnectionsModule({
+      autoAcceptConnections: true,
+    }),
   },
 })
 

@@ -1,7 +1,7 @@
 import { Expose } from 'class-transformer'
 import { IsEnum, IsOptional, Matches, ValidateIf } from 'class-validator'
 
-import { MessageIdRegExp } from '../../BaseMessage'
+import { MessageIdRegExp } from '../../BaseDidCommMessage'
 
 /**
  * Return route types.

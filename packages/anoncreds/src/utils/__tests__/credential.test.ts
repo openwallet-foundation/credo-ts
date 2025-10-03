@@ -1,4 +1,4 @@
-import { CredentialPreviewAttribute } from '@credo-ts/didcomm'
+import { DidCommCredentialPreviewAttribute } from '@credo-ts/didcomm'
 
 import {
   assertCredentialValuesMatch,
@@ -109,12 +109,12 @@ describe('Utils | Credentials', () => {
   describe('convertAttributesToCredentialValues', () => {
     test('returns object with raw and encoded attributes', () => {
       const attributes = [
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'name',
           mimeType: 'text/plain',
           value: '101 Wilson Lane',
         }),
-        new CredentialPreviewAttribute({
+        new DidCommCredentialPreviewAttribute({
           name: 'age',
           mimeType: 'text/plain',
           value: '1234',

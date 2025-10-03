@@ -2,7 +2,7 @@ import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidExchangeState, InboundMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
@@ -27,7 +27,7 @@ describe('QuestionAnswerService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   let agentConfig: AgentConfig
@@ -179,7 +179,7 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      const messageContext = new InboundMessageContext(questionMessage, {
+      const messageContext = new DidCommInboundMessageContext(questionMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -206,7 +206,7 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      const messageContext = new InboundMessageContext(questionMessage, {
+      const messageContext = new DidCommInboundMessageContext(questionMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -242,7 +242,7 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -267,7 +267,7 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -286,7 +286,7 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -307,7 +307,7 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })

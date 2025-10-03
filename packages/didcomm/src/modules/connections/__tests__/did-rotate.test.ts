@@ -12,11 +12,11 @@ import {
   waitForBasicMessage,
   waitForDidRotate,
 } from '../../../../../core/tests/helpers'
-import { MessageSender } from '../../../MessageSender'
-import { getOutboundMessageContext } from '../../../getOutboundMessageContext'
-import { BasicMessage } from '../../basic-messages'
-import { DidRotateAckMessage, DidRotateProblemReportMessage, HangupMessage } from '../messages'
-import { ConnectionRecord } from '../repository'
+import { DidCommMessageSender } from '../../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../../getDidCommOutboundMessageContext'
+import { DidCommBasicMessage } from '../../basic-messages'
+import { DidCommDidRotateAckMessage, DidCommDidRotateProblemReportMessage, DidCommHangupMessage } from '../messages'
+import { DidCommConnectionRecord } from '../repository'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
@@ -41,10 +41,10 @@ const bobAgentOptions = getAgentOptions(
 
 // This is the most common flow
 describe('Rotation E2E tests', () => {
-  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
-  let bobAgent: Agent<(typeof bobAgentOptions)['modules']>
-  let aliceBobConnection: ConnectionRecord | undefined
-  let bobAliceConnection: ConnectionRecord | undefined
+  let aliceAgent: Agent<DefaultAgentModulesInput>
+  let bobAgent: Agent<DefaultAgentModulesInput>
+  let aliceBobConnection: DidCommConnectionRecord | undefined
+  let bobAliceConnection: DidCommConnectionRecord | undefined
 
   beforeEach(async () => {
     aliceAgent = new Agent(aliceAgentOptions)
@@ -77,7 +77,9 @@ describe('Rotation E2E tests', () => {
       const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -106,8 +108,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -116,10 +118,12 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -179,7 +183,9 @@ describe('Rotation E2E tests', () => {
       })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
 
       // Check that new did is taken into account by both parties
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -208,8 +214,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -253,12 +259,14 @@ describe('Rotation E2E tests', () => {
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for acknowledge
-      await waitForAgentMessageProcessedEvent(aliceAgent, { messageType: DidRotateAckMessage.type.messageTypeUri })
+      await waitForAgentMessageProcessedEvent(aliceAgent, {
+        messageType: DidCommDidRotateAckMessage.type.messageTypeUri,
+      })
       const [firstRotate, secondRotate] = await waitForAllDidRotate
 
       const preRotateDid = aliceBobConnection?.did
       expect(firstRotate).toEqual({
-        connectionRecord: expect.any(ConnectionRecord),
+        connectionRecord: expect.any(DidCommConnectionRecord),
         ourDid: {
           from: preRotateDid,
           to: did,
@@ -267,7 +275,7 @@ describe('Rotation E2E tests', () => {
       })
 
       expect(secondRotate).toEqual({
-        connectionRecord: expect.any(ConnectionRecord),
+        connectionRecord: expect.any(DidCommConnectionRecord),
         ourDid: undefined,
         theirDid: {
           from: preRotateDid,
@@ -276,7 +284,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -291,8 +299,8 @@ describe('Rotation E2E tests', () => {
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      const messageToPreviousDid = await getOutboundMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message to previous did' }),
+      const messageToPreviousDid = await getOutboundDidCommMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message to previous did' }),
         connectionRecord: bobAliceConnection,
       })
 
@@ -332,11 +340,11 @@ describe('Rotation E2E tests', () => {
 
       // Wait for a problem report
       await waitForAgentMessageProcessedEvent(aliceAgent, {
-        messageType: DidRotateProblemReportMessage.type.messageTypeUri,
+        messageType: DidCommDidRotateProblemReportMessage.type.messageTypeUri,
       })
 
       // Send message to previous did
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageToPreviousDid)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageToPreviousDid)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message to previous did',
@@ -364,8 +372,8 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message before hangup' }),
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
 
@@ -374,7 +382,7 @@ describe('Rotation E2E tests', () => {
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
-        messageType: HangupMessage.type.messageTypeUri,
+        messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
@@ -384,7 +392,7 @@ describe('Rotation E2E tests', () => {
       ).rejects.toThrow()
 
       // If Bob sends a message afterwards, Alice should still be able to receive it
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
       await waitForBasicMessage(aliceAgent, {
         content: 'Message before hangup',
@@ -401,8 +409,8 @@ describe('Rotation E2E tests', () => {
 
       // Store an outbound context so we can attempt to send a message even if the connection is terminated.
       // A bit hacky, but may happen in some cases where message retry mechanisms are being used
-      const messageBeforeHangup = await getOutboundMessageContext(bobAgent.context, {
-        message: new BasicMessage({ content: 'Message before hangup' }),
+      const messageBeforeHangup = await getOutboundDidCommMessageContext(bobAgent.context, {
+        message: new DidCommBasicMessage({ content: 'Message before hangup' }),
         connectionRecord: bobAliceConnection?.clone(),
       })
 
@@ -415,11 +423,11 @@ describe('Rotation E2E tests', () => {
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {
-        messageType: HangupMessage.type.messageTypeUri,
+        messageType: DidCommHangupMessage.type.messageTypeUri,
       })
 
       // If Bob sends a message afterwards, Alice should not receive it since the connection has been deleted
-      await bobAgent.dependencyManager.resolve(MessageSender).sendMessage(messageBeforeHangup)
+      await bobAgent.dependencyManager.resolve(DidCommMessageSender).sendMessage(messageBeforeHangup)
 
       // An error is thrown by Alice agent and, after inspecting all basic messages, it cannot be found
       // TODO: Update as soon as agent sends error events upon reception of messages

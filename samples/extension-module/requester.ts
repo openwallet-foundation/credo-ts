@@ -2,7 +2,14 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
-import { DidCommModule, HttpOutboundTransport, WsOutboundTransport } from '@credo-ts/didcomm'
+import {
+  DidCommConnectionsModule,
+  DidCommHttpOutboundTransport,
+  DidCommMessagePickupModule,
+  DidCommModule,
+  DidCommOutOfBandModule,
+  DidCommWsOutboundTransport,
+} from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { ReplaySubject, filter, first, firstValueFrom, map, timeout } from 'rxjs'
@@ -12,8 +19,8 @@ import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
-  const wsOutboundTransport = new WsOutboundTransport()
-  const httpOutboundTransport = new HttpOutboundTransport()
+  const wsOutboundTransport = new DidCommWsOutboundTransport()
+  const httpOutboundTransport = new DidCommHttpOutboundTransport()
 
   // Setup the agent
   const agent = new Agent({
@@ -28,10 +35,11 @@ const run = async () => {
           key: 'requester',
         },
       }),
-      didcomm: new DidCommModule({
-        connections: {
-          autoAcceptConnections: true,
-        },
+      didcomm: new DidCommModule(),
+      oob: new DidCommOutOfBandModule(),
+      messagePickup: new DidCommMessagePickupModule(),
+      connections: new DidCommConnectionsModule({
+        autoAcceptConnections: true,
       }),
       dummy: new DummyModule(),
     },
@@ -39,8 +47,8 @@ const run = async () => {
   })
 
   // Register transports
-  agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
-  agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
+  agent.didcomm.registerOutboundTransport(wsOutboundTransport)
+  agent.didcomm.registerOutboundTransport(httpOutboundTransport)
 
   // Now agent will handle messages and events from Dummy protocol
 

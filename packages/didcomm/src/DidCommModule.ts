@@ -1,43 +1,44 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
 import type { Subject } from 'rxjs'
+import type { DidCommMessageReceivedEvent } from './DidCommEvents'
 import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
-import type { AgentMessageReceivedEvent } from './Events'
 
 import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
 import { mergeMap, takeUntil } from 'rxjs'
 
 import { DidCommApi } from './DidCommApi'
+import { DidCommDispatcher } from './DidCommDispatcher'
+import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import { DidCommEventTypes } from './DidCommEvents'
+import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
+import { DidCommMessageReceiver } from './DidCommMessageReceiver'
+import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { Dispatcher } from './Dispatcher'
-import { EnvelopeService } from './EnvelopeService'
-import { AgentEventTypes } from './Events'
-import { FeatureRegistry } from './FeatureRegistry'
-import { MessageHandlerRegistry } from './MessageHandlerRegistry'
-import { MessageReceiver } from './MessageReceiver'
-import { MessageSender } from './MessageSender'
-import { TransportService } from './TransportService'
+import { DidCommTransportService } from './DidCommTransportService'
 import {
-  BasicMessagesModule,
-  ConnectionsModule,
-  CredentialProtocol,
-  CredentialsModule,
-  CredentialsModuleConfigOptions,
-  DefaultCredentialProtocols,
-  DefaultMessagePickupProtocols,
-  DefaultProofProtocols,
-  DiscoverFeaturesModule,
-  MediationRecipientModule,
-  MediatorModule,
-  MessagePickupModule,
-  MessagePickupModuleConfigOptions,
-  MessagePickupProtocol,
-  OutOfBandModule,
+  DefaultDidCommMessagePickupProtocols,
+  DefaultDidCommProofProtocols,
+  DidCommBasicMessagesModule,
+  DidCommConnectionsModule,
+  DidCommCredentialProtocol,
+  DidCommDiscoverFeaturesModule,
+  DidCommMessagePickupModule,
+  DidCommMessagePickupModuleConfigOptions,
+  DidCommMessagePickupProtocol,
+  DidCommOutOfBandModule,
+  DidCommProofsModule,
+  DidCommProofsModuleConfigOptions,
   ProofProtocol,
-  ProofsModule,
-  ProofsModuleConfigOptions,
 } from './modules'
+import {
+  DefaultDidCommCredentialProtocols,
+  DidCommCredentialsModule,
+} from './modules/credentials/DidCommCredentialsModule'
+import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
+import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
-import { DidCommDocumentService } from './services'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
@@ -46,70 +47,73 @@ import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
 type ModuleOrEmpty<Config, Module> = Config extends false ? {} : Module
 
 type DidCommModules<Options extends DidCommModuleConfigOptions> = {
-  connections: ConnectionsModule
-  oob: OutOfBandModule
-  discovery: DiscoverFeaturesModule
+  connections: DidCommConnectionsModule
+  oob: DidCommOutOfBandModule
+  discovery: DidCommDiscoverFeaturesModule
 } & ModuleOrEmpty<
   Options['credentials'],
   {
-    credentials: CredentialsModule<
-      Options['credentials'] extends CredentialsModuleConfigOptions<CredentialProtocol[]>
+    credentials: DidCommCredentialsModule<
+      Options['credentials'] extends DidCommCredentialsModuleConfigOptions<DidCommCredentialProtocol[]>
         ? Options['credentials']['credentialProtocols']
-        : DefaultCredentialProtocols
+        : DefaultDidCommCredentialProtocols
     >
   }
 > &
   ModuleOrEmpty<
     Options['proofs'],
     {
-      proofs: ProofsModule<
-        Options['proofs'] extends ProofsModuleConfigOptions<ProofProtocol[]>
+      proofs: DidCommProofsModule<
+        Options['proofs'] extends DidCommProofsModuleConfigOptions<ProofProtocol[]>
           ? Options['proofs']['proofProtocols']
-          : DefaultProofProtocols
+          : DefaultDidCommProofProtocols
       >
     }
   > &
   ModuleOrEmpty<
     Options['messagePickup'],
     {
-      messagePickup: MessagePickupModule<
-        Options['messagePickup'] extends MessagePickupModuleConfigOptions<MessagePickupProtocol[]>
+      messagePickup: DidCommMessagePickupModule<
+        Options['messagePickup'] extends DidCommMessagePickupModuleConfigOptions<DidCommMessagePickupProtocol[]>
           ? Options['messagePickup']['protocols']
-          : DefaultMessagePickupProtocols
+          : DefaultDidCommMessagePickupProtocols
       >
     }
   > &
-  ModuleOrEmpty<Options['mediator'], { mediator: MediatorModule }> &
-  ModuleOrEmpty<Options['mediationRecipient'], { mediationRecipient: MediationRecipientModule }> &
-  ModuleOrEmpty<Options['basicMessages'], { basicMessages: BasicMessagesModule }>
+  ModuleOrEmpty<Options['mediator'], { mediator: DidCommMediatorModule }> &
+  ModuleOrEmpty<Options['mediationRecipient'], { mediationRecipient: DidCommMediationRecipientModule }> &
+  ModuleOrEmpty<Options['basicMessages'], { basicMessages: DidCommBasicMessagesModule }>
 
 function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: Options): DidCommModules<Options> {
   return {
-    connections: new ConnectionsModule(options.connections),
-    oob: new OutOfBandModule(),
-    discovery: new DiscoverFeaturesModule(options.discovery),
+    connections: new DidCommConnectionsModule(options.connections),
+    oob: new DidCommOutOfBandModule(),
+    discovery: new DidCommDiscoverFeaturesModule(options.discovery),
 
     credentials:
       options.credentials !== false
-        ? new CredentialsModule(options.credentials === true ? {} : options.credentials)
+        ? new DidCommCredentialsModule(options.credentials === true ? {} : options.credentials)
         : undefined,
 
-    proofs: options.proofs !== false ? new ProofsModule(options.proofs === true ? {} : options.proofs) : undefined,
+    proofs:
+      options.proofs !== false ? new DidCommProofsModule(options.proofs === true ? {} : options.proofs) : undefined,
 
     mediator:
-      options.mediator !== false ? new MediatorModule(options.mediator === true ? {} : options.mediator) : undefined,
+      options.mediator !== false
+        ? new DidCommMediatorModule(options.mediator === true ? {} : options.mediator)
+        : undefined,
 
     mediationRecipient:
       options.mediationRecipient !== false
-        ? new MediationRecipientModule(options.mediationRecipient === true ? {} : options.mediationRecipient)
+        ? new DidCommMediationRecipientModule(options.mediationRecipient === true ? {} : options.mediationRecipient)
         : undefined,
 
     messagePickup:
       options.messagePickup !== false
-        ? new MessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
+        ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
         : undefined,
 
-    basicMessages: options.basicMessages !== false ? new BasicMessagesModule() : undefined,
+    basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
   } as unknown as DidCommModules<Options>
 }
 
@@ -132,16 +136,15 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
     dependencyManager.registerInstance(DidCommModuleConfig, this.config)
 
     // Registries
-    dependencyManager.registerSingleton(MessageHandlerRegistry)
-    dependencyManager.registerSingleton(FeatureRegistry)
+    dependencyManager.registerSingleton(DidCommMessageHandlerRegistry)
+    dependencyManager.registerSingleton(DidCommFeatureRegistry)
 
     // Services
-    dependencyManager.registerSingleton(MessageSender)
-    dependencyManager.registerSingleton(MessageReceiver)
-    dependencyManager.registerSingleton(TransportService)
-    dependencyManager.registerSingleton(Dispatcher)
-    dependencyManager.registerSingleton(EnvelopeService)
-    dependencyManager.registerSingleton(DidCommDocumentService)
+    dependencyManager.registerSingleton(DidCommMessageSender)
+    dependencyManager.registerSingleton(DidCommMessageReceiver)
+    dependencyManager.registerSingleton(DidCommTransportService)
+    dependencyManager.registerSingleton(DidCommDispatcher)
+    dependencyManager.registerSingleton(DidCommEnvelopeService)
 
     // Repositories
     dependencyManager.registerSingleton(DidCommMessageRepository)
@@ -158,13 +161,13 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
   public async initialize(agentContext: AgentContext): Promise<void> {
     const stop$ = agentContext.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
-    const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
-    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+    const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
+    const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     // We create this before doing any other initialization, so the initialization could already receive messages
     eventEmitter
-      .observable<AgentMessageReceivedEvent>(AgentEventTypes.AgentMessageReceived)
+      .observable<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived)
       .pipe(
         takeUntil(stop$),
         mergeMap(
@@ -226,8 +229,8 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions> implement
   }
 
   public async shutdown(agentContext: AgentContext) {
-    const messageReceiver = agentContext.dependencyManager.resolve(MessageReceiver)
-    const messageSender = agentContext.dependencyManager.resolve(MessageSender)
+    const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
+    const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
 
     // Stop transports
     const allTransports = [...messageReceiver.inboundTransports, ...messageSender.outboundTransports]

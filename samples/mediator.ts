@@ -24,12 +24,16 @@ import { TestLogger } from '../packages/core/tests/logger'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
-  ConnectionInvitationMessage,
+  DidCommConnectionInvitationMessage,
+  DidCommConnectionsModule,
+  DidCommHttpOutboundTransport,
+  DidCommMediatorModule,
+  DidCommMessagePickupModule,
   DidCommModule,
-  HttpOutboundTransport,
-  WsOutboundTransport,
+  DidCommOutOfBandModule,
+  DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 
@@ -58,34 +62,34 @@ const agent = new Agent({
         key: process.env.WALLET_KEY || 'Credo',
       },
     }),
-    didcomm: new DidCommModule({
-      endpoints,
-      mediator: {
-        autoAcceptMediationRequests: true,
-      },
-      connections: {
-        autoAcceptConnections: true,
-      },
+    didcomm: new DidCommModule({ endpoints }),
+    oob: new DidCommOutOfBandModule(),
+    messagePickup: new DidCommMessagePickupModule(),
+    mediator: new DidCommMediatorModule({
+      autoAcceptMediationRequests: true,
+    }),
+    connections: new DidCommConnectionsModule({
+      autoAcceptConnections: true,
     }),
   },
 })
 
 // Create all transports
-const httpInboundTransport = new HttpInboundTransport({ app, port })
-const httpOutboundTransport = new HttpOutboundTransport()
-const wsInboundTransport = new WsInboundTransport({ server: socketServer })
-const wsOutboundTransport = new WsOutboundTransport()
+const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+const httpOutboundTransport = new DidCommHttpOutboundTransport()
+const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+const wsOutboundTransport = new DidCommWsOutboundTransport()
 
 // Register all Transports
-agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
-agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
+agent.didcomm.registerInboundTransport(httpInboundTransport)
+agent.didcomm.registerOutboundTransport(httpOutboundTransport)
+agent.didcomm.registerInboundTransport(wsInboundTransport)
+agent.didcomm.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
   if (typeof req.query.c_i === 'string') {
-    const invitation = ConnectionInvitationMessage.fromUrl(req.url)
+    const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
     const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()

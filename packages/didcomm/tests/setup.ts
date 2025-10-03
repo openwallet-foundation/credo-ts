@@ -1,12 +1,12 @@
 import 'reflect-metadata'
 
-import type { ConnectionRecord } from '../../didcomm/src'
+import type { DidCommConnectionRecord } from '../../didcomm/src'
 
 jest.setTimeout(120000)
 expect.extend({ toBeConnectedWith })
 
 // Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
-function toBeConnectedWith(actual: ConnectionRecord, expected: ConnectionRecord) {
+function toBeConnectedWith(actual: DidCommConnectionRecord, expected: DidCommConnectionRecord) {
   actual.assertReady()
   expected.assertReady()
 

@@ -3,7 +3,7 @@ import type { AnonCredsHolderService } from '../../services'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 
 import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
-import { CredentialRepository } from '@credo-ts/didcomm'
+import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
 
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
 import { AnonCredsHolderServiceSymbol } from '../../services'
@@ -135,7 +135,7 @@ async function migrateLegacyToW3cCredential(agentContext: AgentContext, legacyRe
   await w3cCredentialRepository.update(agentContext, w3cCredentialRecord)
 
   // Find the credential exchange record bound to this anoncreds credential and update it to point to the newly created w3c record
-  const credentialExchangeRepository = agentContext.dependencyManager.resolve(CredentialRepository)
+  const credentialExchangeRepository = agentContext.dependencyManager.resolve(DidCommCredentialExchangeRepository)
   const [relatedCredentialExchangeRecord] = await credentialExchangeRepository.findByQuery(agentContext, {
     credentialIds: [legacyRecord.credentialId],
   })

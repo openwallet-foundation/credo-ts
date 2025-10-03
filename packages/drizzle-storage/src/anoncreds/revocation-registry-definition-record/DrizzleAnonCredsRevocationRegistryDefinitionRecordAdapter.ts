@@ -24,7 +24,7 @@ export class DrizzleAnonCredsRevocationRegistryDefinitionRecordAdapter extends B
         postgres: postgres.anonCredsRevocationRegistryDefinition,
         sqlite: sqlite.anonCredsRevocationRegistryDefinition,
       },
-      'AnonCredsRevocationRegistryDefinitionRecord'
+      AnonCredsRevocationRegistryDefinitionRecord
     )
   }
 

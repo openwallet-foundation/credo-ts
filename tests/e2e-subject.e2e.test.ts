@@ -11,7 +11,12 @@ import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent } from '@credo-ts/core'
-import { AutoAcceptCredential, MediatorPickupStrategy } from '@credo-ts/didcomm'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
+} from '@credo-ts/didcomm'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',
@@ -19,12 +24,10 @@ const recipientAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        mediationRecipient: {
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-        },
-      },
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+    }),
+    mediationRecipient: new DidCommMediationRecipientModule({
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -38,8 +41,9 @@ const mediatorAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
+    mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -51,13 +55,11 @@ const senderAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        mediationRecipient: {
-          mediatorPollingInterval: 1000,
-          mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
-        },
-      },
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+    }),
+    mediationRecipient: new DidCommMediationRecipientModule({
+      mediatorPollingInterval: 1000,
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -90,17 +92,17 @@ describe('E2E Subject tests', () => {
     }
 
     // Recipient Setup
-    recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    senderAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
+    senderAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    senderAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
 
     await e2eTest({

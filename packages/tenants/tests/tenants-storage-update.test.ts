@@ -2,7 +2,7 @@ import type { FileSystem, InitConfig } from '@credo-ts/core'
 
 import path from 'path'
 import { Agent, CacheModule, InMemoryLruCache, InjectionSymbols, UpdateAssistant } from '@credo-ts/core'
-import { ConnectionsModule, DidCommModule } from '@credo-ts/didcomm'
+import { DidCommConnectionsModule, DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
@@ -27,7 +27,7 @@ const modules = {
       key: 'tenants-agent-04',
     },
   }),
-  connections: new ConnectionsModule({
+  connections: new DidCommConnectionsModule({
     autoAcceptConnections: true,
   }),
   cache: new CacheModule({

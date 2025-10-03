@@ -1,10 +1,10 @@
-import type { DidExchangeRole, DidExchangeState, HandshakeProtocol } from '@credo-ts/didcomm'
+import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
 import { boolean, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
 
 export const didcommConnectionStates = exhaustiveArray(
-  {} as DidExchangeState,
+  {} as DidCommDidExchangeState,
   [
     'start',
     'invitation-sent',
@@ -19,11 +19,11 @@ export const didcommConnectionStates = exhaustiveArray(
 )
 export const didcommConnectionStateEnum = pgEnum('DidcommConnectionState', didcommConnectionStates)
 
-export const didcommConnectionRoles = exhaustiveArray({} as DidExchangeRole, ['requester', 'responder'] as const)
+export const didcommConnectionRoles = exhaustiveArray({} as DidCommDidExchangeRole, ['requester', 'responder'] as const)
 export const didcommConnectionRoleEnum = pgEnum('DidcommConnectionRole', didcommConnectionRoles)
 
 export const didcommConnectionHandshakeProtocols = exhaustiveArray(
-  {} as HandshakeProtocol,
+  {} as DidCommHandshakeProtocol,
   ['https://didcomm.org/didexchange/1.x', 'https://didcomm.org/connections/1.x'] as const
 )
 export const didcommConnectionHandshakeProtocolEnum = pgEnum(

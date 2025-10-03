@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord } from '../../connections'
+import type { DidCommConnectionRecord } from '../../connections'
 
 import { Agent, RecordNotFoundError } from '@credo-ts/core'
 import { Subject } from 'rxjs'
@@ -9,8 +9,8 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { MessageSendingError } from '../../../errors'
-import { BasicMessage } from '../messages'
-import { BasicMessageRecord } from '../repository'
+import { DidCommBasicMessage } from '../messages'
+import { DidCommBasicMessageRecord } from '../repository'
 
 const faberConfig = getAgentOptions(
   'Faber Basic Messages',
@@ -35,8 +35,8 @@ const aliceConfig = getAgentOptions(
 describe('Basic Messages E2E', () => {
   let faberAgent: Agent
   let aliceAgent: Agent
-  let faberConnection: ConnectionRecord
-  let aliceConnection: ConnectionRecord
+  let faberConnection: DidCommConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -47,13 +47,13 @@ describe('Basic Messages E2E', () => {
     }
 
     faberAgent = new Agent(faberConfig)
-    faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceConfig)
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection, faberConnection] = await makeConnection(aliceAgent, faberAgent)
   })
@@ -145,7 +145,7 @@ describe('Basic Messages E2E', () => {
     testLogger.test('Alice sends message to Faber that is undeliverable')
 
     const spy = jest
-      .spyOn(aliceAgent.modules.didcomm.outboundTransports[0], 'sendMessage')
+      .spyOn(aliceAgent.didcomm.outboundTransports[0], 'sendMessage')
       .mockRejectedValue(new Error('any error'))
 
     await expect(aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello')).rejects.toThrow(
@@ -159,15 +159,15 @@ describe('Basic Messages E2E', () => {
         `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
       )
       testLogger.test('Error thrown includes the outbound message and recently created record id')
-      expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(BasicMessageRecord)
-      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(BasicMessage)
-      expect((thrownError.outboundMessageContext.message as BasicMessage).content).toBe('Hello undeliverable')
+      expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
+      expect(thrownError.outboundMessageContext.message).toBeInstanceOf(DidCommBasicMessage)
+      expect((thrownError.outboundMessageContext.message as DidCommBasicMessage).content).toBe('Hello undeliverable')
 
       testLogger.test('Created record can be found and deleted by id')
       const storedRecord = await aliceAgent.didcomm.basicMessages.getById(
         thrownError.outboundMessageContext.associatedRecord?.id
       )
-      expect(storedRecord).toBeInstanceOf(BasicMessageRecord)
+      expect(storedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.didcomm.basicMessages.deleteById(storedRecord.id)

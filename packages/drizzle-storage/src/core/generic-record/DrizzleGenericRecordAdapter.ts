@@ -15,7 +15,7 @@ export class DrizzleGenericRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.genericRecord, sqlite: sqlite.genericRecord }, 'GenericRecord')
+    super(database, { postgres: postgres.genericRecord, sqlite: sqlite.genericRecord }, GenericRecord)
   }
 
   public getValues(record: GenericRecord) {

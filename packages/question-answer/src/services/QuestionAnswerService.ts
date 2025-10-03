@@ -1,5 +1,5 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { InboundMessageContext } from '@credo-ts/didcomm'
+import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import type { ValidResponse } from '../models'
 
@@ -79,7 +79,7 @@ export class QuestionAnswerService {
    * @returns QuestionAnswer record
    */
   public async processReceiveQuestion(
-    messageContext: InboundMessageContext<QuestionMessage>
+    messageContext: DidCommInboundMessageContext<QuestionMessage>
   ): Promise<QuestionAnswerRecord> {
     const { message: questionMessage } = messageContext
 
@@ -143,7 +143,9 @@ export class QuestionAnswerService {
    * @param messageContext the message context containing an answer message message
    * @returns QuestionAnswer record
    */
-  public async receiveAnswer(messageContext: InboundMessageContext<AnswerMessage>): Promise<QuestionAnswerRecord> {
+  public async receiveAnswer(
+    messageContext: DidCommInboundMessageContext<AnswerMessage>
+  ): Promise<QuestionAnswerRecord> {
     const { message: answerMessage } = messageContext
 
     this.logger.debug(`Receiving answer message with id ${answerMessage.id}`)

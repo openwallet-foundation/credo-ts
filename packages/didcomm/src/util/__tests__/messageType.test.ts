@@ -1,4 +1,4 @@
-import { AgentMessage } from '../../AgentMessage'
+import { DidCommMessage } from '../../DidCommMessage'
 import {
   canHandleMessageType,
   parseDidCommProtocolUri,
@@ -12,7 +12,7 @@ import {
 } from '../messageType'
 
 // biome-ignore lint/suspicious/noExportsInTest: <explanation>
-export class TestMessage extends AgentMessage {
+export class TestMessage extends DidCommMessage {
   public constructor() {
     super()
 

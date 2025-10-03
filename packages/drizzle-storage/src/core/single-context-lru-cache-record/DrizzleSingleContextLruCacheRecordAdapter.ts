@@ -18,7 +18,7 @@ export class DrizzleSingleContextLruCacheRecordAdapter extends BaseDrizzleRecord
     super(
       database,
       { postgres: postgres.singleContextLruCache, sqlite: sqlite.singleContextLruCache },
-      'SingleContextLruCacheRecord'
+      SingleContextLruCacheRecord
     )
   }
 

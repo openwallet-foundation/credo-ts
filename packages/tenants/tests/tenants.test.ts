@@ -3,7 +3,13 @@ import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { TenantAgent } from '../src/TenantAgent'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
-import { DidCommModule, OutOfBandRecord } from '@credo-ts/didcomm'
+import {
+  DidCommConnectionsModule,
+  DidCommMessagePickupModule,
+  DidCommModule,
+  DidCommOutOfBandModule,
+  DidCommOutOfBandRecord,
+} from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -32,11 +38,12 @@ const agent2DidcommConfig: DidCommModuleConfigOptions = {
 
 const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
   ({
-    didcomm: new DidCommModule({
-      ...didcommConfig,
-      connections: {
-        autoAcceptConnections: true,
-      },
+    didcomm: new DidCommModule(didcommConfig),
+    oob: new DidCommOutOfBandModule(),
+    messagePickup: new DidCommMessagePickupModule(),
+    tenants: new TenantsModule(),
+    connections: new DidCommConnectionsModule({
+      autoAcceptConnections: true,
     }),
     inMemory: new InMemoryWalletModule({ enableKms: false }),
     cache: new CacheModule({
@@ -77,16 +84,16 @@ const agent2 = new Agent({
 const agent1InboundTransport = new SubjectInboundTransport()
 const agent2InboundTransport = new SubjectInboundTransport()
 
-agent1.modules.didcomm.registerInboundTransport(agent1InboundTransport)
-agent2.modules.didcomm.registerInboundTransport(agent2InboundTransport)
+agent1.didcomm.registerInboundTransport(agent1InboundTransport)
+agent2.didcomm.registerInboundTransport(agent2InboundTransport)
 
-agent1.modules.didcomm.registerOutboundTransport(
+agent1.didcomm.registerOutboundTransport(
   new SubjectOutboundTransport({
     'rxjs:tenant-agent1': agent1InboundTransport.ourSubject,
     'rxjs:tenant-agent2': agent2InboundTransport.ourSubject,
   })
 )
-agent2.modules.didcomm.registerOutboundTransport(
+agent2.didcomm.registerOutboundTransport(
   new SubjectOutboundTransport({
     'rxjs:tenant-agent1': agent1InboundTransport.ourSubject,
     'rxjs:tenant-agent2': agent2InboundTransport.ourSubject,
@@ -271,7 +278,7 @@ describe('Tenants E2E', () => {
         tenantAgent as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
       ).didcomm.oob.createInvitation()
 
-      expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
+      expect(outOfBandRecord).toBeInstanceOf(DidCommOutOfBandRecord)
       expect(tenantAgent.context.contextCorrelationId).toBe(`tenant-${tenantRecord.id}`)
     })
 
@@ -279,7 +286,7 @@ describe('Tenants E2E', () => {
   })
 
   test('fallback middleware for the tenant manager propagated to the tenant', async () => {
-    expect(agent1.modules.didcomm.fallbackMessageHandler).toBeUndefined()
+    expect(agent1.didcomm.fallbackMessageHandler).toBeUndefined()
 
     const fallbackFunction = async () => {
       // empty
@@ -287,9 +294,9 @@ describe('Tenants E2E', () => {
       return undefined
     }
 
-    agent1.modules.didcomm.setFallbackMessageHandler(fallbackFunction)
+    agent1.didcomm.setFallbackMessageHandler(fallbackFunction)
 
-    expect(agent1.modules.didcomm.fallbackMessageHandler).toBe(fallbackFunction)
+    expect(agent1.didcomm.fallbackMessageHandler).toBe(fallbackFunction)
 
     const tenantRecord = await agent1.modules.tenants.createTenant({
       config: {
@@ -301,7 +308,7 @@ describe('Tenants E2E', () => {
       tenantId: tenantRecord.id,
     })) as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
 
-    expect(tenantAgent.modules.didcomm.fallbackMessageHandler).toBe(fallbackFunction)
+    expect(tenantAgent.didcomm.fallbackMessageHandler).toBe(fallbackFunction)
 
     await tenantAgent.endSession()
   })

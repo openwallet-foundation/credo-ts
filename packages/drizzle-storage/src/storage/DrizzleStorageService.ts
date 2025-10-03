@@ -16,7 +16,7 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
   public constructor(public config: DrizzleStorageModuleConfig) {}
 
   private getAdapterForRecordType(recordType: string) {
-    const adapter = this.config.adapters.find((adapter) => adapter.recordType === recordType)
+    const adapter = this.config.adapters.find((adapter) => adapter.recordClass.type === recordType)
     if (!adapter) {
       throw new CredoDrizzleStorageError(
         `Could not find a registered drizzle adapter for record type '${recordType}'. Make sure to register the record type in the DrizzleStorageModule.`
@@ -32,8 +32,6 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
     record.updatedAt = record.createdAt
 
     const adapter = this.getAdapterForRecordType(record.type)
-
-    // TOOD: duplicate
     await adapter.insert(agentContext, record)
   }
 

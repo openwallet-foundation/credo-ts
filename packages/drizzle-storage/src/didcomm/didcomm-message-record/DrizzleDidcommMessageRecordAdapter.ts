@@ -20,7 +20,7 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommMessage, sqlite: sqlite.didcommMessage }, 'DidCommMessageRecord')
+    super(database, { postgres: postgres.didcommMessage, sqlite: sqlite.didcommMessage }, DidCommMessageRecord)
   }
 
   public tagKeyMapping = {

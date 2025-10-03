@@ -1,8 +1,8 @@
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { AutoAcceptProof, ConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type { DidCommAutoAcceptProof, DidCommConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
-  AnonCredsOfferCredentialFormat,
+  AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
   AnonCredsRegisterRevocationRegistryDefinitionOptions,
   AnonCredsRegisterRevocationStatusListOptions,
@@ -27,15 +27,15 @@ import {
   TypedArrayEncoder,
 } from '@credo-ts/core'
 import {
-  AutoAcceptCredential,
-  CredentialEventTypes,
-  CredentialState,
+  DidCommAutoAcceptCredential,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommCredentialV2Protocol,
+  DidCommDifPresentationExchangeProofFormatService,
   DidCommModule,
-  DifPresentationExchangeProofFormatService,
-  ProofEventTypes,
-  ProofState,
-  V2CredentialProtocol,
-  V2ProofProtocol,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
 
 import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
@@ -49,8 +49,8 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import { AnonCredsCredentialFormatService, AnonCredsModule, AnonCredsProofFormatService } from '../src'
-import { DataIntegrityCredentialFormatService } from '../src/formats/DataIntegrityCredentialFormatService'
+import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
 
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
@@ -69,8 +69,8 @@ export const getAnonCredsModules = ({
   cheqd,
   extraDidCommConfig,
 }: {
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
   registries?: [AnonCredsRegistry, ...AnonCredsRegistry[]]
   cheqd?: {
     rpcUrl?: string
@@ -78,7 +78,7 @@ export const getAnonCredsModules = ({
   }
   extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
-  const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
+  const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
     existingCredentialDefinitions: {
@@ -90,9 +90,9 @@ export const getAnonCredsModules = ({
     },
   })
 
-  const anonCredsCredentialFormatService = new AnonCredsCredentialFormatService()
-  const anonCredsProofFormatService = new AnonCredsProofFormatService()
-  const presentationExchangeProofFormatService = new DifPresentationExchangeProofFormatService()
+  const anonCredsCredentialFormatService = new AnonCredsDidCommCredentialFormatService()
+  const anonCredsProofFormatService = new AnonCredsDidCommProofFormatService()
+  const presentationExchangeProofFormatService = new DidCommDifPresentationExchangeProofFormatService()
 
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
@@ -102,7 +102,7 @@ export const getAnonCredsModules = ({
       credentials: {
         autoAcceptCredentials,
         credentialProtocols: [
-          new V2CredentialProtocol({
+          new DidCommCredentialV2Protocol({
             credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
           }),
         ],
@@ -110,12 +110,13 @@ export const getAnonCredsModules = ({
       proofs: {
         autoAcceptProofs,
         proofProtocols: [
-          new V2ProofProtocol({
+          new DidCommProofV2Protocol({
             proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
           }),
         ],
       },
     }),
+
     anoncreds: new AnonCredsModule({
       registries: registries ?? [inMemoryAnonCredsRegistry],
       tailsFileService: new InMemoryTailsFileService(),
@@ -152,7 +153,7 @@ export async function issueAnonCredsCredential({
 
   issuerHolderConnectionId: string
   revocationRegistryDefinitionId: string | null
-  offer: AnonCredsOfferCredentialFormat
+  offer: AnonCredsDidCommOfferCredentialFormat
 }) {
   let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
@@ -165,28 +166,28 @@ export async function issueAnonCredsCredential({
         revocationRegistryIndex: 1,
       },
     },
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   let holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.OfferReceived,
+    state: DidCommCredentialState.OfferReceived,
   })
 
   await holderAgent.didcomm.credentials.acceptOffer({
-    credentialRecordId: holderCredentialExchangeRecord.id,
-    autoAcceptCredential: AutoAcceptCredential.ContentApproved,
+    credentialExchangeRecordId: holderCredentialExchangeRecord.id,
+    autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
 
   // Because we use auto-accept it can take a while to have the whole credential flow finished
   // Both parties need to interact with the ledger and sign/verify the credential
   holderCredentialExchangeRecord = await waitForCredentialRecordSubject(holderReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
   issuerCredentialExchangeRecord = await waitForCredentialRecordSubject(issuerReplay, {
     threadId: issuerCredentialExchangeRecord.threadId,
-    state: CredentialState.Done,
+    state: DidCommCredentialState.Done,
   })
 
   return {
@@ -251,7 +252,7 @@ export async function presentAnonCredsProof({
   }
 }) {
   let holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
-    state: ProofState.RequestReceived,
+    state: DidCommProofState.RequestReceived,
   })
 
   let verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
@@ -270,16 +271,16 @@ export async function presentAnonCredsProof({
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
   const selectedCredentials = await holderAgent.didcomm.proofs.selectCredentialsForRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
   const verifierProofExchangeRecordPromise = waitForProofExchangeRecordSubject(verifierReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.PresentationReceived,
+    state: DidCommProofState.PresentationReceived,
   })
 
   await holderAgent.didcomm.proofs.acceptRequest({
-    proofRecordId: holderProofExchangeRecord.id,
+    proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
 
@@ -290,11 +291,11 @@ export async function presentAnonCredsProof({
 
   holderProofExchangeRecordPromise = waitForProofExchangeRecordSubject(holderReplay, {
     threadId: holderProofExchangeRecord.threadId,
-    state: ProofState.Done,
+    state: DidCommProofState.Done,
   })
 
   verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptPresentation({
-    proofRecordId: verifierProofExchangeRecord.id,
+    proofExchangeRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
@@ -328,8 +329,8 @@ export async function setupAnonCredsTests<
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
   attributeNames: string[]
   createConnections?: CreateConnections
   supportRevocation?: boolean
@@ -391,7 +392,7 @@ export async function setupAnonCredsTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
@@ -440,10 +441,10 @@ export async function setupAnonCredsTests<
       supportRevocation,
     })
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)

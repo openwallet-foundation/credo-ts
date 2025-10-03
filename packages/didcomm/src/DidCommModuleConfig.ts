@@ -1,18 +1,17 @@
-import { ModulesMap } from '@credo-ts/core'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
 import {
-  ConnectionsModuleConfigOptions,
-  CredentialProtocol,
-  CredentialsModuleConfigOptions,
-  MessagePickupModuleConfigOptions,
-  ProofProtocol,
-  ProofsModuleConfigOptions,
+  DidCommConnectionsModuleConfigOptions,
+  DidCommCredentialProtocol,
+  DidCommMessagePickupModuleConfigOptions,
+  DidCommMessagePickupProtocol,
+  DidCommProofsModuleConfigOptions,
 } from './modules'
-import { DiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DiscoverFeaturesModuleConfig'
-import { MessagePickupProtocol } from './modules/message-pickup/protocol/MessagePickupProtocol'
-import { MediationRecipientModuleConfigOptions } from './modules/routing/MediationRecipientModuleConfig'
-import { MediatorModuleConfigOptions } from './modules/routing/MediatorModuleConfig'
-import { InMemoryQueueTransportRepository, QueueTransportRepository } from './transport'
+import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
+import { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
+import { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
+import { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
+import { DidCommQueueTransportRepository, InMemoryQueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {
@@ -21,21 +20,21 @@ export interface DidCommModuleConfigOptions {
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
-  queueTransportRepository?: QueueTransportRepository
+  queueTransportRepository?: DidCommQueueTransportRepository
 
   /**
    * Configuration for the connection module.
    *
    * The connection module is always enabled
    */
-  connections?: ConnectionsModuleConfigOptions
+  connections?: DidCommConnectionsModuleConfigOptions
 
   /**
    * Configuration for the discover features module.
    *
    * The discover features module is always enabled
    */
-  discovery?: DiscoverFeaturesModuleConfigOptions
+  discovery?: DidCommDiscoverFeaturesModuleConfigOptions
 
   /**
    * Configuration for the credentials module
@@ -48,7 +47,7 @@ export interface DidCommModuleConfigOptions {
    *
    * @default true
    */
-  credentials?: boolean | CredentialsModuleConfigOptions<CredentialProtocol[]>
+  credentials?: boolean | DidCommCredentialsModuleConfigOptions<DidCommCredentialProtocol[]>
 
   /**
    * Configuration for the proofs module
@@ -61,7 +60,7 @@ export interface DidCommModuleConfigOptions {
    *
    * @default true
    */
-  proofs?: boolean | ProofsModuleConfigOptions<ProofProtocol[]>
+  proofs?: boolean | DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
 
   /**
    * Configuration to enable to basic messages module
@@ -84,7 +83,7 @@ export interface DidCommModuleConfigOptions {
    *
    * @default true
    */
-  messagePickup?: boolean | MessagePickupModuleConfigOptions<MessagePickupProtocol[]>
+  messagePickup?: boolean | DidCommMessagePickupModuleConfigOptions<DidCommMessagePickupProtocol[]>
 
   /**
    * Configuration or the mediator module
@@ -94,7 +93,7 @@ export interface DidCommModuleConfigOptions {
    *
    * @default true
    */
-  mediator?: boolean | MediatorModuleConfigOptions
+  mediator?: boolean | DidCommMediatorModuleConfigOptions
 
   /**
    * Configuration for the mediation recipient module
@@ -104,23 +103,13 @@ export interface DidCommModuleConfigOptions {
    *
    * @default true
    */
-  mediationRecipient?: boolean | MediationRecipientModuleConfigOptions
-
-  /**
-   * Additional modules to register as part of the DIDComm module.
-   *
-   * NOTE: you should not register any of the default registered modules,
-   * only extension modules, such as ActionMenuModule.
-   *
-   * Additional modules can be accessed on `agent.didcomm.modules.XXX`
-   */
-  modules?: ModulesMap
+  mediationRecipient?: boolean | DidCommMediationRecipientModuleConfigOptions
 }
 
 export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
   private options: Options
   private _endpoints?: string[]
-  private _queueTransportRepository: QueueTransportRepository
+  private _queueTransportRepository: DidCommQueueTransportRepository
 
   public readonly enabledModules: {
     oob: true

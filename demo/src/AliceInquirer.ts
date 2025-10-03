@@ -1,4 +1,4 @@
-import type { CredentialExchangeRecord, ProofExchangeRecord } from '@credo-ts/didcomm'
+import type { DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { clear } from 'console'
 import { textSync } from 'figlet'
@@ -69,21 +69,23 @@ export class AliceInquirer extends BaseInquirer {
     await this.processAnswer()
   }
 
-  public async acceptCredentialOffer(credentialRecord: CredentialExchangeRecord) {
+  public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.didcomm.credentials.declineOffer(credentialRecord.id)
+      await this.alice.agent.didcomm.credentials.declineOffer({
+        credentialExchangeRecordId: credentialExchangeRecord.id,
+      })
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.alice.acceptCredentialOffer(credentialRecord)
+      await this.alice.acceptCredentialOffer(credentialExchangeRecord)
     }
   }
 
-  public async acceptProofRequest(proofRecord: ProofExchangeRecord) {
+  public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.didcomm.proofs.declineRequest({ proofRecordId: proofRecord.id })
+      await this.alice.agent.didcomm.proofs.declineRequest({ proofExchangeRecordId: proofExchangeRecord.id })
     } else if (confirm.options === ConfirmOptions.Yes) {
-      await this.alice.acceptProofRequest(proofRecord)
+      await this.alice.acceptProofRequest(proofExchangeRecord)
     }
   }
 

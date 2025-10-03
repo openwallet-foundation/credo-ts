@@ -10,9 +10,10 @@ import {
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
-import { HandshakeProtocol } from '../../connections'
-import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
-import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
+import { DidCommHandshakeProtocol } from '../../connections'
+import { DidCommMediatorModule } from '../../routing'
+import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
+import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
 
 const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', undefined, undefined, undefined, {
   requireDidcomm: true,
@@ -22,10 +23,13 @@ const mediatorOptions = getAgentOptions(
   'Mediation Pickup Loop Mediator',
   {
     endpoints: ['wss://mediator'],
-    mediator: {
+  },
+  {},
+  {
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
-      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
-    },
+      messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+    }),
   },
   {},
   {},
@@ -52,20 +56,20 @@ describe('E2E Pick Up protocol', () => {
 
     // Initialize mediatorReceived message
     mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
     const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
     recipientAgent = new Agent(recipientOptions)
-    recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Connect
@@ -117,20 +121,20 @@ describe('E2E Pick Up protocol', () => {
 
     // Initialize mediatorReceived message
     mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
     const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
     recipientAgent = new Agent(recipientOptions)
-    recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Connect
@@ -187,20 +191,20 @@ describe('E2E Pick Up protocol', () => {
 
     // Initialize mediatorReceived message
     mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
     const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
     recipientAgent = new Agent(recipientOptions)
-    recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Connect
@@ -240,25 +244,25 @@ describe('E2E Pick Up protocol', () => {
       protocolVersion: 'v2',
     })
     const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: V2StatusMessage.type.messageTypeUri,
+      messageType: DidCommStatusV2Message.type.messageTypeUri,
     })
 
-    expect((firstStatusMessage as V2StatusMessage).messageCount).toBe(1)
+    expect((firstStatusMessage as DidCommStatusV2Message).messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
     const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
-      messageType: V2MessagesReceivedMessage.type.messageTypeUri,
+      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
     })
 
-    expect((messagesReceived as V2MessagesReceivedMessage).messageIdList.length).toBe(1)
+    expect((messagesReceived as DidCommMessagesReceivedV2Message).messageIdList.length).toBe(1)
 
     const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: V2StatusMessage.type.messageTypeUri,
+      messageType: DidCommStatusV2Message.type.messageTypeUri,
     })
 
-    expect((secondStatusMessage as V2StatusMessage).messageCount).toBe(0)
+    expect((secondStatusMessage as DidCommStatusV2Message).messageCount).toBe(0)
   })
 
   test('E2E manual Pick Up V2 loop - waiting for completion', async () => {
@@ -274,20 +278,20 @@ describe('E2E Pick Up protocol', () => {
 
     // Initialize mediatorReceived message
     mediatorAgent = new Agent(mediatorOptions)
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    mediatorAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
+    mediatorAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    mediatorAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(mediatorMessages))
     await mediatorAgent.initialize()
 
     // Create connection to use for recipient
     const mediatorOutOfBandRecord = await mediatorAgent.didcomm.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
     recipientAgent = new Agent(recipientOptions)
-    recipientAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await recipientAgent.initialize()
 
     // Connect

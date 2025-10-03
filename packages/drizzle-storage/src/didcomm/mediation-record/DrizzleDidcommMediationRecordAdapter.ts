@@ -6,24 +6,24 @@ import {
   DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
-import { MediationRecord } from '@credo-ts/didcomm'
+import { DidCommMediationRecord } from '@credo-ts/didcomm'
 import { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
 type DrizzleDidcommMediationAdapterValues = DrizzleAdapterRecordValues<(typeof sqlite)['didcommMediation']>
 export class DrizzleDidcommMediationRecordAdapter extends BaseDrizzleRecordAdapter<
-  MediationRecord,
+  DidCommMediationRecord,
   typeof postgres.didcommMediation,
   typeof postgres,
   typeof sqlite.didcommMediation,
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.didcommMediation, sqlite: sqlite.didcommMediation }, 'MediationRecord')
+    super(database, { postgres: postgres.didcommMediation, sqlite: sqlite.didcommMediation }, DidCommMediationRecord)
   }
 
-  public getValues(record: MediationRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMediation']> {
+  public getValues(record: DidCommMediationRecord): DrizzleAdapterValues<(typeof sqlite)['didcommMediation']> {
     const { connectionId, recipientKeys, role, state, threadId, default: defaultTag, ...customTags } = record.getTags()
 
     return {
@@ -40,10 +40,10 @@ export class DrizzleDidcommMediationRecordAdapter extends BaseDrizzleRecordAdapt
     }
   }
 
-  public toRecord(values: DrizzleDidcommMediationAdapterValues): MediationRecord {
+  public toRecord(values: DrizzleDidcommMediationAdapterValues): DidCommMediationRecord {
     const { customTags, default: defaultTag, ...remainingValues } = values
 
-    const record = JsonTransformer.fromJSON(remainingValues, MediationRecord)
+    const record = JsonTransformer.fromJSON(remainingValues, DidCommMediationRecord)
     record.setTags({ ...customTags, default: defaultTag ?? undefined })
 
     return record

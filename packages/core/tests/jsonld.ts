@@ -1,12 +1,13 @@
-import type { AutoAcceptCredential, AutoAcceptProof, ConnectionRecord } from '../../didcomm/src'
+import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
 import {
-  CredentialEventTypes,
-  DidCommModule,
-  DifPresentationExchangeProofFormatService,
-  JsonLdCredentialFormatService,
-  ProofEventTypes,
-  V2CredentialProtocol,
-  V2ProofProtocol,
+  DidCommCredentialEventTypes,
+  DidCommCredentialV2Protocol,
+  DidCommCredentialsModule,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommJsonLdCredentialFormatService,
+  DidCommProofEventTypes,
+  DidCommProofV2Protocol,
+  DidCommProofsModule,
 } from '../../didcomm/src'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
@@ -23,21 +24,23 @@ export const getJsonLdModules = (
   {
     autoAcceptCredentials,
     autoAcceptProofs,
-  }: { autoAcceptCredentials?: AutoAcceptCredential; autoAcceptProofs?: AutoAcceptProof } = {}
+  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}
 ) =>
   ({
-    didcomm: new DidCommModule({
-      credentials: {
-        credentialProtocols: [new V2CredentialProtocol({ credentialFormats: [new JsonLdCredentialFormatService()] })],
-        autoAcceptCredentials,
-      },
-      proofs: {
-        autoAcceptProofs,
-        proofProtocols: [new V2ProofProtocol({ proofFormats: [new DifPresentationExchangeProofFormatService()] })],
-      },
+    credentials: new DidCommCredentialsModule({
+      credentialProtocols: [
+        new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
+      ],
+      autoAcceptCredentials,
     }),
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
+    }),
+    proofs: new DidCommProofsModule({
+      autoAcceptProofs,
+      proofProtocols: [
+        new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+      ],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -85,8 +88,8 @@ export async function setupJsonLdTests<
   issuerName: string
   holderName: string
   verifierName?: VerifierName
-  autoAcceptCredentials?: AutoAcceptCredential
-  autoAcceptProofs?: AutoAcceptProof
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
   createConnections?: CreateConnections
 }): Promise<SetupJsonLdTestsReturn<VerifierName, CreateConnections>> {
   const issuerAgent = new Agent(
@@ -139,17 +142,17 @@ export async function setupJsonLdTests<
   setupSubjectTransports(verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent])
   const [issuerReplay, holderReplay, verifierReplay] = setupEventReplaySubjects(
     verifierAgent ? [issuerAgent, holderAgent, verifierAgent] : [issuerAgent, holderAgent],
-    [CredentialEventTypes.CredentialStateChanged, ProofEventTypes.ProofStateChanged]
+    [DidCommCredentialEventTypes.DidCommCredentialStateChanged, DidCommProofEventTypes.ProofStateChanged]
   )
 
   await issuerAgent.initialize()
   await holderAgent.initialize()
   if (verifierAgent) await verifierAgent.initialize()
 
-  let issuerHolderConnection: ConnectionRecord | undefined
-  let holderIssuerConnection: ConnectionRecord | undefined
-  let verifierHolderConnection: ConnectionRecord | undefined
-  let holderVerifierConnection: ConnectionRecord | undefined
+  let issuerHolderConnection: DidCommConnectionRecord | undefined
+  let holderIssuerConnection: DidCommConnectionRecord | undefined
+  let verifierHolderConnection: DidCommConnectionRecord | undefined
+  let holderVerifierConnection: DidCommConnectionRecord | undefined
 
   if (createConnections ?? true) {
     ;[issuerHolderConnection, holderIssuerConnection] = await makeConnection(issuerAgent, holderAgent)

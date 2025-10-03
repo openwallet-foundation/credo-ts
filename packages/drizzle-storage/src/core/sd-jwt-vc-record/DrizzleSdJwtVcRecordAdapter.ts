@@ -15,7 +15,7 @@ export class DrizzleSdJwtVcRecordAdapter extends BaseDrizzleRecordAdapter<
   typeof sqlite
 > {
   public constructor(database: DrizzleDatabase<typeof postgres, typeof sqlite>) {
-    super(database, { postgres: postgres.sdJwtVc, sqlite: sqlite.sdJwtVc }, 'SdJwtVcRecord')
+    super(database, { postgres: postgres.sdJwtVc, sqlite: sqlite.sdJwtVc }, SdJwtVcRecord)
   }
 
   public getValues(record: SdJwtVcRecord) {
