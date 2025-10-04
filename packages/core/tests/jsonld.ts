@@ -1,4 +1,9 @@
-import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
+import type {
+  DidCommAutoAcceptCredential,
+  DidCommAutoAcceptProof,
+  DidCommConnectionRecord,
+  DidCommModuleConfigOptions,
+} from '../../didcomm/src'
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialV2Protocol,
@@ -21,9 +26,18 @@ export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 export const getJsonLdModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
-}: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}) =>
+  extraDidCommConfig,
+}: {
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
+  extraDidCommConfig?: DidCommModuleConfigOptions
+} = {}) =>
   ({
     didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...extraDidCommConfig,
       credentials: {
         credentialProtocols: [
           new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
@@ -94,13 +108,14 @@ export async function setupJsonLdTests<
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
+      {},
       {},
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -109,13 +124,14 @@ export async function setupJsonLdTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
+      {},
       {},
       getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -125,13 +141,14 @@ export async function setupJsonLdTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
+          {},
           {},
           getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
           { requireDidcomm: true }
         )

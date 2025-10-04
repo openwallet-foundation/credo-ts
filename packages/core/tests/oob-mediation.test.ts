@@ -123,7 +123,7 @@ describe('out of band with mediation', () => {
     let connectionTypes = await aliceAgent.didcomm.connections.getConnectionTypes(aliceMediatorConnection.id)
     expect(connectionTypes).toMatchObject(['initial-type'])
 
-    const mediationRecord = await aliceAgent.modules.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
+    const mediationRecord = await aliceAgent.didcomm.mediationRecipient.requestAndAwaitGrant(aliceMediatorConnection)
     connectionTypes = await aliceAgent.didcomm.connections.getConnectionTypes(mediationRecord.connectionId)
     expect(connectionTypes.sort()).toMatchObject(['initial-type', DidCommConnectionType.Mediator].sort())
     await aliceAgent.didcomm.connections.removeConnectionType(mediationRecord.connectionId, 'initial-type')
