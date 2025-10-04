@@ -21,7 +21,6 @@ import {
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   DidCommLinkedAttachment,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -366,11 +365,7 @@ describe('V1 Proofs - Connectionless - Indy', () => {
         },
       },
       {},
-      {
-        mediator: new DidCommMediatorModule({
-          autoAcceptMediationRequests: true,
-        }),
-      },
+      {},
       { requireDidcomm: true }
     )
 

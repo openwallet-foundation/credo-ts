@@ -15,9 +15,7 @@ import {
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateMessage,
-  DidCommMediationRecipientModule,
   DidCommMediationState,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
 } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
@@ -43,11 +41,7 @@ const aliceAgentOptions = getAgentOptions(
     },
   },
   {},
-  {
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
-    }),
-  },
+  {},
   { requireDidcomm: true }
 )
 const mediatorAgentOptions = getAgentOptions(
@@ -57,7 +51,7 @@ const mediatorAgentOptions = getAgentOptions(
     mediator: { autoAcceptMediationRequests: true },
   },
   {},
-  { mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }) },
+  {},
   { requireDidcomm: true }
 )
 

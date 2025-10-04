@@ -8,7 +8,6 @@ import {
   DidCommHandshakeProtocol,
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateMessage,
-  DidCommMediatorModule,
 } from '../../didcomm/src'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { Agent } from '../src/agent/Agent'
@@ -63,11 +62,7 @@ const mediatorAgent = new Agent(
       },
     },
     {},
-    {
-      mediator: new DidCommMediatorModule({
-        autoAcceptMediationRequests: true,
-      }),
-    },
+    {},
     { requireDidcomm: true }
   )
 )

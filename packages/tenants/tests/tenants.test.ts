@@ -3,13 +3,7 @@ import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import type { TenantAgent } from '../src/TenantAgent'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
-import {
-  DidCommConnectionsModule,
-  DidCommMessagePickupModule,
-  DidCommModule,
-  DidCommOutOfBandModule,
-  DidCommOutOfBandRecord,
-} from '@credo-ts/didcomm'
+import { DidCommModule, DidCommOutOfBandRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -38,13 +32,13 @@ const agent2DidcommConfig: DidCommModuleConfigOptions = {
 
 const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
   ({
-    didcomm: new DidCommModule(didcommConfig),
-    oob: new DidCommOutOfBandModule(),
-    messagePickup: new DidCommMessagePickupModule(),
-    tenants: new TenantsModule(),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
+    didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...didcommConfig,
     }),
+    tenants: new TenantsModule(),
     inMemory: new InMemoryWalletModule({ enableKms: false }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 500 }),

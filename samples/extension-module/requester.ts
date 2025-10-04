@@ -2,14 +2,7 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
-import {
-  DidCommConnectionsModule,
-  DidCommHttpOutboundTransport,
-  DidCommMessagePickupModule,
-  DidCommModule,
-  DidCommOutOfBandModule,
-  DidCommWsOutboundTransport,
-} from '@credo-ts/didcomm'
+import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { ReplaySubject, filter, first, firstValueFrom, map, timeout } from 'rxjs'
@@ -35,11 +28,10 @@ const run = async () => {
           key: 'requester',
         },
       }),
-      didcomm: new DidCommModule(),
-      oob: new DidCommOutOfBandModule(),
-      messagePickup: new DidCommMessagePickupModule(),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
+      didcomm: new DidCommModule({
+        connections: {
+          autoAcceptConnections: true,
+        },
       }),
       dummy: new DummyModule(),
     },

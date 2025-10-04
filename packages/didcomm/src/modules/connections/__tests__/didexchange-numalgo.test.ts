@@ -9,7 +9,6 @@ import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
-import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
 import { DidCommDidExchangeState } from '../models'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
@@ -103,13 +102,13 @@ async function didExchangeNumAlgoBaseTest(options: {
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:alice'],
+      connections: {
+        autoAcceptConnections: false,
+        peerNumAlgoForDidExchangeRequests: options.requesterNumAlgoSetting,
+      },
     },
     {},
     {
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: false,
-        peerNumAlgoForDidExchangeRequests: options.requesterNumAlgoSetting,
-      }),
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
     },
     { requireDidcomm: true }
@@ -118,13 +117,13 @@ async function didExchangeNumAlgoBaseTest(options: {
     'DID Exchange numalgo settings Alice',
     {
       endpoints: ['rxjs:faber'],
+      connections: {
+        autoAcceptConnections: false,
+        peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
+      },
     },
     {},
     {
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: false,
-        peerNumAlgoForDidExchangeRequests: options.responderNumAlgoSetting,
-      }),
       dids: new DidsModule({ registrars: [didRegistry], resolvers: [didRegistry] }),
     },
     { requireDidcomm: true }

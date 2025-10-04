@@ -34,21 +34,13 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
-> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `DidCommOutOfBandModule`, `DidCommConnectionsModule` and `MessagePickupModule`
-
 ### Example of usage
 
 ```ts
 import type { DidCommModuleConfigOptions } from "@credo-ts/didcomm";
 
 import { agentDependencies, DidCommHttpInboundTransport } from "@credo-ts/node";
-import {
-  DidCommConnectionsModule,
-  DidCommProofsModule,
-  DidCommCredentialsModule,
-  DidCommHttpOutboundTransport,
-  getDefaultDidcommModules,
-} from "@credo-ts/didcomm";
+import { DidCommModule, DidCommHttpOutboundTransport } from "@credo-ts/didcomm";
 
 const agent = new Agent({
   config: {
@@ -56,17 +48,27 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    ...getDefaultDidcommModules(didcommConfig),
-    connections: new DidCommConnectionsModule({
-      /* Custom module settings */
+    didcomm: new DidCommModule({
+      /* didcomm config */
+
+      connections: {
+        /* Custom module settings */
+      },
+      proofs: {
+        /* Custom module settings */
+      },
+      credentials: {
+        /* Custom module settings */
+      },
+
+      // can also provide module config for:
+      // mediator: {},
+      // mediationRecipient: {},
+      // messagePickup: {},
+      // discovery: {},
+      // basicMessages: {},
     }),
-    credentials: new DidCommCredentialsModule({
-      /* Custom module settings */
-    }),
-    proofs: new DidCommProofsModule({
-      /* Custom module settings */
-    }),
-    /* */
+
     /* other custom modules */
   },
 });

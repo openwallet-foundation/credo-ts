@@ -1,12 +1,7 @@
 import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
-import {
-  DidCommMediationRecipientModule,
-  DidCommMediationState,
-  DidCommMediatorModule,
-  DidCommMediatorPickupStrategy,
-} from '../../didcomm/src/modules/routing'
+import { DidCommMediationState, DidCommMediatorPickupStrategy } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
@@ -30,11 +25,7 @@ const aliceAgentOptions = getAgentOptions(
     },
   },
   {},
-  {
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
-    }),
-  },
+  {},
   { requireDidcomm: true }
 )
 const mediatorAgentOptions = getAgentOptions(
@@ -44,7 +35,7 @@ const mediatorAgentOptions = getAgentOptions(
     mediator: { autoAcceptMediationRequests: true },
   },
   {},
-  { mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }) },
+  {},
   { requireDidcomm: true }
 )
 

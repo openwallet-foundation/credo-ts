@@ -7,7 +7,6 @@ import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
-import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
 import { DidCommDidExchangeState } from '../models'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
@@ -53,39 +52,36 @@ describe('Manual Connection Flow', () => {
       'Manual Connection Flow Alice',
       {
         endpoints: ['rxjs:alice'],
+        connections: {
+          autoAcceptConnections: false,
+        },
       },
       {},
-      {
-        connections: new DidCommConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
+      {},
       { requireDidcomm: true }
     )
     const bobAgentOptions = getAgentOptions(
       'Manual Connection Flow Bob',
       {
         endpoints: ['rxjs:bob'],
+        connections: {
+          autoAcceptConnections: false,
+        },
       },
       {},
-      {
-        connections: new DidCommConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
+      {},
       { requireDidcomm: true }
     )
     const faberAgentOptions = getAgentOptions(
       'Manual Connection Flow Faber',
       {
         endpoints: ['rxjs:faber'],
+        connections: {
+          autoAcceptConnections: false,
+        },
       },
       {},
-      {
-        connections: new DidCommConnectionsModule({
-          autoAcceptConnections: false,
-        }),
-      },
+      {},
       { requireDidcomm: true }
     )
 

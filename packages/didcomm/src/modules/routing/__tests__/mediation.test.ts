@@ -9,10 +9,9 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { sleep } from '../../../../../core/src/utils/sleep'
 import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { DidCommModule } from '../../../DidCommModule'
 import { DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
 import { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../../connections'
-import { DidCommMediationRecipientModule } from '../DidCommMediationRecipientModule'
-import { DidCommMediatorModule } from '../DidCommMediatorModule'
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
 import { DidCommMediationState } from '../models/DidCommMediationState'
 
@@ -24,11 +23,11 @@ const getRecipientAgentOptions = (
   getAgentOptions(
     'Mediation: Recipient',
     {
-      ...didCommModuleConfig,
-      useDidKeyInProtocols,
       mediationRecipient: {
         mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
       },
+      useDidKeyInProtocols,
+      ...didCommModuleConfig,
     },
     undefined,
     undefined,
@@ -43,11 +42,7 @@ const getMediatorAgentOptions = (useDidKeyInProtocols = true) =>
       mediator: { autoAcceptMediationRequests: true },
     },
     {},
-    {
-      mediator: new DidCommMediatorModule({
-        autoAcceptMediationRequests: true,
-      }),
-    },
+    {},
     { requireDidcomm: true }
   )
 
@@ -109,29 +104,24 @@ describe('mediator establishment', () => {
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent({
       ...recipientAgentOptions,
+
       modules: {
         ...recipientAgentOptions.modules,
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
+        didcomm: new DidCommModule({
+          // @ts-ignore
+          ...recipientAgentOptions.modules.didcomm.config.options,
+          mediationRecipient: {
+            mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+            mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+              domain: 'https://example.com/ssi',
+            }),
+          },
         }),
       },
     })
     recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     recipientAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
-
-    let { connectionRecord } = await recipientAgent.didcomm.oob.receiveInvitationFromUrl(
-      mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-        domain: 'https://example.com/ssi',
-      }),
-      { label: 'wallet' }
-    )
-    if (!connectionRecord) throw new Error('expected connection record')
-    connectionRecord = await recipientAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
-    await recipientAgent.didcomm.mediationRecipient.provision(connectionRecord)
 
     const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
     if (!recipientMediator) {

@@ -8,7 +8,7 @@ import { registerAskar } from '@openwallet-foundation/askar-shared'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
-import { DidCommConnectionsModule, DidCommHandshakeProtocol } from '../../didcomm'
+import { DidCommHandshakeProtocol } from '../../didcomm'
 import { agentDependencies } from '../../node/src'
 import { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
@@ -50,10 +50,10 @@ export function getAskarPostgresAgentOptions(
     dependencies: agentDependencies,
     modules: {
       didcomm: new DidCommModule({
-        ...didcommConfig,
         connections: {
           autoAcceptConnections: true,
         },
+        ...didcommConfig,
       }),
       askar: new AskarModule({
         askar,
@@ -62,9 +62,6 @@ export function getAskarPostgresAgentOptions(
           key: `Key${name}`,
           database: storageConfig,
         },
-      }),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
       }),
     },
   } as const
@@ -87,10 +84,10 @@ export function getAskarSqliteAgentOptions(
     dependencies: agentDependencies,
     modules: {
       didcomm: new DidCommModule({
-        ...didcommConfig,
         connections: {
           autoAcceptConnections: true,
         },
+        ...didcommConfig,
       }),
       askar: new AskarModule({
         askar,
@@ -99,9 +96,6 @@ export function getAskarSqliteAgentOptions(
           key: `Key${name}`,
           database: { type: 'sqlite', config: { inMemory } },
         },
-      }),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
       }),
     },
   } as const

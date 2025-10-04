@@ -25,12 +25,8 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
-  DidCommConnectionsModule,
   DidCommHttpOutboundTransport,
-  DidCommMediatorModule,
-  DidCommMessagePickupModule,
   DidCommModule,
-  DidCommOutOfBandModule,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
@@ -62,14 +58,14 @@ const agent = new Agent({
         key: process.env.WALLET_KEY || 'Credo',
       },
     }),
-    didcomm: new DidCommModule({ endpoints }),
-    oob: new DidCommOutOfBandModule(),
-    messagePickup: new DidCommMessagePickupModule(),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
-    }),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
+    didcomm: new DidCommModule({
+      endpoints,
+      mediator: {
+        autoAcceptMediationRequests: true,
+      },
+      connections: {
+        autoAcceptConnections: true,
+      },
     }),
   },
 })
