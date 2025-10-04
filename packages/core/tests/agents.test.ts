@@ -45,20 +45,20 @@ describe('agents', () => {
     await aliceAgent.initialize()
     await bobAgent.initialize()
 
-    const aliceBobOutOfBandRecord = await aliceAgent.modules.oob.createInvitation({
+    const aliceBobOutOfBandRecord = await aliceAgent.didcomm.oob.createInvitation({
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
-    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.modules.oob.receiveInvitation(
+    const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.didcomm.oob.receiveInvitation(
       aliceBobOutOfBandRecord.outOfBandInvitation,
       { label: 'alice' }
     )
-    bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionAtBobAlice?.id)
+    bobConnection = await bobAgent.didcomm.connections.returnWhenIsConnected(bobConnectionAtBobAlice?.id)
 
-    const [aliceConnectionAtAliceBob] = await aliceAgent.modules.connections.findAllByOutOfBandId(
+    const [aliceConnectionAtAliceBob] = await aliceAgent.didcomm.connections.findAllByOutOfBandId(
       aliceBobOutOfBandRecord.id
     )
-    aliceConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnectionAtAliceBob?.id)
+    aliceConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnectionAtAliceBob?.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
@@ -66,7 +66,7 @@ describe('agents', () => {
 
   test('send a message to connection', async () => {
     const message = 'hello, world'
-    await aliceAgent.modules.basicMessages.sendMessage(aliceConnection.id, message)
+    await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, message)
 
     const basicMessage = await waitForBasicMessage(bobAgent, {
       content: message,

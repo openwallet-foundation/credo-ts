@@ -187,7 +187,7 @@ describe('DidsApi', () => {
   })
 
   test('create and resolve did:peer:4 in short and long form', async () => {
-    const routing = await agent.modules.mediationRecipient.getRouting({})
+    const routing = await agent.didcomm.mediationRecipient.getRouting({})
     const { didDocument, keys } = createPeerDidDocumentFromServices(
       [
         {

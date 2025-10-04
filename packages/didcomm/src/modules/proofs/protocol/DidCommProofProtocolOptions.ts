@@ -43,7 +43,7 @@ export type ProofFormatDataMessagePayload<
 /**
  * Infer the {@link DidCommProofFormat} types based on an array of {@link DidCommProofProtocol} types.
  *
- * It does this by extracting the `ProofFormatServices` generic from the `ProofProtocol`, and
+ * It does this by extracting the `ProofFormatServices` generic from the `DidCommProofProtocol`, and
  * then extracting the `ProofFormat` generic from each of the `ProofFormatService` types.
  *
  * @example
@@ -54,7 +54,7 @@ export type ProofFormatDataMessagePayload<
  *
  * Because the `DidCommProofV1Protocol` is defined as follows:
  * ```
- * class DidCommProofV1Protocol implements ProofProtocol<[IndyProofFormatService]> {
+ * class DidCommProofV1Protocol implements DidCommProofProtocol<[IndyProofFormatService]> {
  * }
  * ```
  */

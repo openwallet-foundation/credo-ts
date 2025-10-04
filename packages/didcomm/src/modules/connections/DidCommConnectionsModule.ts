@@ -1,15 +1,41 @@
-import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
+import {
+  type AgentContext,
+  type DependencyManager,
+  DidRepository,
+  DidResolverService,
+  type Module,
+} from '@credo-ts/core'
 import type { DidCommConnectionsModuleConfigOptions } from './DidCommConnectionsModuleConfig'
 
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommProtocol } from '../../models'
 
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
+import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import { DidCommConnectionsApi } from './DidCommConnectionsApi'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
+import {
+  DidCommAckMessageHandler,
+  DidCommConnectionProblemReportHandler,
+  DidCommConnectionRequestHandler,
+  DidCommConnectionResponseHandler,
+  DidCommDidExchangeCompleteHandler,
+  DidCommDidExchangeRequestHandler,
+  DidCommDidExchangeResponseHandler,
+  DidCommDidRotateAckHandler,
+  DidCommDidRotateHandler,
+  DidCommDidRotateProblemReportHandler,
+  DidCommHangupHandler,
+  DidCommTrustPingMessageHandler,
+  DidCommTrustPingResponseMessageHandler,
+} from './handlers'
 import { DidCommConnectionRole, DidCommDidExchangeRole, DidCommDidRotateRole } from './models'
 import { DidCommConnectionRepository } from './repository'
-import { DidCommConnectionService, DidCommDidRotateService, DidCommTrustPingService } from './services'
+import { DidCommConnectionService } from './services/DidCommConnectionService'
+import { DidCommDidRotateService } from './services/DidCommDidRotateService'
+import { DidCommTrustPingService } from './services/DidCommTrustPingService'
 
 export class DidCommConnectionsModule implements Module {
   public readonly config: DidCommConnectionsModuleConfig
@@ -38,7 +64,61 @@ export class DidCommConnectionsModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     // Features
-    const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+    const featureRegistry = agentContext.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+
+    const connectionService = agentContext.resolve(DidCommConnectionService)
+    const outOfBandService = agentContext.resolve(DidCommOutOfBandService)
+    const routingService = agentContext.resolve(DidCommRoutingService)
+    const didRepository = agentContext.resolve(DidRepository)
+    const didResolverService = agentContext.resolve(DidResolverService)
+    const trustPingService = agentContext.resolve(DidCommTrustPingService)
+    const didExchangeProtocol = agentContext.resolve(DidExchangeProtocol)
+    const didRotateService = agentContext.resolve(DidCommDidRotateService)
+
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommConnectionRequestHandler(
+        connectionService,
+        outOfBandService,
+        routingService,
+        didRepository,
+        this.config
+      )
+    )
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommConnectionResponseHandler(connectionService, outOfBandService, didResolverService, this.config)
+    )
+    messageHandlerRegistry.registerMessageHandler(new DidCommAckMessageHandler(connectionService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommConnectionProblemReportHandler(connectionService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommTrustPingMessageHandler(trustPingService, connectionService)
+    )
+    messageHandlerRegistry.registerMessageHandler(new DidCommTrustPingResponseMessageHandler(trustPingService))
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommDidExchangeRequestHandler(
+        didExchangeProtocol,
+        outOfBandService,
+        routingService,
+        didRepository,
+        this.config
+      )
+    )
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommDidExchangeResponseHandler(
+        didExchangeProtocol,
+        outOfBandService,
+        connectionService,
+        didResolverService,
+        this.config
+      )
+    )
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommDidExchangeCompleteHandler(didExchangeProtocol, outOfBandService)
+    )
+    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateHandler(didRotateService, connectionService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
 
     featureRegistry.register(
       new DidCommProtocol({

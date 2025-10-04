@@ -143,7 +143,7 @@ async function anonCredsFlowTest(options: {
   })
 
   // issuer offers credential
-  let issuerRecord = await issuer.modules.credentials.offerCredential({
+  let issuerRecord = await issuer.didcomm.credentials.offerCredential({
     protocolVersion: 'v2',
     autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     connectionId: issuerHolderConnectionId,
@@ -166,7 +166,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommCredentialState.OfferReceived,
     threadId: issuerRecord.threadId,
   })
-  holderRecord = await holder.modules.credentials.acceptOffer({
+  holderRecord = await holder.didcomm.credentials.acceptOffer({
     credentialExchangeRecordId: holderRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
@@ -183,7 +183,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommCredentialState.RequestReceived,
     threadId: holderRecord.threadId,
   })
-  issuerRecord = await issuer.modules.credentials.acceptRequest({
+  issuerRecord = await issuer.didcomm.credentials.acceptRequest({
     credentialExchangeRecordId: issuerRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.Never,
     credentialFormats: {
@@ -195,7 +195,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommCredentialState.CredentialReceived,
     threadId: issuerRecord.threadId,
   })
-  holderRecord = await holder.modules.credentials.acceptCredential({
+  holderRecord = await holder.didcomm.credentials.acceptCredential({
     credentialExchangeRecordId: holderRecord.id,
   })
 
@@ -248,7 +248,7 @@ async function anonCredsFlowTest(options: {
     }
   }
 
-  let holderProofExchangeRecord = await holder.modules.proofs.proposeProof({
+  let holderProofExchangeRecord = await holder.didcomm.proofs.proposeProof({
     protocolVersion: 'v2',
     connectionId: holderIssuerConnectionId,
     proofFormats: {
@@ -264,13 +264,13 @@ async function anonCredsFlowTest(options: {
     state: DidCommProofState.RequestReceived,
   })
 
-  issuerProofExchangeRecord = await issuer.modules.proofs.acceptProposal({
+  issuerProofExchangeRecord = await issuer.didcomm.proofs.acceptProposal({
     proofExchangeRecordId: issuerProofExchangeRecord.id,
   })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const requestedCredentials = await holder.modules.proofs.selectCredentialsForRequest({
+  const requestedCredentials = await holder.didcomm.proofs.selectCredentialsForRequest({
     proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
@@ -284,7 +284,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommProofState.PresentationReceived,
   })
 
-  await holder.modules.proofs.acceptRequest({
+  await holder.didcomm.proofs.acceptRequest({
     proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: {
       presentationExchange: {
@@ -299,7 +299,7 @@ async function anonCredsFlowTest(options: {
     state: DidCommProofState.Done,
   })
 
-  await issuer.modules.proofs.acceptPresentation({ proofExchangeRecordId: issuerProofExchangeRecord.id })
+  await issuer.didcomm.proofs.acceptPresentation({ proofExchangeRecordId: issuerProofExchangeRecord.id })
 
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
 }

@@ -64,7 +64,7 @@ describe('Auto accept present proof', () => {
     test("Alice starts with proof proposal to Faber, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Alice sends presentation proposal to Faber')
 
-      await aliceAgent.modules.proofs.proposeProof({
+      await aliceAgent.didcomm.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
@@ -101,7 +101,7 @@ describe('Auto accept present proof', () => {
     test("Faber starts with proof requests to Alice, both with autoAcceptProof on 'always'", async () => {
       testLogger.test('Faber sends presentation request to Alice')
 
-      await faberAgent.modules.proofs.requestProof({
+      await faberAgent.didcomm.proofs.requestProof({
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -196,7 +196,7 @@ describe('Auto accept present proof', () => {
         state: DidCommProofState.ProposalReceived,
       })
 
-      await aliceAgent.modules.proofs.proposeProof({
+      await aliceAgent.didcomm.proofs.proposeProof({
         connectionId: aliceConnectionId,
         protocolVersion: 'v2',
         proofFormats: {
@@ -223,7 +223,7 @@ describe('Auto accept present proof', () => {
       })
 
       const faberProofExchangeRecord = await faberProofExchangeRecordPromise
-      await faberAgent.modules.proofs.acceptProposal({
+      await faberAgent.didcomm.proofs.acceptProposal({
         proofExchangeRecordId: faberProofExchangeRecord.id,
       })
 
@@ -240,7 +240,7 @@ describe('Auto accept present proof', () => {
         state: DidCommProofState.RequestReceived,
       })
 
-      await faberAgent.modules.proofs.requestProof({
+      await faberAgent.didcomm.proofs.requestProof({
         protocolVersion: 'v2',
         connectionId: faberConnectionId,
         proofFormats: {
@@ -274,7 +274,7 @@ describe('Auto accept present proof', () => {
       })
 
       const aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
-      await aliceAgent.modules.proofs.acceptRequest({
+      await aliceAgent.didcomm.proofs.acceptRequest({
         proofExchangeRecordId: aliceProofExchangeRecord.id,
       })
 

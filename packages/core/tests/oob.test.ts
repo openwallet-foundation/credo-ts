@@ -30,19 +30,19 @@ import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
-import testLogger from './logger'
 
 import { CredoError, Kms } from '@credo-ts/core'
 
 const faberAgent = new Agent(
   getAgentOptions(
     'Faber Agent OOB',
-    {
-      endpoints: ['rxjs:faber'],
-    },
+    {},
     {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:faber'],
+      },
     }),
     { requireDidcomm: true }
   )
@@ -50,14 +50,13 @@ const faberAgent = new Agent(
 const aliceAgent = new Agent(
   getAgentOptions(
     'Alice Agent OOB',
-    {
-      endpoints: ['rxjs:alice'],
-    },
-    {
-      logger: testLogger,
-    },
+    {},
+    {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:alice'],
+      },
     }),
     { requireDidcomm: true }
   )
@@ -96,15 +95,13 @@ describe('out of band', () => {
       'rxjs:alice': aliceMessages,
     }
 
-    faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
-
-    //await aliceAgent.modules.anoncreds.createLinkSecret()
 
     const { credentialDefinitionId } = await storePreCreatedAnonCredsDefinition(
       faberAgent,
@@ -145,14 +142,14 @@ describe('out of band', () => {
   })
 
   afterEach(async () => {
-    const credentials = await aliceAgent.modules.credentials.getAll()
+    const credentials = await aliceAgent.didcomm.credentials.getAll()
     for (const credential of credentials) {
-      await aliceAgent.modules.credentials.deleteById(credential.id)
+      await aliceAgent.didcomm.credentials.deleteById(credential.id)
     }
 
-    const connections = await faberAgent.modules.connections.getAll()
+    const connections = await faberAgent.didcomm.connections.getAll()
     for (const connection of connections) {
-      await faberAgent.modules.connections.deleteById(connection.id)
+      await faberAgent.didcomm.connections.deleteById(connection.id)
     }
 
     jest.resetAllMocks()
@@ -161,7 +158,7 @@ describe('out of band', () => {
   describe('createInvitation', () => {
     test('throw error when there is no handshake or message', async () => {
       await expect(
-        faberAgent.modules.oob.createInvitation({ label: 'test-connection', handshake: false })
+        faberAgent.didcomm.oob.createInvitation({ label: 'test-connection', handshake: false })
       ).rejects.toEqual(
         new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
@@ -169,7 +166,7 @@ describe('out of band', () => {
 
     test('throw error when multiUseInvitation is true and messages are provided', async () => {
       await expect(
-        faberAgent.modules.oob.createInvitation({
+        faberAgent.didcomm.oob.createInvitation({
           label: 'test-connection',
           messages: [{} as DidCommMessage],
           multiUseInvitation: true,
@@ -179,7 +176,7 @@ describe('out of band', () => {
 
     test('handles empty messages array as no messages being passed', async () => {
       await expect(
-        faberAgent.modules.oob.createInvitation({
+        faberAgent.didcomm.oob.createInvitation({
           messages: [],
           handshake: false,
         })
@@ -189,7 +186,7 @@ describe('out of band', () => {
     })
 
     test('create OOB record', async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       // expect contains services
 
       expect(outOfBandRecord.autoAcceptConnection).toBe(true)
@@ -204,7 +201,7 @@ describe('out of band', () => {
     })
 
     test('create OOB message only with handshake', async () => {
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
 
       // expect supported handshake protocols
       expect(outOfBandInvitation.handshakeProtocols).toContain('https://didcomm.org/didexchange/1.1')
@@ -223,8 +220,8 @@ describe('out of band', () => {
     })
 
     test('create OOB message only with requests', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         label: 'test-connection',
         handshake: false,
         messages: [message],
@@ -247,8 +244,8 @@ describe('out of band', () => {
     })
 
     test('create OOB message with both handshake and requests', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         label: 'test-connection',
         handshakeProtocols: [DidCommHandshakeProtocol.Connections],
         messages: [message],
@@ -274,7 +271,7 @@ describe('out of band', () => {
       const eventListener = jest.fn()
 
       faberAgent.events.on(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         label: 'test-connection',
         handshake: true,
       })
@@ -296,11 +293,11 @@ describe('out of band', () => {
 
   describe('receiveInvitation', () => {
     test('receive OOB connection invitation', async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
 
       const { outOfBandRecord: receivedOutOfBandRecord, connectionRecord } =
-        await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+        await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
           label: 'alice',
           autoAcceptInvitation: false,
           autoAcceptConnection: false,
@@ -313,20 +310,20 @@ describe('out of band', () => {
     })
 
     test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} on OOB invitation encoded in URL`, async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: aliceFaberConnection } =
-        await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'alice' })
+        await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, { label: 'alice' })
       expect(receivedOutOfBandRecord.state).toBe(DidCommOutOfBandState.PrepareResponse)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord?.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
       expect(faberAliceConnection?.state).toBe(DidCommDidExchangeState.Completed)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -337,24 +334,24 @@ describe('out of band', () => {
     })
 
     test(`make a connection with ${DidCommHandshakeProtocol.Connections} based on OOB invitation encoded in URL`, async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         ...makeConnectionConfig,
         handshakeProtocols: [DidCommHandshakeProtocol.Connections],
       })
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
         urlMessage,
         { label: 'alice' }
       )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord?.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
       expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -363,18 +360,18 @@ describe('out of band', () => {
     })
 
     test('make a connection based on old connection invitation encoded in URL', async () => {
-      const { outOfBandRecord, invitation } = await faberAgent.modules.oob.createLegacyInvitation(makeConnectionConfig)
+      const { outOfBandRecord, invitation } = await faberAgent.didcomm.oob.createLegacyInvitation(makeConnectionConfig)
       const urlMessage = invitation.toUrl({ domain: 'http://example.com' })
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitationFromUrl(
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitationFromUrl(
         urlMessage,
         { label: 'alice' }
       )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
 
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
       expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -394,7 +391,7 @@ describe('out of band', () => {
       ) as Kms.PublicJwk<Kms.Ed25519PublicJwk>
       recipientKey.keyId = recipientKey.legacyKeyId
 
-      const { invitation } = await faberAgent.modules.oob.createLegacyInvitation({
+      const { invitation } = await faberAgent.didcomm.oob.createLegacyInvitation({
         ...makeConnectionConfig,
         routing: {
           endpoints: ['https://endpoint-1.com', 'https://endpoint-2.com'],
@@ -407,9 +404,9 @@ describe('out of band', () => {
     })
 
     test('process credential offer requests based on OOB message', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
       })
@@ -420,19 +417,19 @@ describe('out of band', () => {
         state: DidCommCredentialState.OfferReceived,
         threadId: message.threadId,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
+      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
     })
 
     test('process credential offer requests with legacy did:sov prefix on message type based on OOB message', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
       // we need to override the message type to use the legacy did:sov prefix
       // @ts-ignore
       message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [message],
       })
@@ -443,7 +440,7 @@ describe('out of band', () => {
         state: DidCommCredentialState.OfferReceived,
         threadId: message.threadId,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
+      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, receiveInvitationConfig)
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
@@ -453,14 +450,14 @@ describe('out of band', () => {
       const eventListener = jest.fn()
       aliceAgent.events.on<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, eventListener)
 
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...makeConnectionConfig,
         messages: [message],
       })
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
         label: 'alice',
         autoAcceptConnection: false,
       })
@@ -472,15 +469,15 @@ describe('out of band', () => {
     })
 
     test('make a connection based on OOB invitation and process requests after the acceptation', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         ...makeConnectionConfig,
         messages: [message],
       })
       const { outOfBandInvitation } = outOfBandRecord
 
       // First, we crate a connection but we won't accept it, therefore it won't be ready
-      const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.modules.oob.receiveInvitation(
+      const { outOfBandRecord: aliceFaberOutOfBandRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandInvitation,
         {
           label: 'alice',
@@ -497,7 +494,7 @@ describe('out of band', () => {
       })
 
       // Accept connection invitation
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.acceptInvitation(
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.acceptInvitation(
         aliceFaberOutOfBandRecord.id,
         {
           label: 'alice',
@@ -507,10 +504,10 @@ describe('out of band', () => {
 
       // Wait until connection is ready
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
 
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord?.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
 
@@ -523,20 +520,20 @@ describe('out of band', () => {
       const faberReuseListener = jest.fn()
 
       // Create first connection
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord.outOfBandInvitation,
         { label: 'alice' }
       )
-      firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
+      firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         firstAliceFaberConnection?.id!
       )
 
-      const [firstFaberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      const [firstFaberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
 
       // Create second connection
-      const outOfBandRecord2 = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
 
       // Take over the recipientKeys from the first invitation so they match when encoded
       const [firstInvitationService] = outOfBandRecord.outOfBandInvitation.getInlineServices()
@@ -549,7 +546,7 @@ describe('out of band', () => {
       const {
         connectionRecord: secondAliceFaberConnection,
         outOfBandRecord: { id: secondOobRecordId },
-      } = await aliceAgent.modules.oob.receiveInvitation(outOfBandRecord2.outOfBandInvitation, {
+      } = await aliceAgent.didcomm.oob.receiveInvitation(outOfBandRecord2.outOfBandInvitation, {
         label: 'alice',
         reuseConnection: true,
       })
@@ -557,10 +554,10 @@ describe('out of band', () => {
       aliceAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, aliceReuseListener)
       faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, faberReuseListener)
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      await aliceAgent.modules.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
 
       // There shouldn't be any connection records for this oob id, as we reused an existing one
-      expect((await faberAgent.modules.connections.findAllByOutOfBandId(secondOobRecordId)).length).toBe(0)
+      expect((await faberAgent.didcomm.connections.findAllByOutOfBandId(secondOobRecordId)).length).toBe(0)
 
       expect(firstAliceFaberConnection.id).toEqual(secondAliceFaberConnection?.id)
 
@@ -602,25 +599,25 @@ describe('out of band', () => {
       const reuseListener = jest.fn()
 
       // Create first connection
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord.outOfBandInvitation,
         {
           label: 'alice',
         }
       )
-      firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
+      firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         firstAliceFaberConnection?.id!
       )
 
       // Create second connection
-      const outOfBandRecord2 = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
 
       aliceAgent.events.on(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       faberAgent.events.on(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
 
-      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      const { connectionRecord: secondAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord2.outOfBandInvitation,
         { label: 'alice', reuseConnection: false }
       )
@@ -628,18 +625,18 @@ describe('out of band', () => {
       aliceAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      await aliceAgent.modules.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
 
       // If we're not reusing the connection, the reuse listener shouldn't be called
       expect(reuseListener).not.toHaveBeenCalled()
       expect(firstAliceFaberConnection.id).not.toEqual(secondAliceFaberConnection?.id)
 
-      const faberConnections = await faberAgent.modules.connections.getAll()
+      const faberConnections = await faberAgent.didcomm.connections.getAll()
       let [firstFaberAliceConnection, secondFaberAliceConnection] = faberConnections
-      firstFaberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(
+      firstFaberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(
         firstFaberAliceConnection.id
       )
-      secondFaberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(
+      secondFaberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(
         secondFaberAliceConnection.id
       )
 
@@ -654,23 +651,23 @@ describe('out of band', () => {
     })
 
     test('throws an error when the invitation has already been received', async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
       const { outOfBandInvitation } = outOfBandRecord
 
-      const { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      const { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandInvitation,
         { label: 'alice' }
       )
 
       // Wait until connection is ready
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
 
-      const [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
-      await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      const [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
+      await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
 
       // Try to receive the invitation again
-      await expect(aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })).rejects.toThrow(
+      await expect(aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })).rejects.toThrow(
         new CredoError(
           `An out of band record with invitation ${outOfBandInvitation.id} has already been received. Invitations should have a unique id.`
         )
@@ -679,11 +676,11 @@ describe('out of band', () => {
 
     test('emits OutOfBandStateChanged event', async () => {
       const eventListener = jest.fn()
-      const { outOfBandInvitation, id } = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
+      const { outOfBandInvitation, id } = await faberAgent.didcomm.oob.createInvitation(makeConnectionConfig)
 
       aliceAgent.events.on(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)
 
-      const { outOfBandRecord, connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+      const { outOfBandRecord, connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandInvitation,
         {
           label: 'alice',
@@ -694,11 +691,11 @@ describe('out of band', () => {
 
       // Wait for the connection to complete so we don't get wallet closed errors
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord?.id!)
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord?.id!)
       aliceAgent.events.off(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)
 
-      const [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(id)
-      await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection.id)
+      const [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(id)
+      await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection.id)
 
       // Receiving the invitation
       expect(eventListener).toHaveBeenNthCalledWith(1, {
@@ -726,29 +723,29 @@ describe('out of band', () => {
     })
 
     test.skip('do not create a new connection when connection exists and multiuse is false', async () => {
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         ...makeConnectionConfig,
         multiUseInvitation: false,
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      let { connectionRecord: firstAliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandInvitation,
         { label: 'alice' }
       )
-      firstAliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(
+      firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         firstAliceFaberConnection?.id!
       )
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       // TODO Somehow check agents throws an error or sends problem report
 
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord?.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
 
-      const faberConnections = await faberAgent.modules.connections.getAll()
+      const faberConnections = await faberAgent.didcomm.connections.getAll()
       expect(faberConnections).toHaveLength(1)
       expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
       expect(firstAliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
@@ -760,7 +757,7 @@ describe('out of band', () => {
       outOfBandInvitation.handshakeProtocols = [unsupportedProtocol as DidCommHandshakeProtocol]
 
       await expect(
-        aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
+        aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
       ).rejects.toEqual(
         new CredoError(
           `Handshake protocols [${unsupportedProtocol}] are not supported. Supported protocols are [https://didcomm.org/didexchange/1.x,https://didcomm.org/connections/1.x]`
@@ -772,7 +769,7 @@ describe('out of band', () => {
       const outOfBandInvitation = new DidCommOutOfBandInvitation({ label: 'test-connection', services: [] })
 
       await expect(
-        aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
+        aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
       ).rejects.toEqual(
         new CredoError('One or both of handshake_protocols and requests~attach MUST be included in the message.')
       )
@@ -781,62 +778,62 @@ describe('out of band', () => {
     test('throw an error when the OOB message contains unsupported message request', async () => {
       const testMessage = new TestMessage()
       testMessage.type = 'https://didcomm.org/test-protocol/1.0/test-message'
-      const { outOfBandInvitation } = await faberAgent.modules.oob.createInvitation({
+      const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...issueCredentialConfig,
         messages: [testMessage],
       })
 
       await expect(
-        aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
+        aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, receiveInvitationConfig)
       ).rejects.toEqual(new CredoError('There is no message in requests~attach supported by agent.'))
     })
 
     test(`make two connections with ${DidCommHandshakeProtocol.DidExchange} by reusing the did from the first connection as the 'invitationDid' in oob invitation for the second connection`, async () => {
-      const outOfBandRecord1 = await faberAgent.modules.oob.createInvitation({})
+      const outOfBandRecord1 = await faberAgent.didcomm.oob.createInvitation({})
 
-      let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveInvitation(
+      let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord1.outOfBandInvitation,
         { label: 'alice' }
       )
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+      aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-      let [faberAliceConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord1?.id)
-      faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+      let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord1?.id)
+      faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
       expect(faberAliceConnection?.state).toBe(DidCommDidExchangeState.Completed)
 
       // Use the invitation did from the first connection to create the second connection
       // (first connection's did matches the one used in invitation, since no rotation has been done (multiUse=false))
-      const outOfBandRecord2 = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord2 = await faberAgent.didcomm.oob.createInvitation({
         invitationDid: faberAliceConnection.did,
       })
 
-      let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.modules.oob.receiveInvitation(
+      let { connectionRecord: aliceFaberConnection2 } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord2.outOfBandInvitation,
         { label: 'alice' }
       )
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      aliceFaberConnection2 = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection2?.id!)
+      aliceFaberConnection2 = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection2?.id!)
       expect(aliceFaberConnection2.state).toBe(DidCommDidExchangeState.Completed)
 
-      let [faberAliceConnection2] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord2?.id)
-      faberAliceConnection2 = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection2?.id)
+      let [faberAliceConnection2] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord2?.id)
+      faberAliceConnection2 = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection2?.id)
       expect(faberAliceConnection2?.state).toBe(DidCommDidExchangeState.Completed)
     })
   })
 
   describe('messages and connection exchange', () => {
     test('oob exchange with handshake where response is received to invitation', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         handshake: true,
         messages: [message],
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: DidCommCredentialState.OfferReceived,
@@ -854,7 +851,7 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
@@ -862,28 +859,28 @@ describe('out of band', () => {
     })
 
     test('oob exchange with reuse where response is received to invitation', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
-      const routing = await faberAgent.modules.mediationRecipient.getRouting({})
-      const connectionOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const routing = await faberAgent.didcomm.mediationRecipient.getRouting({})
+      const connectionOutOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         routing,
       })
 
       // Create connection
-      const { connectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+      const { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
         connectionOutOfBandRecord.outOfBandInvitation,
         { label: 'alice' }
       )
       if (!connectionRecord) throw new Error('Connection record is undefined')
-      await aliceAgent.modules.connections.returnWhenIsConnected(connectionRecord.id)
+      await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
 
       // Create offer and reuse
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         routing,
         messages: [message],
       })
       // Create connection
-      const { connectionRecord: offerConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
+      const { connectionRecord: offerConnectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(
         outOfBandRecord.outOfBandInvitation,
         {
           label: 'alice',
@@ -911,7 +908,7 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
@@ -921,14 +918,14 @@ describe('out of band', () => {
 
   describe('connection-less exchange', () => {
     test('oob exchange without handshake where response is received to invitation', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         handshake: false,
         messages: [message],
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'alice' })
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: DidCommCredentialState.OfferReceived,
@@ -946,7 +943,7 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
@@ -954,16 +951,16 @@ describe('out of band', () => {
     })
 
     test('oob exchange without handshake where response is received and custom routing is used on recipient', async () => {
-      const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
+      const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const outOfBandRecord = await faberAgent.didcomm.oob.createInvitation({
         handshake: false,
         messages: [message],
       })
       const { outOfBandInvitation } = outOfBandRecord
 
-      const routing = await aliceAgent.modules.mediationRecipient.getRouting({})
+      const routing = await aliceAgent.didcomm.mediationRecipient.getRouting({})
 
-      await aliceAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+      await aliceAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
         label: 'alice',
         routing,
       })
@@ -984,13 +981,13 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       const faberCredentialRecord = await faberCredentialRecordPromise
 
-      const faberCredentialRequest = await faberAgent.modules.credentials.findRequestMessage(faberCredentialRecord.id)
+      const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
 
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
         recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
@@ -1000,8 +997,8 @@ describe('out of band', () => {
     })
 
     test('legacy connectionless exchange where response is received to invitation', async () => {
-      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      const { message, credentialExchangeRecord } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         domain: 'http://example.com',
         message,
         recordId: credentialExchangeRecord.id,
@@ -1012,7 +1009,7 @@ describe('out of band', () => {
         threadId: message.threadId,
         timeoutMs: 10000,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
@@ -1024,7 +1021,7 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
@@ -1032,21 +1029,21 @@ describe('out of band', () => {
     })
 
     test('legacy connectionless exchange where response is received to invitation and custom routing is used on recipient', async () => {
-      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
-      const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+      const { message, credentialExchangeRecord } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
+      const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
         domain: 'http://example.com',
         message,
         recordId: credentialExchangeRecord.id,
       })
 
-      const routing = await aliceAgent.modules.mediationRecipient.getRouting({})
+      const routing = await aliceAgent.didcomm.mediationRecipient.getRouting({})
 
       const aliceCredentialRecordPromise = waitForCredentialRecord(aliceAgent, {
         state: DidCommCredentialState.OfferReceived,
         threadId: message.threadId,
         timeoutMs: 10000,
       })
-      await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice', routing })
+      await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice', routing })
 
       const aliceCredentialRecord = await aliceCredentialRecordPromise
       expect(aliceCredentialRecord.state).toBe(DidCommCredentialState.OfferReceived)
@@ -1058,13 +1055,13 @@ describe('out of band', () => {
         timeoutMs: 10000,
       })
 
-      await aliceAgent.modules.credentials.acceptOffer({
+      await aliceAgent.didcomm.credentials.acceptOffer({
         credentialExchangeRecordId: aliceCredentialRecord.id,
       })
 
       const faberCredentialRecord = await faberCredentialRecordPromise
 
-      const faberCredentialRequest = await faberAgent.modules.credentials.findRequestMessage(faberCredentialRecord.id)
+      const faberCredentialRequest = await faberAgent.didcomm.credentials.findRequestMessage(faberCredentialRecord.id)
 
       expect(JsonTransformer.toJSON(faberCredentialRequest?.service)).toEqual({
         recipientKeys: [TypedArrayEncoder.toBase58(routing.recipientKey.publicKey.publicKey)],
@@ -1074,10 +1071,10 @@ describe('out of band', () => {
     })
 
     test('add ~service decorator to the message and returns invitation url in createLegacyConnectionlessInvitation', async () => {
-      const { message, credentialExchangeRecord } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
+      const { message, credentialExchangeRecord } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
       const { message: offerMessage, invitationUrl } =
-        await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+        await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
           recordId: credentialExchangeRecord.id,
           domain: 'https://test.com',
           message,

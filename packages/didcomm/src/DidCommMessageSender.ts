@@ -578,7 +578,7 @@ export class DidCommMessageSender {
 
     agentContext.config.logger.debug(
       `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`,
-      { hasQueueService: queueService !== undefined }
+      { hasQueueService: queueService !== undefined, transportPriority }
     )
     return { services, queueService }
   }

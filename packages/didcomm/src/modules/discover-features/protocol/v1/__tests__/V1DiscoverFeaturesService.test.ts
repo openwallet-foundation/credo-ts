@@ -19,7 +19,7 @@ import { DidCommDiscoverFeaturesV1Service } from '../DidCommDiscoverFeaturesV1Se
 import { DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from '../messages'
 
 jest.mock('../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
+const _MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -37,7 +37,6 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -246,7 +245,6 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
-    new DidCommMessageHandlerRegistry(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )

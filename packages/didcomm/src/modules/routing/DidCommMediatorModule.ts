@@ -4,8 +4,12 @@ import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModule
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommProtocol } from '../../models'
 
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMediatorApi } from './DidCommMediatorApi'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
+import { DidCommForwardHandler } from './handlers/DidCommForwardHandler'
+import { DidCommKeylistUpdateHandler } from './handlers/DidCommKeylistUpdateHandler'
+import { DidCommMediationRequestHandler } from './handlers/DidCommMediationRequestHandler'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository, DidCommMediatorRoutingRepository } from './repository'
 import { DidCommMediatorService } from './services'
@@ -35,6 +39,12 @@ export class DidCommMediatorModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+    const mediatorService = agentContext.resolve(DidCommMediatorService)
+
+    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateHandler(mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommForwardHandler(mediatorService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(mediatorService, this.config))
 
     featureRegistry.register(
       new DidCommProtocol({

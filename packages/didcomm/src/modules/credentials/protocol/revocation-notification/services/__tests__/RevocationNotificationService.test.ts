@@ -27,7 +27,7 @@ const credentialRepository = new CredentialRepositoryMock()
 
 jest.mock('../../../../../../DidCommMessageHandlerRegistry')
 const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
-const messageHandlerRegistry = new MessageHandlerRegistryMock()
+const _messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
@@ -47,7 +47,6 @@ describe('RevocationNotificationService', () => {
     revocationNotificationService = new DidCommRevocationNotificationService(
       credentialRepository,
       eventEmitter,
-      messageHandlerRegistry,
       agentConfig.logger
     )
   })

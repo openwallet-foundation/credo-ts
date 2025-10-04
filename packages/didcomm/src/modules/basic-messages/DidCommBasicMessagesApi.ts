@@ -2,13 +2,9 @@ import type { Query, QueryOptions } from '@credo-ts/core'
 import type { DidCommBasicMessageRecord } from './repository/DidCommBasicMessageRecord'
 
 import { AgentContext, injectable } from '@credo-ts/core'
-
-import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
-
-import { DidCommBasicMessageHandler } from './handlers'
 import { DidCommBasicMessageService } from './services'
 
 @injectable()
@@ -19,7 +15,6 @@ export class DidCommBasicMessagesApi {
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     basicMessageService: DidCommBasicMessageService,
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
@@ -29,7 +24,6 @@ export class DidCommBasicMessagesApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -103,9 +97,5 @@ export class DidCommBasicMessagesApi {
    */
   public async deleteById(basicMessageRecordId: string) {
     await this.basicMessageService.deleteById(this.agentContext, basicMessageRecordId)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(this.basicMessageService))
   }
 }

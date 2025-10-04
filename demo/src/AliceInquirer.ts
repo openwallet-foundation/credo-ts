@@ -72,7 +72,7 @@ export class AliceInquirer extends BaseInquirer {
   public async acceptCredentialOffer(credentialExchangeRecord: DidCommCredentialExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.CredentialOfferTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.modules.credentials.declineOffer({
+      await this.alice.agent.didcomm.credentials.declineOffer({
         credentialExchangeRecordId: credentialExchangeRecord.id,
       })
     } else if (confirm.options === ConfirmOptions.Yes) {
@@ -83,7 +83,7 @@ export class AliceInquirer extends BaseInquirer {
   public async acceptProofRequest(proofExchangeRecord: DidCommProofExchangeRecord) {
     const confirm = await prompt([this.inquireConfirmation(Title.ProofRequestTitle)])
     if (confirm.options === ConfirmOptions.No) {
-      await this.alice.agent.modules.proofs.declineRequest({ proofExchangeRecordId: proofExchangeRecord.id })
+      await this.alice.agent.didcomm.proofs.declineRequest({ proofExchangeRecordId: proofExchangeRecord.id })
     } else if (confirm.options === ConfirmOptions.Yes) {
       await this.alice.acceptProofRequest(proofExchangeRecord)
     }

@@ -73,7 +73,7 @@ export class Faber extends BaseAgent {
       throw Error(redText(Output.MissingConnectionRecord))
     }
 
-    const [connection] = await this.agent.modules.connections.findAllByOutOfBandId(this.outOfBandId)
+    const [connection] = await this.agent.didcomm.connections.findAllByOutOfBandId(this.outOfBandId)
 
     if (!connection) {
       throw Error(redText(Output.MissingConnectionRecord))
@@ -83,7 +83,7 @@ export class Faber extends BaseAgent {
   }
 
   private async printConnectionInvite() {
-    const outOfBand = await this.agent.modules.oob.createInvitation()
+    const outOfBand = await this.agent.didcomm.oob.createInvitation()
     this.outOfBandId = outOfBand.id
 
     console.log(
@@ -119,7 +119,7 @@ export class Faber extends BaseAgent {
         )
 
         // Also retrieve the connection record by invitation if the event has already fired
-        void this.agent.modules.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
+        void this.agent.didcomm.connections.findAllByOutOfBandId(outOfBandId).then(([connectionRecord]) => {
           if (connectionRecord) {
             clearTimeout(timeoutId)
             resolve(connectionRecord)
@@ -130,7 +130,7 @@ export class Faber extends BaseAgent {
     const connectionRecord = await getConnectionRecord(this.outOfBandId)
 
     try {
-      await this.agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
+      await this.agent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
     } catch (_e) {
       console.log(redText('\nTimeout of 20 seconds reached.. Returning to home screen.\n'))
       return
@@ -220,7 +220,7 @@ export class Faber extends BaseAgent {
 
     this.ui.updateBottomBar('\nSending credential offer...\n')
 
-    await this.agent.modules.credentials.offerCredential({
+    await this.agent.didcomm.credentials.offerCredential({
       connectionId: connectionRecord.id,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -274,7 +274,7 @@ export class Faber extends BaseAgent {
     const proofAttribute = await this.newProofAttribute()
     await this.printProofFlow(greenText('\nRequesting proof...\n', false))
 
-    await this.agent.modules.proofs.requestProof({
+    await this.agent.didcomm.proofs.requestProof({
       protocolVersion: 'v2',
       connectionId: connectionRecord.id,
       proofFormats: {
@@ -292,7 +292,7 @@ export class Faber extends BaseAgent {
 
   public async sendMessage(message: string) {
     const connectionRecord = await this.getConnectionRecord()
-    await this.agent.modules.basicMessages.sendMessage(connectionRecord.id, message)
+    await this.agent.didcomm.basicMessages.sendMessage(connectionRecord.id, message)
   }
 
   public async exit() {

@@ -1,10 +1,10 @@
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
 /**
- * MessagePickupModuleConfigOptions defines the interface for the options of the DidCommMessagePickupModuleConfig class.
+ * DidCommMessagePickupModuleConfigOptions defines the interface for the options of the DidCommMessagePickupModuleConfig class.
  * This can contain optional parameters that have default values in the config class itself.
  */
-export interface MessagePickupModuleConfigOptions<
+export interface DidCommMessagePickupModuleConfigOptions<
   DidCommMessagePickupProtocols extends DidCommMessagePickupProtocol[],
 > {
   /**
@@ -29,9 +29,9 @@ export interface MessagePickupModuleConfigOptions<
 }
 
 export class DidCommMessagePickupModuleConfig<MessagePickupProtocols extends DidCommMessagePickupProtocol[]> {
-  private options: MessagePickupModuleConfigOptions<MessagePickupProtocols>
+  private options: DidCommMessagePickupModuleConfigOptions<MessagePickupProtocols>
 
-  public constructor(options: MessagePickupModuleConfigOptions<MessagePickupProtocols>) {
+  public constructor(options: DidCommMessagePickupModuleConfigOptions<MessagePickupProtocols>) {
     this.options = options
   }
 

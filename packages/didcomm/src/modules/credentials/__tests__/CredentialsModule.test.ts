@@ -64,6 +64,7 @@ describe('CredentialsModule', () => {
       registerInstances: [
         [DidCommMessageHandlerRegistry, messageHandlerRegistry],
         [DidCommFeatureRegistry, featureRegistry],
+        [DidCommRevocationNotificationService, {} as DidCommRevocationNotificationService],
       ],
     })
     await credentialsModule.initialize(agentContext)

@@ -30,7 +30,6 @@ export { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModule
 
 export { getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
 
-export { getDefaultDidcommModules } from './util/modules'
 export {
   type ParsedMessageType,
   parseMessageType,

@@ -50,13 +50,13 @@ export async function e2eTest({
 
   // Request mediation from mediator
   const mediationRecord =
-    await recipientAgent.modules.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
+    await recipientAgent.didcomm.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
   expect(mediationRecord.state).toBe(DidCommMediationState.Granted)
 
   // Set mediator as default for recipient, start picking up messages
-  await recipientAgent.modules.mediationRecipient.setDefaultMediator(mediationRecord)
-  await recipientAgent.modules.mediationRecipient.initiateMessagePickup(mediationRecord)
-  const defaultMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
+  await recipientAgent.didcomm.mediationRecipient.setDefaultMediator(mediationRecord)
+  await recipientAgent.didcomm.mediationRecipient.initiateMessagePickup(mediationRecord)
+  const defaultMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
   expect(defaultMediator?.id).toBe(mediationRecord.id)
 
   // Make connection between sender and recipient
@@ -129,7 +129,7 @@ export async function e2eTest({
   expect(verifierProofExchangeRecord.state).toBe(DidCommProofState.Done)
 
   // We want to stop the mediator polling before the agent is shutdown.
-  await recipientAgent.modules.mediationRecipient.stopMessagePickup()
+  await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
 
   const pickupRequestMessages = [
     DidCommDeliveryRequestV2Message.type.messageTypeUri,
