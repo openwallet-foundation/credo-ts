@@ -19,9 +19,9 @@ import {
   DidCommMessagePickupModuleConfigOptions,
   DidCommMessagePickupProtocol,
   DidCommOutOfBandApi,
+  DidCommProofProtocol,
   DidCommProofsApi,
   DidCommProofsModuleConfigOptions,
-  ProofProtocol,
 } from './modules'
 import { DidCommCredentialsApi } from './modules/credentials/DidCommCredentialsApi'
 import { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
@@ -39,7 +39,7 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
   public proofs: ApiOrUndefined<
     Options['proofs'],
     DidCommProofsApi<
-      Options['proofs'] extends DidCommProofsModuleConfigOptions<ProofProtocol[]>
+      Options['proofs'] extends DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
         ? Options['proofs']['proofProtocols']
         : DefaultDidCommProofProtocols
     >

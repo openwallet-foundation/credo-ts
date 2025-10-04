@@ -1,4 +1,10 @@
-import type { DidCommAutoAcceptProof, DidCommConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type {
+  DidCommAutoAcceptProof,
+  DidCommConnectionRecord,
+  DidCommCredentialFormatService,
+  DidCommModuleConfigOptions,
+  DidCommProofFormatService,
+} from '@credo-ts/didcomm'
 import type { EventReplaySubject } from '../../core/tests'
 import type {
   AnonCredsDidCommOfferCredentialFormat,
@@ -74,14 +80,21 @@ import {
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
 export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsIndyModules>>
 
-export const getAnonCredsIndyModules = ({
+export const getAnonCredsIndyModules = <
+  ProofServices extends DidCommProofFormatService[] = [],
+  CredentialServices extends DidCommCredentialFormatService[] = [],
+>({
   autoAcceptCredentials,
   autoAcceptProofs,
   extraDidCommConfig = {},
+  extraCredentialFormatServices,
+  extraProofFormatServices,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
-  extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
+  extraCredentialFormatServices?: CredentialServices
+  extraProofFormatServices?: ProofServices
+  extraDidCommConfig?: DidCommModuleConfigOptions
 } = {}) => {
   // Add support for resolving pre-created credential definitions and schemas
   const inMemoryAnonCredsRegistry = new InMemoryAnonCredsRegistry({
@@ -107,7 +120,11 @@ export const getAnonCredsIndyModules = ({
             indyCredentialFormat: legacyIndyCredentialFormatService,
           }),
           new DidCommCredentialV2Protocol({
-            credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
+            credentialFormats: [
+              legacyIndyCredentialFormatService,
+              new AnonCredsDidCommCredentialFormatService(),
+              ...(extraCredentialFormatServices ?? []),
+            ],
           }),
         ],
       },
@@ -118,7 +135,11 @@ export const getAnonCredsIndyModules = ({
             indyProofFormat: legacyIndyProofFormatService,
           }),
           new DidCommProofV2Protocol({
-            proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
+            proofFormats: [
+              legacyIndyProofFormatService,
+              new AnonCredsDidCommProofFormatService(),
+              ...(extraProofFormatServices ?? []),
+            ],
           }),
         ],
       },

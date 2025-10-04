@@ -41,8 +41,8 @@ const bobAgentOptions = getAgentOptions(
 
 // This is the most common flow
 describe('Rotation E2E tests', () => {
-  let aliceAgent: Agent<DefaultAgentModulesInput>
-  let bobAgent: Agent<DefaultAgentModulesInput>
+  let aliceAgent: Agent<(typeof aliceAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof bobAgentOptions)['modules']>
   let aliceBobConnection: DidCommConnectionRecord | undefined
   let bobAliceConnection: DidCommConnectionRecord | undefined
 

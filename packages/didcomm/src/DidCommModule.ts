@@ -27,9 +27,9 @@ import {
   DidCommMessagePickupModuleConfigOptions,
   DidCommMessagePickupProtocol,
   DidCommOutOfBandModule,
+  DidCommProofProtocol,
   DidCommProofsModule,
   DidCommProofsModuleConfigOptions,
-  ProofProtocol,
 } from './modules'
 import {
   DefaultDidCommCredentialProtocols,
@@ -64,7 +64,7 @@ type DidCommModules<Options extends DidCommModuleConfigOptions> = {
     Options['proofs'],
     {
       proofs: DidCommProofsModule<
-        Options['proofs'] extends DidCommProofsModuleConfigOptions<ProofProtocol[]>
+        Options['proofs'] extends DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
           ? Options['proofs']['proofProtocols']
           : DefaultDidCommProofProtocols
       >

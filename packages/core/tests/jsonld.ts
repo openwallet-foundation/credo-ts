@@ -2,12 +2,11 @@ import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnec
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialV2Protocol,
-  DidCommCredentialsModule,
   DidCommDifPresentationExchangeProofFormatService,
   DidCommJsonLdCredentialFormatService,
+  DidCommModule,
   DidCommProofEventTypes,
   DidCommProofV2Protocol,
-  DidCommProofsModule,
 } from '../../didcomm/src'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
@@ -19,28 +18,28 @@ import { setupSubjectTransports } from './transport'
 
 export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 
-export const getJsonLdModules = (
-  _name: string,
-  {
-    autoAcceptCredentials,
-    autoAcceptProofs,
-  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}
-) =>
+export const getJsonLdModules = ({
+  autoAcceptCredentials,
+  autoAcceptProofs,
+}: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}) =>
   ({
-    credentials: new DidCommCredentialsModule({
-      credentialProtocols: [
-        new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
-      ],
-      autoAcceptCredentials,
+    didcomm: new DidCommModule({
+      credentials: {
+        credentialProtocols: [
+          new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
+        ],
+        autoAcceptCredentials,
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [
+          new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+        ],
+      },
     }),
+
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
-    }),
-    proofs: new DidCommProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
-      ],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -99,7 +98,7 @@ export async function setupJsonLdTests<
         endpoints: ['rxjs:issuer'],
       },
       {},
-      getJsonLdModules(issuerName, {
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
@@ -114,7 +113,7 @@ export async function setupJsonLdTests<
         endpoints: ['rxjs:holder'],
       },
       {},
-      getJsonLdModules(holderName, {
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
       }),
@@ -130,7 +129,7 @@ export async function setupJsonLdTests<
             endpoints: ['rxjs:verifier'],
           },
           {},
-          getJsonLdModules(verifierName, {
+          getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
           }),

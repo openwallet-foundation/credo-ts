@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import path from 'path'
 
+import { DidCommModule } from '@credo-ts/didcomm'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { DidCommMediatorRoutingRecord } from '../../../../../didcomm/src/modules'
@@ -9,7 +10,6 @@ import { agentDependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'
 import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
-import { DidCommModule } from '@credo-ts/didcomm'
 
 const backupDate = new Date('2023-01-21T22:50:20.522Z')
 jest.useFakeTimers().setSystemTime(backupDate)

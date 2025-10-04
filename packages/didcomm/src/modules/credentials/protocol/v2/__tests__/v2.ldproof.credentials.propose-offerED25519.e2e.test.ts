@@ -1,11 +1,3 @@
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-
-import {
-  DidCommCredentialV1Protocol,
-  DidCommProofV1Protocol,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
-} from '../../../../../../../anoncreds/src'
 import {
   getAnonCredsIndyModules,
   prepareForAnonCredsIssuance,
@@ -17,6 +9,7 @@ import { W3cCredentialsModule } from '../../../../../../../core/src/modules/vc'
 import { customDocumentLoader } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/documentLoader'
 import { TypedArrayEncoder } from '../../../../../../../core/src/utils'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import {
   getAgentOptions,
   makeConnection,
@@ -25,13 +18,11 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
-import { DidCommProofEventTypes, DidCommProofV2Protocol, DidCommProofsModule } from '../../../../proofs'
+import { DidCommProofEventTypes } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
-import { DidCommCredentialsModule } from '../../../DidCommCredentialsModule'
 import { DidCommJsonLdCredentialFormatService } from '../../../formats'
 import { DidCommCredentialState } from '../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
-import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
 import { DidCommCredentialV2Preview } from '../messages'
 
 const signCredentialOptions = {
@@ -66,47 +57,12 @@ const signCredentialOptions = {
   },
 }
 
-const indyCredentialFormat = new LegacyIndyDidCommCredentialFormatService()
 const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
-const indyProofFormat = new LegacyIndyDidCommProofFormatService()
-
-const didcommModuleConfig = {
-  credentials: {
-    credentialProtocols: [
-      new V1CredentialProtocol({ indyCredentialFormat }),
-      new V2CredentialProtocol({
-        credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
-      }),
-    ],
-  },
-  proofs: {
-    proofProtocols: [
-      new V1ProofProtocol({ indyProofFormat }),
-      new V2ProofProtocol({
-        proofFormats: [indyProofFormat],
-      }),
-    ],
-  },
-} as const satisfies DidCommModuleConfigOptions
 
 const getIndyJsonLdModules = () =>
   ({
-    ...getAnonCredsIndyModules(),
-    credentials: new DidCommCredentialsModule({
-      credentialProtocols: [
-        new DidCommCredentialV1Protocol({ indyCredentialFormat }),
-        new DidCommCredentialV2Protocol({
-          credentialFormats: [indyCredentialFormat, jsonLdCredentialFormat],
-        }),
-      ],
-    }),
-    proofs: new DidCommProofsModule({
-      proofProtocols: [
-        new DidCommProofV1Protocol({ indyProofFormat }),
-        new DidCommProofV2Protocol({
-          proofFormats: [indyProofFormat],
-        }),
-      ],
+    ...getAnonCredsIndyModules({
+      extraCredentialFormatServices: [jsonLdCredentialFormat],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -131,7 +87,6 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         'Faber Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:faber'],
-          ...didcommModuleConfig,
         },
         {},
         getIndyJsonLdModules(),
@@ -143,7 +98,6 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
         'Alice Agent Indy/JsonLD',
         {
           endpoints: ['rxjs:alice'],
-          ...didcommModuleConfig,
         },
         {},
         getIndyJsonLdModules(),

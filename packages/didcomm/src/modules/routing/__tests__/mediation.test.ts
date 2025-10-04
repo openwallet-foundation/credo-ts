@@ -9,6 +9,7 @@ import { SubjectOutboundTransport } from '../../../../../../tests/transport/Subj
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { sleep } from '../../../../../core/src/utils/sleep'
 import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
+import { DidCommModuleConfigOptions } from '../../../DidCommModuleConfig'
 import { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../../connections'
 import { DidCommMediationRecipientModule } from '../DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from '../DidCommMediatorModule'
@@ -26,7 +27,7 @@ const getRecipientAgentOptions = (
       ...didCommModuleConfig,
       useDidKeyInProtocols,
       mediationRecipient: {
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
       },
     },
     undefined,
@@ -242,19 +243,12 @@ describe('mediator establishment', () => {
       handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
-    const recipientAgentOptions = getRecipientAgentOptions(undefined, false)
-    // Initialize recipient with mediation connections invitation
-    recipientAgent = new Agent({
-      ...recipientAgentOptions,
-      modules: {
-        ...recipientAgentOptions.modules,
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com/ssi',
-          }),
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+    const recipientAgentOptions = getRecipientAgentOptions(undefined, false, {
+      mediationRecipient: {
+        mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
+          domain: 'https://example.com/ssi',
         }),
-        mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+        mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
       },
     })
     // Initialize recipient with mediation connections invitation

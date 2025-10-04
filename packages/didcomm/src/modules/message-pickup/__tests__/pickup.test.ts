@@ -11,7 +11,6 @@ import {
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
 import { DidCommHandshakeProtocol } from '../../connections'
-import { DidCommMediatorModule } from '../../routing'
 import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
 import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
 
@@ -23,13 +22,10 @@ const mediatorOptions = getAgentOptions(
   'Mediation Pickup Loop Mediator',
   {
     endpoints: ['wss://mediator'],
-  },
-  {},
-  {
-    mediator: new DidCommMediatorModule({
+    mediator: {
       autoAcceptMediationRequests: true,
       messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
-    }),
+    },
   },
   {},
   {},

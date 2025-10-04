@@ -245,7 +245,6 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
-    new DidCommMessageHandlerRegistry(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
