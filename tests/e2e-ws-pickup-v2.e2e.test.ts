@@ -27,7 +27,7 @@ const mediatorOptions = getAgentOptions(
     endpoints: [`ws://localhost:${mediatorPort}`],
     mediator: {
       autoAcceptMediationRequests: true,
-      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+      messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
     },
   },
   {},
