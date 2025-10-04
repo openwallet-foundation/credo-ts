@@ -98,6 +98,9 @@ export const getAnonCredsModules = ({
   const modules = {
     ...(cheqdSdk && { cheqdSdk }),
     didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
