@@ -26,21 +26,25 @@ import { DidCommCredentialV2Preview } from '../messages'
 
 const faberAgentOptions = getAgentOptions(
   'Faber connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:faber'],
-  },
   {},
-  getAnonCredsIndyModules(),
+  {},
+  getAnonCredsIndyModules({
+    extraDidCommConfig: {
+      endpoints: ['rxjs:faber'],
+    },
+  }),
   { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getAgentOptions(
   'Alice connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:alice'],
-  },
   {},
-  getAnonCredsIndyModules(),
+  {},
+  getAnonCredsIndyModules({
+    extraDidCommConfig: {
+      endpoints: ['rxjs:alice'],
+    },
+  }),
   { requireDidcomm: true }
 )
 

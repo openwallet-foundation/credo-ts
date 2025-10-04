@@ -30,7 +30,6 @@ import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
 
 import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
-import testLogger from './logger'
 
 import { CredoError, Kms } from '@credo-ts/core'
 
@@ -41,6 +40,9 @@ const faberAgent = new Agent(
     {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:faber'],
+      },
     }),
     { requireDidcomm: true }
   )
@@ -49,11 +51,12 @@ const aliceAgent = new Agent(
   getAgentOptions(
     'Alice Agent OOB',
     {},
-    {
-      logger: testLogger,
-    },
+    {},
     getAnonCredsIndyModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:alice'],
+      },
     }),
     { requireDidcomm: true }
   )

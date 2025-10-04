@@ -4,8 +4,6 @@ import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
 import { getAgentOptions } from '../packages/core/tests/helpers'
 import {
   DidCommAutoAcceptCredential,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommMessageForwardingStrategy,
   DidCommWsOutboundTransport,
@@ -23,21 +21,18 @@ import { DidCommWsInboundTransport } from '@credo-ts/node'
 const mediatorPort = 4100
 const mediatorOptions = getAgentOptions(
   'E2E WS Pickup V2 Mediator',
-  {
-    endpoints: [`ws://localhost:${mediatorPort}`],
-    mediator: {
-      autoAcceptMediationRequests: true,
-      messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
-    },
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
-      messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+      extraDidCommConfig: {
+        endpoints: [`ws://localhost:${mediatorPort}`],
+        mediator: {
+          autoAcceptMediationRequests: true,
+          messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -46,13 +41,14 @@ const mediatorOptions = getAgentOptions(
 const senderPort = 4101
 const senderOptions = getAgentOptions(
   'E2E WS Pickup V2 Sender',
-  {
-    endpoints: [`ws://localhost:${senderPort}`],
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: [`ws://localhost:${senderPort}`],
+      },
     }),
   },
   { requireDidcomm: true }
@@ -84,10 +80,12 @@ describe('E2E WS Pickup V2 tests', () => {
       {
         ...getAnonCredsModules({
           autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2,
-          mediatorPollingInterval: 500,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2,
+              mediatorPollingInterval: 500,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -124,9 +122,11 @@ describe('E2E WS Pickup V2 tests', () => {
       {
         ...getAnonCredsModules({
           autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2LiveMode,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV2LiveMode,
+            },
+          },
         }),
       },
       { requireDidcomm: true }

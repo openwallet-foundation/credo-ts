@@ -29,8 +29,6 @@ import {
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   DidCommLinkedAttachment,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
   DidCommProofState,
@@ -271,17 +269,15 @@ describe('V2 Connectionless Proofs - Indy', () => {
 
     const mediatorOptions = getAgentOptions(
       `Connectionless proofs with mediator Mediator-${unique}`,
-      {
-        endpoints: ['rxjs:mediator'],
-        mediator: { autoAcceptMediationRequests: true },
-      },
+      {},
       {},
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
-        }),
-        mediator: new DidCommMediatorModule({
-          autoAcceptMediationRequests: true,
+          extraDidCommConfig: {
+            endpoints: ['rxjs:mediator'],
+            mediator: { autoAcceptMediationRequests: true },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -313,12 +309,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -331,12 +329,14 @@ describe('V2 Connectionless Proofs - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }

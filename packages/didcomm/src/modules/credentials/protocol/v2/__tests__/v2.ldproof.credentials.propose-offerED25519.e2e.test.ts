@@ -18,6 +18,7 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
+import { DidCommModuleConfigOptions } from '../../../../../DidCommModuleConfig'
 import { DidCommProofEventTypes } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommJsonLdCredentialFormatService } from '../../../formats'
@@ -59,10 +60,11 @@ const signCredentialOptions = {
 
 const jsonLdCredentialFormat = new DidCommJsonLdCredentialFormatService()
 
-const getIndyJsonLdModules = () =>
+const getIndyJsonLdModules = (extraDidCommConfig: DidCommModuleConfigOptions) =>
   ({
     ...getAnonCredsIndyModules({
       extraCredentialFormatServices: [jsonLdCredentialFormat],
+      extraDidCommConfig,
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -85,22 +87,22 @@ describe('V2 Credentials - JSON-LD - Ed25519', () => {
     faberAgent = new Agent(
       getAgentOptions(
         'Faber Agent Indy/JsonLD',
-        {
-          endpoints: ['rxjs:faber'],
-        },
         {},
-        getIndyJsonLdModules(),
+        {},
+        getIndyJsonLdModules({
+          endpoints: ['rxjs:faber'],
+        }),
         { requireDidcomm: true }
       )
     )
     aliceAgent = new Agent(
       getAgentOptions(
         'Alice Agent Indy/JsonLD',
-        {
-          endpoints: ['rxjs:alice'],
-        },
         {},
-        getIndyJsonLdModules(),
+        {},
+        getIndyJsonLdModules({
+          endpoints: ['rxjs:alice'],
+        }),
         { requireDidcomm: true }
       )
     )

@@ -11,12 +11,7 @@ import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent } from '@credo-ts/core'
-import {
-  DidCommAutoAcceptCredential,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
-  DidCommMediatorPickupStrategy,
-} from '@credo-ts/didcomm'
+import { DidCommAutoAcceptCredential, DidCommMediatorPickupStrategy } from '@credo-ts/didcomm'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Askar Subject Recipient',
@@ -25,40 +20,46 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
 )
 const mediatorAgentOptions = getAgentOptions(
   'E2E Askar Subject Mediator',
-  {
-    endpoints: ['rxjs:mediator'],
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:mediator'],
+        mediator: {
+          autoAcceptMediationRequests: true,
+        },
+      },
     }),
-    mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
 const senderAgentOptions = getAgentOptions(
   'E2E Askar Subject Sender',
-  {
-    endpoints: ['rxjs:sender'],
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        endpoints: ['rxjs:sender'],
+        mediationRecipient: {
+          mediatorPollingInterval: 1000,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }

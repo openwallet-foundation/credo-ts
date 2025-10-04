@@ -112,6 +112,9 @@ export const getAnonCredsIndyModules = <
 
   const modules = {
     didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
       ...extraDidCommConfig,
       credentials: {
         autoAcceptCredentials,
@@ -360,15 +363,16 @@ export async function setupAnonCredsTests<
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
+      {},
       {
         logger: testLogger,
       },
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true, drizzle: issuerDrizzle }
     )
@@ -384,13 +388,14 @@ export async function setupAnonCredsTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
+      {},
       {},
       getAnonCredsIndyModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true, drizzle: holderDrizzle }
     )
@@ -408,13 +413,14 @@ export async function setupAnonCredsTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
+          {},
           {},
           getAnonCredsIndyModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
           { requireDidcomm: true, drizzle: verifierDrizzle }
         )

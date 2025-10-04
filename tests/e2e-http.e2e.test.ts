@@ -9,8 +9,6 @@ import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommHttpOutboundTransport,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport } from '@credo-ts/node'
@@ -22,10 +20,12 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPollingInterval: 500,
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPollingInterval: 500,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -34,17 +34,17 @@ const recipientAgentOptions = getAgentOptions(
 const mediatorPort = 3000
 const mediatorAgentOptions = getAgentOptions(
   'E2E HTTP Mediator',
-  {
-    endpoints: [`http://localhost:${mediatorPort}`],
-    mediator: { autoAcceptMediationRequests: true },
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
+      extraDidCommConfig: {
+        endpoints: [`http://localhost:${mediatorPort}`],
+        mediator: {
+          autoAcceptMediationRequests: true,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -53,12 +53,13 @@ const mediatorAgentOptions = getAgentOptions(
 const senderPort = 3001
 const senderAgentOptions = getAgentOptions(
   'E2E HTTP Sender',
-  {
-    endpoints: [`http://localhost:${senderPort}`],
-  },
+  {},
   {},
   getAnonCredsModules({
     autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+    extraDidCommConfig: {
+      endpoints: [`http://localhost:${senderPort}`],
+    },
   }),
   { requireDidcomm: true }
 )

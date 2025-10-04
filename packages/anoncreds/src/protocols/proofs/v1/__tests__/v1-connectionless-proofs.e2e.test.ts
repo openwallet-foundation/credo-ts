@@ -21,7 +21,6 @@ import {
   DidCommCredentialEventTypes,
   DidCommHandshakeProtocol,
   DidCommLinkedAttachment,
-  DidCommMediationRecipientModule,
   DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommProofEventTypes,
@@ -401,12 +400,14 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: faberMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }
@@ -419,12 +420,14 @@ describe('V1 Proofs - Connectionless - Indy', () => {
       {
         ...getAnonCredsIndyModules({
           autoAcceptProofs: DidCommAutoAcceptProof.Always,
-        }),
-        mediationRecipient: new DidCommMediationRecipientModule({
-          mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
-            domain: 'https://example.com',
-          }),
-          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+          extraDidCommConfig: {
+            mediationRecipient: {
+              mediatorInvitationUrl: aliceMediationOutOfBandRecord.outOfBandInvitation.toUrl({
+                domain: 'https://example.com',
+              }),
+              mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+            },
+          },
         }),
       },
       { requireDidcomm: true }

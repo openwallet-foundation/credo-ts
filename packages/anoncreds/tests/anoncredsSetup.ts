@@ -339,15 +339,16 @@ export async function setupAnonCredsTests<
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
+      {},
       {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
         cheqd,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -356,15 +357,16 @@ export async function setupAnonCredsTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
+      {},
       {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
         cheqd,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -374,15 +376,16 @@ export async function setupAnonCredsTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
+          {},
           {},
           getAnonCredsModules({
             autoAcceptCredentials,
             autoAcceptProofs,
             registries,
             cheqd,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
           { requireDidcomm: true }
         )

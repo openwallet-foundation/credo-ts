@@ -8,8 +8,6 @@ import { e2eTest } from './e2e-test'
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
@@ -24,9 +22,11 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -35,16 +35,18 @@ const recipientAgentOptions = getAgentOptions(
 const mediatorPort = 4000
 const mediatorAgentOptions = getAgentOptions(
   'E2E WS Mediator',
-  {
-    endpoints: [`ws://localhost:${mediatorPort}`],
-    mediator: { autoAcceptMediationRequests: true },
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+      extraDidCommConfig: {
+        endpoints: [`ws://localhost:${mediatorPort}`],
+        mediator: {
+          autoAcceptMediationRequests: true,
+        },
+      },
     }),
-    mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -52,17 +54,18 @@ const mediatorAgentOptions = getAgentOptions(
 const senderPort = 4001
 const senderAgentOptions = getAgentOptions(
   'E2E WS Sender',
-  {
-    endpoints: [`ws://localhost:${senderPort}`],
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        endpoints: [`ws://localhost:${senderPort}`],
+        mediationRecipient: {
+          mediatorPollingInterval: 1000,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }

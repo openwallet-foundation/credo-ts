@@ -151,11 +151,10 @@ export function getAgentOptions<
     ...(requireDidcomm
       ? {
           didcomm: new DidCommModule({
+            connections: {
+              autoAcceptConnections: true,
+            },
             ...didcommConfig,
-
-            // ...(didcommConfig ?? {
-            //   connections: { autoAcceptionConnections: true },
-            // }),
           }),
         }
       : {}),
