@@ -5,8 +5,6 @@ import type { DidCommConnectionType } from './models'
 import type { DidCommConnectionRecord } from './repository'
 
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
-
-import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommOutboundMessageContext } from '../../models'
@@ -42,7 +40,6 @@ export class DidCommConnectionsApi {
   private agentContext: AgentContext
 
   public constructor(
-    _messageHandlerRegistry: DidCommMessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: DidCommConnectionService,
     didRotateService: DidCommDidRotateService,
