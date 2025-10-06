@@ -183,7 +183,9 @@ export class SdJwtVcService {
       presentationFrame as { [key: string]: boolean }
     )
     const [jwt] = compactSdJwtVc.split('~')
-    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosuresString =
+      requiredDisclosures.length > 0 ? `${requiredDisclosures.map((d) => d.encoded).join('~')}~` : ''
+    const sdJwt = `${jwt}~${disclosuresString}`
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
     return disclosedDecoded
   }
