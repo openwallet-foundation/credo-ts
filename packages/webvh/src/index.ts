@@ -1,4 +1,4 @@
-export { WebvhDidResolver } from './dids'
+export { WebvhDidResolver, WebVhDidRegistrar } from './dids'
 export { WebVhAnonCredsRegistry } from './anoncreds/services/WebVhAnonCredsRegistry'
 
 export { WebvhModule } from './WebvhModule'
