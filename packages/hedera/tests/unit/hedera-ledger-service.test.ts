@@ -1,24 +1,17 @@
-import {
+import type { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
+import type {
   RegisterCredentialDefinitionOptions,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationStatusListOptions,
   RegisterSchemaOptions,
 } from '@credo-ts/anoncreds'
+import type { AgentContext, DidRecord } from '@credo-ts/core'
+import type { Client } from '@hashgraph/sdk'
+import type { CreateDIDRequest, DeactivateDIDRequest, UpdateDIDRequest } from '@hiero-did-sdk/registrar'
+
+import { Buffer, DidDocument, DidDocumentService, DidRepository, Key, KeyType } from '@credo-ts/core'
+import { PrivateKey } from '@hashgraph/sdk'
 import {
-  AgentContext,
-  Buffer,
-  DidDocument,
-  DidDocumentService,
-  DidRecord,
-  DidRepository,
-  Key,
-  KeyType,
-} from '@credo-ts/core'
-import { Client, PrivateKey } from '@hashgraph/sdk'
-import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
-import {
-  CreateDIDRequest,
-  DeactivateDIDRequest,
   DIDUpdateBuilder,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
@@ -26,11 +19,12 @@ import {
   submitCreateDIDRequest,
   submitDeactivateDIDRequest,
   submitUpdateDIDRequest,
-  UpdateDIDRequest,
 } from '@hiero-did-sdk/registrar'
 import { resolveDID } from '@hiero-did-sdk/resolver'
+
 import { mockFunction } from '../../../core/tests/helpers'
-import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
+import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
+
 import { did, didDocument as didDocumentFixture } from './fixtures/did-document'
 
 jest.mock('@hiero-did-sdk/registrar', () => ({
@@ -134,17 +128,17 @@ describe('HederaLedgerService', () => {
   })
   const builder: DIDUpdateBuilder = new DIDUpdateBuilder()
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jest.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
     const mockClient = {} as Client
     // @ts-ignore
     return operation(mockClient)
   })
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jest.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   jest.spyOn(service as any, 'getPublisher').mockResolvedValue({})
 
   describe('resolveDid', () =>
@@ -269,7 +263,7 @@ describe('HederaLedgerService', () => {
       for (const [property, action, param, spy] of testCases) {
         jest.clearAllMocks()
 
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const builderMethod = (service as any).getUpdateMethod(builder, property, action)
 
         const result = builderMethod(param)
@@ -286,7 +280,7 @@ describe('HederaLedgerService', () => {
     it('should return builder unchanged for unknown property', () => {
       const unknownProperty = 'unknown-property'
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const builderMethod = (service as any).getUpdateMethod(builder, unknownProperty, 'add')
       const result = builderMethod({})
 
@@ -316,13 +310,13 @@ describe('HederaLedgerService', () => {
       mockFunction(resolveDID).mockResolvedValueOnce({ didDocument })
 
       jest
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .spyOn(service as any, 'prepareDidUpdates')
         .mockReturnValueOnce({ build: jest.fn().mockReturnValueOnce(updatedDidDocument) })
 
       mockFunction(generateUpdateDIDRequest).mockResolvedValueOnce(updateDidRequest)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       jest.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
       mockFunction(submitUpdateDIDRequest).mockResolvedValueOnce({ did, didDocument: updatedDidDocument })
 
@@ -337,7 +331,7 @@ describe('HederaLedgerService', () => {
         })
       ).resolves.toHaveProperty('did', did)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       expect((service as any).prepareDidUpdates).toHaveBeenCalled()
       expect(generateUpdateDIDRequest).toHaveBeenCalled()
       expect(submitUpdateDIDRequest).toHaveBeenCalled()
@@ -500,7 +494,7 @@ describe('HederaLedgerService', () => {
 
   describe('getIssuerKeySigner', () => {
     it('should return Signer when rootKey exists', async () => {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await (service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
 
       expect(mockDidRepository.findCreatedDid).toHaveBeenCalledWith(mockAgentContext, 'issuer-id')
@@ -513,7 +507,7 @@ describe('HederaLedgerService', () => {
       } as unknown as DidRecord
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key is not found in DID document'
       )
@@ -522,7 +516,7 @@ describe('HederaLedgerService', () => {
     it('should throw error if didRecord is null or undefined', async () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(null)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'Created DID document for issuer-id is not found'
       )

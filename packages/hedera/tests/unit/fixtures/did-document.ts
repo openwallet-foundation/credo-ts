@@ -1,5 +1,7 @@
-import { ParsedDid, parseDid } from '@credo-ts/core'
-import { DIDResolutionMetadata, JsonLdDIDDocument } from '@hiero-did-sdk/core'
+import type { ParsedDid } from '@credo-ts/core'
+import type { DIDResolutionMetadata, JsonLdDIDDocument } from '@hiero-did-sdk/core'
+
+import { parseDid } from '@credo-ts/core'
 
 export const did = 'did:hedera:testnet:4BGybF4yCeYNi8RFVowK3zHc1xs2psYdkbiEvETrp3HL_0.0.1000001'
 export const parsedDid: ParsedDid = parseDid(did)

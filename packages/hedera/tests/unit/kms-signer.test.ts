@@ -1,9 +1,11 @@
-import { CredoSigner } from '../../src/ledger/signer/CredoSigner'
-import { mockFunction } from '../../../core/tests/helpers'
+import type { AgentContext } from '@credo-ts/core'
 
+import { Key, KeyType, Buffer } from '@credo-ts/core'
 import { PrivateKey } from '@hashgraph/sdk'
+
+import { mockFunction } from '../../../core/tests/helpers'
+import { CredoSigner } from '../../src/ledger/signer/CredoSigner'
 import { hederaPublicKeyFromCredoKey } from '../../src/ledger/utils'
-import { AgentContext, Key, KeyType, Buffer } from '@credo-ts/core'
 
 jest.mock('../../src/ledger/utils', () => ({
   hederaPublicKeyFromCredoKey: jest.fn(),
@@ -29,6 +31,7 @@ describe('KmsSigner', () => {
   })
 
   it('should correctly create an instance via constructor', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const _signer = new CredoSigner(mockAgentContext, publicKey)
     expect(hederaPublicKeyFromCredoKey).toHaveBeenCalledWith(publicKey)
   })

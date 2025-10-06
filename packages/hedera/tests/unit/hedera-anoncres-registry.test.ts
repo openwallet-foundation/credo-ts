@@ -1,4 +1,4 @@
-import {
+import type {
   GetCredentialDefinitionReturn,
   GetRevocationRegistryDefinitionReturn,
   GetRevocationStatusListReturn,
@@ -12,7 +12,8 @@ import {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
-import { AgentContext } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'

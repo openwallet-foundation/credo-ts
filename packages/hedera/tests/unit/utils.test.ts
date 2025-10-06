@@ -1,8 +1,11 @@
-import { PublicKey } from '@hashgraph/sdk'
+import type { DidDocument, Key } from '@credo-ts/core'
+import type { PublicKey } from '@hashgraph/sdk'
+
+import { getKeyFromVerificationMethod } from '@credo-ts/core'
 import { DID_ROOT_KEY_ID, KeysUtility } from '@hiero-did-sdk/core'
+
 import { mockFunction } from '../../../core/tests/helpers'
 import { getRootKeyForHederaDid, hederaPublicKeyFromCredoKey } from '../../src/ledger/utils'
-import { DidDocument, Key, getKeyFromVerificationMethod } from '@credo-ts/core'
 
 jest.mock('@hiero-did-sdk/core', () => ({
   KeysUtility: {

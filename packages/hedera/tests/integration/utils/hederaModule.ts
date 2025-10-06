@@ -1,16 +1,14 @@
+import type { HederaModuleConfigOptions } from '../../../src'
+import type { Cache, Logger, ModulesMap } from '@credo-ts/core'
+import type { HederaNetwork } from '@hiero-did-sdk/client'
+
 import { AnonCredsModule } from '@credo-ts/anoncreds'
-import { Agent, Cache, CacheModule, DidsModule, Logger, ModulesMap, utils } from '@credo-ts/core'
-import { HederaNetwork } from '@hiero-did-sdk/client'
+import { Agent, CacheModule, DidsModule, utils } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+
 import { InMemoryTailsFileService } from '../../../../anoncreds/tests/InMemoryTailsFileService'
-import {
-  HederaAnonCredsRegistry,
-  HederaDidRegistrar,
-  HederaDidResolver,
-  HederaModule,
-  HederaModuleConfigOptions,
-} from '../../../src'
 import { getInMemoryAgentOptions } from '../../../../core/tests/helpers'
+import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '../../../src'
 
 export const getHederaModuleConfig = (props: {
   network?: HederaNetwork

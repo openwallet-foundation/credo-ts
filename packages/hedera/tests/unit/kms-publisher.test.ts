@@ -1,7 +1,11 @@
-import { AgentContext, Key, KeyType } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+import type { Client } from '@hashgraph/sdk'
+
+import { Key, KeyType } from '@credo-ts/core'
+import { PrivateKey } from '@hashgraph/sdk'
+
 import { mockFunction } from '../../../core/tests/helpers'
 import { CredoPublisher } from '../../src/ledger/publisher/CredoPublisher'
-import { Client, PrivateKey } from '@hashgraph/sdk'
 import { hederaPublicKeyFromCredoKey } from '../../src/ledger/utils'
 
 jest.mock('../../src/ledger/utils', () => ({

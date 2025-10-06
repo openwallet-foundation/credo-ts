@@ -1,7 +1,11 @@
-import { AgentContext, DidDocument, JsonTransformer } from '@credo-ts/core'
+import type { AgentContext } from '@credo-ts/core'
+
+import { DidDocument, JsonTransformer } from '@credo-ts/core'
+
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaDidResolver } from '../../src/dids/HederaDidResolver'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
+
 import { did, didDocument, didResolutionMetadata, parsedDid } from './fixtures/did-document'
 
 const mockLedgerService = {

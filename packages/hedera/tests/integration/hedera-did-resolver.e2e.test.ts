@@ -1,5 +1,8 @@
-import { Agent, ConsoleLogger, JsonTransformer, LogLevel } from '@credo-ts/core'
-import { HederaDidCreateOptions } from '../../src'
+import type { HederaDidCreateOptions } from '../../src'
+import type { Agent } from '@credo-ts/core'
+
+import { ConsoleLogger, JsonTransformer, LogLevel } from '@credo-ts/core'
+
 import { getHederaAgent } from './utils'
 
 describe('Hedera DID resolver', () => {

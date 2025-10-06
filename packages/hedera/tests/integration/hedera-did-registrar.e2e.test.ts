@@ -1,13 +1,8 @@
-import {
-  Agent,
-  ConsoleLogger,
-  DidDocument,
-  DidDocumentService,
-  KeyType,
-  LogLevel,
-  VerificationMethod,
-} from '@credo-ts/core'
-import { HederaDidCreateOptions } from '../../src'
+import type { HederaDidCreateOptions } from '../../src'
+import type { Agent } from '@credo-ts/core'
+
+import { ConsoleLogger, DidDocument, DidDocumentService, KeyType, LogLevel, VerificationMethod } from '@credo-ts/core'
+
 import { getHederaAgent } from './utils'
 
 const validDid = 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6226170'

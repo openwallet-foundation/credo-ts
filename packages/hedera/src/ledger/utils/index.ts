@@ -1,6 +1,9 @@
-import { DidDocument, getKeyFromVerificationMethod, Key } from '@credo-ts/core'
-import { PublicKey } from '@hashgraph/sdk'
-import { DID_ROOT_KEY_ID, JsonLdDIDDocument, KeysUtility } from '@hiero-did-sdk/core'
+import type { DidDocument, Key } from '@credo-ts/core'
+import type { PublicKey } from '@hashgraph/sdk'
+import type { JsonLdDIDDocument } from '@hiero-did-sdk/core'
+
+import { getKeyFromVerificationMethod } from '@credo-ts/core'
+import { DID_ROOT_KEY_ID, KeysUtility } from '@hiero-did-sdk/core'
 
 export function hederaPublicKeyFromCredoKey(key: Key): PublicKey {
   return KeysUtility.fromBytes(key.publicKey).toPublicKey()

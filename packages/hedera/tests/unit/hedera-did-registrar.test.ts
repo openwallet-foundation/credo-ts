@@ -1,9 +1,13 @@
-import { AgentContext, DidDocumentRole, DidRecord, DidRepository, DidUpdateOptions, Key, KeyType } from '@credo-ts/core'
+import type { AgentContext, DidRecord, DidUpdateOptions } from '@credo-ts/core'
+
+import { DidDocumentRole, DidRepository, Key, KeyType } from '@credo-ts/core'
+import { PrivateKey } from '@hashgraph/sdk'
+
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaDidRegistrar } from '../../src/dids/HederaDidRegistrar'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
+
 import { did, didDocument, didResolutionMetadata } from './fixtures/did-document'
-import { PrivateKey } from '@hashgraph/sdk'
 
 const mockDidRepository = {
   save: jest.fn(),
@@ -59,8 +63,7 @@ describe('HederaDidRegistrar', () => {
       expect(savedRecord.role).toBe(DidDocumentRole.Created)
       expect(savedRecord.didDocument).toBeInstanceOf(Object)
       expect(savedRecord.didDocument?.service).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      expect(savedRecord.didDocument?.service![0]).toBeInstanceOf(Object)
+      expect(savedRecord.didDocument?.service?.[0]).toBeInstanceOf(Object)
 
       expect(result.didState.state).toBe('finished')
       expect(result.didState.did).toBe(did)

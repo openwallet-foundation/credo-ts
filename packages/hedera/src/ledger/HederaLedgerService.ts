@@ -45,7 +45,9 @@ import {
   UpdateDIDResult,
 } from '@hiero-did-sdk/registrar'
 import { resolveDID, TopicReaderHederaHcs } from '@hiero-did-sdk/resolver'
+
 import { HederaModuleConfig } from '../HederaModuleConfig'
+
 import { CredoPublisher } from './publisher/CredoPublisher'
 import { CredoSigner } from './signer/CredoSigner'
 import { getRootKeyForHederaDid } from './utils'
@@ -248,18 +250,21 @@ export class HederaLedgerService {
     })
   }
 
-  getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
+  public getSchema(agentContext: AgentContext, schemaId: string): Promise<GetSchemaReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
     return registry.getSchema(schemaId)
   }
 
-  async registerSchema(agentContext: AgentContext, options: RegisterSchemaOptions): Promise<RegisterSchemaReturn> {
+  public async registerSchema(
+    agentContext: AgentContext,
+    options: RegisterSchemaOptions
+  ): Promise<RegisterSchemaReturn> {
     const registry = this.getHederaAnonCredsRegistry(agentContext)
     const issuerKeySigner = await this.getIssuerKeySigner(agentContext, options.schema.issuerId)
     return registry.registerSchema({ ...options, issuerKeySigner })
   }
 
-  getCredentialDefinition(
+  public getCredentialDefinition(
     agentContext: AgentContext,
     credentialDefinitionId: string
   ): Promise<GetCredentialDefinitionReturn> {
@@ -267,7 +272,7 @@ export class HederaLedgerService {
     return registry.getCredentialDefinition(credentialDefinitionId)
   }
 
-  async registerCredentialDefinition(
+  public async registerCredentialDefinition(
     agentContext: AgentContext,
     options: RegisterCredentialDefinitionOptions
   ): Promise<RegisterCredentialDefinitionReturn> {
@@ -282,7 +287,7 @@ export class HederaLedgerService {
     })
   }
 
-  getRevocationRegistryDefinition(
+  public getRevocationRegistryDefinition(
     agentContext: AgentContext,
     revocationRegistryDefinitionId: string
   ): Promise<GetRevocationRegistryDefinitionReturn> {
@@ -290,7 +295,7 @@ export class HederaLedgerService {
     return registry.getRevocationRegistryDefinition(revocationRegistryDefinitionId)
   }
 
-  async registerRevocationRegistryDefinition(
+  public async registerRevocationRegistryDefinition(
     agentContext: AgentContext,
     options: RegisterRevocationRegistryDefinitionOptions
   ): Promise<RegisterRevocationRegistryDefinitionReturn> {
@@ -302,7 +307,7 @@ export class HederaLedgerService {
     })
   }
 
-  getRevocationStatusList(
+  public getRevocationStatusList(
     agentContext: AgentContext,
     revocationRegistryId: string,
     timestamp: number
@@ -311,7 +316,7 @@ export class HederaLedgerService {
     return registry.getRevocationStatusList(revocationRegistryId, timestamp)
   }
 
-  async registerRevocationStatusList(
+  public async registerRevocationStatusList(
     agentContext: AgentContext,
     options: RegisterRevocationStatusListOptions
   ): Promise<RegisterRevocationStatusListReturn> {
@@ -323,6 +328,7 @@ export class HederaLedgerService {
     })
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private getHederaHcsTopicReader(_agentContext: AgentContext): TopicReaderHederaHcs {
     return new TopicReaderHederaHcs({ ...this.config.options, cache: this.cache })
   }
@@ -331,6 +337,7 @@ export class HederaLedgerService {
     return new CredoPublisher(agentContext, client, key)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   private getHederaAnonCredsRegistry(_agentContext: AgentContext): HederaAnoncredsRegistry {
     return new HederaAnoncredsRegistry({ ...this.config.options, cache: this.cache })
   }
@@ -433,9 +440,9 @@ export class HederaLedgerService {
     builder: DIDUpdateBuilder,
     property: string,
     action: 'add' | 'remove'
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): (item: any) => DIDUpdateBuilder {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const methodMap: Record<string, Record<'add' | 'remove', (item: any) => DIDUpdateBuilder>> = {
       service: {
         add: (item: Service) => builder.addService(item),

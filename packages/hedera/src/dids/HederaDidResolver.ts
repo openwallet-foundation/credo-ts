@@ -7,6 +7,7 @@ import {
   JsonTransformer,
   type ParsedDid,
 } from '@credo-ts/core'
+
 import { HederaLedgerService } from '../ledger'
 
 export class HederaDidResolver implements DidResolver {
@@ -14,10 +15,12 @@ export class HederaDidResolver implements DidResolver {
   public readonly allowsCaching = true
   public readonly allowsLocalDidRecord = true
 
-  async resolve(
+  public async resolve(
     agentContext: AgentContext,
     did: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _parsed: ParsedDid,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _didResolutionOptions: DidResolutionOptions
   ): Promise<DidResolutionResult> {
     try {

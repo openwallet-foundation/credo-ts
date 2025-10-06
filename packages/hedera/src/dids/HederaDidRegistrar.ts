@@ -1,24 +1,29 @@
-import {
+import type { HederaDidCreateOptions } from '../ledger'
+import type {
   AgentContext,
   DidCreateResult,
   DidDeactivateOptions,
   DidDeactivateResult,
+  DidRegistrar,
+  DidUpdateOptions,
+  DidUpdateResult,
+} from '@credo-ts/core'
+
+import {
   DidDocument,
   DidDocumentRole,
   DidDocumentService,
   DidRecord,
-  DidRegistrar,
   DidRepository,
-  DidUpdateOptions,
-  DidUpdateResult,
   JsonTransformer,
 } from '@credo-ts/core'
-import { HederaDidCreateOptions, HederaLedgerService } from '../ledger'
+
+import { HederaLedgerService } from '../ledger'
 
 export class HederaDidRegistrar implements DidRegistrar {
   public readonly supportedMethods = ['hedera']
 
-  async create(agentContext: AgentContext, options: HederaDidCreateOptions): Promise<DidCreateResult> {
+  public async create(agentContext: AgentContext, options: HederaDidCreateOptions): Promise<DidCreateResult> {
     try {
       const didRepository = agentContext.dependencyManager.resolve(DidRepository)
       const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
@@ -63,7 +68,7 @@ export class HederaDidRegistrar implements DidRegistrar {
     }
   }
 
-  async update(agentContext: AgentContext, options: DidUpdateOptions): Promise<DidUpdateResult> {
+  public async update(agentContext: AgentContext, options: DidUpdateOptions): Promise<DidUpdateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
 
@@ -109,7 +114,7 @@ export class HederaDidRegistrar implements DidRegistrar {
     }
   }
 
-  async deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
+  public async deactivate(agentContext: AgentContext, options: DidDeactivateOptions): Promise<DidDeactivateResult> {
     const didRepository = agentContext.dependencyManager.resolve(DidRepository)
     const ledgerService = agentContext.dependencyManager.resolve(HederaLedgerService)
 
