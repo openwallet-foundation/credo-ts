@@ -12,10 +12,10 @@ import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 import { Agent } from '@credo-ts/core'
 import {
-  AutoAcceptCredential,
-  MediationRecipientModule,
-  MediatorModule,
-  MediatorPickupStrategy,
+  DidCommAutoAcceptCredential,
+  DidCommMediationRecipientModule,
+  DidCommMediatorModule,
+  DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 
 const recipientAgentOptions = getAgentOptions(
@@ -24,10 +24,10 @@ const recipientAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new MediationRecipientModule({
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+    mediationRecipient: new DidCommMediationRecipientModule({
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }
@@ -40,9 +40,9 @@ const mediatorAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediator: new MediatorModule({ autoAcceptMediationRequests: true }),
+    mediator: new DidCommMediatorModule({ autoAcceptMediationRequests: true }),
   },
   { requireDidcomm: true }
 )
@@ -54,11 +54,11 @@ const senderAgentOptions = getAgentOptions(
   {},
   {
     ...getAnonCredsModules({
-      autoAcceptCredentials: AutoAcceptCredential.ContentApproved,
+      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
     }),
-    mediationRecipient: new MediationRecipientModule({
+    mediationRecipient: new DidCommMediationRecipientModule({
       mediatorPollingInterval: 1000,
-      mediatorPickupStrategy: MediatorPickupStrategy.PickUpV1,
+      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
     }),
   },
   { requireDidcomm: true }

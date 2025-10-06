@@ -1,0 +1,165 @@
+{
+  "id": "9261d982-c40a-40bc-a3ff-151da279b110",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.DidcommQuestionAnswer": {
+      "name": "DidcommQuestionAnswer",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "DidcommQuestionAnswerState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "DidcommQuestionAnswerRole",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "connection_id": {
+          "name": "connection_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "thread_id": {
+          "name": "thread_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question_text": {
+          "name": "question_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "question_detail": {
+          "name": "question_detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "valid_responses": {
+          "name": "valid_responses",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature_required": {
+          "name": "signature_required",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "response": {
+          "name": "response",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "didcommQuestionAnswer_fk_context": {
+          "name": "didcommQuestionAnswer_fk_context",
+          "tableFrom": "DidcommQuestionAnswer",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk": {
+          "name": "DidcommQuestionAnswer_connection_id_context_correlation_id_DidcommConnection_id_context_correlation_id_fk",
+          "tableFrom": "DidcommQuestionAnswer",
+          "tableTo": "DidcommConnection",
+          "columnsFrom": ["connection_id", "context_correlation_id"],
+          "columnsTo": ["id", "context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "didcommQuestionAnswer_pk": {
+          "name": "didcommQuestionAnswer_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "DidcommQuestionAnswer_context_correlation_id_thread_id_unique": {
+          "name": "DidcommQuestionAnswer_context_correlation_id_thread_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["context_correlation_id", "thread_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.DidcommQuestionAnswerState": {
+      "name": "DidcommQuestionAnswerState",
+      "schema": "public",
+      "values": ["question-sent", "answer-received", "question-received", "answer-sent"]
+    },
+    "public.DidcommQuestionAnswerRole": {
+      "name": "DidcommQuestionAnswerRole",
+      "schema": "public",
+      "values": ["questioner", "responder"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

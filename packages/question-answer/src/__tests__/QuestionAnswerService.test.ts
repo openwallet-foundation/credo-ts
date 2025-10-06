@@ -2,7 +2,7 @@ import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
 import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidExchangeState, InboundMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { Subject } from 'rxjs'
 
@@ -27,7 +27,7 @@ describe('QuestionAnswerService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   let agentConfig: AgentConfig
@@ -124,7 +124,7 @@ describe('QuestionAnswerService', () => {
     })
 
     it('throws an error when invalid response is provided', async () => {
-      expect(questionAnswerService.createAnswer(agentContext, mockRecord, 'Maybe')).rejects.toThrowError(
+      expect(questionAnswerService.createAnswer(agentContext, mockRecord, 'Maybe')).rejects.toThrow(
         'Response does not match valid responses'
       )
     })
@@ -179,7 +179,7 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      const messageContext = new InboundMessageContext(questionMessage, {
+      const messageContext = new DidCommInboundMessageContext(questionMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -206,12 +206,12 @@ describe('QuestionAnswerService', () => {
         validResponses: [{ text: 'Yes' }, { text: 'No' }],
       })
 
-      const messageContext = new InboundMessageContext(questionMessage, {
+      const messageContext = new DidCommInboundMessageContext(questionMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.processReceiveQuestion(messageContext)).rejects.toThrowError(
+      expect(questionAnswerService.processReceiveQuestion(messageContext)).rejects.toThrow(
         `Question answer record with thread Id ${questionMessage.id} already exists.`
       )
       jest.resetAllMocks()
@@ -242,7 +242,7 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -267,12 +267,12 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Question Answer record with thread Id ${answerMessage.threadId} not found.`
       )
     })
@@ -286,12 +286,12 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Question answer record is in invalid state ${mockRecord.state}. Valid states are: ${QuestionAnswerState.QuestionSent}`
       )
       jest.resetAllMocks()
@@ -307,12 +307,12 @@ describe('QuestionAnswerService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(answerMessage, {
+      const messageContext = new DidCommInboundMessageContext(answerMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrowError(
+      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Invalid question answer record role ${mockRecord.role}, expected is ${QuestionAnswerRole.Questioner}`
       )
     })

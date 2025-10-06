@@ -32,11 +32,11 @@ Previously:
       config,
       dependencies: agentDependencies,
       modules: {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })
-    this.agent.registerInboundTransport(new HttpInboundTransport({ port }))
+    this.agent.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
     this.agent.registerOutboundTransport(new HttpOutboundTransport())
 
 ```
@@ -57,10 +57,10 @@ Now:
       dependencies: agentDependencies,
       modules: {
         ...getDefaultDidcommModules({ endpoints: ['https://myendpoint'] }),
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
            autoAcceptConnections: true,
         })
       })
-    agent.modules.didcomm.registerInboundTransport(new HttpInboundTransport({ port }))
-    agent.modules.didcomm.registerOutboundTransport(new HttpOutboundTransport())
+    agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
+    agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
 ```

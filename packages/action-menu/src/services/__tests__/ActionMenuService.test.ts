@@ -3,7 +3,7 @@ import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import type { ActionMenuSelection } from '../../models'
 
 import { EventEmitter } from '@credo-ts/core'
-import { DidExchangeState, InboundMessageContext } from '@credo-ts/didcomm'
+import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import {
@@ -30,7 +30,7 @@ describe('ActionMenuService', () => {
   const mockConnectionRecord = getMockConnection({
     id: 'd3849ac3-c981-455b-a1aa-a10bea6cead8',
     did: 'did:sov:C2SsBf5QUQpqSAQfhu3sd2',
-    state: DidExchangeState.Completed,
+    state: DidCommDidExchangeState.Completed,
   })
 
   let actionMenuRepository: Repository<ActionMenuRecord>
@@ -94,7 +94,7 @@ describe('ActionMenuService', () => {
             ],
           },
         })
-      ).rejects.toThrowError('Action Menu contains duplicated options')
+      ).rejects.toThrow('Action Menu contains duplicated options')
     })
 
     it('no previous menu: emits a menu with title, description and options', async () => {
@@ -241,7 +241,7 @@ describe('ActionMenuService', () => {
           actionMenuRecord: mockRecord,
           performedAction: { name: 'fake' },
         })
-      ).rejects.toThrowError('Selection does not match valid actions')
+      ).rejects.toThrow('Selection does not match valid actions')
     })
 
     it('throws an error when state is not preparing-selection', async () => {
@@ -254,9 +254,7 @@ describe('ActionMenuService', () => {
             actionMenuRecord: mockRecord,
             performedAction: { name: 'opt1' },
           })
-        ).rejects.toThrowError(
-          `Action Menu record is in invalid state ${state}. Valid states are: preparing-selection.`
-        )
+        ).rejects.toThrow(`Action Menu record is in invalid state ${state}. Valid states are: preparing-selection.`)
       }
     })
 
@@ -504,7 +502,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and creates record when no previous record', async () => {
-      const messageContext = new InboundMessageContext(mockMenuMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -551,7 +549,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and updates record when existing record', async () => {
-      const messageContext = new InboundMessageContext(mockMenuMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -629,7 +627,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -686,7 +684,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -696,9 +694,7 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrowError(
-        'Selection does not match valid actions'
-      )
+      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow('Selection does not match valid actions')
 
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
@@ -711,7 +707,7 @@ describe('ActionMenuService', () => {
         threadId: '122',
       })
 
-      const messageContext = new InboundMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -721,7 +717,7 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrowError(
+      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `No Action Menu found with thread id ${mockPerformMessage.threadId}`
       )
 
@@ -736,7 +732,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -747,7 +743,7 @@ describe('ActionMenuService', () => {
       mockRecord.state = ActionMenuState.Done
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrowError(
+      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `Action Menu record is in invalid state ${mockRecord.state}. Valid states are: ${ActionMenuState.AwaitingSelection}.`
       )
 
@@ -762,7 +758,7 @@ describe('ActionMenuService', () => {
         threadId: '123',
       })
 
-      const messageContext = new InboundMessageContext(mockPerformMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockPerformMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -773,7 +769,7 @@ describe('ActionMenuService', () => {
       mockRecord.state = ActionMenuState.Null
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrowError(
+      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         new ActionMenuProblemReportError('Action Menu has been cleared by the responder', {
           problemCode: ActionMenuProblemReportReason.Timeout,
         })
@@ -810,7 +806,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and creates record when no previous record', async () => {
-      const messageContext = new InboundMessageContext(mockMenuRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuRequestMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })
@@ -847,7 +843,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits event and updates record when existing record', async () => {
-      const messageContext = new InboundMessageContext(mockMenuRequestMessage, {
+      const messageContext = new DidCommInboundMessageContext(mockMenuRequestMessage, {
         agentContext,
         connection: mockConnectionRecord,
       })

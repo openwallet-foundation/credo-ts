@@ -17,23 +17,23 @@ import {
   W3cCredentialsModuleConfig,
 } from '@credo-ts/core'
 import {
-  CredentialExchangeRecord,
-  CredentialPreviewAttribute,
-  CredentialRole,
-  CredentialState,
-  ProofExchangeRecord,
-  ProofRole,
-  ProofState,
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { DataIntegrityCredentialFormatService } from '../../anoncreds/src/formats/DataIntegrityCredentialFormatService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
@@ -43,6 +43,7 @@ import {
   AnonCredsCredentialDefinitionPrivateRepository,
   AnonCredsCredentialDefinitionRecord,
   AnonCredsCredentialDefinitionRepository,
+  AnonCredsDidCommProofFormatService,
   AnonCredsHolderServiceSymbol,
   AnonCredsIssuerServiceSymbol,
   AnonCredsKeyCorrectnessProofRecord,
@@ -50,7 +51,6 @@ import {
   AnonCredsLinkSecretRecord,
   AnonCredsLinkSecretRepository,
   AnonCredsModuleConfig,
-  AnonCredsProofFormatService,
   AnonCredsRevocationRegistryDefinitionPrivateRecord,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryDefinitionRecord,
@@ -110,8 +110,8 @@ const agentContext = getAgentContext({
 
 agentContext.dependencyManager.registerInstance(AgentContext, agentContext)
 
-const dataIntegrityCredentialFormatService = new DataIntegrityCredentialFormatService()
-const anoncredsProofFormatService = new AnonCredsProofFormatService()
+const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
+const anoncredsProofFormatService = new AnonCredsDidCommProofFormatService()
 
 const indyDid = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
@@ -280,23 +280,23 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     })
   )
 
-  const holderCredentialRecord = new CredentialExchangeRecord({
+  const holderCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalSent,
+    state: DidCommCredentialState.ProposalSent,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Holder,
+    role: DidCommCredentialRole.Holder,
   })
 
-  const issuerCredentialRecord = new CredentialExchangeRecord({
+  const issuerCredentialRecord = new DidCommCredentialExchangeRecord({
     protocolVersion: 'v1',
-    state: CredentialState.ProposalReceived,
+    state: DidCommCredentialState.ProposalReceived,
     threadId: 'f365c1a5-2baf-4873-9432-fa87c888a0aa',
-    role: CredentialRole.Issuer,
+    role: DidCommCredentialRole.Issuer,
   })
 
   const credentialAttributes = [
-    new CredentialPreviewAttribute({ name: 'name', value: 'John' }),
-    new CredentialPreviewAttribute({ name: 'age', value: '25' }),
+    new DidCommCredentialPreviewAttribute({ name: 'name', value: 'John' }),
+    new DidCommCredentialPreviewAttribute({ name: 'age', value: '25' }),
   ]
 
   // Set attributes on the credential record, this is normally done by the protocol service
@@ -320,7 +320,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   })
 
   const { attachment: offerAttachment } = await dataIntegrityCredentialFormatService.createOffer(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     credentialFormats: {
       dataIntegrity: {
         bindingRequired: true,
@@ -337,12 +337,12 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Holder processes and accepts offer
   await dataIntegrityCredentialFormatService.processOffer(agentContext, {
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: offerAttachment,
   })
   const { attachment: requestAttachment, appendAttachments: requestAppendAttachments } =
     await dataIntegrityCredentialFormatService.acceptOffer(agentContext, {
-      credentialRecord: holderCredentialRecord,
+      credentialExchangeRecord: holderCredentialRecord,
       offerAttachment,
       credentialFormats: {
         dataIntegrity: {
@@ -362,11 +362,11 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   // Issuer processes and accepts request
   await dataIntegrityCredentialFormatService.processRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     attachment: requestAttachment,
   })
   const { attachment: credentialAttachment } = await dataIntegrityCredentialFormatService.acceptRequest(agentContext, {
-    credentialRecord: issuerCredentialRecord,
+    credentialExchangeRecord: issuerCredentialRecord,
     requestAttachment,
     offerAttachment,
     requestAppendAttachments,
@@ -376,7 +376,7 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
   // Holder processes and accepts credential
   await dataIntegrityCredentialFormatService.processCredential(agentContext, {
     offerAttachment,
-    credentialRecord: holderCredentialRecord,
+    credentialExchangeRecord: holderCredentialRecord,
     attachment: credentialAttachment,
     requestAttachment,
   })
@@ -387,8 +387,8 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
 
   const credentialRecordId = holderCredentialRecord.credentials[0].credentialRecordId
   const w3cCredentialService = agentContext.dependencyManager.resolve(W3cCredentialService)
-  const credentialRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
-  const credentialId = credentialRecord.id
+  const credentialExchangeRecord = await w3cCredentialService.getCredentialRecordById(agentContext, credentialRecordId)
+  const credentialId = credentialExchangeRecord.id
 
   const anonCredsCredential = await anonCredsHolderService.getCredential(agentContext, {
     id: credentialId,
@@ -434,16 +434,16 @@ async function anonCredsFlowTest(options: { issuerId: string; revocable: boolean
     '_anoncreds/credential': expectedCredentialMetadata,
   })
 
-  const holderProofRecord = new ProofExchangeRecord({
+  const holderProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    state: ProofState.ProposalSent,
-    role: ProofRole.Prover,
+    state: DidCommProofState.ProposalSent,
+    role: DidCommProofRole.Prover,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })
-  const verifierProofRecord = new ProofExchangeRecord({
+  const verifierProofRecord = new DidCommProofExchangeRecord({
     protocolVersion: 'v1',
-    role: ProofRole.Verifier,
-    state: ProofState.ProposalReceived,
+    role: DidCommProofRole.Verifier,
+    state: DidCommProofState.ProposalReceived,
     threadId: '4f5659a4-1aea-4f42-8c22-9a9985b35e38',
   })
 

@@ -1,9 +1,8 @@
 import type { SDJwt } from '@sd-jwt/core'
-import type { DisclosureFrame, PresentationFrame, Signer, Verifier } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 import type { Query, QueryOptions } from '../../storage/StorageService'
 import type {
   SdJwtVcHeader,
-  SdJwtVcHolderBinding,
   SdJwtVcIssuer,
   SdJwtVcPayload,
   SdJwtVcPresentOptions,
@@ -24,16 +23,24 @@ import { JsonObject } from '../../types'
 import { TypedArrayEncoder, dateToSeconds, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
-import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
 import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
-import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import { SdJwtVcTypeMetadata } from './typeMetadata'
+import {
+  extractKeyFromHolderBinding,
+  getSdJwtSigner,
+  getSdJwtVerifier,
+  parseHolderBindingFromCredential,
+  resolveDidUrl,
+  resolveSigningPublicJwkFromDidUrl,
+} from './utils'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
 
@@ -44,7 +51,7 @@ export interface SdJwtVc<
   /**
    * claim format is convenience method added to all credential instances
    */
-  claimFormat: ClaimFormat.SdJwtVc
+  claimFormat: ClaimFormat.SdJwtDc
   /**
    * encoded is convenience method added to all credential instances
    */
@@ -62,11 +69,6 @@ export interface SdJwtVc<
   }
 
   typeMetadata?: SdJwtVcTypeMetadata
-}
-
-export interface CnfPayload {
-  jwk?: Jwk
-  kid?: string
 }
 
 export interface VerificationResult {
@@ -104,9 +106,7 @@ export class SdJwtVcService {
     const issuer = await this.extractKeyFromIssuer(agentContext, options.issuer, true)
 
     // holer binding is optional
-    const holderBinding = options.holder
-      ? await this.extractKeyFromHolderBinding(agentContext, options.holder)
-      : undefined
+    const holderBinding = options.holder ? await extractKeyFromHolderBinding(agentContext, options.holder) : undefined
 
     const header = {
       alg: issuer.alg,
@@ -117,7 +117,7 @@ export class SdJwtVcService {
 
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
-      signer: this.signer(agentContext, issuer.publicJwk),
+      signer: getSdJwtSigner(agentContext, issuer.publicJwk),
       hashAlg: 'sha-256',
       signAlg: issuer.alg,
     })
@@ -150,7 +150,7 @@ export class SdJwtVcService {
       prettyClaims,
       header: header,
       payload: sdjwtPayload,
-      claimFormat: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtDc,
       encoded: compact,
     } satisfies SdJwtVc<typeof header, Payload>
   }
@@ -196,14 +196,14 @@ export class SdJwtVcService {
 
     const sdJwtVc = await sdjwt.decode(compactSdJwtVc)
 
-    const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
+    const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt?.payload)
     if (!holderBinding && verifierMetadata) {
       throw new SdJwtVcError("Verifier metadata provided, but credential has no 'cnf' claim to create a KB-JWT from")
     }
 
-    const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
+    const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding, true) : undefined
     sdjwt.config({
-      kbSigner: holder ? this.signer(agentContext, holder.publicJwk) : undefined,
+      kbSigner: holder ? getSdJwtSigner(agentContext, holder.publicJwk) : undefined,
       kbSignAlg: holder?.alg,
     })
 
@@ -239,8 +239,8 @@ export class SdJwtVcService {
     agentContext: AgentContext,
     { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
   ): Promise<
-    | { isValid: true; verification: VerificationResult; sdJwtVc: SdJwtVc<Header, Payload> }
-    | { isValid: false; verification: VerificationResult; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
+    | { isValid: true; sdJwtVc: SdJwtVc<Header, Payload> }
+    | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -249,12 +249,7 @@ export class SdJwtVcService {
       // loadTypeMetadataFormat: false,
     })
 
-    const verificationResult: VerificationResult = {
-      isValid: false,
-    }
-
     let sdJwtVc: SDJwt
-    let _error: Error | undefined = undefined
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
@@ -262,7 +257,6 @@ export class SdJwtVcService {
     } catch (error) {
       return {
         isValid: false,
-        verification: verificationResult,
         error,
       }
     }
@@ -279,7 +273,7 @@ export class SdJwtVcService {
             header: sdJwtVc.kbJwt.header as Record<string, unknown>,
           }
         : undefined,
-      claimFormat: ClaimFormat.SdJwtVc,
+      claimFormat: ClaimFormat.SdJwtDc,
       encoded: compactSdJwtVc,
     } satisfies SdJwtVc<Header, Payload>
 
@@ -291,12 +285,12 @@ export class SdJwtVcService {
         trustedCertificates
       )
       const issuer = await this.extractKeyFromIssuer(agentContext, credentialIssuer)
-      const holderBinding = this.parseHolderBindingFromCredential(sdJwtVc)
-      const holder = holderBinding ? await this.extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
+      const holderBinding = parseHolderBindingFromCredential(sdJwtVc.jwt.payload)
+      const holder = holderBinding ? await extractKeyFromHolderBinding(agentContext, holderBinding) : undefined
 
       sdjwt.config({
-        verifier: this.verifier(agentContext, issuer.publicJwk),
-        kbVerifier: holder ? this.verifier(agentContext, holder.publicJwk) : undefined,
+        verifier: getSdJwtVerifier(agentContext, issuer.publicJwk),
+        kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
       try {
@@ -304,30 +298,35 @@ export class SdJwtVcService {
           requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
           keyBindingNonce: keyBinding?.nonce,
           currentDate: dateToSeconds(now ?? new Date()),
+          skewSeconds: 0,
         })
-
-        verificationResult.isSignatureValid = true
-        verificationResult.areRequiredClaimsIncluded = true
-        verificationResult.isStatusValid = true
       } catch (error) {
-        _error = error
-        verificationResult.isSignatureValid = false
-        verificationResult.areRequiredClaimsIncluded = false
-        verificationResult.isStatusValid = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       if (sdJwtVc.jwt.header?.typ !== 'vc+sd-jwt' && sdJwtVc.jwt.header?.typ !== 'dc+sd-jwt') {
-        verificationResult.areRequiredClaimsIncluded = false
-        _error = new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`)
+        return {
+          error: new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`),
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       try {
-        JwtPayload.fromJson(returnSdJwtVc.payload).validate()
-
-        verificationResult.isValidJwtPayload = true
+        JwtPayload.fromJson(returnSdJwtVc.payload).validate({
+          now: dateToSeconds(now ?? new Date()),
+          skewTime: 0,
+        })
       } catch (error) {
-        _error = error
-        verificationResult.isValidJwtPayload = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       // If keyBinding is present, verify the key binding
@@ -345,16 +344,13 @@ export class SdJwtVcService {
           if (sdJwtVc.kbJwt.payload.nonce !== keyBinding.nonce) {
             throw new SdJwtVcError('The key binding JWT does not contain the expected nonce')
           }
-
-          verificationResult.isKeyBindingValid = true
-          verificationResult.containsExpectedKeyBinding = true
-          verificationResult.containsRequiredVcProperties = true
         }
       } catch (error) {
-        _error = error
-        verificationResult.isKeyBindingValid = false
-        verificationResult.containsExpectedKeyBinding = false
-        verificationResult.containsRequiredVcProperties = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       try {
@@ -375,30 +371,15 @@ export class SdJwtVcService {
         // we allow vct without type metadata for now
       }
     } catch (error) {
-      verificationResult.isValid = false
       return {
         isValid: false,
         error,
-        verification: verificationResult,
         sdJwtVc: returnSdJwtVc,
-      }
-    }
-
-    const { isValid: _, ...allVerifications } = verificationResult
-    verificationResult.isValid = Object.values(allVerifications).every((verification) => verification === true)
-
-    if (_error) {
-      return {
-        isValid: false,
-        error: _error,
-        sdJwtVc: returnSdJwtVc,
-        verification: verificationResult,
       }
     }
 
     return {
       isValid: true,
-      verification: verificationResult,
       sdJwtVc: returnSdJwtVc,
     }
   }
@@ -436,60 +417,6 @@ export class SdJwtVcService {
     await this.sdJwtVcRepository.update(agentContext, sdJwtVcRecord)
   }
 
-  private async resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
-    const dids = agentContext.dependencyManager.resolve(DidsApi)
-
-    const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(didUrl)
-    return publicJwk
-  }
-
-  private async resolveDidUrl(agentContext: AgentContext, didUrl: string) {
-    const didResolver = agentContext.dependencyManager.resolve(DidResolverService)
-    const didDocument = await didResolver.resolveDidDocument(agentContext, didUrl)
-
-    return {
-      verificationMethod: didDocument.dereferenceKey(didUrl, ['assertionMethod']),
-      didDocument,
-    }
-  }
-
-  /**
-   * @todo validate the JWT header (alg)
-   */
-  private signer(agentContext: AgentContext, key: PublicJwk): Signer {
-    const kms = agentContext.resolve(KeyManagementApi)
-
-    return async (input: string) => {
-      const result = await kms.sign({
-        keyId: key.keyId,
-        data: TypedArrayEncoder.fromString(input),
-        algorithm: key.signatureAlgorithm,
-      })
-
-      return TypedArrayEncoder.toBase64URL(result.signature)
-    }
-  }
-
-  /**
-   * @todo validate the JWT header (alg)
-   */
-  private verifier(agentContext: AgentContext, key: PublicJwk): Verifier {
-    const kms = agentContext.resolve(KeyManagementApi)
-
-    return async (message: string, signatureBase64Url: string) => {
-      const result = await kms.verify({
-        signature: TypedArrayEncoder.fromBase64(signatureBase64Url),
-        key: {
-          publicJwk: key.toJson(),
-        },
-        data: TypedArrayEncoder.fromString(message),
-        algorithm: key.signatureAlgorithm,
-      })
-
-      return result.verified
-    }
-  }
-
   private async extractKeyFromIssuer(agentContext: AgentContext, issuer: SdJwtVcIssuer, forSigning = false) {
     if (issuer.method === 'did') {
       const parsedDid = parseDid(issuer.didUrl)
@@ -501,9 +428,9 @@ export class SdJwtVcService {
 
       let publicJwk: PublicJwk
       if (forSigning) {
-        publicJwk = await this.resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
+        publicJwk = await resolveSigningPublicJwkFromDidUrl(agentContext, issuer.didUrl)
       } else {
-        const { verificationMethod } = await this.resolveDidUrl(agentContext, issuer.didUrl)
+        const { verificationMethod } = await resolveDidUrl(agentContext, issuer.didUrl)
         publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
       }
 
@@ -655,98 +582,6 @@ export class SdJwtVcService {
       }
     }
     throw new SdJwtVcError("Unsupported 'iss' value. Only did is supported at the moment.")
-  }
-
-  private parseHolderBindingFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
-    sdJwtVc: SDJwt<Header, Payload>
-  ): SdJwtVcHolderBinding | null {
-    if (!sdJwtVc.jwt?.payload) {
-      throw new SdJwtVcError('Unable to extract payload from SD-JWT VC')
-    }
-
-    if (!sdJwtVc.jwt?.payload.cnf) {
-      return null
-    }
-    const cnf: CnfPayload = sdJwtVc.jwt.payload.cnf
-
-    if (cnf.jwk) {
-      return {
-        method: 'jwk',
-        jwk: PublicJwk.fromUnknown(cnf.jwk),
-      }
-    }
-    if (cnf.kid) {
-      if (!cnf.kid.startsWith('did:') || !cnf.kid.includes('#')) {
-        throw new SdJwtVcError('Invalid holder kid for did. Only absolute KIDs for cnf are supported')
-      }
-      return {
-        method: 'did',
-        didUrl: cnf.kid,
-      }
-    }
-
-    throw new SdJwtVcError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
-  }
-
-  private async extractKeyFromHolderBinding(
-    agentContext: AgentContext,
-    holder: SdJwtVcHolderBinding,
-    forSigning = false
-  ) {
-    if (holder.method === 'did') {
-      const parsedDid = parseDid(holder.didUrl)
-      if (!parsedDid.fragment) {
-        throw new SdJwtVcError(
-          `didUrl '${holder.didUrl}' does not contain a '#'. Unable to derive key from did document`
-        )
-      }
-
-      let publicJwk: PublicJwk
-      if (forSigning) {
-        publicJwk = await this.resolveSigningPublicJwkFromDidUrl(agentContext, holder.didUrl)
-      } else {
-        const { verificationMethod } = await this.resolveDidUrl(agentContext, holder.didUrl)
-        publicJwk = getPublicJwkFromVerificationMethod(verificationMethod)
-      }
-
-      const supportedSignatureAlgorithms = publicJwk.supportedSignatureAlgorithms
-      if (supportedSignatureAlgorithms.length === 0) {
-        throw new SdJwtVcError(
-          `No supported JWA signature algorithms found for key ${publicJwk.jwkTypehumanDescription}`
-        )
-      }
-      const alg = supportedSignatureAlgorithms[0]
-
-      return {
-        alg,
-        publicJwk,
-        cnf: {
-          // We need to include the whole didUrl here, otherwise the verifier
-          // won't know which did it is associated with
-          kid: holder.didUrl,
-        },
-      }
-    }
-    if (holder.method === 'jwk') {
-      const publicJwk = holder.jwk
-      const alg = publicJwk.supportedSignatureAlgorithms[0]
-
-      // If there is no key id configured when signing, we assume this credential was issued before we included key ids
-      // and the we use the legacy key id.
-      if (forSigning && !publicJwk.hasKeyId) {
-        publicJwk.keyId = publicJwk.legacyKeyId
-      }
-
-      return {
-        alg,
-        publicJwk,
-        cnf: {
-          jwk: publicJwk.toJson(),
-        },
-      }
-    }
-
-    throw new SdJwtVcError("Unsupported credential holder binding. Only 'did' and 'jwk' are supported at the moment.")
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {

@@ -3,8 +3,13 @@ import type { DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
-import { ConnectionsModule, DidCommModule, MessagePickupModule, OutOfBandModule } from '@credo-ts/didcomm'
-import { HttpInboundTransport, WsInboundTransport, agentDependencies } from '@credo-ts/node'
+import {
+  DidCommConnectionsModule,
+  DidCommMessagePickupModule,
+  DidCommModule,
+  DidCommOutOfBandModule,
+} from '@credo-ts/didcomm'
+import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
 import { Server } from 'ws'
@@ -18,13 +23,12 @@ const run = async () => {
   const app = express()
   const socketServer = new Server({ noServer: true })
 
-  const httpInboundTransport = new HttpInboundTransport({ app, port })
-  const wsInboundTransport = new WsInboundTransport({ server: socketServer })
+  const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+  const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
 
   // Setup the agent
   const agent = new Agent({
     config: {
-      label: 'Dummy-powered agent - responder',
       logger: new ConsoleLogger(LogLevel.debug),
     },
     modules: {
@@ -36,10 +40,10 @@ const run = async () => {
         },
       }),
       didcomm: new DidCommModule({ endpoints: [`http://localhost:${port}`] }),
-      oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
+      oob: new DidCommOutOfBandModule(),
+      messagePickup: new DidCommMessagePickupModule(),
       dummy: new DummyModule({ autoAcceptRequests }),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },

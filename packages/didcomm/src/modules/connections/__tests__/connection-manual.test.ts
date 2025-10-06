@@ -1,4 +1,4 @@
-import type { ConnectionStateChangedEvent } from '../ConnectionEvents'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 
 import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
@@ -6,37 +6,42 @@ import { filter, first, map, timeout } from 'rxjs/operators'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions } from '../../../../../core/tests/helpers'
-import { ConnectionEventTypes } from '../ConnectionEvents'
-import { ConnectionsModule } from '../ConnectionsModule'
-import { DidExchangeState } from '../models'
+import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
+import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
+import { DidCommDidExchangeState } from '../models'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
   return firstValueFrom(
-    agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged).pipe(
-      map((event) => event.payload.connectionRecord),
-      // Wait for request received
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidExchangeState.RequestReceived && connectionRecord.theirLabel === theirLabel
-      ),
-      first(),
-      timeout(5000)
-    )
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        map((event) => event.payload.connectionRecord),
+        // Wait for request received
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.RequestReceived &&
+            connectionRecord.theirLabel === theirLabel
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 
 function waitForResponse(agent: Agent, connectionId: string) {
   return firstValueFrom(
-    agent.events.observable<ConnectionStateChangedEvent>(ConnectionEventTypes.ConnectionStateChanged).pipe(
-      // Wait for response received
-      map((event) => event.payload.connectionRecord),
-      filter(
-        (connectionRecord) =>
-          connectionRecord.state === DidExchangeState.ResponseReceived && connectionRecord.id === connectionId
-      ),
-      first(),
-      timeout(5000)
-    )
+    agent.events
+      .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
+      .pipe(
+        // Wait for response received
+        map((event) => event.payload.connectionRecord),
+        filter(
+          (connectionRecord) =>
+            connectionRecord.state === DidCommDidExchangeState.ResponseReceived && connectionRecord.id === connectionId
+        ),
+        first(),
+        timeout(5000)
+      )
   )
 }
 
@@ -49,11 +54,9 @@ describe('Manual Connection Flow', () => {
       {
         endpoints: ['rxjs:alice'],
       },
+      {},
       {
-        label: 'alice',
-      },
-      {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
           autoAcceptConnections: false,
         }),
       },
@@ -64,11 +67,9 @@ describe('Manual Connection Flow', () => {
       {
         endpoints: ['rxjs:bob'],
       },
+      {},
       {
-        label: 'bob',
-      },
-      {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
           autoAcceptConnections: false,
         }),
       },
@@ -81,7 +82,7 @@ describe('Manual Connection Flow', () => {
       },
       {},
       {
-        connections: new ConnectionsModule({
+        connections: new DidCommConnectionsModule({
           autoAcceptConnections: false,
         }),
       },
@@ -100,6 +101,7 @@ describe('Manual Connection Flow', () => {
     const faberOutOfBandRecord = await faberAgent.modules.oob.createInvitation({
       autoAcceptConnection: false,
       multiUseInvitation: true,
+      label: 'faber',
     })
 
     const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
@@ -108,6 +110,7 @@ describe('Manual Connection Flow', () => {
     let { connectionRecord: aliceConnectionRecord } = await aliceAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
+        label: 'alice',
         autoAcceptInvitation: true,
         autoAcceptConnection: false,
       }
@@ -116,6 +119,7 @@ describe('Manual Connection Flow', () => {
     let { connectionRecord: bobConnectionRecord } = await bobAgent.modules.oob.receiveInvitation(
       faberOutOfBandRecord.outOfBandInvitation,
       {
+        label: 'bob',
         autoAcceptInvitation: true,
         autoAcceptConnection: false,
       }

@@ -1,7 +1,7 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
-import type { Routing } from '../../models'
-import type { OutOfBandRecord } from '../oob/repository'
-import type { ConnectionRecord } from './repository'
+import type { DidCommRouting } from '../../models'
+import type { DidCommOutOfBandRecord } from '../oob/repository'
+import type { DidCommConnectionRecord } from './repository'
 
 import {
   Buffer,
@@ -30,20 +30,24 @@ import {
   tryParseDid,
 } from '@credo-ts/core'
 
-import { Attachment, AttachmentData } from '../../decorators/attachment/Attachment'
-import { InboundMessageContext } from '../../models'
+import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
+import { DidCommInboundMessageContext } from '../../models'
 import { ParsedMessageType } from '../../util/messageType'
-import { OutOfBandRole } from '../oob/domain/OutOfBandRole'
-import { OutOfBandState } from '../oob/domain/OutOfBandState'
+import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
+import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { DidCommDocumentService } from '../../services'
-import { ConnectionsModuleConfig } from './ConnectionsModuleConfig'
+import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
-import { DidExchangeCompleteMessage, DidExchangeRequestMessage, DidExchangeResponseMessage } from './messages'
-import { DidExchangeRole, DidExchangeState, HandshakeProtocol } from './models'
-import { ConnectionService } from './services'
+import {
+  DidCommDidExchangeCompleteMessage,
+  DidCommDidExchangeRequestMessage,
+  DidCommDidExchangeResponseMessage,
+} from './messages'
+import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
+import { DidCommConnectionService } from './services'
 import {
   createPeerDidFromServices,
   getResolvedDidcommServiceWithSigningKeyId,
@@ -51,25 +55,25 @@ import {
 } from './services/helpers'
 
 interface DidExchangeRequestParams {
-  label?: string
+  label: string
   alias?: string
   goal?: string
   goalCode?: string
-  routing?: Routing
+  routing?: DidCommRouting
   autoAcceptConnection?: boolean
   ourDid?: string
 }
 
 @injectable()
 export class DidExchangeProtocol {
-  private connectionService: ConnectionService
+  private connectionService: DidCommConnectionService
   private didcommDocumentService: DidCommDocumentService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
 
   public constructor(
-    connectionService: ConnectionService,
+    connectionService: DidCommConnectionService,
     didRepository: DidRepository,
     jwsService: JwsService,
     didcommDocumentService: DidCommDocumentService,
@@ -84,14 +88,14 @@ export class DidExchangeProtocol {
 
   public async createRequest(
     agentContext: AgentContext,
-    outOfBandRecord: OutOfBandRecord,
+    outOfBandRecord: DidCommOutOfBandRecord,
     params: DidExchangeRequestParams
-  ): Promise<{ message: DidExchangeRequestMessage; connectionRecord: ConnectionRecord }> {
-    this.logger.debug(`Create message ${DidExchangeRequestMessage.type.messageTypeUri} start`, {
+  ): Promise<{ message: DidCommDidExchangeRequestMessage; connectionRecord: DidCommConnectionRecord }> {
+    this.logger.debug(`Create message ${DidCommDidExchangeRequestMessage.type.messageTypeUri} start`, {
       outOfBandRecord,
       params,
     })
-    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
+    const config = agentContext.dependencyManager.resolve(DidCommConnectionsModuleConfig)
 
     const { outOfBandInvitation } = outOfBandRecord
     const { alias, goal, goalCode, routing, autoAcceptConnection, ourDid: did } = params
@@ -100,7 +104,7 @@ export class DidExchangeProtocol {
     const [invitationDid] = outOfBandInvitation.invitationDids
 
     // Create message
-    const label = params.label ?? agentContext.config.label
+    const label = params.label
 
     let didDocument: DidDocument
     let keys: DidDocumentKey[] | undefined
@@ -130,7 +134,7 @@ export class DidExchangeProtocol {
 
     const parentThreadId = outOfBandRecord.outOfBandInvitation.id
 
-    const message = new DidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
+    const message = new DidCommDidExchangeRequestMessage({ label, parentThreadId, did: didDocument.id, goal, goalCode })
 
     const signingKeys = didDocument
       .getRecipientKeysWithVerificationMethod({ mapX25519ToEd25519: true })
@@ -152,10 +156,10 @@ export class DidExchangeProtocol {
     }
 
     const connectionRecord = await this.connectionService.createConnection(agentContext, {
-      protocol: HandshakeProtocol.DidExchange,
-      role: DidExchangeRole.Requester,
+      protocol: DidCommHandshakeProtocol.DidExchange,
+      role: DidCommDidExchangeRole.Requester,
       alias,
-      state: DidExchangeState.InvitationReceived,
+      state: DidCommDidExchangeState.InvitationReceived,
       theirLabel: outOfBandInvitation.label,
       mediatorId,
       autoAcceptConnection: outOfBandRecord.autoAcceptConnection,
@@ -164,7 +168,7 @@ export class DidExchangeProtocol {
       imageUrl: outOfBandInvitation.imageUrl,
     })
 
-    DidExchangeStateMachine.assertCreateMessageState(DidExchangeRequestMessage.type, connectionRecord)
+    DidExchangeStateMachine.assertCreateMessageState(DidCommDidExchangeRequestMessage.type, connectionRecord)
 
     connectionRecord.did = didDocument.id
     connectionRecord.threadId = message.id
@@ -173,8 +177,8 @@ export class DidExchangeProtocol {
       connectionRecord.autoAcceptConnection = autoAcceptConnection
     }
 
-    await this.updateState(agentContext, DidExchangeRequestMessage.type, connectionRecord)
-    this.logger.debug(`Create message ${DidExchangeRequestMessage.type.messageTypeUri} end`, {
+    await this.updateState(agentContext, DidCommDidExchangeRequestMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidCommDidExchangeRequestMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
     })
@@ -182,15 +186,15 @@ export class DidExchangeProtocol {
   }
 
   public async processRequest(
-    messageContext: InboundMessageContext<DidExchangeRequestMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
+    messageContext: DidCommInboundMessageContext<DidCommDidExchangeRequestMessage>,
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
     this.logger.debug(`Process message ${messageContext.message.type} start`, {
       message: messageContext.message,
     })
 
-    outOfBandRecord.assertRole(OutOfBandRole.Sender)
-    outOfBandRecord.assertState(OutOfBandState.AwaitResponse)
+    outOfBandRecord.assertRole(DidCommOutOfBandRole.Sender)
+    outOfBandRecord.assertState(DidCommOutOfBandState.AwaitResponse)
 
     // TODO check there is no connection record for particular oob record
 
@@ -242,9 +246,9 @@ export class DidExchangeProtocol {
     })
 
     const connectionRecord = await this.connectionService.createConnection(messageContext.agentContext, {
-      protocol: HandshakeProtocol.DidExchange,
-      role: DidExchangeRole.Responder,
-      state: DidExchangeState.RequestReceived,
+      protocol: DidCommHandshakeProtocol.DidExchange,
+      role: DidCommDidExchangeRole.Responder,
+      state: DidCommDidExchangeState.RequestReceived,
       alias: outOfBandRecord.alias,
       theirDid: message.did,
       theirLabel: message.label,
@@ -254,23 +258,23 @@ export class DidExchangeProtocol {
       outOfBandId: outOfBandRecord.id,
     })
 
-    await this.updateState(messageContext.agentContext, DidExchangeRequestMessage.type, connectionRecord)
-    this.logger.debug(`Process message ${DidExchangeRequestMessage.type.messageTypeUri} end`, connectionRecord)
+    await this.updateState(messageContext.agentContext, DidCommDidExchangeRequestMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidCommDidExchangeRequestMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createResponse(
     agentContext: AgentContext,
-    connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord,
-    routing?: Routing
-  ): Promise<DidExchangeResponseMessage> {
-    this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} start`, connectionRecord)
-    DidExchangeStateMachine.assertCreateMessageState(DidExchangeResponseMessage.type, connectionRecord)
+    connectionRecord: DidCommConnectionRecord,
+    outOfBandRecord: DidCommOutOfBandRecord,
+    routing?: DidCommRouting
+  ): Promise<DidCommDidExchangeResponseMessage> {
+    this.logger.debug(`Create message ${DidCommDidExchangeResponseMessage.type.messageTypeUri} start`, connectionRecord)
+    DidExchangeStateMachine.assertCreateMessageState(DidCommDidExchangeResponseMessage.type, connectionRecord)
 
     const { threadId, theirDid } = connectionRecord
 
-    const config = agentContext.dependencyManager.resolve(ConnectionsModuleConfig)
+    const config = agentContext.dependencyManager.resolve(DidCommConnectionsModuleConfig)
 
     if (!threadId) {
       throw new CredoError('Missing threadId on connection record.')
@@ -304,7 +308,7 @@ export class DidExchangeProtocol {
       : config.peerNumAlgoForDidExchangeRequests
 
     const { didDocument } = await createPeerDidFromServices(agentContext, services, numAlgo)
-    const message = new DidExchangeResponseMessage({ did: didDocument.id, threadId })
+    const message = new DidCommDidExchangeResponseMessage({ did: didDocument.id, threadId })
 
     // DID Rotate attachment should be signed with invitation keys
     const invitationRecipientKeys = inlineResolvedServices.flatMap((s) => s.recipientKeys)
@@ -336,8 +340,8 @@ export class DidExchangeProtocol {
 
     connectionRecord.did = didDocument.id
 
-    await this.updateState(agentContext, DidExchangeResponseMessage.type, connectionRecord)
-    this.logger.debug(`Create message ${DidExchangeResponseMessage.type.messageTypeUri} end`, {
+    await this.updateState(agentContext, DidCommDidExchangeResponseMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidCommDidExchangeResponseMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
     })
@@ -345,10 +349,10 @@ export class DidExchangeProtocol {
   }
 
   public async processResponse(
-    messageContext: InboundMessageContext<DidExchangeResponseMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} start`, {
+    messageContext: DidCommInboundMessageContext<DidCommDidExchangeResponseMessage>,
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
+    this.logger.debug(`Process message ${DidCommDidExchangeResponseMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
 
@@ -358,7 +362,7 @@ export class DidExchangeProtocol {
       throw new CredoError('No connection record in message context.')
     }
 
-    DidExchangeStateMachine.assertProcessMessageState(DidExchangeResponseMessage.type, connectionRecord)
+    DidExchangeStateMachine.assertProcessMessageState(DidCommDidExchangeResponseMessage.type, connectionRecord)
 
     if (!message.thread?.threadId || message.thread?.threadId !== connectionRecord.threadId) {
       throw new DidExchangeProblemReportError('Invalid or missing thread ID.', {
@@ -405,18 +409,18 @@ export class DidExchangeProtocol {
 
     connectionRecord.theirDid = message.did
 
-    await this.updateState(messageContext.agentContext, DidExchangeResponseMessage.type, connectionRecord)
-    this.logger.debug(`Process message ${DidExchangeResponseMessage.type.messageTypeUri} end`, connectionRecord)
+    await this.updateState(messageContext.agentContext, DidCommDidExchangeResponseMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidCommDidExchangeResponseMessage.type.messageTypeUri} end`, connectionRecord)
     return connectionRecord
   }
 
   public async createComplete(
     agentContext: AgentContext,
-    connectionRecord: ConnectionRecord,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<DidExchangeCompleteMessage> {
-    this.logger.debug(`Create message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, connectionRecord)
-    DidExchangeStateMachine.assertCreateMessageState(DidExchangeCompleteMessage.type, connectionRecord)
+    connectionRecord: DidCommConnectionRecord,
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommDidExchangeCompleteMessage> {
+    this.logger.debug(`Create message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} start`, connectionRecord)
+    DidExchangeStateMachine.assertCreateMessageState(DidCommDidExchangeCompleteMessage.type, connectionRecord)
 
     const threadId = connectionRecord.threadId
     const parentThreadId = outOfBandRecord.outOfBandInvitation.id
@@ -429,10 +433,10 @@ export class DidExchangeProtocol {
       throw new CredoError(`Connection record ${connectionRecord.id} does not have 'parentThreadId' attribute.`)
     }
 
-    const message = new DidExchangeCompleteMessage({ threadId, parentThreadId })
+    const message = new DidCommDidExchangeCompleteMessage({ threadId, parentThreadId })
 
-    await this.updateState(agentContext, DidExchangeCompleteMessage.type, connectionRecord)
-    this.logger.debug(`Create message ${DidExchangeCompleteMessage.type.messageTypeUri} end`, {
+    await this.updateState(agentContext, DidCommDidExchangeCompleteMessage.type, connectionRecord)
+    this.logger.debug(`Create message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} end`, {
       connectionRecord,
       message,
     })
@@ -440,10 +444,10 @@ export class DidExchangeProtocol {
   }
 
   public async processComplete(
-    messageContext: InboundMessageContext<DidExchangeCompleteMessage>,
-    outOfBandRecord: OutOfBandRecord
-  ): Promise<ConnectionRecord> {
-    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} start`, {
+    messageContext: DidCommInboundMessageContext<DidCommDidExchangeCompleteMessage>,
+    outOfBandRecord: DidCommOutOfBandRecord
+  ): Promise<DidCommConnectionRecord> {
+    this.logger.debug(`Process message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} start`, {
       message: messageContext.message,
     })
 
@@ -453,7 +457,7 @@ export class DidExchangeProtocol {
       throw new CredoError('No connection record in message context.')
     }
 
-    DidExchangeStateMachine.assertProcessMessageState(DidExchangeCompleteMessage.type, connectionRecord)
+    DidExchangeStateMachine.assertProcessMessageState(DidCommDidExchangeCompleteMessage.type, connectionRecord)
 
     if (message.threadId !== connectionRecord.threadId) {
       throw new DidExchangeProblemReportError('Invalid or missing thread ID.', {
@@ -467,15 +471,17 @@ export class DidExchangeProtocol {
       })
     }
 
-    await this.updateState(messageContext.agentContext, DidExchangeCompleteMessage.type, connectionRecord)
-    this.logger.debug(`Process message ${DidExchangeCompleteMessage.type.messageTypeUri} end`, { connectionRecord })
+    await this.updateState(messageContext.agentContext, DidCommDidExchangeCompleteMessage.type, connectionRecord)
+    this.logger.debug(`Process message ${DidCommDidExchangeCompleteMessage.type.messageTypeUri} end`, {
+      connectionRecord,
+    })
     return connectionRecord
   }
 
   private async updateState(
     agentContext: AgentContext,
     messageType: ParsedMessageType,
-    connectionRecord: ConnectionRecord
+    connectionRecord: DidCommConnectionRecord
   ) {
     this.logger.debug('Updating state', { connectionRecord })
     const nextState = DidExchangeStateMachine.nextState(messageType, connectionRecord)
@@ -488,9 +494,9 @@ export class DidExchangeProtocol {
     signingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   ) {
     this.logger.debug('Creating signed attachment')
-    const signedAttach = new Attachment({
+    const signedAttach = new DidCommAttachment({
       mimeType: typeof data === 'string' ? undefined : 'application/json',
-      data: new AttachmentData({
+      data: new DidCommAttachmentData({
         base64:
           typeof data === 'string' ? TypedArrayEncoder.toBase64URL(Buffer.from(data)) : JsonEncoder.toBase64(data),
       }),
@@ -530,7 +536,7 @@ export class DidExchangeProtocol {
 
   private async resolveDidDocument(
     agentContext: AgentContext,
-    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    message: DidCommDidExchangeRequestMessage | DidCommDidExchangeResponseMessage,
     invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ) {
     // The only supported case where we expect to receive a did-document attachment is did:peer algo 1
@@ -545,11 +551,11 @@ export class DidExchangeProtocol {
    */
   private async extractResolvableDidDocument(
     agentContext: AgentContext,
-    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    message: DidCommDidExchangeRequestMessage | DidCommDidExchangeResponseMessage,
     invitationKeys?: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
   ) {
     // Validate did-rotate attachment in case of DID Exchange response
-    if (message instanceof DidExchangeResponseMessage) {
+    if (message instanceof DidCommDidExchangeResponseMessage) {
       const didRotateAttachment = message.didRotate
 
       if (!didRotateAttachment) {
@@ -627,7 +633,7 @@ export class DidExchangeProtocol {
       return await agentContext.dependencyManager.resolve(DidsApi).resolveDidDocument(message.did)
     } catch (error) {
       const problemCode =
-        message instanceof DidExchangeRequestMessage
+        message instanceof DidCommDidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
 
@@ -646,12 +652,12 @@ export class DidExchangeProtocol {
    */
   private async extractAttachedDidDocument(
     agentContext: AgentContext,
-    message: DidExchangeRequestMessage | DidExchangeResponseMessage,
+    message: DidCommDidExchangeRequestMessage | DidCommDidExchangeResponseMessage,
     invitationKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[] = []
   ): Promise<DidDocument> {
     if (!message.didDoc) {
       const problemCode =
-        message instanceof DidExchangeRequestMessage
+        message instanceof DidCommDidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document attachment is missing.', { problemCode })
@@ -661,7 +667,7 @@ export class DidExchangeProtocol {
 
     if (!jws) {
       const problemCode =
-        message instanceof DidExchangeRequestMessage
+        message instanceof DidCommDidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document signature is missing.', { problemCode })
@@ -712,7 +718,7 @@ export class DidExchangeProtocol {
 
     if (!isValid || !jwsSigners.every((jwsSigner) => didDocumentKeys?.some((key) => key.equals(jwsSigner.jwk)))) {
       const problemCode =
-        message instanceof DidExchangeRequestMessage
+        message instanceof DidCommDidExchangeRequestMessage
           ? DidExchangeProblemReportReason.RequestNotAccepted
           : DidExchangeProblemReportReason.ResponseNotAccepted
       throw new DidExchangeProblemReportError('DID Document signature is invalid.', { problemCode })

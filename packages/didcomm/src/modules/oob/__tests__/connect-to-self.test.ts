@@ -6,8 +6,8 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core'
 import { getAgentOptions } from '../../../../../core/tests/helpers'
-import { DidExchangeState, HandshakeProtocol } from '../../connections'
-import { OutOfBandState } from '../domain/OutOfBandState'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
+import { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
 
 const faberAgentOptions = getAgentOptions(
   'Faber Agent OOB Connect to Self',
@@ -40,24 +40,24 @@ describe('out of band', () => {
   })
 
   describe('connect with self', () => {
-    test(`make a connection with self using ${HandshakeProtocol.DidExchange} protocol`, async () => {
+    test(`make a connection with self using ${DidCommHandshakeProtocol.DidExchange} protocol`, async () => {
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation()
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
-      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+      expect(receivedOutOfBandRecord.state).toBe(DidCommOutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
-      expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
+      expect(receiverSenderConnection.state).toBe(DidCommDidExchangeState.Completed)
 
       let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
       senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
-      expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
-      expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
+      expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
+      expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.DidExchange)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
@@ -72,44 +72,44 @@ describe('out of band', () => {
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
-      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+      expect(receivedOutOfBandRecord.state).toBe(DidCommOutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
-      expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
+      expect(receiverSenderConnection.state).toBe(DidCommDidExchangeState.Completed)
 
       let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
       senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
-      expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
-      expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.DidExchange)
+      expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
+      expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.DidExchange)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
 
-    test(`make a connection with self using ${HandshakeProtocol.Connections} protocol`, async () => {
+    test(`make a connection with self using ${DidCommHandshakeProtocol.Connections} protocol`, async () => {
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
-        handshakeProtocols: [HandshakeProtocol.Connections],
+        handshakeProtocols: [DidCommHandshakeProtocol.Connections],
       })
       const { outOfBandInvitation } = outOfBandRecord
       const urlMessage = outOfBandInvitation.toUrl({ domain: 'http://example.com' })
 
       let { outOfBandRecord: receivedOutOfBandRecord, connectionRecord: receiverSenderConnection } =
-        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage)
-      expect(receivedOutOfBandRecord.state).toBe(OutOfBandState.PrepareResponse)
+        await faberAgent.modules.oob.receiveInvitationFromUrl(urlMessage, { label: 'faber' })
+      expect(receivedOutOfBandRecord.state).toBe(DidCommOutOfBandState.PrepareResponse)
 
       receiverSenderConnection = await faberAgent.modules.connections.returnWhenIsConnected(
         receiverSenderConnection?.id
       )
-      expect(receiverSenderConnection.state).toBe(DidExchangeState.Completed)
+      expect(receiverSenderConnection.state).toBe(DidCommDidExchangeState.Completed)
 
       let [senderReceiverConnection] = await faberAgent.modules.connections.findAllByOutOfBandId(outOfBandRecord.id)
       senderReceiverConnection = await faberAgent.modules.connections.returnWhenIsConnected(senderReceiverConnection.id)
-      expect(senderReceiverConnection.state).toBe(DidExchangeState.Completed)
-      expect(senderReceiverConnection.protocol).toBe(HandshakeProtocol.Connections)
+      expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
+      expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.Connections)
 
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)

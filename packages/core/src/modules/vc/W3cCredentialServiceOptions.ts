@@ -125,7 +125,7 @@ interface W3cSignPresentationOptionsBase {
   /**
    * The challenge / nonce to be used in the proof to prevent replay attacks.
    */
-  challenge: string
+  challenge?: string
 
   /**
    * The domain / aud to be used in the proof to assert the intended recipient.
@@ -188,6 +188,6 @@ export interface W3cJsonLdVerifyPresentationOptions extends W3cVerifyPresentatio
   purpose?: ProofPurpose
 }
 
-export interface StoreCredentialOptions {
+export interface W3cStoreCredentialOptions {
   credential: W3cVerifiableCredential
 }

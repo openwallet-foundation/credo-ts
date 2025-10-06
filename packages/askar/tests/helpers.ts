@@ -8,7 +8,7 @@ import { registerAskar } from '@openwallet-foundation/askar-shared'
 
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
-import { ConnectionsModule, HandshakeProtocol } from '../../didcomm'
+import { DidCommConnectionsModule, DidCommHandshakeProtocol } from '../../didcomm'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
 import { AskarPostgresStorageConfig } from '../src'
@@ -42,7 +42,6 @@ export function getAskarPostgresAgentOptions(
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `PostgresAgent: ${name} - ${random}`,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -60,7 +59,7 @@ export function getAskarPostgresAgentOptions(
           database: storageConfig,
         },
       }),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },
@@ -75,7 +74,6 @@ export function getAskarSqliteAgentOptions(
 ) {
   const random = utils.uuid().slice(0, 4)
   const config: InitConfig = {
-    label: `SQLiteAgent: ${name} - ${random}`,
     autoUpdateStorageOnStartup: false,
     logger: new TestLogger(LogLevel.off, name),
     ...extraConfig,
@@ -93,7 +91,7 @@ export function getAskarSqliteAgentOptions(
           database: { type: 'sqlite', config: { inMemory } },
         },
       }),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },
@@ -105,13 +103,19 @@ export function getAskarSqliteAgentOptions(
  * @param senderAgent
  * @param receiverAgent
  */
-export async function e2eTest(senderAgent: Agent, receiverAgent: Agent) {
+export async function e2eTest(
+  senderAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>,
+  receiverAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+) {
   const senderReceiverOutOfBandRecord = await senderAgent.modules.oob.createInvitation({
-    handshakeProtocols: [HandshakeProtocol.Connections],
+    handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
   const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.modules.oob.receiveInvitation(
-    senderReceiverOutOfBandRecord.outOfBandInvitation
+    senderReceiverOutOfBandRecord.outOfBandInvitation,
+    {
+      label: 'receiver',
+    }
   )
   if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
 

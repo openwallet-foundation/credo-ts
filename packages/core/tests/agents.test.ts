@@ -1,6 +1,6 @@
-import type { ConnectionRecord } from '../../didcomm/src'
+import type { DidCommConnectionRecord } from '../../didcomm/src'
 
-import { HandshakeProtocol } from '../../didcomm/src'
+import { DidCommHandshakeProtocol } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
 import { getAgentOptions, waitForBasicMessage } from './helpers'
@@ -28,8 +28,8 @@ const bobAgentOptions = getAgentOptions(
 describe('agents', () => {
   let aliceAgent: Agent
   let bobAgent: Agent
-  let aliceConnection: ConnectionRecord
-  let bobConnection: ConnectionRecord
+  let aliceConnection: DidCommConnectionRecord
+  let bobConnection: DidCommConnectionRecord
 
   afterAll(async () => {
     await bobAgent.shutdown()
@@ -46,11 +46,12 @@ describe('agents', () => {
     await bobAgent.initialize()
 
     const aliceBobOutOfBandRecord = await aliceAgent.modules.oob.createInvitation({
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     const { connectionRecord: bobConnectionAtBobAlice } = await bobAgent.modules.oob.receiveInvitation(
-      aliceBobOutOfBandRecord.outOfBandInvitation
+      aliceBobOutOfBandRecord.outOfBandInvitation,
+      { label: 'alice' }
     )
     bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnectionAtBobAlice?.id)
 

@@ -6,8 +6,8 @@ import {
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
-import { ProofState } from '../../../models/ProofState'
-import { ProofExchangeRecord } from '../../../repository/ProofExchangeRecord'
+import { DidCommProofState } from '../../../models/DidCommProofState'
+import { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
 
 describe('V2 Proofs - Indy', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -95,7 +95,7 @@ describe('V2 Proofs - Indy', () => {
 
     testLogger.test('Faber waits for presentation from Alice')
     let faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
     })
 
     const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
@@ -122,20 +122,20 @@ describe('V2 Proofs - Indy', () => {
     expect(faberProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.ProposalReceived,
+      state: DidCommProofState.ProposalReceived,
       protocolVersion: 'v2',
     })
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
     faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
-      proofRecordId: faberProofExchangeRecord.id,
+      proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
     testLogger.test('Alice waits for proof request from Faber')
     aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
     })
 
     const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
@@ -164,7 +164,7 @@ describe('V2 Proofs - Indy', () => {
     expect(aliceProofExchangeRecord).toMatchObject({
       id: expect.anything(),
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.RequestReceived,
+      state: DidCommProofState.RequestReceived,
       protocolVersion: 'v2',
     })
 
@@ -172,17 +172,17 @@ describe('V2 Proofs - Indy', () => {
     testLogger.test('Alice accepts presentation request from Faber')
 
     const requestedCredentials = await aliceAgent.modules.proofs.selectCredentialsForRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
     })
 
     await aliceAgent.modules.proofs.acceptRequest({
-      proofRecordId: aliceProofExchangeRecord.id,
+      proofExchangeRecordId: aliceProofExchangeRecord.id,
       proofFormats: { indy: requestedCredentials.proofFormats.indy },
     })
 
     faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     // Faber waits for the presentation from Alice
@@ -214,40 +214,40 @@ describe('V2 Proofs - Indy', () => {
     expect(faberProofExchangeRecord.id).not.toBeNull()
     expect(faberProofExchangeRecord).toMatchObject({
       threadId: faberProofExchangeRecord.threadId,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
       protocolVersion: 'v2',
     })
 
     const aliceProofExchangeRecordPromise = waitForProofExchangeRecordSubject(aliceReplay, {
       threadId: aliceProofExchangeRecord.threadId,
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
 
     // Faber accepts the presentation provided by Alice
     testLogger.test('Faber accepts the presentation provided by Alice')
-    await faberAgent.modules.proofs.acceptPresentation({ proofRecordId: faberProofExchangeRecord.id })
+    await faberAgent.modules.proofs.acceptPresentation({ proofExchangeRecordId: faberProofExchangeRecord.id })
 
     // Alice waits until she received a presentation acknowledgement
     testLogger.test('Alice waits until she receives a presentation acknowledgement')
     aliceProofExchangeRecord = await aliceProofExchangeRecordPromise
 
     expect(faberProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: aliceProofExchangeRecord.threadId,
       connectionId: expect.any(String),
       isVerified: true,
-      state: ProofState.PresentationReceived,
+      state: DidCommProofState.PresentationReceived,
     })
 
     expect(aliceProofExchangeRecord).toMatchObject({
-      type: ProofExchangeRecord.type,
+      type: DidCommProofExchangeRecord.type,
       id: expect.any(String),
       createdAt: expect.any(Date),
       threadId: faberProofExchangeRecord.threadId,
       connectionId: expect.any(String),
-      state: ProofState.Done,
+      state: DidCommProofState.Done,
     })
   })
 })

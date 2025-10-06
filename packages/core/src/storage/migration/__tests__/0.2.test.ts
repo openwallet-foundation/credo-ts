@@ -3,7 +3,7 @@ import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
-import { MediatorRoutingRecord } from '../../../../../didcomm/src/modules'
+import { DidCommMediatorRoutingRecord } from '../../../../../didcomm/src/modules'
 import { getDefaultDidcommModules } from '../../../../../didcomm/src/util/modules'
 import { Agent } from '../../../../src'
 import { agentDependencies } from '../../../../tests/helpers'
@@ -26,9 +26,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     )
 
     const agent = new Agent({
-      config: {
-        label: 'Test Agent',
-      },
+      config: {},
       dependencies: agentDependencies,
       modules: {
         inMemory: new InMemoryWalletModule(),
@@ -91,7 +89,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const agent = new Agent({
       config: {
-        label: 'Test Agent',
         autoUpdateStorageOnStartup: true,
       },
       modules: {
@@ -112,7 +109,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
     }
 
     await agent.initialize()
-    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
+    await storageService.deleteById(agent.context, DidCommMediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()
@@ -129,7 +126,6 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     const agent = new Agent({
       config: {
-        label: 'Test Agent',
         autoUpdateStorageOnStartup: true,
       },
       dependencies: agentDependencies,
@@ -151,7 +147,7 @@ describe('UpdateAssistant | v0.2 - v0.3.1', () => {
 
     await agent.initialize()
 
-    await storageService.deleteById(agent.context, MediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
+    await storageService.deleteById(agent.context, DidCommMediatorRoutingRecord, 'MEDIATOR_ROUTING_RECORD')
     expect(storageService.contextCorrelationIdToRecords[agent.context.contextCorrelationId].records).toMatchSnapshot()
 
     await agent.shutdown()

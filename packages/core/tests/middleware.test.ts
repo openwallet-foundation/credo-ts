@@ -1,16 +1,16 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { ConnectionRecord, InboundMessageContext } from '../../didcomm'
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm'
 
 import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
-  AgentMessage,
-  BasicMessage,
-  MessageSender,
-  TrustPingResponseMessage,
-  getOutboundMessageContext,
+  DidCommBasicMessage,
+  DidCommMessage,
+  DidCommMessageSender,
+  DidCommTrustPingResponseMessage,
+  getOutboundDidCommMessageContext,
 } from '../../didcomm/src'
 import { Agent, JsonTransformer } from '../src'
 
@@ -41,8 +41,8 @@ const aliceAgent = new Agent(
 )
 
 describe('Message Handler Middleware E2E', () => {
-  let faberConnection: ConnectionRecord
-  let _aliceConnection: ConnectionRecord
+  let faberConnection: DidCommConnectionRecord
+  let _aliceConnection: DidCommConnectionRecord
 
   beforeEach(async () => {
     const faberMessages = new Subject<SubjectMessage>()
@@ -70,9 +70,9 @@ describe('Message Handler Middleware E2E', () => {
   test('Correctly calls the fallback message handler if no message handler is defined', async () => {
     // Fallback message handler
     aliceAgent.modules.didcomm.setFallbackMessageHandler((messageContext) => {
-      return getOutboundMessageContext(messageContext.agentContext, {
+      return getOutboundDidCommMessageContext(messageContext.agentContext, {
         connectionRecord: messageContext.connection,
-        message: new BasicMessage({
+        message: new DidCommBasicMessage({
           content: "Hey there, I'm not sure I understand the message you sent to me",
         }),
       })
@@ -83,12 +83,12 @@ describe('Message Handler Middleware E2E', () => {
         '@type': 'https://credo.js.org/custom-messaging/1.0/say-hello',
         '@id': 'b630b69a-2b82-4764-87ba-56aa2febfb97',
       },
-      AgentMessage
+      DidCommMessage
     )
 
     // Send a custom message
-    const messageSender = faberAgent.dependencyManager.resolve(MessageSender)
-    const outboundMessageContext = await getOutboundMessageContext(faberAgent.context, {
+    const messageSender = faberAgent.dependencyManager.resolve(DidCommMessageSender)
+    const outboundMessageContext = await getOutboundDidCommMessageContext(faberAgent.context, {
       connectionRecord: faberConnection,
       message,
     })
@@ -102,7 +102,7 @@ describe('Message Handler Middleware E2E', () => {
 
   test('Correctly calls the registered message handler middleware', async () => {
     aliceAgent.modules.didcomm.registerMessageHandlerMiddleware(
-      async (inboundMessageContext: InboundMessageContext, next) => {
+      async (inboundMessageContext: DidCommInboundMessageContext, next) => {
         await next()
 
         if (inboundMessageContext.responseMessage) {
@@ -115,7 +115,7 @@ describe('Message Handler Middleware E2E', () => {
 
     await faberAgent.modules.connections.sendPing(faberConnection.id, {})
     const receiveMessage = await waitForAgentMessageProcessedEvent(faberAgent, {
-      messageType: TrustPingResponseMessage.type.messageTypeUri,
+      messageType: DidCommTrustPingResponseMessage.type.messageTypeUri,
     })
 
     // Should have sent the message with the timing added in the middleware

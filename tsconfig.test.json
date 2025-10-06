@@ -2,11 +2,15 @@
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "paths": {
-      "@credo-ts/*": ["packages/*/src"]
-    },
     "types": ["jest", "node"]
   },
-  "include": ["tests", "samples", "demo", "demo-openid", "packages/core/types/jest.d.ts"],
+  "include": [
+    "tests",
+    "samples",
+    "demo",
+    "demo-openid",
+    "packages/core/types/jest.d.ts",
+    "packages/drizzle-storage/types/shell.d.ts"
+  ],
   "exclude": ["node_modules", "build", "**/build/**"]
 }

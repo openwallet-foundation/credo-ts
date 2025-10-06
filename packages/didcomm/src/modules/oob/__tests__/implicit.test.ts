@@ -11,7 +11,7 @@ import {
 } from '../../../../../core/src/modules/dids'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
-import { DidExchangeState, HandshakeProtocol } from '../../connections'
+import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
 import { InMemoryDidRegistry } from '../../connections/__tests__/InMemoryDidRegistry'
 
 const inMemoryDidsRegistry = new InMemoryDidRegistry()
@@ -72,26 +72,28 @@ describe('out of band implicit', () => {
     jest.resetAllMocks()
   })
 
-  test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
+  test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
       label: 'Custom Alice',
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -103,7 +105,7 @@ describe('out of band implicit', () => {
     expect(await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
-  test(`make a connection with ${HandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
+  test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
     const inMemoryDidDocument = await faberAgent.dids.resolveDidDocument(inMemoryDid)
     const serviceUrl = inMemoryDidDocument.service?.[1].id
@@ -112,23 +114,26 @@ describe('out of band implicit', () => {
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       did: serviceUrl!,
       alias: 'Faber public',
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      label: 'alice',
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
@@ -137,29 +142,32 @@ describe('out of band implicit', () => {
     expect(await aliceAgent.modules.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
   })
 
-  test(`make a connection with ${HandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
+  test(`make a connection with ${DidCommHandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      label: 'alice',
       alias: 'Faber public',
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
@@ -171,8 +179,9 @@ describe('out of band implicit', () => {
     await expect(
       aliceAgent.modules.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
+        label: 'alice',
         alias: 'Faber public',
-        handshakeProtocols: [HandshakeProtocol.DidExchange],
+        handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
       })
     ).rejects.toThrow(/Unable to resolve did/)
   })
@@ -182,24 +191,27 @@ describe('out of band implicit', () => {
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
       did: inMemoryDid,
+      label: 'alice',
       alias: 'Faber public',
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     // Wait for a connection event in faber agent and accept the request
-    let faberAliceConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
     faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
-    expect(faberAliceConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
-    expect(aliceFaberConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
     expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
-    expect(faberAliceConnection.theirLabel).toBe(aliceAgent.config.label)
+    expect(faberAliceConnection.theirLabel).toBe('alice')
     expect(aliceFaberConnection.theirLabel).toBe('Faber public')
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
@@ -208,19 +220,21 @@ describe('out of band implicit', () => {
       did: inMemoryDid,
       alias: 'Faber public New',
       label: 'Alice New',
-      handshakeProtocols: [HandshakeProtocol.Connections],
+      handshakeProtocols: [DidCommHandshakeProtocol.Connections],
     })
 
     // Wait for a connection event in faber agent
-    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, { state: DidExchangeState.RequestReceived })
+    let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {
+      state: DidCommDidExchangeState.RequestReceived,
+    })
     await faberAgent.modules.connections.acceptRequest(faberAliceNewConnection.id)
     faberAliceNewConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceNewConnection?.id)
-    expect(faberAliceNewConnection.state).toBe(DidExchangeState.Completed)
+    expect(faberAliceNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
     aliceFaberNewConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberNewConnection?.id!)
-    expect(aliceFaberNewConnection.state).toBe(DidExchangeState.Completed)
+    expect(aliceFaberNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
     expect(faberAliceNewConnection).toBeConnectedWith(aliceFaberNewConnection)

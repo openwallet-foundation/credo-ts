@@ -3,12 +3,12 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import {
-  ConnectionsModule,
+  DidCommConnectionsModule,
+  DidCommHttpOutboundTransport,
+  DidCommMessagePickupModule,
   DidCommModule,
-  HttpOutboundTransport,
-  MessagePickupModule,
-  OutOfBandModule,
-  WsOutboundTransport,
+  DidCommOutOfBandModule,
+  DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
@@ -19,13 +19,12 @@ import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 const run = async () => {
   // Create transports
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
-  const wsOutboundTransport = new WsOutboundTransport()
-  const httpOutboundTransport = new HttpOutboundTransport()
+  const wsOutboundTransport = new DidCommWsOutboundTransport()
+  const httpOutboundTransport = new DidCommHttpOutboundTransport()
 
   // Setup the agent
   const agent = new Agent({
     config: {
-      label: 'Dummy-powered agent - requester',
       logger: new ConsoleLogger(LogLevel.info),
     },
     modules: {
@@ -37,10 +36,10 @@ const run = async () => {
         },
       }),
       didcomm: new DidCommModule(),
-      oob: new OutOfBandModule(),
-      messagePickup: new MessagePickupModule(),
+      oob: new DidCommOutOfBandModule(),
+      messagePickup: new DidCommMessagePickupModule(),
       dummy: new DummyModule(),
-      connections: new ConnectionsModule({
+      connections: new DidCommConnectionsModule({
         autoAcceptConnections: true,
       }),
     },
@@ -58,7 +57,9 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl)
+  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl, {
+    label: 'requester',
+  })
   if (!connectionRecord) {
     throw new CredoError('Connection record for out-of-band invitation was not created.')
   }

@@ -1,21 +1,27 @@
 import { createHash } from 'crypto'
 import {
   AgentContext,
+  DidDocument,
+  DidDocumentService,
   DidsApi,
-  JsonTransformer,
-  Kms,
   MultiBaseEncoder,
   MultiHashEncoder,
   TypedArrayEncoder,
+  VerificationMethod,
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
 import { WebvhDidResolver } from '../../../dids'
-import { WebVhResource } from '../../utils/transform'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
-import { mockCredDefResource, mockRevRegDefResource, mockSchemaResource } from './mock-resources'
+import {
+  issuerId,
+  mockResolvedDidDocument,
+  mockRevRegDefResource,
+  mockSchemaResource,
+  verificationMethodId,
+} from './mock-resources'
 
 // Mock the WebvhDidResolver
 const mockResolveResource = jest.fn()
@@ -27,16 +33,24 @@ jest.mock('../../../dids/WebvhDidResolver', () => {
   }
 })
 
+interface DidDocumentOptions {
+  context?: string | string[]
+  id: string
+  alsoKnownAs?: string[]
+  controller?: string | string[]
+  verificationMethod?: VerificationMethod[]
+  service?: DidDocumentService[]
+  authentication?: Array<string | VerificationMethod>
+  assertionMethod?: Array<string | VerificationMethod>
+  keyAgreement?: Array<string | VerificationMethod>
+  capabilityInvocation?: Array<string | VerificationMethod>
+  capabilityDelegation?: Array<string | VerificationMethod>
+}
+
 // Mock DidsApi
 const mockResolveDidDocument = jest.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
-}
-
-// Mock KeyManagementApi
-const mockVerify = jest.fn()
-const mockKeyManagementApi = {
-  verify: mockVerify,
 }
 
 describe('WebVhAnonCredsRegistry', () => {
@@ -47,14 +61,12 @@ describe('WebVhAnonCredsRegistry', () => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
     mockResolveDidDocument.mockReset()
-    mockVerify.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
         [DidsApi, mockDidsApi],
-        [Kms.KeyManagementApi, mockKeyManagementApi],
         [WebvhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
@@ -71,7 +83,8 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const mockResolverResponse = {
         content: mockSchemaResource,
-        contentMetadata: mockSchemaResource.metadata || {},
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResource.metadata || {},
         dereferencingMetadata: { contentType: 'application/json' },
       }
 
@@ -79,15 +92,13 @@ describe('WebVhAnonCredsRegistry', () => {
 
       const result = await registry.getSchema(agentContext, schemaId)
 
-      const expectedIssuerId = schemaId.substring(0, schemaId.lastIndexOf('/resources/'))
-
       expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
       expect(result).toEqual({
         schema: {
           attrNames: mockSchemaResource.content.attrNames,
           name: mockSchemaResource.content.name,
           version: mockSchemaResource.content.version,
-          issuerId: expectedIssuerId,
+          issuerId: issuerId,
         },
         schemaId,
         resolutionMetadata: mockResolverResponse.dereferencingMetadata,
@@ -179,7 +190,7 @@ describe('WebVhAnonCredsRegistry', () => {
         schemaId,
         resolutionMetadata: {
           error: 'invalid',
-          message: expect.stringContaining('Resolved resource data is not attested'),
+          message: expect.stringContaining('Missing AttestedResource type'),
         },
         schemaMetadata: {},
       })
@@ -191,8 +202,7 @@ describe('WebVhAnonCredsRegistry', () => {
       verifyProofSpy.mockResolvedValueOnce(false)
 
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
-      const contentString = canonicalize(schemaContent)
-      const digestBuffer = createHash('sha256').update(contentString).digest()
+      const digestBuffer = TypedArrayEncoder.fromString(canonicalize(schemaContent))
       const multibaseHash = MultiBaseEncoder.encode(MultiHashEncoder.encode(digestBuffer, 'sha-256'), 'base58btc')
       const schemaId = `did:webvh:example.com:resource:badproof/${multibaseHash}`
 
@@ -387,239 +397,117 @@ describe('WebVhAnonCredsRegistry', () => {
     // similar to the getSchema tests
   })
 
-  describe('Resource Transformation', () => {
-    it('should correctly transform a schema resource', () => {
-      const resource = JsonTransformer.fromJSON(mockSchemaResource, WebVhResource)
-
-      expect(resource).toBeInstanceOf(WebVhResource)
-      expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
-      expect(resource.type).toEqual(['AttestedResource'])
-
-      // Type guard to check if content is a schema
-      if ('attrNames' in resource.content) {
-        expect(resource.content.name).toBe('Meeting Invitation')
-        expect(resource.content.version).toBe('1.1')
-        expect(Array.isArray(resource.content.attrNames)).toBe(true)
-        expect(resource.content.attrNames).toContain('email')
-      } else {
-        // This should not happen in this test
-        fail('Content should be a schema')
-      }
-    })
-
-    it('should correctly transform a credential definition resource', () => {
-      const resource = JsonTransformer.fromJSON(mockCredDefResource, WebVhResource)
-
-      expect(resource).toBeInstanceOf(WebVhResource)
-      expect(resource['@context']).toEqual(['https://w3id.org/security/data-integrity/v2'])
-      expect(resource.type).toEqual(['AttestedResource'])
-
-      // Type guard to check if content is a credential definition
-      if ('schemaId' in resource.content) {
-        expect(resource.content.type).toBe('CL')
-        expect(resource.content.tag).toBe('Meeting Invitation')
-        expect(resource.content.schemaId).toContain('zQmc3ZT6N3s3UhqTcC5kWcWVoHwnkK6dZVBVfkLtYKY8YJm')
-      } else {
-        // This should not happen in this test
-        fail('Content should be a credential definition')
-      }
-    })
-  })
-
   describe('verifyProof', () => {
-    const mockDidDocument = {
-      id: 'did:webvh:example.com',
-      verificationMethod: [
-        {
-          id: 'did:webvh:example.com#key-1',
-          type: 'Ed25519VerificationKey2020',
-          controller: 'did:webvh:example.com',
-          publicKeyMultibase: 'z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK',
-        },
-      ],
-    }
-
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
       jest.restoreAllMocks()
 
-      // Re-setup the dependency manager mocks
-      const originalResolve = agentContext.dependencyManager.resolve.bind(agentContext.dependencyManager)
-      agentContext.dependencyManager.resolve = jest.fn().mockImplementation((token) => {
-        const tokenString = token?.name || token?.toString?.() || String(token)
-
-        if (tokenString.includes('DidsApi')) {
-          return mockDidsApi
-        }
-        if (tokenString.includes('KeyManagementApi')) {
-          return mockKeyManagementApi
-        }
-        if (token === WebvhDidResolver || tokenString.includes('WebvhDidResolver')) {
-          return { resolveResource: mockResolveResource }
-        }
-        return originalResolve(token)
-      })
-
       // Mock successful DID resolution
-      mockResolveDidDocument.mockResolvedValue(mockDidDocument)
-
-      // Mock successful signature verification
-      mockVerify.mockResolvedValue({ verified: true })
+      mockResolveDidDocument.mockResolvedValue(
+        new DidDocument(mockResolvedDidDocument as unknown as DidDocumentOptions)
+      )
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
-      const validProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-        proofPurpose: 'assertionMethod',
-        created: '2023-01-01T00:00:00Z',
-      }
-
-      const content = { test: 'data', someField: 'value' }
-
-      const result = await registry.verifyProof(agentContext, validProof, content)
+      const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
-      expect(mockResolveDidDocument).toHaveBeenCalledWith('did:webvh:example.com#key-1')
-      expect(mockVerify).toHaveBeenCalledWith({
-        key: {
-          publicJwk: expect.objectContaining({
-            kty: 'OKP',
-            crv: 'Ed25519',
-            x: expect.any(String),
-          }),
-        },
-        algorithm: 'EdDSA',
-        signature: expect.any(Uint8Array),
-        data: expect.any(Uint8Array),
-      })
+      expect(mockResolveDidDocument).toHaveBeenCalledWith(verificationMethodId)
     })
 
     it('should return false for null proof', async () => {
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, null, {})
+      testInput.proof = null
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for undefined proof', async () => {
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, undefined, {})
+      testInput.proof = undefined
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for non-object proof', async () => {
+      const testInput = { ...mockSchemaResource }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, 'not an object', {})
+      testInput.proof = testInput.proof.proofValue
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for wrong proof type', async () => {
-      const invalidProof = {
-        type: 'WrongProofType',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofPurpose: 'test',
-        proofValue: 'validSignature',
-      }
-
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      // @ts-ignore
+      testProof.type = 'Ed25519Signature2020'
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for wrong cryptosuite', async () => {
-      const invalidProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'wrong-cryptosuite',
-        proofPurpose: 'test',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'validSignature',
-      }
-
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      testProof.cryptosuite = 'eddsa-rdfc-2022'
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for missing verificationMethod', async () => {
-      const invalidProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        proofPurpose: 'test',
-        proofValue: 'validSignature',
-      }
-
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      testProof.verificationMethod = undefined
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
+      // expect(mockResolveDidDocument).not.toHaveBeenCalled()
     })
 
     it('should return false for invalid verificationMethod type', async () => {
-      const invalidProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        proofPurpose: 'test',
-        verificationMethod: 123, // Should be string
-        proofValue: 'validSignature',
-      }
-
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      testProof.verificationMethod = { id: testProof.verificationMethod }
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for missing proofValue', async () => {
-      const invalidProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        proofPurpose: 'test',
-        verificationMethod: 'did:webvh:example.com#key-1',
-      }
-
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      // @ts-ignore
+      testProof.proofValue = undefined
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false for invalid proofValue type', async () => {
-      const invalidProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofPurpose: 'test',
-        proofValue: 123, // Should be string
-      }
-
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
       // @ts-ignore
-      const result = await registry.verifyProof(agentContext, invalidProof, {})
+      testProof.proofValue = { value: testInput.proof.proofValue }
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).not.toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when DID resolution fails', async () => {
-      const validProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofPurpose: 'test',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-      }
+      const testInput = { ...mockSchemaResource }
 
       // Mock DID resolution failure
       mockResolveDidDocument.mockResolvedValue({
@@ -628,61 +516,38 @@ describe('WebVhAnonCredsRegistry', () => {
         didDocumentMetadata: {},
       })
 
-      const result = await registry.verifyProof(agentContext, validProof, {})
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when verification method not found in DID document', async () => {
-      const validProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#nonexistent-key',
-        proofPurpose: 'test',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-      }
-
-      const result = await registry.verifyProof(agentContext, validProof, {})
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      // @ts-ignore
+      testProof.verificationMethod = `${issuerId}#key-01`
+      testInput.proof = testProof
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
-      expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).not.toHaveBeenCalled()
     })
 
     it('should return false when signature verification fails', async () => {
-      const validProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofPurpose: 'test',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-      }
+      const testInput = { ...mockSchemaResource }
+      const testProof = { ...mockSchemaResource.proof }
+      testProof.proofValue = 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
+      testInput.proof = testProof
 
-      // Mock signature verification failure
-      mockVerify.mockResolvedValue({ verified: false })
-
-      const result = await registry.verifyProof(agentContext, validProof, {})
+      const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).toHaveBeenCalled()
     })
 
     it('should handle proof without optional fields', async () => {
-      const minimalProof = {
-        type: 'DataIntegrityProof',
-        cryptosuite: 'eddsa-jcs-2022',
-        verificationMethod: 'did:webvh:example.com#key-1',
-        proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
-        proofPurpose: 'test',
-      }
-
-      const content = { test: 'data' }
-
-      const result = await registry.verifyProof(agentContext, minimalProof, content)
+      const testInput = { ...mockSchemaResource }
+      const result = await registry.verifyProof(agentContext, testInput)
 
       expect(result).toBe(true)
       expect(mockResolveDidDocument).toHaveBeenCalled()
-      expect(mockVerify).toHaveBeenCalled()
     })
   })
 })

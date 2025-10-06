@@ -10,10 +10,11 @@ import {
   waitForAgentMessageProcessedEvent,
   waitForBasicMessage,
 } from '../../../../../core/tests/helpers'
-import { HandshakeProtocol } from '../../connections'
-import { MediatorModule } from '../../routing'
-import { MessageForwardingStrategy } from '../../routing/MessageForwardingStrategy'
-import { V2MessagesReceivedMessage, V2StatusMessage } from '../protocol'
+import { getDefaultDidcommModules } from '../../../util/modules'
+import { DidCommHandshakeProtocol } from '../../connections'
+import { DidCommMediatorModule } from '../../routing'
+import { DidCommMessageForwardingStrategy } from '../../routing/DidCommMessageForwardingStrategy'
+import { DidCommMessagesReceivedV2Message, DidCommStatusV2Message } from '../protocol'
 
 const recipientOptions = getAgentOptions('Mediation Pickup Loop Recipient', undefined, undefined, undefined, {
   requireDidcomm: true,
@@ -26,17 +27,17 @@ const mediatorOptions = getAgentOptions(
   },
   {},
   {
-    mediator: new MediatorModule({
+    mediator: new DidCommMediatorModule({
       autoAcceptMediationRequests: true,
-      messageForwardingStrategy: MessageForwardingStrategy.QueueAndLiveModeDelivery,
+      messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
     }),
   },
   { requireDidcomm: true, inMemory: false }
 )
 
 describe('E2E Pick Up protocol', () => {
-  let recipientAgent: Agent
-  let mediatorAgent: Agent
+  let recipientAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  let mediatorAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
 
   afterEach(async () => {
     await recipientAgent.modules.mediationRecipient.stopMessagePickup()
@@ -62,7 +63,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -74,11 +75,13 @@ describe('E2E Pick Up protocol', () => {
     const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.modules.oob.receiveInvitationFromUrl(
-      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
+      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' }),
+      { label: 'recipient' }
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection.id
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -125,7 +128,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -137,11 +140,13 @@ describe('E2E Pick Up protocol', () => {
     const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.modules.oob.receiveInvitationFromUrl(
-      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
+      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' }),
+      { label: 'recipient' }
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -193,7 +198,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -205,11 +210,13 @@ describe('E2E Pick Up protocol', () => {
     const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.modules.oob.receiveInvitationFromUrl(
-      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
+      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' }),
+      { label: 'recipient' }
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -217,7 +224,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection?.id
+      mediatorRecipientConnection.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)
@@ -236,25 +243,25 @@ describe('E2E Pick Up protocol', () => {
       protocolVersion: 'v2',
     })
     const firstStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: V2StatusMessage.type.messageTypeUri,
+      messageType: DidCommStatusV2Message.type.messageTypeUri,
     })
 
-    expect((firstStatusMessage as V2StatusMessage).messageCount).toBe(1)
+    expect((firstStatusMessage as DidCommStatusV2Message).messageCount).toBe(1)
 
     const basicMessage = await basicMessagePromise
     expect(basicMessage.content).toBe(message)
 
     const messagesReceived = await waitForAgentMessageProcessedEvent(mediatorAgent, {
-      messageType: V2MessagesReceivedMessage.type.messageTypeUri,
+      messageType: DidCommMessagesReceivedV2Message.type.messageTypeUri,
     })
 
-    expect((messagesReceived as V2MessagesReceivedMessage).messageIdList.length).toBe(1)
+    expect((messagesReceived as DidCommMessagesReceivedV2Message).messageIdList.length).toBe(1)
 
     const secondStatusMessage = await waitForAgentMessageProcessedEvent(recipientAgent, {
-      messageType: V2StatusMessage.type.messageTypeUri,
+      messageType: DidCommStatusV2Message.type.messageTypeUri,
     })
 
-    expect((secondStatusMessage as V2StatusMessage).messageCount).toBe(0)
+    expect((secondStatusMessage as DidCommStatusV2Message).messageCount).toBe(0)
   })
 
   test('E2E manual Pick Up V2 loop - waiting for completion', async () => {
@@ -278,7 +285,7 @@ describe('E2E Pick Up protocol', () => {
     const mediatorOutOfBandRecord = await mediatorAgent.modules.oob.createInvitation({
       label: 'mediator invitation',
       handshake: true,
-      handshakeProtocols: [HandshakeProtocol.DidExchange],
+      handshakeProtocols: [DidCommHandshakeProtocol.DidExchange],
     })
 
     // Initialize recipient
@@ -290,11 +297,13 @@ describe('E2E Pick Up protocol', () => {
     const mediatorInvitation = mediatorOutOfBandRecord.outOfBandInvitation
 
     let { connectionRecord: recipientMediatorConnection } = await recipientAgent.modules.oob.receiveInvitationFromUrl(
-      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' })
+      mediatorInvitation.toUrl({ domain: 'https://example.com/ssi' }),
+      { label: 'recipient' }
     )
 
     recipientMediatorConnection = await recipientAgent.modules.connections.returnWhenIsConnected(
-      recipientMediatorConnection?.id
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      recipientMediatorConnection!.id
     )
 
     let [mediatorRecipientConnection] = await mediatorAgent.modules.connections.findAllByOutOfBandId(
@@ -302,7 +311,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     mediatorRecipientConnection = await mediatorAgent.modules.connections.returnWhenIsConnected(
-      mediatorRecipientConnection?.id
+      mediatorRecipientConnection.id
     )
 
     // Now they are connected, reinitialize recipient agent in order to lose the session (as with SubjectTransport it remains open)

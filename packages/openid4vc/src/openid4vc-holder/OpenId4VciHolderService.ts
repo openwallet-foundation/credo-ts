@@ -1,4 +1,4 @@
-import { AgentContext, DidsApi } from '@credo-ts/core'
+import { AgentContext, DidsApi, W3cV2CredentialService, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import {
   CredoError,
   InjectionSymbols,
@@ -16,6 +16,7 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import {
+  CallbackContext,
   Jwk,
   Oauth2Client,
   RequestDpopOptions,
@@ -25,6 +26,7 @@ import {
   clientAuthenticationNone,
   getAuthorizationServerMetadataFromList,
   preAuthorizedCodeGrantIdentifier,
+  refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
   DeferredCredentialResponse,
@@ -54,6 +56,7 @@ import type {
   OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions,
   OpenId4VciSendNotificationOptions,
   OpenId4VciSupportedCredentialFormats,
+  OpenId4VciTokenRefreshOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
 
@@ -69,9 +72,15 @@ import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceO
 export class OpenId4VciHolderService {
   private logger: Logger
   private w3cCredentialService: W3cCredentialService
+  private w3cV2CredentialService: W3cV2CredentialService
 
-  public constructor(@inject(InjectionSymbols.Logger) logger: Logger, w3cCredentialService: W3cCredentialService) {
+  public constructor(
+    @inject(InjectionSymbols.Logger) logger: Logger,
+    w3cCredentialService: W3cCredentialService,
+    w3cV2CredentialService: W3cV2CredentialService
+  ) {
     this.w3cCredentialService = w3cCredentialService
+    this.w3cV2CredentialService = w3cV2CredentialService
     this.logger = logger
   }
 
@@ -354,6 +363,43 @@ export class OpenId4VciHolderService {
           dpop,
           txCode: options.txCode,
         })
+
+    return {
+      ...result,
+      dpop: dpop
+        ? {
+            ...result.dpop,
+            alg: dpop.signer.alg as Kms.KnownJwaSignatureAlgorithm,
+            jwk: Kms.PublicJwk.fromUnknown(dpop.signer.publicJwk),
+          }
+        : undefined,
+    }
+  }
+
+  public async refreshAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRefreshOptions) {
+    const oauth2Client = this.getOauth2Client(agentContext, {
+      clientAttestation: options.walletAttestationJwt,
+      clientId: options.clientId,
+    })
+
+    const dpop = options.dpop
+      ? await this.getDpopOptions(agentContext, {
+          ...options.dpop,
+          dpopSigningAlgValuesSupported: [options.dpop.alg],
+        })
+      : undefined
+
+    const authorizationServerMetadata = getAuthorizationServerMetadataFromList(
+      options.issuerMetadata.authorizationServers,
+      options.authorizationServer ?? options.issuerMetadata.authorizationServers[0].issuer
+    )
+
+    const result = await oauth2Client.retrieveRefreshTokenAccessToken({
+      authorizationServerMetadata,
+      refreshToken: options.refreshToken,
+      dpop,
+      resource: options.issuerMetadata.credentialIssuer.credential_issuer,
+    })
 
     return {
       ...result,
@@ -1024,9 +1070,13 @@ export class OpenId4VciHolderService {
     const { verifyCredentialStatus, credentialConfigurationId, credentialConfiguration } = options
     this.logger.debug('Credential response', credentialResponse)
 
-    const credentials =
-      credentialResponse.credentials ??
-      (credentialResponse.credential ? [credentialResponse.credential as CredentialResponse['credential']] : undefined)
+    const credentials = credentialResponse.credentials
+      ? credentialResponse.credentials.every((c) => typeof c === 'object' && c !== null && 'credential' in c)
+        ? credentialResponse.credentials.map((c) => (c as { credential: string | Record<string, unknown> }).credential)
+        : (credentialResponse.credentials as (string | Record<string, unknown>)[])
+      : credentialResponse.credential
+        ? [credentialResponse.credential as CredentialResponse['credential']]
+        : undefined
 
     if (!credentials) {
       throw new CredoError(`Credential response returned neither 'credentials' nor 'credential' parameter.`)
@@ -1044,26 +1094,56 @@ export class OpenId4VciHolderService {
         )
       }
 
-      const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
-      const verificationResults = await Promise.all(
-        credentials.map((compactSdJwtVc, index) =>
-          sdJwtVcApi.verify({
-            compactSdJwtVc,
-            // Only load and verify it for the first instance
-            fetchTypeMetadata: index === 0,
-          })
+      if (format === OpenId4VciCredentialFormatProfile.SdJwtDc || credentialConfiguration.vct) {
+        const sdJwtVcApi = agentContext.dependencyManager.resolve(SdJwtVcApi)
+        const verificationResults = await Promise.all(
+          credentials.map((compactSdJwtVc, index) =>
+            sdJwtVcApi.verify({
+              compactSdJwtVc,
+              // Only load and verify it for the first instance
+              fetchTypeMetadata: index === 0,
+            })
+          )
         )
+
+        if (!verificationResults.every((result) => result.isValid)) {
+          agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+          throw new CredoError(
+            `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+          )
+        }
+
+        return {
+          credentials: verificationResults.map((result) => result.sdJwtVc),
+          notificationId,
+          credentialConfigurationId,
+          credentialConfiguration,
+        }
+      }
+
+      const result = await Promise.all(
+        credentials.map(async (c) => {
+          const credential = W3cV2SdJwtVerifiableCredential.fromCompact(c)
+          const result = await this.w3cV2CredentialService.verifyCredential(agentContext, {
+            credential,
+          })
+
+          return { credential, result }
+        })
       )
 
-      if (!verificationResults.every((result) => result.isValid)) {
-        agentContext.config.logger.error('Failed to validate credential(s)', { verificationResults })
+      if (!result.every((c) => c.result.isValid)) {
+        agentContext.config.logger.error('Failed to validate credentials', { result })
         throw new CredoError(
-          `Failed to validate sd-jwt-vc credentials. Results = ${JSON.stringify(verificationResults, replaceError)}`
+          `Failed to validate credential, error = ${result
+            .map((e) => e.result.error?.message)
+            .filter(Boolean)
+            .join(', ')}`
         )
       }
 
       return {
-        credentials: verificationResults.map((result) => result.sdJwtVc),
+        credentials: result.map((r) => r.credential),
         notificationId,
         credentialConfigurationId,
         credentialConfiguration,
@@ -1188,67 +1268,78 @@ export class OpenId4VciHolderService {
     throw new CredoError(`Unsupported credential format ${options.format}`)
   }
 
-  private getClient(
+  private getCallbacks(
     agentContext: AgentContext,
     { clientAttestation, clientId }: { clientAttestation?: string; clientId?: string } = {}
   ) {
     const callbacks = getOid4vcCallbacks(agentContext)
-    return new Openid4vciClient({
-      callbacks: {
-        ...callbacks,
-        clientAuthentication: (options) => {
-          const { authorizationServerMetadata, url, body } = options
-          const oauth2Client = this.getOauth2Client(agentContext)
-          const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
-            authorizationServerMetadata,
-          })
 
-          // Client attestations
-          if (clientAttestation && clientAttestationSupported) {
-            return clientAuthenticationClientAttestationJwt({
-              clientAttestationJwt: clientAttestation,
-              callbacks,
-            })(options)
-          }
+    return {
+      ...callbacks,
+      clientAuthentication: (options) => {
+        const { authorizationServerMetadata, url, body } = options
+        const oauth2Client = this.getOauth2Client(agentContext)
+        const clientAttestationSupported = oauth2Client.isClientAttestationSupported({
+          authorizationServerMetadata,
+        })
 
-          // Pre auth flow
-          if (
-            url === authorizationServerMetadata.token_endpoint &&
-            authorizationServerMetadata['pre-authorized_grant_anonymous_access_supported'] &&
-            body.grant_type === preAuthorizedCodeGrantIdentifier
-          ) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // Client attestations
+        if (clientAttestation && clientAttestationSupported) {
+          return clientAuthenticationClientAttestationJwt({
+            clientAttestationJwt: clientAttestation,
+            callbacks,
+          })(options)
+        }
 
-          // Just a client id (no auth)
-          if (clientId) {
-            return clientAuthenticationNone({ clientId })(options)
-          }
+        // Pre auth flow
+        if (
+          url === authorizationServerMetadata.token_endpoint &&
+          authorizationServerMetadata['pre-authorized_grant_anonymous_access_supported'] &&
+          body.grant_type === preAuthorizedCodeGrantIdentifier
+        ) {
+          return clientAuthenticationAnonymous()(options)
+        }
 
-          // NOTE: we fall back to anonymous authentication for pre-auth for now, as there's quite some
-          // issuers that do not have pre-authorized_grant_anonymous_access_supported defined
-          if (
-            url === authorizationServerMetadata.token_endpoint &&
-            body.grant_type === preAuthorizedCodeGrantIdentifier
-          ) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // Just a client id (no auth)
+        if (clientId) {
+          return clientAuthenticationNone({ clientId })(options)
+        }
 
-          // TODO: We should still look at auth_methods_supported
-          // If there is an auth session for the auth challenge endpoint, we don't have to include the client_id
-          if (url === authorizationServerMetadata.authorization_challenge_endpoint && body.auth_session) {
-            return clientAuthenticationAnonymous()(options)
-          }
+        // NOTE: we fall back to anonymous authentication for pre-auth for now, as there's quite some
+        // issuers that do not have pre-authorized_grant_anonymous_access_supported defined
+        if (
+          url === authorizationServerMetadata.token_endpoint &&
+          body.grant_type === preAuthorizedCodeGrantIdentifier
+        ) {
+          return clientAuthenticationAnonymous()(options)
+        }
 
-          throw new CredoError('Unable to perform client authentication.')
-        },
+        // Refresh token flow defaults to anonymous auth if there is neither a client attestation or client id
+        // is present.
+        if (body.grant_type === refreshTokenGrantIdentifier) {
+          return clientAuthenticationAnonymous()(options)
+        }
+
+        // TODO: We should still look at auth_methods_supported
+        // If there is an auth session for the auth challenge endpoint, we don't have to include the client_id
+        if (url === authorizationServerMetadata.authorization_challenge_endpoint && body.auth_session) {
+          return clientAuthenticationAnonymous()(options)
+        }
+
+        throw new CredoError('Unable to perform client authentication.')
       },
+    } satisfies Partial<CallbackContext>
+  }
+
+  private getClient(agentContext: AgentContext, options: { clientAttestation?: string; clientId?: string } = {}) {
+    return new Openid4vciClient({
+      callbacks: this.getCallbacks(agentContext, options),
     })
   }
 
-  private getOauth2Client(agentContext: AgentContext) {
+  private getOauth2Client(agentContext: AgentContext, options?: { clientAttestation?: string; clientId?: string }) {
     return new Oauth2Client({
-      callbacks: getOid4vcCallbacks(agentContext),
+      callbacks: options ? this.getCallbacks(agentContext, options) : getOid4vcCallbacks(agentContext),
     })
   }
 }

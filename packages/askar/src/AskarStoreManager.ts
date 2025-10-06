@@ -529,7 +529,9 @@ export class AskarStoreManager {
 
       return result
     } catch (error) {
-      agentContext.config.logger.error('Error occured during tranaction, rollback')
+      agentContext.config.logger.error('Error occured during transaction, rollback', {
+        error,
+      })
       if (transaction && session?.handle) {
         await session.rollback()
       }

@@ -4,11 +4,11 @@ import type { TenantAgent } from '../src/TenantAgent'
 
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
 import {
-  ConnectionsModule,
+  DidCommConnectionsModule,
+  DidCommMessagePickupModule,
   DidCommModule,
-  MessagePickupModule,
-  OutOfBandModule,
-  OutOfBandRecord,
+  DidCommOutOfBandModule,
+  DidCommOutOfBandRecord,
 } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 
@@ -21,7 +21,6 @@ import { getAskarStoreConfig, testLogger } from '../../core/tests'
 import { TenantsModule } from '../src/TenantsModule'
 
 const agent1Config: InitConfig = {
-  label: 'Tenant Agent 1',
   logger: testLogger,
 }
 
@@ -30,7 +29,6 @@ const agent1DidcommConfig: DidCommModuleConfigOptions = {
 }
 
 const agent2Config: InitConfig = {
-  label: 'Tenant Agent 2',
   logger: testLogger,
 }
 
@@ -41,11 +39,11 @@ const agent2DidcommConfig: DidCommModuleConfigOptions = {
 const getTenantsAgentModules = (didcommConfig: DidCommModuleConfigOptions) =>
   ({
     didcomm: new DidCommModule(didcommConfig),
-    oob: new OutOfBandModule(),
-    messagePickup: new MessagePickupModule(),
+    oob: new DidCommOutOfBandModule(),
+    messagePickup: new DidCommMessagePickupModule(),
     tenants: new TenantsModule(),
     inMemory: new InMemoryWalletModule({ enableKms: false }),
-    connections: new ConnectionsModule({
+    connections: new DidCommConnectionsModule({
       autoAcceptConnections: true,
     }),
     cache: new CacheModule({
@@ -191,7 +189,10 @@ describe('Tenants E2E', () => {
     // Create and receive oob invitation in scope of tenants
     const outOfBandRecord = await tenantAgent1.modules.oob.createInvitation()
     const { connectionRecord: tenant2ConnectionRecord } = await tenantAgent2.modules.oob.receiveInvitation(
-      outOfBandRecord.outOfBandInvitation
+      outOfBandRecord.outOfBandInvitation,
+      {
+        label: 'Tenant 2',
+      }
     )
 
     // Retrieve all oob records for the base and tenant agent, only the
@@ -242,7 +243,10 @@ describe('Tenants E2E', () => {
     // Create and receive oob invitation in scope of tenants
     const outOfBandRecord = await tenantAgent1.modules.oob.createInvitation()
     const { connectionRecord: tenant2ConnectionRecord } = await tenantAgent2.modules.oob.receiveInvitation(
-      outOfBandRecord.outOfBandInvitation
+      outOfBandRecord.outOfBandInvitation,
+      {
+        label: 'Agent 2 Tenant 1',
+      }
     )
 
     if (!tenant2ConnectionRecord) throw new Error('Receive invitation did not return connection record')
@@ -272,9 +276,8 @@ describe('Tenants E2E', () => {
         tenantAgent as TenantAgent<ReturnType<typeof getTenantsAgentModules>>
       ).modules.oob.createInvitation()
 
-      expect(outOfBandRecord).toBeInstanceOf(OutOfBandRecord)
+      expect(outOfBandRecord).toBeInstanceOf(DidCommOutOfBandRecord)
       expect(tenantAgent.context.contextCorrelationId).toBe(`tenant-${tenantRecord.id}`)
-      expect(tenantAgent.config.label).toBe('Agent 1 Tenant 1')
     })
 
     await agent1.modules.tenants.deleteTenantById(tenantRecord.id)
