@@ -1088,7 +1088,7 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
-    const expiresAt = addSecondsToDate(new Date(), expiresInSeconds)
+    const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
@@ -1096,7 +1096,7 @@ export class OpenId4VcIssuerService {
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
         aud: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(expiresAt),
+        exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
         cnf: options.dpop
