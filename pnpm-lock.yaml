@@ -286,11 +286,11 @@ importers:
         specifier: ^0.2.3
         version: 0.2.3
       '@openwallet-foundation/askar-react-native':
-        specifier: ^0.4.1
-        version: 0.4.1(react-native@0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1))(react@19.1.1)
+        specifier: ^0.4.2
+        version: 0.4.2(react-native@0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1))(react@19.1.1)
       '@openwallet-foundation/askar-shared':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
       bn.js:
         specifier: ^5.2.1
         version: 5.2.2
@@ -314,8 +314,8 @@ importers:
         specifier: ^0.2.3
         version: 0.2.3
       '@openwallet-foundation/askar-nodejs':
-        specifier: ^0.4.1
-        version: 0.4.1
+        specifier: ^0.4.2
+        version: 0.4.2
       '@types/bn.js':
         specifier: ^5.1.0
         version: 5.2.0
@@ -2339,28 +2339,15 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@openwallet-foundation/askar-nodejs@0.4.1':
-    resolution: {integrity: sha512-2tAGBl+Yg59w0XDwD/pdBOiN5CGR73+MImFYcP0TSq167i3D/hv5RnGwp5tgjn9h2UepNJVsmYGrdQjrNUs0kA==}
-    engines: {node: '>= 18'}
-
   '@openwallet-foundation/askar-nodejs@0.4.2':
     resolution: {integrity: sha512-aQ4+zi8DWYjJUyTdCMnVsUwvEsFZuUBeDdxHxXMu19FAmTNAc4sOT6tPYZEBWAui5EBapn5tyFJ/0sqrmrif5A==}
     engines: {node: '>= 18'}
-
-  '@openwallet-foundation/askar-react-native@0.4.1':
-    resolution: {integrity: sha512-gLCV473tfUeguPngBgmavXfCry+GVdWTs6lGvIULFDZAgivaeGo1kNMenorJPF2lb7Sr0vAzWOS8Nmj0degauw==}
-    peerDependencies:
-      react: '>= 16'
-      react-native: '>= 0.71'
 
   '@openwallet-foundation/askar-react-native@0.4.2':
     resolution: {integrity: sha512-aYNK5v+kWNf5SdQkhXWRFiEPA6MJDYi/I29dPeLSpAkIOP4hIMFVjOwjcvHVLgB702gGLxoebV6xnNpnRY19NA==}
     peerDependencies:
       react: '>= 16'
       react-native: '>= 0.71'
-
-  '@openwallet-foundation/askar-shared@0.4.1':
-    resolution: {integrity: sha512-r9xF68R+xYkalG0+6L+fcywo/87l29RuU1AtCSLFj3w0nKlzmxaK0HbJ4zvJjfVqvd+qglvn3HTFdUuKC/Pwrg==}
 
   '@openwallet-foundation/askar-shared@0.4.2':
     resolution: {integrity: sha512-OakCxZ3ZYA8ho4ZxSl7QDQxXqR5G42CL2vtszqzisBMOr3zML63B22zpkf8Q+n2IFXt5iuKXfbuTzHBeBSHSjg==}
@@ -9986,16 +9973,6 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@openwallet-foundation/askar-nodejs@0.4.1':
-    dependencies:
-      '@2060.io/ffi-napi': 4.0.9
-      '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.4.1
-      ref-array-di: 1.2.2
-      ref-struct-di: 1.1.1
-    transitivePeerDependencies:
-      - supports-color
-
   '@openwallet-foundation/askar-nodejs@0.4.2':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
@@ -10006,22 +9983,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@openwallet-foundation/askar-react-native@0.4.1(react-native@0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1))(react@19.1.1)':
-    dependencies:
-      '@openwallet-foundation/askar-shared': 0.4.1
-      react: 19.1.1
-      react-native: 0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1)
-
   '@openwallet-foundation/askar-react-native@0.4.2(react-native@0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1))(react@19.1.1)':
     dependencies:
       '@openwallet-foundation/askar-shared': 0.4.2
       react: 19.1.1
       react-native: 0.71.19(@babel/core@7.28.0)(@babel/preset-env@7.28.0(@babel/core@7.28.0))(react@19.1.1)
-
-  '@openwallet-foundation/askar-shared@0.4.1':
-    dependencies:
-      buffer: 6.0.3
-      tar: 7.4.3
 
   '@openwallet-foundation/askar-shared@0.4.2':
     dependencies:
