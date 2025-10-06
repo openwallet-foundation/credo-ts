@@ -14,6 +14,7 @@ import { Color, Output, greenText, purpleText, redText } from './OutputClass'
 export enum RegistryOptions {
   indy = 'did:indy',
   cheqd = 'did:cheqd',
+  hedera = 'did:hedera',
 }
 
 export class Faber extends BaseAgent {
@@ -38,11 +39,22 @@ export class Faber extends BaseAgent {
     // and store the existing did in the wallet
     // indy did is based on private key (seed)
     const unqualifiedIndyDid = '2jEvRuKmfBJTRa7QowDpNN'
-    const cheqdDid = 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675'
-    const indyDid = `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`
-    const didDocumentRelativeKeyId = registry === RegistryOptions.indy ? '#verkey' : '#key-1'
 
-    const did = registry === RegistryOptions.indy ? indyDid : cheqdDid
+    const rootKeyIds: Record<string, string> = {
+      [RegistryOptions.indy]: '#verkey',
+      [RegistryOptions.cheqd]: '#key-1',
+      [RegistryOptions.hedera]: '#did-root-key',
+    }
+
+    const Dids: Record<string, string> = {
+      [RegistryOptions.indy]: `did:indy:${indyNetworkConfig.indyNamespace}:${unqualifiedIndyDid}`,
+      [RegistryOptions.cheqd]: 'did:cheqd:testnet:d37eba59-513d-42d3-8f9f-d1df0548b675',
+      [RegistryOptions.hedera]: 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6231121',
+    }
+
+    const didDocumentRelativeKeyId = rootKeyIds[registry]
+    const did = Dids[registry]
+
     const { privateJwk } = transformPrivateKeyToPrivateJwk({
       type: {
         crv: 'Ed25519',
