@@ -117,7 +117,7 @@ function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: 
   } as unknown as DidCommModules<Options>
 }
 
-export class DidCommModule<Options extends DidCommModuleConfigOptions> implements Module {
+export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> implements Module {
   public readonly config: DidCommModuleConfig<Options>
   public readonly api: typeof DidCommApi<Options> = DidCommApi
 

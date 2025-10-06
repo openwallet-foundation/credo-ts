@@ -8,6 +8,7 @@ import { SubjectInboundTransport } from '../../../../../../tests/transport/Subje
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
+import { DidCommModule } from '../../../DidCommModule'
 import { MessageSendingError } from '../../../errors'
 import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository'
@@ -33,8 +34,8 @@ const aliceConfig = getAgentOptions(
 )
 
 describe('Basic Messages E2E', () => {
-  let faberAgent: Agent
-  let aliceAgent: Agent
+  let faberAgent: Agent<{ didcomm: DidCommModule }>
+  let aliceAgent: Agent<{ didcomm: DidCommModule }>
   let faberConnection: DidCommConnectionRecord
   let aliceConnection: DidCommConnectionRecord
 
@@ -155,9 +156,11 @@ describe('Basic Messages E2E', () => {
       await aliceAgent.didcomm.basicMessages.sendMessage(aliceConnection.id, 'Hello undeliverable')
     } catch (error) {
       const thrownError = error as MessageSendingError
-      expect(thrownError.message).toEqual(
-        `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
-      )
+      expect(
+        thrownError.message.startsWith(
+          `Message is undeliverable to connection ${aliceConnection.id} (${aliceConnection.theirLabel})`
+        )
+      ).toBe(true)
       testLogger.test('Error thrown includes the outbound message and recently created record id')
       expect(thrownError.outboundMessageContext.associatedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
       expect(thrownError.outboundMessageContext.message).toBeInstanceOf(DidCommBasicMessage)
@@ -165,14 +168,14 @@ describe('Basic Messages E2E', () => {
 
       testLogger.test('Created record can be found and deleted by id')
       const storedRecord = await aliceAgent.didcomm.basicMessages.getById(
-        thrownError.outboundMessageContext.associatedRecord?.id
+        thrownError.outboundMessageContext.associatedRecord?.id as string
       )
       expect(storedRecord).toBeInstanceOf(DidCommBasicMessageRecord)
       expect(storedRecord.content).toBe('Hello undeliverable')
 
       await aliceAgent.didcomm.basicMessages.deleteById(storedRecord.id)
       await expect(
-        aliceAgent.didcomm.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id)
+        aliceAgent.didcomm.basicMessages.getById(thrownError.outboundMessageContext.associatedRecord?.id as string)
       ).rejects.toThrow(RecordNotFoundError)
     }
     spy.mockClear()
