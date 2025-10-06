@@ -90,7 +90,9 @@ export class FaberInquirer extends BaseInquirer {
   }
 
   public async credential() {
-    const registry = await prompt([this.inquireOptions([RegistryOptions.indy, RegistryOptions.cheqd])])
+    const registry = await prompt([
+      this.inquireOptions([RegistryOptions.indy, RegistryOptions.cheqd, RegistryOptions.hedera]),
+    ])
     await this.faber.importDid(registry.options)
     await this.faber.issueCredential()
     const title = 'Is the credential offer accepted?'
