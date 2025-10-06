@@ -1,0 +1,1 @@
+export { HederaAnonCredsRegistry } from './HederaAnonCredsRegistry'
