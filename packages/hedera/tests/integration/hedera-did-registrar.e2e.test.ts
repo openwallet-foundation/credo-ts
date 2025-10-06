@@ -7,7 +7,7 @@ import {
   LogLevel,
   VerificationMethod,
 } from '@credo-ts/core'
-import { HederaDidCreateOptions } from '../../src/ledger/HederaLedgerService'
+import { HederaDidCreateOptions } from '../../src'
 import { getHederaAgent } from './utils'
 
 const validDid = 'did:hedera:testnet:44eesExqdsUvLZ35FpnBPErqRGRnYbzzyG3wgCCYxkmq_0.0.6226170'

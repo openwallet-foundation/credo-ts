@@ -6,10 +6,7 @@ import { AgentContext, Key, Buffer } from '@credo-ts/core'
 export class CredoSigner extends Signer {
   private _publicKey: PublicKey
 
-  constructor(
-    private readonly agentContext: AgentContext,
-    private key: Key
-  ) {
+  constructor(private readonly agentContext: AgentContext, private key: Key) {
     super()
 
     this._publicKey = hederaPublicKeyFromCredoKey(key)

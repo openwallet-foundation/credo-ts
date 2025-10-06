@@ -88,8 +88,8 @@ export class HederaLedgerService {
         typeof didDocument?.controller === 'string'
           ? didDocument?.controller
           : Array.isArray(didDocument?.controller)
-            ? didDocument?.controller[0]
-            : undefined
+          ? didDocument?.controller[0]
+          : undefined
 
       if (secret?.privateKey && !isValidPrivateKey(secret.privateKey, KeyType.Ed25519)) {
         throw new Error('Unsupported private key provided')

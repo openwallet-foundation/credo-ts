@@ -6,11 +6,7 @@ import { hederaPublicKeyFromCredoKey } from '../utils'
 export class CredoPublisher extends ClientPublisher {
   private submitPublicKey: PublicKey
 
-  constructor(
-    private readonly agentContext: AgentContext,
-    client: Client,
-    private key: Key
-  ) {
+  constructor(private readonly agentContext: AgentContext, client: Client, private key: Key) {
     super(client)
 
     this.submitPublicKey = hederaPublicKeyFromCredoKey(key)

@@ -7,7 +7,7 @@ import {
   JsonTransformer,
   type ParsedDid,
 } from '@credo-ts/core'
-import { HederaLedgerService } from '../ledger/HederaLedgerService'
+import { HederaLedgerService } from '../ledger'
 
 export class HederaDidResolver implements DidResolver {
   public readonly supportedMethods = ['hedera']
