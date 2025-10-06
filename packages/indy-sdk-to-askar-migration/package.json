@@ -31,19 +31,19 @@
     "@credo-ts/core": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@hyperledger/aries-askar-shared": "^0.2.3",
-    "@openwallet-foundation/askar-shared": "^0.4.1"
+    "@openwallet-foundation/askar-shared": "^0.4.2"
   },
   "devDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
-    "@openwallet-foundation/askar-nodejs": "^0.4.1",
+    "@openwallet-foundation/askar-nodejs": "^0.4.2",
     "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   },
   "peerDependencies": {
     "@hyperledger/aries-askar-nodejs": "^0.2.3",
     "@hyperledger/aries-askar-react-native": "^0.2.3",
-    "@openwallet-foundation/askar-nodejs": "^0.4.1",
-    "@openwallet-foundation/askar-react-native": "^0.4.1"
+    "@openwallet-foundation/askar-nodejs": "^0.4.2",
+    "@openwallet-foundation/askar-react-native": "^0.4.2"
   },
   "peerDependenciesMeta": {
     "@hyperledger/aries-askar-nodejs": {
