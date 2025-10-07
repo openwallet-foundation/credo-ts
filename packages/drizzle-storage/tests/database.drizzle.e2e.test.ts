@@ -6,7 +6,7 @@ import anoncredsDrizzleBundle from '../src/anoncreds/bundle'
 import coreDrizzleBundle from '../src/core/bundle'
 import didcommDrizzleBundle from '../src/didcomm/bundle'
 import {
-  DrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,

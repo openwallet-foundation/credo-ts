@@ -1,7 +1,7 @@
 import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
-import { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
+import { type DrizzleSqliteDatabase } from '../../DrizzleDatabase'
 import * as coreContextSchema from '../../core/context-record/sqlite'
 import * as didcommConnectionSchema from '../../didcomm/connection-record/sqlite'
 import { queryToDrizzleSqlite } from '../queryToDrizzleSqlite'

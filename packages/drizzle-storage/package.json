@@ -29,7 +29,8 @@
   "bin": "./bin.mjs",
   "exports": {
     ".": {
-      "import": "./src/index.ts"
+      "import": "./src/index.ts",
+      "cli": "./build/index.mjs"
     },
     "./didcomm": { "import": "./build/didcomm/bundle.mjs" },
     "./action-menu": { "import": "./build/action-menu/bundle.mjs" },
@@ -38,7 +39,7 @@
     "./tenants": { "import": "./build/tenants/bundle.mjs" },
     "./openid4vc": { "import": "./build/openid4vc/bundle.mjs" },
     "./anoncreds": { "import": "./build/anoncreds/bundle.mjs" },
-    "./question-answer": { "import": "./build/openid4vc/question-answer.mjs" }
+    "./question-answer": { "import": "./build/question-answer/bundle.mjs" }
   },
   "publishConfig": {
     "access": "public",
@@ -58,7 +59,7 @@
       "./tenants": { "import": "./build/tenants/bundle.mjs" },
       "./openid4vc": { "import": "./build/openid4vc/bundle.mjs" },
       "./anoncreds": { "import": "./build/anoncreds/bundle.mjs" },
-      "./question-answer": { "import": "./build/openid4vc/question-answer.mjs" },
+      "./question-answer": { "import": "./build/question-answer/bundle.mjs" },
       "./package.json": "./package.json"
     }
   },

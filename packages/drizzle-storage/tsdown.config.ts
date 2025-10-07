@@ -1,8 +1,6 @@
 import { defineConfig } from 'tsdown'
 import config from '../../tsdown.config.base'
 
-const configArray = Array.isArray(config) ? config : [config]
-
 const bundles = ['didcomm', 'action-menu', 'core', 'drpc', 'tenants', 'openid4vc', 'anoncreds', 'question-answer']
 const bundleEntry = (bundle: string) => [
   `src/${bundle}/bundle.ts`,
@@ -11,8 +9,8 @@ const bundleEntry = (bundle: string) => [
 ]
 
 export default defineConfig([
-  ...configArray.map((config) => ({
-    ...config,
+  ...config.map((item) => ({
+    ...item,
     entry: ['src/index.ts', ...bundles.flatMap(bundleEntry)],
   })),
   // CLI

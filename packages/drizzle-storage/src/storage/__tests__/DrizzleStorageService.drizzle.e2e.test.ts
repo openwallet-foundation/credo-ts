@@ -2,7 +2,7 @@ import { Agent, GenericRecord, RecordDuplicateError, RecordNotFoundError } from 
 import { GenericRecordsRepository } from '@credo-ts/core/src/modules/generic-records/repository/GenericRecordsRepository'
 import { agentDependencies } from '@credo-ts/node'
 import {
-  DrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,

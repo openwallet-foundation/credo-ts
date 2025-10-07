@@ -1,6 +1,6 @@
-import { defineConfig } from 'tsdown'
+import { type UserConfig } from 'tsdown'
 
-export default defineConfig([
+export default [
   {
     entry: ['src/index.ts'],
     outDir: 'build',
@@ -27,4 +27,4 @@ export default defineConfig([
     platform: 'neutral',
     logLevel: 'error',
   },
-])
+] as const satisfies UserConfig
