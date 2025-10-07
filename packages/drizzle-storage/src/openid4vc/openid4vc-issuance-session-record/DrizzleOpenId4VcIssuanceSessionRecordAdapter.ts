@@ -7,7 +7,7 @@ import {
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { OpenId4VcIssuanceSessionRecord } from '@credo-ts/openid4vc'
-import { type DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 

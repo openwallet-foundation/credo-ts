@@ -2,11 +2,7 @@ import { AgentContext, type FileSystem, InjectionSymbols, JsonTransformer, Stora
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
-import {
-  type AskarStoreExportOptions,
-  type AskarStoreImportOptions,
-  type AskarStoreRotateKeyOptions,
-} from './AskarApiOptions'
+import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
 import {
   AskarModuleConfig,
   type AskarModuleConfigStoreOptions,

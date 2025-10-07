@@ -7,7 +7,7 @@ import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { assymetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
-import { type KnownJwaKeyAgreementAlgorithm, type KnownJwaSignatureAlgorithm } from './jwa'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
 import { type KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 

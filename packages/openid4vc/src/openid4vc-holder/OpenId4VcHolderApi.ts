@@ -23,7 +23,7 @@ import {
   injectable,
 } from '@credo-ts/core'
 
-import { type OpenId4VciMetadata } from '../shared'
+import type { OpenId4VciMetadata } from '../shared'
 
 import { OpenId4VciHolderService } from './OpenId4VciHolderService'
 import { OpenId4VpHolderService } from './OpenId4vpHolderService'

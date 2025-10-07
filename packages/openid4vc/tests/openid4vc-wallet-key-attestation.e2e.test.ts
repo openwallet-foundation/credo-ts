@@ -14,7 +14,7 @@ import {
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
-import { type Jwk } from '@openid4vc/oauth2'
+import type { Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'

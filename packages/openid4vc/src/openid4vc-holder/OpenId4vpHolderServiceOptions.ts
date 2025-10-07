@@ -6,7 +6,7 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import { type ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp

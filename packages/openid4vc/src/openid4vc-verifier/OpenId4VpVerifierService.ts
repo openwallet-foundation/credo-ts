@@ -59,7 +59,7 @@ import {
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import { type OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {

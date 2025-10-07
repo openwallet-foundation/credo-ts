@@ -1,6 +1,6 @@
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
-import { type KnownJwaKeyAgreementAlgorithm, type KnownJwaSignatureAlgorithm } from '../../jwa'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
 import type { KmsJwkPublicRsa } from './rsaJwk'
 import { rsaPublicJwkToPublicKey, rsaPublicKeyToPublicJwk } from './rsaPublicKey'

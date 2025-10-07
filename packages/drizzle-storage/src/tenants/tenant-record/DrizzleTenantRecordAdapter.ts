@@ -7,7 +7,7 @@ import {
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { TenantRecord } from '@credo-ts/tenants'
-import { type DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 

@@ -24,7 +24,7 @@ import {
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { isJsonObject } from '../types'
 import { X509Service } from './../modules/x509/X509Service'
-import { type JwsSigner, type JwsSignerWithJwk } from './JwsSigner'
+import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { JwtPayload } from './jose/jwt'
 

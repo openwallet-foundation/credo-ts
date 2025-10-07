@@ -38,8 +38,8 @@ import {
   parseTransactionData,
 } from '@openid4vc/openid4vp'
 
-import { type Jwk } from '@openid4vc/oauth2'
-import { type OpenId4VpVersion } from '../openid4vc-verifier'
+import type { Jwk } from '@openid4vc/oauth2'
+import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 
 @injectable()

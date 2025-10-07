@@ -5,7 +5,7 @@ import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@c
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { type OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 

@@ -3,7 +3,7 @@ import { injectable } from '../../plugins'
 
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509Service } from './X509Service'
-import { type X509CreateCertificateOptions, type X509ValidateCertificateChainOptions } from './X509ServiceOptions'
+import type { X509CreateCertificateOptions, X509ValidateCertificateChainOptions } from './X509ServiceOptions'
 
 /**
  * @public

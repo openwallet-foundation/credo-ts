@@ -8,7 +8,7 @@ import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../getDidCommOutboundMessageContext'
 import { DidCommInboundMessageContext } from '../models'
-import { type DidCommConnectionRecord } from '../modules/connections'
+import type { DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
 
 jest.mock('../DidCommMessageSender')

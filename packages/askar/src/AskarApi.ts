@@ -1,11 +1,7 @@
 import { AgentContext } from '@credo-ts/core'
 import { injectable } from 'tsyringe'
 
-import {
-  type AskarStoreExportOptions,
-  type AskarStoreImportOptions,
-  type AskarStoreRotateKeyOptions,
-} from './AskarApiOptions'
+import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
 import { AskarModuleConfig } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
 

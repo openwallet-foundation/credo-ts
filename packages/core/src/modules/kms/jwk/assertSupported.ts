@@ -5,10 +5,10 @@ import {
   type KmsKeyAgreementDecryptOptions,
   type KmsKeyAgreementEncryptOptions,
 } from '../options'
-import {
-  type KnownJwaContentEncryptionAlgorithm,
-  type KnownJwaKeyAgreementAlgorithm,
-  type KnownJwaKeyEncryptionAlgorithm,
+import type {
+  KnownJwaContentEncryptionAlgorithm,
+  KnownJwaKeyAgreementAlgorithm,
+  KnownJwaKeyEncryptionAlgorithm,
 } from './jwa'
 
 export function assertSupportedKeyAgreementAlgorithm<
