@@ -1,6 +1,6 @@
 import { KeyManagementError } from '../error/KeyManagementError'
 import { getJwkHumanDescription } from './humanDescription'
-import { KmsJwkPrivateAsymmetric, KmsJwkPublicAsymmetric } from './knownJwk'
+import { type KmsJwkPrivateAsymmetric, type KmsJwkPublicAsymmetric } from './knownJwk'
 
 /**
  * Checks if two JWK public keys have matching key types

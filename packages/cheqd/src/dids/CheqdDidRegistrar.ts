@@ -1,4 +1,4 @@
-import { CheqdNetwork, DIDDocument, DidStdFee, VerificationMethods } from '@cheqd/sdk'
+import { CheqdNetwork, type DIDDocument, type DidStdFee, VerificationMethods } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import {
   AgentContext,

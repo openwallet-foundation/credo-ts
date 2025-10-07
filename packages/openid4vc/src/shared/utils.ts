@@ -1,4 +1,4 @@
-import { AgentContext, ClaimFormat, DcqlQuery, DidPurpose, Kms } from '@credo-ts/core'
+import { AgentContext, ClaimFormat, type DcqlQuery, type DidPurpose, Kms } from '@credo-ts/core'
 import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 

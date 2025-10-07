@@ -1,7 +1,7 @@
 import { ECDSASigValue } from '@peculiar/asn1-ecc'
 import { AsnConvert } from '@peculiar/asn1-schema'
 import { KeyManagementError } from '../../../error/KeyManagementError'
-import { KmsJwkPublicEc } from './ecJwk'
+import type { KmsJwkPublicEc } from './ecJwk'
 import { ecCrvToCurveParams } from './ecPublicKey'
 
 /**

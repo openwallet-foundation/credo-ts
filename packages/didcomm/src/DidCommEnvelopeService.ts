@@ -11,7 +11,7 @@ import {
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
-import { Logger, injectable } from '@credo-ts/core'
+import { type Logger, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'

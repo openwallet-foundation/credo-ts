@@ -4,7 +4,7 @@ import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePic
 
 import { Subject } from 'rxjs'
 
-import { Logger } from '@credo-ts/core'
+import { type Logger } from '@credo-ts/core'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../core/src/error/CredoError'
 import { testLogger } from '../../../../../core/tests'

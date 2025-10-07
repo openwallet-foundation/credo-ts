@@ -6,7 +6,7 @@ import { isLongFormDidPeer4, isShortFormDidPeer4 } from '../methods/peer/peerDid
 import {
   DidDocument,
   DidDocumentService,
-  PeerDidCreateOptions,
+  type PeerDidCreateOptions,
   PeerDidNumAlgo,
   TypedArrayEncoder,
   createPeerDidDocumentFromServices,

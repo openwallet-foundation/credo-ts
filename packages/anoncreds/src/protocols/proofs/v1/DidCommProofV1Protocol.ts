@@ -32,7 +32,7 @@ import {
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 
-import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
+import { type AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
 import { DidCommPresentationV1ProblemReportError } from './errors'
 import {
   DidCommPresentationV1AckHandler,

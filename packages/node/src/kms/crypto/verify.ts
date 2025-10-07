@@ -1,4 +1,4 @@
-import { CanBePromise, Kms } from '@credo-ts/core'
+import { type CanBePromise, Kms } from '@credo-ts/core'
 
 import { Buffer } from 'node:buffer'
 import {

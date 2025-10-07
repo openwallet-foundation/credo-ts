@@ -2,9 +2,9 @@ import { Agent, utils } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import type { PgDatabase } from 'drizzle-orm/pg-core'
 import type { Client as ClientType, Pool as PoolType } from 'pg'
-import { DrizzleRecord, DrizzleStorageModule } from '../src'
-import { DrizzlePostgresDatabase, isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
-import { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
+import { type DrizzleRecord, DrizzleStorageModule } from '../src'
+import { type DrizzlePostgresDatabase, isDrizzlePostgresDatabase } from '../src/DrizzleDatabase'
+import type { AnyDrizzleDatabase } from '../src/DrizzleStorageModuleConfig'
 
 export type DrizzlePostgresTestDatabase = {
   pool: PoolType

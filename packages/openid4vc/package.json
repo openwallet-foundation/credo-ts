@@ -1,14 +1,22 @@
 {
   "name": "@credo-ts/openid4vc",
-  "main": "src/index",
-  "types": "src/index",
+  "module": "./src/index.ts",
   "version": "0.5.13",
   "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc",
   "repository": {
@@ -17,9 +25,8 @@
     "directory": "packages/openid4vc"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
+    "build": "tsdown",
+    "build:legacy": "tsc --project tsconfig.build.json",
     "prepublishOnly": "pnpm run build",
     "test": "jest"
   },

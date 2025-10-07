@@ -11,10 +11,17 @@ import {
   DcqlW3cVcCredential,
 } from 'dcql'
 import { injectable } from 'tsyringe'
-import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
+import { type JsonObject, type JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
 import { TypedArrayEncoder, asArray } from '../../utils'
 import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
+import {
+  Mdoc,
+  MdocApi,
+  MdocDeviceResponse,
+  type MdocNameSpaces,
+  MdocRecord,
+  type MdocSessionTranscriptOptions,
+} from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import {
@@ -37,12 +44,12 @@ import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
 import {
-  DcqlCredentialsForRequest,
-  DcqlEncodedPresentations,
-  DcqlFailedCredential,
-  DcqlPresentation,
-  DcqlQueryResult,
-  DcqlValidCredential,
+  type DcqlCredentialsForRequest,
+  type DcqlEncodedPresentations,
+  type DcqlFailedCredential,
+  type DcqlPresentation,
+  type DcqlQueryResult,
+  type DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
 

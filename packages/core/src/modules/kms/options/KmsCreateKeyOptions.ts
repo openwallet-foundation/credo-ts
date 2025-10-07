@@ -1,7 +1,7 @@
 import type { KmsJwkPublicFromCreateType } from '../jwk/knownJwk'
 
 import * as z from '../../../utils/zod'
-import { KnownJwaSignatureAlgorithm } from '../jwk'
+import type { KnownJwaSignatureAlgorithm } from '../jwk'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { zKmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
 import { zKmsJwkPublicOct } from '../jwk/kty/oct/octJwk'

@@ -7,7 +7,7 @@ import { X509Service } from '../X509Service'
 
 import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import { KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
+import { KeyManagementApi, KeyManagementModuleConfig, type KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
 
 /**
  *

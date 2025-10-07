@@ -7,7 +7,7 @@ import { AgentContext } from '../../../../../core/src/agent/context/AgentContext
 import { InjectionSymbols } from '../../../../../core/src/constants'
 import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers'
 import { DidCommMessage } from '../../../DidCommMessage'
-import { DidCommTransportSession } from '../../../DidCommTransportService'
+import { type DidCommTransportSession } from '../../../DidCommTransportService'
 import { DidCommTransportEventTypes } from '../../../transport/DidCommTransportEventTypes'
 import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'

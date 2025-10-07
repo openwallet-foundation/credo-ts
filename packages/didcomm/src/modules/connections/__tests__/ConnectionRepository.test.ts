@@ -4,7 +4,7 @@ import {
   CachedStorageService,
   InjectionSymbols,
   SingleContextStorageLruCache,
-  StorageService,
+  type StorageService,
 } from '@credo-ts/core'
 import { getAgentOptions } from '../../../../../core/tests'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'

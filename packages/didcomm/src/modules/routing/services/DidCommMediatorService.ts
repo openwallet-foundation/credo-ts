@@ -10,7 +10,7 @@ import {
   EventEmitter,
   InjectionSymbols,
   Kms,
-  Logger,
+  type Logger,
   RecordDuplicateError,
   TypedArrayEncoder,
   didKeyToVerkey,

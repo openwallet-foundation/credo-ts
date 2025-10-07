@@ -1,5 +1,5 @@
 import { SDJwtInstance } from '@sd-jwt/core'
-import { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import { type DisclosureFrame, type PresentationFrame, type SDJWTConfig } from '@sd-jwt/types'
 import type { AgentContext } from '../../../agent/context'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'

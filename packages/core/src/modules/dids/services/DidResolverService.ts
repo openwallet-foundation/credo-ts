@@ -4,7 +4,7 @@ import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../ty
 
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
-import { Logger } from '../../../logger'
+import type { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { JsonTransformer } from '../../../utils'
 import { CacheModuleConfig } from '../../cache'

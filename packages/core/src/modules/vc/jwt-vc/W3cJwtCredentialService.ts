@@ -20,7 +20,7 @@ import {
   getPublicJwkFromVerificationMethod,
   getSupportedVerificationMethodTypesForPublicJwk,
 } from '../../dids/domain/key-type/keyDidMapping'
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
+import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../../kms'
 import { W3cJwtVerifiableCredential } from './W3cJwtVerifiableCredential'
 import { W3cJwtVerifiablePresentation } from './W3cJwtVerifiablePresentation'
 import { getJwtPayloadFromCredential } from './credentialTransformer'

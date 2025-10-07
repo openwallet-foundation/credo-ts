@@ -22,11 +22,11 @@ import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
 import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
 import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import {
-  DrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
 } from '../../drizzle-storage/tests/testDatabase'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { OpenId4VcModule, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import { OpenId4VcVerificationSessionState } from '../src'
 
 import type { AgentType, TenantType } from './utils'

@@ -1,6 +1,6 @@
 import { Kms, MdocDeviceResponse, TypedArrayEncoder } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { OpenId4VcModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType } from './utils'
 import { createAgentFromModules } from './utils'
 

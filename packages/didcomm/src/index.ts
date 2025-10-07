@@ -12,7 +12,7 @@ export * from './DidCommEvents'
 export type { DidCommTransportSession } from './DidCommTransportService'
 export { DidCommTransportService } from './DidCommTransportService'
 export { DidCommAttachment, DidCommAttachmentData } from './decorators/attachment/DidCommAttachment'
-export { ServiceDecorator, ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
+export { ServiceDecorator, type ServiceDecoratorOptions } from './decorators/service/ServiceDecorator'
 export { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 export { AckDecorator } from './decorators/ack/AckDecorator'
 
@@ -26,7 +26,7 @@ export { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 
 export { DidCommApi } from './DidCommApi'
 export { DidCommModule } from './DidCommModule'
-export { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
+export { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
 
 export { getOutboundDidCommMessageContext } from './getDidCommOutboundMessageContext'
 
@@ -38,7 +38,7 @@ export {
   replaceLegacyDidSovPrefix,
 } from './util/messageType'
 
-export { DidCommLinkedAttachment, DidCommLinkedAttachmentOptions } from './util/DidCommLinkedAttachment'
+export { DidCommLinkedAttachment, type DidCommLinkedAttachmentOptions } from './util/DidCommLinkedAttachment'
 export { oobInvitationFromShortUrl, parseInvitationUrl, parseInvitationShortUrl } from './util/parseInvitation'
 export { encodeAttachment, isLinkedAttachment } from './util/attachment'
 export { isValidJweStructure } from './util/JWE'

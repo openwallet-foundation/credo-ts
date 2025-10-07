@@ -1,7 +1,9 @@
 {
   "name": "@credo-ts/hedera",
-  "main": "src/index",
-  "types": "src/index",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
   "version": "0.5.13",
   "files": ["build"],
   "license": "Apache-2.0",
@@ -15,9 +17,7 @@
     "directory": "packages/hedera"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
+    "build": "tsdown",
     "prepublishOnly": "pnpm run build",
     "test": "jest",
     "test:coverage": "jest --coverage",

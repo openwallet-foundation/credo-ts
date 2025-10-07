@@ -1,4 +1,4 @@
-import { Config, defineConfig } from 'drizzle-kit'
+import { type Config, defineConfig } from 'drizzle-kit'
 
 const drizzleDatabaseUrl = process.env.DRIZZLE_DATABASE_URL
 

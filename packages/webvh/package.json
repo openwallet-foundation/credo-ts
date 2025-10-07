@@ -6,15 +6,22 @@
   "types": "build/index.d.ts",
   "files": ["build"],
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "license": "Apache-2.0",
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf -rf ./build",
-    "compile": "tsc -p tsconfig.build.json",
+    "build": "tsdown",
     "prepublishOnly": "pnpm run build",
     "test": "jest",
     "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --config jest.config.js"

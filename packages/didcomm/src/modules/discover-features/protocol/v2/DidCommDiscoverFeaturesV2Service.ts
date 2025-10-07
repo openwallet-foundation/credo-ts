@@ -9,7 +9,7 @@ import type {
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DidCommDiscoverFeaturesServiceOptions'
 
-import { EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'

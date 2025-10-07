@@ -4,7 +4,7 @@ import { Transform, TransformationType } from 'class-transformer'
 import { ValidationError } from 'class-validator'
 
 import { ClassValidationError, CredoError } from '../../../../error'
-import { SingleOrArray } from '../../../../types'
+import type { SingleOrArray } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'

@@ -3,7 +3,7 @@ import {
   CredoError,
   InjectionSymbols,
   Kms,
-  Logger,
+  type Logger,
   Mdoc,
   MdocApi,
   SdJwtVcApi,
@@ -16,10 +16,11 @@ import {
   parseDid,
 } from '@credo-ts/core'
 import {
-  CallbackContext,
-  Jwk,
+  type AccessTokenResponse,
+  type CallbackContext,
+  type Jwk,
   Oauth2Client,
-  RequestDpopOptions,
+  type RequestDpopOptions,
   authorizationCodeGrantIdentifier,
   clientAuthenticationAnonymous,
   clientAuthenticationClientAttestationJwt,
@@ -29,14 +30,14 @@ import {
   refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
-  DeferredCredentialResponse,
+  type DeferredCredentialResponse,
   determineAuthorizationServerForCredentialOffer,
   parseKeyAttestationJwt,
 } from '@openid4vc/openid4vci'
 import {
   AuthorizationFlow,
-  CredentialResponse,
-  IssuerMetadataResult,
+  type CredentialResponse,
+  type IssuerMetadataResult,
   Openid4vciClient,
   Openid4vciDraftVersion,
   Openid4vciRetrieveCredentialsError,
@@ -282,7 +283,10 @@ export class OpenId4VciHolderService {
   public async retrieveAuthorizationCodeUsingPresentation(
     agentContext: AgentContext,
     options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
-  ) {
+  ): Promise<{
+    authorizationCode: string
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const client = this.getClient(agentContext, {
       clientAttestation: options.walletAttestationJwt,
     })
@@ -314,7 +318,14 @@ export class OpenId4VciHolderService {
     }
   }
 
-  public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
+  public async requestAccessToken(
+    agentContext: AgentContext,
+    options: OpenId4VciTokenRequestOptions
+  ): Promise<{
+    authorizationServer: string
+    accessTokenResponse: AccessTokenResponse
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
     const client = this.getClient(agentContext, {
       clientAttestation: options.walletAttestationJwt,
@@ -376,7 +387,15 @@ export class OpenId4VciHolderService {
     }
   }
 
-  public async refreshAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRefreshOptions) {
+  public async refreshAccessToken(
+    agentContext: AgentContext,
+    options: OpenId4VciTokenRefreshOptions
+  ): Promise<
+    // FIXME: export type in oid4vc library
+    Omit<Awaited<ReturnType<Oauth2Client['retrieveRefreshTokenAccessToken']>>, 'dpop'> & {
+      dpop?: OpenId4VciDpopRequestOptions
+    }
+  > {
     const oauth2Client = this.getOauth2Client(agentContext, {
       clientAttestation: options.walletAttestationJwt,
       clientId: options.clientId,
@@ -423,7 +442,12 @@ export class OpenId4VciHolderService {
       dpop?: OpenId4VciDpopRequestOptions
       clientId?: string
     }
-  ) {
+  ): Promise<{
+    credentials: OpenId4VciCredentialResponse[]
+    deferredCredentials: OpenId4VciDeferredCredentialResponse[]
+    dpop?: OpenId4VciDpopRequestOptions
+    cNonce?: string
+  }> {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
     const { metadata, offeredCredentialConfigurations } = resolvedCredentialOffer
     const {
@@ -583,7 +607,11 @@ export class OpenId4VciHolderService {
   public async retrieveDeferredCredentials(
     agentContext: AgentContext,
     options: OpenId4VciDeferredCredentialRequestOptions
-  ) {
+  ): Promise<{
+    credentials: OpenId4VciCredentialResponse[]
+    deferredCredentials: OpenId4VciDeferredCredentialResponse[]
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const {
       issuerMetadata,
       transactionId,

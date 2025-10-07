@@ -6,7 +6,7 @@ import {
   DidRepository,
   DidsApi,
   DidsModuleConfig,
-  KeyDidCreateOptions,
+  type KeyDidCreateOptions,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'

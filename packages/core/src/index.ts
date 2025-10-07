@@ -28,14 +28,14 @@ export type { FileSystem, DownloadToFileOptions } from './storage/FileSystem'
 export * from './storage/BaseRecord'
 export { Repository } from './storage/Repository'
 export * from './storage/RepositoryEvents'
-export { StorageService, Query, QueryOptions, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
+export type { StorageService, Query, QueryOptions, SimpleQuery, BaseRecordConstructor } from './storage/StorageService'
 export * from './storage/migration'
-export { Metadata } from './storage/Metadata'
-export { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/updates'
+export { Metadata, type MetadataBase } from './storage/Metadata'
+export type { UpdateConfig, V0_1ToV0_2UpdateConfig } from './storage/migration/updates'
 
 export { getDirFromFilePath, joinUriParts } from './utils/path'
 export { InjectionSymbols } from './constants'
-export { VersionString } from './utils/version'
+export type { VersionString } from './utils/version'
 
 export * from './plugins'
 export * from './modules/x509'
@@ -45,7 +45,9 @@ export * from './modules/cache'
 export * from './modules/dif-presentation-exchange'
 export * from './modules/sd-jwt-vc'
 export * from './modules/mdoc'
+
 export * as Kms from './modules/kms'
+
 export * from './modules/dcql'
 export * from './modules/generic-records'
 export {
@@ -55,7 +57,7 @@ export {
   MultiBaseEncoder,
   MultiHashEncoder,
   HashlinkEncoder,
-  BaseName,
+  type BaseName,
   Buffer,
   deepEquality,
   isDid,
