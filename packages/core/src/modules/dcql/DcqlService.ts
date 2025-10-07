@@ -43,13 +43,13 @@ import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
-import {
-  type DcqlCredentialsForRequest,
-  type DcqlEncodedPresentations,
-  type DcqlFailedCredential,
-  type DcqlPresentation,
-  type DcqlQueryResult,
-  type DcqlValidCredential,
+import type {
+  DcqlCredentialsForRequest,
+  DcqlEncodedPresentations,
+  DcqlFailedCredential,
+  DcqlPresentation,
+  DcqlQueryResult,
+  DcqlValidCredential,
 } from './models'
 import { dcqlGetPresentationsToCreate as getDcqlVcPresentationsToCreate } from './utils'
 

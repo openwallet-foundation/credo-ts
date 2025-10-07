@@ -1,9 +1,9 @@
 import { KeyManagementAlgorithmNotSupportedError } from '../error/KeyManagementAlgorithmNotSupportedError'
-import {
-  type KmsDecryptDataDecryption,
-  type KmsEncryptDataEncryption,
-  type KmsKeyAgreementDecryptOptions,
-  type KmsKeyAgreementEncryptOptions,
+import type {
+  KmsDecryptDataDecryption,
+  KmsEncryptDataEncryption,
+  KmsKeyAgreementDecryptOptions,
+  KmsKeyAgreementEncryptOptions,
 } from '../options'
 import type {
   KnownJwaContentEncryptionAlgorithm,

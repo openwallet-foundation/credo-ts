@@ -1,11 +1,11 @@
 import * as z from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
-import {
-  type KmsCreateKeyType,
-  type KmsCreateKeyTypeEc,
-  type KmsCreateKeyTypeOct,
-  type KmsCreateKeyTypeOkp,
-  type KmsCreateKeyTypeRsa,
+import type {
+  KmsCreateKeyType,
+  KmsCreateKeyTypeEc,
+  KmsCreateKeyTypeOct,
+  KmsCreateKeyTypeOkp,
+  KmsCreateKeyTypeRsa,
 } from '../options'
 
 import {
