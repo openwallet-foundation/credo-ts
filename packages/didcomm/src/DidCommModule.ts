@@ -20,6 +20,7 @@ import { DidCommMessageRepository } from './repository'
 import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
+import { updateV0_5ToV0_6 } from './updates/0.5-0.6'
 
 export class DidCommModule implements Module {
   public readonly config: DidCommModuleConfig
@@ -117,6 +118,11 @@ export class DidCommModule implements Module {
       fromVersion: '0.4',
       toVersion: '0.5',
       doUpdate: updateV0_4ToV0_5,
+    },
+    {
+      fromVersion: '0.5',
+      toVersion: '0.6',
+      doUpdate: updateV0_5ToV0_6,
     },
   ] satisfies Update[]
 }
