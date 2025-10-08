@@ -49,7 +49,7 @@ describe('multi version protocols', () => {
     setupSubjectTransports([aliceAgent, bobAgent])
 
     // Register the test handler with the v1.3 version of the message
-    const mockHandle = jest.fn()
+    const mockHandle = vi.fn()
     aliceAgent.modules.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
 
     await aliceAgent.initialize()

@@ -16,11 +16,11 @@ const schemaRepository = new AnonCredsSchemaRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => schemaRepository),
+        resolve: vi.fn(() => schemaRepository),
       },
     })),
   }

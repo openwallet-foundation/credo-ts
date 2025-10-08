@@ -353,7 +353,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.OfferSent} to ${DidCommCredentialState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -434,7 +434,7 @@ describe('DidCommCredentialV1Protocol', () => {
         }),
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -569,7 +569,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.CredentialReceived} to ${DidCommCredentialState.Done}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock

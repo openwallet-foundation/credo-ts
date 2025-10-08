@@ -12,24 +12,24 @@ import { mockFunction } from '../../../core/tests/helpers'
 jest.mock('@credo-ts/core', () => ({
   ...jest.requireActual('@credo-ts/core'),
   Kms: {
-    KeyManagementApi: jest.fn().mockReturnValue({}),
+    KeyManagementApi: vi.fn().mockReturnValue({}),
     PublicJwk: {
-      fromFingerprint: jest.fn().mockReturnValue(mockPublicJwk),
+      fromFingerprint: vi.fn().mockReturnValue(mockPublicJwk),
     },
   },
 }))
 
 jest.mock('../../src/ledger/utils', () => ({
-  createOrGetKey: jest.fn(),
-  hederaPublicKeyFromPublicJwk: jest.fn(),
+  createOrGetKey: vi.fn(),
+  hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
 
 import { PublicKey } from '@hashgraph/sdk'
 import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 describe('KmsSigner', () => {
-  const signMock = jest.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })
-  const verifyMock = jest.fn().mockResolvedValue({ verified: true })
+  const signMock = vi.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })
+  const verifyMock = vi.fn().mockResolvedValue({ verified: true })
 
   const kmsMock = {
     sign: signMock,
@@ -37,7 +37,7 @@ describe('KmsSigner', () => {
   }
 
   const mockPublicKey = {
-    toStringDer: jest.fn().mockReturnValue('mock-der-string'),
+    toStringDer: vi.fn().mockReturnValue('mock-der-string'),
   }
 
   beforeEach(() => {

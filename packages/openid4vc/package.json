@@ -29,9 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "build:legacy": "tsc --project tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
@@ -48,7 +46,7 @@
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
     "nock": "catalog:",
-    "rimraf": "catalog:",
+
     "typescript": "catalog:"
   }
 }

@@ -13,11 +13,11 @@ const linkSecretRepository = new AnonCredsLinkSecretRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => linkSecretRepository),
+        resolve: vi.fn(() => linkSecretRepository),
       },
     })),
   }

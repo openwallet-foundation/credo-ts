@@ -15,7 +15,7 @@ const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-mockFunction(dependencyManager.resolve).mockReturnValue({ logger: { warn: jest.fn() } })
+mockFunction(dependencyManager.resolve).mockReturnValue({ logger: { warn: vi.fn() } })
 
 describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {

@@ -74,11 +74,10 @@
     "prepublishOnly": "pnpm run build",
     "cli:local": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
     "cli:local:generate": "pnpm cli:local generate",
-    "cli:dev:migrate:postgres": "pnpm cli:dev migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
-    "cli:dev:migrate:sqlite": "pnpm cli:dev migrate --dialect sqlite --database-url \"file:local.db\"",
-    "cli:dev:studio:postgres": "pnpm cli:dev studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
-    "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:../../db.db\"",
-    "test": "jest"
+    "cli:dev:migrate:postgres": "pnpm cli:local migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:migrate:sqlite": "pnpm cli:local migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:local:studio:postgres": "pnpm cli:local studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:studio:sqlite": "pnpm cli:local studio --dialect sqlite --database-url \"file:../../db.db\""
   },
   "dependencies": {
     "@credo-ts/action-menu": "workspace:*",
@@ -106,7 +105,7 @@
     "@types/yargs": "^17.0.33",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
-    "rimraf": "catalog:",
+
     "typescript": "catalog:"
   }
 }

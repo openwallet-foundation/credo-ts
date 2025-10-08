@@ -6,7 +6,7 @@ import { createOrGetKey, getMultibasePublicKey, hederaPublicKeyFromPublicJwk } f
 
 jest.mock('@hiero-did-sdk/core', () => ({
   KeysUtility: {
-    fromBytes: jest.fn(),
+    fromBytes: vi.fn(),
   },
 }))
 
@@ -28,8 +28,8 @@ describe('createOrGetKey', () => {
 
   beforeEach(() => {
     kmsMock = {
-      createKey: jest.fn(),
-      getPublicKey: jest.fn(),
+      createKey: vi.fn(),
+      getPublicKey: vi.fn(),
     } as unknown as jest.Mocked<Kms.KeyManagementApi>
   })
 
@@ -88,7 +88,7 @@ describe('hederaPublicKeyFromPublicJwk', () => {
   })
 
   it('should convert a public JWK to a Hedera PublicKey', () => {
-    const mockPublicKey = { toPublicKey: jest.fn() } as unknown as ReturnType<typeof KeysUtility.fromBytes>
+    const mockPublicKey = { toPublicKey: vi.fn() } as unknown as ReturnType<typeof KeysUtility.fromBytes>
     const mockHederaPublicKey = {} as PublicKey
 
     mockFunction(mockPublicKey.toPublicKey).mockReturnValue(mockHederaPublicKey)

@@ -14,10 +14,10 @@
     "style:check": "biome check --unsafe",
     "style:fix": "biome check --write --unsafe",
     "build": "pnpm -r --parallel run build",
-    "test:unit": "pnpm test --testPathIgnorePatterns e2e.test.ts",
-    "test:e2e": "pnpm test --testPathIgnorePatterns drizzle --testMatch '**/?(*.)e2e.test.ts'",
-    "test:drizzle": "pnpm test --testMatch '**/*drizzle*.test.ts'",
-    "test": "jest",
+    "test:unit": "pnpm test --project unit",
+    "test:e2e": "pnpm test --project e2e",
+    "test:drizzle": "pnpm test --project drizzle",
+    "test": "vitest",
     "validate": "pnpm types:check && pnpm style:check",
     "run-mediator": "ts-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
@@ -46,11 +46,9 @@
     "@credo-ts/redis-cache": "workspace:*",
     "@credo-ts/tenants": "workspace:*",
     "@credo-ts/webvh": "workspace:*",
-    "@jest/types": "^29.6.3",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
-    "@types/jest": "^30.0.0",
     "@types/node": "catalog:",
     "@types/supertest": "^6.0.3",
     "@types/varint": "^6.0.3",
@@ -58,17 +56,23 @@
     "cors": "^2.8.5",
     "drizzle-kit": "^0.31.4",
     "express": "catalog:",
-    "jest": "^30.0.3",
     "nock": "catalog:",
+    "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "supertest": "^7.1.3",
-    "ts-jest": "^29.4.0",
     "ts-node": "catalog:",
     "tsdown": "^0.15.6",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.21.3",
+    "vite": "npm:rolldown-vite@latest",
+    "vitest": "^3.2.4",
     "ws": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "npm:rolldown-vite@latest"
+    }
   },
   "resolutions": {
     "undici": "^6.20.1"

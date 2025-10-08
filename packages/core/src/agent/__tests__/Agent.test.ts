@@ -36,7 +36,7 @@ import { Agent } from '../Agent'
 
 const agentOptions = getAgentOptions('Agent Class Test', undefined, undefined, undefined, { requireDidcomm: true })
 
-const myModuleMethod = jest.fn()
+const myModuleMethod = vi.fn()
 @injectable()
 class MyApi {
   public myModuleMethod = myModuleMethod

@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@cheqd/sdk": "^5.2.1",
@@ -47,7 +46,6 @@
     "tsyringe": "catalog:"
   },
   "devDependencies": {
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -20,11 +20,11 @@ const credentialRepository = new CredentialRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => credentialRepository),
+        resolve: vi.fn(() => credentialRepository),
       },
     })),
   }

@@ -25,11 +25,11 @@ const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCo
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => ({
-  Agent: jest.fn(() => ({
+  Agent: vi.fn(() => ({
     config: agentConfig,
     context: agentContext,
     dependencyManager: {
-      resolve: jest.fn((injectionToken) =>
+      resolve: vi.fn((injectionToken) =>
         injectionToken === DidCommCredentialExchangeRepository ? credentialRepository : didCommMessageRepository
       ),
     },

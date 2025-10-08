@@ -11,29 +11,29 @@ import { Client, PrivateKey } from '@hashgraph/sdk'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 jest.mock('@hiero-did-sdk/registrar', () => ({
-  DIDUpdateBuilder: jest.fn().mockReturnValue({
-    addService: jest.fn().mockReturnThis(),
-    removeService: jest.fn().mockReturnThis(),
-    addVerificationMethod: jest.fn().mockReturnThis(),
-    removeVerificationMethod: jest.fn().mockReturnThis(),
-    addAssertionMethod: jest.fn().mockReturnThis(),
-    removeAssertionMethod: jest.fn().mockReturnThis(),
-    addAuthenticationMethod: jest.fn().mockReturnThis(),
-    removeAuthenticationMethod: jest.fn().mockReturnThis(),
-    addCapabilityDelegationMethod: jest.fn().mockReturnThis(),
-    removeCapabilityDelegationMethod: jest.fn().mockReturnThis(),
-    addCapabilityInvocationMethod: jest.fn().mockReturnThis(),
-    removeCapabilityInvocationMethod: jest.fn().mockReturnThis(),
-    addKeyAgreementMethod: jest.fn().mockReturnThis(),
-    removeKeyAgreementMethod: jest.fn().mockReturnThis(),
-    build: jest.fn(),
+  DIDUpdateBuilder: vi.fn().mockReturnValue({
+    addService: vi.fn().mockReturnThis(),
+    removeService: vi.fn().mockReturnThis(),
+    addVerificationMethod: vi.fn().mockReturnThis(),
+    removeVerificationMethod: vi.fn().mockReturnThis(),
+    addAssertionMethod: vi.fn().mockReturnThis(),
+    removeAssertionMethod: vi.fn().mockReturnThis(),
+    addAuthenticationMethod: vi.fn().mockReturnThis(),
+    removeAuthenticationMethod: vi.fn().mockReturnThis(),
+    addCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+    removeCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+    addCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+    removeCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+    addKeyAgreementMethod: vi.fn().mockReturnThis(),
+    removeKeyAgreementMethod: vi.fn().mockReturnThis(),
+    build: vi.fn(),
   }),
-  generateCreateDIDRequest: jest.fn(),
-  submitCreateDIDRequest: jest.fn(),
-  generateUpdateDIDRequest: jest.fn(),
-  submitUpdateDIDRequest: jest.fn(),
-  generateDeactivateDIDRequest: jest.fn(),
-  submitDeactivateDIDRequest: jest.fn(),
+  generateCreateDIDRequest: vi.fn(),
+  submitCreateDIDRequest: vi.fn(),
+  generateUpdateDIDRequest: vi.fn(),
+  submitUpdateDIDRequest: vi.fn(),
+  generateDeactivateDIDRequest: vi.fn(),
+  submitDeactivateDIDRequest: vi.fn(),
 }))
 
 import {
@@ -50,8 +50,8 @@ import {
 } from '@hiero-did-sdk/registrar'
 
 jest.mock('@hiero-did-sdk/resolver', () => ({
-  resolveDID: jest.fn(),
-  TopicReaderHederaHcs: jest.fn(),
+  resolveDID: vi.fn(),
+  TopicReaderHederaHcs: vi.fn(),
 }))
 
 import { resolveDID } from '@hiero-did-sdk/resolver'
@@ -73,12 +73,12 @@ const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
 }
 
 const mockKms = {
-  sign: jest.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3]) }),
-  getPublicKey: jest.fn().mockReturnValue(mockPublicJwk),
+  sign: vi.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3]) }),
+  getPublicKey: vi.fn().mockReturnValue(mockPublicJwk),
 } as unknown as Kms.KeyManagementApi
 
 const mockDidRepository = {
-  findCreatedDid: jest.fn().mockResolvedValue({
+  findCreatedDid: vi.fn().mockResolvedValue({
     keys: [
       {
         didDocumentRelativeKeyId: DID_ROOT_KEY_ID,
@@ -90,7 +90,7 @@ const mockDidRepository = {
 
 const mockAgentContext = {
   dependencyManager: {
-    resolve: jest.fn((cls) => {
+    resolve: vi.fn((cls) => {
       if (cls === Kms.KeyManagementApi) {
         return mockKms
       }
@@ -103,14 +103,14 @@ const mockAgentContext = {
 } as unknown as AgentContext
 
 const mockHederaAnonCredsRegistry = {
-  getSchema: jest.fn().mockResolvedValue('schema'),
-  registerSchema: jest.fn().mockResolvedValue('registerSchema'),
-  getCredentialDefinition: jest.fn().mockResolvedValue('credDef'),
-  registerCredentialDefinition: jest.fn().mockResolvedValue('registerCredDef'),
-  getRevocationRegistryDefinition: jest.fn().mockResolvedValue('revRegDef'),
-  registerRevocationRegistryDefinition: jest.fn().mockResolvedValue('registerRevRegDef'),
-  getRevocationStatusList: jest.fn().mockResolvedValue('revStatusList'),
-  registerRevocationStatusList: jest.fn().mockResolvedValue('registerRevStatus'),
+  getSchema: vi.fn().mockResolvedValue('schema'),
+  registerSchema: vi.fn().mockResolvedValue('registerSchema'),
+  getCredentialDefinition: vi.fn().mockResolvedValue('credDef'),
+  registerCredentialDefinition: vi.fn().mockResolvedValue('registerCredDef'),
+  getRevocationRegistryDefinition: vi.fn().mockResolvedValue('revRegDef'),
+  registerRevocationRegistryDefinition: vi.fn().mockResolvedValue('registerRevRegDef'),
+  getRevocationStatusList: vi.fn().mockResolvedValue('revStatusList'),
+  registerRevocationStatusList: vi.fn().mockResolvedValue('registerRevStatus'),
 } as unknown as HederaAnonCredsRegistry
 
 describe('HederaLedgerService', () => {
@@ -124,10 +124,10 @@ describe('HederaLedgerService', () => {
         },
       ],
       cache: {
-        get: jest.fn().mockResolvedValue(null),
-        set: jest.fn().mockResolvedValue(undefined),
-        remove: jest.fn().mockResolvedValue(undefined),
-        clear: jest.fn(),
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined),
+        clear: vi.fn(),
       },
     },
   })
@@ -324,7 +324,7 @@ describe('HederaLedgerService', () => {
       jest
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         .spyOn(service as any, 'prepareDidUpdates')
-        .mockReturnValueOnce({ build: jest.fn().mockReturnValueOnce(updatedDidDocument) })
+        .mockReturnValueOnce({ build: vi.fn().mockReturnValueOnce(updatedDidDocument) })
 
       mockFunction(generateUpdateDIDRequest).mockResolvedValueOnce(updateDidRequest)
 
@@ -356,7 +356,7 @@ describe('HederaLedgerService', () => {
     })
 
     it('should throw an error if root key is not found in deactivateDid', async () => {
-      mockFunction(mockAgentContext.dependencyManager.resolve).mockReturnValueOnce({ sign: jest.fn() })
+      mockFunction(mockAgentContext.dependencyManager.resolve).mockReturnValueOnce({ sign: vi.fn() })
 
       await expect(
         service.deactivateDid(mockAgentContext, {

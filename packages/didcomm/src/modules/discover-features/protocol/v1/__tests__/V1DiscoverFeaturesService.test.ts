@@ -152,7 +152,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processQuery', () => {
     it('should emit event and create disclosure message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock
@@ -198,7 +198,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processDisclosure', () => {
     it('should emit event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
         eventListenerMock
@@ -253,7 +253,7 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
 
   describe('processQuery', () => {
     it('should emit event and not send any message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock

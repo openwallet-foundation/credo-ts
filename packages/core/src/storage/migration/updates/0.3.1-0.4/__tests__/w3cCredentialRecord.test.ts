@@ -9,17 +9,17 @@ const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.3.1-0.4')
 const agentContext = getAgentContext()
 
 const repository = {
-  getAll: jest.fn(),
-  update: jest.fn(),
+  getAll: vi.fn(),
+  update: vi.fn(),
 }
 
 jest.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => repository),
+        resolve: vi.fn(() => repository),
       },
     })),
   }

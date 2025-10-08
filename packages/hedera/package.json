@@ -18,11 +18,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "style:check": "biome check --unsafe",
-    "style:fix": "biome check --write --unsafe"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
@@ -40,7 +36,6 @@
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
     "@hyperledger/anoncreds-nodejs": "^0.3.1",
-    "rimraf": "^4.4.0",
     "zstd-napi": "^0.0.10"
   }
 }

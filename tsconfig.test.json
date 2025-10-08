@@ -2,15 +2,8 @@
   "extends": "./tsconfig.build.json",
   "compilerOptions": {
     "baseUrl": ".",
-    "types": ["jest", "node"]
+    "types": ["node", "vitest/globals"]
   },
-  "include": [
-    "tests",
-    "samples",
-    "demo",
-    "demo-openid",
-    "packages/core/types/jest.d.ts",
-    "packages/drizzle-storage/types/shell.d.ts"
-  ],
+  "include": ["tests", "samples", "demo", "demo-openid", "packages/drizzle-storage/types/shell.d.ts"],
   "exclude": ["node_modules", "build", "**/build/**"]
 }

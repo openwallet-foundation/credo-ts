@@ -15,11 +15,11 @@ const tenantRepository = new TenantRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => tenantRepository),
+        resolve: vi.fn(() => tenantRepository),
       },
     })),
   }

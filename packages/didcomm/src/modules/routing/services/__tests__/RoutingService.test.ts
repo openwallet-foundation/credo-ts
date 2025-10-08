@@ -43,7 +43,7 @@ describe('DidCommRoutingService', () => {
     })
 
     test('emits RoutingCreatedEvent', async () => {
-      const routingListener = jest.fn()
+      const routingListener = vi.fn()
       eventEmitter.on(DidCommRoutingEventTypes.RoutingCreatedEvent, routingListener)
 
       const newRouting = await routingService.getRouting(agentContext)

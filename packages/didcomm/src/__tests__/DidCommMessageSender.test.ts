@@ -113,11 +113,11 @@ describe('DidCommMessageSender', () => {
     senderKey: senderKey,
   }
   session.inboundMessage = inboundMessage
-  session.send = jest.fn()
+  session.send = vi.fn()
 
   const sessionWithoutKeys = new DummyTransportSession('sessionWithoutKeys-123')
   sessionWithoutKeys.inboundMessage = inboundMessage
-  sessionWithoutKeys.send = jest.fn()
+  sessionWithoutKeys.send = vi.fn()
 
   const transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
@@ -146,7 +146,7 @@ describe('DidCommMessageSender', () => {
       [AgentConfig, agentConfig],
     ],
   })
-  const eventListenerMock = jest.fn()
+  const eventListenerMock = vi.fn()
 
   describe('sendMessage', () => {
     beforeEach(() => {
@@ -236,7 +236,7 @@ describe('DidCommMessageSender', () => {
     test('call send message when session send method fails', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       transportServiceFindSessionMock.mockReturnValue(session)
-      session.send = jest.fn().mockRejectedValue(new Error('some error'))
+      session.send = vi.fn().mockRejectedValue(new Error('some error'))
 
       messageSender.registerOutboundTransport(outboundTransport)
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')

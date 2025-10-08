@@ -151,7 +151,7 @@ describe('DidCommProofV1Protocol', () => {
     })
 
     test(`emits stateChange event with ${DidCommProofState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged, eventListenerMock)
 
       // when

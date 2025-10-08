@@ -38,11 +38,11 @@ const didRepository = new DidRepository(storageService, eventEmitter)
 const agentContext = getAgentContext({
   registerInstances: [
     [DidRepository, didRepository],
-    [IndyVdrPoolService, { getPoolForNamespace: jest.fn().mockReturnValue(poolMock) }],
+    [IndyVdrPoolService, { getPoolForNamespace: vi.fn().mockReturnValue(poolMock) }],
     [
       DidsApi,
       {
-        resolve: jest.fn().mockResolvedValue({
+        resolve: vi.fn().mockResolvedValue({
           didDocument: new DidDocument({
             id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
             authentication: [
@@ -55,7 +55,7 @@ const agentContext = getAgentContext({
             ],
           }),
         }),
-        resolveCreatedDidDocumentWithKeys: jest.fn().mockResolvedValue({
+        resolveCreatedDidDocumentWithKeys: vi.fn().mockResolvedValue({
           keys: [],
           didDocument: new DidDocument({
             id: 'did:indy:pool1:BzCbsNYhMrjHiqZDTUASHg',
@@ -379,7 +379,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
-    const saveCalled = jest.fn()
+    const saveCalled = vi.fn()
     eventEmitter.on<RecordSavedEvent<DidRecord>>(RepositoryEventTypes.RecordSaved, saveCalled)
 
     await indyVdrIndyDidRegistrar.create(agentContext, {

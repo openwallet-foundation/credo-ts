@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@azure/core-asynciterator-polyfill": "^1.0.2",
@@ -41,7 +40,7 @@
     "react-native": "^0.79.3",
     "react-native-fs": "^2.20.0",
     "react-native-get-random-values": "^1.8.0",
-    "rimraf": "catalog:",
+
     "typescript": "catalog:"
   },
   "peerDependencies": {

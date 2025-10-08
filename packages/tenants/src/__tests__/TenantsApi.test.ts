@@ -123,7 +123,7 @@ describe('TenantsApi', () => {
       })
 
       const tenantAgentMock = {
-        endSession: jest.fn(),
+        endSession: vi.fn(),
       } as unknown as TenantAgent
 
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
@@ -148,7 +148,7 @@ describe('TenantsApi', () => {
 
   describe('getTenantById', () => {
     test('calls get tenant by id on tenant service', async () => {
-      const tenantRecord = jest.fn() as unknown as TenantRecord
+      const tenantRecord = vi.fn() as unknown as TenantRecord
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
 
       const actualTenantRecord = await tenantsApi.getTenantById('tenant-id')
@@ -161,10 +161,10 @@ describe('TenantsApi', () => {
   describe('deleteTenantById', () => {
     test('deletes the tenant and removes the wallet', async () => {
       const tenantAgentMock = {
-        endSession: jest.fn(),
+        endSession: vi.fn(),
         context: {
           dependencyManager: {
-            deleteAgentContext: jest.fn(),
+            deleteAgentContext: vi.fn(),
           },
         },
       } as unknown as TenantAgent
@@ -180,7 +180,7 @@ describe('TenantsApi', () => {
 
   describe('getAllTenants', () => {
     test('calls get all tenants on tenant service', async () => {
-      const tenantRecords = jest.fn() as unknown as Array<TenantRecord>
+      const tenantRecords = vi.fn() as unknown as Array<TenantRecord>
       mockFunction(tenantRecordService.getAllTenants).mockResolvedValue(tenantRecords)
 
       const actualTenantRecords = await tenantsApi.getAllTenants()

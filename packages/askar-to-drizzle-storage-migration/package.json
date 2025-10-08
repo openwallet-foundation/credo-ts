@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/askar": "workspace:*",
@@ -41,7 +40,6 @@
     "@openwallet-foundation/askar-shared": "catalog:"
   },
   "devDependencies": {
-    "rimraf": "catalog:",
     "typescript": "catalog:",
     "@openwallet-foundation/askar-shared": "catalog:"
   }

@@ -36,11 +36,11 @@ const outOfBandRepository = new OutOfBandRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((cls) => {
+        resolve: vi.fn((cls) => {
           if (cls === DidCommConnectionRepository) {
             return connectionRepository
           }

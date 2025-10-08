@@ -24,10 +24,10 @@ import {
 } from './mock-resources'
 
 // Mock the WebvhDidResolver
-const mockResolveResource = jest.fn()
+const mockResolveResource = vi.fn()
 jest.mock('../../../dids/WebvhDidResolver', () => {
   return {
-    WebvhDidResolver: jest.fn().mockImplementation(() => {
+    WebvhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -48,7 +48,7 @@ interface DidDocumentOptions {
 }
 
 // Mock DidsApi
-const mockResolveDidDocument = jest.fn()
+const mockResolveDidDocument = vi.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
 }

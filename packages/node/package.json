@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@2060.io/ffi-napi": "^4.0.9",
@@ -46,7 +45,7 @@
     "@types/node": "catalog:",
     "@types/ws": "catalog:",
     "nock": "catalog:",
-    "rimraf": "catalog:",
+
     "typescript": "catalog:"
   }
 }

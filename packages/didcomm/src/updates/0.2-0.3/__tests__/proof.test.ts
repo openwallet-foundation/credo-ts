@@ -20,11 +20,11 @@ const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((token) => (token === ProofRepositoryMock ? proofRepository : didCommMessageRepository)),
+        resolve: vi.fn((token) => (token === ProofRepositoryMock ? proofRepository : didCommMessageRepository)),
       },
     })),
   }

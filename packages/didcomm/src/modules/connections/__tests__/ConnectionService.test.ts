@@ -393,7 +393,7 @@ describe('DidCommConnectionService', () => {
     it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Sender}`, async () => {
       expect.assertions(1)
 
-      const inboundMessage = new DidCommInboundMessageContext(jest.fn()(), {
+      const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), {
         agentContext,
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
@@ -427,7 +427,7 @@ describe('DidCommConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        const inboundMessage = new DidCommInboundMessageContext(jest.fn()(), { agentContext })
+        const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), { agentContext })
         const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrow(
@@ -615,7 +615,7 @@ describe('DidCommConnectionService', () => {
         role: DidCommDidExchangeRole.Responder,
         state: DidCommDidExchangeState.RequestSent,
       })
-      const messageContext = new DidCommInboundMessageContext(jest.fn()(), {
+      const messageContext = new DidCommInboundMessageContext(vi.fn()(), {
         agentContext,
         connection: connectionRecord,
         recipientKey: Kms.PublicJwk.fromPublicKey({

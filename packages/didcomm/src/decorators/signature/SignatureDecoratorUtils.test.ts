@@ -8,7 +8,7 @@ import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecorato
 jest.mock('../../../../core/src/utils/timestamp', () => {
   return {
     __esModule: true,
-    default: jest.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
+    default: vi.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
   }
 })
 

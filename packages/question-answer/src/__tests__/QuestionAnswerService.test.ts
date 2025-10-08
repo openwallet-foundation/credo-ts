@@ -73,7 +73,7 @@ describe('QuestionAnswerService', () => {
 
   describe('create question', () => {
     it('emits a question with question text, valid responses, and question answer record', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<QuestionAnswerStateChangedEvent>(
         QuestionAnswerEventTypes.QuestionAnswerStateChanged,
         eventListenerMock
@@ -130,7 +130,7 @@ describe('QuestionAnswerService', () => {
     })
 
     it('emits an answer with a valid response and question answer record', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<QuestionAnswerStateChangedEvent>(
         QuestionAnswerEventTypes.QuestionAnswerStateChanged,
         eventListenerMock

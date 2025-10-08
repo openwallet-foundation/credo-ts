@@ -10,13 +10,13 @@ import { ActionMenuRepository } from '../repository'
 import { ActionMenuService } from '../services'
 
 const featureRegistry = {
-  register: jest.fn(),
+  register: vi.fn(),
 } as unknown as DidCommFeatureRegistry
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
   resolve: () => featureRegistry,
 } as unknown as DependencyManager
 

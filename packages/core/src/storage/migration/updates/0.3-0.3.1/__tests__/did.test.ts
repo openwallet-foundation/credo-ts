@@ -16,11 +16,11 @@ const didRepository = new DidRepositoryMock()
 
 jest.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => didRepository),
+        resolve: vi.fn(() => didRepository),
       },
     })),
   }

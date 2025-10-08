@@ -162,7 +162,7 @@ describe('DidCommOutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
       const messageContext = new DidCommInboundMessageContext(reuseMessage, {
@@ -377,7 +377,7 @@ describe('DidCommOutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' })
       const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
@@ -461,7 +461,7 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('emits an OutOfBandStateChangedEvent', async () => {
-      const stateChangedListener = jest.fn()
+      const stateChangedListener = vi.fn()
 
       const mockOob = getMockOutOfBand({
         state: DidCommOutOfBandState.Initial,

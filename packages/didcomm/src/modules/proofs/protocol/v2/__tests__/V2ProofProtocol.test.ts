@@ -45,7 +45,7 @@ const connectionService = new connectionServiceMock()
 const didCommMessageRepository = new didCommMessageRepositoryMock()
 const proofFormatService = {
   supportsFormat: () => true,
-  processRequest: jest.fn(),
+  processRequest: vi.fn(),
 } as unknown as DidCommProofFormatService
 
 const agentConfig = getAgentConfig('V2ProofProtocolTest')
@@ -149,7 +149,7 @@ describe('DidCommProofV2Protocol', () => {
     })
 
     test(`emits stateChange event with ${DidCommProofState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged, eventListenerMock)
 
       // when

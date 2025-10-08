@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
@@ -42,7 +41,7 @@
     "@stablelib/ed25519": "^1.0.2",
     "@types/ref-array-di": "^1.2.6",
     "@types/ref-struct-di": "^1.1.10",
-    "rimraf": "catalog:",
+
     "rxjs": "catalog:",
     "typescript": "catalog:"
   },

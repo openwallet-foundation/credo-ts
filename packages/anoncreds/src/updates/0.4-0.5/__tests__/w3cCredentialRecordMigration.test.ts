@@ -43,20 +43,20 @@ const stop = new Subject<boolean>()
 const eventEmitter = new EventEmitter(agentDependencies, stop)
 
 const w3cRepo = {
-  save: jest.fn(),
-  update: jest.fn(),
+  save: vi.fn(),
+  update: vi.fn(),
 }
 
 const credentialExchangeRepo = {
-  findByQuery: jest.fn(),
-  update: jest.fn(),
+  findByQuery: vi.fn(),
+  update: vi.fn(),
 }
 
 const inMemoryLruCache = {
-  get: jest.fn(),
-  set: jest.fn(),
-  clear: jest.fn(),
-  remove: jest.fn(),
+  get: vi.fn(),
+  set: vi.fn(),
+  clear: vi.fn(),
+  remove: vi.fn(),
 }
 
 const cacheModuleConfig = new CacheModuleConfig({
@@ -87,18 +87,18 @@ const agentContext = getAgentContext({
 })
 
 const anonCredsRepo = {
-  getAll: jest.fn(),
-  delete: jest.fn(),
+  getAll: vi.fn(),
+  delete: vi.fn(),
 }
 
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        resolve: jest.fn((repo: any) => {
+        resolve: vi.fn((repo: any) => {
           if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
             return anonCredsRepo
           }

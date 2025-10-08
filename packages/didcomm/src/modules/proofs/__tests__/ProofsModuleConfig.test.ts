@@ -14,7 +14,7 @@ describe('ProofsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const proofProtocol = jest.fn() as unknown as DidCommProofProtocol
+    const proofProtocol = vi.fn() as unknown as DidCommProofProtocol
     const config = new DidCommProofsModuleConfig({
       autoAcceptProofs: DidCommAutoAcceptProof.Always,
       proofProtocols: [proofProtocol],

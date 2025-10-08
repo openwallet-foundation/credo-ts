@@ -44,7 +44,7 @@ describe('DidCommDispatcher', () => {
       const customProtocolMessage = new CustomProtocolMessage({})
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
 
       await dispatcher.dispatch(inboundMessageContext)
@@ -65,7 +65,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       messageHandlerRegistry.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
 
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
@@ -94,8 +94,8 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
-      const secondMiddleware = jest.fn()
+      const firstMiddleware = vi.fn().mockImplementation(async (_, next) => next())
+      const secondMiddleware = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .registerMessageHandlerMiddleware(firstMiddleware)
@@ -135,8 +135,8 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
-      const secondMiddleware = jest.fn()
+      const firstMiddleware = vi.fn().mockImplementation(async (_, next) => next())
+      const secondMiddleware = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .registerMessageHandlerMiddleware(firstMiddleware)
@@ -176,7 +176,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const fallbackMessageHandler = jest.fn()
+      const fallbackMessageHandler = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .setFallbackMessageHandler(fallbackMessageHandler)
@@ -207,7 +207,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlers([
         {
           supportedMessages: [CustomProtocolMessage],
@@ -215,7 +215,7 @@ describe('DidCommDispatcher', () => {
         },
       ])
 
-      const middleware = jest.fn()
+      const middleware = vi.fn()
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)
       expect(mockHandle).not.toHaveBeenCalled()
@@ -247,7 +247,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const handle = jest.fn()
+      const handle = vi.fn()
       const middleware = jest
         .fn()
         .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext, next) => {
@@ -284,7 +284,7 @@ describe('DidCommDispatcher', () => {
         agentConfig.logger
       )
 
-      const connectionMock = jest.fn() as unknown as DidCommConnectionRecord
+      const connectionMock = vi.fn() as unknown as DidCommConnectionRecord
 
       const customProtocolMessage = new CustomProtocolMessage({
         id: '55170d10-b91f-4df2-9dcd-6deb4e806c1b',

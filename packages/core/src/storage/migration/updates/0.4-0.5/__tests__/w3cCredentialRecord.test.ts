@@ -9,12 +9,12 @@ import * as testModule from '../w3cCredentialRecord'
 const agentConfig = getAgentConfig('Migration W3cCredentialRecord 0.4-0.5')
 
 const repository = {
-  getAll: jest.fn(),
-  update: jest.fn(),
+  getAll: vi.fn(),
+  update: vi.fn(),
 }
 
 const w3cJsonLdCredentialService = {
-  getExpandedTypesForCredential: jest.fn().mockResolvedValue(['https://example.com#example']),
+  getExpandedTypesForCredential: vi.fn().mockResolvedValue(['https://example.com#example']),
 }
 
 const agentContext = getAgentContext({
@@ -27,7 +27,7 @@ const agentContext = getAgentContext({
 
 jest.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: agentContext.dependencyManager,

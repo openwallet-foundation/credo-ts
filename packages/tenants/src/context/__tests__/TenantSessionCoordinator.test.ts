@@ -41,7 +41,7 @@ describe('TenantSessionCoordinator', () => {
 
   describe('getContextForSession', () => {
     test('returns the context from the tenantAgentContextMapping and increases the session count if already available', async () => {
-      const tenant1AgentContext = jest.fn() as unknown as AgentContext
+      const tenant1AgentContext = vi.fn() as unknown as AgentContext
 
       const tenant1 = {
         agentContext: tenant1AgentContext,
@@ -90,8 +90,8 @@ describe('TenantSessionCoordinator', () => {
       const extendSpy = jest.spyOn(agentContext.config, 'extend')
 
       const tenantDependencyManager = {
-        registerInstance: jest.fn(),
-        initializeAgentContext: jest.fn(),
+        registerInstance: vi.fn(),
+        initializeAgentContext: vi.fn(),
       } as unknown as DependencyManager
 
       createChildSpy.mockReturnValue(tenantDependencyManager)
@@ -193,7 +193,7 @@ describe('TenantSessionCoordinator', () => {
     test('Returns early and does not release a session if the agent context correlation id matches the root agent context', async () => {
       const rootAgentContextMock = {
         contextCorrelationId: 'mock',
-        dependencyManager: { dispose: jest.fn() },
+        dependencyManager: { dispose: vi.fn() },
         isRootAgentContext: true,
       } as unknown as AgentContext
       await tenantSessionCoordinator.endAgentContextSession(rootAgentContextMock)
@@ -233,7 +233,7 @@ describe('TenantSessionCoordinator', () => {
 
     test('closes the agent context and removes the agent context mapping if the number of sessions reaches 0', async () => {
       const tenant1AgentContext = {
-        dependencyManager: { closeAgentContext: jest.fn() },
+        dependencyManager: { closeAgentContext: vi.fn() },
         contextCorrelationId: 'tenant-tenant1',
       } as unknown as AgentContext
 

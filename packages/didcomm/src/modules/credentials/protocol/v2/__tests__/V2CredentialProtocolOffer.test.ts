@@ -77,12 +77,12 @@ export const testCredentialFormatService = {
       },
     ],
   }),
-  acceptRequest: jest.fn(),
-  deleteCredentialById: jest.fn(),
-  processCredential: jest.fn(),
-  acceptOffer: jest.fn(),
-  processRequest: jest.fn(),
-  processOffer: jest.fn(),
+  acceptRequest: vi.fn(),
+  deleteCredentialById: vi.fn(),
+  processCredential: vi.fn(),
+  acceptOffer: vi.fn(),
+  processRequest: vi.fn(),
+  processOffer: vi.fn(),
 } as unknown as TestCredentialFormatService
 
 // Mock classes
@@ -169,7 +169,7 @@ describe('V2CredentialProtocolOffer', () => {
     })
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.OfferSent} state`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -254,7 +254,7 @@ describe('V2CredentialProtocolOffer', () => {
     })
 
     test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock

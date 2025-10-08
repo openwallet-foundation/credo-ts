@@ -61,7 +61,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
@@ -87,7 +87,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
@@ -129,7 +129,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
       mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
@@ -156,7 +156,7 @@ describe('TenantAgentContextProvider', () => {
 
   describe('disposeAgentContext', () => {
     test('calls disposeAgentContextSession on tenant session coordinator', async () => {
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       await tenantAgentContextProvider.endSessionForAgentContext(tenantAgentContext)
 

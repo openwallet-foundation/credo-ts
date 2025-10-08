@@ -28,12 +28,12 @@ describe('DependencyManager', () => {
     it('calls the register method for all module plugins', () => {
       @injectable()
       class Module1 implements Module {
-        public register = jest.fn()
+        public register = vi.fn()
       }
 
       @injectable()
       class Module2 implements Module {
-        public register = jest.fn()
+        public register = vi.fn()
       }
 
       const module1 = new Module1()
@@ -133,7 +133,7 @@ describe('DependencyManager', () => {
 
     it('inherits the registeredModules from the parent dependency manager', () => {
       const module = {
-        register: jest.fn(),
+        register: vi.fn(),
       }
 
       dependencyManager.registerModules({

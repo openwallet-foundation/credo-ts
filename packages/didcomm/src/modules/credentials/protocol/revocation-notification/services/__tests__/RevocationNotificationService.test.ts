@@ -58,7 +58,7 @@ describe('RevocationNotificationService', () => {
 
   describe('v1ProcessRevocationNotification', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -123,7 +123,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -152,7 +152,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -174,7 +174,7 @@ describe('RevocationNotificationService', () => {
 
   describe('v2ProcessRevocationNotification', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -236,7 +236,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -266,7 +266,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,

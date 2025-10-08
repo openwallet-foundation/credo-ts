@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
@@ -40,7 +39,6 @@
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
     "reflect-metadata": "catalog:",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

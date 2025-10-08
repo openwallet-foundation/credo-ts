@@ -5,9 +5,9 @@ import { TenantRoutingRecord } from '../TenantRoutingRecord'
 import { TenantRoutingRepository } from '../TenantRoutingRepository'
 
 const storageServiceMock = {
-  findByQuery: jest.fn(),
+  findByQuery: vi.fn(),
 } as unknown as StorageService<TenantRoutingRecord>
-const eventEmitter = jest.fn() as unknown as EventEmitter
+const eventEmitter = vi.fn() as unknown as EventEmitter
 const agentContext = getAgentContext({
   registerInstances: [
     [

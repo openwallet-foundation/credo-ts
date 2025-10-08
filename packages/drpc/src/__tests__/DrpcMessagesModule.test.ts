@@ -11,9 +11,9 @@ import { DrpcService } from '../services'
 describe('DrpcModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
       resolve: () => {
         return getAgentConfig('dprc')
       },

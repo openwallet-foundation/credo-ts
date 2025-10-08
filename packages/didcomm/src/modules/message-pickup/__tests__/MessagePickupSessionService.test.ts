@@ -46,8 +46,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     // Add the session to the instance
@@ -83,8 +83,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {
@@ -112,8 +112,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {

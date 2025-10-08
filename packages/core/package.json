@@ -30,7 +30,8 @@
   "scripts": {
     "build": "tsdown",
     "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+    "test2": "vitest packages/core/src/modules/sd-jwt-vc/__tests__/SdJwtVcService.test.ts"
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",
@@ -82,7 +83,7 @@
     "@types/object-inspect": "^1.8.0",
     "@types/varint": "^6.0.0",
     "nock": "catalog:",
-    "rimraf": "catalog:",
+
     "tslog": "^4.8.2",
     "typescript": "catalog:"
   }

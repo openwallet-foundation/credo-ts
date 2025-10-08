@@ -22,9 +22,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand --config jest.config.js"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
@@ -36,7 +34,6 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
-    "rimraf": "^4.4.0",
     "typescript": "~5.5.2"
   }
 }

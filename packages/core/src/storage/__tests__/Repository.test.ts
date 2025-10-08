@@ -60,7 +60,7 @@ describe('Repository', () => {
     })
 
     it('should emit saved event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordSavedEvent<TestRecord>>(RepositoryEventTypes.RecordSaved, eventListenerMock)
 
       // given
@@ -93,7 +93,7 @@ describe('Repository', () => {
     })
 
     it('should emit updated event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordUpdatedEvent<TestRecord>>(RepositoryEventTypes.RecordUpdated, eventListenerMock)
 
       // given
@@ -126,7 +126,7 @@ describe('Repository', () => {
     })
 
     it('should emit deleted event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
 
       // given
@@ -158,7 +158,7 @@ describe('Repository', () => {
     })
 
     it('should emit deleted event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<RecordDeletedEvent<TestRecord>>(RepositoryEventTypes.RecordDeleted, eventListenerMock)
 
       const record = getRecord({ id: 'test-id' })

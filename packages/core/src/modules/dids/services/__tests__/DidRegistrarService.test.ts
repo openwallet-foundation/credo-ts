@@ -10,13 +10,13 @@ const agentContext = getAgentContext()
 
 const didRegistrarMock = {
   supportedMethods: ['key'],
-  create: jest.fn(),
-  update: jest.fn(),
-  deactivate: jest.fn(),
+  create: vi.fn(),
+  update: vi.fn(),
+  deactivate: vi.fn(),
 } as DidRegistrar
 
 const didResolverMock = {
-  invalidateCacheForDid: jest.fn(),
+  invalidateCacheForDid: vi.fn(),
 } as unknown as DidResolverService
 
 const didRegistrarService = new DidRegistrarService(

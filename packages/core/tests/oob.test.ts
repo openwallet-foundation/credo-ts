@@ -271,7 +271,7 @@ describe('out of band', () => {
     })
 
     test('emits OutOfBandStateChanged event', async () => {
-      const eventListener = jest.fn()
+      const eventListener = vi.fn()
 
       faberAgent.events.on(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation({
@@ -450,7 +450,7 @@ describe('out of band', () => {
     })
 
     test('do not process requests when a connection is not ready', async () => {
-      const eventListener = jest.fn()
+      const eventListener = vi.fn()
       aliceAgent.events.on<DidCommMessageReceivedEvent>(DidCommEventTypes.DidCommMessageReceived, eventListener)
 
       const { message } = await faberAgent.modules.credentials.createOffer(credentialTemplate)
@@ -519,8 +519,8 @@ describe('out of band', () => {
     })
 
     test('do not create a new connection when no messages and handshake reuse succeeds', async () => {
-      const aliceReuseListener = jest.fn()
-      const faberReuseListener = jest.fn()
+      const aliceReuseListener = vi.fn()
+      const faberReuseListener = vi.fn()
 
       // Create first connection
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
@@ -599,7 +599,7 @@ describe('out of band', () => {
     })
 
     test('create a new connection when connection exists and reuse is false', async () => {
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
       // Create first connection
       const outOfBandRecord = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
@@ -678,7 +678,7 @@ describe('out of band', () => {
     })
 
     test('emits OutOfBandStateChanged event', async () => {
-      const eventListener = jest.fn()
+      const eventListener = vi.fn()
       const { outOfBandInvitation, id } = await faberAgent.modules.oob.createInvitation(makeConnectionConfig)
 
       aliceAgent.events.on(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)

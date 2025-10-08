@@ -37,11 +37,11 @@ const registryService = {
 }
 jest.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((injectionSymbol) =>
+        resolve: vi.fn((injectionSymbol) =>
           injectionSymbol === AnonCredsCredentialDefinitionRepository ? credentialDefinitionRepository : registryService
         ),
       },

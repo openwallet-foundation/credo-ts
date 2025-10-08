@@ -150,7 +150,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
     })
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.ProposalSent} state`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -264,7 +264,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
     })
 
     test(`emits stateChange event with a new credential in ${DidCommCredentialState.OfferSent} state`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -376,7 +376,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
     })
 
     test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock

@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
@@ -45,7 +44,6 @@
     "@sphereon/pex-models": "catalog:",
     "@types/luxon": "^3.2.0",
     "reflect-metadata": "catalog:",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

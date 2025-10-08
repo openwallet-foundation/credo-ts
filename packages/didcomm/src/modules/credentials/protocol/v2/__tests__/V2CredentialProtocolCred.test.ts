@@ -243,10 +243,10 @@ export const testCredentialFormatService = {
     _agentContext: AgentContext,
     _options: DidCommCredentialFormatAcceptRequestOptions<TestCredentialFormat>
   ) => ({ attachment: credentialAttachment, format: credentialFormat }),
-  deleteCredentialById: jest.fn(),
-  processCredential: jest.fn(),
+  deleteCredentialById: vi.fn(),
+  processCredential: vi.fn(),
   acceptOffer: () => ({ attachment: requestAttachment, format: requestFormat }),
-  processRequest: jest.fn(),
+  processRequest: vi.fn(),
 } as unknown as TestCredentialFormatService
 
 describe('credentialProtocol', () => {
@@ -368,7 +368,7 @@ describe('credentialProtocol', () => {
         agentContext,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -436,7 +436,7 @@ describe('credentialProtocol', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       // given
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
@@ -543,7 +543,7 @@ describe('credentialProtocol', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock

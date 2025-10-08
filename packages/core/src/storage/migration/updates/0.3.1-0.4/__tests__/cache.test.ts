@@ -6,17 +6,17 @@ const agentConfig = getAgentConfig('Migration Cache 0.3.1-0.4')
 const agentContext = getAgentContext()
 
 const storageService = {
-  getAll: jest.fn(),
-  deleteById: jest.fn(),
+  getAll: vi.fn(),
+  deleteById: vi.fn(),
 }
 
 jest.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => storageService),
+        resolve: vi.fn(() => storageService),
       },
     })),
   }

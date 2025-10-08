@@ -10,9 +10,9 @@ import { DidCommDiscoverFeaturesV2Service } from '../protocol/v2'
 describe('DiscoverFeaturesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
     } as unknown as DependencyManager
 
     new DidCommDiscoverFeaturesModule().register(dependencyManager)

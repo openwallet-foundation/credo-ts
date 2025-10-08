@@ -29,8 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@astronautlabs/jsonpath": "catalog:",
@@ -45,7 +44,6 @@
     "@credo-ts/node": "workspace:*",
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/anoncreds-shared": "catalog:",
-    "rimraf": "catalog:",
     "rxjs": "catalog:",
     "typescript": "catalog:"
   },

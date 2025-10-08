@@ -5,18 +5,18 @@ import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 import { did, didDocument, didResolutionMetadata, parsedDid } from './fixtures/did-document'
 
 const mockLedgerService = {
-  resolveDid: jest.fn(),
+  resolveDid: vi.fn(),
 } as unknown as HederaLedgerService
 
 const mockAgentContext = {
   config: {
     logger: {
-      trace: jest.fn(),
-      debug: jest.fn(),
+      trace: vi.fn(),
+      debug: vi.fn(),
     },
   },
   dependencyManager: {
-    resolve: jest.fn().mockImplementation((cls) => {
+    resolve: vi.fn().mockImplementation((cls) => {
       if (cls === HederaLedgerService) return mockLedgerService
     }),
   },

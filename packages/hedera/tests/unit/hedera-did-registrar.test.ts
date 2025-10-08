@@ -7,29 +7,29 @@ import { HederaDidUpdateOptions, HederaLedgerService } from '../../src/ledger/He
 import { did, didDocument, didResolutionMetadata } from './fixtures/did-document'
 
 const mockDidRepository = {
-  save: jest.fn(),
-  findCreatedDid: jest.fn(),
-  update: jest.fn(),
+  save: vi.fn(),
+  findCreatedDid: vi.fn(),
+  update: vi.fn(),
 } as unknown as DidRepository
 
 const mockLedgerService = {
-  createDid: jest.fn(),
-  resolveDid: jest.fn(),
-  updateDid: jest.fn(),
-  deactivateDid: jest.fn(),
+  createDid: vi.fn(),
+  resolveDid: vi.fn(),
+  updateDid: vi.fn(),
+  deactivateDid: vi.fn(),
 } as unknown as HederaLedgerService
 
 const mockAgentContext = {
   dependencyManager: {
-    resolve: jest.fn().mockImplementation((cls) => {
+    resolve: vi.fn().mockImplementation((cls) => {
       if (cls === DidRepository) return mockDidRepository
       if (cls === HederaLedgerService) return mockLedgerService
     }),
   },
   config: {
     logger: {
-      debug: jest.fn(),
-      error: jest.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
     },
   },
 } as unknown as AgentContext

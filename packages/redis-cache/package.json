@@ -29,15 +29,13 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
     "ioredis": "^5.6.1"
   },
   "devDependencies": {
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }
