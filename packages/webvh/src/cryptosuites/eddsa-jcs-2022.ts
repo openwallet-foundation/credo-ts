@@ -9,7 +9,7 @@ import {
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 import { WebVhResource } from '../anoncreds/utils/transform'
-import { ProofOptions } from './types'
+import { type ProofOptions } from './types'
 
 export class EddsaJcs2022Cryptosuite {
   didApi: DidsApi

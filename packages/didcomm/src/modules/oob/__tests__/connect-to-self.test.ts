@@ -4,7 +4,7 @@ import { Subject } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
-import { Agent } from '../../../../../core'
+import { Agent } from '../../../../../core/src/index'
 import { getAgentOptions } from '../../../../../core/tests/helpers'
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../connections'
 import { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'

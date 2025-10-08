@@ -1,8 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowJs": false,
-    "typeRoots": ["../../node_modules/@types", "src/types", "../../node_modules"],
-    "types": ["node", "vitest/globals"]
+    "allowJs": false
   }
 }

@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { type UserConfig } from 'tsdown'
 
 export default [
@@ -9,7 +10,7 @@ export default [
     target: 'es2020',
     dts: {
       sourcemap: true,
-      tsconfig: 'tsconfig.build.json',
+      tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),
     },
     platform: 'neutral',
     logLevel: 'error',
@@ -22,7 +23,7 @@ export default [
     target: 'es2020',
     dts: {
       sourcemap: true,
-      tsconfig: 'tsconfig.build.json',
+      tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),
     },
     platform: 'neutral',
     logLevel: 'error',

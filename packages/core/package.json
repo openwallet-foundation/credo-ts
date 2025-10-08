@@ -29,9 +29,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "pnpm run build",
-    "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
-    "test2": "vitest packages/core/src/modules/sd-jwt-vc/__tests__/SdJwtVcService.test.ts"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",

@@ -2,20 +2,21 @@ import type { AgentContext } from '@credo-ts/core'
 
 import { Kms } from '@credo-ts/core'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
-import { TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
+import { type TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
 
-jest.mock('../../../../core/src/agent/EventEmitter')
-jest.mock('../../services/TenantRecordService')
-jest.mock('../TenantSessionCoordinator')
+vi.mock('../../../../core/src/agent/EventEmitter')
+vi.mock('../../services/TenantRecordService')
+vi.mock('../TenantSessionCoordinator')
 
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const TenantRecordServiceMock = TenantRecordService as jest.Mock<TenantRecordService>
-const TenantSessionCoordinatorMock = TenantSessionCoordinator as jest.Mock<TenantSessionCoordinator>
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
+const TenantRecordServiceMock = TenantRecordService as MockedClassConstructor<typeof TenantRecordService>
+const TenantSessionCoordinatorMock = TenantSessionCoordinator as MockedClassConstructor<typeof TenantSessionCoordinator>
 
 const tenantRecordService = new TenantRecordServiceMock()
 const tenantSessionCoordinator = new TenantSessionCoordinatorMock()
@@ -48,7 +49,7 @@ const inboundMessage = {
 
 describe('TenantAgentContextProvider', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getAgentContextForContextCorrelationId', () => {

@@ -3,8 +3,9 @@ import type { DidCommRouting } from '../../../models'
 
 import { Subject } from 'rxjs'
 
-import { Kms, TypedArrayEncoder } from '../../../../../core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/service/DidCommV1Service'
@@ -44,14 +45,16 @@ import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService } from '../services'
 import { convertToNewDidDocument } from '../services/helpers'
 
-jest.mock('../repository/DidCommConnectionRepository')
-jest.mock('../../oob/repository/DidCommOutOfBandRepository')
-jest.mock('../../oob/DidCommOutOfBandService')
-jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
-const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
-const OutOfBandRepositoryMock = DidCommOutOfBandRepository as jest.Mock<DidCommOutOfBandRepository>
-const OutOfBandServiceMock = DidCommOutOfBandService as jest.Mock<DidCommOutOfBandService>
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../repository/DidCommConnectionRepository')
+vi.mock('../../oob/repository/DidCommOutOfBandRepository')
+vi.mock('../../oob/DidCommOutOfBandService')
+vi.mock('../../../../../core/src/modules/dids/repository/DidRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
+const OutOfBandServiceMock = DidCommOutOfBandService as MockedClassConstructor<typeof DidCommOutOfBandService>
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -109,14 +112,12 @@ describe('DidCommConnectionService', () => {
     }
 
     mockFunction(didRepository.getById).mockResolvedValue(
-      Promise.resolve(
-        new DidRecord({
-          did: 'did:peer:123',
-          role: DidDocumentRole.Created,
-        })
-      )
+      new DidRecord({
+        did: 'did:peer:123',
+        role: DidDocumentRole.Created,
+      })
     )
-    mockFunction(didRepository.findByQuery).mockResolvedValue(Promise.resolve([]))
+    mockFunction(didRepository.findByQuery).mockResolvedValue([])
   })
 
   describe('createRequest', () => {

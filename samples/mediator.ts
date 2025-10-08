@@ -17,7 +17,7 @@ import type { InitConfig } from '@credo-ts/core'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
-import { Server } from 'ws'
+import { WebSocketServer } from 'ws'
 
 import { TestLogger } from '../packages/core/tests/logger'
 
@@ -40,7 +40,7 @@ const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 // We create our own instance of express here. This is not required
 // but allows use to use the same server (and port) for both WebSockets and HTTP
 const app = express()
-const socketServer = new Server({ noServer: true })
+const socketServer = new WebSocketServer({ noServer: true })
 
 const endpoints = process.env.AGENT_ENDPOINTS?.split(',') ?? [`http://localhost:${port}`, `ws://localhost:${port}`]
 
@@ -98,16 +98,12 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
   }
 })
 
-const run = async () => {
-  await agent.initialize()
+await agent.initialize()
 
-  // When an 'upgrade' to WS is made on our http server, we forward the
-  // request to the WS server
-  httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
-    socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
-      socketServer.emit('connection', socket, request)
-    })
+// When an 'upgrade' to WS is made on our http server, we forward the
+// request to the WS server
+httpInboundTransport.server?.on('upgrade', (request, socket, head) => {
+  socketServer.handleUpgrade(request, socket as Socket, head, (socket) => {
+    socketServer.emit('connection', socket, request)
   })
-}
-
-void run()
+})

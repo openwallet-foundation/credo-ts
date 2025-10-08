@@ -9,6 +9,7 @@ import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtoc
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import {
@@ -86,18 +87,20 @@ export const testCredentialFormatService = {
 } as unknown as TestCredentialFormatService
 
 // Mock classes
-jest.mock('../../../repository/DidCommCredentialExchangeRepository')
-jest.mock('../../../../../repository/DidCommMessageRepository')
-jest.mock('../../../../routing/services/DidCommRoutingService')
-jest.mock('../../../../connections/services/DidCommConnectionService')
-jest.mock('../../../../../DidCommDispatcher')
+vi.mock('../../../repository/DidCommCredentialExchangeRepository')
+vi.mock('../../../../../repository/DidCommMessageRepository')
+vi.mock('../../../../routing/services/DidCommRoutingService')
+vi.mock('../../../../connections/services/DidCommConnectionService')
+vi.mock('../../../../../DidCommDispatcher')
 
 // Mock typed object
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const RoutingServiceMock = DidCommRoutingService as jest.Mock<DidCommRoutingService>
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
-const DispatcherMock = DidCommDispatcher as jest.Mock<DidCommDispatcher>
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
+const RoutingServiceMock = DidCommRoutingService as MockedClassConstructor<typeof DidCommRoutingService>
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
+const DispatcherMock = DidCommDispatcher as MockedClassConstructor<typeof DidCommDispatcher>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
@@ -138,7 +141,7 @@ describe('V2CredentialProtocolOffer', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('createOffer', () => {

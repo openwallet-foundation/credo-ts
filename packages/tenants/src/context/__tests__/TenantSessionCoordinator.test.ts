@@ -4,6 +4,7 @@ import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import { AgentConfig, AgentContext } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
 import { TenantsModuleConfig } from '../../TenantsModuleConfig'
@@ -11,8 +12,8 @@ import { TenantRecord } from '../../repository'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
 import { TenantSessionMutex } from '../TenantSessionMutex'
 
-jest.mock('../TenantSessionMutex')
-const TenantSessionMutexMock = TenantSessionMutex as jest.Mock<TenantSessionMutex>
+vi.mock('../TenantSessionMutex')
+const TenantSessionMutexMock = TenantSessionMutex as MockedClassConstructor<typeof TenantSessionMutex>
 
 // tenantAgentContextMapping is private, but we need to access it to properly test this class. Adding type override to
 // make sure we don't get a lot of type errors.
@@ -35,8 +36,8 @@ const tenantSessionMutexMock = TenantSessionMutexMock.mock.instances[0]
 describe('TenantSessionCoordinator', () => {
   afterEach(() => {
     tenantSessionCoordinator.tenantAgentContextMapping = {}
-    jest.resetAllMocks()
-    jest.clearAllMocks()
+    vi.resetAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getContextForSession', () => {
@@ -86,8 +87,8 @@ describe('TenantSessionCoordinator', () => {
         },
         storageVersion: '0.5',
       })
-      const createChildSpy = jest.spyOn(agentContext.dependencyManager, 'createChild')
-      const extendSpy = jest.spyOn(agentContext.config, 'extend')
+      const createChildSpy = vi.spyOn(agentContext.dependencyManager, 'createChild')
+      const extendSpy = vi.spyOn(agentContext.config, 'extend')
 
       const tenantDependencyManager = {
         registerInstance: vi.fn(),

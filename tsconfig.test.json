@@ -5,5 +5,5 @@
     "types": ["node", "vitest/globals"]
   },
   "include": ["tests", "samples", "demo", "demo-openid", "packages/drizzle-storage/types/shell.d.ts"],
-  "exclude": ["node_modules", "build", "**/build/**"]
+  "exclude": ["node_modules", "node_modules/**", "**/node_modules/**", "build", "**/build/**"]
 }

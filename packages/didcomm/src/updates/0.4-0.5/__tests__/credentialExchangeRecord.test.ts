@@ -1,5 +1,6 @@
 import type { CredentialRecordBinding } from '../../../modules/credentials'
 
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
@@ -16,15 +17,17 @@ import * as testModule from '../credentialExchangeRecord'
 const agentConfig = getAgentConfig('Migration - Credential Exchange Record - 0.4-0.5')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
+vi.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../repository/DidCommMessageRepository')
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+vi.mock('../../../repository/DidCommMessageRepository')
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => ({
+vi.mock('../../../../../core/src/agent/Agent', () => ({
   Agent: vi.fn(() => ({
     config: agentConfig,
     context: agentContext,
@@ -37,7 +40,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => ({
 }))
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | Migration | Credential Exchange Record', () => {
   let agent: Agent
@@ -47,7 +50,7 @@ describe('0.4-0.5 | Migration | Credential Exchange Record', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateCredentialExchangeRecordToV0_5()', () => {

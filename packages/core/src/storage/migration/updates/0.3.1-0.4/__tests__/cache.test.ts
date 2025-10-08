@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import * as testModule from '../cache'
@@ -10,7 +11,7 @@ const storageService = {
   deleteById: vi.fn(),
 }
 
-jest.mock('../../../../../agent/Agent', () => {
+vi.mock('../../../../../agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -23,7 +24,7 @@ jest.mock('../../../../../agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4 | Cache', () => {
   let agent: Agent

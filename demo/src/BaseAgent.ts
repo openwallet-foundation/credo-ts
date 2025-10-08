@@ -32,12 +32,12 @@ import {
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { DidCommHttpInboundTransport, agentDependencies } from '@credo-ts/node'
-import { HederaNetwork } from '@hiero-did-sdk/client'
+import { type HederaNetwork } from '@hiero-did-sdk/client'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
-import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import { type AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
 import { greenText } from './OutputClass'
 

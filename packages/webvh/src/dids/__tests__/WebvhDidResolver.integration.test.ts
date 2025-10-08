@@ -20,7 +20,7 @@ interface AttestedResourceContent {
 }
 
 // Mock the `didwebvh-ts` dependency so that `resolveDID` never performs a network call.
-jest.mock('didwebvh-ts', () => {
+vi.mock('didwebvh-ts', () => {
   return {
     resolveDID: vi.fn(async (did: string) => {
       return {

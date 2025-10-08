@@ -1,11 +1,13 @@
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { SingleContextLruCacheRecord } from '../SingleContextLruCacheRecord'
 import { SingleContextLruCacheRepository } from '../SingleContextLruCacheRepository'
 import { SingleContextStorageLruCache } from '../SingleContextStorageLruCache'
 
-jest.mock('../SingleContextLruCacheRepository')
-const SingleContextLruCacheRepositoryMock =
-  SingleContextLruCacheRepository as jest.Mock<SingleContextLruCacheRepository>
+vi.mock('../SingleContextLruCacheRepository')
+const SingleContextLruCacheRepositoryMock = SingleContextLruCacheRepository as MockedClassConstructor<
+  typeof SingleContextLruCacheRepository
+>
 
 const cacheRepository = new SingleContextLruCacheRepositoryMock()
 const agentContext = getAgentContext({

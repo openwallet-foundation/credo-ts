@@ -25,7 +25,7 @@ import {
 
 // Mock the WebvhDidResolver
 const mockResolveResource = vi.fn()
-jest.mock('../../../dids/WebvhDidResolver', () => {
+vi.mock('../../../dids/WebvhDidResolver', () => {
   return {
     WebvhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
@@ -72,7 +72,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     // Default mock for verifyProof to return true (will be overridden in verifyProof tests)
-    jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
+    vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
 
     registry = new WebVhAnonCredsRegistry()
   })
@@ -198,7 +198,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return resolutionMetadata with error if proof validation fails (placeholder)', async () => {
       // Use a type assertion to access the private method for mocking
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValueOnce(false)
 
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
@@ -373,7 +373,7 @@ describe('WebVhAnonCredsRegistry', () => {
       mockResolveResource.mockResolvedValue(mockResolverResponse)
 
       // We need to mock verifyProof to return true for this test
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValue(true)
 
       const result = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
@@ -400,7 +400,7 @@ describe('WebVhAnonCredsRegistry', () => {
   describe('verifyProof', () => {
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
-      jest.restoreAllMocks()
+      vi.restoreAllMocks()
 
       // Mock successful DID resolution
       mockResolveDidDocument.mockResolvedValue(

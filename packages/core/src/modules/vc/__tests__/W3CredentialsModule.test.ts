@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { Ed25519PublicJwk } from '../../kms'
 import { W3cCredentialService } from '../W3cCredentialService'
@@ -9,8 +10,8 @@ import { Ed25519Signature2018, Ed25519Signature2020 } from '../data-integrity/si
 import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cCredentialRepository } from '../repository'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 

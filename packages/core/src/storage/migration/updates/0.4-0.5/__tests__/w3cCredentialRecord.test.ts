@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { W3cCredentialRecord, W3cCredentialRepository, W3cJsonLdVerifiableCredential } from '../../../../../modules/vc'
@@ -25,7 +26,7 @@ const agentContext = getAgentContext({
   ],
 })
 
-jest.mock('../../../../../agent/Agent', () => {
+vi.mock('../../../../../agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -36,7 +37,7 @@ jest.mock('../../../../../agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | W3cCredentialRecord', () => {
   let agent: Agent
@@ -46,7 +47,7 @@ describe('0.4-0.5 | W3cCredentialRecord', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateW3cCredentialRecordToV0_5()', () => {

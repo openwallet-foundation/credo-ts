@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
@@ -14,15 +15,17 @@ import * as testModule from '../proofExchangeRecord'
 const agentConfig = getAgentConfig('Migration - Proof Exchange Record - 0.4-0.5')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
-const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
+vi.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
+const ProofRepositoryMock = DidCommProofExchangeRepository as MockedClassConstructor<
+  typeof DidCommProofExchangeRepository
+>
 const proofRepository = new ProofRepositoryMock()
 
-jest.mock('../../../repository/DidCommMessageRepository')
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+vi.mock('../../../repository/DidCommMessageRepository')
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => ({
+vi.mock('../../../../../core/src/agent/Agent', () => ({
   Agent: vi.fn(() => ({
     config: agentConfig,
     context: agentContext,
@@ -35,7 +38,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => ({
 }))
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | Migration | Proof Exchange Record', () => {
   let agent: Agent
@@ -45,7 +48,7 @@ describe('0.4-0.5 | Migration | Proof Exchange Record', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateProofExchangeRecordToV0_5()', () => {

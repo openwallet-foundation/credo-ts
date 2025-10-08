@@ -29,7 +29,7 @@ import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__te
 import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
 import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
 import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
-import { TenantAgent, TenantsModule } from '../../tenants'
+import { TenantAgent, TenantsModule } from '../../tenants/src'
 
 async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
   await agent.genericRecords.save({

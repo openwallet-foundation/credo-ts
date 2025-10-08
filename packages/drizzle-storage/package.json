@@ -99,13 +99,11 @@
     "drizzle-orm": "^0.44.5"
   },
   "devDependencies": {
-    "ts-node": "catalog:",
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
-
     "typescript": "catalog:"
   }
 }

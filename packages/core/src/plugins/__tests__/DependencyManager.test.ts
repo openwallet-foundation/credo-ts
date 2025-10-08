@@ -20,7 +20,7 @@ describe('DependencyManager', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
     container.reset()
   })
 
@@ -57,7 +57,7 @@ describe('DependencyManager', () => {
     it('calls registerSingleton on the container', () => {
       class Singleton {}
 
-      const registerSingletonSpy = jest.spyOn(container, 'registerSingleton')
+      const registerSingletonSpy = vi.spyOn(container, 'registerSingleton')
       dependencyManager.registerSingleton(Singleton)
 
       expect(registerSingletonSpy).toHaveBeenLastCalledWith(Singleton, undefined)
@@ -75,7 +75,7 @@ describe('DependencyManager', () => {
       const dependencyManager = new DependencyManager(child)
       child.registerInstance(Instance, instance)
 
-      const resolveSpy = jest.spyOn(child, 'resolve')
+      const resolveSpy = vi.spyOn(child, 'resolve')
       expect(dependencyManager.resolve(Instance)).toBe(instance)
 
       expect(resolveSpy).toHaveBeenCalledWith(Instance)
@@ -86,7 +86,7 @@ describe('DependencyManager', () => {
     it('calls isRegistered on the container', () => {
       class Singleton {}
 
-      const isRegisteredSpy = jest.spyOn(container, 'isRegistered')
+      const isRegisteredSpy = vi.spyOn(container, 'isRegistered')
 
       expect(dependencyManager.isRegistered(Singleton)).toBe(false)
 
@@ -99,7 +99,7 @@ describe('DependencyManager', () => {
       class Instance {}
       const instance = new Instance()
 
-      const registerInstanceSpy = jest.spyOn(container, 'registerInstance')
+      const registerInstanceSpy = vi.spyOn(container, 'registerInstance')
 
       dependencyManager.registerInstance(Instance, instance)
 
@@ -111,7 +111,7 @@ describe('DependencyManager', () => {
     it('calls register on the container with Lifecycle.ContainerScoped', () => {
       class SomeService {}
 
-      const registerSpy = jest.spyOn(container, 'register')
+      const registerSpy = vi.spyOn(container, 'register')
 
       dependencyManager.registerContextScoped(SomeService)
       expect(registerSpy).toHaveBeenCalledWith(SomeService, SomeService, { lifecycle: Lifecycle.ContainerScoped })
@@ -124,7 +124,7 @@ describe('DependencyManager', () => {
 
   describe('createChild', () => {
     it('calls createChildContainer on the container', () => {
-      const createChildSpy = jest.spyOn(container, 'createChildContainer')
+      const createChildSpy = vi.spyOn(container, 'createChildContainer')
 
       const childDependencyManager = dependencyManager.createChild()
       expect(createChildSpy).toHaveBeenCalledTimes(1)

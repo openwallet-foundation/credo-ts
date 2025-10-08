@@ -34,7 +34,7 @@ describe('HederaDidResolver', () => {
 
     mockFunction(mockLedgerService.resolveDid).mockResolvedValue(resolutionResult)
 
-    jest.spyOn(JsonTransformer, 'fromJSON').mockReturnValue(didDocument)
+    vi.spyOn(JsonTransformer, 'fromJSON').mockReturnValue(didDocument)
 
     const result = await resolver.resolve(mockAgentContext, did, parsedDid, {})
 

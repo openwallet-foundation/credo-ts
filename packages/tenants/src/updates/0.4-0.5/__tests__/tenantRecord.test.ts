@@ -1,5 +1,6 @@
 import { Agent, JsonTransformer } from '@credo-ts/core'
 
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import { TenantRecord } from '../../../repository'
 import { TenantRepository } from '../../../repository/TenantRepository'
@@ -8,12 +9,11 @@ import * as testModule from '../tenantRecord'
 const agentConfig = getAgentConfig('Tenants Migration - Tenant Record - 0.4-0.5.0')
 const agentContext = getAgentContext()
 
-TenantRepository
-jest.mock('../../../repository/TenantRepository')
-const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
+vi.mock('../../../repository/TenantRepository')
+const TenantRepositoryMock = TenantRepository as MockedClassConstructor<typeof TenantRepository>
 const tenantRepository = new TenantRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -26,7 +26,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | Tenants Migration | Tenant Record', () => {
   let agent: Agent

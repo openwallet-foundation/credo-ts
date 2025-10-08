@@ -1,5 +1,6 @@
 import { JsonTransformer } from '@credo-ts/core'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { parseDid } from '../../../../core/src/modules/dids/domain/parse'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
 import { IndyVdrPool } from '../../pool/IndyVdrPool'
@@ -9,8 +10,8 @@ import { IndyVdrSovDidResolver } from '../IndyVdrSovDidResolver'
 import didSovR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didSovR1xKJw17sUoXhejEpugMYJ.json'
 import didSovWJz9mHyW9BZksioQnRsrAoFixture from './__fixtures__/didSovWJz9mHyW9BZksioQnRsrAo.json'
 
-jest.mock('../../pool/IndyVdrPool')
-const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
+vi.mock('../../pool/IndyVdrPool')
+const IndyVdrPoolMock = IndyVdrPool as MockedClassConstructor<typeof IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'local')
 
@@ -50,8 +51,8 @@ describe('DidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 
@@ -89,8 +90,8 @@ describe('DidResolver', () => {
         },
       }
 
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
-      jest.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(nymResponse)
+      vi.spyOn(poolMock, 'submitRequest').mockResolvedValueOnce(attribResponse)
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 
@@ -106,7 +107,7 @@ describe('DidResolver', () => {
     it('should return did resolution metadata with error if the indy ledger service throws an error', async () => {
       const did = 'did:sov:R1xKJw17sUoXhejEpugMYJ'
 
-      jest.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
+      vi.spyOn(poolMock, 'submitRequest').mockRejectedValue(new Error('Error submitting read request'))
 
       const result = await resolver.resolve(agentContext, did, parseDid(did))
 

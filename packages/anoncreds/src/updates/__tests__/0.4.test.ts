@@ -28,7 +28,7 @@ vi.useFakeTimers().setSystemTime(backupDate)
 // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
 let uuidCounter = 1
 vi.mock('../../../../core/src/utils/uuid', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual: object = await importOriginal()
   return {
     ...actual,
     uuid: vi.fn().mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`),

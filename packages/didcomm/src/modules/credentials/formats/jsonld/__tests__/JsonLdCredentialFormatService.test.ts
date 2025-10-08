@@ -8,6 +8,7 @@ import type {
   JsonCredential,
 } from '../DidCommJsonLdCredentialFormat'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { DidDocument } from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
 import {
@@ -27,13 +28,15 @@ import { DidCommCredentialV2Preview } from '../../../protocol/v2/messages'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommJsonLdCredentialFormatService } from '../DidCommJsonLdCredentialFormatService'
 
-jest.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
-jest.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
-jest.mock('../../../../../../../core/src/modules/dids/services/DidResolverService')
+vi.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')
+vi.mock('../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService')
+vi.mock('../../../../../../../core/src/modules/dids/services/DidResolverService')
 
-const W3cCredentialServiceMock = W3cCredentialService as jest.Mock<W3cCredentialService>
-const W3cJsonLdCredentialServiceMock = W3cJsonLdCredentialService as jest.Mock<W3cJsonLdCredentialService>
-const DidResolverServiceMock = DidResolverService as jest.Mock<DidResolverService>
+const W3cCredentialServiceMock = W3cCredentialService as MockedClassConstructor<typeof W3cCredentialService>
+const W3cJsonLdCredentialServiceMock = W3cJsonLdCredentialService as MockedClassConstructor<
+  typeof W3cJsonLdCredentialService
+>
+const DidResolverServiceMock = DidResolverService as MockedClassConstructor<typeof DidResolverService>
 
 const didDocument = JsonTransformer.fromJSON(
   {

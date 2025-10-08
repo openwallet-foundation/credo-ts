@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
@@ -10,15 +11,17 @@ import * as testModule from '../proof'
 const agentConfig = getAgentConfig('Migration DidCommProofExchangeRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
-const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
+vi.mock('../../../modules/proofs/repository/DidCommProofExchangeRepository')
+const ProofRepositoryMock = DidCommProofExchangeRepository as MockedClassConstructor<
+  typeof DidCommProofExchangeRepository
+>
 const proofRepository = new ProofRepositoryMock()
 
-jest.mock('../../../repository/DidCommMessageRepository')
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+vi.mock('../../../repository/DidCommMessageRepository')
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -31,7 +34,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.2-0.3 | Proof', () => {
   let agent: Agent

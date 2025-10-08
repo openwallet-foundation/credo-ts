@@ -21,6 +21,7 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
@@ -91,7 +92,7 @@ const anonCredsRepo = {
   delete: vi.fn(),
 }
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -110,7 +111,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | AnonCredsRecord', () => {
   let agent: Agent

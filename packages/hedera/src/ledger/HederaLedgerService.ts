@@ -1,38 +1,45 @@
 import {
-  GetCredentialDefinitionReturn,
-  GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn,
-  GetSchemaReturn,
-  RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListOptions,
-  RegisterRevocationStatusListReturn,
-  RegisterSchemaOptions,
-  RegisterSchemaReturn,
+  type GetCredentialDefinitionReturn,
+  type GetRevocationRegistryDefinitionReturn,
+  type GetRevocationStatusListReturn,
+  type GetSchemaReturn,
+  type RegisterCredentialDefinitionOptions,
+  type RegisterCredentialDefinitionReturn,
+  type RegisterRevocationRegistryDefinitionOptions,
+  type RegisterRevocationRegistryDefinitionReturn,
+  type RegisterRevocationStatusListOptions,
+  type RegisterRevocationStatusListReturn,
+  type RegisterSchemaOptions,
+  type RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import {
   type AgentContext,
-  DidCreateOptions,
-  DidDeactivateOptions,
+  type DidCreateOptions,
+  type DidDeactivateOptions,
   type DidDocument,
-  DidDocumentKey,
+  type DidDocumentKey,
   DidRepository,
-  DidUpdateOptions,
+  type DidUpdateOptions,
   Kms,
   injectable,
 } from '@credo-ts/core'
 import { Client } from '@hashgraph/sdk'
 import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
 import { LRUMemoryCache } from '@hiero-did-sdk/cache'
-import { HederaClientService, HederaNetwork } from '@hiero-did-sdk/client'
-import { Cache, DIDResolution, DID_ROOT_KEY_ID, Service, VerificationMethod, parseDID } from '@hiero-did-sdk/core'
+import { HederaClientService, type HederaNetwork } from '@hiero-did-sdk/client'
 import {
-  CreateDIDResult,
+  type Cache,
+  type DIDResolution,
+  DID_ROOT_KEY_ID,
+  type Service,
+  type VerificationMethod,
+  parseDID,
+} from '@hiero-did-sdk/core'
+import {
+  type CreateDIDResult,
   DIDUpdateBuilder,
-  DeactivateDIDResult,
-  UpdateDIDResult,
+  type DeactivateDIDResult,
+  type UpdateDIDResult,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
   generateUpdateDIDRequest,

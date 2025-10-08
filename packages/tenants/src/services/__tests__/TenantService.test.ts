@@ -1,14 +1,15 @@
 import { Kms } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRepository } from '../../repository/TenantRepository'
 import { TenantRoutingRepository } from '../../repository/TenantRoutingRepository'
 import { TenantRecordService } from '../TenantRecordService'
 
-jest.mock('../../repository/TenantRepository')
-const TenantRepositoryMock = TenantRepository as jest.Mock<TenantRepository>
-jest.mock('../../repository/TenantRoutingRepository')
-const TenantRoutingRepositoryMock = TenantRoutingRepository as jest.Mock<TenantRoutingRepository>
+vi.mock('../../repository/TenantRepository')
+const TenantRepositoryMock = TenantRepository as MockedClassConstructor<typeof TenantRepository>
+vi.mock('../../repository/TenantRoutingRepository')
+const TenantRoutingRepositoryMock = TenantRoutingRepository as MockedClassConstructor<typeof TenantRoutingRepository>
 
 const tenantRepository = new TenantRepositoryMock()
 const tenantRoutingRepository = new TenantRoutingRepositoryMock()
@@ -18,7 +19,7 @@ const tenantRecordService = new TenantRecordService(tenantRepository, tenantRout
 
 describe('TenantRecordService', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('createTenant', () => {

@@ -7,8 +7,8 @@ import { AgentContext, Kms } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'
 import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
 
-jest.mock('@credo-ts/core', () => ({
-  ...jest.requireActual('@credo-ts/core'),
+vi.mock('@credo-ts/core', async (importOriginal) => ({
+  ...((await importOriginal()) as object),
   Kms: {
     KeyManagementApi: vi.fn().mockReturnValue({}),
     PublicJwk: {
@@ -17,7 +17,7 @@ jest.mock('@credo-ts/core', () => ({
   },
 }))
 
-jest.mock('../../src/ledger/utils', () => ({
+vi.mock('../../src/ledger/utils', () => ({
   createOrGetKey: vi.fn(),
   hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
@@ -25,7 +25,7 @@ jest.mock('../../src/ledger/utils', () => ({
 import { PublicKey } from '@hashgraph/sdk'
 import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
-jest.mock('@hiero-did-sdk/publisher-internal', () => {
+vi.mock('@hiero-did-sdk/publisher-internal', () => {
   return {
     Publisher: vi.fn(),
   }
@@ -70,7 +70,7 @@ describe('KmsPublisher', () => {
   const mockPublicKey = {}
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFunction(hederaPublicKeyFromPublicJwk).mockReturnValue(mockPublicKey as PublicKey)
 
     mockClient.freezeWith.mockReturnValue(mockFrozenTransaction)

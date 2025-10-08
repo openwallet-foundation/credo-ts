@@ -12,12 +12,15 @@ import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../err
 import { Repository } from '../Repository'
 import { RepositoryEventTypes } from '../RepositoryEvents'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
 import { TestRecord } from './TestRecord'
 
-jest.mock('../../../../../tests/InMemoryStorageService')
+vi.mock('../../../../../tests/InMemoryStorageService')
 
-const StorageMock = InMemoryStorageService as unknown as jest.Mock<InMemoryStorageService<TestRecord>>
+const StorageMock = InMemoryStorageService as unknown as MockedClassConstructor<
+  typeof InMemoryStorageService<TestRecord>
+>
 
 const config = getAgentConfig('Repository')
 

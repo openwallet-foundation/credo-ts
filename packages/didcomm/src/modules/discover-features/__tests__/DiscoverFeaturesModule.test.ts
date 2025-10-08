@@ -1,4 +1,4 @@
-import type { DependencyManager } from '../../../../../core'
+import type { DependencyManager } from '../../../../../core/src/index'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'

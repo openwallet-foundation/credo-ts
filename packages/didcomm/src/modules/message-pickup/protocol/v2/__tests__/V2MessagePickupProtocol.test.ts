@@ -1,5 +1,6 @@
 import type { DidCommEncryptedMessage } from '../../../../../types'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../../../core/src/error'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
@@ -28,16 +29,18 @@ const mockConnection = getMockConnection({
 })
 
 // Mock classes
-jest.mock('../../../../../transport/queue/InMemoryQueueTransportRepository')
-jest.mock('../../../../../../../core/src/agent/EventEmitter')
-jest.mock('../../../../../DidCommMessageSender')
-jest.mock('../../../../connections/services/DidCommConnectionService')
+vi.mock('../../../../../transport/queue/InMemoryQueueTransportRepository')
+vi.mock('../../../../../../../core/src/agent/EventEmitter')
+vi.mock('../../../../../DidCommMessageSender')
+vi.mock('../../../../connections/services/DidCommConnectionService')
 
 // Mock typed object
-const InMessageRepositoryMock = InMemoryQueueTransportRepository as jest.Mock<InMemoryQueueTransportRepository>
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
+const InMessageRepositoryMock = InMemoryQueueTransportRepository as MockedClassConstructor<
+  typeof InMemoryQueueTransportRepository
+>
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
+const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
 
 const queueTransportRepository = new InMessageRepositoryMock()
 
@@ -422,7 +425,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
 
     it('calls the event emitter for each message', async () => {
       // This is to not take into account events previously emitted
-      jest.clearAllMocks()
+      vi.clearAllMocks()
 
       const messageDeliveryMessage = new DidCommMessageDeliveryV2Message({
         threadId: uuid(),

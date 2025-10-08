@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
@@ -11,7 +12,7 @@ import { DidCommInboundMessageContext } from '../models'
 import type { DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
 
-jest.mock('../DidCommMessageSender')
+vi.mock('../DidCommMessageSender')
 
 class CustomProtocolMessage extends DidCommMessage {
   public readonly type = CustomProtocolMessage.type.messageTypeUri
@@ -29,7 +30,7 @@ class CustomProtocolMessage extends DidCommMessage {
 describe('DidCommDispatcher', () => {
   const agentConfig = getAgentConfig('DispatcherTest')
   const agentContext = getAgentContext()
-  const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
+  const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
   describe('dispatch()', () => {
@@ -248,7 +249,7 @@ describe('DidCommDispatcher', () => {
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
       const handle = vi.fn()
-      const middleware = jest
+      const middleware = vi
         .fn()
         .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext, next) => {
           inboundMessageContext.messageHandler = {
@@ -294,20 +295,18 @@ describe('DidCommDispatcher', () => {
         connection: connectionMock,
       })
 
-      const middleware = jest
-        .fn()
-        .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext) => {
-          // We do not call next
-          inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
-            inboundMessageContext.agentContext,
-            {
-              message: new CustomProtocolMessage({
-                id: 'static-id',
-              }),
-              connectionRecord: inboundMessageContext.connection,
-            }
-          )
-        })
+      const middleware = vi.fn().mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext) => {
+        // We do not call next
+        inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
+          inboundMessageContext.agentContext,
+          {
+            message: new CustomProtocolMessage({
+              id: 'static-id',
+            }),
+            connectionRecord: inboundMessageContext.connection,
+          }
+        )
+      })
 
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)

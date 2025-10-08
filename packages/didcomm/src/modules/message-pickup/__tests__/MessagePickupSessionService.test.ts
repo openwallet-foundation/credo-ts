@@ -19,7 +19,7 @@ describe('start listener remove live sessions', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
 
     stop$ = new Subject<boolean>()
     eventEmitter = new EventEmitter(agentDependencies, stop$)
@@ -30,7 +30,7 @@ describe('start listener remove live sessions', () => {
       ],
     })
     instance = new DidCommMessagePickupSessionService()
-    jest.spyOn(instance, 'removeLiveSession').mockImplementation()
+    vi.spyOn(instance, 'removeLiveSession').mockImplementation(() => {})
   })
 
   test('removes live session on related transport event', () => {

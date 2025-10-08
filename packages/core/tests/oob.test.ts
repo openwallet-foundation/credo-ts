@@ -155,7 +155,7 @@ describe('out of band', () => {
       await faberAgent.modules.connections.deleteById(connection.id)
     }
 
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('createInvitation', () => {

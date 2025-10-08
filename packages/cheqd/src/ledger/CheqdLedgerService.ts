@@ -10,7 +10,7 @@ import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/pro
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
 import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
-import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
 import type { DeliverTxResponse } from '@cosmjs/stargate'
 import { CheqdModuleConfig } from '../CheqdModuleConfig'

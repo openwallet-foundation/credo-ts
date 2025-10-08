@@ -214,8 +214,8 @@ describe('DidsApi', () => {
       ? result.didState.didDocument?.alsoKnownAs[0]
       : undefined
 
-    if (!longFormDid) fail('Long form did not defined')
-    if (!shortFormDid) fail('Short form did not defined')
+    if (!longFormDid) throw new Error('Long form did not defined')
+    if (!shortFormDid) throw new Error('Short form did not defined')
 
     expect(isLongFormDidPeer4(longFormDid)).toBeTruthy()
     expect(isShortFormDidPeer4(shortFormDid)).toBeTruthy()

@@ -1,16 +1,16 @@
 import {
-  GetCredentialDefinitionReturn,
-  GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn,
-  GetSchemaReturn,
-  RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListOptions,
-  RegisterRevocationStatusListReturn,
-  RegisterSchemaOptions,
-  RegisterSchemaReturn,
+  type GetCredentialDefinitionReturn,
+  type GetRevocationRegistryDefinitionReturn,
+  type GetRevocationStatusListReturn,
+  type GetSchemaReturn,
+  type RegisterCredentialDefinitionOptions,
+  type RegisterCredentialDefinitionReturn,
+  type RegisterRevocationRegistryDefinitionOptions,
+  type RegisterRevocationRegistryDefinitionReturn,
+  type RegisterRevocationStatusListOptions,
+  type RegisterRevocationStatusListReturn,
+  type RegisterSchemaOptions,
+  type RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import { AgentContext } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'

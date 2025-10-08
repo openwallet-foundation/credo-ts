@@ -48,8 +48,8 @@ describe('W3cCredentialsApi', () => {
   })
 
   it('Should successfully store a credential', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'save')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'storeCredential')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'save')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'storeCredential')
 
     await agent.w3cCredentials.storeCredential({
       credential: testCredential,
@@ -60,8 +60,8 @@ describe('W3cCredentialsApi', () => {
   })
 
   it('Should successfully retrieve a credential by id', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'getById')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'getCredentialRecordById')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'getById')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'getCredentialRecordById')
 
     const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,
@@ -78,8 +78,8 @@ describe('W3cCredentialsApi', () => {
   })
 
   it('Should successfully remove a credential by id', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'deleteById')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'removeCredentialRecord')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'deleteById')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
     const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,

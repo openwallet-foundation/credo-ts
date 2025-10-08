@@ -1,20 +1,20 @@
 import {
   AgentContext,
-  DidCreateResult,
-  DidDeactivateResult,
+  type DidCreateResult,
+  type DidDeactivateResult,
   DidDocument,
-  DidDocumentKey,
+  type DidDocumentKey,
   DidDocumentRole,
   DidRecord,
-  DidRegistrar,
+  type DidRegistrar,
   DidRepository,
-  DidUpdateResult,
+  type DidUpdateResult,
   JsonTransformer,
 } from '@credo-ts/core'
 import {
-  HederaDidCreateOptions,
-  HederaDidDeactivateOptions,
-  HederaDidUpdateOptions,
+  type HederaDidCreateOptions,
+  type HederaDidDeactivateOptions,
+  type HederaDidUpdateOptions,
   HederaLedgerService,
 } from '../ledger'
 

@@ -14,11 +14,22 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
     "verbatimModuleSyntax": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     // TODO: we should update code to assume errors are of type 'unknown'
     "useUnknownInCatchVariables": false
   },
-  "exclude": ["node_modules", "build", "**/*.test.ts", "**/__tests__/*.ts", "**/__mocks__/*.ts", "**/build/**"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "build",
+    "**/build/**",
+    "**/cli-build/**",
+    "**/*.test.ts",
+    "**/__tests__/*.ts",
+    "**/__mocks__/*.ts",
+    "**/.pnpm/**"
+  ]
 }

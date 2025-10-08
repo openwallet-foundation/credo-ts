@@ -1,4 +1,4 @@
-import {
+import type {
   RegisterCredentialDefinitionOptions,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationStatusListOptions,
@@ -6,11 +6,11 @@ import {
 } from '@credo-ts/anoncreds'
 import { DidDocument, DidRecord, DidRepository, TypedArrayEncoder } from '@credo-ts/core'
 import { AgentContext } from '@credo-ts/core'
-import { DidDocumentKey, Kms } from '@credo-ts/core'
+import { type DidDocumentKey, Kms } from '@credo-ts/core'
 import { Client, PrivateKey } from '@hashgraph/sdk'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
-jest.mock('@hiero-did-sdk/registrar', () => ({
+vi.mock('@hiero-did-sdk/registrar', () => ({
   DIDUpdateBuilder: vi.fn().mockReturnValue({
     addService: vi.fn().mockReturnThis(),
     removeService: vi.fn().mockReturnThis(),
@@ -37,10 +37,10 @@ jest.mock('@hiero-did-sdk/registrar', () => ({
 }))
 
 import {
-  CreateDIDRequest,
+  type CreateDIDRequest,
   DIDUpdateBuilder,
-  DeactivateDIDRequest,
-  UpdateDIDRequest,
+  type DeactivateDIDRequest,
+  type UpdateDIDRequest,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
   generateUpdateDIDRequest,
@@ -49,7 +49,7 @@ import {
   submitUpdateDIDRequest,
 } from '@hiero-did-sdk/registrar'
 
-jest.mock('@hiero-did-sdk/resolver', () => ({
+vi.mock('@hiero-did-sdk/resolver', () => ({
   resolveDID: vi.fn(),
   TopicReaderHederaHcs: vi.fn(),
 }))
@@ -57,6 +57,7 @@ jest.mock('@hiero-did-sdk/resolver', () => ({
 import { resolveDID } from '@hiero-did-sdk/resolver'
 
 import { DID_ROOT_KEY_ID } from '@hiero-did-sdk/core'
+import type { MockInstance } from 'vitest'
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
 import { did, didDocument } from './fixtures/did-document'
@@ -134,17 +135,17 @@ describe('HederaLedgerService', () => {
   const builder: DIDUpdateBuilder = new DIDUpdateBuilder()
 
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
+  vi.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
     const mockClient = {} as Client
     // @ts-ignore
     return operation(mockClient)
   })
 
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
+  vi.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
 
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn(service as any, 'getPublisher').mockResolvedValue({})
+  vi.spyOn(service as any, 'getPublisher').mockResolvedValue({})
 
   describe('resolveDid', () =>
     it('should call resolveDID with proper args and returns result', async () => {
@@ -193,7 +194,7 @@ describe('HederaLedgerService', () => {
       mockFunction(generateCreateDIDRequest).mockResolvedValueOnce(createDidRequest)
       mockFunction(submitCreateDIDRequest).mockResolvedValueOnce({ did, didDocument })
 
-      const updateDidSpy = jest.spyOn(service, 'updateDid').mockResolvedValueOnce({ did, didDocument })
+      const updateDidSpy = vi.spyOn(service, 'updateDid').mockResolvedValueOnce({ did, didDocument })
 
       const result = await service.createDid(mockAgentContext, {
         method: 'hedera',
@@ -228,23 +229,23 @@ describe('HederaLedgerService', () => {
 
     it('should call correct builder methods for each field and action', () => {
       const spies = {
-        addService: jest.spyOn(builder, 'addService'),
-        removeService: jest.spyOn(builder, 'removeService'),
-        addVerificationMethod: jest.spyOn(builder, 'addVerificationMethod'),
-        removeVerificationMethod: jest.spyOn(builder, 'removeVerificationMethod'),
-        addAssertionMethod: jest.spyOn(builder, 'addAssertionMethod'),
-        removeAssertionMethod: jest.spyOn(builder, 'removeAssertionMethod'),
-        addAuthenticationMethod: jest.spyOn(builder, 'addAuthenticationMethod'),
-        removeAuthenticationMethod: jest.spyOn(builder, 'removeAuthenticationMethod'),
-        addCapabilityDelegationMethod: jest.spyOn(builder, 'addCapabilityDelegationMethod'),
-        removeCapabilityDelegationMethod: jest.spyOn(builder, 'removeCapabilityDelegationMethod'),
-        addCapabilityInvocationMethod: jest.spyOn(builder, 'addCapabilityInvocationMethod'),
-        removeCapabilityInvocationMethod: jest.spyOn(builder, 'removeCapabilityInvocationMethod'),
-        addKeyAgreementMethod: jest.spyOn(builder, 'addKeyAgreementMethod'),
-        removeKeyAgreementMethod: jest.spyOn(builder, 'removeKeyAgreementMethod'),
+        addService: vi.spyOn(builder, 'addService'),
+        removeService: vi.spyOn(builder, 'removeService'),
+        addVerificationMethod: vi.spyOn(builder, 'addVerificationMethod'),
+        removeVerificationMethod: vi.spyOn(builder, 'removeVerificationMethod'),
+        addAssertionMethod: vi.spyOn(builder, 'addAssertionMethod'),
+        removeAssertionMethod: vi.spyOn(builder, 'removeAssertionMethod'),
+        addAuthenticationMethod: vi.spyOn(builder, 'addAuthenticationMethod'),
+        removeAuthenticationMethod: vi.spyOn(builder, 'removeAuthenticationMethod'),
+        addCapabilityDelegationMethod: vi.spyOn(builder, 'addCapabilityDelegationMethod'),
+        removeCapabilityDelegationMethod: vi.spyOn(builder, 'removeCapabilityDelegationMethod'),
+        addCapabilityInvocationMethod: vi.spyOn(builder, 'addCapabilityInvocationMethod'),
+        removeCapabilityInvocationMethod: vi.spyOn(builder, 'removeCapabilityInvocationMethod'),
+        addKeyAgreementMethod: vi.spyOn(builder, 'addKeyAgreementMethod'),
+        removeKeyAgreementMethod: vi.spyOn(builder, 'removeKeyAgreementMethod'),
       }
 
-      const testCases: [string, 'add' | 'remove', string, jest.SpyInstance][] = [
+      const testCases: [string, 'add' | 'remove', string, MockInstance][] = [
         ['service', 'add', 'service-item', spies.addService],
         ['service', 'remove', 'service-id', spies.removeService],
 
@@ -268,7 +269,7 @@ describe('HederaLedgerService', () => {
       ]
 
       for (const [property, action, param, spy] of testCases) {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
 
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         const builderMethod = (service as any).getUpdateMethod(builder, property, action)
@@ -321,7 +322,7 @@ describe('HederaLedgerService', () => {
       // @ts-ignore - there is a conflict with 'resolveDID' "overloaded" signatures
       mockFunction(resolveDID).mockResolvedValueOnce({ didDocument })
 
-      jest
+      vi
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
         .spyOn(service as any, 'prepareDidUpdates')
         .mockReturnValueOnce({ build: vi.fn().mockReturnValueOnce(updatedDidDocument) })
@@ -329,7 +330,7 @@ describe('HederaLedgerService', () => {
       mockFunction(generateUpdateDIDRequest).mockResolvedValueOnce(updateDidRequest)
 
       // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      jest.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
+      vi.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
       mockFunction(submitUpdateDIDRequest).mockResolvedValueOnce({ did, didDocument: updatedDidDocument })
 
       await expect(

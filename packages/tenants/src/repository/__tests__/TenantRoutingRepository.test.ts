@@ -23,7 +23,7 @@ const tenantRoutingRepository = new TenantRoutingRepository(storageServiceMock, 
 
 describe('TenantRoutingRepository', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('findByRecipientKey', () => {

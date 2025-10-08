@@ -12,7 +12,7 @@ import {
   prepareForAnonCredsIssuance,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import { Agent } from '../../../../../../../core'
+import { Agent } from '../../../../../../../core/src/index'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
   getAgentOptions,

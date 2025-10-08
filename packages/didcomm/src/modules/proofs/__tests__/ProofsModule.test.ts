@@ -1,4 +1,4 @@
-import type { DependencyManager } from '../../../../../core'
+import type { DependencyManager } from '../../../../../core/src/index'
 import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
 
 import { getAgentContext } from '../../../../../core/tests'

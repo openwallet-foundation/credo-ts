@@ -36,7 +36,7 @@ export async function resolveBundle(bundle: string) {
     }
   }
 
-  throw new Error(`Unable to resolve bundle ${bundle}. ${lastError.stack}`)
+  throw new Error(`Unable to resolve bundle ${bundle}. ${lastError}`)
 }
 
 export async function resolveSchemaFile(schemaModule: string) {

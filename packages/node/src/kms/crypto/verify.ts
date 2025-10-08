@@ -49,7 +49,6 @@ export function performVerify(
         .update(data)
         .digest()
 
-      // eslint-disable-next-line no-restricted-globals
       return timingSafeEqual(expectedHmac, Buffer.from(signature))
     }
     default:

@@ -1,6 +1,7 @@
 import type { DidCommMediationRecordProps } from '../../../modules'
 import type { CustomDidCommConnectionTags, DidCommConnectionRecordProps } from '../../../modules/connections'
 
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../..//core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
@@ -18,15 +19,17 @@ import * as testModule from '../connection'
 const agentConfig = getAgentConfig('Migration DidCommConnectionRecord 0.2-0.3')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/connections/repository/DidCommConnectionRepository')
-const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
+vi.mock('../../../modules/connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../modules/routing/repository/DidCommMediationRepository')
-const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
+vi.mock('../../../modules/routing/repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
     Agent: vi.fn(() => ({
       config: agentConfig,
@@ -38,13 +41,13 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
   }
 })
 
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.2-0.3 | Connection', () => {
   let agent: Agent
 
   beforeEach(() => {
-    agent = AgentMock()
+    agent = new AgentMock()
   })
 
   describe('migrateConnectionRecordToV0_3', () => {

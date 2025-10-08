@@ -1,4 +1,4 @@
-import { DidRecord, RecordSavedEvent } from '@credo-ts/core'
+import { DidRecord, type RecordSavedEvent } from '@credo-ts/core'
 
 import {
   DidCommV1Service,
@@ -19,13 +19,14 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies, getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests'
 import { IndyVdrPool, IndyVdrPoolService } from '../../pool'
 import { IndyVdrIndyDidRegistrar } from '../IndyVdrIndyDidRegistrar'
 
-jest.mock('../../pool/IndyVdrPool')
-const IndyVdrPoolMock = IndyVdrPool as jest.Mock<IndyVdrPool>
+vi.mock('../../pool/IndyVdrPool')
+const IndyVdrPoolMock = IndyVdrPool as MockedClassConstructor<typeof IndyVdrPool>
 const poolMock = new IndyVdrPoolMock()
 mockProperty(poolMock, 'indyNamespace', 'ns1')
 
@@ -94,7 +95,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   test('returns an error state if the provided key id is not an Ed25519 key', async () => {
@@ -147,7 +148,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('creates a did:indy document without services', async () => {
     // @ts-ignore - method is private
-    const createRegisterDidWriteRequest = jest.spyOn<undefined, undefined>(
+    const createRegisterDidWriteRequest = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
@@ -155,7 +156,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
@@ -210,7 +211,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('creates a did:indy document with services using attrib', async () => {
     // @ts-ignore - method is private
-    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+    const createRegisterDidWriteRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
@@ -218,12 +219,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
-    const createSetDidEndpointsRequestSpy = jest.spyOn<undefined, undefined>(
+    const createSetDidEndpointsRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createSetDidEndpointsRequest'
     )
@@ -231,7 +232,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
     createSetDidEndpointsRequestSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     // @ts-ignore - method is private
-    const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
+    const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
     // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
@@ -362,7 +363,7 @@ describe('IndyVdrIndyDidRegistrar', () => {
 
   test('stores the did document', async () => {
     // @ts-ignore - method is private
-    const createRegisterDidWriteRequestSpy = jest.spyOn<undefined, undefined>(
+    const createRegisterDidWriteRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
@@ -370,12 +371,12 @@ describe('IndyVdrIndyDidRegistrar', () => {
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
-    const registerPublicDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
+    const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
     // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-ignore - method is private
-    const setEndpointsForDidSpy = jest.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
+    const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
     // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 

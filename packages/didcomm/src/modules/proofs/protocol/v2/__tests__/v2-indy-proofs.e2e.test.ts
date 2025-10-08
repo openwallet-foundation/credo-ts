@@ -7,7 +7,11 @@ import {
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
-import { DidCommAttachment, DidCommAttachmentData, DidCommLinkedAttachment } from '../../../../../../../didcomm'
+import {
+  DidCommAttachment,
+  DidCommAttachmentData,
+  DidCommLinkedAttachment,
+} from '../../../../../../../didcomm/src/index'
 import { DidCommProofState } from '../../../models'
 import { DidCommProofExchangeRecord } from '../../../repository'
 import {

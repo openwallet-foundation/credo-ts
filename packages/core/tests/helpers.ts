@@ -63,6 +63,7 @@ import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
+import type { MockedFunction } from 'vitest'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { AskarModule } from '../../askar/src/AskarModule'
 import type { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
@@ -788,8 +789,8 @@ export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, ag
  * @returns mock function with type annotations
  */
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
-  return fn as jest.MockedFunction<T>
+export function mockFunction<T extends (...args: any[]) => any>(fn: T): MockedFunction<T> {
+  return fn as MockedFunction<T>
 }
 
 /**

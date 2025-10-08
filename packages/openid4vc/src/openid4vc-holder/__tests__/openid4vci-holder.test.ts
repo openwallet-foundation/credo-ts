@@ -105,9 +105,10 @@ describe('OpenId4VcHolder', () => {
 
       // The credential issued by mattr launchpad is expired, so we mock the verification...
       const w3cCredentialService = holder.dependencyManager.resolve(W3cCredentialService)
-      jest
-        .spyOn(w3cCredentialService, 'verifyCredential')
-        .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
+      vi.spyOn(w3cCredentialService, 'verifyCredential').mockImplementationOnce(async () => ({
+        isValid: true,
+        validations: {},
+      }))
 
       const credentialsResult = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer: resolved,

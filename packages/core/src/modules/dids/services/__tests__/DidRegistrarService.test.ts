@@ -29,7 +29,7 @@ const didRegistrarService = new DidRegistrarService(
 
 describe('DidResolverService', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('create', () => {

@@ -6,6 +6,7 @@ import { EventEmitter } from '@credo-ts/core'
 import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import {
   agentDependencies,
   getAgentConfig,
@@ -23,8 +24,8 @@ import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
 import { ActionMenuService } from '../ActionMenuService'
 
-jest.mock('../../repository/ActionMenuRepository')
-const ActionMenuRepositoryMock = ActionMenuRepository as jest.Mock<ActionMenuRepository>
+vi.mock('../../repository/ActionMenuRepository')
+const ActionMenuRepositoryMock = ActionMenuRepository as MockedClassConstructor<typeof ActionMenuRepository>
 
 describe('ActionMenuService', () => {
   const mockConnectionRecord = getMockConnection({

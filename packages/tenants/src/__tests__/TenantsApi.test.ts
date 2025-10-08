@@ -1,5 +1,7 @@
 import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 
+import type { MockInstance } from 'vitest'
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
 import { TenantAgent } from '../TenantAgent'
 import { TenantsApi } from '../TenantsApi'
@@ -7,11 +9,11 @@ import { TenantAgentContextProvider } from '../context/TenantAgentContextProvide
 import { TenantRecord } from '../repository'
 import { TenantRecordService } from '../services/TenantRecordService'
 
-jest.mock('../services/TenantRecordService')
-const TenantRecordServiceMock = TenantRecordService as jest.Mock<TenantRecordService>
+vi.mock('../services/TenantRecordService')
+const TenantRecordServiceMock = TenantRecordService as MockedClassConstructor<typeof TenantRecordService>
 
-jest.mock('../context/TenantAgentContextProvider')
-const AgentContextProviderMock = TenantAgentContextProvider as jest.Mock<TenantAgentContextProvider>
+vi.mock('../context/TenantAgentContextProvider')
+const AgentContextProviderMock = TenantAgentContextProvider as MockedClassConstructor<typeof TenantAgentContextProvider>
 
 const tenantRecordService = new TenantRecordServiceMock()
 const agentContextProvider = new AgentContextProviderMock()
@@ -62,10 +64,9 @@ describe('TenantsApi', () => {
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
-
-      let endSessionSpy: jest.SpyInstance | undefined = undefined
+      let endSessionSpy: MockInstance | undefined = undefined
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-        endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
+        endSessionSpy = vi.spyOn(tenantAgent, 'endSession')
         expect(tenantAgent.isInitialized).toBe(true)
 
         expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
@@ -91,10 +92,10 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let endSessionSpy: jest.SpyInstance | undefined = undefined
+      let endSessionSpy: MockInstance | undefined = undefined
       await expect(
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
-          endSessionSpy = jest.spyOn(tenantAgent, 'endSession')
+          endSessionSpy = vi.spyOn(tenantAgent, 'endSession')
           expect(tenantAgent.isInitialized).toBe(true)
 
           expect(agentContextProvider.getAgentContextForContextCorrelationId).toHaveBeenCalledWith('tenant-tenant-id', {
@@ -129,7 +130,7 @@ describe('TenantsApi', () => {
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
 
       // @ts-ignore
-      const getTenantAgentSpy = jest.spyOn(tenantsApi, '_getTenantAgent').mockResolvedValue(tenantAgentMock)
+      const getTenantAgentSpy = vi.spyOn(tenantsApi, '_getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       const createdTenantRecord = await tenantsApi.createTenant({
         config: {
@@ -168,7 +169,7 @@ describe('TenantsApi', () => {
           },
         },
       } as unknown as TenantAgent
-      const getTenantAgentSpy = jest.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
+      const getTenantAgentSpy = vi.spyOn(tenantsApi, 'getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       await tenantsApi.deleteTenantById('tenant-id')
 

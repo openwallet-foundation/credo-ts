@@ -43,7 +43,7 @@ describe('DidResolverService', () => {
   )
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should correctly find and call the correct resolver for a specified did', async () => {

@@ -7,7 +7,7 @@ import { getWebvhModules } from './setupWebvhModule'
 import { validDid } from './utils'
 
 // Simplified mock
-jest.mock('didwebvh-ts', () => ({
+vi.mock('didwebvh-ts', () => ({
   resolveDID: vi.fn().mockResolvedValue({
     doc: {
       '@context': ['https://www.w3.org/ns/did/v1'],

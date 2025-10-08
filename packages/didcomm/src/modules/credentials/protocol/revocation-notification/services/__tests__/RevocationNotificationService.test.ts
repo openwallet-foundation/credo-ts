@@ -1,9 +1,10 @@
-import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds'
+import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/index'
 import type { AgentContext } from '../../../../../../../../core/src/agent'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../../core/src/agent/EventEmitter'
 import {
   getAgentConfig,
@@ -21,12 +22,16 @@ import { DidCommCredentialExchangeRepository } from '../../../../repository/DidC
 import { DidCommRevocationNotificationV1Message, DidCommRevocationNotificationV2Message } from '../../messages'
 import { DidCommRevocationNotificationService } from '../DidCommRevocationNotificationService'
 
-jest.mock('../../../../repository/DidCommCredentialExchangeRepository')
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
+vi.mock('../../../../repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
+vi.mock('../../../../../../DidCommMessageHandlerRegistry')
+const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as MockedClassConstructor<
+  typeof DidCommMessageHandlerRegistry
+>
 const messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
@@ -53,7 +58,7 @@ describe('RevocationNotificationService', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('v1ProcessRevocationNotification', () => {
@@ -68,7 +73,7 @@ describe('RevocationNotificationService', () => {
       const date = new Date('2020-01-01T00:00:00.000Z')
 
       // @ts-ignore
-      const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -184,7 +189,7 @@ describe('RevocationNotificationService', () => {
       const date = new Date('2020-01-01T00:00:00.000Z')
 
       // @ts-ignore
-      const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',

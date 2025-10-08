@@ -1,5 +1,4 @@
 import type { EventEmitter as NativeEventEmitter } from 'events'
-
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentContext } from '../../../tests/helpers'
@@ -10,7 +9,7 @@ const mockOn = vi.fn()
 const mockOff = vi.fn()
 const mock = vi.fn().mockImplementation(() => {
   return { emit: mockEmit, on: mockOn, off: mockOff }
-}) as jest.Mock<NativeEventEmitter>
+})
 
 const eventEmitter = new EventEmitter(
   { ...agentDependencies, EventEmitterClass: mock as unknown as typeof NativeEventEmitter },
@@ -20,7 +19,7 @@ const agentContext = getAgentContext({})
 
 describe('EventEmitter', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('emit', () => {

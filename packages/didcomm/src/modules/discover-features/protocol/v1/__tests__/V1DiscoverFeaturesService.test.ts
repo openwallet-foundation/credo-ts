@@ -6,6 +6,7 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDisc
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
@@ -18,8 +19,10 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFea
 import { DidCommDiscoverFeaturesV1Service } from '../DidCommDiscoverFeaturesV1Service'
 import { DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from '../messages'
 
-jest.mock('../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
+vi.mock('../../../../../DidCommMessageHandlerRegistry')
+const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as MockedClassConstructor<
+  typeof DidCommMessageHandlerRegistry
+>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -28,8 +31,8 @@ featureRegistry.register(
 )
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
 
-jest.mock('../../../../../../../core/src/logger')
-const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+vi.mock('../../../../../../../core/src/logger')
+const LoggerMock = ConsoleLogger as MockedClassConstructor<typeof ConsoleLogger>
 
 describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
