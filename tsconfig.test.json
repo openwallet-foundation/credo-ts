@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.build.json",
-  "compilerOptions": {
-    "baseUrl": ".",
-    "types": ["node", "vitest/globals"]
-  },
-  "include": ["tests", "samples", "demo", "demo-openid", "packages/drizzle-storage/types/shell.d.ts"],
-  "exclude": ["node_modules", "node_modules/**", "**/node_modules/**", "build", "**/build/**"]
-}

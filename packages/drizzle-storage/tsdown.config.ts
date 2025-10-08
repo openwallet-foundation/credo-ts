@@ -22,7 +22,7 @@ export default defineConfig([
     target: 'es2020',
     dts: {
       sourcemap: true,
-      tsconfig: 'tsconfig.cli.json',
+      tsconfig: '../../tsconfig.build.json',
     },
     platform: 'node',
     logLevel: 'error',
