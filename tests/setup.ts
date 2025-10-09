@@ -1,6 +1,6 @@
 import 'reflect-metadata'
-import testLogger from '../packages/core/tests/logger'
 import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
+import testLogger from '../packages/core/tests/logger'
 
 process.on('unhandledRejection', (reason) => {
   testLogger.error('Unhandled rejection in test', {
