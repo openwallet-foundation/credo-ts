@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { type KmsJwkPrivate, type KmsJwkPublicFromKmsJwkPrivate, zKmsJwkPrivate } from '../jwk/knownJwk'
 
 export const zKmsImportKeyOptions = z.object({

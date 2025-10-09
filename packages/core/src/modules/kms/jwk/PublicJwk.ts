@@ -2,7 +2,7 @@ import type { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
 import type { Constructor } from '../../../utils/mixins'
-import { parseWithErrorHandling } from '../../../utils/zod'
+import { zParseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { assymetricPublicJwkMatches } from './equals'
@@ -49,7 +49,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
 
   public static fromUnknown(jwkJson: unknown) {
     // We remove any private properties if they are present
-    const publicJwk = publicJwkFromPrivateJwk(parseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
+    const publicJwk = publicJwkFromPrivateJwk(zParseWithErrorHandling(zKmsJwkPublic, jwkJson, 'jwk is not a valid jwk'))
     assertJwkAsymmetric(publicJwk)
 
     let jwkInstance: SupportedPublicJwk
