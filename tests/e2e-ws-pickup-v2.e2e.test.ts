@@ -19,24 +19,25 @@ import { DidCommWsInboundTransport } from '@credo-ts/node'
 
 // FIXME: port numbers should not depend on availability from other test suites that use web sockets
 const mediatorPort = 4100
-const mediatorOptions = getAgentOptions(
-  'E2E WS Pickup V2 Mediator',
-  {},
-  {},
-  {
-    ...getAnonCredsModules({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        endpoints: [`ws://localhost:${mediatorPort}`],
-        mediator: {
-          autoAcceptMediationRequests: true,
-          messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+const mediatorOptions = () =>
+  getAgentOptions(
+    'E2E WS Pickup V2 Mediator',
+    {},
+    {},
+    {
+      ...getAnonCredsModules({
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        extraDidCommConfig: {
+          endpoints: [`ws://localhost:${mediatorPort}`],
+          mediator: {
+            autoAcceptMediationRequests: true,
+            messageForwardingStrategy: DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery,
+          },
         },
-      },
-    }),
-  },
-  { requireDidcomm: true }
-)
+      }),
+    },
+    { requireDidcomm: true }
+  )
 
 const senderPort = 4101
 const senderOptions = getAgentOptions(
@@ -60,7 +61,7 @@ describe('E2E WS Pickup V2 tests', () => {
   let senderAgent: AnonCredsTestsAgent
 
   beforeEach(async () => {
-    mediatorAgent = new Agent(mediatorOptions) as unknown as AnonCredsTestsAgent
+    mediatorAgent = new Agent(mediatorOptions()) as unknown as AnonCredsTestsAgent
     senderAgent = new Agent(senderOptions) as unknown as AnonCredsTestsAgent
   })
 

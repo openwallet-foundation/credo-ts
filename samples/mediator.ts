@@ -50,7 +50,7 @@ const agentConfig: InitConfig = {
 const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
 const httpOutboundTransport = new DidCommHttpOutboundTransport()
 const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
-const _wsOutboundTransport = new DidCommWsOutboundTransport()
+const wsOutboundTransport = new DidCommWsOutboundTransport()
 
 // Set up agent
 const agent = new Agent({
@@ -68,7 +68,7 @@ const agent = new Agent({
       endpoints,
       transports: {
         inbound: [httpInboundTransport, wsInboundTransport],
-        outbound: [httpOutboundTransport, httpOutboundTransport],
+        outbound: [httpOutboundTransport, wsOutboundTransport],
       },
       mediator: {
         autoAcceptMediationRequests: true,
