@@ -1,5 +1,7 @@
 import type { AgentContext } from '../../../agent'
 
+import type { MockedFunction } from 'vitest'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
 import { JwsService } from '../../../crypto'
 import { JsonTransformer, asArray } from '../../../utils'
@@ -15,8 +17,8 @@ import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cPresentation } from '../models'
 import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
 
-jest.mock('../repository/W3cCredentialRepository')
-const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+vi.mock('../repository/W3cCredentialRepository')
+const W3cCredentialsRepositoryMock = W3cCredentialRepository as MockedClassConstructor<typeof W3cCredentialRepository>
 
 const agentConfig = getAgentConfig('W3cCredentialServiceTest')
 
@@ -94,7 +96,7 @@ describe('W3cCredentialsService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(typeof w3cCredentialsRepository)['deleteById']>
+    let w3cCredentialRepositoryDeleteMock: MockedFunction<(typeof w3cCredentialsRepository)['deleteById']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(

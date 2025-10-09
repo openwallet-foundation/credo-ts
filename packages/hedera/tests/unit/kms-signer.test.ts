@@ -1,4 +1,9 @@
+import { Kms } from '@credo-ts/core'
+import { PublicKey } from '@hashgraph/sdk'
+import { PublicJwk } from '../../../core/src/modules/kms/jwk/PublicJwk'
+import { mockFunction } from '../../../core/tests/helpers'
 import { KmsSigner } from '../../src/ledger/signer/KmsSigner'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 const mockKeyId = 'test-key-id'
 const mockPublicJwk = {
@@ -6,30 +11,19 @@ const mockPublicJwk = {
   publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
 } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-import { Kms } from '@credo-ts/core'
-import { mockFunction } from '../../../core/tests/helpers'
+vi.mock('../../../core/src/modules/kms/jwk/PublicJwk')
+vi.mock('../../../core/src/modules/kms/KeyManagementApi')
 
-jest.mock('@credo-ts/core', () => ({
-  ...jest.requireActual('@credo-ts/core'),
-  Kms: {
-    KeyManagementApi: jest.fn().mockReturnValue({}),
-    PublicJwk: {
-      fromFingerprint: jest.fn().mockReturnValue(mockPublicJwk),
-    },
-  },
+mockFunction(PublicJwk.fromFingerprint).mockReturnValue(mockPublicJwk)
+
+vi.mock('../../src/ledger/utils', () => ({
+  createOrGetKey: vi.fn(),
+  hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
-
-jest.mock('../../src/ledger/utils', () => ({
-  createOrGetKey: jest.fn(),
-  hederaPublicKeyFromPublicJwk: jest.fn(),
-}))
-
-import { PublicKey } from '@hashgraph/sdk'
-import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 describe('KmsSigner', () => {
-  const signMock = jest.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })
-  const verifyMock = jest.fn().mockResolvedValue({ verified: true })
+  const signMock = vi.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })
+  const verifyMock = vi.fn().mockResolvedValue({ verified: true })
 
   const kmsMock = {
     sign: signMock,
@@ -37,11 +31,11 @@ describe('KmsSigner', () => {
   }
 
   const mockPublicKey = {
-    toStringDer: jest.fn().mockReturnValue('mock-der-string'),
+    toStringDer: vi.fn().mockReturnValue('mock-der-string'),
   }
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFunction(hederaPublicKeyFromPublicJwk).mockReturnValue(mockPublicKey as unknown as PublicKey)
   })
 

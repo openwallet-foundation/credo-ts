@@ -1,5 +1,5 @@
 import { Exclude, Expose, Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
-import { IsDataURI, ValidateBy, ValidationOptions, buildMessage, isInstance } from 'class-validator'
+import { IsDataURI, ValidateBy, type ValidationOptions, buildMessage, isInstance } from 'class-validator'
 import { CredoError } from '../../../../error'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import { CREDENTIALS_CONTEXT_V2_URL, ENVELOPED_VERIFIABLE_CREDENTIAL_TYPE } from '../../constants'

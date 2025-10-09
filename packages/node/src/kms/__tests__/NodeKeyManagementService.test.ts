@@ -1852,7 +1852,6 @@ describe('NodeKeyManagementService', () => {
       await expect(
         service.importKey(agentContext, {
           privateJwk: {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             kty: 'something',
           },

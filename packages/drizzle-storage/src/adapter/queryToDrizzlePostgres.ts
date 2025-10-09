@@ -1,5 +1,5 @@
-import { BaseRecord, Query, TagValue } from '@credo-ts/core'
-import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
+import { BaseRecord, type Query, type TagValue } from '@credo-ts/core'
+import { SQL, type SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { PgColumn, pgTable } from 'drizzle-orm/pg-core'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'

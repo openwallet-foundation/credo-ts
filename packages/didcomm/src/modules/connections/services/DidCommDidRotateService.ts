@@ -10,7 +10,7 @@ import {
   DidsApi,
   EventEmitter,
   InjectionSymbols,
-  Logger,
+  type Logger,
   PeerDidNumAlgo,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,

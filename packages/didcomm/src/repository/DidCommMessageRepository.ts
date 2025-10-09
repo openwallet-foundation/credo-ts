@@ -2,7 +2,7 @@ import type { AgentContext } from '@credo-ts/core'
 import type { ConstructableAgentMessage, DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageRole } from './DidCommMessageRole'
 
-import { EventEmitter, InjectionSymbols, Repository, StorageService, inject, injectable } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, Repository, type StorageService, inject, injectable } from '@credo-ts/core'
 
 import { parseMessageType } from '../util/messageType'
 

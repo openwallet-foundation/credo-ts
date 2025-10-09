@@ -1,16 +1,15 @@
 import type { EventEmitter as NativeEventEmitter } from 'events'
-
 import { Subject } from 'rxjs'
 
 import { agentDependencies, getAgentContext } from '../../../tests/helpers'
 import { EventEmitter } from '../EventEmitter'
 
-const mockEmit = jest.fn()
-const mockOn = jest.fn()
-const mockOff = jest.fn()
-const mock = jest.fn().mockImplementation(() => {
+const mockEmit = vi.fn()
+const mockOn = vi.fn()
+const mockOff = vi.fn()
+const mock = vi.fn().mockImplementation(() => {
   return { emit: mockEmit, on: mockOn, off: mockOff }
-}) as jest.Mock<NativeEventEmitter>
+})
 
 const eventEmitter = new EventEmitter(
   { ...agentDependencies, EventEmitterClass: mock as unknown as typeof NativeEventEmitter },
@@ -20,7 +19,7 @@ const agentContext = getAgentContext({})
 
 describe('EventEmitter', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('emit', () => {
@@ -42,7 +41,7 @@ describe('EventEmitter', () => {
 
   describe('on', () => {
     test("calls 'on' on native event emitter instance", () => {
-      const listener = jest.fn()
+      const listener = vi.fn()
       eventEmitter.on('some-event', listener)
 
       expect(mockOn).toHaveBeenCalledWith('some-event', listener)
@@ -50,7 +49,7 @@ describe('EventEmitter', () => {
   })
   describe('off', () => {
     test("calls 'off' on native event emitter instance", () => {
-      const listener = jest.fn()
+      const listener = vi.fn()
       eventEmitter.off('some-event', listener)
 
       expect(mockOff).toHaveBeenCalledWith('some-event', listener)

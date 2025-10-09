@@ -1,4 +1,4 @@
-import type { InvitationType } from '../messages'
+import type { DidCommInvitationType } from '../messages'
 
 export enum DidCommOutOfBandRecordMetadataKeys {
   RecipientRouting = '_internal/recipientRouting',
@@ -20,6 +20,6 @@ export type DidCommOutOfBandRecordMetadata = {
     /**
      * Indicates the type of the legacy invitation that was used for this out of band exchange.
      */
-    legacyInvitationType?: Exclude<InvitationType, InvitationType.OutOfBand>
+    legacyInvitationType?: Exclude<DidCommInvitationType, DidCommInvitationType.OutOfBand>
   }
 }

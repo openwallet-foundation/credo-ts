@@ -1,8 +1,8 @@
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicRsa } from './rsaJwk'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicRsa } from './rsaJwk'
 import { rsaPublicJwkToPublicKey, rsaPublicKeyToPublicJwk } from './rsaPublicKey'
 
 export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {

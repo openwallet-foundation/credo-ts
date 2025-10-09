@@ -1,14 +1,14 @@
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
-import { Kms, TypedArrayEncoder } from '../../../../core'
+import { Kms, TypedArrayEncoder } from '../../../../core/src/index'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
 
-jest.mock('../../../../core/src/utils/timestamp', () => {
+vi.mock('../../../../core/src/utils/timestamp', () => {
   return {
     __esModule: true,
-    default: jest.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
+    default: vi.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
   }
 })
 

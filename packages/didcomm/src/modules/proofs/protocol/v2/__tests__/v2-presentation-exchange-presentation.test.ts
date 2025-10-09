@@ -1,7 +1,7 @@
-import type { Agent } from '../../../../../../../core'
+import type { Agent } from '../../../../../../../core/src/index'
 import type { getJsonLdModules } from '../../../../../../../core/tests'
 
-import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core'
+import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core/src/index'
 import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'

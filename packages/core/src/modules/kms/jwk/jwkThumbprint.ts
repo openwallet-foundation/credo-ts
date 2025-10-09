@@ -1,7 +1,7 @@
-import { HashName, Hasher } from '../../../crypto/hashes/Hasher'
+import { type HashName, Hasher } from '../../../crypto/hashes/Hasher'
 import { TypedArrayEncoder } from '../../../utils'
 import { parseWithErrorHandling } from '../../../utils/zod'
-import { KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
+import { type KmsJwkPublic, zKmsJwkPublic } from './knownJwk'
 
 export const zJwkThumbprintComponents = zKmsJwkPublic.transform((data) => {
   if (data.kty === 'EC') {

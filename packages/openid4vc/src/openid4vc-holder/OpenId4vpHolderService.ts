@@ -27,9 +27,9 @@ import {
   injectable,
 } from '@credo-ts/core'
 import {
-  Openid4vpAuthorizationResponse,
+  type Openid4vpAuthorizationResponse,
   Openid4vpClient,
-  VpToken,
+  type VpToken,
   extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
   isJarmResponseMode,
@@ -38,8 +38,8 @@ import {
   parseTransactionData,
 } from '@openid4vc/openid4vp'
 
-import { Jwk } from '@openid4vc/oauth2'
-import { OpenId4VpVersion } from '../openid4vc-verifier'
+import type { Jwk } from '@openid4vc/oauth2'
+import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import { getOid4vcCallbacks } from '../shared/callbacks'
 
 @injectable()

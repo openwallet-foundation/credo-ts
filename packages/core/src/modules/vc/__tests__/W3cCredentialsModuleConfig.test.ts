@@ -9,7 +9,7 @@ describe('W3cCredentialsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const documentLoader = jest.fn()
+    const documentLoader = vi.fn()
     const config = new W3cCredentialsModuleConfig({
       documentLoader,
     })

@@ -14,8 +14,8 @@ import {
 import { getAgentOptions } from '../../core/tests/helpers'
 
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
-import { validService } from './setup'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
+import { validService } from './testUtils'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
 

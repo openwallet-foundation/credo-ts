@@ -1,5 +1,5 @@
 import { shell } from 'shell'
-import { Dialect, generateMigrations } from './generate-migrations'
+import { type Dialect, generateMigrations } from './generate-migrations'
 import { runMigrations } from './run-migrations'
 import { runStudio } from './run-studio'
 import { errorLog, log } from './utils'

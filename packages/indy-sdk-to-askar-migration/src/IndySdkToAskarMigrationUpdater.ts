@@ -1,6 +1,6 @@
 import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
 import type { Agent, FileSystem } from '@credo-ts/core'
-import { EntryObject, KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
+import { type EntryObject, KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
 import { InjectionSymbols, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'

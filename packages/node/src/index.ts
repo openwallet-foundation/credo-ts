@@ -9,7 +9,7 @@ import { DidCommWsInboundTransport } from './transport/DidCommWsInboundTransport
 
 export { NodeInMemoryKeyManagementStorage } from './kms/NodeInMemoryKeyManagementStorage'
 export { NodeKeyManagementService } from './kms/NodeKeyManagementService'
-export { NodeKeyManagementStorage } from './kms/NodeKeyManagementStorage'
+export type { NodeKeyManagementStorage } from './kms/NodeKeyManagementStorage'
 
 const agentDependencies: AgentDependencies = {
   FileSystem: NodeFileSystem,

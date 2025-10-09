@@ -7,7 +7,7 @@ import { sha256 } from '@noble/hashes/sha2'
 
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
-import { KeyManagementApi, KmsJwkPublicAsymmetric, KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
 
 export const getMdocContext = (agentContext: AgentContext): MdocContext => {
