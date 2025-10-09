@@ -18,8 +18,8 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
-import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
+import { openid4vcBundle } from '../../drizzle-storage/src/openid4vc/bundle'
+import { tenantsBundle } from '../../drizzle-storage/src/tenants/bundle'
 import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import {
   type DrizzlePostgresTestDatabase,

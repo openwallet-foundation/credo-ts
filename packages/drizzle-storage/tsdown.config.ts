@@ -2,7 +2,7 @@ import { defineConfig } from 'tsdown'
 import config from '../../tsdown.config.base'
 
 // NOTE: core is exlcuded since we already import it, so we don't have to add it as entry.
-const bundles = ['didcomm', 'action-menu', 'drpc', 'tenants', 'openid4vc', 'anoncreds', 'question-answer']
+const bundles = ['didcomm', 'action-menu', 'core', 'drpc', 'tenants', 'openid4vc', 'anoncreds', 'question-answer']
 const bundleEntry = (bundle: string) => [
   `src/${bundle}/bundle.ts`,
   `src/${bundle}/sqlite.ts`,

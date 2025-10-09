@@ -19,10 +19,13 @@ export async function resolveBundle(bundle: string) {
       continue
     }
 
-    if (!module.default) {
-      throw new Error(`Expected bundle ${bundle} to export default object defining the bundle.`)
+    const bundleValue = Object.values(module).find(
+      (value) => value && typeof value === 'object' && 'name' in value && 'records' in value
+    )
+    if (!bundleValue) {
+      throw new Error(`Expected module ${bundle} to export a buundle object defining the bundle.`)
     }
-    return module.default as {
+    return bundleValue as {
       name: string
       migrations: {
         sqlite: {

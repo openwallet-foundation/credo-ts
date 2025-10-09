@@ -8,7 +8,7 @@ import {
   pushDrizzleSchema,
 } from '../../../tests/testDatabase'
 import { DrizzleStorageModule } from '../../DrizzleStorageModule'
-import coreDrizzleBundle from '../../core/bundle'
+import { coreBundle } from '../../core/bundle'
 
 describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', (drizzleDialect) => {
   let postgresDatabase: DrizzlePostgresTestDatabase | undefined = undefined
@@ -21,7 +21,7 @@ describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', 
 
     const drizzleModule = new DrizzleStorageModule({
       database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
-      bundles: [coreDrizzleBundle],
+      bundles: [coreBundle],
     })
 
     agent = new Agent({

@@ -12,11 +12,11 @@ import { AskarModule, AskarMultiWalletDatabaseScheme } from '@credo-ts/askar'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
 import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
 import testLogger from '../../core/tests/logger'
-import actionMenuDrizzleBundle from '../../drizzle-storage/src/action-menu/bundle'
-import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
-import coreDrizzleBundle from '../../drizzle-storage/src/core/bundle'
-import didcommDrizzleBundle from '../../drizzle-storage/src/didcomm/bundle'
-import tenantsDrizzleBundle from '../../drizzle-storage/src/tenants/bundle'
+import { actionMenuBundle } from '../../drizzle-storage/src/action-menu/bundle'
+import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
+import { coreBundle } from '../../drizzle-storage/src/core/bundle'
+import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
+import { tenantsBundle } from '../../drizzle-storage/src/tenants/bundle'
 import {
   createDrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
@@ -103,7 +103,7 @@ describe('Askar to Drizzle Migration', () => {
     const storeId = `askar sqlite to drizzle sqlite successful migration ${Math.random()}`
 
     const drizzleModule = new DrizzleStorageModule({
-      bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
       database: await inMemoryDrizzleSqliteDatabase(),
     })
 
@@ -150,7 +150,7 @@ describe('Askar to Drizzle Migration', () => {
     const postgresDatabase = await createDrizzlePostgresTestDatabase()
 
     const drizzleModule = new DrizzleStorageModule({
-      bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
       database: postgresDatabase.drizzle,
     })
 
@@ -197,13 +197,7 @@ describe('Askar to Drizzle Migration', () => {
     const storeId = `askar sqlite to drizzle sqlite with tenants successful migration ${Math.random()}`
 
     const drizzleModule = new DrizzleStorageModule({
-      bundles: [
-        coreDrizzleBundle,
-        didcommDrizzleBundle,
-        actionMenuDrizzleBundle,
-        anoncredsDrizzleBundle,
-        tenantsDrizzleBundle,
-      ],
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle, tenantsBundle],
       database: await inMemoryDrizzleSqliteDatabase(),
     })
 
@@ -282,13 +276,7 @@ describe('Askar to Drizzle Migration', () => {
     const postgresDatabase = await createDrizzlePostgresTestDatabase()
 
     const drizzleModule = new DrizzleStorageModule({
-      bundles: [
-        coreDrizzleBundle,
-        didcommDrizzleBundle,
-        actionMenuDrizzleBundle,
-        anoncredsDrizzleBundle,
-        tenantsDrizzleBundle,
-      ],
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle, tenantsBundle],
       database: postgresDatabase.drizzle,
     })
 

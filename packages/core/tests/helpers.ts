@@ -18,8 +18,8 @@ import type {
   TrustPingResponseReceivedEvent,
 } from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
 import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
-import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
-import didcommDrizzleBundle from '../../drizzle-storage/src/didcomm/bundle'
+import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
+import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
 import type {
   Agent,
   AgentDependencies,
@@ -142,7 +142,7 @@ export function getAgentOptions<
     ? {
         drizzle: new DrizzleStorageModule({
           database: drizzle,
-          bundles: [didcommDrizzleBundle, anoncredsDrizzleBundle],
+          bundles: [didcommBundle, anoncredsBundle],
         }),
       }
     : {}

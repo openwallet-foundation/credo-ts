@@ -1,10 +1,10 @@
 import { Agent } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
 import { DrizzleStorageModule } from '../src'
-import actionMenuDrizzleBundle from '../src/action-menu/bundle'
-import anoncredsDrizzleBundle from '../src/anoncreds/bundle'
-import coreDrizzleBundle from '../src/core/bundle'
-import didcommDrizzleBundle from '../src/didcomm/bundle'
+import { actionMenuBundle } from '../src/action-menu/bundle'
+import { anoncredsBundle } from '../src/anoncreds/bundle'
+import { coreBundle } from '../src/core/bundle'
+import { didcommBundle } from '../src/didcomm/bundle'
 import {
   type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
@@ -23,7 +23,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
 
     const drizzleModule = new DrizzleStorageModule({
       database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
-      bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
+      bundles: [coreBundle, didcommBundle, actionMenuBundle, anoncredsBundle],
     })
 
     agent = new Agent({

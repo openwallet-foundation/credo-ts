@@ -20,6 +20,8 @@ GENESIS_TXN_PATH=/work/network/genesis/local-genesis.txn
 
 Test are executed using vitest. E2E tests (ending in `.e2e.test.ts`) require the **indy ledger**, **cheqd ledger**, **postgres database**, or **redis** to be running. Drizzle tests (ending in `drizzle.e2e.test.ts`) require the **postgres database** to be running.
 
+NOTE: when running the Drizzle tests, you must first run `pnpm build`, as the CLI requires the built packages.
+
 When running tests that require a connection to the indy ledger pool, you can set the `TEST_AGENT_PUBLIC_DID_SEED`, `ENDORSER_AGENT_PUBLIC_DID_SEED` and `GENESIS_TXN_PATH` environment variables.
 
 ### Quick Setup
