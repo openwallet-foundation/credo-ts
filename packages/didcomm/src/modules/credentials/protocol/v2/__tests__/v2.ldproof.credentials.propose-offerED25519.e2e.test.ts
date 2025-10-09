@@ -18,7 +18,7 @@ import {
   testLogger,
   waitForCredentialRecordSubject,
 } from '../../../../../../../core/tests'
-import { DidCommModuleConfigOptions } from '../../../../../DidCommModuleConfig'
+import type { DidCommModuleConfigOptions } from '../../../../../DidCommModuleConfig'
 import { DidCommProofEventTypes } from '../../../../proofs'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommJsonLdCredentialFormatService } from '../../../formats'
