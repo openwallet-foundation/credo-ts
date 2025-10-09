@@ -5,10 +5,16 @@ import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMedi
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommProtocol } from '../../models'
 
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommConnectionsApi } from '../connections'
 import { DidCommOutOfBandApi } from '../oob'
 import { DidCommMediationRecipientApi } from './DidCommMediationRecipientApi'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
+import {
+  DidCommKeylistUpdateResponseHandler,
+  DidCommMediationDenyHandler,
+  DidCommMediationGrantHandler,
+} from './handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
@@ -38,6 +44,12 @@ export class DidCommMediationRecipientModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+    const mediationRecipientService = agentContext.resolve(DidCommMediationRecipientService)
+
+    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
     featureRegistry.register(
       new DidCommProtocol({
