@@ -2,7 +2,7 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../Repository'
-import { StorageService } from '../../StorageService'
+import type { StorageService } from '../../StorageService'
 
 import { StorageVersionRecord } from './StorageVersionRecord'
 

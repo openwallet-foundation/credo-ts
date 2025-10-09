@@ -1,6 +1,6 @@
-import { DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
-import { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
-import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
+import { type DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
+import type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
+import type { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
 import coreDrizzleBundle from './core/bundle'
 

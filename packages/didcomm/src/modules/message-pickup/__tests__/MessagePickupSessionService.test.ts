@@ -7,7 +7,7 @@ import { AgentContext } from '../../../../../core/src/agent/context/AgentContext
 import { InjectionSymbols } from '../../../../../core/src/constants'
 import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers'
 import { DidCommMessage } from '../../../DidCommMessage'
-import { DidCommTransportSession } from '../../../DidCommTransportService'
+import type { DidCommTransportSession } from '../../../DidCommTransportService'
 import { DidCommTransportEventTypes } from '../../../transport/DidCommTransportEventTypes'
 import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
@@ -19,7 +19,7 @@ describe('start listener remove live sessions', () => {
   let eventEmitter: EventEmitter
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
 
     stop$ = new Subject<boolean>()
     eventEmitter = new EventEmitter(agentDependencies, stop$)
@@ -30,7 +30,7 @@ describe('start listener remove live sessions', () => {
       ],
     })
     instance = new DidCommMessagePickupSessionService()
-    jest.spyOn(instance, 'removeLiveSession').mockImplementation()
+    vi.spyOn(instance, 'removeLiveSession').mockImplementation(() => {})
   })
 
   test('removes live session on related transport event', () => {
@@ -46,8 +46,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     // Add the session to the instance
@@ -83,8 +83,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {
@@ -112,8 +112,8 @@ describe('start listener remove live sessions', () => {
       },
       inboundMessage: new DidCommMessage(),
       connectionId: 'conn-123',
-      send: jest.fn(),
-      close: jest.fn(),
+      send: vi.fn(),
+      close: vi.fn(),
     }
 
     eventEmitter.emit<DidCommTransportSessionRemovedEvent>(agentContext, {

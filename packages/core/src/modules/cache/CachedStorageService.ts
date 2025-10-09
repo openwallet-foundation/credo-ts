@@ -2,7 +2,7 @@ import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'
 import { inject, injectable } from '../../plugins'
 import { BaseRecord } from '../../storage/BaseRecord'
-import { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
+import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from '../../storage/StorageService'
 import { JsonTransformer } from '../../utils'
 import { CacheModuleConfig } from './CacheModuleConfig'
 

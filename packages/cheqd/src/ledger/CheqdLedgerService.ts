@@ -10,8 +10,9 @@ import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/pro
 import type { DidDocumentMetadata } from '@credo-ts/core'
 
 import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
-import { CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
+import type { DeliverTxResponse } from '@cosmjs/stargate'
 import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
 import { getCosmosPayerWallet } from '../dids/didCheqdUtil'
@@ -124,7 +125,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.createDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -134,7 +135,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.updateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -144,7 +145,7 @@ export class CheqdLedgerService {
     signInputs: SignInfo[],
     versionId?: string | undefined,
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(didPayload.id)
     return sdk.deactivateDidDocTx(signInputs, didPayload, '', fee, undefined, versionId)
   }
@@ -167,7 +168,7 @@ export class CheqdLedgerService {
     resourcePayload: Partial<MsgCreateResourcePayload>,
     signInputs: SignInfo[],
     fee?: DidStdFee
-  ) {
+  ): Promise<DeliverTxResponse> {
     const sdk = await this.getSdk(did)
     return sdk.createLinkedResourceTx(signInputs, resourcePayload, '', fee, undefined)
   }

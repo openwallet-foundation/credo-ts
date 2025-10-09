@@ -3,7 +3,7 @@ import type { ResolvedDidCommService } from '../../../../types'
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
 
 import { PublicJwk } from '../../../kms'
-import { DidDocumentKey } from '../../DidsApiOptions'
+import type { DidDocumentKey } from '../../DidsApiOptions'
 import { DidDocument, getEd25519VerificationKey2018, getX25519KeyAgreementKey2019 } from '../../domain'
 import { DidDocumentBuilder } from '../../domain/DidDocumentBuilder'
 import { DidCommV1Service } from '../../domain/service/DidCommV1Service'

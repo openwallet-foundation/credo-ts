@@ -4,15 +4,15 @@ import {
   CachedStorageService,
   InjectionSymbols,
   SingleContextStorageLruCache,
-  StorageService,
+  type StorageService,
 } from '@credo-ts/core'
 import { getAgentOptions } from '../../../../../core/tests'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from '../models'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
 
 const cache = new SingleContextStorageLruCache({ limit: 500 })
-const cacheSetSpy = jest.spyOn(cache, 'set')
-const cacheGetSpy = jest.spyOn(cache, 'get')
+const cacheSetSpy = vi.spyOn(cache, 'set')
+const cacheGetSpy = vi.spyOn(cache, 'get')
 
 const agentOptions = getAgentOptions(
   'Agent Connection Repository',
@@ -51,7 +51,7 @@ describe('ConnectionRepository', () => {
     const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(
       InjectionSymbols.StorageService
     )
-    const storageServiceGetByIdSpy = jest.spyOn(storageService, 'getById')
+    const storageServiceGetByIdSpy = vi.spyOn(storageService, 'getById')
 
     const connectionRecord = new DidCommConnectionRecord({
       role: DidCommDidExchangeRole.Requester,
@@ -87,7 +87,7 @@ describe('ConnectionRepository', () => {
     const storageService = agent.context.resolve<StorageService<DidCommConnectionRecord>>(
       InjectionSymbols.StorageService
     )
-    const storageServiceFindByQuerySpy = jest.spyOn(storageService, 'findByQuery')
+    const storageServiceFindByQuerySpy = vi.spyOn(storageService, 'findByQuery')
 
     const foundConnectionRecord2 = await connectionRepository.findByDids(agent.context, dids)
     expect(foundConnectionRecord2).toEqual(foundConnectionRecord)

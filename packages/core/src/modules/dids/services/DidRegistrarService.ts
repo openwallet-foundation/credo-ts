@@ -10,7 +10,7 @@ import type {
 } from '../types'
 
 import { InjectionSymbols } from '../../../constants'
-import { Logger } from '../../../logger'
+import type { Logger } from '../../../logger'
 import { inject, injectable } from '../../../plugins'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { tryParseDid } from '../domain/parse'

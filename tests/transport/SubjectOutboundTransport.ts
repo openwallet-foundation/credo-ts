@@ -56,7 +56,9 @@ export class SubjectOutboundTransport implements DidCommOutboundTransport {
       next: async ({ message }: SubjectMessage) => {
         this.logger.test('Received message')
 
-        await messageReceiver.receiveMessage(message)
+        await messageReceiver
+          .receiveMessage(message)
+          .catch((e) => this.agentContext.config.logger.error('Error processing message', e))
       },
     })
 

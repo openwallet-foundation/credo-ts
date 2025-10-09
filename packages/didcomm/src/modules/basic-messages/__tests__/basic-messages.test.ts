@@ -145,7 +145,7 @@ describe('Basic Messages E2E', () => {
   test('Alice is unable to send a message', async () => {
     testLogger.test('Alice sends message to Faber that is undeliverable')
 
-    const spy = jest
+    const spy = vi
       .spyOn(aliceAgent.didcomm.outboundTransports[0], 'sendMessage')
       .mockRejectedValue(new Error('any error'))
 

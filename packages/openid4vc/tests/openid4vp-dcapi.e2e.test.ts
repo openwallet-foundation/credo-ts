@@ -1,5 +1,5 @@
 import type { DcqlQuery, X509Certificate } from '@credo-ts/core'
-import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '../src'
+import { OpenId4VcModule, type OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '../src'
 import type { AgentType } from './utils'
 
 import {

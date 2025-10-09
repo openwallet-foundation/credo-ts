@@ -1,11 +1,12 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../plugins/DependencyManager'
 import { DidsModule } from '../DidsModule'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidRepository } from '../repository'
 import { DidRegistrarService, DidResolverService } from '../services'
 
-jest.mock('../../../plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 

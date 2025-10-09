@@ -14,7 +14,7 @@ import type {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import { HederaLedgerService } from '../ledger'
+import { HederaLedgerService } from '../ledger/HederaLedgerService'
 
 export class HederaAnonCredsRegistry implements AnonCredsRegistry {
   public readonly methodName = 'hedera'

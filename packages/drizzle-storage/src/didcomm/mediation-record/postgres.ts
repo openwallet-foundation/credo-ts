@@ -2,7 +2,7 @@ import type { DidCommMediationRole, DidCommMediationState, DidCommMediatorPickup
 import { boolean, foreignKey, pgEnum, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
-import { didcommConnection } from '../postgres'
+import { didcommConnection } from '../connection-record/postgres'
 
 export const didcommMediationStates = exhaustiveArray(
   {} as DidCommMediationState,

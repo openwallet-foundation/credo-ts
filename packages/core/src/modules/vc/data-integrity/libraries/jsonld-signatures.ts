@@ -1,10 +1,7 @@
-import {
-  constants as JsonLdConstants,
-  purposes as JsonLdPurposes,
-  suites as JsonLdSuites,
-  // No type definitions available for this library
-  //@ts-ignore
-} from '@digitalcredentials/jsonld-signatures'
+// No type definitions available for this library
+//@ts-ignore
+import jsonLdSignatures from '@digitalcredentials/jsonld-signatures'
+const { constants: JsonLdConstants, purposes: JsonLdPurposes, suites: JsonLdSuites } = jsonLdSignatures
 
 export interface Suites {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>

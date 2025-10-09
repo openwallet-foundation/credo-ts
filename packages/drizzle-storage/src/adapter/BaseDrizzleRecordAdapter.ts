@@ -1,17 +1,17 @@
 import {
   AgentContext,
   BaseRecord,
-  BaseRecordConstructor,
+  type BaseRecordConstructor,
   CredoError,
-  Query,
-  QueryOptions,
+  type Query,
+  type QueryOptions,
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { DrizzleQueryError, Simplify, and, eq } from 'drizzle-orm'
+import { DrizzleQueryError, type Simplify, and, eq } from 'drizzle-orm'
 import { PgTable, pgTable } from 'drizzle-orm/pg-core'
 import { SQLiteTable as _SQLiteTable, sqliteTable } from 'drizzle-orm/sqlite-core'
-import { DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
+import { type DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
 import { getSqliteBaseRecordTable } from '../sqlite'
@@ -21,7 +21,7 @@ import {
   extractPostgresErrorCode,
   extractSqliteErrorCode,
 } from './drizzleError'
-import { DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
+import { type DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
 import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>

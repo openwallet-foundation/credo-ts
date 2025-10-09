@@ -7,7 +7,7 @@ import express, { type Express } from 'express'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcModule,
   OpenId4VciCredentialFormatProfile,
 } from '../src'

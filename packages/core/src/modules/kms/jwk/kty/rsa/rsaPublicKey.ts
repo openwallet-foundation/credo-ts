@@ -1,5 +1,5 @@
 import { TypedArrayEncoder } from '../../../../../utils'
-import { KmsJwkPublicRsa } from './rsaJwk'
+import type { KmsJwkPublicRsa } from './rsaJwk'
 
 export function rsaPublicJwkToPublicKey(publicJwk: KmsJwkPublicRsa) {
   const modulus = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.n))

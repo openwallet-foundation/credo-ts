@@ -4,7 +4,7 @@ import type { EventReplaySubject } from '../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from '../../anoncreds/tests/anoncredsSetup'
 import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentation-definition'
-import { W3cCredential, W3cCredentialSubject } from '../../core'
+import { W3cCredential, W3cCredentialSubject } from '../../core/src/index'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
 import {
@@ -12,7 +12,7 @@ import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialState,
   DidCommProofState,
-} from '../../didcomm'
+} from '../../didcomm/src/index'
 
 import { cheqdPayerSeeds } from './setupCheqdModule'
 
