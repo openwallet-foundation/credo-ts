@@ -520,10 +520,11 @@ describe('DidCommMessageSender', () => {
 
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didCommModuleConfig,
         didCommDocumentService,
         eventEmitter
       )
@@ -539,6 +540,8 @@ describe('DidCommMessageSender', () => {
     })
 
     test('throws error when there is no outbound transport', async () => {
+      didCommModuleConfig.outboundTransports = []
+
       outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
         serviceParams: {
@@ -660,10 +663,11 @@ describe('DidCommMessageSender', () => {
   describe('packMessage', () => {
     beforeEach(() => {
       outboundTransport = new DummyHttpOutboundTransport()
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       messageSender = new DidCommMessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didCommModuleConfig,
         didCommDocumentService,
         eventEmitter
       )
