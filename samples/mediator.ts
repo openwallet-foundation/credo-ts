@@ -69,7 +69,7 @@ const agent = new Agent({
       transports: {
         inbound: [httpInboundTransport, wsInboundTransport],
         outbound: [httpOutboundTransport, httpOutboundTransport],
-      },      
+      },
       mediator: {
         autoAcceptMediationRequests: true,
       },

@@ -29,7 +29,7 @@ const run = async () => {
         },
       }),
       didcomm: new DidCommModule({
-        transports: { inbound: [httpOutboundTransport], outbound: [wsOutboundTransport],
+        transports: { inbound: [httpOutboundTransport], outbound: [wsOutboundTransport] },
         connections: {
           autoAcceptConnections: true,
         },

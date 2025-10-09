@@ -227,7 +227,7 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     }
   }
 
-  public async shutdown(_agentContext: AgentContext) {
+  public async shutdown(agentContext: AgentContext) {
     // Stop transports
     const allTransports = [...this.config.inboundTransports, ...this.config.outboundTransports]
     const transportPromises = allTransports.map((transport) => transport.stop())
