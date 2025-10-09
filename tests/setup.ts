@@ -1,5 +1,14 @@
-import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import 'reflect-metadata'
+import testLogger from '../packages/core/tests/logger'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
+
+process.on('unhandledRejection', (reason) => {
+  testLogger.error('Unhandled rejection in test', {
+    reason,
+  })
+
+  process.exit(1)
+})
 
 expect.extend({
   toBeConnectedWith,

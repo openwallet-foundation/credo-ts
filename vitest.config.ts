@@ -22,6 +22,9 @@ export default defineConfig({
       exclude: ['/build/', '/node_modules/', '/__tests__/', 'tests', 'coverage'],
     },
 
+    // Enable for debugging
+    // logHeapUsage: true,
+
     projects: [
       {
         extends: true,
