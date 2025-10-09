@@ -128,6 +128,9 @@ importers:
       '@credo-ts/drpc':
         specifier: workspace:*
         version: link:packages/drpc
+      '@credo-ts/hedera':
+        specifier: workspace:*
+        version: link:packages/hedera
       '@credo-ts/indy-sdk-to-askar-migration':
         specifier: workspace:*
         version: link:packages/indy-sdk-to-askar-migration
