@@ -40,20 +40,21 @@ const mediatorOptions = () =>
   )
 
 const senderPort = 4101
-const senderOptions = () => getAgentOptions(
-  'E2E WS Pickup V2 Sender',
-  {},
-  {},
-  {
-    ...getAnonCredsModules({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      extraDidCommConfig: {
-        endpoints: [`ws://localhost:${senderPort}`],
-      },
-    }),
-  },
-  { requireDidcomm: true }
-)
+const senderOptions = () =>
+  getAgentOptions(
+    'E2E WS Pickup V2 Sender',
+    {},
+    {},
+    {
+      ...getAnonCredsModules({
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        extraDidCommConfig: {
+          endpoints: [`ws://localhost:${senderPort}`],
+        },
+      }),
+    },
+    { requireDidcomm: true }
+  )
 
 describe('E2E WS Pickup V2 tests', () => {
   let recipientAgent: AnonCredsTestsAgent
