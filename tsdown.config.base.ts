@@ -1,5 +1,5 @@
 import path from 'node:path'
-import { type UserConfig } from 'tsdown'
+import type { UserConfig } from 'tsdown'
 
 export default [
   {
@@ -8,6 +8,7 @@ export default [
     unbundle: true,
     format: 'esm',
     target: 'es2020',
+    tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),
     dts: {
       sourcemap: true,
       tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),
@@ -21,6 +22,7 @@ export default [
     unbundle: true,
     format: 'cjs',
     target: 'es2020',
+    tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),
     dts: {
       sourcemap: true,
       tsconfig: path.join(import.meta.dirname, 'tsconfig.build.json'),

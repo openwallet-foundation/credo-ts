@@ -25,7 +25,7 @@ import {
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
-import { type AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText } from './OutputClass'

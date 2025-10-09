@@ -9,7 +9,7 @@ import type {
 } from '../W3cCredentialServiceOptions'
 import type { SingleValidationResult, W3cVerifyCredentialResult, W3cVerifyPresentationResult } from '../models'
 
-import { JwsService } from '../../../crypto'
+import { JwsService } from '../../../crypto/JwsService'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
 import { MessageValidator, asArray, isDid } from '../../../utils'

@@ -11,7 +11,7 @@ import { TestLogger } from '../../core/tests/logger'
 import { DidCommConnectionsModule, DidCommHandshakeProtocol } from '../../didcomm/src/index'
 import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { agentDependencies } from '../../node/src'
-import { type AskarPostgresStorageConfig } from '../src'
+import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
 
 registerAskar({ askar })

@@ -45,7 +45,6 @@
     "@credo-ts/tenants": "workspace:*",
     "@credo-ts/webvh": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
-    "@swc-node/register": "^1.11.1",
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
     "@types/node": "catalog:",

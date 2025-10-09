@@ -1,5 +1,5 @@
 import { type AgentContext, Kms } from '@credo-ts/core'
-import { type Verifier } from 'didwebvh-ts'
+import type { Verifier } from 'didwebvh-ts'
 
 export class WebvhDidCrypto implements Verifier {
   private agentContext: AgentContext
