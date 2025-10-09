@@ -1136,8 +1136,8 @@ importers:
         specifier: 0.14.1
         version: 0.14.1
       didwebvh-ts:
-        specifier: ^2.5.3
-        version: 2.5.3
+        specifier: 2.5.5
+        version: 2.5.5
       json-canonicalize:
         specifier: ^1.2.0
         version: 1.2.0
@@ -1148,6 +1148,9 @@ importers:
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
+      rxjs:
+        specifier: 'catalog:'
+        version: 7.8.2
       typescript:
         specifier: ~5.5.2
         version: 5.5.4
@@ -5008,8 +5011,8 @@ packages:
   did-resolver@4.1.0:
     resolution: {integrity: sha512-S6fWHvCXkZg2IhS4RcVHxwuyVejPR7c+a4Go0xbQ9ps5kILa8viiYQgrM4gfTyeTjJ0ekgJH9gk/BawTpmkbZA==}
 
-  didwebvh-ts@2.5.3:
-    resolution: {integrity: sha512-VTjA6yKRplrxV2lA1d14lf6B+0uVLdZzPwoqnTuHm/RQVPG1xNj7CRm6Gl5wEnq3NEd/9xJBabqAY7adX94MIQ==}
+  didwebvh-ts@2.5.5:
+    resolution: {integrity: sha512-R45IeIVrlvAkD4gjXR/43Nr1H38OVRfVvHw74wRLbhmHU1HOsWn49yJ1gU4UwEduCbFz06gLvrGUooDnB/8a0w==}
     hasBin: true
 
   diff@4.0.2:
@@ -14328,7 +14331,7 @@ snapshots:
 
   did-resolver@4.1.0: {}
 
-  didwebvh-ts@2.5.3:
+  didwebvh-ts@2.5.5:
     dependencies:
       '@noble/hashes': 1.8.0
       json-canonicalize: 1.2.0
