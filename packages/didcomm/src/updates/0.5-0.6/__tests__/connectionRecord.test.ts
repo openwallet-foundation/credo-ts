@@ -62,7 +62,7 @@ describe('0.5-0.6 | Migration | DIDComm Connection Record', () => {
       const [, connectionRecord3] = mockFunction(connectionRepository.update).mock.calls[2]
       expect(connectionRecord3.toJSON()).toMatchObject({
         _tags: expect.objectContaining({ alias: 'alias-3', theirLabel: 'theirLabel-3' }),
-      })            
+      })
     })
   })
 
