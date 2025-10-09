@@ -40,7 +40,7 @@ const mediatorOptions = () =>
   )
 
 const senderPort = 4101
-const senderOptions = getAgentOptions(
+const senderOptions = () => getAgentOptions(
   'E2E WS Pickup V2 Sender',
   {},
   {},
@@ -62,7 +62,7 @@ describe('E2E WS Pickup V2 tests', () => {
 
   beforeEach(async () => {
     mediatorAgent = new Agent(mediatorOptions()) as unknown as AnonCredsTestsAgent
-    senderAgent = new Agent(senderOptions) as unknown as AnonCredsTestsAgent
+    senderAgent = new Agent(senderOptions()) as unknown as AnonCredsTestsAgent
   })
 
   afterEach(async () => {
