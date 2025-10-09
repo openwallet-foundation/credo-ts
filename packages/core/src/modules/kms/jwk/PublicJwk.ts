@@ -1,15 +1,15 @@
-import { HashName } from '../../../crypto'
+import type { HashName } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { MultiBaseEncoder, TypedArrayEncoder, VarintEncoder } from '../../../utils'
-import { Constructor } from '../../../utils/mixins'
+import type { Constructor } from '../../../utils/mixins'
 import { parseWithErrorHandling } from '../../../utils/zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 import { legacyKeyIdFromPublicJwk } from '../legacy'
 import { assymetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
-import { KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
+import { type KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 
 import {
   Ed25519PublicJwk,

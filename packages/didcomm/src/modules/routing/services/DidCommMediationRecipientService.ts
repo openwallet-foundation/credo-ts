@@ -1,4 +1,4 @@
-import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, Kms, type Query, type QueryOptions } from '@credo-ts/core'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import type { DidCommConnectionRecord } from '../../connections/repository'

@@ -44,7 +44,7 @@ jobs:
       - name: Check Types
         run: pnpm types:check
 
-      - name: Compile
+      - name: Build
         run: pnpm build
 
   unit-tests:
@@ -59,7 +59,7 @@ jobs:
         # Each shard runs a set of the tests
         # Make sure to UPDATE THE TEST command with the total length of
         # the shards if you change this!!
-        shard: [1, 2, 3]
+        shard: [1, 2]
 
     steps:
       - uses: actions/checkout@v5
@@ -88,15 +88,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Issue with node 22 starting 22.18
-      # https://github.com/nodejs/node/issues/59364
       - name: Run tests
-        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/3
-        if: matrix.node-version == 22
-
-      - name: Run tests
-        run: pnpm test:unit --coverage --forceExit --shard=${{ matrix.shard }}/3
-        if: matrix.node-version != 22
+        run: pnpm test:unit --coverage --shard=${{ matrix.shard }}/2
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
@@ -148,15 +141,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Issue with node 22 starting 22.18
-      # https://github.com/nodejs/node/issues/59364
       - name: Run tests
-        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:e2e --coverage --forceExit
-        if: matrix.node-version == 22
-
-      - name: Run tests
-        run: pnpm test:e2e --coverage --forceExit
-        if: matrix.node-version != 22
+        run: pnpm test:e2e --coverage
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
@@ -212,15 +198,8 @@ jobs:
       - name: Build drizzle package
         run: pnpm --filter @credo-ts/drizzle-storage run build
 
-      # Issue with node 22 starting 22.18
-      # https://github.com/nodejs/node/issues/59364
       - name: Run tests
-        run: NODE_OPTIONS="$NODE_OPTIONS --no-experimental-strip-types" pnpm test:drizzle --coverage --forceExit
-        if: matrix.node-version == 22
-
-      - name: Run tests
-        run: pnpm test:drizzle --coverage --forceExit
-        if: matrix.node-version != 22
+        run: pnpm test:drizzle --coverage
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json

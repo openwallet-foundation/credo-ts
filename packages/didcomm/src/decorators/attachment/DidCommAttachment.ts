@@ -1,6 +1,6 @@
 import type { JwsDetachedFormat, JwsFlattenedDetachedFormat, JwsGeneralFormat } from '@credo-ts/core'
 
-import { CredoError, JsonEncoder, JsonValue, utils } from '@credo-ts/core'
+import { CredoError, JsonEncoder, type JsonValue, utils } from '@credo-ts/core'
 import { Expose, Type } from 'class-transformer'
 import { IsDate, IsHash, IsInstance, IsInt, IsMimeType, IsOptional, IsString, ValidateNested } from 'class-validator'
 

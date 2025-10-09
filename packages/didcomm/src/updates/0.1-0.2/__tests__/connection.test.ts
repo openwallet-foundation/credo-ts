@@ -1,4 +1,5 @@
-import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
+import { Agent, DidDocumentRole, DidRecord, DidRepository, JsonTransformer } from '../../../../../core/src/index'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
 import {
   DidCommConnectionRecord,
@@ -22,25 +23,27 @@ import legacyDidPeerR1xKJw17sUoXhejEpugMYJ from './__fixtures__/legacyDidPeerR1x
 const agentConfig = getAgentConfig('Migration DidCommConnectionRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/connections/repository/DidCommConnectionRepository')
-const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
+vi.mock('../../../modules/connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
 const connectionRepository = new ConnectionRepositoryMock()
 
-jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../../../core/src/modules/dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 const didRepository = new DidRepositoryMock()
 
-jest.mock('../../../modules/oob/repository/DidCommOutOfBandRepository')
-const OutOfBandRepositoryMock = DidCommOutOfBandRepository as jest.Mock<DidCommOutOfBandRepository>
+vi.mock('../../../modules/oob/repository/DidCommOutOfBandRepository')
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
 const outOfBandRepository = new OutOfBandRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((cls) => {
+        resolve: vi.fn((cls) => {
           if (cls === DidCommConnectionRepository) {
             return connectionRepository
           }
@@ -94,7 +97,7 @@ const connectionJsonNewDidStateRole = {
 }
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.1-0.2 | Connection', () => {
   let agent: Agent
@@ -104,7 +107,7 @@ describe('0.1-0.2 | Connection', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateCredentialRecordToV0_2()', () => {

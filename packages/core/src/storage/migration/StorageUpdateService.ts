@@ -3,7 +3,7 @@ import type { VersionString } from '../../utils/version'
 import type { UpdateToVersion } from './updates'
 
 import { InjectionSymbols } from '../../constants'
-import { Logger } from '../../logger'
+import type { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 
 import { isStorageUpToDate } from './isUpToDate'

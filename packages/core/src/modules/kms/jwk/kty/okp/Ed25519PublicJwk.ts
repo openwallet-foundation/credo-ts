@@ -1,8 +1,12 @@
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
+import {
+  type KnownJwaKeyAgreementAlgorithm,
+  type KnownJwaSignatureAlgorithm,
+  KnownJwaSignatureAlgorithms,
+} from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
 import { X25519PublicJwk } from './X25519PublicJwk'
-import { KmsJwkPublicOkp } from './okpJwk'
+import type { KmsJwkPublicOkp } from './okpJwk'
 import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
 
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }

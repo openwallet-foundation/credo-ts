@@ -8,7 +8,7 @@ import { takeUntil } from 'rxjs/operators'
 import { InjectionSymbols } from '../constants'
 import { inject, injectable } from '../plugins'
 
-import { AgentDependencies } from './AgentDependencies'
+import type { AgentDependencies } from './AgentDependencies'
 
 type EmitEvent<T extends BaseEvent> = Omit<T, 'metadata'>
 

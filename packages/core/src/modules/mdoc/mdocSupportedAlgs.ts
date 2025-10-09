@@ -1,4 +1,4 @@
-import { KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../kms'
+import { type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../kms'
 
 export type MdocSupportedSignatureAlgorithm = (typeof mdocSupporteSignatureAlgorithms)[number]
 export const mdocSupporteSignatureAlgorithms = [

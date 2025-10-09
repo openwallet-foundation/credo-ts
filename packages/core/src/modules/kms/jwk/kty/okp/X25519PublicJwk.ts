@@ -1,6 +1,6 @@
-import { KnownJwaKeyAgreementAlgorithms, KnownJwaSignatureAlgorithm } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicOkp } from './okpJwk'
+import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicOkp } from './okpJwk'
 import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
 
 type Jwk = KmsJwkPublicOkp & { crv: 'X25519' }

@@ -2,6 +2,7 @@ import type { AgentContext } from '../../../../../../core/src/agent'
 import type { DidCommRouting } from '../../../../models'
 
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { DidRepository } from '../../../../../../core/src/modules/dids/repository/DidRepository'
 import { uuid } from '../../../../../../core/src/utils/uuid'
@@ -24,20 +25,22 @@ import { DidCommMediationRecord } from '../../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../../repository/DidCommMediationRepository'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 
-jest.mock('../../repository/DidCommMediationRepository')
-const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
+vi.mock('../../repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 
-jest.mock('../../../connections/repository/DidCommConnectionRepository')
-const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
+vi.mock('../../../connections/repository/DidCommConnectionRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
 
-jest.mock('../../../../../../core/src/modules/dids/repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../../../../core/src/modules/dids/repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
-jest.mock('../../../../../../core/src/agent/EventEmitter')
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+vi.mock('../../../../../../core/src/agent/EventEmitter')
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 
-jest.mock('../../../../DidCommMessageSender')
-const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
+vi.mock('../../../../DidCommMessageSender')
+const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
 
 describe('DidCommMediationRecipientService', () => {
   const config = getAgentConfig('MediationRecipientServiceTest', {
@@ -133,7 +136,7 @@ describe('DidCommMediationRecipientService', () => {
 
   describe('processKeylistUpdateResults', () => {
     it('it stores did:key-encoded keys in base58 format', async () => {
-      const spyAddRecipientKey = jest.spyOn(mediationRecord, 'addRecipientKey')
+      const spyAddRecipientKey = vi.spyOn(mediationRecord, 'addRecipientKey')
 
       const connection = getMockConnection({
         state: DidCommDidExchangeState.Completed,
@@ -197,7 +200,7 @@ describe('DidCommMediationRecipientService', () => {
     })
 
     beforeEach(() => {
-      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+      vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
     })
 
     test('adds mediation routing id mediator id is passed', async () => {
@@ -217,7 +220,7 @@ describe('DidCommMediationRecipientService', () => {
     test('adds mediation routing if useDefaultMediator is true and default mediation is found', async () => {
       mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
 
-      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+      vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
       const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
         useDefaultMediator: true,
       })
@@ -232,7 +235,7 @@ describe('DidCommMediationRecipientService', () => {
     test('does not add mediation routing if no mediation is found', async () => {
       mockFunction(mediationRepository.findSingleByQuery).mockResolvedValue(mediationRecord)
 
-      jest.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
+      vi.spyOn(mediationRecipientService, 'keylistUpdateAndAwait').mockResolvedValue(mediationRecord)
       const extendedRouting = await mediationRecipientService.addMediationRouting(agentContext, routing, {
         useDefaultMediator: false,
       })

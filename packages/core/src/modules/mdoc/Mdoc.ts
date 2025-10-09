@@ -14,7 +14,7 @@ import {
 import { ClaimFormat } from '../vc/index'
 import { X509Certificate, X509ModuleConfig } from '../x509'
 
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { isKnownJwaSignatureAlgorithm } from '../kms/jwk/jwa'
 import { TypedArrayEncoder } from './../../utils'
 import { getMdocContext } from './MdocContext'

@@ -1,10 +1,10 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
 import {
-  OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcModule,
-  OpenId4VcVerifierModuleConfigOptions,
-  OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
-  OpenId4VciSignSdJwtCredentials,
+  type OpenId4VcVerifierModuleConfigOptions,
+  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  type OpenId4VciSignSdJwtCredentials,
 } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import type { AgentType } from './utils'

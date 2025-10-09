@@ -6,7 +6,7 @@ import anoncredsDrizzleBundle from '../src/anoncreds/bundle'
 import coreDrizzleBundle from '../src/core/bundle'
 import didcommDrizzleBundle from '../src/didcomm/bundle'
 import {
-  DrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
@@ -22,7 +22,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
     }
 
     const drizzleModule = new DrizzleStorageModule({
-      database: postgresDatabase?.drizzle ?? inMemoryDrizzleSqliteDatabase(),
+      database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
       bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
     })
 

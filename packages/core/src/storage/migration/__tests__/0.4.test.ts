@@ -12,13 +12,13 @@ import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2024-02-05T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | v0.4 - v0.5', () => {
   it(`should correctly add 'type' tag to w3c records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-2-w3c-credential-records-0.4.json'),
@@ -78,7 +78,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
   it('should correctly add role to credential exchange records', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/2-credentials-0.4.json'),
@@ -134,7 +134,7 @@ describe('UpdateAssistant | v0.4 - v0.5', () => {
   it('should correctly add role to proof exchange records', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(path.join(__dirname, '__fixtures__/2-proofs-0.4.json'), 'utf8')
 

@@ -17,7 +17,7 @@ import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './
 import { W3cV2JwtCredentialService } from './jwt-vc/W3cV2JwtCredentialService'
 import type { W3cV2VerifiableCredential, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from './models'
 import { ClaimFormat } from './models'
-import { W3cV2VerifiablePresentation } from './models/presentation/W3cV2VerifiablePresentation'
+import type { W3cV2VerifiablePresentation } from './models/presentation/W3cV2VerifiablePresentation'
 import { W3cV2CredentialRecord, W3cV2CredentialRepository } from './repository'
 import {
   W3cV2SdJwtCredentialService,

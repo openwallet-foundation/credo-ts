@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 should correctly update the credential exchange records for holders 1`] = `
+exports[`UpdateAssistant | AnonCreds | v0.4 - v0.5 > should correctly update the credential exchange records for holders 1`] = `
 {
   "1-4e4f-41d9-94c4-f49351b811f1": {
     "id": "1-4e4f-41d9-94c4-f49351b811f1",

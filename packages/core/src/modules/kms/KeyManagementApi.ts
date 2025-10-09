@@ -6,35 +6,35 @@ import { parseWithErrorHandling } from '../../utils/zod'
 import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
-import { KmsJwkPrivate, getJwkHumanDescription } from './jwk'
+import { type KmsJwkPrivate, getJwkHumanDescription } from './jwk'
 import { createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
 import {
-  KmsDecryptOptions,
-  KmsDeleteKeyOptions,
-  KmsGetPublicKeyOptions,
-  KmsImportKeyOptions,
-  KmsOperation,
-  KmsRandomBytesOptions,
+  type KmsDecryptOptions,
+  type KmsDeleteKeyOptions,
+  type KmsGetPublicKeyOptions,
+  type KmsImportKeyOptions,
+  type KmsOperation,
+  type KmsRandomBytesOptions,
   getKmsOperationHumanDescription,
 } from './options'
 import {
-  KmsCreateKeyForSignatureAlgorithmOptions,
-  KmsCreateKeyOptions,
-  KmsCreateKeyReturn,
-  KmsCreateKeyType,
-  KmsCreateKeyTypeAssymetric,
+  type KmsCreateKeyForSignatureAlgorithmOptions,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyReturn,
+  type KmsCreateKeyType,
+  type KmsCreateKeyTypeAssymetric,
   zKmsCreateKeyForSignatureAlgorithmOptions,
   zKmsCreateKeyOptions,
 } from './options/KmsCreateKeyOptions'
 import { zKmsDecryptOptions } from './options/KmsDecryptOptions'
 import { zKmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
-import { KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
+import { type KmsEncryptOptions, zKmsEncryptOptions } from './options/KmsEncryptOptions'
 import { zKmsGetPublicKeyOptions } from './options/KmsGetPublicKeyOptions'
-import { KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
+import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImportKeyOptions'
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
-import { KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
-import { KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
-import { WithBackend, zWithBackend } from './options/backend'
+import { type KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
+import { type KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
+import { type WithBackend, zWithBackend } from './options/backend'
 
 @injectable()
 export class KeyManagementApi {
