@@ -15,7 +15,15 @@ import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } fro
 import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 
-import { AgentContext, CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import {
+  AgentContext,
+  CredoError,
+  EventEmitter,
+  InjectionSymbols,
+  type Logger,
+  inject,
+  injectable,
+} from '@credo-ts/core'
 import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
 
 import { DidCommMessageSender } from '../../DidCommMessageSender'

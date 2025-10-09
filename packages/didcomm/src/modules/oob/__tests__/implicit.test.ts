@@ -69,7 +69,7 @@ describe('out of band implicit', () => {
       await faberAgent.didcomm.connections.deleteById(connection.id)
     }
 
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {

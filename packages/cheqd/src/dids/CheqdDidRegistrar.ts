@@ -1,18 +1,18 @@
-import { CheqdNetwork, DIDDocument, DidStdFee, VerificationMethods } from '@cheqd/sdk'
+import { CheqdNetwork, type DIDDocument, type DidStdFee, VerificationMethods } from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import {
   AgentContext,
   DID_V1_CONTEXT_URL,
-  DidCreateOptions,
-  DidCreateResult,
-  DidDeactivateResult,
-  DidDocumentKey,
-  DidRegistrar,
-  DidUpdateOptions,
-  DidUpdateResult,
+  type DidCreateOptions,
+  type DidCreateResult,
+  type DidDeactivateResult,
+  type DidDocumentKey,
+  type DidRegistrar,
+  type DidUpdateOptions,
+  type DidUpdateResult,
   Kms,
   SECURITY_JWS_CONTEXT_URL,
-  XOR,
+  type XOR,
   getKmsKeyIdForVerifiacationMethod,
   getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'

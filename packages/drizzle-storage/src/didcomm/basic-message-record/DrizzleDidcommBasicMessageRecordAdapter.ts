@@ -1,9 +1,9 @@
-import { JsonTransformer, TagsBase } from '@credo-ts/core'
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 
 import {
   BaseDrizzleRecordAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { DidCommBasicMessageRecord } from '@credo-ts/didcomm'

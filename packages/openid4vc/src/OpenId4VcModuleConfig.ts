@@ -1,7 +1,7 @@
 import type { Router } from 'express'
 
-import { OpenId4VcIssuerModuleConfig, OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
-import { OpenId4VcVerifierModuleConfig, OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
+import { OpenId4VcIssuerModuleConfig, type OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
+import { OpenId4VcVerifierModuleConfig, type OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
 
 export type OpenId4VcModuleConfigOptions<
   IssuerConfig extends OpenId4VcIssuerModuleConfigOptions | undefined | null = null,

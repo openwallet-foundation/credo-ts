@@ -1,5 +1,5 @@
 import { TypedArrayEncoder } from '../../../../../utils'
-import { KmsJwkPublicOkp } from './okpJwk'
+import type { KmsJwkPublicOkp } from './okpJwk'
 
 export function okpPublicJwkToPublicKey(publicJwk: KmsJwkPublicOkp): Uint8Array {
   const publicKey = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))

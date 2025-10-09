@@ -11,6 +11,15 @@ import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from 
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import { outOfBandServiceToNumAlgo2Did } from '../helpers'
 
+/**
+ * The original invitation an out of band invitation was derived from.
+ */
+export enum DidCommInvitationType {
+  OutOfBand = 'out-of-band/1.x',
+  Connection = 'connections/1.x',
+  Connectionless = 'connectionless',
+}
+
 export interface DidCommOutOfBandInvitationOptions {
   id?: string
   label?: string
@@ -45,7 +54,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
    * from what the oob invitation was originally created (e.g. legacy connectionless invitation).
    */
   @Exclude()
-  public invitationType?: InvitationType
+  public invitationType?: DidCommInvitationType
 
   public addRequest(message: DidCommMessage) {
     if (!this.requests) this.requests = []
@@ -181,13 +190,4 @@ function OutOfBandServiceTransformer() {
     // PLAIN_TO_PLAIN
     return value
   })
-}
-
-/**
- * The original invitation an out of band invitation was derived from.
- */
-export enum InvitationType {
-  OutOfBand = 'out-of-band/1.x',
-  Connection = 'connections/1.x',
-  Connectionless = 'connectionless',
 }

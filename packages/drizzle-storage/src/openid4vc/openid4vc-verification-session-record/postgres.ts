@@ -6,7 +6,7 @@ import type {
 import { jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
-import { openid4vcVerifier } from '../postgres'
+import { openid4vcVerifier } from '../openid4vc-verifier-record/postgres'
 
 export const openId4VcVerificationSessionStates = exhaustiveArray(
   {} as OpenId4VcVerificationSessionState,

@@ -2,6 +2,7 @@ import type { DrpcRequestObject } from '../messages'
 
 import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../core/tests/helpers'
 import { DrpcRequestMessage } from '../messages'
@@ -10,12 +11,12 @@ import { DrpcRecord } from '../repository/DrpcRecord'
 import { DrpcRepository } from '../repository/DrpcRepository'
 import { DrpcService } from '../services'
 
-jest.mock('../repository/DrpcRepository')
-const DrpcRepositoryMock = DrpcRepository as jest.Mock<DrpcRepository>
+vi.mock('../repository/DrpcRepository')
+const DrpcRepositoryMock = DrpcRepository as MockedClassConstructor<typeof DrpcRepository>
 const drpcMessageRepository = new DrpcRepositoryMock()
 
-jest.mock('../../../core/src/agent/EventEmitter')
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+vi.mock('../../../core/src/agent/EventEmitter')
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 const eventEmitter = new EventEmitterMock()
 
 const agentContext = getAgentContext()

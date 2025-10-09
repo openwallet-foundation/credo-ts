@@ -3,11 +3,11 @@ import type { AgentContext } from '../agent'
 import type { ModulesMap } from '../agent/AgentModules'
 import type { Constructor } from '../utils/mixins'
 
-import { InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
+import { type InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
 
 import { CredoError } from '../error'
 
-export { InjectionToken }
+export type { InjectionToken }
 
 export class DependencyManager {
   public readonly container: DependencyContainer

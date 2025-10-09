@@ -1,1 +1,3 @@
-module.exports = require('./build/question-answer/bundle.js')
+// If using CJS and `exports` key in package.json is not supported
+// this ensures you can still import `@credo-ts/drizzle-storage/question-answer`
+exports.questionAnswerBundle = require('./build/question-answer/bundle.js').questionAnswerBundle

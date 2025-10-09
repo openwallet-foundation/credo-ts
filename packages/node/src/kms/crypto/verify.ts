@@ -1,4 +1,4 @@
-import { CanBePromise, Kms } from '@credo-ts/core'
+import { type CanBePromise, Kms } from '@credo-ts/core'
 
 import { Buffer } from 'node:buffer'
 import {
@@ -49,7 +49,6 @@ export function performVerify(
         .update(data)
         .digest()
 
-      // eslint-disable-next-line no-restricted-globals
       return timingSafeEqual(expectedHmac, Buffer.from(signature))
     }
     default:

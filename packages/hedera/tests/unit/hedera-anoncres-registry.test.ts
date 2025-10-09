@@ -1,16 +1,16 @@
 import {
-  GetCredentialDefinitionReturn,
-  GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn,
-  GetSchemaReturn,
-  RegisterCredentialDefinitionOptions,
-  RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionOptions,
-  RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListOptions,
-  RegisterRevocationStatusListReturn,
-  RegisterSchemaOptions,
-  RegisterSchemaReturn,
+  type GetCredentialDefinitionReturn,
+  type GetRevocationRegistryDefinitionReturn,
+  type GetRevocationStatusListReturn,
+  type GetSchemaReturn,
+  type RegisterCredentialDefinitionOptions,
+  type RegisterCredentialDefinitionReturn,
+  type RegisterRevocationRegistryDefinitionOptions,
+  type RegisterRevocationRegistryDefinitionReturn,
+  type RegisterRevocationStatusListOptions,
+  type RegisterRevocationStatusListReturn,
+  type RegisterSchemaOptions,
+  type RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import { AgentContext } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'
@@ -18,27 +18,27 @@ import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegi
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
 const mockLedgerService = {
-  registerSchema: jest.fn(),
-  getSchema: jest.fn(),
-  registerCredentialDefinition: jest.fn(),
-  getCredentialDefinition: jest.fn(),
-  registerRevocationRegistryDefinition: jest.fn(),
-  getRevocationRegistryDefinition: jest.fn(),
-  registerRevocationStatusList: jest.fn(),
-  getRevocationStatusList: jest.fn(),
+  registerSchema: vi.fn(),
+  getSchema: vi.fn(),
+  registerCredentialDefinition: vi.fn(),
+  getCredentialDefinition: vi.fn(),
+  registerRevocationRegistryDefinition: vi.fn(),
+  getRevocationRegistryDefinition: vi.fn(),
+  registerRevocationStatusList: vi.fn(),
+  getRevocationStatusList: vi.fn(),
 } as unknown as HederaLedgerService
 
 const mockAgentContext = {
   dependencyManager: {
-    resolve: jest.fn().mockImplementation((cls) => {
+    resolve: vi.fn().mockImplementation((cls) => {
       if (cls === HederaLedgerService) return mockLedgerService
     }),
   },
   config: {
     logger: {
-      trace: jest.fn(),
-      debug: jest.fn(),
-      error: jest.fn(),
+      trace: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
     },
   },
 } as unknown as AgentContext

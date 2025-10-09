@@ -10,7 +10,7 @@ import type {
 } from '@credo-ts/openid4vc'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
-import { openid4vcIssuer } from '../sqlite'
+import { openid4vcIssuer } from '../openid4vc-issuer-record/sqlite'
 
 export const openId4VcIssuanceSession = sqliteTable(
   'OpenId4VcIssuanceSession',

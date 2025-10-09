@@ -1,7 +1,7 @@
 import { JsonTransformer } from '@credo-ts/core'
 
 import { DidCommOutOfBandRecord, DidCommOutOfBandRepository } from '@credo-ts/didcomm'
-import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
+import { type DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommOutOfBandDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('OutOfBandRecord with %s', (type) => {

@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 
 function recordToUnion<T>(record: Record<string, T>) {
   return Object.values(record) as [

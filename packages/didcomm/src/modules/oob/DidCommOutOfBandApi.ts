@@ -14,7 +14,7 @@ import {
   JsonEncoder,
   JsonTransformer,
   Kms,
-  Logger,
+  type Logger,
   filterContextCorrelationId,
   inject,
   injectable,
@@ -50,9 +50,9 @@ import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
-import { DidCommOutOfBandInvitation, InvitationType } from './messages'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages'
 import { DidCommOutOfBandRepository } from './repository'
-import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
+import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -283,7 +283,7 @@ export class DidCommOutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: InvitationType.Connection,
+      legacyInvitationType: DidCommInvitationType.Connection,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)
@@ -309,7 +309,7 @@ export class DidCommOutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: InvitationType.Connectionless,
+      legacyInvitationType: DidCommInvitationType.Connectionless,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)
@@ -481,7 +481,7 @@ export class DidCommOutOfBandApi {
     }
 
     // If the invitation was converted from another legacy format, we store this, as its needed for some flows
-    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== InvitationType.OutOfBand) {
+    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== DidCommInvitationType.OutOfBand) {
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
         legacyInvitationType: outOfBandInvitation.invitationType,
       })
@@ -920,7 +920,7 @@ export class DidCommOutOfBandApi {
 
     // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
     // as that's not expected, and it's generated on our side only
-    if (legacyInvitationMetadata?.legacyInvitationType === InvitationType.Connectionless) {
+    if (legacyInvitationMetadata?.legacyInvitationType === DidCommInvitationType.Connectionless) {
       return
     }
 
