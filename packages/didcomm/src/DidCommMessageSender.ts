@@ -375,7 +375,7 @@ export class DidCommMessageSender {
     this.emitMessageSentEvent(outboundMessageContext, OutboundMessageSendStatus.Undeliverable)
 
     throw new MessageSendingError(
-      `Message is undeliverable to connection ${connection.id} (${connection.theirLabel})`,
+      `Message is undeliverable to connection ${connection.id} (${connection.theirLabel}). \n\nReasons:\n\t- ${errors.map((e) => e.message).join('\n\t-')}`,
       { outboundMessageContext }
     )
   }
@@ -561,7 +561,7 @@ export class DidCommMessageSender {
 
     agentContext.config.logger.debug(
       `Retrieved ${services.length} services for message to connection '${connection.id}'(${connection.theirLabel})'`,
-      { hasQueueService: queueService !== undefined }
+      { hasQueueService: queueService !== undefined, transportPriority }
     )
     return { services, queueService }
   }

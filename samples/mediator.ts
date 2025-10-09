@@ -25,12 +25,8 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
-  DidCommConnectionsModule,
   DidCommHttpOutboundTransport,
-  DidCommMediatorModule,
-  DidCommMessagePickupModule,
   DidCommModule,
-  DidCommOutOfBandModule,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
@@ -73,15 +69,13 @@ const agent = new Agent({
       transports: {
         inbound: [httpInboundTransport, wsInboundTransport],
         outbound: [httpOutboundTransport, httpOutboundTransport],
+      },      
+      mediator: {
+        autoAcceptMediationRequests: true,
       },
-    }),
-    oob: new DidCommOutOfBandModule(),
-    messagePickup: new DidCommMessagePickupModule(),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
-    }),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
+      connections: {
+        autoAcceptConnections: true,
+      },
     }),
   },
 })
@@ -92,7 +86,7 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
+    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
     const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
     res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }
