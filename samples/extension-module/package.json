@@ -9,11 +9,10 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "requester": "ts-node requester.ts",
-    "responder": "ts-node responder.ts"
+    "requester": "vite-node requester.ts",
+    "responder": "vite-node responder.ts"
   },
   "devDependencies": {
-    "ts-node": "catalog:",
     "@types/express": "catalog:",
     "@types/ws": "catalog:"
   },

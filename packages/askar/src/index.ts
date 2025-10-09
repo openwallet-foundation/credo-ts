@@ -1,4 +1,4 @@
-export {
+export type {
   AskarPostgresConfig,
   AskarPostgresCredentials,
   AskarPostgresStorageConfig,
@@ -14,10 +14,10 @@ export { recordToInstance } from './storage/utils'
 // Module
 export { AskarModule } from './AskarModule'
 export {
-  AskarModuleConfigOptions,
+  type AskarModuleConfigOptions,
   AskarMultiWalletDatabaseScheme,
   AskarModuleConfig,
-  AskarModuleConfigStoreOptions,
+  type AskarModuleConfigStoreOptions,
 } from './AskarModuleConfig'
 
 export { transformPrivateKeyToPrivateJwk, transformSeedToPrivateJwk } from './utils'

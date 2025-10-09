@@ -6,13 +6,14 @@ import { DidRepository } from '../../../repository/DidRepository'
 import { PeerDidRegistrar } from '../PeerDidRegistrar'
 import { PeerDidNumAlgo } from '../didPeer'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { Ed25519PublicJwk, KeyManagementApi, PublicJwk } from '../../../../kms'
 import didPeer0z6MksLeFixture from './__fixtures__/didPeer0z6MksLe.json'
 
-jest.mock('../../../repository/DidRepository')
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../../../repository/DidRepository')
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const didRepositoryMock = new DidRepositoryMock()
 
@@ -25,7 +26,7 @@ const kms = agentContext.resolve(KeyManagementApi)
 
 describe('DidRegistrar', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('PeerDidRegistrar', () => {

@@ -1,9 +1,10 @@
-import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds'
+import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/index'
 import type { AgentContext } from '../../../../../../../../core/src/agent'
 import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../../core/src/agent/EventEmitter'
 import {
   getAgentConfig,
@@ -11,7 +12,6 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
-import { DidCommMessageHandlerRegistry } from '../../../../../../DidCommMessageHandlerRegistry'
 import { DidCommInboundMessageContext } from '../../../../../../models'
 import { DidCommDidExchangeState } from '../../../../../connections'
 import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
@@ -21,13 +21,11 @@ import { DidCommCredentialExchangeRepository } from '../../../../repository/DidC
 import { DidCommRevocationNotificationV1Message, DidCommRevocationNotificationV2Message } from '../../messages'
 import { DidCommRevocationNotificationService } from '../DidCommRevocationNotificationService'
 
-jest.mock('../../../../repository/DidCommCredentialExchangeRepository')
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
+vi.mock('../../../../repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
 const credentialRepository = new CredentialRepositoryMock()
-
-jest.mock('../../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
-const _messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
@@ -52,12 +50,12 @@ describe('RevocationNotificationService', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('v1ProcessRevocationNotification', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -67,7 +65,7 @@ describe('RevocationNotificationService', () => {
       const date = new Date('2020-01-01T00:00:00.000Z')
 
       // @ts-ignore
-      const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -122,7 +120,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -151,7 +149,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -173,7 +171,7 @@ describe('RevocationNotificationService', () => {
 
   describe('v2ProcessRevocationNotification', () => {
     test('emits revocation notification event if credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -183,7 +181,7 @@ describe('RevocationNotificationService', () => {
       const date = new Date('2020-01-01T00:00:00.000Z')
 
       // @ts-ignore
-      const dateSpy = jest.spyOn(global, 'Date').mockImplementation(() => date)
+      const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
         threadId: 'thread-id',
@@ -235,7 +233,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if no credential record exists for indy thread', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,
@@ -265,7 +263,7 @@ describe('RevocationNotificationService', () => {
     })
 
     test('does not emit revocation notification event if invalid threadId is passed', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       eventEmitter.on<DidCommRevocationNotificationReceivedEvent>(
         DidCommCredentialEventTypes.DidCommRevocationNotificationReceived,

@@ -1,5 +1,5 @@
-import { UnionToIntersection } from '@credo-ts/core'
-import { DrizzleRecord } from './DrizzleRecord'
+import type { UnionToIntersection } from '@credo-ts/core'
+import type { DrizzleRecord } from './DrizzleRecord'
 
 /**
  * Extracts and combines schema types from an array of DrizzleRecord objects for a specific database type

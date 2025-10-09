@@ -61,12 +61,13 @@ import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
 
 import { askar } from '@openwallet-foundation/askar-nodejs'
+import type { MockedFunction } from 'vitest'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { AskarModule } from '../../askar/src/AskarModule'
-import { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
+import type { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
 import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
-import { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
-import { KeyManagementApi, KeyManagementService, PublicJwk } from '../src/modules/kms'
+import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
+import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
 import testLogger, { TestLogger } from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -799,8 +800,8 @@ export async function makeConnection(
  * @returns mock function with type annotations
  */
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function mockFunction<T extends (...args: any[]) => any>(fn: T): jest.MockedFunction<T> {
-  return fn as jest.MockedFunction<T>
+export function mockFunction<T extends (...args: any[]) => any>(fn: T): MockedFunction<T> {
+  return fn as MockedFunction<T>
 }
 
 /**

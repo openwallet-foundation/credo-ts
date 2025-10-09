@@ -9,10 +9,10 @@ import { CredoError, Kms, utils } from '@credo-ts/core'
 import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import { DidCommOutboundMessageContext } from './models'
 import {
+  DidCommInvitationType,
   DidCommOutOfBandRepository,
   DidCommOutOfBandRole,
   DidCommOutOfBandService,
-  InvitationType,
 } from './modules/oob'
 import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommRoutingService } from './modules/routing'
@@ -329,7 +329,7 @@ async function addExchangeDataToMessage(
 
   // Set the parentThreadId on the message from the oob invitation
   // If connectionless is used, we should not add the parentThreadId
-  if (outOfBandRecord && legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless) {
+  if (outOfBandRecord && legacyInvitationMetadata?.legacyInvitationType !== DidCommInvitationType.Connectionless) {
     if (!message.thread) {
       message.setThread({
         parentThreadId: outOfBandRecord.outOfBandInvitation.id,

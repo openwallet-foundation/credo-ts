@@ -65,8 +65,8 @@ const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 const dids = agentContext.dependencyManager.resolve(DidsApi)
 const w3cV2JwtCredentialService = new W3cV2SdJwtCredentialService()
 
-kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = vi.fn(() => 1698151532000)
 
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk

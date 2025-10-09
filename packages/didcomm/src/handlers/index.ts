@@ -1,5 +1,5 @@
-export { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from './DidCommMessageHandler'
+export type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from './DidCommMessageHandler'
 export {
-  DidCommMessageHandlerMiddleware,
+  type DidCommMessageHandlerMiddleware,
   DidCommMessageHandlerMiddlewareRunner,
 } from './DidCommMessageHandlerMiddleware'

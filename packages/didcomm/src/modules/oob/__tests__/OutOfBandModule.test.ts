@@ -1,10 +1,11 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 import { DidCommOutOfBandModule } from '../DidCommOutOfBandModule'
 import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 import { DidCommOutOfBandRepository } from '../repository/DidCommOutOfBandRepository'
 
-jest.mock('../../../../../core/src/plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../../../core/src/plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 

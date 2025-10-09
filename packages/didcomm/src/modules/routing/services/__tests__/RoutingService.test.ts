@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../core/tests/helpers'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../../node/src'
@@ -8,8 +9,10 @@ import { DidCommRoutingEventTypes } from '../../DidCommRoutingEvents'
 import { DidCommMediationRecipientService } from '../DidCommMediationRecipientService'
 import { DidCommRoutingService } from '../DidCommRoutingService'
 
-jest.mock('../DidCommMediationRecipientService')
-const MediationRecipientServiceMock = DidCommMediationRecipientService as jest.Mock<DidCommMediationRecipientService>
+vi.mock('../DidCommMediationRecipientService')
+const MediationRecipientServiceMock = DidCommMediationRecipientService as MockedClassConstructor<
+  typeof DidCommMediationRecipientService
+>
 
 const agentConfig = getAgentConfig('DidCommRoutingService', {
   endpoints: ['http://endpoint.com'],
@@ -26,7 +29,7 @@ mockFunction(mediationRecipientService.addMediationRouting).mockImplementation(a
 
 describe('DidCommRoutingService', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getRouting', () => {
@@ -43,7 +46,7 @@ describe('DidCommRoutingService', () => {
     })
 
     test('emits RoutingCreatedEvent', async () => {
-      const routingListener = jest.fn()
+      const routingListener = vi.fn()
       eventEmitter.on(DidCommRoutingEventTypes.RoutingCreatedEvent, routingListener)
 
       const newRouting = await routingService.getRouting(agentContext)

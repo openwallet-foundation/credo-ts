@@ -2,7 +2,7 @@ import { JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 
 import { agentDependencies } from '../../../../core/tests'
 import { DidCommConnectionInvitationMessage } from '../../modules/connections'
-import { DidCommOutOfBandInvitation, InvitationType } from '../../modules/oob'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../../modules/oob'
 import { convertToNewInvitation } from '../../modules/oob/converters'
 import { oobInvitationFromShortUrl, parseInvitationShortUrl } from '../parseInvitation'
 
@@ -93,7 +93,7 @@ let connectionInvitationToNew: DidCommOutOfBandInvitation
 
 beforeAll(async () => {
   outOfBandInvitationMock = JsonTransformer.fromJSON(mockOobInvite, DidCommOutOfBandInvitation)
-  outOfBandInvitationMock.invitationType = InvitationType.OutOfBand
+  outOfBandInvitationMock.invitationType = DidCommInvitationType.OutOfBand
   MessageValidator.validateSync(outOfBandInvitationMock)
   connectionInvitationMock = JsonTransformer.fromJSON(mockConnectionInvite, DidCommConnectionInvitationMessage)
   MessageValidator.validateSync(connectionInvitationMock)
