@@ -51,14 +51,14 @@ describe('Dummy extension module test', () => {
     }
 
     bobAgent = new Agent(bobAgentOptions)
-    bobAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
 
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
     ;[aliceConnection] = await makeConnection(aliceAgent, bobAgent)
   })

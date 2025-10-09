@@ -66,7 +66,7 @@ describe('IC v2 credential revocation', () => {
   test('Alice starts with V2 credential proposal to Faber', async () => {
     testLogger.test('Alice sends (v2) credential proposal to Faber')
 
-    const credentialExchangeRecord = await aliceAgent.modules.credentials.proposeCredential({
+    const credentialExchangeRecord = await aliceAgent.didcomm.credentials.proposeCredential({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       credentialFormats: {
@@ -97,7 +97,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Faber sends credential offer to Alice')
-    await faberAgent.modules.credentials.acceptProposal({
+    await faberAgent.didcomm.credentials.acceptProposal({
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Proposal',
       credentialFormats: {
@@ -169,7 +169,7 @@ describe('IC v2 credential revocation', () => {
       credentialIds: [],
     })
 
-    const offerCredentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer({
+    const offerCredentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer({
       credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
@@ -187,7 +187,7 @@ describe('IC v2 credential revocation', () => {
     })
 
     testLogger.test('Faber sends credential to Alice')
-    await faberAgent.modules.credentials.acceptRequest({
+    await faberAgent.didcomm.credentials.acceptRequest({
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 AnonCreds Credential',
     })
@@ -198,7 +198,7 @@ describe('IC v2 credential revocation', () => {
       state: DidCommCredentialState.CredentialReceived,
     })
 
-    await aliceAgent.modules.credentials.acceptCredential({
+    await aliceAgent.didcomm.credentials.acceptCredential({
       credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
@@ -226,7 +226,7 @@ describe('IC v2 credential revocation', () => {
       options: {},
     })
 
-    await faberAgent.modules.credentials.sendRevocationNotification({
+    await faberAgent.didcomm.credentials.sendRevocationNotification({
       credentialExchangeRecordId: doneCredentialRecord.id,
       revocationFormat: 'anoncreds',
       revocationId: `${credentialRevocationRegistryDefinitionId}::${credentialRevocationIndex}`,

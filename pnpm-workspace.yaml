@@ -17,12 +17,12 @@ catalog:
   zod: ^3.25.56
   nock: ^14.0.5
   express: ^4.21.2
-  "@openwallet-foundation/askar-nodejs": ^0.4.1
-  "@openwallet-foundation/askar-shared": ^0.4.1
+  "@openwallet-foundation/askar-nodejs": ^0.4.2
+  "@openwallet-foundation/askar-shared": ^0.4.2
   "@hyperledger/indy-vdr-nodejs": ^0.2.2
   "@hyperledger/indy-vdr-shared": ^0.2.2
-  "@hyperledger/anoncreds-nodejs": ^0.3.1
-  "@hyperledger/anoncreds-shared": ^0.3.1
+  "@hyperledger/anoncreds-nodejs": ^0.3.3
+  "@hyperledger/anoncreds-shared": ^0.3.3
   "@astronautlabs/jsonpath": ^1.1.2
   "@sphereon/pex-models": ^2.3.2
   "@animo-id/pex": ^6.1.0

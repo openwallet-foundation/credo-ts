@@ -1,15 +1,18 @@
-import type { DidCommAutoAcceptCredential, DidCommAutoAcceptProof, DidCommConnectionRecord } from '../../didcomm/src'
+import type {
+  DidCommAutoAcceptCredential,
+  DidCommAutoAcceptProof,
+  DidCommConnectionRecord,
+  DidCommModuleConfigOptions,
+} from '../../didcomm/src'
 import {
   DidCommCredentialEventTypes,
   DidCommCredentialV2Protocol,
-  DidCommCredentialsModule,
   DidCommDifPresentationExchangeProofFormatService,
   DidCommJsonLdCredentialFormatService,
+  DidCommModule,
   DidCommProofEventTypes,
   DidCommProofV2Protocol,
-  DidCommProofsModule,
 } from '../../didcomm/src'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import { Agent, CacheModule, InMemoryLruCache, W3cCredentialsModule } from '../src'
 import { customDocumentLoader } from '../src/modules/vc/data-integrity/__tests__/documentLoader'
 import type { EventReplaySubject } from './events'
@@ -18,30 +21,39 @@ import { setupEventReplaySubjects } from './events'
 import { getAgentOptions, makeConnection } from './helpers'
 import { setupSubjectTransports } from './transport'
 
-export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules> & DefaultAgentModulesInput>
+export type JsonLdTestsAgent = Agent<ReturnType<typeof getJsonLdModules>>
 
-export const getJsonLdModules = (
-  _name: string,
-  {
-    autoAcceptCredentials,
-    autoAcceptProofs,
-  }: { autoAcceptCredentials?: DidCommAutoAcceptCredential; autoAcceptProofs?: DidCommAutoAcceptProof } = {}
-) =>
+export const getJsonLdModules = ({
+  autoAcceptCredentials,
+  autoAcceptProofs,
+  extraDidCommConfig,
+}: {
+  autoAcceptCredentials?: DidCommAutoAcceptCredential
+  autoAcceptProofs?: DidCommAutoAcceptProof
+  extraDidCommConfig?: DidCommModuleConfigOptions
+} = {}) =>
   ({
-    credentials: new DidCommCredentialsModule({
-      credentialProtocols: [
-        new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
-      ],
-      autoAcceptCredentials,
+    didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...extraDidCommConfig,
+      credentials: {
+        credentialProtocols: [
+          new DidCommCredentialV2Protocol({ credentialFormats: [new DidCommJsonLdCredentialFormatService()] }),
+        ],
+        autoAcceptCredentials,
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [
+          new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
+        ],
+      },
     }),
+
     w3cCredentials: new W3cCredentialsModule({
       documentLoader: customDocumentLoader,
-    }),
-    proofs: new DidCommProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new DidCommProofV2Protocol({ proofFormats: [new DidCommDifPresentationExchangeProofFormatService()] }),
-      ],
     }),
     cache: new CacheModule({
       cache: new InMemoryLruCache({ limit: 100 }),
@@ -96,13 +108,14 @@ export async function setupJsonLdTests<
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
       {},
-      getJsonLdModules(issuerName, {
+      {},
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -111,13 +124,14 @@ export async function setupJsonLdTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
       {},
-      getJsonLdModules(holderName, {
+      {},
+      getJsonLdModules({
         autoAcceptCredentials,
         autoAcceptProofs,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -127,13 +141,14 @@ export async function setupJsonLdTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
           {},
-          getJsonLdModules(verifierName, {
+          {},
+          getJsonLdModules({
             autoAcceptCredentials,
             autoAcceptProofs,
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
           }),
           { requireDidcomm: true }
         )
