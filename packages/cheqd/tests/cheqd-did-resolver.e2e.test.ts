@@ -63,7 +63,7 @@ describe('Cheqd DID resolver', () => {
         throw new Error(`Resource creation failed: ${resource.resourceState.reason}`)
       }
     }
-  })
+  }, 40000)
 
   afterAll(async () => {
     await resolverAgent.shutdown()
