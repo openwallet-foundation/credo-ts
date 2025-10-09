@@ -1,5 +1,10 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { DidCommQueueTransportRepository, DidCommInboundTransport, InMemoryQueueTransportRepository, DidCommOutboundTransport } from './transport'
+import {
+  DidCommInboundTransport,
+  DidCommOutboundTransport,
+  DidCommQueueTransportRepository,
+  InMemoryQueueTransportRepository,
+} from './transport'
 import { DidCommMimeType } from './types'
 
 /**
@@ -9,7 +14,7 @@ import { DidCommMimeType } from './types'
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
   transports?: {
-    inbound?: DidCommInboundTransport[],
+    inbound?: DidCommInboundTransport[]
     outbound?: DidCommOutboundTransport[]
   }
   useDidSovPrefixWhereAllowed?: boolean
@@ -22,11 +27,15 @@ export interface DidCommModuleConfigOptions {
 export class DidCommModuleConfig {
   private options: DidCommModuleConfigOptions
   private _endpoints?: string[]
+  private _inboundTransports: DidCommInboundTransport[]
+  private _outboundTransports: DidCommOutboundTransport[]
   private _queueTransportRepository: DidCommQueueTransportRepository
 
   public constructor(options?: DidCommModuleConfigOptions) {
     this.options = options ?? {}
     this._endpoints = options?.endpoints
+    this._inboundTransports = options?.transports?.inbound ?? []
+    this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
   }
 
@@ -46,6 +55,22 @@ export class DidCommModuleConfig {
 
   public get useDidSovPrefixWhereAllowed() {
     return this.options.useDidSovPrefixWhereAllowed ?? false
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
+  }
+
+  public set inboundTransports(inboundTransports: DidCommInboundTransport[]) {
+    this._inboundTransports = inboundTransports
+  }
+
+  public get outboundTransports() {
+    return this._outboundTransports
+  }
+
+  public set outboundTransports(outboundTransports: DidCommOutboundTransport[]) {
+    this._outboundTransports = outboundTransports
   }
 
   public get processDidCommMessagesConcurrently() {

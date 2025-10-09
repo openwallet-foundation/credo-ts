@@ -67,10 +67,17 @@ export class BaseAgent {
     this.agent = new Agent({
       config: {},
       dependencies: agentDependencies,
-      modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
+      modules: getAskarAnonCredsIndyModules(
+        {
+          endpoints: [`http://localhost:${this.port}`],
+          transports: {
+            inbound: [new DidCommHttpInboundTransport({ port })],
+            outbound: [new DidCommHttpOutboundTransport()],
+          },
+        },
+        { id: name, key: name }
+      ),
     })
-    this.agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
   }
 
   public async initializeAgent() {

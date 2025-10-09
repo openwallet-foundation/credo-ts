@@ -5,8 +5,6 @@ import { injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
-import { DidCommMessageReceiver } from './DidCommMessageReceiver'
-import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 
 @injectable()
@@ -14,46 +12,43 @@ export class DidCommApi {
   public config: DidCommModuleConfig
 
   private featureRegistry: DidCommFeatureRegistry
-  private messageSender: DidCommMessageSender
-  private messageReceiver: DidCommMessageReceiver
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
 
   public constructor(
     messageHandlerRegistry: DidCommMessageHandlerRegistry,
-    messageSender: DidCommMessageSender,
-    messageReceiver: DidCommMessageReceiver,
     featureRegistry: DidCommFeatureRegistry,
     config: DidCommModuleConfig
   ) {
-    this.messageReceiver = messageReceiver
-    this.messageSender = messageSender
     this.featureRegistry = featureRegistry
     this.config = config
     this.messageHandlerRegistry = messageHandlerRegistry
   }
 
   public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
-    this.messageReceiver.registerInboundTransport(inboundTransport)
+    this.config.inboundTransports.push(inboundTransport)
   }
 
   public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
-    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
+    this.config.inboundTransports = this.config.inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   public get inboundTransports() {
-    return this.messageReceiver.inboundTransports
+    return this.config.inboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    this.messageSender.registerOutboundTransport(outboundTransport)
+    this.config.outboundTransports.push(outboundTransport)
   }
 
   public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    await this.messageSender.unregisterOutboundTransport(outboundTransport)
+    this.config.outboundTransports = this.config.outboundTransports.filter(
+      (transport) => transport !== outboundTransport
+    )
   }
 
   public get outboundTransports() {
-    return this.messageSender.outboundTransports
+    return this.config.outboundTransports
   }
 
   /**

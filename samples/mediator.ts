@@ -50,6 +50,12 @@ const agentConfig: InitConfig = {
   logger,
 }
 
+// Create all transports
+const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+const httpOutboundTransport = new DidCommHttpOutboundTransport()
+const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+const _wsOutboundTransport = new DidCommWsOutboundTransport()
+
 // Set up agent
 const agent = new Agent({
   config: agentConfig,
@@ -62,7 +68,13 @@ const agent = new Agent({
         key: process.env.WALLET_KEY || 'Credo',
       },
     }),
-    didcomm: new DidCommModule({ endpoints }),
+    didcomm: new DidCommModule({
+      endpoints,
+      transports: {
+        inbound: [httpInboundTransport, wsInboundTransport],
+        outbound: [httpOutboundTransport, httpOutboundTransport],
+      },
+    }),
     oob: new DidCommOutOfBandModule(),
     messagePickup: new DidCommMessagePickupModule(),
     mediator: new DidCommMediatorModule({
@@ -73,18 +85,6 @@ const agent = new Agent({
     }),
   },
 })
-
-// Create all transports
-const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
-const httpOutboundTransport = new DidCommHttpOutboundTransport()
-const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
-const wsOutboundTransport = new DidCommWsOutboundTransport()
-
-// Register all Transports
-agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
-agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {

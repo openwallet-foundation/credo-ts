@@ -83,7 +83,7 @@ export class DidCommModule implements Module {
       )
       .subscribe()
 
-    for (const transport of messageReceiver.inboundTransports) {
+    for (const transport of this.config.inboundTransports) {
       await transport.start(agentContext)
     }
 
