@@ -137,6 +137,7 @@ describe('DidCommMessageSender', () => {
 
   let messageSender: DidCommMessageSender
   let outboundTransport: DidCommOutboundTransport
+  let didCommModuleConfig: DidCommModuleConfig
   let connection: DidCommConnectionRecord
   let outboundMessageContext: DidCommOutboundMessageContext
   const agentConfig = getAgentConfig('DidCommMessageSender')
@@ -155,11 +156,14 @@ describe('DidCommMessageSender', () => {
 
       eventEmitter.on<DidCommMessageSentEvent>(DidCommEventTypes.DidCommMessageSent, eventListenerMock)
 
+      didCommModuleConfig = new DidCommModuleConfig({
+        queueTransportRepository: new InMemoryQueueTransportRepository(),
+      })
       outboundTransport = new DummyHttpOutboundTransport()
       messageSender = new DidCommMessageSender(
         enveloperService,
         transportService,
-        new DidCommModuleConfig({ queueTransportRepository: new InMemoryQueueTransportRepository() }),
+        didCommModuleConfig,
         didCommDocumentService,
         eventEmitter
       )
@@ -210,7 +214,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('throw error when there is no service or queue', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
 
       resolveCreatedDidDocumentWithKeysMock.mockResolvedValue({
         didDocument: getMockDidDocument({ service: [] }),
@@ -234,11 +238,11 @@ describe('DidCommMessageSender', () => {
     })
 
     test('call send message when session send method fails', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       transportServiceFindSessionMock.mockReturnValue(session)
       session.send = jest.fn().mockRejectedValue(new Error('some error'))
 
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
@@ -264,7 +268,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test("resolves the did service using the did resolver if connection.theirDid starts with 'did:'", async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
 
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
@@ -292,7 +296,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test("throws an error if connection.theirDid starts with 'did:' but the resolver can't resolve the did document", async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
 
       resolveCreatedDidDocumentWithKeysMock.mockRejectedValue(
         new Error(`Unable to resolve did document for did '${connection.theirDid}': notFound`)
@@ -315,10 +319,10 @@ describe('DidCommMessageSender', () => {
     })
 
     test('call send message when session send method fails with missing keys', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
 
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
@@ -345,7 +349,7 @@ describe('DidCommMessageSender', () => {
 
     test('call send message on session when outbound message has sessionId attached', async () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       // @ts-ignore
       const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
@@ -377,7 +381,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('call send message on session when there is a session for a given connection', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       //@ts-ignore
       const sendToServiceSpy = jest.spyOn(messageSender, 'sendToService')
@@ -425,7 +429,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('calls sendToService with payload and endpoint from second DidComm service when the first fails', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
       //@ts-ignore
       const sendToServiceSpy = jest.spyOn(messageSender, 'sendToService')
@@ -477,7 +481,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
-      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      didCommModuleConfig.outboundTransports = [new DummyWsOutboundTransport()]
       await expect(messageSender.sendMessage(outboundMessageContext)).rejects.toThrow(
         /Message is undeliverable to connection/
       )
@@ -559,7 +563,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('calls send message with payload and endpoint from DIDComm service', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
@@ -592,7 +596,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('call send message with responseRequested when message has return route', async () => {
-      messageSender.registerOutboundTransport(outboundTransport)
+      didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
 
       const message = new TestMessage()
@@ -628,7 +632,7 @@ describe('DidCommMessageSender', () => {
     })
 
     test('throw error when message endpoint is not supported by outbound transport schemes', async () => {
-      messageSender.registerOutboundTransport(new DummyWsOutboundTransport())
+      didCommModuleConfig.outboundTransports = [new DummyWsOutboundTransport()]
       outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
         serviceParams: {
