@@ -18,7 +18,6 @@ import type {
   TrustPingResponseReceivedEvent,
 } from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
 import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
 import anoncredsDrizzleBundle from '../../drizzle-storage/src/anoncreds/bundle'
 import didcommDrizzleBundle from '../../drizzle-storage/src/didcomm/bundle'
 import type {
@@ -40,12 +39,12 @@ import {
   DidCommBasicMessageEventTypes,
   DidCommConnectionEventTypes,
   DidCommConnectionRecord,
-  DidCommConnectionsModule,
   DidCommCredentialEventTypes,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
   DidCommEventTypes,
   DidCommHandshakeProtocol,
+  DidCommModule,
   DidCommProofEventTypes,
   DidCommTrustPingEventTypes,
   OutOfBandDidCommService,
@@ -54,7 +53,6 @@ import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCo
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommOutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
@@ -105,23 +103,29 @@ export function getAskarStoreConfig(
   } satisfies AskarModuleConfigStoreOptions
 }
 
-export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyModuleMap>(
+export function getAgentOptions<
+  AgentModules extends AgentModulesInput | EmptyModuleMap,
+  RequireDidComm extends boolean | undefined = undefined,
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  DidCommConfig extends DidCommModuleConfigOptions = {},
+>(
   name: string,
-  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
+  didcommConfig?: DidCommConfig,
   extraConfig: Partial<InitConfig> = {},
   inputModules?: AgentModules,
   {
-    requireDidcomm = false,
+    requireDidcomm,
     inMemory = true,
     drizzle,
-  }: { requireDidcomm?: boolean; inMemory?: boolean; drizzle?: AnyDrizzleDatabase } = {}
+  }: { requireDidcomm?: RequireDidComm; inMemory?: boolean; drizzle?: AnyDrizzleDatabase } = {}
 ): {
   config: InitConfig
-  modules: AgentModules & DefaultAgentModulesInput & { drizzle?: DrizzleStorageModule }
+  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  modules: (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) &
+    AgentModules & { drizzle?: DrizzleStorageModule }
   dependencies: AgentDependencies
   inMemory?: boolean
 } {
-  const _random = uuid().slice(0, 4)
   const config: InitConfig = {
     // TODO: determine the log level based on an environment variable. This will make it
     // possible to run e.g. failed github actions in debug mode for extra logs
@@ -143,17 +147,16 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
       }
     : {}
 
-  const modules = {
+  const _modules = {
     ...(storage === 'drizzle' ? drizzleModules : {}),
     ...(requireDidcomm
       ? {
-          ...getDefaultDidcommModules(didcommConfig),
-          connections:
-            // Make sure connections module is always defined so we can set autoAcceptConnections
-            m.connections ??
-            new DidCommConnectionsModule({
+          didcomm: new DidCommModule({
+            connections: {
               autoAcceptConnections: true,
-            }),
+            },
+            ...didcommConfig,
+          }),
         }
       : {}),
     ...m,
@@ -180,7 +183,10 @@ export function getAgentOptions<AgentModules extends AgentModulesInput | EmptyMo
 
   return {
     config,
-    modules: modules as unknown as AgentModules & DefaultAgentModulesInput,
+    modules:
+      // biome-ignore lint/complexity/noBannedTypes: <explanation>
+      _modules as unknown as (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) &
+        AgentModules & { drizzle?: DrizzleStorageModule },
     dependencies: agentDependencies,
   } as const
 }
@@ -763,20 +769,25 @@ export function getMockOutOfBand({
   return outOfBandRecord
 }
 
-export async function makeConnection(agentA: Agent<DefaultAgentModulesInput>, agentB: Agent<DefaultAgentModulesInput>) {
-  const agentAOutOfBand = await agentA.modules.oob.createInvitation({
+export async function makeConnection(
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  agentA: Agent<{ didcomm: DidCommModule<any> }>,
+  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  agentB: Agent<{ didcomm: DidCommModule<any> }>
+) {
+  const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
     handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
-  let { connectionRecord: agentBConnection } = await agentB.modules.oob.receiveInvitation(
+  let { connectionRecord: agentBConnection } = await agentB.didcomm.oob.receiveInvitation(
     agentAOutOfBand.outOfBandInvitation,
     { label: '' }
   )
 
   // biome-ignore lint/style/noNonNullAssertion: <explanation>
-  agentBConnection = await agentB.modules.connections.returnWhenIsConnected(agentBConnection?.id!)
-  let [agentAConnection] = await agentA.modules.connections.findAllByOutOfBandId(agentAOutOfBand.id)
-  agentAConnection = await agentA.modules.connections.returnWhenIsConnected(agentAConnection?.id)
+  agentBConnection = await agentB.didcomm.connections.returnWhenIsConnected(agentBConnection?.id!)
+  let [agentAConnection] = await agentA.didcomm.connections.findAllByOutOfBandId(agentAOutOfBand.id)
+  agentAConnection = await agentA.didcomm.connections.returnWhenIsConnected(agentAConnection?.id)
 
   return [agentAConnection, agentBConnection]
 }

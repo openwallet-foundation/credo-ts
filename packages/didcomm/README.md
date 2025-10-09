@@ -34,21 +34,13 @@ Base DIDComm package for [Credo](https://github.com/openwallet-foundation/credo-
 
 In order for this module to work, we have to inject it into the agent to access agent functionality. See the example for more information.
 
-> **Note**: At the moment, for a basic DIDComm agent to work, it is required to instantiate at least 3 modules besides the basic `DidCommModule`: `DidCommOutOfBandModule`, `DidCommConnectionsModule` and `MessagePickupModule`
-
 ### Example of usage
 
 ```ts
-import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import type { DidCommModuleConfigOptions } from "@credo-ts/didcomm";
 
-import { agentDependencies, DidCommHttpInboundTransport } from '@credo-ts/node'
-import {
-  DidCommConnectionsModule,
-  DidCommProofsModule,
-  DidCommCredentialsModule,
-  DidCommHttpOutboundTransport,
-  getDefaultDidcommModules,
-} from '@credo-ts/didcomm'
+import { agentDependencies, DidCommHttpInboundTransport } from "@credo-ts/node";
+import { DidCommModule, DidCommHttpOutboundTransport } from "@credo-ts/didcomm";
 
 const agent = new Agent({
   config: {
@@ -56,29 +48,39 @@ const agent = new Agent({
   },
   dependencies: agentDependencies,
   modules: {
-    ...getDefaultDidcommModules(didcommConfig),
-    connections: new DidCommConnectionsModule({
-      /* Custom module settings */
+    didcomm: new DidCommModule({
+      /* didcomm config */
+
+      connections: {
+        /* Custom module settings */
+      },
+      proofs: {
+        /* Custom module settings */
+      },
+      credentials: {
+        /* Custom module settings */
+      },
+
+      // can also provide module config for:
+      // mediator: {},
+      // mediationRecipient: {},
+      // messagePickup: {},
+      // discovery: {},
+      // basicMessages: {},
     }),
-    credentials: new DidCommCredentialsModule({
-      /* Custom module settings */
-    }),
-    proofs: new DidCommProofsModule({
-      /* Custom module settings */
-    }),
-    /* */
+
     /* other custom modules */
   },
-})
+});
 
 // Register inbound and outbound transports for DIDComm
-agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
-agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+agent.didcomm.registerInboundTransport(
+  new DidCommHttpInboundTransport({ port })
+);
+agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport());
 
-await agent.initialize()
+await agent.initialize();
 
 // Create an invitation
-const outOfBand = await this.agent.modules.oob.createInvitation()
+const outOfBand = await agent.didcomm.oob.createInvitation();
 ```
-
-In this example, by using the convenient method `getDefaultDidcommModules` you can easily instantiate the basic DIDComm protocols: out-of-band, connections, message pickup, discover features, proof exchange, issue credentials, basic message and mediation coordination. You can of course instantiate only the ones you need for your particular implementation.

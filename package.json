@@ -45,6 +45,7 @@
     "@credo-ts/redis-cache": "workspace:*",
     "@credo-ts/tenants": "workspace:*",
     "@credo-ts/webvh": "workspace:*",
+    "@credo-ts/hedera": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",

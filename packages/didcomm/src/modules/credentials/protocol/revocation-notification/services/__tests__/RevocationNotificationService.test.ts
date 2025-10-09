@@ -12,7 +12,6 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../../../../../core/tests/helpers'
-import { DidCommMessageHandlerRegistry } from '../../../../../../DidCommMessageHandlerRegistry'
 import { DidCommInboundMessageContext } from '../../../../../../models'
 import { DidCommDidExchangeState } from '../../../../../connections'
 import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
@@ -27,12 +26,6 @@ const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedCl
   typeof DidCommCredentialExchangeRepository
 >
 const credentialRepository = new CredentialRepositoryMock()
-
-vi.mock('../../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as MockedClassConstructor<
-  typeof DidCommMessageHandlerRegistry
->
-const messageHandlerRegistry = new MessageHandlerRegistryMock()
 
 const connection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
@@ -52,7 +45,6 @@ describe('RevocationNotificationService', () => {
     revocationNotificationService = new DidCommRevocationNotificationService(
       credentialRepository,
       eventEmitter,
-      messageHandlerRegistry,
       agentConfig.logger
     )
   })

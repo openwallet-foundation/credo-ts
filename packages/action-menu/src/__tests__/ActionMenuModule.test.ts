@@ -1,5 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { DidCommFeatureRegistry } from '@credo-ts/didcomm'
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry } from '@credo-ts/didcomm'
 
 import { DidCommProtocol } from '@credo-ts/didcomm'
 
@@ -13,11 +13,17 @@ const featureRegistry = {
   register: vi.fn(),
 } as unknown as DidCommFeatureRegistry
 
+const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
 const dependencyManager = {
   registerInstance: vi.fn(),
   registerSingleton: vi.fn(),
   registerContextScoped: vi.fn(),
-  resolve: () => featureRegistry,
+  resolve: (token: unknown) =>
+    token === DidCommFeatureRegistry
+      ? featureRegistry
+      : token === DidCommMessageHandlerRegistry
+        ? messageHandlerRegistry
+        : {},
 } as unknown as DependencyManager
 
 describe('ActionMenuModule', () => {

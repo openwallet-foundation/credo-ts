@@ -14,7 +14,7 @@ expect.extend({
   toBeConnectedWith,
 })
 
-// Custom matchers which can be used to extend Jest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
+// Custom matchers which can be used to extend Vitest matchers via extend, e. g. `expect.extend({ toBeConnectedWith })`.
 function toBeConnectedWith(actual: DidCommConnectionRecord, expected: DidCommConnectionRecord) {
   actual.assertReady()
   expected.assertReady()

@@ -49,8 +49,6 @@ import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { DidCommHandshakeReuseHandler } from './handlers'
-import { DidCommHandshakeReuseAcceptedHandler } from './handlers/DidCommHandshakeReuseAcceptedHandler'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages'
 import { DidCommOutOfBandRepository } from './repository'
@@ -141,7 +139,6 @@ export class DidCommOutOfBandApi {
     this.connectionsApi = connectionsApi
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -1005,11 +1002,5 @@ export class DidCommOutOfBandApi {
     }
 
     return recipientKeyFingerprints
-  }
-
-  // TODO: we should probably move these to the out of band module and register the handler there
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseHandler(this.outOfBandService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

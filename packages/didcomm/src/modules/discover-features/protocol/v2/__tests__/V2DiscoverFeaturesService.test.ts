@@ -11,7 +11,6 @@ import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
 import { DidCommGoalCode, DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
@@ -19,10 +18,6 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFea
 import { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 import { DidCommFeaturesDisclosuresMessage, DidCommFeaturesQueriesMessage } from '../messages'
 
-vi.mock('../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as MockedClassConstructor<
-  typeof DidCommMessageHandlerRegistry
->
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -43,7 +38,6 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV2Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -264,7 +258,6 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV2Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )

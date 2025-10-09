@@ -26,21 +26,25 @@ import { DidCommCredentialV2Preview } from '../messages'
 
 const faberAgentOptions = getAgentOptions(
   'Faber connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:faber'],
-  },
   {},
-  getAnonCredsIndyModules(),
+  {},
+  getAnonCredsIndyModules({
+    extraDidCommConfig: {
+      endpoints: ['rxjs:faber'],
+    },
+  }),
   { requireDidcomm: true }
 )
 
 const aliceAgentOptions = getAgentOptions(
   'Alice connection-less Credentials V2',
-  {
-    endpoints: ['rxjs:alice'],
-  },
   {},
-  getAnonCredsIndyModules(),
+  {},
+  getAnonCredsIndyModules({
+    extraDidCommConfig: {
+      endpoints: ['rxjs:alice'],
+    },
+  }),
   { requireDidcomm: true }
 )
 
@@ -66,13 +70,13 @@ describe('V2 Connectionless Credentials', () => {
       'rxjs:alice': aliceMessages,
     }
     faberAgent = new Agent(faberAgentOptions)
-    faberAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
-    faberAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    faberAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(faberMessages))
+    faberAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await faberAgent.initialize()
 
     aliceAgent = new Agent(aliceAgentOptions)
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     // Make sure the pre-created credential definition is in the wallet
@@ -97,7 +101,7 @@ describe('V2 Connectionless Credentials', () => {
   test('Faber starts with connection-less credential offer to Alice', async () => {
     testLogger.test('Faber sends credential offer to Alice')
 
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.didcomm.credentials.createOffer(
       {
         comment: 'V2 Out of Band offer',
         credentialFormats: {
@@ -110,13 +114,13 @@ describe('V2 Connectionless Credentials', () => {
       }
     )
 
-    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
       threadId: faberCredentialRecord.threadId,
@@ -127,7 +131,7 @@ describe('V2 Connectionless Credentials', () => {
     const acceptOfferOptions: AcceptCredentialOfferOptions = {
       credentialExchangeRecordId: aliceCredentialRecord.id,
     }
-    const credentialExchangeRecord = await aliceAgent.modules.credentials.acceptOffer(acceptOfferOptions)
+    const credentialExchangeRecord = await aliceAgent.didcomm.credentials.acceptOffer(acceptOfferOptions)
 
     testLogger.test('Faber waits for credential request from Alice')
     faberCredentialRecord = await waitForCredentialRecordSubject(faberReplay, {
@@ -140,7 +144,7 @@ describe('V2 Connectionless Credentials', () => {
       credentialExchangeRecordId: faberCredentialRecord.id,
       comment: 'V2 Indy Credential',
     }
-    faberCredentialRecord = await faberAgent.modules.credentials.acceptRequest(options)
+    faberCredentialRecord = await faberAgent.didcomm.credentials.acceptRequest(options)
 
     testLogger.test('Alice waits for credential from Faber')
     aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -149,7 +153,7 @@ describe('V2 Connectionless Credentials', () => {
     })
 
     testLogger.test('Alice sends credential ack to Faber')
-    aliceCredentialRecord = await aliceAgent.modules.credentials.acceptCredential({
+    aliceCredentialRecord = await aliceAgent.didcomm.credentials.acceptCredential({
       credentialExchangeRecordId: aliceCredentialRecord.id,
     })
 
@@ -197,7 +201,7 @@ describe('V2 Connectionless Credentials', () => {
   })
 
   test('Faber starts with connection-less credential offer to Alice with auto-accept enabled', async () => {
-    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.modules.credentials.createOffer(
+    let { message, credentialExchangeRecord: faberCredentialRecord } = await faberAgent.didcomm.credentials.createOffer(
       {
         comment: 'V2 Out of Band offer',
         credentialFormats: {
@@ -211,14 +215,14 @@ describe('V2 Connectionless Credentials', () => {
       }
     )
 
-    const { invitationUrl } = await faberAgent.modules.oob.createLegacyConnectionlessInvitation({
+    const { invitationUrl } = await faberAgent.didcomm.oob.createLegacyConnectionlessInvitation({
       recordId: faberCredentialRecord.id,
       message,
       domain: 'https://a-domain.com',
     })
 
     // Receive Message
-    await aliceAgent.modules.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
+    await aliceAgent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, { label: 'alice' })
 
     // Wait for it to be processed
     let aliceCredentialRecord = await waitForCredentialRecordSubject(aliceReplay, {
@@ -226,7 +230,7 @@ describe('V2 Connectionless Credentials', () => {
       state: DidCommCredentialState.OfferReceived,
     })
 
-    await aliceAgent.modules.credentials.acceptOffer({
+    await aliceAgent.didcomm.credentials.acceptOffer({
       credentialExchangeRecordId: aliceCredentialRecord.id,
       autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
     })

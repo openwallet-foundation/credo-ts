@@ -25,12 +25,8 @@ import { AskarModule } from '@credo-ts/askar'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
-  DidCommConnectionsModule,
   DidCommHttpOutboundTransport,
-  DidCommMediatorModule,
-  DidCommMessagePickupModule,
   DidCommModule,
-  DidCommOutOfBandModule,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
@@ -62,14 +58,14 @@ const agent = new Agent({
         key: process.env.WALLET_KEY || 'Credo',
       },
     }),
-    didcomm: new DidCommModule({ endpoints }),
-    oob: new DidCommOutOfBandModule(),
-    messagePickup: new DidCommMessagePickupModule(),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
-    }),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
+    didcomm: new DidCommModule({
+      endpoints,
+      mediator: {
+        autoAcceptMediationRequests: true,
+      },
+      connections: {
+        autoAcceptConnections: true,
+      },
     }),
   },
 })
@@ -81,10 +77,10 @@ const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer 
 const wsOutboundTransport = new DidCommWsOutboundTransport()
 
 // Register all Transports
-agent.modules.didcomm.registerInboundTransport(httpInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
-agent.modules.didcomm.registerInboundTransport(wsInboundTransport)
-agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
+agent.didcomm.registerInboundTransport(httpInboundTransport)
+agent.didcomm.registerOutboundTransport(httpOutboundTransport)
+agent.didcomm.registerInboundTransport(wsInboundTransport)
+agent.didcomm.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {
@@ -92,7 +88,7 @@ httpInboundTransport.app.get('/invitation', async (req, res) => {
     const invitation = DidCommConnectionInvitationMessage.fromUrl(req.url)
     res.send(invitation.toJSON())
   } else {
-    const { outOfBandInvitation } = await agent.modules.oob.createInvitation()
+    const { outOfBandInvitation } = await agent.didcomm.oob.createInvitation()
     const httpEndpoint = endpoints.find((e) => e.startsWith('http'))
     res.send(outOfBandInvitation.toUrl({ domain: `${httpEndpoint}/invitation` }))
   }

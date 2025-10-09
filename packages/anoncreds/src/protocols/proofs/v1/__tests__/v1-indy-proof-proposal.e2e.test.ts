@@ -37,7 +37,7 @@ describe('Present Proof', () => {
       state: DidCommProofState.ProposalReceived,
     })
 
-    await aliceAgent.modules.proofs.proposeProof({
+    await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v1',
       proofFormats: {
@@ -68,7 +68,7 @@ describe('Present Proof', () => {
     testLogger.test('Faber waits for presentation from Alice')
     const faberProofExchangeRecord = await faberProofExchangeRecordPromise
 
-    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/1.0/propose-presentation',
       id: expect.any(String),

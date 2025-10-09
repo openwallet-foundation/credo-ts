@@ -19,8 +19,6 @@ import {
 } from '@credo-ts/core'
 import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
-
-import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
@@ -35,9 +33,6 @@ import { DidCommStatusV2Message } from '../message-pickup/protocol/v2'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
 import { DidCommRoutingEventTypes } from './DidCommRoutingEvents'
-import { DidCommKeylistUpdateResponseHandler } from './handlers/DidCommKeylistUpdateResponseHandler'
-import { DidCommMediationDenyHandler } from './handlers/DidCommMediationDenyHandler'
-import { DidCommMediationGrantHandler } from './handlers/DidCommMediationGrantHandler'
 import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './messages'
 import { DidCommMediationState } from './models/DidCommMediationState'
 import { DidCommMediationRepository } from './repository'
@@ -65,7 +60,6 @@ export class DidCommMediationRecipientApi {
   private readonly stopMessagePickup$ = new Subject<boolean>()
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     mediationRecipientService: DidCommMediationRecipientService,
     connectionService: DidCommConnectionService,
     dids: DidsApi,
@@ -93,7 +87,6 @@ export class DidCommMediationRecipientApi {
     this.agentContext = agentContext
     this.stop$ = stop$
     this.config = mediationRecipientModuleConfig
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   private async sendMessage(
@@ -503,15 +496,5 @@ export class DidCommMediationRecipientApi {
 
   public async getRouting(options: GetRoutingOptions) {
     return this.routingService.getRouting(this.agentContext, options)
-  }
-
-  // Register handlers for the several messages for the mediator.
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommKeylistUpdateResponseHandler(this.mediationRecipientService)
-    )
-    messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(this.mediationRecipientService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(this.mediationRecipientService))
-    //messageHandlerRegistry.registerMessageHandler(new KeylistListHandler(this.mediationRecipientService)) // TODO: write this
   }
 }
