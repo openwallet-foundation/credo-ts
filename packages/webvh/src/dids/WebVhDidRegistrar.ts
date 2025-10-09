@@ -151,10 +151,7 @@ export class WebVhDidRegistrar implements DidRegistrar {
         domain,
         updateKeys,
         ...inputDidDocument,
-        verificationMethods: verificationMethods.map((vm) => ({
-          ...vm,
-          publicKeyMultibase: vm.publicKeyMultibase as string,
-        })),
+        verificationMethods,
         controller: Array.isArray(controller) ? controller[0] : controller,
         authentication: normalizeMethodArray(authentication),
         assertionMethod: normalizeMethodArray(assertionMethod),
