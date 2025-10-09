@@ -13,11 +13,11 @@ catalogs:
       specifier: ^1.1.2
       version: 1.1.2
     '@hyperledger/anoncreds-nodejs':
-      specifier: ^0.3.1
-      version: 0.3.1
+      specifier: ^0.3.3
+      version: 0.3.3
     '@hyperledger/anoncreds-shared':
-      specifier: ^0.3.1
-      version: 0.3.1
+      specifier: ^0.3.3
+      version: 0.3.3
     '@hyperledger/indy-vdr-nodejs':
       specifier: ^0.2.2
       version: 0.2.2
@@ -25,11 +25,11 @@ catalogs:
       specifier: ^0.2.2
       version: 0.2.2
     '@openwallet-foundation/askar-nodejs':
-      specifier: ^0.4.1
-      version: 0.4.1
+      specifier: ^0.4.2
+      version: 0.4.2
     '@openwallet-foundation/askar-shared':
-      specifier: ^0.4.1
-      version: 0.4.1
+      specifier: ^0.4.2
+      version: 0.4.2
     '@sphereon/pex-models':
       specifier: ^2.3.2
       version: 2.3.2
@@ -160,7 +160,7 @@ importers:
         version: 29.6.3
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -226,13 +226,13 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.3.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.2
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       inquirer:
         specifier: ^8.2.5
         version: 8.2.6
@@ -284,7 +284,7 @@ importers:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.3.3
       '@hyperledger/indy-vdr-nodejs':
         specifier: 'catalog:'
         version: 0.2.2
@@ -293,7 +293,7 @@ importers:
         version: 5.1.1(koa@2.16.0)
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       express:
         specifier: 'catalog:'
         version: 4.21.2
@@ -401,10 +401,10 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.3.3
       '@hyperledger/anoncreds-shared':
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.3.3
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -438,10 +438,10 @@ importers:
         version: link:../tenants
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       '@types/ref-array-di':
         specifier: ^1.2.6
         version: 1.2.8
@@ -472,7 +472,7 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -859,7 +859,7 @@ importers:
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
         specifier: ^0.3.1
-        version: 0.3.1
+        version: 0.3.3
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -884,10 +884,10 @@ importers:
     devDependencies:
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1
@@ -1168,7 +1168,7 @@ importers:
         version: link:../../packages/node
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
-        version: 0.4.1
+        version: 0.4.2
       class-validator:
         specifier: 'catalog:'
         version: 0.14.1
@@ -2931,12 +2931,12 @@ packages:
     resolution: {integrity: sha512-imoKG0qJy29kxxGt37YY3y6mTKo4Zl9o+q4sS1gee0+5fpU9IsjDHE7k/YqlLRB/P8nwDE55eFaZtheZzQErBg==}
     engines: {node: '>=20'}
 
-  '@hyperledger/anoncreds-nodejs@0.3.1':
-    resolution: {integrity: sha512-/oWmWgcOPqjAtd2+dKASPYL84Qd7sAFyCBfEKM7PAgVbObaZUZc0kqA7hkEz/qyiqUvcP/JwKTc1v4zVZi6BTg==}
+  '@hyperledger/anoncreds-nodejs@0.3.3':
+    resolution: {integrity: sha512-6OVeUUvpHAiTqjDE1MwIIPOOxp3lal9fJ2sSIXf6vA2chlVutMhcsPik9FKJMhbK/u9x9KSsLMWVSrqGicN6VA==}
     engines: {node: '>= 18'}
 
-  '@hyperledger/anoncreds-shared@0.3.1':
-    resolution: {integrity: sha512-pJNIMvineGpNsyEqsMR+tkRNy5+PQAnMkNgnefJlscCjVsTMqJnOtoNl18pk0LzjVKdGtwJtpg5N+lRx81hfAQ==}
+  '@hyperledger/anoncreds-shared@0.3.3':
+    resolution: {integrity: sha512-id6d4ZGdFaoduZish/B/2XLWJleoOWX7KzBmJseVxmvjxabegudfNMgfjABHzE7zlgkGRJ0fR0nRM21gf6d4FA==}
 
   '@hyperledger/indy-vdr-nodejs@0.2.2':
     resolution: {integrity: sha512-mc0iKuHCtKuOV0sMnGOTVWnQrpfBMS+1tIRyob+CvGCvwC2llGo3Hu5AvgPcR9nqCo/wJ0LoKBo66dYYb0uZbw==}
@@ -3293,12 +3293,12 @@ packages:
   '@openid4vc/utils@0.3.0-alpha-20251001121503':
     resolution: {integrity: sha512-KViYaEFtkeMVTmq+PB8RyU1m4x9WARtIQ/jtSFS1K4A54AmyNHA6MxQ1ei+aSzD0tnOaGgCtn6VzCDHkQA+lew==}
 
-  '@openwallet-foundation/askar-nodejs@0.4.1':
-    resolution: {integrity: sha512-2tAGBl+Yg59w0XDwD/pdBOiN5CGR73+MImFYcP0TSq167i3D/hv5RnGwp5tgjn9h2UepNJVsmYGrdQjrNUs0kA==}
+  '@openwallet-foundation/askar-nodejs@0.4.2':
+    resolution: {integrity: sha512-aQ4+zi8DWYjJUyTdCMnVsUwvEsFZuUBeDdxHxXMu19FAmTNAc4sOT6tPYZEBWAui5EBapn5tyFJ/0sqrmrif5A==}
     engines: {node: '>= 18'}
 
-  '@openwallet-foundation/askar-shared@0.4.1':
-    resolution: {integrity: sha512-r9xF68R+xYkalG0+6L+fcywo/87l29RuU1AtCSLFj3w0nKlzmxaK0HbJ4zvJjfVqvd+qglvn3HTFdUuKC/Pwrg==}
+  '@openwallet-foundation/askar-shared@0.4.2':
+    resolution: {integrity: sha512-OakCxZ3ZYA8ho4ZxSl7QDQxXqR5G42CL2vtszqzisBMOr3zML63B22zpkf8Q+n2IFXt5iuKXfbuTzHBeBSHSjg==}
 
   '@paralleldrive/cuid2@2.2.2':
     resolution: {integrity: sha512-ZOBkgDwEdoYVlSeRbYYXs0S9MejQofiVYoTbKzy/6GQa39/q5tQU2IX46+shYnUkpEl3wc+J6wRlar7r2EK2xA==}
@@ -6861,6 +6861,7 @@ packages:
 
   metro-react-native-babel-preset@0.73.10:
     resolution: {integrity: sha512-1/dnH4EHwFb2RKEKx34vVDpUS3urt2WEeR8FYim+ogqALg4sTpG7yeQPxWpbgKATezt4rNfqAANpIyH19MS4BQ==}
+    deprecated: Use @react-native/babel-preset instead
     peerDependencies:
       '@babel/core': '*'
 
@@ -11602,17 +11603,17 @@ snapshots:
 
   '@hiero-did-sdk/zstd@0.1.5': {}
 
-  '@hyperledger/anoncreds-nodejs@0.3.1':
+  '@hyperledger/anoncreds-nodejs@0.3.3':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/anoncreds-shared': 0.3.1
+      '@hyperledger/anoncreds-shared': 0.3.3
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  '@hyperledger/anoncreds-shared@0.3.1':
+  '@hyperledger/anoncreds-shared@0.3.3':
     dependencies:
       tar: 7.4.3
 
@@ -12153,17 +12154,17 @@ snapshots:
       buffer: 6.0.3
       zod: 3.25.67
 
-  '@openwallet-foundation/askar-nodejs@0.4.1':
+  '@openwallet-foundation/askar-nodejs@0.4.2':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@openwallet-foundation/askar-shared': 0.4.1
+      '@openwallet-foundation/askar-shared': 0.4.2
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
       - supports-color
 
-  '@openwallet-foundation/askar-shared@0.4.1':
+  '@openwallet-foundation/askar-shared@0.4.2':
     dependencies:
       buffer: 6.0.3
       tar: 7.4.3
