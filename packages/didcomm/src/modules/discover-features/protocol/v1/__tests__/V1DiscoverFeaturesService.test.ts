@@ -102,7 +102,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if features other than protocols are disclosed', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createDisclosure({
           disclosureQueries: [
             { featureType: 'protocol', match: '1' },
@@ -114,7 +114,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if no thread id is provided', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createDisclosure({
           disclosureQueries: [{ featureType: 'protocol', match: '1' }],
         })
@@ -134,7 +134,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if multiple features are queried', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createQuery({
           queries: [
             { featureType: 'protocol', match: '1' },
@@ -145,7 +145,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if a feature other than protocol is queried', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createQuery({
           queries: [{ featureType: 'goal-code', match: '1' }],
         })

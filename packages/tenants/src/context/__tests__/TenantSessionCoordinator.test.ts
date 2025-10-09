@@ -204,7 +204,7 @@ describe('TenantSessionCoordinator', () => {
 
     test('throws an error if no agent context session exists for the tenant', async () => {
       const tenantAgentContextMock = { contextCorrelationId: 'tenant-does-not-exist' } as unknown as AgentContext
-      expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
+      await expect(tenantSessionCoordinator.endAgentContextSession(tenantAgentContextMock)).rejects.toThrow(
         `Unknown agent context with contextCorrelationId 'tenant-does-not-exist'. Cannot end session`
       )
     })

@@ -161,7 +161,7 @@ describe('DidsApi', () => {
     })
 
     expect(await agent.dids.getCreatedDids({ did })).toHaveLength(1)
-    expect(
+    await expect(
       agent.dids.import({
         did,
         didDocument: didDocument2,

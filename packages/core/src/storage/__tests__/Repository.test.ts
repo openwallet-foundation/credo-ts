@@ -220,7 +220,7 @@ describe('Repository', () => {
     it('should return null if the storage service throws an error that is not RecordNotFoundError', async () => {
       mockFunction(storageMock.getById).mockReturnValue(Promise.reject(new CredoError('Not found')))
 
-      expect(repository.findById(agentContext, 'test-id')).rejects.toThrow(CredoError)
+      await expect(repository.findById(agentContext, 'test-id')).rejects.toThrow(CredoError)
       expect(storageMock.getById).toHaveBeenCalledWith(agentContext, TestRecord, 'test-id')
     })
   })
@@ -291,7 +291,7 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.findSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
+      await expect(repository.findSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordDuplicateError
       )
       expect(storageMock.findByQuery).toHaveBeenCalledWith(
@@ -322,7 +322,7 @@ describe('Repository', () => {
     it('should throw RecordNotFoundError if no records are returned by the storage service', async () => {
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([]))
 
-      expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
+      await expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordNotFoundError
       )
       expect(storageMock.findByQuery).toHaveBeenCalledWith(
@@ -338,7 +338,7 @@ describe('Repository', () => {
       const record2 = getRecord({ id: 'test-id2' })
       mockFunction(storageMock.findByQuery).mockReturnValue(Promise.resolve([record, record2]))
 
-      expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
+      await expect(repository.getSingleByQuery(agentContext, { something: 'interesting' })).rejects.toThrow(
         RecordDuplicateError
       )
       expect(storageMock.findByQuery).toHaveBeenCalledWith(

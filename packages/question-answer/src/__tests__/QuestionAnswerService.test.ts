@@ -125,7 +125,7 @@ describe('QuestionAnswerService', () => {
     })
 
     it('throws an error when invalid response is provided', async () => {
-      expect(questionAnswerService.createAnswer(agentContext, mockRecord, 'Maybe')).rejects.toThrow(
+      await expect(questionAnswerService.createAnswer(agentContext, mockRecord, 'Maybe')).rejects.toThrow(
         'Response does not match valid responses'
       )
     })
@@ -212,7 +212,7 @@ describe('QuestionAnswerService', () => {
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.processReceiveQuestion(messageContext)).rejects.toThrow(
+      await expect(questionAnswerService.processReceiveQuestion(messageContext)).rejects.toThrow(
         `Question answer record with thread Id ${questionMessage.id} already exists.`
       )
       vi.resetAllMocks()
@@ -273,7 +273,7 @@ describe('QuestionAnswerService', () => {
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
+      await expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Question Answer record with thread Id ${answerMessage.threadId} not found.`
       )
     })
@@ -292,7 +292,7 @@ describe('QuestionAnswerService', () => {
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
+      await expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Question answer record is in invalid state ${mockRecord.state}. Valid states are: ${QuestionAnswerState.QuestionSent}`
       )
       vi.resetAllMocks()
@@ -313,7 +313,7 @@ describe('QuestionAnswerService', () => {
         connection: mockConnectionRecord,
       })
 
-      expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
+      await expect(questionAnswerService.receiveAnswer(messageContext)).rejects.toThrow(
         `Invalid question answer record role ${mockRecord.role}, expected is ${QuestionAnswerRole.Questioner}`
       )
     })

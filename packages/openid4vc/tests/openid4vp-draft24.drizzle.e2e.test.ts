@@ -57,16 +57,18 @@ describe('OpenID4VP Draft 24', () => {
   let verifier2: TenantType
 
   let holderDrizzleModule: DrizzleStorageModule
-  // Use SQLite for verifier
-  const verifierDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDrizzleSqliteDatabase(),
-    bundles: [openid4vcBundle, tenantsBundle],
-  })
+  let verifierDrizzleModule: DrizzleStorageModule
 
   beforeAll(async () => {
     holderPostgresDatabase = await createDrizzlePostgresTestDatabase()
     holderDrizzleModule = new DrizzleStorageModule({
       database: holderPostgresDatabase.drizzle,
+      bundles: [openid4vcBundle, tenantsBundle],
+    })
+
+    // Use SQLite for verifier
+    verifierDrizzleModule = new DrizzleStorageModule({
+      database: await inMemoryDrizzleSqliteDatabase(),
       bundles: [openid4vcBundle, tenantsBundle],
     })
 

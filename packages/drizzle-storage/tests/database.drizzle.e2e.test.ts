@@ -22,7 +22,7 @@ describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type)
     }
 
     const drizzleModule = new DrizzleStorageModule({
-      database: postgresDatabase?.drizzle ?? inMemoryDrizzleSqliteDatabase(),
+      database: postgresDatabase?.drizzle ?? (await inMemoryDrizzleSqliteDatabase()),
       bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
     })
 

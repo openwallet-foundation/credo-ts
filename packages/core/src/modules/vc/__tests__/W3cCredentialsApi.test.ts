@@ -44,7 +44,7 @@ describe('W3cCredentialsApi', () => {
     // for tenants we do it on the tenants api, for the main context
     //  we can do it on the agent instance? So `agent.delete()` maybe?
     await agent.dependencyManager.registeredModules.inMemory.onDeleteContext?.(agent.context)
-    agent.shutdown()
+    await agent.shutdown()
   })
 
   it('Should successfully store a credential', async () => {
@@ -71,9 +71,7 @@ describe('W3cCredentialsApi', () => {
     expect(storedCredential.id).toEqual(retrievedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    expect(repoSpy).toHaveBeenCalledWith((agent as any).agentContext, storedCredential.id)
+    expect(repoSpy).toHaveBeenCalledWith(agent.context, storedCredential.id)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
   })
 

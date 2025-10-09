@@ -14,7 +14,7 @@ export type DrizzlePostgresTestDatabase = {
 }
 
 export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgresTestDatabase> {
-  const { Pool, Client } = require('pg')
+  const { Pool, Client } = await import('pg')
   const databaseName = utils.uuid().replace('-', '')
 
   const pgClient = new Client({
@@ -31,7 +31,7 @@ export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgr
 
   return {
     pool: drizzleClient,
-    drizzle: require('drizzle-orm/node-postgres').drizzle(drizzleClient),
+    drizzle: (await drizzlePostgresDatabase(drizzleClient)) as DrizzlePostgresDatabase,
     drizzleConnectionString,
     teardown: async () => {
       await drizzleClient.end()
@@ -44,7 +44,7 @@ export async function createDrizzlePostgresTestDatabase(): Promise<DrizzlePostgr
 export type DrizzleRecordTest = Awaited<ReturnType<typeof setupDrizzleRecordTest>>
 export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite', drizzleRecord: DrizzleRecord) {
   const postgresDrizzle = databaseType === 'postgres' ? await createDrizzlePostgresTestDatabase() : undefined
-  const drizzle = postgresDrizzle ? postgresDrizzle.drizzle : inMemoryDrizzleSqliteDatabase()
+  const drizzle = postgresDrizzle ? postgresDrizzle.drizzle : await inMemoryDrizzleSqliteDatabase()
 
   const drizzleModule = new DrizzleStorageModule({
     database: drizzle,
@@ -82,7 +82,7 @@ export async function setupDrizzleRecordTest(databaseType: 'postgres' | 'sqlite'
 }
 
 export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
-  const { pushSQLiteSchema, pushSchema } = require('drizzle-kit/api')
+  const { pushSQLiteSchema, pushSchema } = await import('drizzle-kit/api')
   if (isDrizzlePostgresDatabase(drizzleModule.config.database)) {
     const { apply } = await pushSchema(
       drizzleModule.config.schemas,
@@ -100,14 +100,18 @@ export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
   }
 }
 
-export function drizzleSqliteDatabase(path: string): AnyDrizzleDatabase {
-  return require('drizzle-orm/libsql').drizzle(path)
+export async function drizzleSqliteDatabase(path: string): Promise<AnyDrizzleDatabase> {
+  const libsql = await import('drizzle-orm/libsql')
+  return libsql.drizzle(path)
 }
 
-export function inMemoryDrizzleSqliteDatabase(): AnyDrizzleDatabase {
-  return require('drizzle-orm/libsql').drizzle(':memory:')
+export async function inMemoryDrizzleSqliteDatabase(): Promise<AnyDrizzleDatabase> {
+  const libsql = await import('drizzle-orm/libsql')
+  return libsql.drizzle(':memory:')
 }
 
-export function drizzlePostgresDatabase(client: ClientType | PoolType): AnyDrizzleDatabase {
-  return require('drizzle-orm/node-postgres').drizzle(client)
+export async function drizzlePostgresDatabase(client: ClientType | PoolType): Promise<AnyDrizzleDatabase> {
+  const pg = await import('drizzle-orm/node-postgres')
+
+  return pg.drizzle(client)
 }

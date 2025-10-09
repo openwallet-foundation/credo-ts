@@ -136,7 +136,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        expect(async () => {
+        await expect(async () => {
           await w3cJsonLdCredentialService.signCredential(agentContext, {
             format: ClaimFormat.LdpVc,
             credential,

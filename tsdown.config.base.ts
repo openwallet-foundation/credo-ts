@@ -29,5 +29,13 @@ export default [
     },
     platform: 'neutral',
     logLevel: 'error',
+    plugins: [
+      {
+        // Updates dynamic imports to require when transpiling for CJS
+        // See: https://github.com/rolldown/tsdown/issues/532
+        name: 'dynamic-import-to-require',
+        transform: (code) => code.split(' await import(').join(' require('),
+      },
+    ],
   },
 ] as const satisfies UserConfig

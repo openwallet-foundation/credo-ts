@@ -1,13 +1,5 @@
-import {
-  Agent,
-  ConsoleLogger,
-  DidDocument,
-  type DidDocumentKey,
-  DidDocumentService,
-  Kms,
-  LogLevel,
-  VerificationMethod,
-} from '@credo-ts/core'
+import { Agent, DidDocument, type DidDocumentKey, DidDocumentService, Kms, VerificationMethod } from '@credo-ts/core'
+import { testLogger } from '../../../core/tests'
 import type { HederaDidCreateOptions, HederaDidUpdateOptions } from '../../src'
 import { getMultibasePublicKey } from '../../src/ledger/utils'
 import { getHederaAgent } from './utils'
@@ -38,12 +30,11 @@ function getValidDidDocument(publicKeyMultibase?: string) {
 }
 
 describe('Hedera DID registrar', () => {
-  const logger = new ConsoleLogger(LogLevel.error)
   let agent: Agent
 
   beforeAll(async () => {
     agent = getHederaAgent({
-      logger,
+      logger: testLogger,
       label: 'alice',
     })
     await agent.initialize()

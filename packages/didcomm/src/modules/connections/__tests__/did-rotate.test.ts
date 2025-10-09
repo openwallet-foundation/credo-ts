@@ -388,7 +388,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
-      expect(
+      await expect(
         // biome-ignore lint/style/noNonNullAssertion: <explanation>
         bobAgent.modules.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after hangup')
       ).rejects.toThrow()
@@ -421,7 +421,7 @@ describe('Rotation E2E tests', () => {
 
       // Verify that alice connection has been effectively deleted
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      expect(aliceAgent.modules.connections.getById(aliceBobConnection?.id!)).rejects.toThrow(RecordNotFoundError)
+      await expect(aliceAgent.modules.connections.getById(aliceBobConnection?.id!)).rejects.toThrow(RecordNotFoundError)
 
       // Wait for hangup
       await waitForAgentMessageProcessedEvent(bobAgent, {

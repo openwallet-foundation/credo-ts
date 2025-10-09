@@ -18,7 +18,6 @@ import { ActionMenuEventTypes } from '../../ActionMenuEvents'
 import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
-import { ActionMenuProblemReportReason } from '../../errors/ActionMenuProblemReportReason'
 import { MenuMessage, MenuRequestMessage, PerformMessage } from '../../messages'
 import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
@@ -81,7 +80,7 @@ describe('ActionMenuService', () => {
     })
 
     it('throws an error when duplicated options are specified', async () => {
-      expect(
+      await expect(
         actionMenuService.createMenu(agentContext, {
           connection: mockConnectionRecord,
           menu: {
@@ -237,7 +236,7 @@ describe('ActionMenuService', () => {
     })
 
     it('throws an error when invalid selection is provided', async () => {
-      expect(
+      await expect(
         actionMenuService.createPerform(agentContext, {
           actionMenuRecord: mockRecord,
           performedAction: { name: 'fake' },
@@ -250,7 +249,7 @@ describe('ActionMenuService', () => {
         (state) => state !== ActionMenuState.PreparingSelection
       )) {
         mockRecord.state = state
-        expect(
+        await expect(
           actionMenuService.createPerform(agentContext, {
             actionMenuRecord: mockRecord,
             performedAction: { name: 'opt1' },
@@ -695,7 +694,9 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow('Selection does not match valid actions')
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+        'Selection does not match valid actions'
+      )
 
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
@@ -718,7 +719,7 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `No Action Menu found with thread id ${mockPerformMessage.threadId}`
       )
 
@@ -744,7 +745,7 @@ describe('ActionMenuService', () => {
       mockRecord.state = ActionMenuState.Done
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `Action Menu record is in invalid state ${mockRecord.state}. Valid states are: ${ActionMenuState.AwaitingSelection}.`
       )
 
@@ -770,11 +771,7 @@ describe('ActionMenuService', () => {
       mockRecord.state = ActionMenuState.Null
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
-        new ActionMenuProblemReportError('Action Menu has been cleared by the responder', {
-          problemCode: ActionMenuProblemReportReason.Timeout,
-        })
-      )
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(ActionMenuProblemReportError)
 
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()

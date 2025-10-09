@@ -2,7 +2,6 @@ import type { DidCommEncryptedMessage } from '../../../../../types'
 
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
-import { CredoError } from '../../../../../../../core/src/error'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../../../core/tests/helpers'
@@ -10,6 +9,7 @@ import { DidCommEventTypes } from '../../../../../DidCommEvents'
 import { DidCommMessageSender } from '../../../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../../../DidCommModuleConfig'
 import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
+import { DidCommProblemReportError } from '../../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommInboundMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
 import { DidCommConnectionService, DidCommDidExchangeState, DidCommTrustPingMessage } from '../../../../connections'
@@ -389,9 +389,7 @@ describe('DidCommMessagePickupV2Protocol', () => {
         agentContext,
       })
 
-      await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrow(
-        new CredoError('Error processing attachments')
-      )
+      await expect(pickupProtocol.processDelivery(messageContext)).rejects.toThrowError(DidCommProblemReportError)
     })
 
     it('should return a message received with an message id list in it', async () => {

@@ -782,7 +782,7 @@ describe('credentialProtocol', () => {
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialExchangeRecord))
 
-      const repositoryDeleteSpy = vi.spyOn(credentialRepository, 'delete')
+      const repositoryDeleteSpy = mockFunction(credentialRepository.delete)
       await credentialProtocol.delete(agentContext, credentialExchangeRecord)
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialExchangeRecord)
     })

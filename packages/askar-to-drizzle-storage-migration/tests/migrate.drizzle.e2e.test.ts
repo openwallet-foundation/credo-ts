@@ -104,7 +104,7 @@ describe('Askar to Drizzle Migration', () => {
 
     const drizzleModule = new DrizzleStorageModule({
       bundles: [coreDrizzleBundle, didcommDrizzleBundle, actionMenuDrizzleBundle, anoncredsDrizzleBundle],
-      database: inMemoryDrizzleSqliteDatabase(),
+      database: await inMemoryDrizzleSqliteDatabase(),
     })
 
     await pushDrizzleSchema(drizzleModule)
@@ -204,7 +204,7 @@ describe('Askar to Drizzle Migration', () => {
         anoncredsDrizzleBundle,
         tenantsDrizzleBundle,
       ],
-      database: inMemoryDrizzleSqliteDatabase(),
+      database: await inMemoryDrizzleSqliteDatabase(),
     })
 
     await pushDrizzleSchema(drizzleModule)
