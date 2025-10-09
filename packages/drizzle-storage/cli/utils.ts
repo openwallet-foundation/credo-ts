@@ -1,3 +1,4 @@
+import { existsSync } from 'fs'
 import path from 'path'
 
 export async function resolveBundle(bundle: string) {
@@ -59,7 +60,9 @@ export function getDrizzleKitCliPath() {
 
 const __dirname = path.dirname(import.meta.url.replace('file://', ''))
 export function getDrizzleConfigPath() {
-  return path.join(__dirname, 'drizzle.config.mjs')
+  return existsSync(path.join(__dirname, 'drizzle.config.ts'))
+    ? path.join(__dirname, 'drizzle.config.ts')
+    : path.join(__dirname, 'drizzle.config.mjs')
 }
 
 export function log(message: string, ...optionalParams: unknown[]) {

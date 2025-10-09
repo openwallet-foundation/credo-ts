@@ -73,6 +73,7 @@ const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as Mocke
   typeof AnonCredsCredentialRepository
 >
 const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
+mockFunction(anoncredsCredentialRepositoryMock.findByQuery).mockResolvedValue([])
 
 const inMemoryStorageService = new InMemoryStorageService()
 
@@ -584,7 +585,7 @@ describe('AnonCredsRsHolderService', () => {
       methodName: 'inMemory',
     })
 
-    expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+    expect(w3cCredentialRepositoryMock.findByQuery).toHaveBeenCalledWith(agentContext, {
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',
       anonCredsSchemaIssuerId: 'schemaIssuerDid',

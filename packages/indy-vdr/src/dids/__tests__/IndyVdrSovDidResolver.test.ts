@@ -1,3 +1,4 @@
+import '@hyperledger/indy-vdr-nodejs'
 import { JsonTransformer } from '@credo-ts/core'
 
 import type { MockedClassConstructor } from '../../../../../tests/types'

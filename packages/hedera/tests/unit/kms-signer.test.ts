@@ -1,4 +1,9 @@
+import { Kms } from '@credo-ts/core'
+import { PublicKey } from '@hashgraph/sdk'
+import { PublicJwk } from '../../../core/src/modules/kms/jwk/PublicJwk'
+import { mockFunction } from '../../../core/tests/helpers'
 import { KmsSigner } from '../../src/ledger/signer/KmsSigner'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 const mockKeyId = 'test-key-id'
 const mockPublicJwk = {
@@ -6,26 +11,15 @@ const mockPublicJwk = {
   publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
 } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-import { Kms } from '@credo-ts/core'
-import { mockFunction } from '../../../core/tests/helpers'
+vi.mock('../../../core/src/modules/kms/jwk/PublicJwk')
+vi.mock('../../../core/src/modules/kms/KeyManagementApi')
 
-vi.mock('@credo-ts/core', async (importOriginal) => ({
-  ...((await importOriginal()) as object),
-  Kms: {
-    KeyManagementApi: vi.fn().mockReturnValue({}),
-    PublicJwk: {
-      fromFingerprint: vi.fn().mockReturnValue(mockPublicJwk),
-    },
-  },
-}))
+mockFunction(PublicJwk.fromFingerprint).mockReturnValue(mockPublicJwk)
 
 vi.mock('../../src/ledger/utils', () => ({
   createOrGetKey: vi.fn(),
   hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
-
-import { PublicKey } from '@hashgraph/sdk'
-import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 describe('KmsSigner', () => {
   const signMock = vi.fn().mockResolvedValue({ signature: new Uint8Array([7, 8, 9]) })

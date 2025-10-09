@@ -13,7 +13,10 @@ export default defineConfig({
     globals: true,
     watch: false,
 
+    // hooks sometimes interact with ledger etc, so it needs to be longer than default 10000
+    hookTimeout: 40000,
     testTimeout: 120000,
+
     setupFiles: ['./tests/setup.ts'],
     coverage: {
       exclude: ['/build/', '/node_modules/', '/__tests__/', 'tests', 'coverage'],

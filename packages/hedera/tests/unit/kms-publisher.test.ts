@@ -1,29 +1,24 @@
+import { AgentContext, Kms } from '@credo-ts/core'
+import { PublicKey } from '@hashgraph/sdk'
+import { PublicJwk } from '../../../core/src/modules/kms/jwk/PublicJwk'
+import { mockFunction } from '../../../core/tests/helpers'
+import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
+
 const mockPublicJwk = {
   keyId: 'test-key-id',
   publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
 } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-import { AgentContext, Kms } from '@credo-ts/core'
-import { mockFunction } from '../../../core/tests/helpers'
-import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
+vi.mock('../../../core/src/modules/kms/jwk/PublicJwk')
+vi.mock('../../../core/src/modules/kms/KeyManagementApi')
 
-vi.mock('@credo-ts/core', async (importOriginal) => ({
-  ...((await importOriginal()) as object),
-  Kms: {
-    KeyManagementApi: vi.fn().mockReturnValue({}),
-    PublicJwk: {
-      fromFingerprint: vi.fn().mockReturnValue(mockPublicJwk),
-    },
-  },
-}))
+mockFunction(PublicJwk.fromFingerprint).mockReturnValue(mockPublicJwk)
 
 vi.mock('../../src/ledger/utils', () => ({
   createOrGetKey: vi.fn(),
   hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
-
-import { PublicKey } from '@hashgraph/sdk'
-import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
 vi.mock('@hiero-did-sdk/publisher-internal', () => {
   return {

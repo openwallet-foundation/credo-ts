@@ -1,6 +1,6 @@
 import type { CredentialProtocolOptions, DidCommCredentialStateChangedEvent } from '@credo-ts/didcomm'
 
-import { EventEmitter, JsonTransformer } from '@credo-ts/core'
+import { AgentContext, EventEmitter, JsonTransformer } from '@credo-ts/core'
 import {
   DidCommAttachment,
   DidCommAttachmentData,
@@ -38,26 +38,8 @@ const LegacyIndyCredentialFormatServiceMock = LegacyIndyDidCommCredentialFormatS
   typeof LegacyIndyDidCommCredentialFormatService
 >
 
-const credentialRepository = new CredentialRepositoryMock()
-const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const connectionService = new ConnectionServiceMock()
-const indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
-
 const agentConfig = getAgentConfig('V1CredentialProtocolProposeOfferTest')
 const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
-
-const agentContext = getAgentContext({
-  registerInstances: [
-    [DidCommCredentialExchangeRepository, credentialRepository],
-    [DidCommMessageRepository, didCommMessageRepository],
-    [DidCommConnectionService, connectionService],
-    [EventEmitter, eventEmitter],
-  ],
-  agentConfig,
-})
-
-// @ts-ignore
-indyCredentialFormatService.credentialRecordType = 'w3c'
 
 const connectionRecord = getMockConnection({
   id: '123',
@@ -93,8 +75,30 @@ const proposalAttachment = new DidCommAttachment({
 
 describe('V1CredentialProtocolProposeOffer', () => {
   let credentialProtocol: DidCommCredentialV1Protocol
+  let agentContext: AgentContext
+
+  let credentialRepository: DidCommCredentialExchangeRepository
+  let indyCredentialFormatService: LegacyIndyDidCommCredentialFormatService
 
   beforeEach(async () => {
+    const didCommMessageRepository = new DidCommMessageRepositoryMock()
+    const connectionService = new ConnectionServiceMock()
+    credentialRepository = new CredentialRepositoryMock()
+    indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
+
+    // @ts-ignore
+    indyCredentialFormatService.credentialRecordType = 'w3c'
+
+    agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommCredentialExchangeRepository, credentialRepository],
+        [DidCommMessageRepository, didCommMessageRepository],
+        [DidCommConnectionService, connectionService],
+        [EventEmitter, eventEmitter],
+      ],
+      agentConfig,
+    })
+
     // mock function implementations
     mockFunction(connectionService.getById).mockResolvedValue(connectionRecord)
 
@@ -349,17 +353,17 @@ describe('V1CredentialProtocolProposeOffer', () => {
   })
 
   describe('processOffer', () => {
-    const credentialOfferMessage = new V1OfferCredentialMessage({
-      comment: 'some comment',
-      credentialPreview: credentialPreview,
-      offerAttachments: [offerAttachment],
-    })
-    const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
-      agentContext,
-      connection: connectionRecord,
-    })
-
     test(`creates and return credential record in ${DidCommCredentialState.OfferReceived} state with offer, thread ID`, async () => {
+      const credentialOfferMessage = new V1OfferCredentialMessage({
+        comment: 'some comment',
+        credentialPreview: credentialPreview,
+        offerAttachments: [offerAttachment],
+      })
+      const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
+        agentContext,
+        connection: connectionRecord,
+      })
+
       // when
       await credentialProtocol.processOffer(messageContext)
 
@@ -380,6 +384,16 @@ describe('V1CredentialProtocolProposeOffer', () => {
     })
 
     test(`emits stateChange event with ${DidCommCredentialState.OfferReceived}`, async () => {
+      const credentialOfferMessage = new V1OfferCredentialMessage({
+        comment: 'some comment',
+        credentialPreview: credentialPreview,
+        offerAttachments: [offerAttachment],
+      })
+      const messageContext = new DidCommInboundMessageContext(credentialOfferMessage, {
+        agentContext,
+        connection: connectionRecord,
+      })
+
       const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,

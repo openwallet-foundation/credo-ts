@@ -80,6 +80,11 @@ overrides:
   undici: ^6.20.1
   vite: npm:rolldown-vite@latest
 
+patchedDependencies:
+  drizzle-kit:
+    hash: 990e481b6a673abca15a32df7ea76ac63bfdb9a3fc8657c42db0ce593c3f5d50
+    path: patches/drizzle-kit.patch
+
 importers:
 
   .:
@@ -179,7 +184,7 @@ importers:
         version: 2.8.5
       drizzle-kit:
         specifier: ^0.31.4
-        version: 0.31.4
+        version: 0.31.4(patch_hash=990e481b6a673abca15a32df7ea76ac63bfdb9a3fc8657c42db0ce593c3f5d50)
       express:
         specifier: 'catalog:'
         version: 4.21.2
@@ -725,7 +730,7 @@ importers:
         version: 0.14.1
       drizzle-kit:
         specifier: ^0.31.4
-        version: 0.31.4
+        version: 0.31.4(patch_hash=990e481b6a673abca15a32df7ea76ac63bfdb9a3fc8657c42db0ce593c3f5d50)
       shell:
         specifier: ^0.12.0
         version: 0.12.0
@@ -3565,6 +3570,7 @@ packages:
 
   '@sphereon/kmp-mdoc-core@0.2.0-SNAPSHOT.26':
     resolution: {integrity: sha512-QXJ6R8ENiZV2rPMbn06cw5JKwqUYN1kzVRbYfONqE1PEXx1noQ4md7uxr2zSczi0ubKkNcbyYDNtIMTZIhGzmQ==}
+    bundledDependencies: []
 
   '@sphereon/pex-models@2.3.2':
     resolution: {integrity: sha512-foFxfLkRwcn/MOp/eht46Q7wsvpQGlO7aowowIIb5Tz9u97kYZ2kz6K2h2ODxWuv5CRA7Q0MY8XUBGE2lfOhOQ==}
@@ -13809,7 +13815,7 @@ snapshots:
 
   dotenv@16.4.5: {}
 
-  drizzle-kit@0.31.4:
+  drizzle-kit@0.31.4(patch_hash=990e481b6a673abca15a32df7ea76ac63bfdb9a3fc8657c42db0ce593c3f5d50):
     dependencies:
       '@drizzle-team/brocli': 0.10.2
       '@esbuild-kit/esm-loader': 2.6.5

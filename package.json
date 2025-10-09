@@ -72,6 +72,9 @@
   "pnpm": {
     "overrides": {
       "vite": "npm:rolldown-vite@latest"
+    },
+    "patchedDependencies": {
+      "drizzle-kit": "patches/drizzle-kit.patch"
     }
   },
   "resolutions": {

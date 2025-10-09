@@ -1,3 +1,4 @@
+import '@openwallet-foundation/askar-nodejs'
 import { type KeyDidCreateOptions, Kms, type SdJwtVc } from '@credo-ts/core'
 
 import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
