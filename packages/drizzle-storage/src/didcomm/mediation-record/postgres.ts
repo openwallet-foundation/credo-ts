@@ -4,13 +4,10 @@ import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../pos
 import { exhaustiveArray } from '../../util'
 import { didcommConnection } from '../connection-record/postgres'
 
-export const didcommMediationStates = exhaustiveArray(
-  {} as DidCommMediationState,
-  ['requested', 'granted', 'denied'] as const
-)
+const didcommMediationStates = exhaustiveArray({} as DidCommMediationState, ['requested', 'granted', 'denied'] as const)
 export const didcommMediationStateEnum = pgEnum('DidcommMediationState', didcommMediationStates)
 
-export const didcommMediationRoles = exhaustiveArray({} as DidCommMediationRole, ['MEDIATOR', 'RECIPIENT'] as const)
+const didcommMediationRoles = exhaustiveArray({} as DidCommMediationRole, ['MEDIATOR', 'RECIPIENT'] as const)
 export const didcommMediationRoleEnum = pgEnum('DidcommMediationRole', didcommMediationRoles)
 
 export const didcommMediationPickupStrategies = exhaustiveArray(
