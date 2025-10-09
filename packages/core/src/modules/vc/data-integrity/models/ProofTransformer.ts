@@ -3,7 +3,7 @@ import type { LinkedDataProofOptions } from './LinkedDataProof'
 
 import { Transform, TransformationType, instanceToPlain, plainToInstance } from 'class-transformer'
 
-import { SingleOrArray } from '../../../../types'
+import type { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import { LinkedDataProof } from './LinkedDataProof'
 

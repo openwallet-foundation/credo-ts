@@ -9,7 +9,7 @@ import { anonCredsRevocationRegistryDefinitionPrivateDrizzleRecord } from './rev
 import { anonCredsRevocationRegistryDefinitionDrizzleRecord } from './revocation-registry-definition-record'
 import { anonCredsSchemaDrizzleRecord } from './schema-record'
 
-export default {
+export const anoncredsBundle = {
   name: 'anoncreds',
   records: [
     anonCredsCredentialDrizzleRecord,

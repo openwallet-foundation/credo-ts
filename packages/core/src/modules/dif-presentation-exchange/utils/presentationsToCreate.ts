@@ -1,6 +1,6 @@
 import type { DifPexInputDescriptorToCredentials } from '../models'
 
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'

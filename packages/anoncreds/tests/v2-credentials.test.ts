@@ -248,7 +248,7 @@ describe('IC V2 AnonCreds credentials', () => {
     // see if deleteCredential is called
     const holderService = aliceAgent.dependencyManager.resolve<AnonCredsHolderService>(AnonCredsHolderServiceSymbol)
 
-    const deleteCredentialSpy = jest.spyOn(holderService, 'deleteCredential')
+    const deleteCredentialSpy = vi.spyOn(holderService, 'deleteCredential')
     await aliceAgent.didcomm.credentials.deleteById(holderCredentialExchangeRecord.id, {
       deleteAssociatedCredentials: true,
       deleteAssociatedDidCommMessages: true,

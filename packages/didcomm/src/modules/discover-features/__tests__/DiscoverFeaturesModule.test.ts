@@ -1,4 +1,4 @@
-import type { DependencyManager } from '../../../../../core'
+import type { DependencyManager } from '../../../../../core/src/index'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
@@ -11,9 +11,9 @@ import { DidCommDiscoverFeaturesV2Service } from '../protocol/v2'
 describe('DiscoverFeaturesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
     } as unknown as DependencyManager
 
     new DidCommDiscoverFeaturesModule().register(dependencyManager)
@@ -29,8 +29,8 @@ describe('DiscoverFeaturesModule', () => {
       registerInstances: [
         [DidCommFeatureRegistry, featureRegistry],
         [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
-        [DidCommDiscoverFeaturesV2Service, { register: jest.fn() } as unknown as DidCommDiscoverFeaturesV2Service],
-        [DidCommDiscoverFeaturesV1Service, { register: jest.fn() } as unknown as DidCommDiscoverFeaturesV1Service],
+        [DidCommDiscoverFeaturesV2Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV2Service],
+        [DidCommDiscoverFeaturesV1Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV1Service],
       ],
     })
     await new DidCommDiscoverFeaturesModule().initialize(agentContext)

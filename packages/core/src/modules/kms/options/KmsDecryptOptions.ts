@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
 import { zKmsKeyAgreementDecryptOptions } from './KmsKeyAgreementDecryptOptions'

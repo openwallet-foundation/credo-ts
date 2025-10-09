@@ -10,7 +10,7 @@ import {
   EventEmitter,
   InjectionSymbols,
   Kms,
-  Logger,
+  type Logger,
   RecordDuplicateError,
   TypedArrayEncoder,
   didKeyToVerkey,
@@ -49,21 +49,18 @@ export class DidCommMediatorService {
   private logger: Logger
   private mediationRepository: DidCommMediationRepository
   private mediatorRoutingRepository: DidCommMediatorRoutingRepository
-  private messagePickupApi: DidCommMessagePickupApi
   private eventEmitter: EventEmitter
   private connectionService: DidCommConnectionService
 
   public constructor(
     mediationRepository: DidCommMediationRepository,
     mediatorRoutingRepository: DidCommMediatorRoutingRepository,
-    messagePickupApi: DidCommMessagePickupApi,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
     connectionService: DidCommConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
-    this.messagePickupApi = messagePickupApi
     this.eventEmitter = eventEmitter
     this.logger = logger
     this.connectionService = connectionService
@@ -86,6 +83,8 @@ export class DidCommMediatorService {
   ): Promise<void> {
     const { message, agentContext } = messageContext
 
+    const messagePickupApi = agentContext.resolve(DidCommMessagePickupApi)
+
     // TODO: update to class-validator validation
     if (!message.to) {
       throw new CredoError('Invalid Message: Missing required attribute "to"')
@@ -106,24 +105,24 @@ export class DidCommMediatorService {
 
     switch (messageForwardingStrategy) {
       case DidCommMessageForwardingStrategy.QueueOnly:
-        await this.messagePickupApi.queueMessage({
+        await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
-        await this.messagePickupApi.queueMessage({
+        await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
-        const session = await this.messagePickupApi.getLiveModeSession({
+        const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
           role: DidCommMessagePickupSessionRole.MessageHolder,
         })
         if (session) {
-          await this.messagePickupApi.deliverMessagesFromQueue({
+          await messagePickupApi.deliverMessagesFromQueue({
             pickupSessionId: session.id,
             recipientDid: verkeyToDidKey(message.to),
           })

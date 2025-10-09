@@ -1,3 +1,4 @@
+import { entityKind } from 'drizzle-orm'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 
@@ -21,7 +22,8 @@ export function isDrizzlePostgresDatabase(database: DrizzleDatabase): database i
 }
 
 export function isDrizzleSqliteDatabase(database: DrizzleDatabase): database is DrizzleSqliteDatabase {
-  return database instanceof BaseSQLiteDatabase
+  // NOTE: somehow instanceof does not work. We use
+  return Object.getPrototypeOf(database.constructor)[entityKind] === 'BaseSQLiteDatabase'
 }
 
 export function getDrizzleDatabaseType(database: DrizzleDatabase): 'sqlite' | 'postgres' {

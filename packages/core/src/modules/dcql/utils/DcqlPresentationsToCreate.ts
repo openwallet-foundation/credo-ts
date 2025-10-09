@@ -1,5 +1,5 @@
 import type { DcqlMdocCredential, DcqlSdJwtVcCredential, DcqlW3cVcCredential } from 'dcql'
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord, W3cV2CredentialRecord } from '../../vc'

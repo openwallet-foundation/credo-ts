@@ -3,10 +3,10 @@ import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 import { AgentConfig } from '@credo-ts/core'
 import { setGlobalConfig } from '@openid4vc/oauth2'
 import { OpenId4VcApi } from './OpenId4VcApi'
-import { OpenId4VcModuleConfig, OpenId4VcModuleConfigOptions } from './OpenId4VcModuleConfig'
+import { OpenId4VcModuleConfig, type OpenId4VcModuleConfigOptions } from './OpenId4VcModuleConfig'
 import { OpenId4VcHolderModule } from './openid4vc-holder'
-import { OpenId4VcIssuerModule, OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
-import { OpenId4VcVerifierModule, OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
+import { OpenId4VcIssuerModule, type OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
+import { OpenId4VcVerifierModule, type OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
 
 /**
  * @public

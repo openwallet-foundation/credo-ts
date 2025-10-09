@@ -1,1 +1,1 @@
-export { RedisCache, RedisCacheOptions } from './RedisCache'
+export { RedisCache, type RedisCacheOptions } from './RedisCache'

@@ -15,7 +15,7 @@ import {
   EventEmitter,
   Kms,
   MessageValidator,
-  ResolvedDidCommService,
+  type ResolvedDidCommService,
   didKeyToEd25519PublicJwk,
   getPublicJwkFromVerificationMethod,
   injectable,
@@ -32,7 +32,7 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
-import { DidCommQueueTransportRepository } from './transport'
+import type { DidCommQueueTransportRepository } from './transport'
 
 export interface TransportPriorityOptions {
   schemes: string[]

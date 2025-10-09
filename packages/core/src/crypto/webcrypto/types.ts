@@ -5,8 +5,8 @@
 
 import {
   Ed25519PublicJwk,
-  Jwk,
-  KnownJwaSignatureAlgorithm,
+  type Jwk,
+  type KnownJwaSignatureAlgorithm,
   P256PublicJwk,
   P384PublicJwk,
   P521PublicJwk,

@@ -97,7 +97,7 @@ describe('genericRecords', () => {
     const deleteRecordById = async () => {
       await aliceAgent.genericRecords.deleteById('test')
     }
-    expect(deleteRecordById).rejects.toThrow(RecordNotFoundError)
+    await expect(deleteRecordById).rejects.toThrow(RecordNotFoundError)
   })
 
   test('update generic record', async () => {

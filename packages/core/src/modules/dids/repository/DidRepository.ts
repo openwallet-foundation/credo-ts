@@ -6,11 +6,11 @@ import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
-import { StorageService } from '../../../storage/StorageService'
+import type { StorageService } from '../../../storage/StorageService'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 
 import { PublicJwk } from '../../kms'
-import { DidDocumentKey } from '../DidsApiOptions'
+import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidRecord } from './DidRecord'
 
 @injectable()

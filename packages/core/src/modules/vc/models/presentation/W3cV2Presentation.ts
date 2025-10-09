@@ -7,11 +7,11 @@ import { CREDENTIALS_CONTEXT_V2_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../
 import { IsCredentialJsonLdContext, IsVerifiablePresentationType } from '../../validators'
 import {
   W3cV2EnvelopedVerifiableCredential,
-  W3cV2EnvelopedVerifiableCredentialOptions,
+  type W3cV2EnvelopedVerifiableCredentialOptions,
   W3cV2EnvelopedVerifiableCredentialTransformer,
 } from '../credential/W3cV2EnvelopedVerifiableCredential'
-import { IsW3cV2Holder, W3cV2Holder, W3cV2HolderOptions, W3cV2HolderTransformer } from './W3cV2Holder'
-import { W3cV2JsonPresentation } from './W3cV2JsonPresentation'
+import { IsW3cV2Holder, W3cV2Holder, type W3cV2HolderOptions, W3cV2HolderTransformer } from './W3cV2Holder'
+import type { W3cV2JsonPresentation } from './W3cV2JsonPresentation'
 
 export interface W3cV2PresentationOptions {
   id?: string

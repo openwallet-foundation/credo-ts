@@ -2,7 +2,7 @@ import type { AgentContext } from '../../../agent/context'
 import type { Cache } from '../Cache'
 import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
 
-import { LRUMap } from 'lru_map'
+import LRUMap from 'lru_map'
 
 import { CredoError, RecordDuplicateError } from '../../../error'
 
@@ -28,7 +28,7 @@ export interface SingleContextStorageLruCacheOptions {
  */
 export class SingleContextStorageLruCache implements Cache {
   private limit: number
-  private _cache?: LRUMap<string, SingleContextLruCacheItem>
+  private _cache?: LRUMap.LRUMap<string, SingleContextLruCacheItem>
   private _contextCorrelationId?: string
 
   public constructor({ limit }: SingleContextStorageLruCacheOptions) {
@@ -101,7 +101,7 @@ export class SingleContextStorageLruCache implements Cache {
   }
 
   private lruFromRecord(cacheRecord: SingleContextLruCacheRecord) {
-    return new LRUMap<string, SingleContextLruCacheItem>(this.limit, cacheRecord.entries.entries())
+    return new LRUMap.LRUMap<string, SingleContextLruCacheItem>(this.limit, cacheRecord.entries.entries())
   }
 
   private async fetchCacheRecord(agentContext: AgentContext) {
@@ -132,7 +132,7 @@ export class SingleContextStorageLruCache implements Cache {
     return cacheRecord
   }
 
-  private removeExpiredItems(cache: LRUMap<string, SingleContextLruCacheItem>) {
+  private removeExpiredItems(cache: LRUMap.LRUMap<string, SingleContextLruCacheItem>) {
     cache.forEach((value, key) => {
       if (value.expiresAt && Date.now() > value.expiresAt) {
         cache.delete(key)

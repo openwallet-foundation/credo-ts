@@ -2,8 +2,8 @@ import { AgentContext, injectable } from '@credo-ts/core'
 
 import { OpenId4VcModuleConfig } from './OpenId4VcModuleConfig'
 import { OpenId4VcHolderApi } from './openid4vc-holder'
-import { OpenId4VcIssuerApi, OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
-import { OpenId4VcVerifierApi, OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
+import { OpenId4VcIssuerApi, type OpenId4VcIssuerModuleConfigOptions } from './openid4vc-issuer'
+import { OpenId4VcVerifierApi, type OpenId4VcVerifierModuleConfigOptions } from './openid4vc-verifier'
 
 /**
  * @public

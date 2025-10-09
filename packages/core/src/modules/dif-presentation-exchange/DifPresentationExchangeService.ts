@@ -28,7 +28,7 @@ import { injectable } from 'tsyringe'
 import { CredoError } from '../../error'
 import { JsonTransformer } from '../../utils'
 import { DidsApi, getPublicJwkFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
+import { Mdoc, MdocApi, MdocRecord, type MdocSessionTranscriptOptions } from '../mdoc'
 import { MdocDeviceResponse } from '../mdoc/MdocDeviceResponse'
 import { SdJwtVcApi } from '../sd-jwt-vc'
 import {
@@ -43,7 +43,7 @@ import {
   AnonCredsDataIntegrityServiceSymbol,
 } from '../vc/data-integrity/models/IAnonCredsDataIntegrityService'
 
-import { PEVersion, PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib'
+import { PEVersion, type PartialSdJwtDecodedVerifiableCredential } from '@animo-id/pex/dist/main/lib/index.js'
 import { getJwkHumanDescription } from '../kms'
 import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { DifPresentationExchangeError } from './DifPresentationExchangeError'

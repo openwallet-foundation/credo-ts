@@ -4,7 +4,7 @@ import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCom
 import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
 
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 import { DidCommConnectionRecord } from '../../../../connections'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'

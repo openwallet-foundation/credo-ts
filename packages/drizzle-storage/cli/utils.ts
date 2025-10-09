@@ -3,30 +3,29 @@ import path from 'path'
 
 export async function resolveBundle(bundle: string) {
   const options = [bundle, path.join(process.cwd(), bundle)]
-  if (!bundle.startsWith('/')) {
+  if (!bundle.startsWith('/') && !bundle.startsWith('.')) {
     options.push(`@credo-ts/drizzle-storage/${bundle}`)
   }
 
+  let lastError: Error | undefined
   for (const option of options) {
-    try {
-      require.resolve(option)
-    } catch {
-      continue
-    }
-
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     let module: any
 
     try {
-      module = require(option)
-    } catch (e) {
-      throw new Error(`Error during require of ${option}: ${e}`)
+      module = await import(option)
+    } catch (_e) {
+      lastError = _e
+      continue
     }
 
-    if (!module.default) {
-      throw new Error(`Expected bundle ${bundle} to export default object defining the bundle.`)
+    const bundleValue = Object.values(module).find(
+      (value) => value && typeof value === 'object' && 'name' in value && 'records' in value
+    )
+    if (!bundleValue) {
+      throw new Error(`Expected module ${bundle} to export a buundle object defining the bundle.`)
     }
-    return module.default as {
+    return bundleValue as {
       name: string
       migrations: {
         sqlite: {
@@ -41,7 +40,7 @@ export async function resolveBundle(bundle: string) {
     }
   }
 
-  throw new Error(`Unable to resolve bundle ${bundle}`)
+  throw new Error(`Unable to resolve bundle ${bundle}. ${lastError}`)
 }
 
 export async function resolveSchemaFile(schemaModule: string) {
@@ -62,10 +61,11 @@ export function getDrizzleKitCliPath() {
   return path.join(path.dirname(require.resolve('drizzle-kit')), 'bin.cjs')
 }
 
+const __dirname = path.dirname(import.meta.url.replace('file://', ''))
 export function getDrizzleConfigPath() {
   return existsSync(path.join(__dirname, 'drizzle.config.ts'))
     ? path.join(__dirname, 'drizzle.config.ts')
-    : path.join(__dirname, 'drizzle.config.js')
+    : path.join(__dirname, 'drizzle.config.mjs')
 }
 
 export function log(message: string, ...optionalParams: unknown[]) {
