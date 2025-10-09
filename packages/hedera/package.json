@@ -6,6 +6,8 @@
   "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
+    "main": "build/index",
+    "types": "build/index",
     "access": "public"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/hedera",
