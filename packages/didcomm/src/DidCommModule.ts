@@ -31,7 +31,7 @@ export class DidCommModule implements Module {
   }
 
   /**
-   * Registers the dependencies of the question answer module on the dependency manager.
+   * Registers the dependencies of the question answechatbot using latest r module on the dependency manager.
    */
   public register(dependencyManager: DependencyManager) {
     // Config
