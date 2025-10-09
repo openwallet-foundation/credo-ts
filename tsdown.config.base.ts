@@ -38,4 +38,4 @@ export default [
       },
     ],
   },
-] as const satisfies UserConfig
+] satisfies UserConfig
