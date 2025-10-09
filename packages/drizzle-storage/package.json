@@ -73,7 +73,7 @@
     "directory": "packages/drizzle-storage"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build",
     "cli:local": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
     "cli:local:generate": "pnpm cli:local generate",

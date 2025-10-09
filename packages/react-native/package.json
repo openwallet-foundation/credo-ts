@@ -28,7 +28,7 @@
     "directory": "packages/react-native"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {

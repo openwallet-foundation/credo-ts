@@ -17,7 +17,7 @@
     "directory": "packages/hedera"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {

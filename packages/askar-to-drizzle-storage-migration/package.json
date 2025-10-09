@@ -28,7 +28,7 @@
     "directory": "packages/askar-to-drizzle-storage-migration"
   },
   "scripts": {
-    "build": "tsdown",
+    "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
