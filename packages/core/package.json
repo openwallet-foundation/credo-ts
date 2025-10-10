@@ -21,6 +21,10 @@
       "./package.json": "./package.json"
     }
   },
+  "react-native": {
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js",
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs"
+  },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
     "type": "git",
@@ -70,7 +74,7 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
-    "uuid": "^11.1.0",
+    "uuid": "^13.0.0",
     "varint": "^6.0.0",
     "web-did-resolver": "^2.0.21",
     "webcrypto-core": "^1.8.1",
@@ -81,7 +85,6 @@
     "@types/object-inspect": "^1.8.0",
     "@types/varint": "^6.0.0",
     "nock": "catalog:",
-
     "tslog": "^4.8.2",
     "typescript": "catalog:"
   }

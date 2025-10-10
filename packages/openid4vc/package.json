@@ -21,6 +21,10 @@
       "./package.json": "./package.json"
     }
   },
+  "react-native": {
+    "./build/shared/router/express.mjs": "./build/shared/router/express.native.mjs",
+    "./build/shared/router/express.js": "./build/shared/router/express.native.js"
+  },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc",
   "repository": {
     "type": "git",
@@ -46,7 +50,6 @@
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
     "nock": "catalog:",
-
     "typescript": "catalog:"
   }
 }
