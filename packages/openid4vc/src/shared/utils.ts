@@ -83,7 +83,7 @@ export async function requestSignerToJwtIssuer(
 
     return {
       ...requestSigner,
-      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64url')),
+      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64')),
       alg: leafCertificate.publicJwk.signatureAlgorithm,
       kid: leafCertificate.publicJwk.keyId,
     }
