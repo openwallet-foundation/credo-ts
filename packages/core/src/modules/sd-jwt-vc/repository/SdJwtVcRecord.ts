@@ -9,7 +9,7 @@ import { Hasher } from '../../../crypto'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { KnownJwaSignatureAlgorithm } from '../../kms'
+import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
 
 export type DefaultSdJwtVcRecordTags = {

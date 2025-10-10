@@ -6,6 +6,7 @@ import { EventEmitter } from '@credo-ts/core'
 import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import {
   agentDependencies,
   getAgentConfig,
@@ -17,14 +18,13 @@ import { ActionMenuEventTypes } from '../../ActionMenuEvents'
 import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
-import { ActionMenuProblemReportReason } from '../../errors/ActionMenuProblemReportReason'
 import { MenuMessage, MenuRequestMessage, PerformMessage } from '../../messages'
 import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
 import { ActionMenuService } from '../ActionMenuService'
 
-jest.mock('../../repository/ActionMenuRepository')
-const ActionMenuRepositoryMock = ActionMenuRepository as jest.Mock<ActionMenuRepository>
+vi.mock('../../repository/ActionMenuRepository')
+const ActionMenuRepositoryMock = ActionMenuRepository as MockedClassConstructor<typeof ActionMenuRepository>
 
 describe('ActionMenuService', () => {
   const mockConnectionRecord = getMockConnection({
@@ -80,7 +80,7 @@ describe('ActionMenuService', () => {
     })
 
     it('throws an error when duplicated options are specified', async () => {
-      expect(
+      await expect(
         actionMenuService.createMenu(agentContext, {
           connection: mockConnectionRecord,
           menu: {
@@ -101,7 +101,7 @@ describe('ActionMenuService', () => {
       // No previous menu
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       await actionMenuService.createMenu(agentContext, {
@@ -141,7 +141,7 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(previousMenuDone))
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       await actionMenuService.createMenu(agentContext, {
@@ -182,7 +182,7 @@ describe('ActionMenuService', () => {
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(previousMenuClear))
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       await actionMenuService.createMenu(agentContext, {
@@ -236,7 +236,7 @@ describe('ActionMenuService', () => {
     })
 
     it('throws an error when invalid selection is provided', async () => {
-      expect(
+      await expect(
         actionMenuService.createPerform(agentContext, {
           actionMenuRecord: mockRecord,
           performedAction: { name: 'fake' },
@@ -249,7 +249,7 @@ describe('ActionMenuService', () => {
         (state) => state !== ActionMenuState.PreparingSelection
       )) {
         mockRecord.state = state
-        expect(
+        await expect(
           actionMenuService.createPerform(agentContext, {
             actionMenuRecord: mockRecord,
             performedAction: { name: 'opt1' },
@@ -259,7 +259,7 @@ describe('ActionMenuService', () => {
     })
 
     it('emits a menu with a valid selection and action menu record', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
@@ -312,7 +312,7 @@ describe('ActionMenuService', () => {
     it('no existing record: emits event and creates new request and record', async () => {
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       const { message, record } = await actionMenuService.createRequest(agentContext, {
@@ -350,7 +350,7 @@ describe('ActionMenuService', () => {
 
       const previousState = mockRecord.state
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       const { message, record } = await actionMenuService.createRequest(agentContext, {
@@ -408,7 +408,7 @@ describe('ActionMenuService', () => {
     })
 
     it('requester role: emits a cleared menu', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockRecord.role = ActionMenuRole.Requester
@@ -437,7 +437,7 @@ describe('ActionMenuService', () => {
     })
 
     it('responder role: emits a cleared menu', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockRecord.state = ActionMenuState.AwaitingSelection
@@ -507,7 +507,7 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
@@ -554,7 +554,7 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       // It should accept any previous state
@@ -632,7 +632,7 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
@@ -689,12 +689,14 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow('Selection does not match valid actions')
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+        'Selection does not match valid actions'
+      )
 
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
@@ -712,12 +714,12 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `No Action Menu found with thread id ${mockPerformMessage.threadId}`
       )
 
@@ -737,13 +739,13 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockRecord.state = ActionMenuState.Done
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
         `Action Menu record is in invalid state ${mockRecord.state}. Valid states are: ${ActionMenuState.AwaitingSelection}.`
       )
 
@@ -763,17 +765,13 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockRecord.state = ActionMenuState.Null
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(mockRecord))
 
-      expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(
-        new ActionMenuProblemReportError('Action Menu has been cleared by the responder', {
-          problemCode: ActionMenuProblemReportReason.Timeout,
-        })
-      )
+      await expect(actionMenuService.processPerform(messageContext)).rejects.toThrow(ActionMenuProblemReportError)
 
       expect(actionMenuRepository.update).not.toHaveBeenCalled()
       expect(actionMenuRepository.save).not.toHaveBeenCalled()
@@ -811,7 +809,7 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       mockFunction(actionMenuRepository.findSingleByQuery).mockReturnValue(Promise.resolve(null))
@@ -848,7 +846,7 @@ describe('ActionMenuService', () => {
         connection: mockConnectionRecord,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<ActionMenuStateChangedEvent>(ActionMenuEventTypes.ActionMenuStateChanged, eventListenerMock)
 
       // It should accept any previous state

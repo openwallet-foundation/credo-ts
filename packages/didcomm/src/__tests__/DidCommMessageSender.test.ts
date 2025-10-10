@@ -20,7 +20,7 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../core/tests/helpers'
-import { DidCommEnvelopeService as EnvelopeServiceImpl } from '../DidCommEnvelopeService'
+import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { DidCommTransportService } from '../DidCommTransportService'
@@ -28,18 +28,20 @@ import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
 
-import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core'
+import type { MockedClassConstructor } from '../../../../tests/types'
+import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core/src/index'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DummyTransportSession } from './stubs'
 
-jest.mock('../DidCommTransportService')
-jest.mock('../DidCommEnvelopeService')
-jest.mock('../../../core/src/modules/dids/DidsApi')
-jest.mock('../services/DidCommDocumentService')
+vi.mock('../DidCommTransportService')
+vi.mock('../DidCommEnvelopeService')
+vi.mock('../../../core/src/modules/dids/DidsApi')
+vi.mock('../services/DidCommDocumentService')
 
-const TransportServiceMock = DidCommTransportService as jest.MockedClass<typeof DidCommTransportService>
-const DidsApiMock = DidsApi as jest.Mock<DidsApi>
-const DidCommDocumentServiceMock = DidCommDocumentService as jest.Mock<DidCommDocumentService>
+const TransportServiceMock = DidCommTransportService as MockedClassConstructor<typeof DidCommTransportService>
+const DidsApiMock = DidsApi as MockedClassConstructor<typeof DidsApi>
+const DidCommDocumentServiceMock = DidCommDocumentService as MockedClassConstructor<typeof DidCommDocumentService>
+const DidCommEnvelopeServiceMock = DidCommEnvelopeService as MockedClassConstructor<typeof DidCommEnvelopeService>
 
 class DummyHttpOutboundTransport implements DidCommOutboundTransport {
   public start(): Promise<void> {
@@ -74,8 +76,6 @@ class DummyWsOutboundTransport implements DidCommOutboundTransport {
 }
 
 describe('DidCommMessageSender', () => {
-  const DidCommEnvelopeService = <jest.Mock<EnvelopeServiceImpl>>(<unknown>EnvelopeServiceImpl)
-
   const encryptedMessage: DidCommEncryptedMessage = {
     protected: 'base64url',
     iv: 'base64url',
@@ -83,7 +83,7 @@ describe('DidCommMessageSender', () => {
     tag: 'base64url',
   }
 
-  const enveloperService = new DidCommEnvelopeService()
+  const enveloperService = new DidCommEnvelopeServiceMock()
   const envelopeServicePackMessageMock = mockFunction(enveloperService.packMessage)
 
   const didsApi = new DidsApiMock()
@@ -113,11 +113,11 @@ describe('DidCommMessageSender', () => {
     senderKey: senderKey,
   }
   session.inboundMessage = inboundMessage
-  session.send = jest.fn()
+  session.send = vi.fn()
 
   const sessionWithoutKeys = new DummyTransportSession('sessionWithoutKeys-123')
   sessionWithoutKeys.inboundMessage = inboundMessage
-  sessionWithoutKeys.send = jest.fn()
+  sessionWithoutKeys.send = vi.fn()
 
   const transportService = new DidCommTransportService(getAgentContext(), eventEmitter)
   const transportServiceFindSessionMock = mockFunction(transportService.findSessionByConnectionId)
@@ -146,7 +146,7 @@ describe('DidCommMessageSender', () => {
       [AgentConfig, agentConfig],
     ],
   })
-  const eventListenerMock = jest.fn()
+  const eventListenerMock = vi.fn()
 
   describe('sendMessage', () => {
     beforeEach(() => {
@@ -190,7 +190,7 @@ describe('DidCommMessageSender', () => {
     afterEach(() => {
       eventEmitter.off<DidCommMessageSentEvent>(DidCommEventTypes.DidCommMessageSent, eventListenerMock)
 
-      jest.resetAllMocks()
+      vi.resetAllMocks()
     })
 
     test('throw error when there is no outbound transport', async () => {
@@ -236,10 +236,10 @@ describe('DidCommMessageSender', () => {
     test('call send message when session send method fails', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
       transportServiceFindSessionMock.mockReturnValue(session)
-      session.send = jest.fn().mockRejectedValue(new Error('some error'))
+      session.send = vi.fn().mockRejectedValue(new Error('some error'))
 
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
 
@@ -266,7 +266,7 @@ describe('DidCommMessageSender', () => {
     test("resolves the did service using the did resolver if connection.theirDid starts with 'did:'", async () => {
       messageSender.registerOutboundTransport(outboundTransport)
 
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
 
@@ -319,7 +319,7 @@ describe('DidCommMessageSender', () => {
       transportServiceFindSessionMock.mockReturnValue(sessionWithoutKeys)
 
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
       await messageSender.sendMessage(outboundMessageContext)
 
@@ -346,9 +346,9 @@ describe('DidCommMessageSender', () => {
     test('call send message on session when outbound message has sessionId attached', async () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
       // @ts-ignore
-      const sendMessageToServiceSpy = jest.spyOn(messageSender, 'sendMessageToService')
+      const sendMessageToServiceSpy = vi.spyOn(messageSender, 'sendMessageToService')
 
       const contextWithSessionId = new DidCommOutboundMessageContext(outboundMessageContext.message, {
         agentContext: outboundMessageContext.agentContext,
@@ -378,9 +378,9 @@ describe('DidCommMessageSender', () => {
 
     test('call send message on session when there is a session for a given connection', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
       //@ts-ignore
-      const sendToServiceSpy = jest.spyOn(messageSender, 'sendToService')
+      const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       await messageSender.sendMessage(outboundMessageContext)
 
@@ -426,9 +426,9 @@ describe('DidCommMessageSender', () => {
 
     test('calls sendToService with payload and endpoint from second DidComm service when the first fails', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
       //@ts-ignore
-      const sendToServiceSpy = jest.spyOn(messageSender, 'sendToService')
+      const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       // Simulate the case when the first call fails
       sendMessageSpy.mockRejectedValueOnce(new Error())
@@ -530,7 +530,7 @@ describe('DidCommMessageSender', () => {
     })
 
     afterEach(() => {
-      jest.resetAllMocks()
+      vi.resetAllMocks()
       eventEmitter.off<DidCommMessageSentEvent>(DidCommEventTypes.DidCommMessageSent, eventListenerMock)
     })
 
@@ -560,7 +560,7 @@ describe('DidCommMessageSender', () => {
 
     test('calls send message with payload and endpoint from DIDComm service', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
       outboundMessageContext = new DidCommOutboundMessageContext(new TestMessage(), {
         agentContext,
@@ -593,7 +593,7 @@ describe('DidCommMessageSender', () => {
 
     test('call send message with responseRequested when message has return route', async () => {
       messageSender.registerOutboundTransport(outboundTransport)
-      const sendMessageSpy = jest.spyOn(outboundTransport, 'sendMessage')
+      const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
 
       const message = new TestMessage()
       message.setReturnRouting(ReturnRouteTypes.all)
@@ -669,7 +669,7 @@ describe('DidCommMessageSender', () => {
     })
 
     afterEach(() => {
-      jest.resetAllMocks()
+      vi.resetAllMocks()
     })
 
     test('return outbound message context with connection, payload and endpoint', async () => {

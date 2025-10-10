@@ -6,8 +6,8 @@ import type {
   DidCommMessageHandlerRegistry,
   DidCommProblemReportMessage,
   DidCommProofFormat,
+  DidCommProofProtocol,
   GetProofFormatDataReturn,
-  ProofProtocol,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
 import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
@@ -15,9 +15,9 @@ import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   AckStatus,
-  BaseProofProtocol,
   DidCommAttachment,
   DidCommAutoAcceptProof,
+  DidCommBaseProofProtocol,
   DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
@@ -32,7 +32,7 @@ import {
 
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 
-import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
+import { type AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
 import { DidCommPresentationV1ProblemReportError } from './errors'
 import {
   DidCommPresentationV1AckHandler,
@@ -57,8 +57,8 @@ export interface DidCommProofV1ProtocolConfig {
 }
 
 export class DidCommProofV1Protocol
-  extends BaseProofProtocol
-  implements ProofProtocol<[LegacyIndyDidCommProofFormatService]>
+  extends DidCommBaseProofProtocol
+  implements DidCommProofProtocol<[LegacyIndyDidCommProofFormatService]>
 {
   private indyProofFormat: LegacyIndyDidCommProofFormatService
 

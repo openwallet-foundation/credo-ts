@@ -1,4 +1,4 @@
-import { AgentContext, ClaimFormat, DcqlQuery, DidPurpose, Kms } from '@credo-ts/core'
+import { AgentContext, ClaimFormat, type DcqlQuery, type DidPurpose, Kms } from '@credo-ts/core'
 import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 
@@ -83,7 +83,7 @@ export async function requestSignerToJwtIssuer(
 
     return {
       ...requestSigner,
-      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64url')),
+      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64')),
       alg: leafCertificate.publicJwk.signatureAlgorithm,
       kid: leafCertificate.publicJwk.keyId,
     }

@@ -6,11 +6,11 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDisc
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
 import { DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
@@ -18,8 +18,6 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFea
 import { DidCommDiscoverFeaturesV1Service } from '../DidCommDiscoverFeaturesV1Service'
 import { DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from '../messages'
 
-jest.mock('../../../../../DidCommMessageHandlerRegistry')
-const MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -28,8 +26,8 @@ featureRegistry.register(
 )
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/issue-credential/1.0' }))
 
-jest.mock('../../../../../../../core/src/logger')
-const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+vi.mock('../../../../../../../core/src/logger')
+const LoggerMock = ConsoleLogger as MockedClassConstructor<typeof ConsoleLogger>
 
 describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
@@ -37,7 +35,6 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
-    new MessageHandlerRegistryMock(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
@@ -99,7 +96,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if features other than protocols are disclosed', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createDisclosure({
           disclosureQueries: [
             { featureType: 'protocol', match: '1' },
@@ -111,7 +108,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if no thread id is provided', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createDisclosure({
           disclosureQueries: [{ featureType: 'protocol', match: '1' }],
         })
@@ -131,7 +128,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if multiple features are queried', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createQuery({
           queries: [
             { featureType: 'protocol', match: '1' },
@@ -142,7 +139,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
     })
 
     it('should throw error if a feature other than protocol is queried', async () => {
-      expect(
+      await expect(
         discoverFeaturesService.createQuery({
           queries: [{ featureType: 'goal-code', match: '1' }],
         })
@@ -152,7 +149,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processQuery', () => {
     it('should emit event and create disclosure message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock
@@ -198,7 +195,7 @@ describe('V1DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processDisclosure', () => {
     it('should emit event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
         eventListenerMock
@@ -246,14 +243,13 @@ describe('V1DiscoverFeaturesService - auto accept disabled', () => {
   const discoverFeaturesService = new DidCommDiscoverFeaturesV1Service(
     featureRegistry,
     eventEmitter,
-    new DidCommMessageHandlerRegistry(),
     new LoggerMock(),
     discoverFeaturesModuleConfig
   )
 
   describe('processQuery', () => {
     it('should emit event and not send any message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock

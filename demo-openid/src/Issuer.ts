@@ -1,16 +1,16 @@
 import type { DidKey, X509Certificate } from '@credo-ts/core'
 import {
-  OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
   OpenId4VcModule,
-  OpenId4VcVerifierModuleConfigOptions,
+  type OpenId4VcVerifierModuleConfigOptions,
   OpenId4VcVerifierRecord,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciCredentialRequestToCredentialMapper,
-  OpenId4VciSignMdocCredentials,
-  OpenId4VciSignSdJwtCredentials,
-  OpenId4VciSignW3cCredentials,
-  VerifiedOpenId4VcCredentialHolderBinding,
+  type OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  type OpenId4VciCredentialRequestToCredentialMapper,
+  type OpenId4VciSignMdocCredentials,
+  type OpenId4VciSignSdJwtCredentials,
+  type OpenId4VciSignW3cCredentials,
+  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 
 import { AskarModule, transformSeedToPrivateJwk } from '@credo-ts/askar'

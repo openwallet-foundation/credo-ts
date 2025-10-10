@@ -23,13 +23,15 @@ import {
 
 // Backup date / time is the unique identifier for a backup, needs to be unique for every test
 const backupDate = new Date('2024-02-28T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
 let uuidCounter = 1
-jest.mock('../../../../core/src/utils/uuid', () => {
+vi.mock('../../../../core/src/utils/uuid', async (importOriginal) => {
+  const actual: object = await importOriginal()
   return {
-    uuid: jest.fn().mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`),
+    ...actual,
+    uuid: vi.fn().mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`),
   }
 })
 

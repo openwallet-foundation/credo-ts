@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential records and create didcomm records 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update credential records and create didcomm records 1`] = `
 {
   "1-4e4f-41d9-94c4-f49351b811f1": {
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -785,7 +785,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update credential record
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection record and create the did and oob records 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the connection record and create the did and oob records 1`] = `
 {
   "1-4e4f-41d9-94c4-f49351b811f1": {
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -2467,7 +2467,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the connection re
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential records and create didcomm records with auto update 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the credential records and create didcomm records with auto update 1`] = `
 {
   "1-4e4f-41d9-94c4-f49351b811f1": {
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -3252,7 +3252,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the credential re
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: allMediator 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the mediation record > allMediator 1`] = `
 {
   "0b47db94-c0fa-4476-87cf-a5f664440412": {
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
@@ -3367,7 +3367,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: allRecipient 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the mediation record > allRecipient 1`] = `
 {
   "0b47db94-c0fa-4476-87cf-a5f664440412": {
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
@@ -3482,7 +3482,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: doNotChange 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the mediation record > doNotChange 1`] = `
 {
   "0b47db94-c0fa-4476-87cf-a5f664440412": {
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",
@@ -3597,7 +3597,7 @@ exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the m
 }
 `;
 
-exports[`UpdateAssistant | v0.1 - v0.2 should correctly update the role in the mediation record: recipientIfEndpoint 1`] = `
+exports[`UpdateAssistant | v0.1 - v0.2 > should correctly update the role in the mediation record > recipientIfEndpoint 1`] = `
 {
   "0b47db94-c0fa-4476-87cf-a5f664440412": {
     "id": "0b47db94-c0fa-4476-87cf-a5f664440412",

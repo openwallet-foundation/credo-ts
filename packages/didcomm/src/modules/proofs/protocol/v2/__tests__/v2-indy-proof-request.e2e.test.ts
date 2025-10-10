@@ -66,7 +66,7 @@ describe('V2 Proofs - Indy', () => {
   test('Alice Creates and sends Proof Proposal to Faber', async () => {
     testLogger.test('Alice sends proof proposal to Faber')
 
-    let aliceProofExchangeRecord = await aliceAgent.modules.proofs.proposeProof({
+    let aliceProofExchangeRecord = await aliceAgent.didcomm.proofs.proposeProof({
       connectionId: aliceConnectionId,
       protocolVersion: 'v2',
       proofFormats: {
@@ -98,7 +98,7 @@ describe('V2 Proofs - Indy', () => {
       state: DidCommProofState.ProposalReceived,
     })
 
-    const proposal = await faberAgent.modules.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const proposal = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
     expect(proposal).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/propose-presentation',
       formats: [
@@ -128,7 +128,7 @@ describe('V2 Proofs - Indy', () => {
 
     // Accept Proposal
     testLogger.test('Faber accepts presentation proposal from Alice')
-    faberProofExchangeRecord = await faberAgent.modules.proofs.acceptProposal({
+    faberProofExchangeRecord = await faberAgent.didcomm.proofs.acceptProposal({
       proofExchangeRecordId: faberProofExchangeRecord.id,
     })
 
@@ -138,7 +138,7 @@ describe('V2 Proofs - Indy', () => {
       state: DidCommProofState.RequestReceived,
     })
 
-    const request = await faberAgent.modules.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const request = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
     expect(request).toMatchObject({
       type: 'https://didcomm.org/present-proof/2.0/request-presentation',
       formats: [

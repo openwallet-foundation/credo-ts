@@ -7,8 +7,8 @@ import { getWebvhModules } from './setupWebvhModule'
 import { validDid } from './utils'
 
 // Simplified mock
-jest.mock('didwebvh-ts', () => ({
-  resolveDID: jest.fn().mockResolvedValue({
+vi.mock('didwebvh-ts', () => ({
+  resolveDID: vi.fn().mockResolvedValue({
     doc: {
       '@context': ['https://www.w3.org/ns/did/v1'],
       id: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
@@ -24,17 +24,17 @@ jest.mock('didwebvh-ts', () => ({
     },
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  createDID: jest.fn().mockResolvedValue({
+  createDID: vi.fn().mockResolvedValue({
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  updateDID: jest.fn().mockResolvedValue({
+  updateDID: vi.fn().mockResolvedValue({
     did: 'did:webvh:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE:domain.example',
   }),
-  AbstractCrypto: jest.fn().mockImplementation(() => ({
-    sign: jest.fn().mockResolvedValue({
+  AbstractCrypto: vi.fn().mockImplementation(() => ({
+    sign: vi.fn().mockResolvedValue({
       signature: 'signature',
     }),
-    verify: jest.fn().mockResolvedValue(true),
+    verify: vi.fn().mockResolvedValue(true),
   })),
 }))
 

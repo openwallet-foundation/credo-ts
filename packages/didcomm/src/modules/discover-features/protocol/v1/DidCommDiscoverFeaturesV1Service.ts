@@ -10,7 +10,7 @@ import type {
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DidCommDiscoverFeaturesServiceOptions'
 
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
@@ -31,13 +31,10 @@ export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesSer
   public constructor(
     featureRegistry: DidCommFeatureRegistry,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesConfig: DidCommDiscoverFeaturesModuleConfig
   ) {
     super(featureRegistry, eventEmitter, logger, discoverFeaturesConfig)
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -45,7 +42,7 @@ export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesSer
    */
   public readonly version = 'v1'
 
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new DidCommFeaturesDiscloseMessageHandler(this))
     messageHandlerRegistry.registerMessageHandler(new DidCommFeaturesQueryMessageHandler(this))
   }

@@ -14,7 +14,7 @@ import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { DidCommHandshakeReuseMessage, DidCommOutOfBandInvitation } from './messages'
 import { DidCommHandshakeReuseAcceptedMessage } from './messages/DidCommHandshakeReuseAcceptedMessage'
-import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord, DidCommOutOfBandRepository } from './repository'
+import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord, DidCommOutOfBandRepository } from './repository'
 
 export interface CreateFromImplicitInvitationConfig {
   did: string

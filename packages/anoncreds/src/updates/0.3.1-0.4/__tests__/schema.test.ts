@@ -1,5 +1,6 @@
 import type { AnonCredsSchema } from '../../../models'
 
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
@@ -10,24 +11,26 @@ import * as testModule from '../schema'
 const agentConfig = getAgentConfig('AnonCreds Migration - Credential Exchange Record - 0.3.1-0.4.0')
 const agentContext = getAgentContext()
 
-jest.mock('../../../repository/AnonCredsSchemaRepository')
-const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as jest.Mock<AnonCredsSchemaRepository>
+vi.mock('../../../repository/AnonCredsSchemaRepository')
+const AnonCredsSchemaRepositoryMock = AnonCredsSchemaRepository as MockedClassConstructor<
+  typeof AnonCredsSchemaRepository
+>
 const schemaRepository = new AnonCredsSchemaRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => schemaRepository),
+        resolve: vi.fn(() => schemaRepository),
       },
     })),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4.0 | AnonCreds Migration | Schema Record', () => {
   let agent: Agent
@@ -37,7 +40,7 @@ describe('0.3.1-0.4.0 | AnonCreds Migration | Schema Record', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('migrateAnonCredsSchemaRecordToV0_4()', () => {

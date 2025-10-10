@@ -49,14 +49,14 @@ describe('multi version protocols', () => {
     setupSubjectTransports([aliceAgent, bobAgent])
 
     // Register the test handler with the v1.3 version of the message
-    const mockHandle = jest.fn()
-    aliceAgent.modules.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
+    const mockHandle = vi.fn()
+    aliceAgent.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
 
     await aliceAgent.initialize()
     await bobAgent.initialize()
 
-    const { outOfBandInvitation, id } = await aliceAgent.modules.oob.createInvitation()
-    let { connectionRecord: bobConnection } = await bobAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+    const { outOfBandInvitation, id } = await aliceAgent.didcomm.oob.createInvitation()
+    let { connectionRecord: bobConnection } = await bobAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
       label: 'bob',
       autoAcceptConnection: true,
       autoAcceptInvitation: true,
@@ -66,10 +66,10 @@ describe('multi version protocols', () => {
       throw new Error('No connection for bob')
     }
 
-    bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnection.id)
+    bobConnection = await bobAgent.didcomm.connections.returnWhenIsConnected(bobConnection.id)
 
-    let [aliceConnection] = await aliceAgent.modules.connections.findAllByOutOfBandId(id)
-    aliceConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnection.id)
+    let [aliceConnection] = await aliceAgent.didcomm.connections.findAllByOutOfBandId(id)
+    aliceConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnection.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)

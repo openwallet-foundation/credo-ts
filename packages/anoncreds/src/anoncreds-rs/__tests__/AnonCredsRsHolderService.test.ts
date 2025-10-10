@@ -7,6 +7,7 @@ import type {
 } from '@credo-ts/anoncreds'
 import type { DidRepository } from '@credo-ts/core'
 import type { JsonObject } from '@hyperledger/anoncreds-shared'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 
@@ -51,22 +52,28 @@ import {
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
-const CredentialDefinitionRepositoryMock =
-  AnonCredsCredentialDefinitionRepository as jest.Mock<AnonCredsCredentialDefinitionRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository')
+const CredentialDefinitionRepositoryMock = AnonCredsCredentialDefinitionRepository as MockedClassConstructor<
+  typeof AnonCredsCredentialDefinitionRepository
+>
 const credentialDefinitionRepositoryMock = new CredentialDefinitionRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
-const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as jest.Mock<AnonCredsLinkSecretRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository')
+const AnonCredsLinkSecretRepositoryMock = AnonCredsLinkSecretRepository as MockedClassConstructor<
+  typeof AnonCredsLinkSecretRepository
+>
 const anoncredsLinkSecretRepositoryMock = new AnonCredsLinkSecretRepositoryMock()
 
-jest.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
-const W3cCredentialRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+vi.mock('../../../../core/src/modules/vc/repository/W3cCredentialRepository')
+const W3cCredentialRepositoryMock = W3cCredentialRepository as MockedClassConstructor<typeof W3cCredentialRepository>
 const w3cCredentialRepositoryMock = new W3cCredentialRepositoryMock()
 
-jest.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
-const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as jest.Mock<AnonCredsCredentialRepository>
+vi.mock('../../../../anoncreds/src/repository/AnonCredsCredentialRepository')
+const AnonCredsCredentialRepositoryMock = AnonCredsCredentialRepository as MockedClassConstructor<
+  typeof AnonCredsCredentialRepository
+>
 const anoncredsCredentialRepositoryMock = new AnonCredsCredentialRepositoryMock()
+mockFunction(anoncredsCredentialRepositoryMock.findByQuery).mockResolvedValue([])
 
 const inMemoryStorageService = new InMemoryStorageService()
 
@@ -96,9 +103,9 @@ const agentContext = getAgentContext({
 })
 
 describe('AnonCredsRsHolderService', () => {
-  const getByCredentialIdMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
-  const findByIdMock = jest.spyOn(w3cCredentialRepositoryMock, 'findById')
-  const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
+  const getByCredentialIdMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'getByCredentialId')
+  const findByIdMock = vi.spyOn(w3cCredentialRepositoryMock, 'findById')
+  const findByQueryMock = vi.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
 
   beforeEach(() => {
     findByIdMock.mockClear()
@@ -316,8 +323,8 @@ describe('AnonCredsRsHolderService', () => {
   })
 
   describe('getCredentialsForProofRequest', () => {
-    const findByQueryMock = jest.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
-    const anonCredsFindByQueryMock = jest.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
+    const findByQueryMock = vi.spyOn(w3cCredentialRepositoryMock, 'findByQuery')
+    const anonCredsFindByQueryMock = vi.spyOn(anoncredsCredentialRepositoryMock, 'findByQuery')
 
     const proofRequest: AnonCredsProofRequest = {
       nonce: anoncreds.generateNonce(),
@@ -578,7 +585,7 @@ describe('AnonCredsRsHolderService', () => {
       methodName: 'inMemory',
     })
 
-    expect(findByQueryMock).toHaveBeenCalledWith(agentContext, {
+    expect(w3cCredentialRepositoryMock.findByQuery).toHaveBeenCalledWith(agentContext, {
       anonCredsCredentialDefinitionId: 'credDefId',
       anonCredsSchemaId: 'schemaId',
       anonCredsSchemaIssuerId: 'schemaIssuerDid',
@@ -611,7 +618,7 @@ describe('AnonCredsRsHolderService', () => {
       new AnonCredsLinkSecretRecord({ linkSecretId: 'linkSecretId', value: linkSecret })
     )
 
-    const saveCredentialMock = jest.spyOn(w3cCredentialRepositoryMock, 'save')
+    const saveCredentialMock = vi.spyOn(w3cCredentialRepositoryMock, 'save')
 
     const { credential } = await createCredentialForHolder({
       agentContext,

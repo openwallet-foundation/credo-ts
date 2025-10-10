@@ -4,6 +4,7 @@ import type { CustomDidCommProofExchangeTags } from '../../../repository/DidComm
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { uuid } from '../../../../../../../core/src/utils/uuid'
 import {
@@ -31,21 +32,23 @@ import { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
 import { DidCommPresentationV2ProblemReportMessage, DidCommRequestPresentationV2Message } from '../messages'
 
 // Mock classes
-jest.mock('../../../repository/DidCommProofExchangeRepository')
-jest.mock('../../../../connections/services/DidCommConnectionService')
-jest.mock('../../../../../repository/DidCommMessageRepository')
+vi.mock('../../../repository/DidCommProofExchangeRepository')
+vi.mock('../../../../connections/services/DidCommConnectionService')
+vi.mock('../../../../../repository/DidCommMessageRepository')
 
 // Mock typed object
-const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
-const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
-const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+const ProofRepositoryMock = DidCommProofExchangeRepository as MockedClassConstructor<
+  typeof DidCommProofExchangeRepository
+>
+const connectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
+const didCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
 
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()
 const didCommMessageRepository = new didCommMessageRepositoryMock()
 const proofFormatService = {
   supportsFormat: () => true,
-  processRequest: jest.fn(),
+  processRequest: vi.fn(),
 } as unknown as DidCommProofFormatService
 
 const agentConfig = getAgentConfig('V2ProofProtocolTest')
@@ -128,7 +131,7 @@ describe('DidCommProofV2Protocol', () => {
     })
 
     test(`creates and return proof record in ${DidCommProofState.PresentationReceived} state with offer, without thread ID`, async () => {
-      const repositorySaveSpy = jest.spyOn(proofRepository, 'save')
+      const repositorySaveSpy = vi.spyOn(proofRepository, 'save')
 
       // when
       const returnedProofExchangeRecord = await proofProtocol.processRequest(messageContext)
@@ -149,7 +152,7 @@ describe('DidCommProofV2Protocol', () => {
     })
 
     test(`emits stateChange event with ${DidCommProofState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged, eventListenerMock)
 
       // when
@@ -226,7 +229,7 @@ describe('DidCommProofV2Protocol', () => {
     })
 
     test('updates problem report error message and returns proof record', async () => {
-      const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(proofRepository, 'update')
 
       // given
       mockFunction(proofRepository.getSingleByQuery).mockReturnValue(Promise.resolve(proof))

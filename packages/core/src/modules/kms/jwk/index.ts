@@ -47,7 +47,7 @@ export {
   rawEcSignatureToDer,
 } from './kty'
 
-export { Jwk, JwkCommon } from './jwk'
+export type { Jwk, JwkCommon } from './jwk'
 export {
   keyAllowsSign,
   keyAllowsVerify,

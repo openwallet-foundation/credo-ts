@@ -1,5 +1,5 @@
 import { spawn } from 'child_process'
-import { Dialect } from './generate-migrations'
+import type { Dialect } from './generate-migrations'
 import { errorLog, getDrizzleConfigPath, getDrizzleKitCliPath, log } from './utils'
 
 interface RunStudioOptions {

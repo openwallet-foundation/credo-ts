@@ -27,7 +27,7 @@ import type {
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
-import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuerRecordProps } from './repository'
+import { OpenId4VcIssuanceSessionRecord, type OpenId4VcIssuerRecordProps } from './repository'
 
 export interface OpenId4VciCredentialRequestAuthorization {
   authorizationServer: string

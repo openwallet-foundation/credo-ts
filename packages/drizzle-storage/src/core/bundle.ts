@@ -10,7 +10,7 @@ import { storageVersionDrizzleRecord } from './storage-version-record'
 import { w3cCredentialDrizzleRecord } from './w3c-credential-record'
 import { w3cV2CredentialDrizzleRecord } from './w3c-v2-credential-record'
 
-export default {
+export const coreBundle = {
   name: 'core',
   records: [
     contextDrizzleRecord,

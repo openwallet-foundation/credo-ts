@@ -10,7 +10,7 @@ import {
 } from 'ec-compression'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
-import { KmsJwkPublicEc } from './ecJwk'
+import type { KmsJwkPublicEc } from './ecJwk'
 
 // CurveParams for ec-compression lib
 export const ecCrvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams> = {

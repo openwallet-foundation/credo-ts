@@ -82,7 +82,7 @@
   },
   "overrides": [
     {
-      "include": ["jest.config.ts", "./scripts/**"],
+      "include": ["./scripts/**"],
       "linter": {
         "rules": {
           "correctness": {
@@ -105,7 +105,7 @@
       "include": [
         "*.test.ts",
         "**/__tests__/**",
-        "jest.*.ts",
+        "vitest.*.ts",
         "samples/**",
         "demo/**",
         "demo-openid/**",

@@ -20,9 +20,9 @@ interface AttestedResourceContent {
 }
 
 // Mock the `didwebvh-ts` dependency so that `resolveDID` never performs a network call.
-jest.mock('didwebvh-ts', () => {
+vi.mock('didwebvh-ts', () => {
   return {
-    resolveDID: jest.fn(async (did: string) => {
+    resolveDID: vi.fn(async (did: string) => {
       return {
         doc: {
           '@context': ['https://www.w3.org/ns/did/v1'],
@@ -116,7 +116,7 @@ describe('WebvhDidResolver Integration Tests', () => {
     agentContext = getAgentContext({ agentConfig })
 
     // Mock the agentContext's fetch method
-    agentContext.config.agentDependencies.fetch = jest.fn(async (input: string | URL | Request): Promise<Response> => {
+    agentContext.config.agentDependencies.fetch = vi.fn(async (input: string | URL | Request): Promise<Response> => {
       const url = typeof input === 'string' ? input : String(input)
       const stub = createStubContent(url)
 
