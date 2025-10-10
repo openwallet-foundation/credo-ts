@@ -2,7 +2,6 @@ import type { AgentContext } from '@credo-ts/core'
 import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
-import type { DidCommInboundTransport } from './transport'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
 import {
@@ -38,7 +37,6 @@ export class DidCommMessageReceiver {
   private connectionService: DidCommConnectionService
   private messageHandlerRegistry: DidCommMessageHandlerRegistry
   private agentContextProvider: AgentContextProvider
-  private _inboundTransports: DidCommInboundTransport[] = []
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -58,20 +56,6 @@ export class DidCommMessageReceiver {
     this.messageHandlerRegistry = messageHandlerRegistry
     this.agentContextProvider = agentContextProvider
     this.logger = logger
-    this._inboundTransports = []
-  }
-
-  public get inboundTransports() {
-    return this._inboundTransports
-  }
-
-  public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
-    this._inboundTransports.push(inboundTransport)
-  }
-
-  public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
-    this._inboundTransports = this._inboundTransports.filter((transport) => transport !== inboundTransport)
-    await inboundTransport.stop()
   }
 
   /**

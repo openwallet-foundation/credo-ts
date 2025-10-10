@@ -46,6 +46,12 @@ const agentConfig: InitConfig = {
   logger,
 }
 
+// Create all transports
+const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
+const httpOutboundTransport = new DidCommHttpOutboundTransport()
+const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
+const wsOutboundTransport = new DidCommWsOutboundTransport()
+
 // Set up agent
 const agent = new Agent({
   config: agentConfig,
@@ -60,6 +66,10 @@ const agent = new Agent({
     }),
     didcomm: new DidCommModule({
       endpoints,
+      transports: {
+        inbound: [httpInboundTransport, wsInboundTransport],
+        outbound: [httpOutboundTransport, wsOutboundTransport],
+      },
       mediator: {
         autoAcceptMediationRequests: true,
       },
@@ -69,18 +79,6 @@ const agent = new Agent({
     }),
   },
 })
-
-// Create all transports
-const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
-const httpOutboundTransport = new DidCommHttpOutboundTransport()
-const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
-const wsOutboundTransport = new DidCommWsOutboundTransport()
-
-// Register all Transports
-agent.didcomm.registerInboundTransport(httpInboundTransport)
-agent.didcomm.registerOutboundTransport(httpOutboundTransport)
-agent.didcomm.registerInboundTransport(wsInboundTransport)
-agent.didcomm.registerOutboundTransport(wsOutboundTransport)
 
 // Allow to create invitation, no other way to ask for invitation yet
 httpInboundTransport.app.get('/invitation', async (req, res) => {

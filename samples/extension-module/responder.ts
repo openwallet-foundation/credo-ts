@@ -36,16 +36,15 @@ const run = async () => {
       }),
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
+        transports: {
+          inbound: [httpInboundTransport, wsInboundTransport],
+        },
         connections: { autoAcceptConnections: true },
       }),
       dummy: new DummyModule({ autoAcceptRequests }),
     },
     dependencies: agentDependencies,
   })
-
-  // Register transports
-  agent.didcomm.registerInboundTransport(httpInboundTransport)
-  agent.didcomm.registerInboundTransport(wsInboundTransport)
 
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (_req, res) => {

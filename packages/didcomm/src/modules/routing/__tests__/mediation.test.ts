@@ -46,20 +46,21 @@ const getMediatorAgentOptions = (useDidKeyInProtocols = true) =>
     { requireDidcomm: true }
   )
 
-const senderAgentOptions = getAgentOptions(
-  'Mediation: Sender',
-  {
-    endpoints: ['rxjs:sender'],
-  },
-  undefined,
-  undefined,
-  { requireDidcomm: true }
-)
+const senderAgentOptions = () =>
+  getAgentOptions(
+    'Mediation: Sender',
+    {
+      endpoints: ['rxjs:sender'],
+    },
+    undefined,
+    undefined,
+    { requireDidcomm: true }
+  )
 
 describe('mediator establishment', () => {
   let recipientAgent: Agent<ReturnType<typeof getRecipientAgentOptions>['modules']>
   let mediatorAgent: Agent<ReturnType<typeof getMediatorAgentOptions>['modules']>
-  let senderAgent: Agent<(typeof senderAgentOptions)['modules']>
+  let senderAgent: Agent<ReturnType<typeof senderAgentOptions>['modules']>
 
   afterEach(async () => {
     await recipientAgent?.shutdown()
@@ -110,6 +111,10 @@ describe('mediator establishment', () => {
         didcomm: new DidCommModule({
           // @ts-ignore
           ...recipientAgentOptions.modules.didcomm.config.options,
+          transports: {
+            inbound: [new SubjectInboundTransport(recipientMessages)],
+            outbound: [new SubjectOutboundTransport(subjectMap)],
+          },
           mediationRecipient: {
             mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
             mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
@@ -119,8 +124,6 @@ describe('mediator establishment', () => {
         }),
       },
     })
-    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    recipientAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
@@ -144,7 +147,7 @@ describe('mediator establishment', () => {
     expect(recipientMediator?.state).toBe(DidCommMediationState.Granted)
 
     // Initialize sender agent
-    senderAgent = new Agent(senderAgentOptions)
+    senderAgent = new Agent(senderAgentOptions())
     senderAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     senderAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
@@ -234,6 +237,10 @@ describe('mediator establishment', () => {
     })
 
     const recipientAgentOptions = getRecipientAgentOptions(undefined, false, {
+      transports: {
+        inbound: [new SubjectInboundTransport(recipientMessages)],
+        outbound: [new SubjectOutboundTransport(subjectMap)],
+      },
       mediationRecipient: {
         mediatorInvitationUrl: mediatorOutOfBandRecord.outOfBandInvitation.toUrl({
           domain: 'https://example.com/ssi',
@@ -243,8 +250,6 @@ describe('mediator establishment', () => {
     })
     // Initialize recipient with mediation connections invitation
     recipientAgent = new Agent(recipientAgentOptions)
-    recipientAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
-    recipientAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(recipientMessages))
     await recipientAgent.initialize()
 
     const recipientMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
@@ -270,7 +275,7 @@ describe('mediator establishment', () => {
     await recipientAgent.initialize()
 
     // Initialize sender agent
-    senderAgent = new Agent(senderAgentOptions)
+    senderAgent = new Agent(senderAgentOptions())
     senderAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     senderAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(senderMessages))
     await senderAgent.initialize()
