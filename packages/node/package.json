@@ -7,6 +7,9 @@
   "version": "0.5.13",
   "files": ["build"],
   "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20.19"
+  },
   "publishConfig": {
     "access": "public",
     "main": "./build/index.js",
