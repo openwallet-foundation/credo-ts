@@ -53,6 +53,9 @@
         "types": "./build/index.d.ts"
       },
       "./didcomm": { "import": "./build/didcomm/bundle.mjs", "require": "./build/didcomm/bundle.js" },
+      "./*/migrations/sqlite": {
+        "import": "./migrations/*/sqlite/migrations.js"
+      },
       "./action-menu": { "import": "./build/action-menu/bundle.mjs", "require": "./build/action-menu/bundle.js" },
       "./core": { "import": "./build/core/bundle.mjs", "require": "./build/core/bundle.js" },
       "./drpc": { "import": "./build/drpc/bundle.mjs", "require": "./build/drpc/bundle.js" },
