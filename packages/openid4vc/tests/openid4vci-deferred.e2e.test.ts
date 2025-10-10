@@ -19,16 +19,16 @@ import {
   calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow, CredentialRequest } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import {
-  OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcModule,
-  OpenId4VciSignMdocCredentials,
-  VerifiedOpenId4VcCredentialHolderBinding,
+  type OpenId4VciSignMdocCredentials,
+  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
 import { OpenId4VcIssuanceSessionState } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'

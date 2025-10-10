@@ -11,11 +11,11 @@ import {
 
 import {
   DidCommConnectionInvitationMessage,
-  DidCommConnectionInvitationMessageOptions,
+  type DidCommConnectionInvitationMessageOptions,
 } from '../connections/messages/DidCommConnectionInvitationMessage'
 
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { DidCommOutOfBandInvitation, InvitationType } from './messages/DidCommOutOfBandInvitation'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages/DidCommOutOfBandInvitation'
 
 export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitationMessage) {
   let service: string | OutOfBandDidCommService
@@ -46,7 +46,7 @@ export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitatio
   }
 
   const outOfBandInvitation = new DidCommOutOfBandInvitation(options)
-  outOfBandInvitation.invitationType = InvitationType.Connection
+  outOfBandInvitation.invitationType = DidCommInvitationType.Connection
   return outOfBandInvitation
 }
 

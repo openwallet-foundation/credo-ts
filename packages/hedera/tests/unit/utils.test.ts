@@ -1,12 +1,13 @@
 import { Kms } from '@credo-ts/core'
 import { PublicKey } from '@hashgraph/sdk'
 import { KeysUtility } from '@hiero-did-sdk/core'
+import type { Mocked } from 'vitest'
 import { mockFunction } from '../../../core/tests/helpers'
 import { createOrGetKey, getMultibasePublicKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
 
-jest.mock('@hiero-did-sdk/core', () => ({
+vi.mock('@hiero-did-sdk/core', () => ({
   KeysUtility: {
-    fromBytes: jest.fn(),
+    fromBytes: vi.fn(),
   },
 }))
 
@@ -24,13 +25,13 @@ describe('getMultibasePublicKey', () => {
 })
 
 describe('createOrGetKey', () => {
-  let kmsMock: jest.Mocked<Kms.KeyManagementApi>
+  let kmsMock: Mocked<Kms.KeyManagementApi>
 
   beforeEach(() => {
     kmsMock = {
-      createKey: jest.fn(),
-      getPublicKey: jest.fn(),
-    } as unknown as jest.Mocked<Kms.KeyManagementApi>
+      createKey: vi.fn(),
+      getPublicKey: vi.fn(),
+    } as unknown as Mocked<Kms.KeyManagementApi>
   })
 
   it('should create a key if keyId is not provided', async () => {
@@ -72,7 +73,7 @@ describe('createOrGetKey', () => {
 
     kmsMock.getPublicKey.mockResolvedValue(badJwk)
 
-    const spyDesc = jest.spyOn(Kms, 'getJwkHumanDescription').mockReturnValue('unsupported key type')
+    const spyDesc = vi.spyOn(Kms, 'getJwkHumanDescription').mockReturnValue('unsupported key type')
 
     await expect(createOrGetKey(kmsMock, keyId)).rejects.toThrow(
       `Key with key id '${keyId}' uses unsupported unsupported key type for did:hedera`
@@ -84,11 +85,11 @@ describe('createOrGetKey', () => {
 
 describe('hederaPublicKeyFromPublicJwk', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should convert a public JWK to a Hedera PublicKey', () => {
-    const mockPublicKey = { toPublicKey: jest.fn() } as unknown as ReturnType<typeof KeysUtility.fromBytes>
+    const mockPublicKey = { toPublicKey: vi.fn() } as unknown as ReturnType<typeof KeysUtility.fromBytes>
     const mockHederaPublicKey = {} as PublicKey
 
     mockFunction(mockPublicKey.toPublicKey).mockReturnValue(mockHederaPublicKey)

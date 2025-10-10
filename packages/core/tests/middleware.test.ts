@@ -1,5 +1,5 @@
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm'
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm/src/index'
 
 import { Subject } from 'rxjs'
 

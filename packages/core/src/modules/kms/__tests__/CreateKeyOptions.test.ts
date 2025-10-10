@@ -1,10 +1,10 @@
-import { parseWithErrorHandling } from '../../../utils/zod'
+import { zParseWithErrorHandling } from '../../../utils/zod'
 import { zKmsCreateKeyType } from '../options/KmsCreateKeyOptions'
 
 describe('CreateKeyOptions', () => {
   test('should throw error for invalid create key type', async () => {
     expect(() =>
-      parseWithErrorHandling(zKmsCreateKeyType, {
+      zParseWithErrorHandling(zKmsCreateKeyType, {
         kty: 'oct',
         algorithm: 'AES',
       })

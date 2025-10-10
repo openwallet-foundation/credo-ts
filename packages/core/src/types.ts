@@ -1,5 +1,5 @@
-import { Kms } from '.'
 import type { Logger } from './logger'
+import { Ed25519PublicJwk, PublicJwk } from './modules/kms'
 
 export interface InitConfig {
   logger?: Logger
@@ -67,8 +67,8 @@ export type IsAny<T> = unknown extends T ? ([keyof T] extends [never] ? false : 
 export interface ResolvedDidCommService {
   id: string
   serviceEndpoint: string
-  recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
-  routingKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
+  recipientKeys: PublicJwk<Ed25519PublicJwk>[]
+  routingKeys: PublicJwk<Ed25519PublicJwk>[]
 }
 
 export const isJsonObject = (value: unknown): value is JsonObject => {

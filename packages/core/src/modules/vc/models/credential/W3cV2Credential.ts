@@ -10,15 +10,19 @@ import {
 } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { IsCredentialJsonLdContext, IsCredentialType } from '../../validators'
-import { W3cV2CredentialSchema, W3cV2CredentialSchemaOptions } from './W3cV2CredentialSchema'
-import { W3cV2CredentialStatus, W3cV2CredentialStatusOptions } from './W3cV2CredentialStatus'
-import { W3cV2CredentialSubject, W3cV2CredentialSubjectOptions } from './W3cV2CredentialSubject'
-import { W3cV2Evidence, W3cV2EvidenceOptions } from './W3cV2Evidence'
-import { IsW3cV2Issuer, W3cV2Issuer, W3cV2IssuerOptions, W3cV2IssuerTransformer } from './W3cV2Issuer'
-import { W3cV2JsonCredential } from './W3cV2JsonCredential'
-import { W3cV2LocalizedValue, W3cV2LocalizedValueOptions, W3cV2LocalizedValueTransformer } from './W3cV2LocalizedValue'
-import { W3cV2RefreshService, W3cV2RefreshServiceOptions } from './W3cV2RefreshService'
-import { W3cV2TermsOfUse, W3cV2TermsOfUseOptions } from './W3cV2TermsOfUse'
+import { W3cV2CredentialSchema, type W3cV2CredentialSchemaOptions } from './W3cV2CredentialSchema'
+import { W3cV2CredentialStatus, type W3cV2CredentialStatusOptions } from './W3cV2CredentialStatus'
+import { W3cV2CredentialSubject, type W3cV2CredentialSubjectOptions } from './W3cV2CredentialSubject'
+import { W3cV2Evidence, type W3cV2EvidenceOptions } from './W3cV2Evidence'
+import { IsW3cV2Issuer, W3cV2Issuer, type W3cV2IssuerOptions, W3cV2IssuerTransformer } from './W3cV2Issuer'
+import type { W3cV2JsonCredential } from './W3cV2JsonCredential'
+import {
+  W3cV2LocalizedValue,
+  type W3cV2LocalizedValueOptions,
+  W3cV2LocalizedValueTransformer,
+} from './W3cV2LocalizedValue'
+import { W3cV2RefreshService, type W3cV2RefreshServiceOptions } from './W3cV2RefreshService'
+import { W3cV2TermsOfUse, type W3cV2TermsOfUseOptions } from './W3cV2TermsOfUse'
 
 export interface W3cV2CredentialOptions {
   context?: Array<string | JsonObject>

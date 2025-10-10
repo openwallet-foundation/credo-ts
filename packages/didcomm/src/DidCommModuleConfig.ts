@@ -1,21 +1,30 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import {
+import type {
   DidCommConnectionsModuleConfigOptions,
   DidCommCredentialProtocol,
   DidCommMessagePickupModuleConfigOptions,
   DidCommMessagePickupProtocol,
   DidCommProofsModuleConfigOptions,
 } from './modules'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
-import { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
-import { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
-import { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
-import { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
-import { DidCommQueueTransportRepository, InMemoryQueueTransportRepository } from './transport'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
+import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
+import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
+import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
+import {
+  type DidCommInboundTransport,
+  type DidCommOutboundTransport,
+  type DidCommQueueTransportRepository,
+  InMemoryQueueTransportRepository,
+} from './transport'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
+  transports?: {
+    inbound?: DidCommInboundTransport[]
+    outbound?: DidCommOutboundTransport[]
+  }
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
@@ -109,6 +118,8 @@ export interface DidCommModuleConfigOptions {
 export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
   private options: Options
   private _endpoints?: string[]
+  private _inboundTransports: DidCommInboundTransport[]
+  private _outboundTransports: DidCommOutboundTransport[]
   private _queueTransportRepository: DidCommQueueTransportRepository
 
   public readonly enabledModules: {
@@ -126,6 +137,8 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
   public constructor(options?: Options) {
     this.options = (options ?? {}) as Options
     this._endpoints = options?.endpoints
+    this._inboundTransports = options?.transports?.inbound ?? []
+    this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
 
     this.enabledModules = {
@@ -157,6 +170,22 @@ export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = Di
 
   public get useDidSovPrefixWhereAllowed() {
     return this.options.useDidSovPrefixWhereAllowed ?? false
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
+  }
+
+  public set inboundTransports(inboundTransports: DidCommInboundTransport[]) {
+    this._inboundTransports = inboundTransports
+  }
+
+  public get outboundTransports() {
+    return this._outboundTransports
+  }
+
+  public set outboundTransports(outboundTransports: DidCommOutboundTransport[]) {
+    this._outboundTransports = outboundTransports
   }
 
   public get processDidCommMessagesConcurrently() {

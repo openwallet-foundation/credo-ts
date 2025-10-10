@@ -3,7 +3,7 @@ import type { GenericRecord, SaveGenericRecordOption } from './repository/Generi
 
 import { AgentContext } from '../../agent'
 import { InjectionSymbols } from '../../constants'
-import { Logger } from '../../logger'
+import type { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
 
 import { GenericRecordService } from './services/GenericRecordService'

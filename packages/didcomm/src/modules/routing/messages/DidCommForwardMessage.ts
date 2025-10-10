@@ -2,7 +2,7 @@ import { Expose } from 'class-transformer'
 import { IsObject, IsString } from 'class-validator'
 
 import { DidCommMessage } from '../../../DidCommMessage'
-import { DidCommEncryptedMessage } from '../../../types'
+import type { DidCommEncryptedMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidCommForwardMessageOptions {

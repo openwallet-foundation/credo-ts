@@ -1,4 +1,5 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Constructable } from '@credo-ts/core'
+import { vi } from 'vitest'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
 import { randomUUID } from 'crypto'
@@ -60,11 +61,11 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = vi.fn(() => 1698151532000)
 
-jest.mock('../repository/SdJwtVcRepository')
-const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
+vi.mock('../repository/SdJwtVcRepository')
+const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
 
 const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
 
@@ -980,7 +981,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -1022,7 +1023,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -1065,7 +1066,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({

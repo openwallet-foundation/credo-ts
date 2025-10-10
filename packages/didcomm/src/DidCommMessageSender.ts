@@ -4,7 +4,6 @@ import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommTransportSession } from './DidCommTransportService'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob/repository'
-import type { DidCommOutboundTransport } from './transport/DidCommOutboundTransport'
 import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 
 import {
@@ -15,7 +14,7 @@ import {
   EventEmitter,
   Kms,
   MessageValidator,
-  ResolvedDidCommService,
+  type ResolvedDidCommService,
   didKeyToEd25519PublicJwk,
   getPublicJwkFromVerificationMethod,
   injectable,
@@ -32,7 +31,6 @@ import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
-import { DidCommQueueTransportRepository } from './transport'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -43,10 +41,9 @@ export interface TransportPriorityOptions {
 export class DidCommMessageSender {
   private envelopeService: DidCommEnvelopeService
   private transportService: DidCommTransportService
-  private queueTransportRepository: DidCommQueueTransportRepository
+  private didCommModuleConfig: DidCommModuleConfig
   private didCommDocumentService: DidCommDocumentService
   private eventEmitter: EventEmitter
-  private _outboundTransports: DidCommOutboundTransport[] = []
 
   public constructor(
     envelopeService: DidCommEnvelopeService,
@@ -57,23 +54,9 @@ export class DidCommMessageSender {
   ) {
     this.envelopeService = envelopeService
     this.transportService = transportService
-    this.queueTransportRepository = didCommModuleConfig.queueTransportRepository
+    this.didCommModuleConfig = didCommModuleConfig
     this.didCommDocumentService = didCommDocumentService
     this.eventEmitter = eventEmitter
-    this._outboundTransports = []
-  }
-
-  public get outboundTransports() {
-    return this._outboundTransports
-  }
-
-  public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    this._outboundTransports.push(outboundTransport)
-  }
-
-  public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    this._outboundTransports = this.outboundTransports.filter((transport) => transport !== outboundTransport)
-    await outboundTransport.stop()
   }
 
   public async packMessage(
@@ -149,7 +132,7 @@ export class DidCommMessageSender {
       options?.transportPriority
     )
 
-    if (this.outboundTransports.length === 0 && !queueService) {
+    if (this.didCommModuleConfig.outboundTransports.length === 0 && !queueService) {
       throw new CredoError('Agent has no outbound transport!')
     }
 
@@ -158,7 +141,7 @@ export class DidCommMessageSender {
       agentContext.config.logger.debug('Sending outbound message to service:', { service })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
-        for (const transport of this.outboundTransports) {
+        for (const transport of this.didCommModuleConfig.outboundTransports) {
           if (transport.supportedSchemes.includes(protocolScheme)) {
             await transport.sendMessage({
               payload: encryptedMessage,
@@ -186,7 +169,7 @@ export class DidCommMessageSender {
       agentContext.config.logger.debug(
         `Queue packed message for connection ${connection.id} (${connection.theirLabel})`
       )
-      await this.queueTransportRepository.addMessage(agentContext, {
+      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: [verkeyToDidKey(recipientKey)],
         payload: encryptedMessage,
@@ -369,7 +352,7 @@ export class DidCommMessageSender {
       }
 
       const encryptedMessage = await this.envelopeService.packMessage(agentContext, message, keys)
-      await this.queueTransportRepository.addMessage(agentContext, {
+      await this.didCommModuleConfig.queueTransportRepository.addMessage(agentContext, {
         connectionId: connection.id,
         recipientDids: keys.recipientKeys.map((item) => new DidKey(item).did),
         payload: encryptedMessage,
@@ -445,7 +428,7 @@ export class DidCommMessageSender {
     }
     const { service, senderKey, returnRoute } = serviceParams
 
-    if (this.outboundTransports.length === 0) {
+    if (this.didCommModuleConfig.outboundTransports.length === 0) {
       throw new CredoError('Agent has no outbound transport!')
     }
 
@@ -482,7 +465,7 @@ export class DidCommMessageSender {
     const outboundPackage = await this.packMessage(agentContext, { message, keys, endpoint: service.serviceEndpoint })
     outboundPackage.endpoint = service.serviceEndpoint
     outboundPackage.connectionId = connection?.id
-    for (const transport of this.outboundTransports) {
+    for (const transport of this.didCommModuleConfig.outboundTransports) {
       const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
       if (!protocolScheme) {
         agentContext.config.logger.warn('Service does not have a protocol scheme.')

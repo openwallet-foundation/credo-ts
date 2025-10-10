@@ -1,6 +1,6 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { KeyManagementError } from '../error/KeyManagementError'
-import {
+import type {
   KmsCreateKeyType,
   KmsCreateKeyTypeEc,
   KmsCreateKeyTypeOct,
@@ -8,30 +8,31 @@ import {
   KmsCreateKeyTypeRsa,
 } from '../options'
 
+import { zParseWithErrorHandling } from '../../../utils/zod'
 import {
-  KmsJwkPrivateEc,
-  KmsJwkPublicEc,
+  type KmsJwkPrivateEc,
+  type KmsJwkPublicEc,
   zKmsJwkPrivateEc,
   zKmsJwkPrivateToPublicEc,
   zKmsJwkPublicEc,
 } from './kty/ec/ecJwk'
 import {
-  KmsJwkPrivateOct,
-  KmsJwkPublicOct,
+  type KmsJwkPrivateOct,
+  type KmsJwkPublicOct,
   zKmsJwkPrivateOct,
   zKmsJwkPrivateToPublicOct,
   zKmsJwkPublicOct,
 } from './kty/oct/octJwk'
 import {
-  KmsJwkPrivateOkp,
-  KmsJwkPublicOkp,
+  type KmsJwkPrivateOkp,
+  type KmsJwkPublicOkp,
   zKmsJwkPrivateOkp,
   zKmsJwkPrivateToPublicOkp,
   zKmsJwkPublicOkp,
 } from './kty/okp/okpJwk'
 import {
-  KmsJwkPrivateRsa,
-  KmsJwkPublicRsa,
+  type KmsJwkPrivateRsa,
+  type KmsJwkPublicRsa,
   zKmsJwkPrivateRsa,
   zKmsJwkPrivateToPublicRsa,
   zKmsJwkPublicRsa,
@@ -107,7 +108,7 @@ export type KmsJwkPrivateAsymmetric = z.output<typeof zKmsJwkPrivateAsymmetric>
 
 export function publicJwkFromPrivateJwk(privateJwk: KmsJwkPrivate | KmsJwkPublic): KmsJwkPublic {
   // This will remove any private properties
-  return z.parseWithErrorHandling(zKmsJwkPrivateToPublic, privateJwk)
+  return zParseWithErrorHandling(zKmsJwkPrivateToPublic, privateJwk)
 }
 
 export type KmsJwkPrivateFromKmsJwkPublic<Type extends KmsCreateKeyType> = Type extends KmsCreateKeyTypeRsa

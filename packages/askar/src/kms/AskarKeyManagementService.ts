@@ -15,7 +15,7 @@ import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
 import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
-import { AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
+import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { randomBytes } from './crypto/randomBytes'
 
 const askarSupportedEncryptionAlgorithms = [

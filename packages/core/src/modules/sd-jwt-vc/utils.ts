@@ -5,7 +5,7 @@ import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 
 export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
   const dids = agentContext.dependencyManager.resolve(DidsApi)

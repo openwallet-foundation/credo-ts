@@ -1,6 +1,6 @@
 import type { KmsJwkPublic } from '../jwk/knownJwk'
 
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { zKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 import { zKmsKeyId } from './common'

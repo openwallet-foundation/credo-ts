@@ -1,31 +1,29 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
 import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
 
-import { AgentContext, InjectionToken, injectable } from '@credo-ts/core'
+import { AgentContext, type InjectionToken, injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
-import { DidCommMessageReceiver } from './DidCommMessageReceiver'
-import { DidCommMessageSender } from './DidCommMessageSender'
-import { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
+import { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import {
-  DefaultDidCommMessagePickupProtocols,
-  DefaultDidCommProofProtocols,
+  type DefaultDidCommMessagePickupProtocols,
+  type DefaultDidCommProofProtocols,
   DidCommBasicMessagesApi,
   DidCommConnectionsApi,
-  DidCommCredentialProtocol,
+  type DidCommCredentialProtocol,
   DidCommDiscoverFeaturesApi,
   DidCommMessagePickupApi,
-  DidCommMessagePickupModuleConfigOptions,
-  DidCommMessagePickupProtocol,
+  type DidCommMessagePickupModuleConfigOptions,
+  type DidCommMessagePickupProtocol,
   DidCommOutOfBandApi,
-  DidCommProofProtocol,
+  type DidCommProofProtocol,
   DidCommProofsApi,
-  DidCommProofsModuleConfigOptions,
+  type DidCommProofsModuleConfigOptions,
 } from './modules'
 import { DidCommCredentialsApi } from './modules/credentials/DidCommCredentialsApi'
-import { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
 import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
 import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
 
@@ -79,34 +77,35 @@ export class DidCommApi<Options extends DidCommModuleConfigOptions> {
   public constructor(
     public agentContext: AgentContext,
     private messageHandlerRegistry: DidCommMessageHandlerRegistry,
-    private messageSender: DidCommMessageSender,
-    private messageReceiver: DidCommMessageReceiver,
     private featureRegistry: DidCommFeatureRegistry,
     public config: DidCommModuleConfig
   ) {}
 
   public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
-    this.messageReceiver.registerInboundTransport(inboundTransport)
+    this.config.inboundTransports.push(inboundTransport)
   }
 
   public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
-    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
+    this.config.inboundTransports = this.config.inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   public get inboundTransports() {
-    return this.messageReceiver.inboundTransports
+    return this.config.inboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    this.messageSender.registerOutboundTransport(outboundTransport)
+    this.config.outboundTransports.push(outboundTransport)
   }
 
   public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    await this.messageSender.unregisterOutboundTransport(outboundTransport)
+    this.config.outboundTransports = this.config.outboundTransports.filter(
+      (transport) => transport !== outboundTransport
+    )
   }
 
   public get outboundTransports() {
-    return this.messageSender.outboundTransports
+    return this.config.outboundTransports
   }
 
   /**

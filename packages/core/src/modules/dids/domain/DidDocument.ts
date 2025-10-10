@@ -10,7 +10,8 @@ import { TypedArrayEncoder } from '../../../utils'
 import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
-import { DidCommV1Service, IndyAgentService, ServiceTransformer } from './service'
+import { DidCommV1Service, IndyAgentService } from './service'
+import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
 
 export type DidPurpose =

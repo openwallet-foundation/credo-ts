@@ -14,7 +14,7 @@ describe('CredentialsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const credentialProtocol = jest.fn() as unknown as DidCommCredentialProtocol
+    const credentialProtocol = vi.fn() as unknown as DidCommCredentialProtocol
     const config = new DidCommCredentialsModuleConfig({
       autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
       credentialProtocols: [credentialProtocol],

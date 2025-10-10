@@ -180,7 +180,7 @@ describe('mdoc service test', () => {
     )
 
     const deviceResponse = MdocDeviceResponse.fromBase64Url(deviceResponseBase64Url)
-    expect(
+    await expect(
       deviceResponse.verify(agentContext, {
         sessionTranscriptOptions: {
           type: 'openId4VpDraft18',

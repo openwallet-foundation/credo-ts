@@ -17,25 +17,25 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
 import {
-  DefaultDidCommMessagePickupProtocols,
-  DefaultDidCommProofProtocols,
+  type DefaultDidCommMessagePickupProtocols,
+  type DefaultDidCommProofProtocols,
   DidCommBasicMessagesModule,
   DidCommConnectionsModule,
-  DidCommCredentialProtocol,
+  type DidCommCredentialProtocol,
   DidCommDiscoverFeaturesModule,
   DidCommMessagePickupModule,
-  DidCommMessagePickupModuleConfigOptions,
-  DidCommMessagePickupProtocol,
+  type DidCommMessagePickupModuleConfigOptions,
+  type DidCommMessagePickupProtocol,
   DidCommOutOfBandModule,
-  DidCommProofProtocol,
+  type DidCommProofProtocol,
   DidCommProofsModule,
-  DidCommProofsModuleConfigOptions,
+  type DidCommProofsModuleConfigOptions,
 } from './modules'
 import {
-  DefaultDidCommCredentialProtocols,
+  type DefaultDidCommCredentialProtocols,
   DidCommCredentialsModule,
 } from './modules/credentials/DidCommCredentialsModule'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
@@ -162,7 +162,6 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
     const stop$ = agentContext.dependencyManager.resolve<Subject<boolean>>(InjectionSymbols.Stop$)
     const eventEmitter = agentContext.dependencyManager.resolve(EventEmitter)
     const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
-    const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
 
     // Listen for new messages (either from transports or somewhere else in the framework / extensions)
     // We create this before doing any other initialization, so the initialization could already receive messages
@@ -187,11 +186,11 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
       )
       .subscribe()
 
-    for (const transport of messageReceiver.inboundTransports) {
+    for (const transport of this.config.inboundTransports) {
       await transport.start(agentContext)
     }
 
-    for (const transport of messageSender.outboundTransports) {
+    for (const transport of this.config.outboundTransports) {
       await transport.start(agentContext)
     }
 
@@ -229,11 +228,8 @@ export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommM
   }
 
   public async shutdown(agentContext: AgentContext) {
-    const messageReceiver = agentContext.dependencyManager.resolve(DidCommMessageReceiver)
-    const messageSender = agentContext.dependencyManager.resolve(DidCommMessageSender)
-
     // Stop transports
-    const allTransports = [...messageReceiver.inboundTransports, ...messageSender.outboundTransports]
+    const allTransports = [...this.config.inboundTransports, ...this.config.outboundTransports]
     const transportPromises = allTransports.map((transport) => transport.stop())
     await Promise.all(transportPromises)
 

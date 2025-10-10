@@ -1,5 +1,5 @@
-import { W3cV2JwtVerifiablePresentation, W3cV2JwtVerifiablePresentationOptions } from '../../jwt-vc'
-import { W3cV2SdJwtVerifiablePresentation, W3cV2SdJwtVerifiablePresentationOptions } from '../../sd-jwt-vc'
+import { W3cV2JwtVerifiablePresentation, type W3cV2JwtVerifiablePresentationOptions } from '../../jwt-vc'
+import { W3cV2SdJwtVerifiablePresentation, type W3cV2SdJwtVerifiablePresentationOptions } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../ClaimFormat'
 
 /**

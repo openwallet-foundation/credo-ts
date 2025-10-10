@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import * as testModule from '../cache'
@@ -6,24 +7,24 @@ const agentConfig = getAgentConfig('Migration Cache 0.3.1-0.4')
 const agentContext = getAgentContext()
 
 const storageService = {
-  getAll: jest.fn(),
-  deleteById: jest.fn(),
+  getAll: vi.fn(),
+  deleteById: vi.fn(),
 }
 
-jest.mock('../../../../../agent/Agent', () => {
+vi.mock('../../../../../agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => storageService),
+        resolve: vi.fn(() => storageService),
       },
     })),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.3.1-0.4 | Cache', () => {
   let agent: Agent

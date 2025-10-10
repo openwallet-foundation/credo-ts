@@ -7,7 +7,7 @@ import { DidCommModule } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
-import { Server } from 'ws'
+import { WebSocketServer } from 'ws'
 
 import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 
@@ -16,7 +16,7 @@ const run = async () => {
   const port = process.env.RESPONDER_PORT ? Number(process.env.RESPONDER_PORT) : 3002
   const autoAcceptRequests = true
   const app = express()
-  const socketServer = new Server({ noServer: true })
+  const socketServer = new WebSocketServer({ noServer: true })
 
   const httpInboundTransport = new DidCommHttpInboundTransport({ app, port })
   const wsInboundTransport = new DidCommWsInboundTransport({ server: socketServer })
@@ -36,16 +36,15 @@ const run = async () => {
       }),
       didcomm: new DidCommModule({
         endpoints: [`http://localhost:${port}`],
+        transports: {
+          inbound: [httpInboundTransport, wsInboundTransport],
+        },
         connections: { autoAcceptConnections: true },
       }),
       dummy: new DummyModule({ autoAcceptRequests }),
     },
     dependencies: agentDependencies,
   })
-
-  // Register transports
-  agent.didcomm.registerInboundTransport(httpInboundTransport)
-  agent.didcomm.registerInboundTransport(wsInboundTransport)
 
   // Allow to create invitation, no other way to ask for invitation yet
   app.get('/invitation', async (_req, res) => {

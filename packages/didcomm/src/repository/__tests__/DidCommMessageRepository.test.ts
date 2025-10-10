@@ -4,15 +4,18 @@ import { CacheModuleConfig, EventEmitter, InMemoryLruCache, JsonTransformer } fr
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests'
 import { DidCommConnectionInvitationMessage } from '../../modules'
 import { DidCommMessageRecord } from '../DidCommMessageRecord'
 import { DidCommMessageRepository } from '../DidCommMessageRepository'
 import { DidCommMessageRole } from '../DidCommMessageRole'
 
-jest.mock('../../../../../tests/InMemoryStorageService')
+vi.mock('../../../../../tests/InMemoryStorageService')
 
-const StorageMock = InMemoryStorageService as unknown as jest.Mock<InMemoryStorageService<DidCommMessageRecord>>
+const StorageMock = InMemoryStorageService as unknown as MockedClassConstructor<
+  typeof InMemoryStorageService<DidCommMessageRecord>
+>
 
 const invitationJson = {
   '@type': 'https://didcomm.org/connections/1.0/invitation',

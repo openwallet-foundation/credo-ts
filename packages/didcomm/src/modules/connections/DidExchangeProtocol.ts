@@ -15,7 +15,7 @@ import {
   JsonTransformer,
   JwsService,
   Kms,
-  Logger,
+  type Logger,
   PeerDidNumAlgo,
   TypedArrayEncoder,
   base64ToBase64URL,
@@ -32,7 +32,7 @@ import {
 
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import { DidCommInboundMessageContext } from '../../models'
-import { ParsedMessageType } from '../../util/messageType'
+import type { ParsedMessageType } from '../../util/messageType'
 import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'

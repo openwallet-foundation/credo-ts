@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { zKmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsKeyId } from './common'

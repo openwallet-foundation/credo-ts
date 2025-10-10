@@ -18,7 +18,7 @@ import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type'
 import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 import { w3cDate } from '../util'
 
-import { SingleOrArray } from '../../../types'
+import type { SingleOrArray } from '../../../types'
 import { PublicJwk } from '../../kms'
 import { SignatureSuiteRegistry } from './SignatureSuiteRegistry'
 import { assertOnlyW3cJsonLdVerifiableCredentials } from './jsonldUtil'

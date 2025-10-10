@@ -18,15 +18,15 @@ import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
-import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
+import { openid4vcBundle } from '../../drizzle-storage/src/openid4vc/bundle'
+import { tenantsBundle } from '../../drizzle-storage/src/tenants/bundle'
 import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import {
-  DrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
 } from '../../drizzle-storage/tests/testDatabase'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { OpenId4VcModule, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import { OpenId4VcVerificationSessionState } from '../src'
 
 import type { AgentType, TenantType } from './utils'
@@ -57,16 +57,18 @@ describe('OpenID4VP Draft 24', () => {
   let verifier2: TenantType
 
   let holderDrizzleModule: DrizzleStorageModule
-  // Use SQLite for verifier
-  const verifierDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDrizzleSqliteDatabase(),
-    bundles: [openid4vcBundle, tenantsBundle],
-  })
+  let verifierDrizzleModule: DrizzleStorageModule
 
   beforeAll(async () => {
     holderPostgresDatabase = await createDrizzlePostgresTestDatabase()
     holderDrizzleModule = new DrizzleStorageModule({
       database: holderPostgresDatabase.drizzle,
+      bundles: [openid4vcBundle, tenantsBundle],
+    })
+
+    // Use SQLite for verifier
+    verifierDrizzleModule = new DrizzleStorageModule({
+      database: await inMemoryDrizzleSqliteDatabase(),
       bundles: [openid4vcBundle, tenantsBundle],
     })
 

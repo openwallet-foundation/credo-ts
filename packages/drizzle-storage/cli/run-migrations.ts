@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process'
-import { Dialect } from './generate-migrations'
+import type { Dialect } from './generate-migrations'
 import { getDrizzleConfigPath, getDrizzleKitCliPath, getMigrationsDirectory, log, resolveBundle } from './utils'
 
 interface RunMigrationsOptions {

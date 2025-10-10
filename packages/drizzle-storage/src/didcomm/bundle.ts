@@ -9,7 +9,7 @@ import { didcommMediatorRoutingDrizzleRecord } from './mediator-routing-record'
 import { didcommOutOfBandDrizzleRecord } from './out-of-band-record'
 import { didcommProofExchangeDrizzleRecord } from './proof-exchange-record'
 
-export default {
+export const didcommBundle = {
   name: 'didcomm',
   records: [
     didcommBasicMessageDrizzleRecord,

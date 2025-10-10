@@ -5,7 +5,7 @@ import type {
 } from '@credo-ts/openid4vc'
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
-import { openid4vcVerifier } from '../sqlite'
+import { openid4vcVerifier } from '../openid4vc-verifier-record/sqlite'
 
 export const openId4VcVerificationSession = sqliteTable(
   'OpenId4VcVerificationSession',

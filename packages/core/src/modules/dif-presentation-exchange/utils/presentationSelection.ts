@@ -8,7 +8,7 @@ import type {
 import { JSONPath } from '@astronautlabs/jsonpath'
 
 import { CredoError } from '../../../error'
-import { SingleOrArray } from '../../../types'
+import type { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
 import {
   ClaimFormat,

@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { getAgentContext, getMockConnection } from '../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../models'
@@ -7,12 +8,14 @@ import { DidCommBasicMessageRecord } from '../repository/DidCommBasicMessageReco
 import { DidCommBasicMessageRepository } from '../repository/DidCommBasicMessageRepository'
 import { DidCommBasicMessageService } from '../services'
 
-jest.mock('../repository/DidCommBasicMessageRepository')
-const BasicMessageRepositoryMock = DidCommBasicMessageRepository as jest.Mock<DidCommBasicMessageRepository>
+vi.mock('../repository/DidCommBasicMessageRepository')
+const BasicMessageRepositoryMock = DidCommBasicMessageRepository as MockedClassConstructor<
+  typeof DidCommBasicMessageRepository
+>
 const basicMessageRepository = new BasicMessageRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/EventEmitter')
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
+vi.mock('../../../../../core/src/agent/EventEmitter')
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
 const eventEmitter = new EventEmitterMock()
 
 const agentContext = getAgentContext()

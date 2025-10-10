@@ -29,6 +29,7 @@ const run = async () => {
         },
       }),
       didcomm: new DidCommModule({
+        transports: { inbound: [httpOutboundTransport], outbound: [wsOutboundTransport] },
         connections: {
           autoAcceptConnections: true,
         },
@@ -37,10 +38,6 @@ const run = async () => {
     },
     dependencies: agentDependencies,
   })
-
-  // Register transports
-  agent.didcomm.registerOutboundTransport(wsOutboundTransport)
-  agent.didcomm.registerOutboundTransport(httpOutboundTransport)
 
   // Now agent will handle messages and events from Dummy protocol
 

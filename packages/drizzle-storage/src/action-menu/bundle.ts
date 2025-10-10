@@ -2,7 +2,7 @@ import type { DrizzleRecordBundle } from '../DrizzleRecord'
 import { bundleMigrationDefinition } from '../util'
 import { didcommActionMenuDrizzleRecord } from './action-menu-record'
 
-export default {
+export const actionMenuBundle = {
   name: 'action-menu',
   records: [didcommActionMenuDrizzleRecord],
 

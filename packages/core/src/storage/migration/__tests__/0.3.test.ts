@@ -10,13 +10,13 @@ import * as uuid from '../../../utils/uuid'
 import { UpdateAssistant } from '../UpdateAssistant'
 
 const backupDate = new Date('2023-03-18T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | v0.3.1 - v0.4', () => {
   it('should correctly update the did records and remove cache records', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceDidRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-2-sov-dids-one-cache-record-0.3.json'),
@@ -73,7 +73,7 @@ describe('UpdateAssistant | v0.3.1 - v0.4', () => {
   it(`should correctly update 'claimFormat' tag to w3c records`, async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(uuid, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const aliceW3cCredentialRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/alice-2-w3c-credential-records-0.3.json'),
