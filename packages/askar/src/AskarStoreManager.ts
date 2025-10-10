@@ -1,9 +1,13 @@
-import { AgentContext, FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
+import { AgentContext, type FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
-import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
-import { AskarModuleConfig, AskarModuleConfigStoreOptions, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
+import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
+import {
+  AskarModuleConfig,
+  type AskarModuleConfigStoreOptions,
+  AskarMultiWalletDatabaseScheme,
+} from './AskarModuleConfig'
 import {
   AskarError,
   AskarStoreDuplicateError,

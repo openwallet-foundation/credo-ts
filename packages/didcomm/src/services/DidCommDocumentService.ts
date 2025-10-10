@@ -1,4 +1,4 @@
-import { AgentContext, ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
+import { AgentContext, type ResolvedDidCommService, findMatchingEd25519Key } from '@credo-ts/core'
 
 import {
   CredoError,

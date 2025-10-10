@@ -15,18 +15,18 @@ const didResolverMock = {
   allowsCaching: true,
   allowsLocalDidRecord: false,
   supportedMethods: ['key'],
-  resolve: jest.fn(),
+  resolve: vi.fn(),
 } as DidResolver
 
 const recordResolverMock = {
   allowsCaching: false,
   allowsLocalDidRecord: true,
   supportedMethods: ['record'],
-  resolve: jest.fn(),
+  resolve: vi.fn(),
 } as DidResolver
 
 const didRepositoryMock = {
-  getCreatedDids: jest.fn(),
+  getCreatedDids: vi.fn(),
 } as unknown as DidRepository
 
 const cache = new InMemoryLruCache({ limit: 10 })
@@ -43,7 +43,7 @@ describe('DidResolverService', () => {
   )
 
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should correctly find and call the correct resolver for a specified did', async () => {

@@ -1,5 +1,5 @@
-import { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../jwa'
-import { KmsJwkPublicAsymmetric } from '../knownJwk'
+import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../jwa'
+import type { KmsJwkPublicAsymmetric } from '../knownJwk'
 
 export interface PublicJwkType<Jwk extends KmsJwkPublicAsymmetric = KmsJwkPublicAsymmetric> {
   readonly jwk: Jwk

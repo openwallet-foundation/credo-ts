@@ -1,6 +1,6 @@
-import { KnownJwaKeyAgreementAlgorithms, KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicEc } from './ecJwk'
+import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicEc } from './ecJwk'
 import { ecPublicJwkToPublicKey, ecPublicKeyToPublicJwk } from './ecPublicKey'
 
 type Jwk = KmsJwkPublicEc & { crv: 'P-384' }

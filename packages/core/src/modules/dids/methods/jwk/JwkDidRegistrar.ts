@@ -5,12 +5,12 @@ import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateR
 import { DidDocumentRole } from '../../domain/DidDocumentRole'
 import { DidRecord, DidRepository } from '../../repository'
 
-import { XOR } from '../../../../types'
+import type { XOR } from '../../../../types'
 import {
   KeyManagementApi,
-  KmsCreateKeyOptions,
-  KmsCreateKeyTypeAssymetric,
-  KmsJwkPublicAsymmetric,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyTypeAssymetric,
+  type KmsJwkPublicAsymmetric,
   PublicJwk,
 } from '../../../kms'
 import { DidJwk } from './DidJwk'

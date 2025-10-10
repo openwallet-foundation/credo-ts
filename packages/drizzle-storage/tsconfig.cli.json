@@ -1,8 +1,0 @@
-{
-  "extends": "../../tsconfig.build.json",
-  "compilerOptions": {
-    "outDir": "./cli-build",
-    "types": ["node", "./types/shell.d.ts"]
-  },
-  "include": ["cli/**/*"]
-}

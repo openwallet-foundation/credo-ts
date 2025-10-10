@@ -6,11 +6,11 @@ import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDisc
 
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
 import { agentDependencies, getAgentContext, getMockConnection } from '../../../../../../../core/tests/helpers'
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
 import { DidCommGoalCode, DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
@@ -18,8 +18,6 @@ import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFea
 import { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 import { DidCommFeaturesDisclosuresMessage, DidCommFeaturesQueriesMessage } from '../messages'
 
-jest.mock('../../../../../DidCommMessageHandlerRegistry')
-const _MessageHandlerRegistryMock = DidCommMessageHandlerRegistry as jest.Mock<DidCommMessageHandlerRegistry>
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const featureRegistry = new DidCommFeatureRegistry()
 featureRegistry.register(new DidCommProtocol({ id: 'https://didcomm.org/connections/1.0' }))
@@ -31,8 +29,8 @@ featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.1' }))
 featureRegistry.register(new DidCommGoalCode({ id: 'aries.vc.2' }))
 featureRegistry.register(new DidCommGoalCode({ id: 'caries.vc.3' }))
 
-jest.mock('../../../../../../../core/src/logger')
-const LoggerMock = ConsoleLogger as jest.Mock<ConsoleLogger>
+vi.mock('../../../../../../../core/src/logger')
+const LoggerMock = ConsoleLogger as MockedClassConstructor<typeof ConsoleLogger>
 
 describe('V2DiscoverFeaturesService - auto accept queries', () => {
   const discoverFeaturesModuleConfig = new DidCommDiscoverFeaturesModuleConfig({ autoAcceptQueries: true })
@@ -163,7 +161,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processQuery', () => {
     it('should emit event and create disclosure message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock
@@ -209,7 +207,7 @@ describe('V2DiscoverFeaturesService - auto accept queries', () => {
 
   describe('processDisclosure', () => {
     it('should emit event', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesDisclosureReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.DisclosureReceived,
         eventListenerMock
@@ -266,7 +264,7 @@ describe('V2DiscoverFeaturesService - auto accept disabled', () => {
 
   describe('processQuery', () => {
     it('should emit event and not send any message', async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommDiscoverFeaturesQueryReceivedEvent>(
         DidCommDiscoverFeaturesEventTypes.QueryReceived,
         eventListenerMock

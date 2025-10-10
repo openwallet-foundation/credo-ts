@@ -21,6 +21,7 @@ import {
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction, testLogger } from '../../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../../AnonCredsModuleConfig'
@@ -43,20 +44,20 @@ const stop = new Subject<boolean>()
 const eventEmitter = new EventEmitter(agentDependencies, stop)
 
 const w3cRepo = {
-  save: jest.fn(),
-  update: jest.fn(),
+  save: vi.fn(),
+  update: vi.fn(),
 }
 
 const credentialExchangeRepo = {
-  findByQuery: jest.fn(),
-  update: jest.fn(),
+  findByQuery: vi.fn(),
+  update: vi.fn(),
 }
 
 const inMemoryLruCache = {
-  get: jest.fn(),
-  set: jest.fn(),
-  clear: jest.fn(),
-  remove: jest.fn(),
+  get: vi.fn(),
+  set: vi.fn(),
+  clear: vi.fn(),
+  remove: vi.fn(),
 }
 
 const cacheModuleConfig = new CacheModuleConfig({
@@ -87,18 +88,18 @@ const agentContext = getAgentContext({
 })
 
 const anonCredsRepo = {
-  getAll: jest.fn(),
-  delete: jest.fn(),
+  getAll: vi.fn(),
+  delete: vi.fn(),
 }
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
         // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-        resolve: jest.fn((repo: any) => {
+        resolve: vi.fn((repo: any) => {
           if (repo.prototype.constructor.name === 'AnonCredsCredentialRepository') {
             return anonCredsRepo
           }
@@ -110,7 +111,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.4-0.5 | AnonCredsRecord', () => {
   let agent: Agent

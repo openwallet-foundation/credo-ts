@@ -4,7 +4,7 @@ import type { Constructable } from '../../../utils/mixins'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
 import { uuid } from '../../../utils/uuid'
-import { KnownJwaSignatureAlgorithm } from '../../kms'
+import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { Mdoc } from '../Mdoc'
 
 export type DefaultMdocRecordTags = {

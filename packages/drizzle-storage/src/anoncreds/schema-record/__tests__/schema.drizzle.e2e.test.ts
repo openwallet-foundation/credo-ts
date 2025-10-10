@@ -1,7 +1,7 @@
 import { AnonCredsSchemaRecord, AnonCredsSchemaRepository } from '@credo-ts/anoncreds'
 import { JsonTransformer } from '@credo-ts/core'
 
-import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
+import { type DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { anonCredsSchemaDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('AnonCredsSchemaRecord with %s', (type) => {

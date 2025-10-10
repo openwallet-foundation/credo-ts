@@ -5,11 +5,11 @@ import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
 import {
-  AgentContextProvider,
+  type AgentContextProvider,
   CredoError,
   InjectionSymbols,
   JsonTransformer,
-  Logger,
+  type Logger,
   inject,
   injectable,
 } from '@credo-ts/core'

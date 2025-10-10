@@ -14,7 +14,7 @@ import {
   EventEmitter,
   Kms,
   MessageValidator,
-  ResolvedDidCommService,
+  type ResolvedDidCommService,
   didKeyToEd25519PublicJwk,
   getPublicJwkFromVerificationMethod,
   injectable,

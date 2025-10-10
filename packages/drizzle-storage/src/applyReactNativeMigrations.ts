@@ -1,4 +1,4 @@
-import { AnyDrizzleDatabase } from './DrizzleStorageModuleConfig'
+import type { AnyDrizzleDatabase } from './DrizzleStorageModuleConfig'
 
 export interface ReactNativeDrizzleMigration {
   journal: {

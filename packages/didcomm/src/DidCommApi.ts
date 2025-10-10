@@ -1,29 +1,29 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
 import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
 
-import { AgentContext, InjectionToken, injectable } from '@credo-ts/core'
+import { AgentContext, type InjectionToken, injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
-import { DidCommModuleConfig, DidCommModuleConfigOptions } from './DidCommModuleConfig'
+import { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import {
-  DefaultDidCommMessagePickupProtocols,
-  DefaultDidCommProofProtocols,
+  type DefaultDidCommMessagePickupProtocols,
+  type DefaultDidCommProofProtocols,
   DidCommBasicMessagesApi,
   DidCommConnectionsApi,
-  DidCommCredentialProtocol,
+  type DidCommCredentialProtocol,
   DidCommDiscoverFeaturesApi,
   DidCommMessagePickupApi,
-  DidCommMessagePickupModuleConfigOptions,
-  DidCommMessagePickupProtocol,
+  type DidCommMessagePickupModuleConfigOptions,
+  type DidCommMessagePickupProtocol,
   DidCommOutOfBandApi,
-  DidCommProofProtocol,
+  type DidCommProofProtocol,
   DidCommProofsApi,
-  DidCommProofsModuleConfigOptions,
+  type DidCommProofsModuleConfigOptions,
 } from './modules'
 import { DidCommCredentialsApi } from './modules/credentials/DidCommCredentialsApi'
-import { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
 import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
 import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
 

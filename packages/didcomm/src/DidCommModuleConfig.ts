@@ -1,22 +1,21 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import {
+import type {
   DidCommConnectionsModuleConfigOptions,
   DidCommCredentialProtocol,
   DidCommMessagePickupModuleConfigOptions,
   DidCommMessagePickupProtocol,
   DidCommProofsModuleConfigOptions,
 } from './modules'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
-import { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
-import { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
-import { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
-import { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
-import {
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
+import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
+import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
+import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
+import type { 
   DidCommInboundTransport,
   DidCommOutboundTransport,
-  DidCommQueueTransportRepository,
-  InMemoryQueueTransportRepository,
-} from './transport'
+  DidCommQueueTransportRepository, 
+  InMemoryQueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {

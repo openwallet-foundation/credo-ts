@@ -20,7 +20,7 @@ import {
   InjectionSymbols,
   JsonTransformer,
   Kms,
-  Logger,
+  type Logger,
   TypedArrayEncoder,
   didDocumentJsonToNumAlgo1Did,
   filterContextCorrelationId,
@@ -32,11 +32,11 @@ import {
 import { ReplaySubject, firstValueFrom } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { DidCommRouting } from '../../../models'
+import type { DidCommRouting } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
-import { InvitationType } from '../../oob/messages'
+import { DidCommInvitationType } from '../../oob/messages'
 import { DidCommOutOfBandRepository } from '../../oob/repository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
@@ -653,7 +653,7 @@ export class DidCommConnectionService {
 
     // If the original invitation was a legacy connectionless invitation, it's okay if the message does not have a pthid.
     if (
-      legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless &&
+      legacyInvitationMetadata?.legacyInvitationType !== DidCommInvitationType.Connectionless &&
       outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
     ) {
       throw new CredoError(

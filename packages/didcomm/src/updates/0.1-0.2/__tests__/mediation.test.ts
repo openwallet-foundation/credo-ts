@@ -1,3 +1,4 @@
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
@@ -8,24 +9,24 @@ import * as testModule from '../mediation'
 const agentConfig = getAgentConfig('Migration MediationRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/routing/repository/DidCommMediationRepository')
-const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
+vi.mock('../../../modules/routing/repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 const mediationRepository = new MediationRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn(() => mediationRepository),
+        resolve: vi.fn(() => mediationRepository),
       },
     })),
   }
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.1-0.2 | Mediation', () => {
   let agent: Agent

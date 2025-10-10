@@ -44,9 +44,9 @@ import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepositor
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from './repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
 import {
-  AnonCredsHolderService,
+  type AnonCredsHolderService,
   AnonCredsHolderServiceSymbol,
-  AnonCredsIssuerService,
+  type AnonCredsIssuerService,
   AnonCredsIssuerServiceSymbol,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'

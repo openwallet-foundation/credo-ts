@@ -1,4 +1,4 @@
-import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core'
+import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core/src/index'
 import type { DidCommProofFormatService } from '../../DidCommProofFormatService'
 import type { DidCommDifPresentationExchangeProofFormat } from '../DidCommDifPresentationExchangeProofFormat'
 
@@ -82,8 +82,8 @@ const verifiablePresentation = new W3cJsonLdVerifiablePresentation({
     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
   },
 })
-jest.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
-jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
+vi.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
+vi.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
   presentationSubmission,
   verifiablePresentations: [verifiablePresentation],
   presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,

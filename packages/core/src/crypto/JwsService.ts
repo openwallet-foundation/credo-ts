@@ -8,14 +8,14 @@ import type {
 } from './JwsTypes'
 
 import { CredoError } from '../error'
-import { EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
+import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { injectable } from '../plugins'
 import { Buffer, JsonEncoder, TypedArrayEncoder } from '../utils'
 
 import {
   KeyManagementApi,
   KeyManagementError,
-  KnownJwaSignatureAlgorithm,
+  type KnownJwaSignatureAlgorithm,
   PublicJwk,
   assertJwkAsymmetric,
   assymetricPublicJwkMatches,
@@ -24,7 +24,7 @@ import {
 import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { isJsonObject } from '../types'
 import { X509Service } from './../modules/x509/X509Service'
-import { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
+import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { JwtPayload } from './jose/jwt'
 

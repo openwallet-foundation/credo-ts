@@ -1,4 +1,3 @@
-import type { EventReplaySubject } from '@credo-ts/core/tests'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 
 import {
@@ -16,6 +15,7 @@ import { DidCommCredentialV2Preview } from '../messages/DidCommCredentialV2Previ
 
 import { setupAnonCredsTests } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { anoncredsDefinitionFourAttributesNoRevocation } from '../../../../../../../anoncreds/tests/preCreatedAnonCredsDefinition'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 
 describe('V2 Credentials Auto Accept', () => {
   let faberAgent: AnonCredsTestsAgent

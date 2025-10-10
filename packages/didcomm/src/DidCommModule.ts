@@ -17,25 +17,25 @@ import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
 import {
-  DefaultDidCommMessagePickupProtocols,
-  DefaultDidCommProofProtocols,
+  type DefaultDidCommMessagePickupProtocols,
+  type DefaultDidCommProofProtocols,
   DidCommBasicMessagesModule,
   DidCommConnectionsModule,
-  DidCommCredentialProtocol,
+  type DidCommCredentialProtocol,
   DidCommDiscoverFeaturesModule,
   DidCommMessagePickupModule,
-  DidCommMessagePickupModuleConfigOptions,
-  DidCommMessagePickupProtocol,
+  type DidCommMessagePickupModuleConfigOptions,
+  type DidCommMessagePickupProtocol,
   DidCommOutOfBandModule,
-  DidCommProofProtocol,
+  type DidCommProofProtocol,
   DidCommProofsModule,
-  DidCommProofsModuleConfigOptions,
+  type DidCommProofsModuleConfigOptions,
 } from './modules'
 import {
-  DefaultDidCommCredentialProtocols,
+  type DefaultDidCommCredentialProtocols,
   DidCommCredentialsModule,
 } from './modules/credentials/DidCommCredentialsModule'
-import { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
 import { DidCommMediationRecipientModule } from './modules/routing/DidCommMediationRecipientModule'
 import { DidCommMediatorModule } from './modules/routing/DidCommMediatorModule'
 import { DidCommMessageRepository } from './repository'
