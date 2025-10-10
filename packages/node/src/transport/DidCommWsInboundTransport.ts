@@ -8,17 +8,20 @@ import type {
 
 import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
-import WebSocket, { Server } from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 
 export class DidCommWsInboundTransport implements DidCommInboundTransport {
-  private socketServer: Server
+  private socketServer: WebSocketServer
   private logger!: Logger
 
   // We're using a `socketId` just for the prevention of calling the connection handler twice.
   private socketIds: Record<string, unknown> = {}
 
-  public constructor({ server, port }: { server: Server; port?: undefined } | { server?: undefined; port: number }) {
-    this.socketServer = server ?? new Server({ port })
+  public constructor({
+    server,
+    port,
+  }: { server: WebSocketServer; port?: undefined } | { server?: undefined; port: number }) {
+    this.socketServer = server ?? new WebSocketServer({ port })
   }
 
   public async start(agentContext: AgentContext) {

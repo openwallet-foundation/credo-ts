@@ -4,7 +4,7 @@ export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupN
 export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
 export { assertBestPracticeRevocationInterval } from './revocationInterval'
 export { getRevocationRegistriesForRequest, getRevocationRegistriesForProof } from './getRevocationRegistries'
-export { checkValidCredentialValueEncoding, AnonCredsCredentialValue } from './credential'
+export { checkValidCredentialValueEncoding, type AnonCredsCredentialValue } from './credential'
 export { IsMap } from './isMap'
 export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'
@@ -27,9 +27,9 @@ export {
   AnonCredsCredentialMetadataKey,
   AnonCredsCredentialRequestMetadataKey,
   W3cAnonCredsCredentialMetadataKey,
-  AnonCredsCredentialMetadata,
-  AnonCredsCredentialRequestMetadata,
-  W3cAnonCredsCredentialMetadata,
+  type AnonCredsCredentialMetadata,
+  type AnonCredsCredentialRequestMetadata,
+  type W3cAnonCredsCredentialMetadata,
 } from './metadata'
 export { getW3cRecordAnonCredsTags } from './w3cAnonCredsUtils'
 export { getCredentialsForAnonCredsProofRequest } from './getCredentialsForAnonCredsRequest'

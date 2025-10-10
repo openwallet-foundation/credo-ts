@@ -27,8 +27,8 @@ import {
   JwtPayload,
   Kms,
   MdocApi,
-  Query,
-  QueryOptions,
+  type Query,
+  type QueryOptions,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
@@ -38,11 +38,11 @@ import {
   utils,
 } from '@credo-ts/core'
 import {
-  AuthorizationServerMetadata,
+  type AuthorizationServerMetadata,
   HashAlgorithm,
-  Jwk,
-  JwtSignerJwk,
-  JwtSignerWithJwk,
+  type Jwk,
+  type JwtSignerJwk,
+  type JwtSignerWithJwk,
   Oauth2AuthorizationServer,
   Oauth2Client,
   Oauth2ErrorCodes,
@@ -53,15 +53,15 @@ import {
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
-  CredentialConfigurationSupportedWithFormats,
-  CredentialConfigurationsSupportedWithFormats,
-  CredentialIssuerMetadata,
-  CredentialRequestFormatSpecific,
-  CredentialResponse,
-  DeferredCredentialResponse,
+  type CredentialConfigurationSupportedWithFormats,
+  type CredentialConfigurationsSupportedWithFormats,
+  type CredentialIssuerMetadata,
+  type CredentialRequestFormatSpecific,
+  type CredentialResponse,
+  type DeferredCredentialResponse,
   Openid4vciDraftVersion,
   Openid4vciIssuer,
-  ParseCredentialRequestReturn,
+  type ParseCredentialRequestReturn,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
@@ -79,7 +79,7 @@ import {
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
+import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
   OpenId4VcIssuanceSessionRecord,

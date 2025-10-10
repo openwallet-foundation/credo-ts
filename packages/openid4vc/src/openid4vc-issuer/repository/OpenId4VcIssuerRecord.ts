@@ -1,4 +1,4 @@
-import { Kms, RecordTags, TagsBase } from '@credo-ts/core'
+import { Kms, type RecordTags, type TagsBase } from '@credo-ts/core'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,

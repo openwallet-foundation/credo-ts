@@ -1,4 +1,4 @@
-import { JsonTransformer } from '../../../../../../core'
+import { JsonTransformer } from '../../../../../../core/src/index'
 import { DidCommOutOfBandRole } from '../../domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from '../../domain/OutOfBandDidCommService'

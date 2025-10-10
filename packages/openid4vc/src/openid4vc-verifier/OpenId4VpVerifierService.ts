@@ -1,17 +1,17 @@
 import {
   AgentContext,
   ClaimFormat,
-  DcqlEncodedPresentations,
-  DcqlQuery,
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  HashName,
+  type DcqlEncodedPresentations,
+  type DcqlQuery,
+  type DifPresentationExchangeDefinition,
+  type DifPresentationExchangeSubmission,
+  type HashName,
   Kms,
-  MdocSessionTranscriptOptions,
-  MdocSupportedSignatureAlgorithm,
-  Query,
-  QueryOptions,
-  VerifiablePresentation,
+  type MdocSessionTranscriptOptions,
+  type MdocSupportedSignatureAlgorithm,
+  type Query,
+  type QueryOptions,
+  type VerifiablePresentation,
   W3cV2CredentialService,
   W3cV2SdJwtVerifiablePresentation,
 } from '@credo-ts/core'
@@ -24,7 +24,7 @@ import {
   JsonEncoder,
   JsonTransformer,
   Jwt,
-  Logger,
+  type Logger,
   MdocDeviceResponse,
   SdJwtVcApi,
   SignatureSuiteRegistry,
@@ -44,22 +44,22 @@ import {
   joinUriParts,
   utils,
 } from '@credo-ts/core'
-import { NonEmptyArray, mapNonEmptyArray } from '@credo-ts/core'
-import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { type NonEmptyArray, mapNonEmptyArray } from '@credo-ts/core'
+import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  ClientIdPrefix,
-  ClientMetadata,
+  type ClientIdPrefix,
+  type ClientMetadata,
   JarmMode,
   Openid4vpVerifier,
-  ParsedOpenid4vpAuthorizationResponse,
-  TransactionDataHashesCredentials,
+  type ParsedOpenid4vpAuthorizationResponse,
+  type TransactionDataHashesCredentials,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
@@ -69,7 +69,7 @@ import {
   requestSignerToJwtIssuer,
 } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
-import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
+import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import type {
   OpenId4VpCreateAuthorizationRequestOptions,

@@ -9,10 +9,7 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "start": "ts-node server.ts"
-  },
-  "devDependencies": {
-    "ts-node": "catalog:"
+    "start": "vite-node server.ts"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",

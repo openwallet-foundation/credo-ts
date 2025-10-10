@@ -1,5 +1,5 @@
 import { IsOptional, IsString } from 'class-validator'
-import { Jwk } from '../../../kms'
+import type { Jwk } from '../../../kms'
 
 export interface VerificationMethodOptions {
   id: string

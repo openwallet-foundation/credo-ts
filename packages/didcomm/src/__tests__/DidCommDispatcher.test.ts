@@ -1,5 +1,6 @@
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext } from '../../../core/tests/helpers'
 import { DidCommDispatcher } from '../DidCommDispatcher'
@@ -8,10 +9,10 @@ import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../DidCommMessageSender'
 import { getOutboundDidCommMessageContext } from '../getDidCommOutboundMessageContext'
 import { DidCommInboundMessageContext } from '../models'
-import { type DidCommConnectionRecord } from '../modules/connections'
+import type { DidCommConnectionRecord } from '../modules/connections'
 import { parseMessageType } from '../util/messageType'
 
-jest.mock('../DidCommMessageSender')
+vi.mock('../DidCommMessageSender')
 
 class CustomProtocolMessage extends DidCommMessage {
   public readonly type = CustomProtocolMessage.type.messageTypeUri
@@ -29,7 +30,7 @@ class CustomProtocolMessage extends DidCommMessage {
 describe('DidCommDispatcher', () => {
   const agentConfig = getAgentConfig('DispatcherTest')
   const agentContext = getAgentContext()
-  const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
+  const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
   const eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
 
   describe('dispatch()', () => {
@@ -44,7 +45,7 @@ describe('DidCommDispatcher', () => {
       const customProtocolMessage = new CustomProtocolMessage({})
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       messageHandlerRegistry.registerMessageHandler({ supportedMessages: [CustomProtocolMessage], handle: mockHandle })
 
       await dispatcher.dispatch(inboundMessageContext)
@@ -65,7 +66,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       messageHandlerRegistry.registerMessageHandler({ supportedMessages: [], handle: mockHandle })
 
       await expect(dispatcher.dispatch(inboundMessageContext)).rejects.toThrow(
@@ -94,8 +95,8 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
-      const secondMiddleware = jest.fn()
+      const firstMiddleware = vi.fn().mockImplementation(async (_, next) => next())
+      const secondMiddleware = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .registerMessageHandlerMiddleware(firstMiddleware)
@@ -135,8 +136,8 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const firstMiddleware = jest.fn().mockImplementation(async (_, next) => next())
-      const secondMiddleware = jest.fn()
+      const firstMiddleware = vi.fn().mockImplementation(async (_, next) => next())
+      const secondMiddleware = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .registerMessageHandlerMiddleware(firstMiddleware)
@@ -176,7 +177,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const fallbackMessageHandler = jest.fn()
+      const fallbackMessageHandler = vi.fn()
       agentContext.dependencyManager
         .resolve(DidCommMessageHandlerRegistry)
         .setFallbackMessageHandler(fallbackMessageHandler)
@@ -207,7 +208,7 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const mockHandle = jest.fn()
+      const mockHandle = vi.fn()
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlers([
         {
           supportedMessages: [CustomProtocolMessage],
@@ -215,7 +216,7 @@ describe('DidCommDispatcher', () => {
         },
       ])
 
-      const middleware = jest.fn()
+      const middleware = vi.fn()
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)
       expect(mockHandle).not.toHaveBeenCalled()
@@ -247,8 +248,8 @@ describe('DidCommDispatcher', () => {
       })
       const inboundMessageContext = new DidCommInboundMessageContext(customProtocolMessage, { agentContext })
 
-      const handle = jest.fn()
-      const middleware = jest
+      const handle = vi.fn()
+      const middleware = vi
         .fn()
         .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext, next) => {
           inboundMessageContext.messageHandler = {
@@ -284,7 +285,7 @@ describe('DidCommDispatcher', () => {
         agentConfig.logger
       )
 
-      const connectionMock = jest.fn() as unknown as DidCommConnectionRecord
+      const connectionMock = vi.fn() as unknown as DidCommConnectionRecord
 
       const customProtocolMessage = new CustomProtocolMessage({
         id: '55170d10-b91f-4df2-9dcd-6deb4e806c1b',
@@ -294,20 +295,18 @@ describe('DidCommDispatcher', () => {
         connection: connectionMock,
       })
 
-      const middleware = jest
-        .fn()
-        .mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext) => {
-          // We do not call next
-          inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
-            inboundMessageContext.agentContext,
-            {
-              message: new CustomProtocolMessage({
-                id: 'static-id',
-              }),
-              connectionRecord: inboundMessageContext.connection,
-            }
-          )
-        })
+      const middleware = vi.fn().mockImplementationOnce(async (inboundMessageContext: DidCommInboundMessageContext) => {
+        // We do not call next
+        inboundMessageContext.responseMessage = await getOutboundDidCommMessageContext(
+          inboundMessageContext.agentContext,
+          {
+            message: new CustomProtocolMessage({
+              id: 'static-id',
+            }),
+            connectionRecord: inboundMessageContext.connection,
+          }
+        )
+      })
 
       agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry).registerMessageHandlerMiddleware(middleware)
       await dispatcher.dispatch(inboundMessageContext)

@@ -1,41 +1,36 @@
+import { AgentContext, Kms } from '@credo-ts/core'
+import { PublicKey } from '@hashgraph/sdk'
+import { PublicJwk } from '../../../core/src/modules/kms/jwk/PublicJwk'
+import { mockFunction } from '../../../core/tests/helpers'
+import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
+import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
+
 const mockPublicJwk = {
   keyId: 'test-key-id',
   publicKey: { publicKey: new Uint8Array([1, 2, 3]) },
 } as Kms.PublicJwk<Kms.Ed25519PublicJwk>
 
-import { AgentContext, Kms } from '@credo-ts/core'
-import { mockFunction } from '../../../core/tests/helpers'
-import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
+vi.mock('../../../core/src/modules/kms/jwk/PublicJwk')
+vi.mock('../../../core/src/modules/kms/KeyManagementApi')
 
-jest.mock('@credo-ts/core', () => ({
-  ...jest.requireActual('@credo-ts/core'),
-  Kms: {
-    KeyManagementApi: jest.fn().mockReturnValue({}),
-    PublicJwk: {
-      fromFingerprint: jest.fn().mockReturnValue(mockPublicJwk),
-    },
-  },
+mockFunction(PublicJwk.fromFingerprint).mockReturnValue(mockPublicJwk)
+
+vi.mock('../../src/ledger/utils', () => ({
+  createOrGetKey: vi.fn(),
+  hederaPublicKeyFromPublicJwk: vi.fn(),
 }))
 
-jest.mock('../../src/ledger/utils', () => ({
-  createOrGetKey: jest.fn(),
-  hederaPublicKeyFromPublicJwk: jest.fn(),
-}))
-
-import { PublicKey } from '@hashgraph/sdk'
-import { createOrGetKey, hederaPublicKeyFromPublicJwk } from '../../src/ledger/utils'
-
-jest.mock('@hiero-did-sdk/publisher-internal', () => {
+vi.mock('@hiero-did-sdk/publisher-internal', () => {
   return {
-    Publisher: jest.fn(),
+    Publisher: vi.fn(),
   }
 })
 
 describe('KmsPublisher', () => {
   const mockClient = {
-    freezeWith: jest.fn(),
-    signWith: jest.fn(),
-    execute: jest.fn(),
+    freezeWith: vi.fn(),
+    signWith: vi.fn(),
+    execute: vi.fn(),
     operator: {
       accountId: '0.0.1234',
       publicKey: {},
@@ -43,14 +38,14 @@ describe('KmsPublisher', () => {
   }
 
   const mockFrozenTransaction = {
-    signWith: jest.fn(),
+    signWith: vi.fn(),
   }
 
   const mockResponse = {
-    getReceipt: jest.fn(),
+    getReceipt: vi.fn(),
   }
 
-  const signMock = jest.fn().mockResolvedValue({ signature: 'signature-bytes' })
+  const signMock = vi.fn().mockResolvedValue({ signature: 'signature-bytes' })
 
   const kmsMock = {
     sign: signMock,
@@ -58,7 +53,7 @@ describe('KmsPublisher', () => {
 
   const agentContext = {
     dependencyManager: {
-      resolve: jest.fn().mockImplementation((key) => {
+      resolve: vi.fn().mockImplementation((key) => {
         if (key === Kms.KeyManagementApi) {
           return kmsMock
         }
@@ -70,7 +65,7 @@ describe('KmsPublisher', () => {
   const mockPublicKey = {}
 
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
     mockFunction(hederaPublicKeyFromPublicJwk).mockReturnValue(mockPublicKey as PublicKey)
 
     mockClient.freezeWith.mockReturnValue(mockFrozenTransaction)

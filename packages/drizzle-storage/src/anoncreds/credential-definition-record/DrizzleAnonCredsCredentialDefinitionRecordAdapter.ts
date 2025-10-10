@@ -1,9 +1,9 @@
-import { JsonTransformer, TagsBase } from '@credo-ts/core'
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 
-import { BaseDrizzleRecordAdapter, DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
+import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 
 import { AnonCredsCredentialDefinitionRecord } from '@credo-ts/anoncreds'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 

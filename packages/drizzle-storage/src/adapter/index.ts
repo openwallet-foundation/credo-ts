@@ -1,6 +1,6 @@
 export {
-  AnyDrizzleAdapter,
+  type AnyDrizzleAdapter,
   BaseDrizzleRecordAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from './BaseDrizzleRecordAdapter'

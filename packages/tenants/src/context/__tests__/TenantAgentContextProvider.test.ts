@@ -2,20 +2,21 @@ import type { AgentContext } from '@credo-ts/core'
 
 import { Kms } from '@credo-ts/core'
 
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { EventEmitter } from '../../../../core/src/agent/EventEmitter'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
 import { TenantRecord, TenantRoutingRecord } from '../../repository'
 import { TenantRecordService } from '../../services/TenantRecordService'
 import { TenantAgentContextProvider } from '../TenantAgentContextProvider'
-import { TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
+import { type TenantContextCorrelationId, TenantSessionCoordinator } from '../TenantSessionCoordinator'
 
-jest.mock('../../../../core/src/agent/EventEmitter')
-jest.mock('../../services/TenantRecordService')
-jest.mock('../TenantSessionCoordinator')
+vi.mock('../../../../core/src/agent/EventEmitter')
+vi.mock('../../services/TenantRecordService')
+vi.mock('../TenantSessionCoordinator')
 
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const TenantRecordServiceMock = TenantRecordService as jest.Mock<TenantRecordService>
-const TenantSessionCoordinatorMock = TenantSessionCoordinator as jest.Mock<TenantSessionCoordinator>
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
+const TenantRecordServiceMock = TenantRecordService as MockedClassConstructor<typeof TenantRecordService>
+const TenantSessionCoordinatorMock = TenantSessionCoordinator as MockedClassConstructor<typeof TenantSessionCoordinator>
 
 const tenantRecordService = new TenantRecordServiceMock()
 const tenantSessionCoordinator = new TenantSessionCoordinatorMock()
@@ -48,7 +49,7 @@ const inboundMessage = {
 
 describe('TenantAgentContextProvider', () => {
   afterEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('getAgentContextForContextCorrelationId', () => {
@@ -61,7 +62,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
@@ -87,7 +88,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
       mockFunction(tenantSessionCoordinator.getContextForSession).mockResolvedValue(tenantAgentContext)
@@ -129,7 +130,7 @@ describe('TenantAgentContextProvider', () => {
         storageVersion: '0.5',
       })
 
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
       mockFunction(tenantRecordService.findTenantRoutingRecordByRecipientKey).mockResolvedValue(tenantRoutingRecord)
 
       mockFunction(tenantRecordService.getTenantById).mockResolvedValue(tenantRecord)
@@ -156,7 +157,7 @@ describe('TenantAgentContextProvider', () => {
 
   describe('disposeAgentContext', () => {
     test('calls disposeAgentContextSession on tenant session coordinator', async () => {
-      const tenantAgentContext = jest.fn() as unknown as AgentContext
+      const tenantAgentContext = vi.fn() as unknown as AgentContext
 
       await tenantAgentContextProvider.endSessionForAgentContext(tenantAgentContext)
 
