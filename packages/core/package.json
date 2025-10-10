@@ -39,7 +39,7 @@
     "@animo-id/mdoc": "^0.5.2",
     "@animo-id/pex": "catalog:",
     "@astronautlabs/jsonpath": "catalog:",
-    "@digitalcredentials/jsonld": "^6.0.0",
+    "@digitalcredentials/jsonld": "^9.0.0",
     "@digitalcredentials/jsonld-signatures": "^9.4.0",
     "@digitalcredentials/vc": "^6.0.1",
     "@multiformats/base-x": "^4.0.1",
