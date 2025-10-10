@@ -1,9 +1,9 @@
 import { Transform, TransformationType } from 'class-transformer'
 import { ValidationError } from 'class-validator'
 import { ClassValidationError, CredoError } from '../../../../error'
-import { SingleOrArray } from '../../../../types'
-import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiableCredentialOptions } from '../../jwt-vc'
-import { W3cV2SdJwtVerifiableCredential, W3cV2SdJwtVerifiableCredentialOptions } from '../../sd-jwt-vc'
+import type { SingleOrArray } from '../../../../types'
+import { W3cV2JwtVerifiableCredential, type W3cV2JwtVerifiableCredentialOptions } from '../../jwt-vc'
+import { W3cV2SdJwtVerifiableCredential, type W3cV2SdJwtVerifiableCredentialOptions } from '../../sd-jwt-vc'
 import { ClaimFormat } from '../ClaimFormat'
 
 const decodeCredential = (v: unknown) => {

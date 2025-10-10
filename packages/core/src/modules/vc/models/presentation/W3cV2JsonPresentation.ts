@@ -1,5 +1,5 @@
 import type { JsonObject } from '../../../../types'
-import { W3cV2JsonCredential } from '../credential/W3cV2JsonCredential'
+import type { W3cV2JsonCredential } from '../credential/W3cV2JsonCredential'
 
 export interface W3cV2JsonPresentation {
   '@context': string | Array<string | JsonObject>

@@ -1,6 +1,7 @@
 import { Subject } from 'rxjs'
 
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
@@ -15,17 +16,19 @@ import { DidCommMediationRepository } from '../../repository/DidCommMediationRep
 import { DidCommMediatorRoutingRepository } from '../../repository/DidCommMediatorRoutingRepository'
 import { DidCommMediatorService } from '../DidCommMediatorService'
 
-jest.mock('../../repository/DidCommMediationRepository')
-const MediationRepositoryMock = DidCommMediationRepository as jest.Mock<DidCommMediationRepository>
+vi.mock('../../repository/DidCommMediationRepository')
+const MediationRepositoryMock = DidCommMediationRepository as MockedClassConstructor<typeof DidCommMediationRepository>
 
-jest.mock('../../repository/DidCommMediatorRoutingRepository')
-const MediatorRoutingRepositoryMock = DidCommMediatorRoutingRepository as jest.Mock<DidCommMediatorRoutingRepository>
+vi.mock('../../repository/DidCommMediatorRoutingRepository')
+const MediatorRoutingRepositoryMock = DidCommMediatorRoutingRepository as MockedClassConstructor<
+  typeof DidCommMediatorRoutingRepository
+>
 
-jest.mock('../../../connections/services/DidCommConnectionService')
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
+vi.mock('../../../connections/services/DidCommConnectionService')
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
 
-jest.mock('../../../connections/services/DidCommConnectionService')
-const MessagePickupApiMock = DidCommMessagePickupApi as jest.Mock<DidCommMessagePickupApi>
+vi.mock('../../../connections/services/DidCommConnectionService')
+const MessagePickupApiMock = DidCommMessagePickupApi as MockedClassConstructor<typeof DidCommMessagePickupApi>
 
 const mediationRepository = new MediationRepositoryMock()
 const mediatorRoutingRepository = new MediatorRoutingRepositoryMock()
@@ -41,13 +44,15 @@ describe('MediatorService - default config', () => {
 
   const agentContext = getAgentContext({
     agentConfig,
-    registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig()]],
+    registerInstances: [
+      [DidCommModuleConfig, new DidCommModuleConfig()],
+      [DidCommMessagePickupApi, mediationPickupApi],
+    ],
   })
 
   const mediatorService = new DidCommMediatorService(
     mediationRepository,
     mediatorRoutingRepository,
-    mediationPickupApi,
     new EventEmitter(agentConfig.agentDependencies, new Subject()),
     agentConfig.logger,
     connectionService
@@ -181,13 +186,15 @@ describe('MediatorService - useDidKeyInProtocols set to false', () => {
 
   const agentContext = getAgentContext({
     agentConfig,
-    registerInstances: [[DidCommModuleConfig, new DidCommModuleConfig({ useDidKeyInProtocols: false })]],
+    registerInstances: [
+      [DidCommModuleConfig, new DidCommModuleConfig({ useDidKeyInProtocols: false })],
+      [DidCommMessagePickupApi, mediationPickupApi],
+    ],
   })
 
   const mediatorService = new DidCommMediatorService(
     mediationRepository,
     mediatorRoutingRepository,
-    mediationPickupApi,
     new EventEmitter(agentConfig.agentDependencies, new Subject()),
     agentConfig.logger,
     connectionService

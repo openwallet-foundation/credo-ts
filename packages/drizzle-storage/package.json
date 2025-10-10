@@ -5,11 +5,8 @@
     "build",
     "cli-build",
     "migrations",
-    "tsconfig.drizzle.json",
     "types",
-    "cli/drizzle.config.ts",
-    "src",
-    "bin.js",
+    "bin.mjs",
     "didcomm.js",
     "didcomm.d.ts",
     "action-menu.js",
@@ -29,11 +26,48 @@
   ],
   "license": "Apache-2.0",
   "description": "Credo storage service implementation based on Drizzle ORM, supporting PostgreSQL and SQLite",
-  "bin": "./bin.js",
-  "main": "src/index.ts",
+  "bin": "./bin.mjs",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "cli": "./build/index.mjs"
+    },
+    "./didcomm": { "import": "./build/didcomm/bundle.mjs" },
+    "./action-menu": { "import": "./build/action-menu/bundle.mjs" },
+    "./core": { "import": "./build/core/bundle.mjs" },
+    "./drpc": { "import": "./build/drpc/bundle.mjs" },
+    "./tenants": { "import": "./build/tenants/bundle.mjs" },
+    "./openid4vc": { "import": "./build/openid4vc/bundle.mjs" },
+    "./anoncreds": { "import": "./build/anoncreds/bundle.mjs" },
+    "./question-answer": { "import": "./build/question-answer/bundle.mjs" }
+  },
   "publishConfig": {
     "access": "public",
-    "main": "build/index.js"
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./didcomm": { "import": "./build/didcomm/bundle.mjs", "require": "./build/didcomm/bundle.js" },
+      "./*/migrations/sqlite": {
+        "import": "./migrations/*/sqlite/migrations.js"
+      },
+      "./action-menu": { "import": "./build/action-menu/bundle.mjs", "require": "./build/action-menu/bundle.js" },
+      "./core": { "import": "./build/core/bundle.mjs", "require": "./build/core/bundle.js" },
+      "./drpc": { "import": "./build/drpc/bundle.mjs", "require": "./build/drpc/bundle.js" },
+      "./tenants": { "import": "./build/tenants/bundle.mjs", "require": "./build/tenants/bundle.js" },
+      "./openid4vc": { "import": "./build/openid4vc/bundle.mjs", "require": "./build/openid4vc/bundle.js" },
+      "./anoncreds": { "import": "./build/anoncreds/bundle.mjs", "require": "./build/anoncreds/bundle.js" },
+      "./question-answer": {
+        "import": "./build/question-answer/bundle.mjs",
+        "require": "./build/question-answer/bundle.mjs"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/drizzle-storage",
   "repository": {
@@ -42,18 +76,14 @@
     "directory": "packages/drizzle-storage"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile && pnpm run compile:cli",
-    "clean": "rimraf ./build ./cli-build",
-    "compile": "tsc -p tsconfig.build.json",
-    "compile:cli": "tsc -p tsconfig.cli.json",
+    "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build",
-    "cli:dev": "ts-node --project tsconfig.cli.json ./cli/cli.ts --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
-    "cli:dev:generate": "pnpm cli:dev generate",
-    "cli:dev:migrate:postgres": "pnpm cli:dev migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
-    "cli:dev:migrate:sqlite": "pnpm cli:dev migrate --dialect sqlite --database-url \"file:local.db\"",
-    "cli:dev:studio:postgres": "pnpm cli:dev studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
-    "cli:dev:studio:sqlite": "pnpm cli:dev studio --dialect sqlite --database-url \"file:../../db.db\"",
-    "test": "jest"
+    "cli:local": "node --conditions cli bin.mjs --bundle core --bundle didcomm --bundle anoncreds --bundle action-menu --bundle question-answer --bundle drpc --bundle tenants --bundle openid4vc",
+    "cli:local:generate": "pnpm cli:local generate",
+    "cli:local:migrate:postgres": "pnpm cli:local migrate --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:migrate:sqlite": "pnpm cli:local migrate --dialect sqlite --database-url \"file:local.db\"",
+    "cli:local:studio:postgres": "pnpm cli:local studio --dialect postgres --database-url \"postgresql://postgres:postgres@localhost:5432/postgres\"",
+    "cli:local:studio:sqlite": "pnpm cli:local studio --dialect sqlite --database-url \"file:../../db.db\""
   },
   "dependencies": {
     "@credo-ts/action-menu": "workspace:*",
@@ -75,13 +105,11 @@
     "drizzle-orm": "^0.44.5"
   },
   "devDependencies": {
-    "ts-node": "catalog:",
     "@libsql/client": "^0.15.6",
     "@types/pg": "^8.15.4",
     "@types/yargs": "^17.0.33",
     "drizzle-orm": "^0.44.5",
     "pg": "^8.16.3",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

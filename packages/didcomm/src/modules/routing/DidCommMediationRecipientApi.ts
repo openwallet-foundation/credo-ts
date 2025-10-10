@@ -11,7 +11,7 @@ import {
   DidsApi,
   EventEmitter,
   InjectionSymbols,
-  Logger,
+  type Logger,
   filterContextCorrelationId,
   inject,
   injectable,

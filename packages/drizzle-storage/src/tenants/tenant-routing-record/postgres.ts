@@ -1,6 +1,6 @@
 import { foreignKey, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
-import { tenant } from '../postgres'
+import { tenant } from '../tenant-record/postgres'
 
 export const tenantRouting = pgTable(
   'TenantRouting',

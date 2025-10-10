@@ -2,7 +2,7 @@ import type { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from
 import { boolean, foreignKey, pgEnum, pgTable, text, unique } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
-import { didcommConnection } from '../postgres'
+import { didcommConnection } from '../connection-record/postgres'
 
 export const didcommProofExchangeRoles = exhaustiveArray({} as DidCommProofRole, ['verifier', 'prover'] as const)
 export const didcommProofExchangeRoleEnum = pgEnum('DidcommProofExchangeRole', didcommProofExchangeRoles)

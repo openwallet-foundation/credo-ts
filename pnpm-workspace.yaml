@@ -10,8 +10,7 @@ catalog:
   rxjs: ^7.8.2
   class-transformer: 0.5.1
   class-validator: 0.14.1
-  reflect-metadata: ^0.2.2
-  rimraf: ^6.0.1
+  reflect-metadata: 0.2.2
   typescript: ~5.8.3
   "@stablelib/ed25519": ^1.0.3
   zod: ^3.25.56
@@ -26,7 +25,6 @@ catalog:
   "@astronautlabs/jsonpath": ^1.1.2
   "@sphereon/pex-models": ^2.3.2
   "@animo-id/pex": ^6.1.0
-  ts-node: ^10.9.2
   "@types/express": ^4.17.23
   "@types/ws": ^8.18.1
   ws: ^8.18.2
@@ -44,5 +42,5 @@ onlyBuiltDependencies:
   - "@hyperledger/anoncreds-nodejs"
   - "@hyperledger/indy-vdr-nodejs"
   - "@openwallet-foundation/askar-nodejs"
-  - "zstd-napi"
-  - "cbor-extract"
+  - zstd-napi
+  - cbor-extract

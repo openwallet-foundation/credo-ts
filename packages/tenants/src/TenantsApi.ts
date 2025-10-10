@@ -10,7 +10,7 @@ import type { TenantRecord } from './repository'
 import {
   AgentContext,
   InjectionSymbols,
-  Logger,
+  type Logger,
   UpdateAssistant,
   inject,
   injectable,

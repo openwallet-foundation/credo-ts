@@ -1,11 +1,11 @@
 import {
   Agent,
   AgentContext,
-  AgentDependencies,
+  type AgentDependencies,
   BaseRecord,
   ConsoleLogger,
   LogLevel,
-  Logger,
+  type Logger,
   StorageVersionRecord,
 } from '@credo-ts/core'
 import { EntryListHandle } from '@openwallet-foundation/askar-shared'

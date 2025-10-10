@@ -10,10 +10,10 @@ import { OpenId4VcIssuanceSessionRepository } from '../repository'
 import { OpenId4VcIssuerRepository } from '../repository/OpenId4VcIssuerRepository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: jest.fn().mockReturnValue({ logger: { warn: jest.fn() } }),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: vi.fn().mockReturnValue({ logger: { warn: vi.fn() } }),
 } as unknown as DependencyManager
 
 const agentContext = getAgentContext()
