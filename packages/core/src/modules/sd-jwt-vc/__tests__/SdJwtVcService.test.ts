@@ -746,6 +746,29 @@ describe('SdJwtVcService', () => {
         family_name: 'MUSTERMANN',
       })
     })
+
+    test('Supports payload that results in no disclosures', async () => {
+      const presentation = sdJwtVcService.applyDisclosuresForPayload(simpleJwtVc, {
+        claim: 'some-claim',
+      })
+
+      expect(presentation.prettyClaims).toStrictEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        cnf: {
+          jwk: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            kid: 'BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        iat: 1698151532,
+      })
+
+      expect(presentation.compact).toEqual(simpleJwtVc)
+    })
   })
 
   describe('SdJwtVcService.present', () => {
