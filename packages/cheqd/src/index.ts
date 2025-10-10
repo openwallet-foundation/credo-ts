@@ -1,9 +1,9 @@
 // Dids
 export {
   CheqdDidRegistrar,
-  CheqdDidCreateOptions,
-  CheqdDidDeactivateOptions,
-  CheqdDidUpdateOptions,
+  type CheqdDidCreateOptions,
+  type CheqdDidDeactivateOptions,
+  type CheqdDidUpdateOptions,
   CheqdDidResolver,
 } from './dids'
 
@@ -14,4 +14,4 @@ export { CheqdLedgerService } from './ledger'
 
 export { CheqdModule } from './CheqdModule'
 
-export { CheqdModuleConfig, CheqdModuleConfigOptions } from './CheqdModuleConfig'
+export { CheqdModuleConfig, type CheqdModuleConfigOptions } from './CheqdModuleConfig'

@@ -33,7 +33,7 @@ describe('CredoWebCrypto', () => {
   describe('key creation', () => {
     supportedAlgorithms.map((algorithm) => {
       it(`should create key with: ${algorithmToTestName(algorithm)}`, async () => {
-        expect(async () => await await webCrypto.subtle.generateKey(algorithm, true, ['sign', 'verify'])).resolves
+        await expect(webCrypto.subtle.generateKey(algorithm, true, ['sign', 'verify'])).resolves.toBeDefined()
       })
     })
   })

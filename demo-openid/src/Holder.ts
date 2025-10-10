@@ -8,8 +8,8 @@ import { AskarModule } from '@credo-ts/askar'
 import {
   DidJwk,
   DidKey,
-  JwkDidCreateOptions,
-  KeyDidCreateOptions,
+  type JwkDidCreateOptions,
+  type KeyDidCreateOptions,
   Kms,
   Mdoc,
   W3cJsonLdVerifiableCredential,
@@ -26,7 +26,7 @@ import {
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
-import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { BaseAgent } from './BaseAgent'
 import { Output, greenText } from './OutputClass'
 

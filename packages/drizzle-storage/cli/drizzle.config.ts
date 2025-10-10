@@ -1,4 +1,4 @@
-import { Config, defineConfig } from 'drizzle-kit'
+import { type Config, defineConfig } from 'drizzle-kit'
 
 const drizzleDatabaseUrl = process.env.DRIZZLE_DATABASE_URL
 
@@ -16,8 +16,9 @@ let drizzleConfig: Config
 if (drizzleDialect === 'sqlite') {
   drizzleConfig = defineConfig({
     dialect: drizzleDialect,
-    // We don't want to provide a schema when migrating, as it requires ts-node, and
-    // slows things down. We only need this for migration generation
+    // We don't want to provide a schema when migrating, as it requires a custom bundler that supports
+    // emitting decorator metadata. Drizzle is built on esbuild which doesn't support this
+    // We only need this for migration generation
     schema: drizzleSchemaFile,
     out: drizzleMigrationsFolder,
     migrations: drizzleMigrationsTable

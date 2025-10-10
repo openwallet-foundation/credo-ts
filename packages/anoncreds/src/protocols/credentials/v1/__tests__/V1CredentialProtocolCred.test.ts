@@ -24,6 +24,7 @@ import {
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
 
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests/helpers'
 import { DidCommConnectionService } from '../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService'
 import { DidCommCredentialExchangeRepository } from '../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
@@ -45,25 +46,20 @@ import {
 } from '../messages'
 
 // Mock classes
-jest.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
-jest.mock('../../../../formats/LegacyIndyDidCommCredentialFormatService')
-jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
-jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
+vi.mock('../../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository')
+vi.mock('../../../../formats/LegacyIndyDidCommCredentialFormatService')
+vi.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
+vi.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
 // Mock typed object
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
-const LegacyIndyCredentialFormatServiceMock =
-  LegacyIndyDidCommCredentialFormatService as jest.Mock<LegacyIndyDidCommCredentialFormatService>
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
-
-const credentialRepository = new CredentialRepositoryMock()
-const didCommMessageRepository = new DidCommMessageRepositoryMock()
-const legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
-const connectionService = new ConnectionServiceMock()
-
-// @ts-ignore
-legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
+const LegacyIndyCredentialFormatServiceMock = LegacyIndyDidCommCredentialFormatService as MockedClassConstructor<
+  typeof LegacyIndyDidCommCredentialFormatService
+>
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
 
 const connection = getMockConnection({
   id: '123',
@@ -190,10 +186,22 @@ describe('DidCommCredentialV1Protocol', () => {
   let agentContext: AgentContext
   let credentialProtocol: DidCommCredentialV1Protocol
 
+  let credentialRepository: DidCommCredentialExchangeRepository
+  let didCommMessageRepository: DidCommMessageRepository
+  let legacyIndyCredentialFormatService: LegacyIndyDidCommCredentialFormatService
+
   beforeEach(async () => {
     // real objects
     agentConfig = getAgentConfig('V1CredentialProtocolCredTest')
     eventEmitter = new EventEmitter(agentConfig.agentDependencies, new Subject())
+
+    credentialRepository = new CredentialRepositoryMock()
+    didCommMessageRepository = new DidCommMessageRepositoryMock()
+    legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
+    const connectionService = new ConnectionServiceMock()
+
+    // @ts-ignore
+    legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
 
     agentContext = getAgentContext({
       registerInstances: [
@@ -219,7 +227,7 @@ describe('DidCommCredentialV1Protocol', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('acceptOffer', () => {
@@ -280,7 +288,7 @@ describe('DidCommCredentialV1Protocol', () => {
         state: DidCommCredentialState.OfferReceived,
       })
 
-      const updateStateSpy = jest.spyOn(credentialProtocol, 'updateState')
+      const updateStateSpy = vi.spyOn(credentialProtocol, 'updateState')
 
       // mock resolved format call
       mockFunction(legacyIndyCredentialFormatService.acceptOffer).mockResolvedValue({
@@ -335,7 +343,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`updates state to ${DidCommCredentialState.RequestReceived}, set request and returns credential record`, async () => {
-      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(credentialRepository, 'update')
 
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
@@ -353,7 +361,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.OfferSent} to ${DidCommCredentialState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -434,7 +442,7 @@ describe('DidCommCredentialV1Protocol', () => {
         }),
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -555,7 +563,7 @@ describe('DidCommCredentialV1Protocol', () => {
 
     test(`updates state to ${DidCommCredentialState.Done}`, async () => {
       // given
-      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(credentialRepository, 'update')
 
       // when
       await credentialProtocol.acceptCredential(agentContext, { credentialExchangeRecord: credential })
@@ -569,7 +577,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`emits stateChange event from ${DidCommCredentialState.CredentialReceived} to ${DidCommCredentialState.Done}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -648,7 +656,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test(`updates state to ${DidCommCredentialState.Done} and returns credential record`, async () => {
-      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(credentialRepository, 'update')
 
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
@@ -730,7 +738,7 @@ describe('DidCommCredentialV1Protocol', () => {
     })
 
     test('updates problem report error message and returns credential record', async () => {
-      const repositoryUpdateSpy = jest.spyOn(credentialRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(credentialRepository, 'update')
 
       // given
       mockFunction(credentialRepository.getSingleByQuery).mockReturnValue(Promise.resolve(credential))
@@ -823,8 +831,9 @@ describe('DidCommCredentialV1Protocol', () => {
     it('should call delete from repository', async () => {
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialExchangeRecord))
+      mockFunction(credentialRepository.delete).mockResolvedValue()
 
-      const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
+      const repositoryDeleteSpy = vi.spyOn(credentialRepository, 'delete')
       await credentialProtocol.delete(agentContext, credentialExchangeRecord)
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialExchangeRecord)
     })
@@ -834,6 +843,7 @@ describe('DidCommCredentialV1Protocol', () => {
 
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
+      mockFunction(credentialRepository.delete).mockResolvedValue()
 
       await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
         deleteAssociatedCredentials: true,
@@ -852,6 +862,7 @@ describe('DidCommCredentialV1Protocol', () => {
 
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
+      mockFunction(credentialRepository.delete).mockResolvedValue()
 
       await credentialProtocol.delete(agentContext, credentialExchangeRecord, {
         deleteAssociatedCredentials: false,
@@ -866,6 +877,7 @@ describe('DidCommCredentialV1Protocol', () => {
 
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
+      mockFunction(credentialRepository.delete).mockResolvedValue()
 
       await credentialProtocol.delete(agentContext, credentialExchangeRecord)
 
@@ -880,6 +892,7 @@ describe('DidCommCredentialV1Protocol', () => {
 
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
+      mockFunction(credentialRepository.delete).mockResolvedValue()
 
       await credentialProtocol.delete(agentContext, credentialExchangeRecord)
 

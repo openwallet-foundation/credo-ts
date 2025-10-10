@@ -30,7 +30,7 @@ export class FullTailsFileService extends BasicTailsFileService {
       `${this.tailsServerBaseUrl}/${encodeURIComponent(tailsFileId)}`,
       {
         method: 'PUT',
-        body: data,
+        body: data.getBuffer(),
       }
     )
     if (response.status !== 200) {

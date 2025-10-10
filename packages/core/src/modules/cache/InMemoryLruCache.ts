@@ -1,7 +1,7 @@
 import type { AgentContext } from '../../agent/context'
 import type { Cache } from './Cache'
 
-import { LRUMap } from 'lru_map'
+import LRUMap from 'lru_map'
 
 export interface InMemoryLruCacheOptions {
   /** The maximum number of entries allowed in the cache */
@@ -15,10 +15,10 @@ export interface InMemoryLruCacheOptions {
  * If you need the cache to be isolated per agent context instance, make sure to use a different cache implementation.
  */
 export class InMemoryLruCache implements Cache {
-  private readonly cache: LRUMap<string, CacheItem>
+  private readonly cache: LRUMap.LRUMap<string, CacheItem>
 
   public constructor({ limit }: InMemoryLruCacheOptions) {
-    this.cache = new LRUMap<string, CacheItem>(limit)
+    this.cache = new LRUMap.LRUMap<string, CacheItem>(limit)
   }
 
   public async get<CacheValue>(_agentContext: AgentContext, key: string) {

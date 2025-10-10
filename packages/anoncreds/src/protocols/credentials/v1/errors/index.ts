@@ -1,4 +1,4 @@
 export {
   DidCommCredentialV1ProblemReportError,
-  DidCommCredentialV1ProblemReportErrorOptions,
+  type DidCommCredentialV1ProblemReportErrorOptions,
 } from './DidCommCredentialV1ProblemReportError'

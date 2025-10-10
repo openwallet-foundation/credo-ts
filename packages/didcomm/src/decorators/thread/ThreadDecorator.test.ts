@@ -1,6 +1,6 @@
 import { validate } from 'class-validator'
 
-import { JsonTransformer } from '../../../../core'
+import { JsonTransformer } from '../../../../core/src/index'
 
 import { ThreadDecorator } from './ThreadDecorator'
 

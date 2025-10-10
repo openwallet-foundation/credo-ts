@@ -5,7 +5,7 @@ import { openid4vcIssuerDrizzleRecord } from './openid4vc-issuer-record'
 import { openId4VcVerificationSessionDrizzleRecord } from './openid4vc-verification-session-record'
 import { openid4vcVerifierDrizzleRecord } from './openid4vc-verifier-record'
 
-export default {
+export const openid4vcBundle = {
   name: 'openid4vc',
   records: [
     openid4vcIssuerDrizzleRecord,

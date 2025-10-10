@@ -3,7 +3,7 @@ import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
 
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
-import { KmsCreateKeyType, PublicJwk, getJwkHumanDescription } from '../../../modules/kms'
+import { type KmsCreateKeyType, PublicJwk, getJwkHumanDescription } from '../../../modules/kms'
 import { CredoWebCryptoError } from '../CredoWebCryptoError'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,

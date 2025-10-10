@@ -21,8 +21,8 @@ import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol, AnonCredsVe
 import { AnonCredsRegistryService } from '../services/registry/AnonCredsRegistryService'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
 } as unknown as DependencyManager
 
 const registry = {} as AnonCredsRegistry

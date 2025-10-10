@@ -10,7 +10,7 @@ import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
 
-import { DidDocumentKey } from '../DidsApiOptions'
+import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidRecordMetadataKeys } from './didRecordMetadataTypes'
 
 export interface DidRecordProps {

@@ -1,5 +1,5 @@
-import { AgentContext, Cache, CacheModuleConfig } from '@credo-ts/core'
-import Redis, { RedisOptions } from 'ioredis'
+import { AgentContext, type Cache, CacheModuleConfig } from '@credo-ts/core'
+import Redis, { type RedisOptions } from 'ioredis'
 
 export type RedisCacheOptions = RedisOptions
 

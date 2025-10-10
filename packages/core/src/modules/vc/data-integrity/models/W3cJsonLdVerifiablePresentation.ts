@@ -6,7 +6,7 @@ import { IsInstanceOrArrayOfInstances, JsonTransformer, asArray } from '../../..
 import { ClaimFormat } from '../../models'
 import { W3cPresentation } from '../../models/presentation/W3cPresentation'
 
-import { SingleOrArray } from '../../../../types'
+import type { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import { LinkedDataProof } from './LinkedDataProof'
 import { ProofTransformer } from './ProofTransformer'

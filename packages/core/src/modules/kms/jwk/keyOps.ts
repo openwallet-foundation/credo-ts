@@ -1,8 +1,9 @@
 import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
 
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { KeyManagementError } from '../error/KeyManagementError'
 
+import { zUniqueArray } from '../../../utils/zod'
 import { getJwkHumanDescription } from './humanDescription'
 
 export const zKnownJwkUse = z.union([z.literal('sig').describe('signature'), z.literal('enc').describe('encryption')])
@@ -23,7 +24,7 @@ export const zKnownJwkKeyOps = z.union([
 ])
 export type KnownJwkKeyOps = z.output<typeof zKnownJwkKeyOps>
 
-export const zJwkKeyOps = z.uniqueArray(z.union([zKnownJwkKeyOps, z.string()]))
+export const zJwkKeyOps = zUniqueArray(z.union([zKnownJwkKeyOps, z.string()]))
 export type JwkKeyOps = z.output<typeof zJwkKeyOps>
 
 export function keyAllowsDerive(key: KmsJwkPublic | KmsJwkPrivate): boolean {

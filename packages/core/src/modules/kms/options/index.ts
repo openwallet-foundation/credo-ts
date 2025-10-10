@@ -25,7 +25,7 @@ export type {
   KmsEncryptDataEncryptionX20c,
   KmsEncryptedKey,
 } from './KmsEncryptOptions'
-export {
+export type {
   KmsDecryptDataDecryption,
   KmsDecryptDataDecryptionAesCbc,
   KmsDecryptDataDecryptionAesGcm,
@@ -33,26 +33,26 @@ export {
   KmsDecryptOptions,
   KmsDecryptReturn,
 } from './KmsDecryptOptions'
-export {
+export type {
   KmsKeyAgreementEcdhEs,
   KmsKeyAgreementEncryptEcdhEsKw,
   KmsKeyAgreementEncryptEcdhHsalsa20,
   KmsKeyAgreementEncryptOptions,
   KmsJwkPublicEcdh,
 } from './KmsKeyAgreementEncryptOptions'
-export {
+export type {
   KmsKeyAgreementDecryptOptions,
   KmsKeyAgreementDecryptEcdhHsalsa20,
   KmsKeyAgreementDecryptEcdhEsKw,
 } from './KmsKeyAgreementDecryptOptions'
 export {
-  KmsOperation,
-  KmsOperationCreateKey,
-  KmsOperationDecrypt,
-  KmsOperationDeleteKey,
-  KmsOperationEncrypt,
-  KmsOperationImportKey,
-  KmsOperationSign,
-  KmsOperationVerify,
+  type KmsOperation,
+  type KmsOperationCreateKey,
+  type KmsOperationDecrypt,
+  type KmsOperationDeleteKey,
+  type KmsOperationEncrypt,
+  type KmsOperationImportKey,
+  type KmsOperationSign,
+  type KmsOperationVerify,
   getKmsOperationHumanDescription,
 } from './KmsOperation'

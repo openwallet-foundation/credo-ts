@@ -59,7 +59,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
     }
 
     // fetches the documentLoader from documentLoader.ts or documentLoader.native.ts depending on the platform at bundle time
-    const platformLoader = getNativeDocumentLoader()
+    const platformLoader = await getNativeDocumentLoader()
     const nativeLoader = platformLoader.apply(jsonld, [])
 
     return await nativeLoader(url)

@@ -68,6 +68,6 @@ export function setupNockToExpress(baseUrl: string, app: Express) {
 
   return () => {
     cleanAll()
-    jest.clearAllMocks()
+    vi.clearAllMocks()
   }
 }

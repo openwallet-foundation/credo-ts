@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update proof records and create didcomm records 1`] = `
+exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update proof records and create didcomm records 1`] = `
 {
   "3d5d7ad4-f0aa-4b1b-8c2c-780ee383564e": {
     "id": "3d5d7ad4-f0aa-4b1b-8c2c-780ee383564e",
@@ -239,7 +239,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update proof records a
 }
 `;
 
-exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records 1`] = `
+exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the did records 1`] = `
 {
   "1-4e4f-41d9-94c4-f49351b811f1": {
     "id": "1-4e4f-41d9-94c4-f49351b811f1",
@@ -764,7 +764,7 @@ exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the did records
 }
 `;
 
-exports[`UpdateAssistant | v0.2 - v0.3.1 should correctly update the proofs records and create didcomm records with auto update 1`] = `
+exports[`UpdateAssistant | v0.2 - v0.3.1 > should correctly update the proofs records and create didcomm records with auto update 1`] = `
 {
   "3d5d7ad4-f0aa-4b1b-8c2c-780ee383564e": {
     "id": "3d5d7ad4-f0aa-4b1b-8c2c-780ee383564e",

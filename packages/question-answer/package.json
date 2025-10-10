@@ -1,14 +1,25 @@
 {
   "name": "@credo-ts/question-answer",
-  "main": "src/index",
-  "types": "src/index",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
   "version": "0.5.13",
   "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/question-answer",
   "repository": {
@@ -17,11 +28,8 @@
     "directory": "packages/question-answer"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
@@ -33,7 +41,6 @@
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
     "reflect-metadata": "catalog:",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }
