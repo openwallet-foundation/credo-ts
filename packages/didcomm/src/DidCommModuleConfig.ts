@@ -11,11 +11,7 @@ import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/disco
 import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
 import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
 import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
-import type { 
-  DidCommInboundTransport,
-  DidCommOutboundTransport,
-  DidCommQueueTransportRepository, 
-  InMemoryQueueTransportRepository } from './transport'
+import type { DidCommInboundTransport, DidCommOutboundTransport, DidCommQueueTransportRepository } from './transport'
 import { DidCommMimeType } from './types'
 
 export interface DidCommModuleConfigOptions {
