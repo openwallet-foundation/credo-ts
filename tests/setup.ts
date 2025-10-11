@@ -93,20 +93,10 @@ process.on('uncaughtException', (reason) => {
 
 process.on('SIGTERM', () => {
   testLogger.warn('[SIGTERM] Process received SIGTERM')
-
-  // if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
-  //   mkdirSync(logDir, { recursive: true })
-  //   writeFileSync(logPath, JSON.stringify([{ testPath: relativeTestPath, source: 'sigterm' }, ...logEntries]))
-  // }
 })
 
 process.on('SIGINT', () => {
   testLogger.warn('[SIGINT] Process received SIGINT')
-
-  // if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
-  //   mkdirSync(logDir, { recursive: true })
-  //   writeFileSync(logPath, JSON.stringify([{ testPath: relativeTestPath, source: 'sigint' }, ...logEntries]))
-  // }
 })
 
 expect.extend({
