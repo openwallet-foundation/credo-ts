@@ -4,7 +4,7 @@ import type { KmsJwkPublicOct } from '../kty/oct/octJwk'
 
 import { TypedArrayEncoder } from '../../../../utils'
 import { KeyManagementError } from '../../error/KeyManagementError'
-import { KmsCreateKeyType } from '../../options'
+import type { KmsCreateKeyType } from '../../options'
 import { getJwkHumanDescription } from '../humanDescription'
 
 /**

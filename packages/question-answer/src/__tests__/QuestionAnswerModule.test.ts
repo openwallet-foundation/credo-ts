@@ -1,5 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { DidCommFeatureRegistry } from '@credo-ts/didcomm'
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry } from '@credo-ts/didcomm'
 
 import { DidCommProtocol } from '@credo-ts/didcomm'
 
@@ -13,15 +13,19 @@ import {
 } from '@credo-ts/question-answer'
 
 const featureRegistry = {
-  register: jest.fn(),
+  register: vi.fn(),
 } as unknown as DidCommFeatureRegistry
 
+const messageHandlerRegistry = new DidCommMessageHandlerRegistry()
+
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
-  resolve: () => {
-    return featureRegistry
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
+  resolve: (token: unknown) => {
+    if (token === DidCommFeatureRegistry) return featureRegistry
+    if (token === DidCommMessageHandlerRegistry) return messageHandlerRegistry
+    return {}
   },
 } as unknown as DependencyManager
 

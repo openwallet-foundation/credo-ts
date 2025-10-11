@@ -13,7 +13,8 @@
           "jwk": {
             "kty": "OKP",
             "crv": "Ed25519",
-            "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo"
+            "x": "oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo",
+            "kid": "BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm"
           }
         },
         "iss": "did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW",

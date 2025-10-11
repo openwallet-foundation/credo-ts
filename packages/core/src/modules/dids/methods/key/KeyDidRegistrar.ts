@@ -2,12 +2,12 @@ import type { AgentContext } from '../../../../agent'
 import type { DidRegistrar } from '../../domain/DidRegistrar'
 import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 
-import { XOR } from '../../../../types'
+import type { XOR } from '../../../../types'
 import {
   KeyManagementApi,
-  KmsCreateKeyOptions,
-  KmsCreateKeyTypeAssymetric,
-  KmsJwkPublicAsymmetric,
+  type KmsCreateKeyOptions,
+  type KmsCreateKeyTypeAssymetric,
+  type KmsJwkPublicAsymmetric,
   PublicJwk,
 } from '../../../kms'
 import { DidDocumentRole } from '../../domain/DidDocumentRole'

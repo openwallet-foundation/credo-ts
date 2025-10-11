@@ -1,4 +1,4 @@
-import { SingleValidationResult } from './W3cVerifyResult'
+import type { SingleValidationResult } from './W3cVerifyResult'
 
 export type W3cV2VerifyPresentationResult = W3cV2VerifyResult<W3cV2PresentationValidations>
 export type W3cV2VerifyCredentialResult = W3cV2VerifyResult<W3cV2CredentialValidations>

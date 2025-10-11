@@ -1,4 +1,5 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, Constructable } from '@credo-ts/core'
+import { vi } from 'vitest'
 import type { SdJwtVcHeader } from '../SdJwtVcOptions'
 
 import { randomUUID } from 'crypto'
@@ -59,11 +60,11 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = vi.fn(() => 1698151532000)
 
-jest.mock('../repository/SdJwtVcRepository')
-const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
+vi.mock('../repository/SdJwtVcRepository')
+const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
 
 const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
 
@@ -744,6 +745,29 @@ describe('SdJwtVcService', () => {
         family_name: 'MUSTERMANN',
       })
     })
+
+    test('Supports payload that results in no disclosures', async () => {
+      const presentation = sdJwtVcService.applyDisclosuresForPayload(simpleJwtVc, {
+        claim: 'some-claim',
+      })
+
+      expect(presentation.prettyClaims).toStrictEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        cnf: {
+          jwk: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            kid: 'BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        iat: 1698151532,
+      })
+
+      expect(presentation.compact).toEqual(simpleJwtVc)
+    })
   })
 
   describe('SdJwtVcService.present', () => {
@@ -925,7 +949,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -960,7 +984,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -996,7 +1020,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({

@@ -23,7 +23,7 @@ import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProt
 import type { CredentialFormatsFromProtocols } from './protocol/DidCommCredentialProtocolOptions'
 import type { DidCommCredentialExchangeRecord } from './repository/DidCommCredentialExchangeRecord'
 
-import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { AgentContext, CredoError, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageSender } from '../../DidCommMessageSender'

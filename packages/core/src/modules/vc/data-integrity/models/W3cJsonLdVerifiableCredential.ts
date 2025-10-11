@@ -9,7 +9,7 @@ import { IsInstanceOrArrayOfInstances, JsonTransformer, asArray, mapSingleOrArra
 import { ClaimFormat } from '../../models/ClaimFormat'
 import { W3cCredential } from '../../models/credential/W3cCredential'
 
-import { SingleOrArray } from '../../../../types'
+import type { SingleOrArray } from '../../../../types'
 import { DataIntegrityProof } from './DataIntegrityProof'
 import { LinkedDataProof } from './LinkedDataProof'
 import { ProofTransformer } from './ProofTransformer'

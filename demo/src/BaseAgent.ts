@@ -22,22 +22,19 @@ import { Agent, DidsModule } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
-  DidCommConnectionsModule,
   DidCommCredentialV2Protocol,
-  DidCommCredentialsModule,
   DidCommHttpOutboundTransport,
+  DidCommModule,
   DidCommProofV2Protocol,
-  DidCommProofsModule,
-  getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { DidCommHttpInboundTransport, agentDependencies } from '@credo-ts/node'
-import { HederaNetwork } from '@hiero-did-sdk/client'
+import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
-import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
 import { greenText } from './OutputClass'
 
@@ -67,10 +64,17 @@ export class BaseAgent {
     this.agent = new Agent({
       config: {},
       dependencies: agentDependencies,
-      modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
+      modules: getAskarAnonCredsIndyModules(
+        {
+          endpoints: [`http://localhost:${this.port}`],
+          transports: {
+            inbound: [new DidCommHttpInboundTransport({ port })],
+            outbound: [new DidCommHttpOutboundTransport()],
+          },
+        },
+        { id: name, key: name }
+      ),
     })
-    this.agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
   }
 
   public async initializeAgent() {
@@ -81,38 +85,40 @@ export class BaseAgent {
 }
 
 function getAskarAnonCredsIndyModules(
-  didcommConfig: DidCommModuleConfigOptions,
+  didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
   const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   return {
-    ...getDefaultDidcommModules(didcommConfig),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    credentials: new DidCommCredentialsModule({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      credentialProtocols: [
-        new DidCommCredentialV1Protocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new DidCommCredentialV2Protocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
-        }),
-      ],
-    }),
-    proofs: new DidCommProofsModule({
-      autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
-      proofProtocols: [
-        new DidCommProofV1Protocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new DidCommProofV2Protocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
-        }),
-      ],
+    didcomm: new DidCommModule({
+      ...didcommConfig,
+      connections: {
+        autoAcceptConnections: true,
+      },
+      credentials: {
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        credentialProtocols: [
+          new DidCommCredentialV1Protocol({
+            indyCredentialFormat: legacyIndyCredentialFormatService,
+          }),
+          new DidCommCredentialV2Protocol({
+            credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
+          }),
+        ],
+      },
+      proofs: {
+        autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
+        proofProtocols: [
+          new DidCommProofV1Protocol({
+            indyProofFormat: legacyIndyProofFormatService,
+          }),
+          new DidCommProofV2Protocol({
+            proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
+          }),
+        ],
+      },
     }),
     anoncreds: new AnonCredsModule({
       registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry(), new HederaAnonCredsRegistry()],

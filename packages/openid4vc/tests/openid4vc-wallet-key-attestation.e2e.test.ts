@@ -6,15 +6,15 @@ import express, { type Express } from 'express'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
   OpenId4VcModule,
-  OpenId4VcVerifierModuleConfigOptions,
-  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  type OpenId4VcVerifierModuleConfigOptions,
+  type OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
 } from '../src'
 
-import { Jwk } from '@openid4vc/oauth2'
+import type { Jwk } from '@openid4vc/oauth2'
 import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'

@@ -1,29 +1,157 @@
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
-import { DidCommQueueTransportRepository, InMemoryQueueTransportRepository } from './transport'
+import type {
+  DidCommConnectionsModuleConfigOptions,
+  DidCommCredentialProtocol,
+  DidCommMessagePickupModuleConfigOptions,
+  DidCommMessagePickupProtocol,
+  DidCommProofsModuleConfigOptions,
+} from './modules'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import type { DidCommDiscoverFeaturesModuleConfigOptions } from './modules/discover-features/DidCommDiscoverFeaturesModuleConfig'
+import type { DidCommProofProtocol } from './modules/proofs/protocol/DidCommProofProtocol'
+import type { DidCommMediationRecipientModuleConfigOptions } from './modules/routing/DidCommMediationRecipientModuleConfig'
+import type { DidCommMediatorModuleConfigOptions } from './modules/routing/DidCommMediatorModuleConfig'
+import {
+  type DidCommInboundTransport,
+  type DidCommOutboundTransport,
+  type DidCommQueueTransportRepository,
+  InMemoryQueueTransportRepository,
+} from './transport'
 import { DidCommMimeType } from './types'
 
-/**
- * MediatorModuleConfigOptions defines the interface for the options of the MediatorModuleConfig class.
- * This can contain optional parameters that have default values in the config class itself.
- */
 export interface DidCommModuleConfigOptions {
   endpoints?: string[]
+  transports?: {
+    inbound?: DidCommInboundTransport[]
+    outbound?: DidCommOutboundTransport[]
+  }
   useDidSovPrefixWhereAllowed?: boolean
   processDidCommMessagesConcurrently?: boolean
   didCommMimeType?: string
   useDidKeyInProtocols?: boolean
   queueTransportRepository?: DidCommQueueTransportRepository
+
+  /**
+   * Configuration for the connection module.
+   *
+   * The connection module is always enabled
+   */
+  connections?: DidCommConnectionsModuleConfigOptions
+
+  /**
+   * Configuration for the discover features module.
+   *
+   * The discover features module is always enabled
+   */
+  discovery?: DidCommDiscoverFeaturesModuleConfigOptions
+
+  /**
+   * Configuration for the credentials module
+   *
+   * The credentials module is enabled by default with
+   * the V2ProofsProtocol and the XProofFormatService
+   *
+   * You can disable the module by passing `false`, or provide a
+   * custom configuration to override the default
+   *
+   * @default true
+   */
+  credentials?: boolean | DidCommCredentialsModuleConfigOptions<DidCommCredentialProtocol[]>
+
+  /**
+   * Configuration for the proofs module
+   *
+   * The proofs module is enabled by default with
+   * the V2CredentialsProtocol and the XXCredentialFormatService
+   *
+   * You can disable the module by passing `false`, or provide a
+   * custom configuration to override the default
+   *
+   * @default true
+   */
+  proofs?: boolean | DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
+
+  /**
+   * Configuration to enable to basic messages module
+   *
+   * The basic messages module is enabled by default,
+   * but can be disabled by passing `false`
+   *
+   * @default true
+   */
+  basicMessages?: boolean
+
+  /**
+   * Configuration for the message pickup module
+   *
+   * The message pickup module is enabled by default with
+   * the V1PickupProtocol and the V2PickupProtocol
+   *
+   * You can disable the module by passing `false`, or provide a
+   * custom configuration to override the default
+   *
+   * @default true
+   */
+  messagePickup?: boolean | DidCommMessagePickupModuleConfigOptions<DidCommMessagePickupProtocol[]>
+
+  /**
+   * Configuration or the mediator module
+   *
+   * The mediator module is enabled by default,
+   * but can be disabled by passing `false`
+   *
+   * @default true
+   */
+  mediator?: boolean | DidCommMediatorModuleConfigOptions
+
+  /**
+   * Configuration for the mediation recipient module
+   *
+   * The mediator module is enabled by default,
+   * but can be disabled by passing `false`
+   *
+   * @default true
+   */
+  mediationRecipient?: boolean | DidCommMediationRecipientModuleConfigOptions
 }
 
-export class DidCommModuleConfig {
-  private options: DidCommModuleConfigOptions
+export class DidCommModuleConfig<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> {
+  private options: Options
   private _endpoints?: string[]
+  private _inboundTransports: DidCommInboundTransport[]
+  private _outboundTransports: DidCommOutboundTransport[]
   private _queueTransportRepository: DidCommQueueTransportRepository
 
-  public constructor(options?: DidCommModuleConfigOptions) {
-    this.options = options ?? {}
+  public readonly enabledModules: {
+    oob: true
+    connections: true
+    discovery: true
+    credentials: Options['credentials'] extends false ? false : true
+    proofs: Options['proofs'] extends false ? false : true
+    messagePickup: Options['messagePickup'] extends false ? false : true
+    mediator: Options['mediator'] extends false ? false : true
+    mediationRecipient: Options['mediationRecipient'] extends false ? false : true
+    basicMessages: Options['basicMessages'] extends false ? false : true
+  }
+
+  public constructor(options?: Options) {
+    this.options = (options ?? {}) as Options
     this._endpoints = options?.endpoints
+    this._inboundTransports = options?.transports?.inbound ?? []
+    this._outboundTransports = options?.transports?.outbound ?? []
     this._queueTransportRepository = options?.queueTransportRepository ?? new InMemoryQueueTransportRepository()
+
+    this.enabledModules = {
+      connections: true,
+      oob: true,
+      discovery: true,
+      proofs: this.options.proofs !== false,
+      credentials: this.options.credentials !== false,
+      messagePickup: this.options.messagePickup !== false,
+      mediator: this.options.mediator !== false,
+      mediationRecipient: this.options.mediationRecipient !== false,
+      basicMessages: this.options.basicMessages !== false,
+    } as this['enabledModules']
   }
 
   public get endpoints(): [string, ...string[]] {
@@ -42,6 +170,22 @@ export class DidCommModuleConfig {
 
   public get useDidSovPrefixWhereAllowed() {
     return this.options.useDidSovPrefixWhereAllowed ?? false
+  }
+
+  public get inboundTransports() {
+    return this._inboundTransports
+  }
+
+  public set inboundTransports(inboundTransports: DidCommInboundTransport[]) {
+    this._inboundTransports = inboundTransports
+  }
+
+  public get outboundTransports() {
+    return this._outboundTransports
+  }
+
+  public set outboundTransports(outboundTransports: DidCommOutboundTransport[]) {
+    this._outboundTransports = outboundTransports
   }
 
   public get processDidCommMessagesConcurrently() {

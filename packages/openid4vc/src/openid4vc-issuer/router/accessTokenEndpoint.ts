@@ -3,7 +3,7 @@ import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { CredoError, Query, joinUriParts, utils } from '@credo-ts/core'
+import { CredoError, type Query, joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,

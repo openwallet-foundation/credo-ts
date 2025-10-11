@@ -3,7 +3,7 @@ import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
 import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
 
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'

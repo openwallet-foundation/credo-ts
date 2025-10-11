@@ -4,7 +4,7 @@ import { IsArray, IsInstance, IsObject, Matches, ValidateNested } from 'class-va
 
 import { MessageIdRegExp } from '../../../../../BaseDidCommMessage'
 import { DidCommMessage } from '../../../../../DidCommMessage'
-import { DidCommEncryptedMessage } from '../../../../../types'
+import type { DidCommEncryptedMessage } from '../../../../../types'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export class DidCommBatchMessageMessage {

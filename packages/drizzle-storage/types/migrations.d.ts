@@ -10,6 +10,6 @@ declare const _default: {
       breakpoints: boolean
     }[]
   }
-  migrations: Record<string, unknown>
+  migrations: Record<string, string>
 }
 export default _default

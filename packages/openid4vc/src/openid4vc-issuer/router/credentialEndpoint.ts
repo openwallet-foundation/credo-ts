@@ -6,7 +6,7 @@ import type { OpenId4VcIssuanceRequest } from './requestContext'
 import { joinUriParts, utils } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ResourceUnauthorizedError, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  CredentialConfigurationsSupportedWithFormats,
+  type CredentialConfigurationsSupportedWithFormats,
   Openid4vciDraftVersion,
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'

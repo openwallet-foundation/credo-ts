@@ -19,20 +19,20 @@ import { AgentContext } from '../../agent'
 import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
-import { JsonObject } from '../../types'
+import type { JsonObject } from '../../types'
 import { TypedArrayEncoder, dateToSeconds, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { ClaimFormat } from '../vc/index'
-import { EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
+import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 
 import { KeyManagementApi, PublicJwk } from '../kms'
 import { SdJwtVcError } from './SdJwtVcError'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
 import { buildDisclosureFrameForPayload } from './disclosureFrame'
 import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
-import { SdJwtVcTypeMetadata } from './typeMetadata'
+import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,
   getSdJwtSigner,
@@ -183,7 +183,9 @@ export class SdJwtVcService {
       presentationFrame as { [key: string]: boolean }
     )
     const [jwt] = compactSdJwtVc.split('~')
-    const sdJwt = `${jwt}~${requiredDisclosures.map((d) => d.encoded).join('~')}~`
+    const disclosuresString =
+      requiredDisclosures.length > 0 ? `${requiredDisclosures.map((d) => d.encoded).join('~')}~` : ''
+    const sdJwt = `${jwt}~${disclosuresString}`
     const disclosedDecoded = decodeSdJwtVc(sdJwt)
     return disclosedDecoded
   }

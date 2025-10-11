@@ -1,4 +1,4 @@
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { zKmsKeyId } from './common'
 

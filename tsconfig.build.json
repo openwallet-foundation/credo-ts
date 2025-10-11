@@ -1,6 +1,8 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "es2022",
+    "moduleResolution": "bundler",
     "target": "ES2020",
     "declaration": true,
     "sourceMap": true,
@@ -12,10 +14,22 @@
     "allowSyntheticDefaultImports": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "verbatimModuleSyntax": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     // TODO: we should update code to assume errors are of type 'unknown'
     "useUnknownInCatchVariables": false
   },
-  "exclude": ["node_modules", "build", "**/*.test.ts", "**/__tests__/*.ts", "**/__mocks__/*.ts", "**/build/**"]
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "build",
+    "**/build/**",
+    "**/cli-build/**",
+    "**/*.test.ts",
+    "**/__tests__/*.ts",
+    "**/__mocks__/*.ts",
+    "**/.pnpm/**"
+  ]
 }

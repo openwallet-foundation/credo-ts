@@ -4,9 +4,7 @@ import type { DidCommOutOfBandRecord } from '../oob/repository'
 import type { DidCommConnectionType } from './models'
 import type { DidCommConnectionRecord } from './repository'
 
-import { AgentContext, CredoError, DidRepository, DidResolverService, injectable } from '@credo-ts/core'
-
-import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
 import { DidCommOutboundMessageContext } from '../../models'
@@ -16,24 +14,9 @@ import { getMediationRecordForDidDocument } from '../routing/services/helpers'
 
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
-import {
-  DidCommAckMessageHandler,
-  DidCommConnectionProblemReportHandler,
-  DidCommConnectionRequestHandler,
-  DidCommConnectionResponseHandler,
-  DidCommDidExchangeCompleteHandler,
-  DidCommDidExchangeRequestHandler,
-  DidCommDidExchangeResponseHandler,
-  DidCommDidRotateAckHandler,
-  DidCommDidRotateHandler,
-  DidCommDidRotateProblemReportHandler,
-  DidCommHangupHandler,
-  DidCommTrustPingMessageHandler,
-  DidCommTrustPingResponseMessageHandler,
-} from './handlers'
 import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } from './messages'
 import { DidCommHandshakeProtocol } from './models'
-import { DidCommConnectionService, DidCommDidRotateService, DidCommTrustPingService } from './services'
+import { DidCommConnectionService, DidCommDidRotateService } from './services'
 
 export interface SendPingOptions {
   responseRequested?: boolean
@@ -52,21 +35,16 @@ export class DidCommConnectionsApi {
   private didRotateService: DidCommDidRotateService
   private outOfBandService: DidCommOutOfBandService
   private messageSender: DidCommMessageSender
-  private trustPingService: DidCommTrustPingService
   private routingService: DidCommRoutingService
-  private didRepository: DidRepository
   private didResolverService: DidResolverService
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     didExchangeProtocol: DidExchangeProtocol,
     connectionService: DidCommConnectionService,
     didRotateService: DidCommDidRotateService,
     outOfBandService: DidCommOutOfBandService,
-    trustPingService: DidCommTrustPingService,
     routingService: DidCommRoutingService,
-    didRepository: DidRepository,
     didResolverService: DidResolverService,
     messageSender: DidCommMessageSender,
     agentContext: AgentContext,
@@ -76,15 +54,11 @@ export class DidCommConnectionsApi {
     this.connectionService = connectionService
     this.didRotateService = didRotateService
     this.outOfBandService = outOfBandService
-    this.trustPingService = trustPingService
     this.routingService = routingService
-    this.didRepository = didRepository
     this.messageSender = messageSender
     this.didResolverService = didResolverService
     this.agentContext = agentContext
     this.config = connectionsModuleConfig
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async acceptOutOfBandInvitation(
@@ -558,64 +532,5 @@ export class DidCommConnectionsApi {
 
   public async findByInvitationDid(invitationDid: string): Promise<DidCommConnectionRecord[]> {
     return this.connectionService.findByInvitationDid(this.agentContext, invitationDid)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommConnectionRequestHandler(
-        this.connectionService,
-        this.outOfBandService,
-        this.routingService,
-        this.didRepository,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommConnectionResponseHandler(
-        this.connectionService,
-        this.outOfBandService,
-        this.didResolverService,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(new DidCommAckMessageHandler(this.connectionService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommConnectionProblemReportHandler(this.connectionService))
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommTrustPingMessageHandler(this.trustPingService, this.connectionService)
-    )
-    messageHandlerRegistry.registerMessageHandler(new DidCommTrustPingResponseMessageHandler(this.trustPingService))
-
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommDidExchangeRequestHandler(
-        this.didExchangeProtocol,
-        this.outOfBandService,
-        this.routingService,
-        this.didRepository,
-        this.config
-      )
-    )
-
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommDidExchangeResponseHandler(
-        this.didExchangeProtocol,
-        this.outOfBandService,
-        this.connectionService,
-        this.didResolverService,
-        this.config
-      )
-    )
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommDidExchangeCompleteHandler(this.didExchangeProtocol, this.outOfBandService)
-    )
-
-    messageHandlerRegistry.registerMessageHandler(
-      new DidCommDidRotateHandler(this.didRotateService, this.connectionService)
-    )
-
-    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(this.didRotateService))
-
-    messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(this.didRotateService))
-
-    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(this.didRotateService))
   }
 }
