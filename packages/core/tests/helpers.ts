@@ -440,7 +440,7 @@ export async function waitForAgentMessageProcessedEvent(
   return waitForAgentMessageProcessedEventSubject(observable, options)
 }
 
-export async function firstValueWithStackTrace<Source extends Observable<V>, V>(source: Source): Promise<V> {
+export async function firstValueWithStackTrace<T>(source: Observable<T>): Promise<T> {
   try {
     return await firstValueFrom(source)
   } catch (error) {

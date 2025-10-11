@@ -38,7 +38,8 @@ export function waitForActionMenuRecordSubject(
     timeoutMs?: number
   }
 ) {
-  const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
+  const observable: Observable<ActionMenuStateChangedEvent> =
+    subject instanceof ReplaySubject ? subject.asObservable() : subject
   return firstValueWithStackTrace(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
