@@ -41,10 +41,6 @@ const oidc = new Provider(PROVIDER_HOST, {
     ],
   },
   scopes: [],
-  pkce: {
-    methods: ['S256'],
-    required: () => true,
-  },
   extraTokenClaims: async (_context, token) => {
     if (token.kind === 'AccessToken') {
       return {

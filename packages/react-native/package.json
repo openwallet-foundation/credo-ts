@@ -32,21 +32,20 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@azure/core-asynciterator-polyfill": "^1.0.2",
     "@credo-ts/core": "workspace:*",
     "events": "^3.3.0"
   },
   "devDependencies": {
-    "react-native": "^0.79.3",
+    "react-native": "^0.82.0",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^1.8.0",
-
+    "react-native-get-random-values": "^1.11.0",
     "typescript": "catalog:"
   },
   "peerDependencies": {
     "react-native": ">=0.71.4",
     "react-native-fs": "^2.20.0",
-    "react-native-get-random-values": "^1.8.0",
+    "react-native-get-random-values": "^1.11.0",
+    "expo-crypto": "^15.0.7",
     "@animo-id/expo-secure-environment": "^0.1.1"
   },
   "peerDependenciesMeta": {

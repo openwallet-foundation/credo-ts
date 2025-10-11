@@ -1,10 +1,10 @@
 import type { MdocContext, X509Context } from '@animo-id/mdoc'
 import type { AgentContext } from '../../agent'
 
-import { p256 } from '@noble/curves/p256'
-import { hkdf } from '@noble/hashes/hkdf'
-import { sha256 } from '@noble/hashes/sha2'
+import { p256 } from '@noble/curves/nist.js'
+import { hkdf } from '@noble/hashes/hkdf.js'
 
+import { sha256 } from '@noble/hashes/sha2.js'
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
@@ -25,9 +25,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
       },
       calculateEphemeralMacKeyJwk: async (input) => {
         const { privateKey, publicKey, sessionTranscriptBytes } = input
-        const ikm = p256
-          .getSharedSecret(TypedArrayEncoder.toHex(privateKey), TypedArrayEncoder.toHex(publicKey), true)
-          .slice(1)
+        const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
         const info = Buffer.from('EMacKey', 'utf-8')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)

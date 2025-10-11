@@ -137,7 +137,7 @@ export class DidCommMessageSender {
     }
 
     // Loop trough all available services and try to send the message
-    for await (const service of services) {
+    for (const service of services) {
       agentContext.config.logger.debug('Sending outbound message to service:', { service })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
@@ -312,7 +312,7 @@ export class DidCommMessageSender {
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
     // Loop trough all available services and try to send the message
-    for await (const service of services) {
+    for (const service of services) {
       try {
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendToService(

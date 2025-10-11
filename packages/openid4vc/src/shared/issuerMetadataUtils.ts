@@ -66,7 +66,7 @@ export function getAllowedAndRequestedScopeValues(options: { requestedScope: str
 export function getCredentialConfigurationsSupportedForScopes(
   credentialConfigurationsSupported: CredentialConfigurationsSupported,
   scopes: string[]
-) {
+): CredentialConfigurationsSupported {
   return Object.fromEntries(
     Object.entries(credentialConfigurationsSupported).filter(
       ([, configuration]) => configuration.scope && scopes.includes(configuration.scope)

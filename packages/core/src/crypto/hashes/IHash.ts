@@ -1,3 +1,3 @@
 export interface IHash {
-  hash(data: Uint8Array | string): Uint8Array
+  hash(data: Uint8Array): Uint8Array
 }

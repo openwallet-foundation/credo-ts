@@ -7,7 +7,7 @@ import type {
 
 import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 
 import { clear } from 'console'
 import { BaseInquirer } from './BaseInquirer'
@@ -16,7 +16,7 @@ import { Title, greenText, redText } from './OutputClass'
 
 export const runHolder = async () => {
   clear()
-  console.log(textSync('Holder', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Holder', { horizontalLayout: 'full' }))
   const holder = await HolderInquirer.build()
   await holder.processAnswer()
 }

@@ -10,13 +10,12 @@ import {
   keyParamsToJwaAlgorithm,
 } from './types'
 
-import { p384 } from '@noble/curves/p384'
-import { sha256, sha384 } from '@noble/hashes/sha2'
+import { p256, p384 } from '@noble/curves/nist.js'
 import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 
-import { p256 } from '@noble/curves/p256'
 import { KeyManagementApi, PublicJwk } from '../../modules/kms'
+import { Hasher } from '../hashes'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import { CredoWebCryptoKey } from './CredoWebCryptoKey'
 import { cryptoKeyAlgorithmToCreateKeyOptions, publicJwkToSpki, spkiToPublicJwk } from './utils'
@@ -66,7 +65,8 @@ export class CredoWalletWebCrypto {
             `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
-        return p256.verify(signature, sha384(message), publicKey.publicKey)
+
+        return p256.verify(signature, Hasher.hash(message, 'sha-384'), publicKey.publicKey)
       }
       if (publicKey.kty === 'EC' && publicKey.crv === 'P-384' && hashAlg !== 'SHA-384') {
         if (hashAlg !== 'SHA-256') {
@@ -74,7 +74,7 @@ export class CredoWalletWebCrypto {
             `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
-        return p384.verify(signature, sha256(message), publicKey.publicKey)
+        return p384.verify(signature, Hasher.hash(message, 'sha-256'), publicKey.publicKey)
       }
     }
 

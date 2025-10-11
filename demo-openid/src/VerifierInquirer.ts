@@ -1,5 +1,5 @@
 import { clear } from 'console'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
 import { Title, purpleText } from './OutputClass'
@@ -7,7 +7,7 @@ import { Verifier, dcqls, presentationDefinitions } from './Verifier'
 
 export const runVerifier = async () => {
   clear()
-  console.log(textSync('Verifier', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Verifier', { horizontalLayout: 'full' }))
   const verifier = await VerifierInquirer.build()
   await verifier.processAnswer()
 }

@@ -1,5 +1,6 @@
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialOfferPayload,
   OpenId4VciMetadata,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
@@ -111,7 +112,7 @@ export class OpenId4VcIssuerService {
   public async createStatelessCredentialOffer(
     agentContext: AgentContext,
     options: OpenId4VciCreateStatelessCredentialOfferOptions & { issuer: OpenId4VcIssuerRecord }
-  ) {
+  ): Promise<{ credentialOffer: string; credentialOfferObject: OpenId4VciCredentialOfferPayload }> {
     const { authorizationCodeFlowConfig, issuer, credentialConfigurationIds } = options
     const vcIssuer = this.getIssuer(agentContext)
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
@@ -271,7 +272,7 @@ export class OpenId4VcIssuerService {
   public async createCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ) {
+  ): Promise<{ issuanceSession: OpenId4VcIssuanceSessionRecord; credentialResponse: CredentialResponse }> {
     options.issuanceSession.assertState([
       // OfferUriRetrieved is valid when doing auth flow (we should add a check)
       OpenId4VcIssuanceSessionState.OfferUriRetrieved,
@@ -460,7 +461,10 @@ export class OpenId4VcIssuerService {
   public async createDeferredCredentialResponse(
     agentContext: AgentContext,
     options: OpenId4VciCreateDeferredCredentialResponseOptions & { issuanceSession: OpenId4VcIssuanceSessionRecord }
-  ) {
+  ): Promise<{
+    issuanceSession: OpenId4VcIssuanceSessionRecord
+    deferredCredentialResponse: DeferredCredentialResponse
+  }> {
     options.issuanceSession.assertState([
       OpenId4VcIssuanceSessionState.CredentialRequestReceived,
       OpenId4VcIssuanceSessionState.CredentialsPartiallyIssued,

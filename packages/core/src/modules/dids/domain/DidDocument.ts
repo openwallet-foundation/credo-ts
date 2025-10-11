@@ -336,10 +336,10 @@ export async function findVerificationMethodByKeyType(
     'capabilityInvocation',
     'capabilityDelegation',
   ]
-  for await (const purpose of didVerificationMethods) {
+  for (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (Array.isArray(key)) {
-      for await (const method of key) {
+      for (const method of key) {
         if (typeof method !== 'string') {
           if (method.type === keyType) {
             return method
