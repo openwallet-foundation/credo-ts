@@ -2,7 +2,7 @@ import type { JsonObject } from '../../../../types'
 
 // No type definitions available for this package
 // @ts-ignore
-import vc from '@digitalcredentials/vc'
+import * as vc from '@digitalcredentials/vc'
 
 export interface VC {
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
