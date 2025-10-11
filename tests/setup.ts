@@ -1,9 +1,11 @@
 import 'reflect-metadata'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { LogLevel } from '@credo-ts/core'
 import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
-import { testLogger } from '../packages/core/tests'
+
+// NOTE: import from '@credo-ts/core' in setup makes tests fail
+import { LogLevel } from '../packages/core/src/logger/Logger'
+import testLogger from '../packages/core/tests/logger'
 
 // Get test file path at module load
 const testPath = expect.getState().testPath
