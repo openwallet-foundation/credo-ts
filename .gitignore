@@ -15,3 +15,4 @@ ngrok.auth.yml
 cli-build
 *.db
 test-logs
+testlogs

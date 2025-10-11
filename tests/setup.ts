@@ -13,7 +13,7 @@ const relativeTestPath = testPath ? path.relative(process.cwd(), testPath) : und
 
 // Create a log file name based on test file
 const logFileName = relativeTestPath?.replace(/[\/\\]/g, '_').replace(/\.[^.]+$/, '.log')
-const logDir = path.join(process.cwd(), 'test-logs')
+const logDir = path.join(process.cwd(), 'testlogs')
 const logPath = logFileName ? path.join(logDir, logFileName) : undefined
 
 const logEntries: Array<object> = []
@@ -35,7 +35,7 @@ if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
     if (!testFailed) return
 
     mkdirSync(logDir, { recursive: true })
-    writeFileSync(logPath, JSON.stringify(logEntries))
+    writeFileSync(logPath, JSON.stringify([{ testPath: relativeTestPath, source: 'after-all' }, ...logEntries]))
   })
 }
 
@@ -45,10 +45,22 @@ process.on('unhandledRejection', (reason) => {
     reason,
     relativeTestPath,
   })
+  testLogger.error('Unhandled rejection in test', {
+    reason,
+    relativeTestPath,
+  })
 
   if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
     mkdirSync(logDir, { recursive: true })
-    writeFileSync(logPath, JSON.stringify(logEntries))
+    writeFileSync(
+      logPath,
+      JSON.stringify([{ testPath: relativeTestPath, source: 'unhandled-rejection' }, ...logEntries])
+    )
+    // Also create specific unhandled-rejection.log
+    writeFileSync(
+      path.join(logDir, 'unhandled-rejection.log'),
+      JSON.stringify([{ testPath: relativeTestPath, source: 'unhandled-rejection' }, ...logEntries])
+    )
   }
   process.exit(1)
 })
@@ -59,29 +71,42 @@ process.on('uncaughtException', (reason) => {
     reason,
     relativeTestPath,
   })
+  testLogger.error('Uncaught exception in test', {
+    reason,
+    relativeTestPath,
+  })
 
   if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
     mkdirSync(logDir, { recursive: true })
-    writeFileSync(logPath, JSON.stringify(logEntries))
+    writeFileSync(
+      logPath,
+      JSON.stringify([{ testPath: relativeTestPath, source: 'uncaught-exception' }, ...logEntries])
+    )
+
+    // Also create specific uncaught-exception.log
+    writeFileSync(
+      path.join(logDir, 'uncaught-exception.log'),
+      JSON.stringify([{ testPath: relativeTestPath, source: 'uncaught-exception' }, ...logEntries])
+    )
   }
 })
 
 process.on('SIGTERM', () => {
   testLogger.warn('[SIGTERM] Process received SIGTERM')
 
-  if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
-    mkdirSync(logDir, { recursive: true })
-    writeFileSync(logPath, JSON.stringify(logEntries))
-  }
+  // if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
+  //   mkdirSync(logDir, { recursive: true })
+  //   writeFileSync(logPath, JSON.stringify([{ testPath: relativeTestPath, source: 'sigterm' }, ...logEntries]))
+  // }
 })
 
 process.on('SIGINT', () => {
   testLogger.warn('[SIGINT] Process received SIGINT')
 
-  if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
-    mkdirSync(logDir, { recursive: true })
-    writeFileSync(logPath, JSON.stringify(logEntries))
-  }
+  // if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
+  //   mkdirSync(logDir, { recursive: true })
+  //   writeFileSync(logPath, JSON.stringify([{ testPath: relativeTestPath, source: 'sigint' }, ...logEntries]))
+  // }
 })
 
 expect.extend({

@@ -69,6 +69,9 @@ catalogs:
     typescript:
       specifier: ~5.8.3
       version: 5.8.3
+    vitest:
+      specifier: ^3.2.4
+      version: 3.2.4
     ws:
       specifier: ^8.18.2
       version: 8.18.3
@@ -222,7 +225,7 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.3)
       vitest:
-        specifier: ^3.2.4
+        specifier: 'catalog:'
         version: 3.2.4(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.3)
       ws:
         specifier: 'catalog:'
@@ -2956,9 +2959,6 @@ packages:
 
   '@jridgewell/source-map@0.3.6':
     resolution: {integrity: sha512-1ZJTZebgqllO79ue2bm3rIGud/bOe0pP5BjSRCRxxYkEZS8STV7zN84UBbiYu7jy+eCKSnVIUgoWWE/tt+shMQ==}
-
-  '@jridgewell/sourcemap-codec@1.4.15':
-    resolution: {integrity: sha512-eF2rxCRulEKXHTRiDrDy6erMYWqNw4LPdQ8UQA4huuxaQsVeRPFl2oM8oDGxMFhJUWZf9McpLtJasDDZb/Bpeg==}
 
   '@jridgewell/sourcemap-codec@1.5.5':
     resolution: {integrity: sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==}
@@ -12064,7 +12064,7 @@ snapshots:
   '@jridgewell/gen-mapping@0.3.5':
     dependencies:
       '@jridgewell/set-array': 1.2.1
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.5
       '@jridgewell/trace-mapping': 0.3.25
 
   '@jridgewell/remapping@2.3.5':
@@ -12087,14 +12087,12 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.13
       '@jridgewell/trace-mapping': 0.3.31
 
-  '@jridgewell/sourcemap-codec@1.4.15': {}
-
   '@jridgewell/sourcemap-codec@1.5.5': {}
 
   '@jridgewell/trace-mapping@0.3.25':
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
-      '@jridgewell/sourcemap-codec': 1.4.15
+      '@jridgewell/sourcemap-codec': 1.5.5
 
   '@jridgewell/trace-mapping@0.3.31':
     dependencies:
