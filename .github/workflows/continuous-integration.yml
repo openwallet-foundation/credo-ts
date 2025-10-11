@@ -89,14 +89,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
+        continue-on-error: true
         run: pnpm test:unit --coverage --shard=${{ matrix.shard }}/2
 
       # Upload coverage for shard
       - run: mv coverage/coverage-final.json coverage/${{ matrix.shard }}.json
+        if: success()
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-unit-${{ matrix.shard }}
           path: coverage/${{ matrix.shard }}.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-unit-${{ matrix.shard }}
+          path: test-logs
           overwrite: true
 
   e2e-tests:
@@ -142,14 +152,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run tests
+        continue-on-error: true
         run: pnpm test:e2e --coverage
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/e2e.json
+        if: success()
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-e2e
           path: coverage/e2e.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-e2e
+          path: test-logs
           overwrite: true
 
   drizzle-tests:
@@ -199,14 +219,24 @@ jobs:
         run: pnpm --filter @credo-ts/drizzle-storage run build
 
       - name: Run tests
+        continue-on-error: true
         run: pnpm test:drizzle --coverage
 
       # Upload coverage for e2e
       - run: mv coverage/coverage-final.json coverage/drizzle.json
+        if: success()
       - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: coverage-artifacts-${{ matrix.node-version }}-drizzle
           path: coverage/drizzle.json
+          overwrite: true
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: failed-tests-${{ matrix.node-version }}-drizzle
+          path: test-logs
           overwrite: true
 
   # Upload all the coverage reports

@@ -926,14 +926,14 @@ describe('SdJwtVcService', () => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
       x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
 
-      Date.prototype.getTime = jest.fn(() => 1717498204 * 1000)
+      Date.prototype.getTime = vi.fn(() => 1717498204 * 1000)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
       })
 
-      Date.prototype.getTime = jest.fn(() => 1698151532000)
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
 
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
       expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
@@ -1146,12 +1146,12 @@ describe('SdJwtVcService', () => {
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
-      Date.prototype.getTime = jest.fn(() => 1716111919 * 1000 + 1000)
+      Date.prototype.getTime = vi.fn(() => 1716111919 * 1000 + 1000)
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
-      Date.prototype.getTime = jest.fn(() => 1698151532000)
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
 
       expect(verificationResult).toEqual({
         isValid: false,
