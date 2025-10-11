@@ -66,7 +66,10 @@ export class CredoWalletWebCrypto {
           )
         }
 
-        return p256.verify(signature, Hasher.hash(message, 'sha-384'), publicKey.publicKey)
+        return p256.verify(signature, Hasher.hash(message, 'sha-384'), publicKey.publicKey, {
+          // we use a custom hash
+          prehash: false,
+        })
       }
       if (publicKey.kty === 'EC' && publicKey.crv === 'P-384' && hashAlg !== 'SHA-384') {
         if (hashAlg !== 'SHA-256') {
@@ -74,7 +77,11 @@ export class CredoWalletWebCrypto {
             `Hash Alg: ${hashAlg} is not supported with key type ${publicKey.crv} currently`
           )
         }
-        return p384.verify(signature, Hasher.hash(message, 'sha-256'), publicKey.publicKey)
+
+        return p384.verify(signature, Hasher.hash(message, 'sha-256'), publicKey.publicKey, {
+          // we use a custom hash
+          prehash: false,
+        })
       }
     }
 
