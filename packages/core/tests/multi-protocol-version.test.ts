@@ -1,6 +1,6 @@
 import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 
-import { filter, firstValueFrom, timeout } from 'rxjs'
+import { filter, timeout } from 'rxjs'
 
 import {
   DidCommEventTypes,
@@ -12,7 +12,7 @@ import {
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getAgentOptions } from './helpers'
+import { firstValueWithStackTrace, getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const aliceAgentOptions = getAgentOptions(
@@ -77,7 +77,7 @@ describe('multi version protocols', () => {
     const bobMessageSender = bobAgent.dependencyManager.resolve(DidCommMessageSender)
 
     // Start event listener for message processed
-    const agentMessageV11ProcessedPromise = firstValueFrom(
+    const agentMessageV11ProcessedPromise = firstValueWithStackTrace(
       aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV11.type.messageTypeUri),
         timeout(8000)
@@ -97,7 +97,7 @@ describe('multi version protocols', () => {
     expect(mockHandle).toHaveBeenCalledTimes(1)
 
     // Start event listener for message processed
-    const agentMessageV15ProcessedPromise = firstValueFrom(
+    const agentMessageV15ProcessedPromise = firstValueWithStackTrace(
       aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV15.type.messageTypeUri),
         timeout(8000)

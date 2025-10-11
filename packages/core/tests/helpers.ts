@@ -5,6 +5,7 @@ import type {
   DidCommConnectionDidRotatedEvent,
   DidCommConnectionRecordProps,
   DidCommConnectionStateChangedEvent,
+  DidCommCredentialExchangeRecord,
   DidCommCredentialState,
   DidCommCredentialStateChangedEvent,
   DidCommMessageProcessedEvent,
@@ -367,7 +368,7 @@ export function waitForTrustPingReceivedEventSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isTrustPingReceivedEvent),
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
@@ -409,7 +410,7 @@ export function waitForTrustPingResponseReceivedEventSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isTrustPingResponseReceivedEvent),
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
@@ -439,6 +440,17 @@ export async function waitForAgentMessageProcessedEvent(
   return waitForAgentMessageProcessedEventSubject(observable, options)
 }
 
+export async function firstValueWithStackTrace<Source extends Observable<V>, V>(source: Source): Promise<V> {
+  try {
+    return await firstValueFrom(source)
+  } catch (error) {
+    // Errors from rxjs have a weird stack trace that doesn't lead to the original caller
+    // So we update the stack trace
+    Error.captureStackTrace(error)
+    throw error
+  }
+}
+
 export function waitForAgentMessageProcessedEventSubject(
   subject: ReplaySubject<BaseEvent> | Observable<BaseEvent>,
   {
@@ -452,7 +464,7 @@ export function waitForAgentMessageProcessedEventSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isAgentMessageProcessedEvent),
       filter((e) => threadId === undefined || e.payload.message.threadId === threadId),
@@ -483,10 +495,10 @@ export function waitForCredentialRecordSubject(
     previousState?: DidCommCredentialState | null
     timeoutMs?: number
   }
-) {
+): Promise<DidCommCredentialExchangeRecord> {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isCredentialStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -535,7 +547,7 @@ export function waitForDidRotateSubject(
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isConnectionDidRotatedEvent),
       filter((e) => threadId === undefined || e.payload.connectionRecord.threadId === threadId),
@@ -568,7 +580,7 @@ export function waitForConnectionRecordSubject(
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
 
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter(isConnectionStateChangedEvent),
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
@@ -670,7 +682,7 @@ export function waitForRevocationNotificationSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter((e) => threadId === undefined || e.payload.credentialExchangeRecord.threadId === threadId),
       timeout(timeoutMs),

@@ -2,7 +2,7 @@ import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTran
 import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
 
-import { Subject, filter, firstValueFrom, map, timeout } from 'rxjs'
+import { Subject, filter, map, timeout } from 'rxjs'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
@@ -21,7 +21,7 @@ import {
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getAgentOptions, waitForBasicMessage } from './helpers'
+import { firstValueWithStackTrace, getAgentOptions, waitForBasicMessage } from './helpers'
 
 const faberAgentOptions = getAgentOptions(
   'OOB mediation - Faber Agent',
@@ -174,7 +174,7 @@ describe('out of band with mediation', () => {
   test('create and delete OOB invitation when using mediation', async () => {
     // Alice creates an invitation: the key is notified to her mediator
 
-    const keyAddMessagePromise = firstValueFrom(
+    const keyAddMessagePromise = firstValueWithStackTrace(
       mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
         map((event) => event.payload.message as DidCommKeylistUpdateMessage),
@@ -198,7 +198,7 @@ describe('out of band with mediation', () => {
       recipientKey: didKeyToVerkey((outOfBandInvitation.getServices()[0] as OutOfBandDidCommService).recipientKeys[0]),
     })
 
-    const keyRemoveMessagePromise = firstValueFrom(
+    const keyRemoveMessagePromise = firstValueWithStackTrace(
       mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
         map((event) => event.payload.message as DidCommKeylistUpdateMessage),

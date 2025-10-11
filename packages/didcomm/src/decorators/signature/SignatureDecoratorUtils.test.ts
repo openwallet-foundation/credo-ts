@@ -5,9 +5,9 @@ import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import { SignatureDecorator } from './SignatureDecorator'
 import { signData, unpackAndVerifySignatureDecorator } from './SignatureDecoratorUtils'
 
-vi.mock('../../../../core/src/utils/timestamp', () => {
+vi.mock('../../../../core/src/utils/timestamp', async (importOriginal) => {
   return {
-    __esModule: true,
+    ...(await importOriginal()),
     default: vi.fn(() => Uint8Array.of(0, 0, 0, 0, 0, 0, 0, 0)),
   }
 })

@@ -1,7 +1,7 @@
 import type { DidCommMessageProcessedEvent, DidCommMessageSentEvent } from '@credo-ts/didcomm'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
-import { filter, firstValueFrom, map } from 'rxjs'
+import { filter, map } from 'rxjs'
 
 import { issueAnonCredsCredential, presentAnonCredsProof } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
@@ -9,7 +9,7 @@ import {
   storePreCreatedAnonCredsDefinition,
 } from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
 import { setupEventReplaySubjects } from '../packages/core/tests'
-import { makeConnection } from '../packages/core/tests/helpers'
+import { firstValueWithStackTrace, makeConnection } from '../packages/core/tests/helpers'
 
 import {
   DidCommBatchMessage,
@@ -152,7 +152,7 @@ export async function e2eTest({
 
   // Wait for the response to the pickup message to be processed
   if (lastSentPickupMessageThreadId) {
-    await firstValueFrom(
+    await firstValueWithStackTrace(
       recipientReplay.pipe(
         filter((e): e is DidCommMessageProcessedEvent => e.type === DidCommEventTypes.DidCommMessageProcessed),
         filter((e) => deliveryMessages.includes(e.payload.message.type)),

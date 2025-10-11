@@ -1,20 +1,18 @@
-import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
-
-import { firstValueFrom } from 'rxjs'
 import { filter, first, map, timeout } from 'rxjs/operators'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
-import { getAgentOptions } from '../../../../../core/tests/helpers'
+import { firstValueWithStackTrace, getAgentOptions } from '../../../../../core/tests/helpers'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommDidExchangeState } from '../models'
 
 import { InMemoryDidRegistry } from './InMemoryDidRegistry'
 
 function waitForRequest(agent: Agent, theirLabel: string) {
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     agent.events
       .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
       .pipe(
@@ -32,7 +30,7 @@ function waitForRequest(agent: Agent, theirLabel: string) {
 }
 
 function waitForResponse(agent: Agent, connectionId: string) {
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     agent.events
       .observable<DidCommConnectionStateChangedEvent>(DidCommConnectionEventTypes.DidCommConnectionStateChanged)
       .pipe(
