@@ -11,7 +11,7 @@ catalog:
   class-transformer: 0.5.1
   class-validator: 0.14.1
   reflect-metadata: 0.2.2
-  typescript: ~5.8.3
+  typescript: ~5.9.3
   "@stablelib/ed25519": ^1.0.3
   zod: ^3.25.56
   nock: ^14.0.5

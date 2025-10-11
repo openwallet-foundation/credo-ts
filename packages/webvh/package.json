@@ -37,6 +37,6 @@
     "tsyringe": "^4.8.0"
   },
   "devDependencies": {
-    "typescript": "~5.5.2"
+    "typescript": "~5.9.3"
   }
 }
