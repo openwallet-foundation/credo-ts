@@ -3,7 +3,7 @@ import type { DidCommPlaintextMessage } from '../../../types'
 import { CredoError, IsStringOrInstance, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
-import { parseUrl } from 'query-string'
+import queryString from 'query-string'
 
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
@@ -80,7 +80,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
   }
 
   public static fromUrl(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
+    const parsedUrl = queryString.parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl.oob
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
