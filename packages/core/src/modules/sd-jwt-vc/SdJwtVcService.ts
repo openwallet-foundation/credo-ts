@@ -20,7 +20,7 @@ import { Hasher, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import type { JsonObject } from '../../types'
-import { TypedArrayEncoder, nowInSeconds } from '../../utils'
+import { TypedArrayEncoder, dateToSeconds, nowInSeconds } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
@@ -239,10 +239,10 @@ export class SdJwtVcService {
 
   public async verify<Header extends SdJwtVcHeader = SdJwtVcHeader, Payload extends SdJwtVcPayload = SdJwtVcPayload>(
     agentContext: AgentContext,
-    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates }: SdJwtVcVerifyOptions
+    { compactSdJwtVc, keyBinding, requiredClaimKeys, fetchTypeMetadata, trustedCertificates, now }: SdJwtVcVerifyOptions
   ): Promise<
-    | { isValid: true; verification: VerificationResult; sdJwtVc: SdJwtVc<Header, Payload> }
-    | { isValid: false; verification: VerificationResult; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
+    | { isValid: true; sdJwtVc: SdJwtVc<Header, Payload> }
+    | { isValid: false; sdJwtVc?: SdJwtVc<Header, Payload>; error: Error }
   > {
     const sdjwt = new SDJwtVcInstance({
       ...this.getBaseSdJwtConfig(agentContext),
@@ -251,12 +251,7 @@ export class SdJwtVcService {
       // loadTypeMetadataFormat: false,
     })
 
-    const verificationResult: VerificationResult = {
-      isValid: false,
-    }
-
     let sdJwtVc: SDJwt
-    let _error: Error | undefined = undefined
 
     try {
       sdJwtVc = await sdjwt.decode(compactSdJwtVc)
@@ -264,7 +259,6 @@ export class SdJwtVcService {
     } catch (error) {
       return {
         isValid: false,
-        verification: verificationResult,
         error,
       }
     }
@@ -301,33 +295,40 @@ export class SdJwtVcService {
         kbVerifier: holder ? getSdJwtVerifier(agentContext, holder.publicJwk) : undefined,
       })
 
-      const requiredKeys = requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct']
-
       try {
-        await sdjwt.verify(compactSdJwtVc, requiredKeys, keyBinding !== undefined)
-
-        verificationResult.isSignatureValid = true
-        verificationResult.areRequiredClaimsIncluded = true
-        verificationResult.isStatusValid = true
+        await sdjwt.verify(compactSdJwtVc, {
+          requiredClaimKeys: requiredClaimKeys ? [...requiredClaimKeys, 'vct'] : ['vct'],
+          keyBindingNonce: keyBinding?.nonce,
+          currentDate: dateToSeconds(now ?? new Date()),
+          skewSeconds: 0,
+        })
       } catch (error) {
-        _error = error
-        verificationResult.isSignatureValid = false
-        verificationResult.areRequiredClaimsIncluded = false
-        verificationResult.isStatusValid = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       if (sdJwtVc.jwt.header?.typ !== 'vc+sd-jwt' && sdJwtVc.jwt.header?.typ !== 'dc+sd-jwt') {
-        verificationResult.areRequiredClaimsIncluded = false
-        _error = new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`)
+        return {
+          error: new SdJwtVcError(`SD-JWT VC header 'typ' must be 'dc+sd-jwt' or 'vc+sd-jwt'`),
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       try {
-        JwtPayload.fromJson(returnSdJwtVc.payload).validate()
-
-        verificationResult.isValidJwtPayload = true
+        JwtPayload.fromJson(returnSdJwtVc.payload).validate({
+          now: dateToSeconds(now ?? new Date()),
+          skewTime: 0,
+        })
       } catch (error) {
-        _error = error
-        verificationResult.isValidJwtPayload = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       // If keyBinding is present, verify the key binding
@@ -345,16 +346,13 @@ export class SdJwtVcService {
           if (sdJwtVc.kbJwt.payload.nonce !== keyBinding.nonce) {
             throw new SdJwtVcError('The key binding JWT does not contain the expected nonce')
           }
-
-          verificationResult.isKeyBindingValid = true
-          verificationResult.containsExpectedKeyBinding = true
-          verificationResult.containsRequiredVcProperties = true
         }
       } catch (error) {
-        _error = error
-        verificationResult.isKeyBindingValid = false
-        verificationResult.containsExpectedKeyBinding = false
-        verificationResult.containsRequiredVcProperties = false
+        return {
+          error,
+          isValid: false,
+          sdJwtVc: returnSdJwtVc,
+        }
       }
 
       try {
@@ -375,30 +373,15 @@ export class SdJwtVcService {
         // we allow vct without type metadata for now
       }
     } catch (error) {
-      verificationResult.isValid = false
       return {
         isValid: false,
         error,
-        verification: verificationResult,
         sdJwtVc: returnSdJwtVc,
-      }
-    }
-
-    const { isValid: _, ...allVerifications } = verificationResult
-    verificationResult.isValid = Object.values(allVerifications).every((verification) => verification === true)
-
-    if (_error) {
-      return {
-        isValid: false,
-        error: _error,
-        sdJwtVc: returnSdJwtVc,
-        verification: verificationResult,
       }
     }
 
     return {
       isValid: true,
-      verification: verificationResult,
       sdJwtVc: returnSdJwtVc,
     }
   }

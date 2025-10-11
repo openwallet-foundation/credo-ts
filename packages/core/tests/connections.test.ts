@@ -1,6 +1,6 @@
 import type { DidCommKeylistUpdate, DidCommMessageProcessedEvent } from '../../didcomm/src'
 
-import { filter, firstValueFrom, map, timeout } from 'rxjs'
+import { filter, map, timeout } from 'rxjs'
 
 import {
   DidCommDidExchangeState,
@@ -13,7 +13,7 @@ import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidC
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
 
-import { getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
+import { firstValueWithStackTrace, getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 import { TypedArrayEncoder } from '@credo-ts/core'
@@ -360,7 +360,7 @@ describe('connections', () => {
     )
 
     for (const connection of [faberAcmeConnection, faberAliceConnection]) {
-      const keyRemoveMessagePromise = firstValueFrom(
+      const keyRemoveMessagePromise = firstValueWithStackTrace(
         mediatorAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
           filter((event) => event.payload.message.type === DidCommKeylistUpdateMessage.type.messageTypeUri),
           map((event) => event.payload.message as DidCommKeylistUpdateMessage),

@@ -1,4 +1,4 @@
-import { ReplaySubject, first, firstValueFrom, timeout } from 'rxjs'
+import { ReplaySubject, first, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { RecordNotFoundError } from '../../../../../core/src/error'
@@ -6,6 +6,7 @@ import { createPeerDidDocumentFromServices } from '../../../../../core/src/modul
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import {
+  firstValueWithStackTrace,
   getAgentOptions,
   makeConnection,
   waitForAgentMessageProcessedEvent,
@@ -434,7 +435,7 @@ describe('Rotation E2E tests', () => {
       const observable = aliceAgent.events.observable('AgentReceiveMessageError')
       const subject = new ReplaySubject(1)
       observable.pipe(first(), timeout({ first: 10000 })).subscribe(subject)
-      await firstValueFrom(subject)
+      await firstValueWithStackTrace(subject)
 
       const aliceBasicMessages = await aliceAgent.didcomm.basicMessages.findAllByQuery({})
       expect(aliceBasicMessages.find((message) => message.content === 'Message before hangup')).toBeUndefined()

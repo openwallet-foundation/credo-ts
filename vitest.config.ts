@@ -23,7 +23,7 @@ export default defineConfig({
     },
 
     // Enable for debugging
-    // logHeapUsage: true,
+    logHeapUsage: true,
 
     projects: [
       {

@@ -6,9 +6,10 @@ import type {
 } from '@credo-ts/question-answer'
 import type { Observable } from 'rxjs'
 
-import { ReplaySubject, catchError, filter, firstValueFrom, map, timeout } from 'rxjs'
+import { ReplaySubject, catchError, filter, map, timeout } from 'rxjs'
 
 import { QuestionAnswerEventTypes } from '@credo-ts/question-answer'
+import { firstValueWithStackTrace } from '../../core/tests/helpers'
 
 export async function waitForQuestionAnswerRecord(
   agent: Agent,
@@ -44,7 +45,7 @@ export function waitForQuestionAnswerRecordSubject(
   }
 ) {
   const observable = subject instanceof ReplaySubject ? subject.asObservable() : subject
-  return firstValueFrom(
+  return firstValueWithStackTrace(
     observable.pipe(
       filter((e) => previousState === undefined || e.payload.previousState === previousState),
       filter((e) => threadId === undefined || e.payload.questionAnswerRecord.threadId === threadId),

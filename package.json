@@ -13,6 +13,7 @@
     "style:check": "biome check --unsafe",
     "style:fix": "biome check --write --unsafe",
     "build": "pnpm -r --parallel run build",
+    "test:debug": "COLLECT_FAILED_TEST_LOGS=true pnpm test",
     "test:unit": "pnpm test --project unit",
     "test:e2e": "pnpm test --project e2e",
     "test:drizzle": "pnpm test --project drizzle",
@@ -67,7 +68,7 @@
     "undici": "^6.21.3",
     "vite": "npm:rolldown-vite@latest",
     "vite-node": "^3.2.4",
-    "vitest": "^3.2.4",
+    "vitest": "catalog:",
     "ws": "catalog:"
   },
   "pnpm": {

@@ -110,14 +110,6 @@ export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.P
   return supportedSignatureSuites[0].proofType
 }
 
-export function addSecondsToDate(date: Date, seconds: number) {
-  return new Date(date.getTime() + seconds * 1000)
-}
-
-export function dateToSeconds(date: Date) {
-  return Math.floor(date.getTime() / 1000)
-}
-
 export function parseIfJson<T>(input: T): T | Record<string, unknown> {
   if (typeof input !== 'string') {
     return input

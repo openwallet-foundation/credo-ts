@@ -31,7 +31,6 @@ import {
 
 import {
   Agent,
-  CredoError,
   DidKey,
   DidsModule,
   JwsService,
@@ -875,16 +874,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -912,16 +901,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -940,40 +919,29 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-        },
       })
     })
 
     test('Verify x509 chain protected sd-jwt-vc', async () => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+      x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+
+      Date.prototype.getTime = vi.fn(() => 1717498204 * 1000)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
       })
 
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
+
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
       expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
       expect(getDomainFromUrl(sdJwtIss as string)).toEqual('demo.pid-issuer.bundesdruckerei.de')
 
       expect(verificationResult).toEqual({
-        isValid: false,
-        error: new CredoError('JWT expired at 1718707804'),
+        isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: false,
-          isValidJwtPayload: false,
-          isStatusValid: true,
-        },
       })
     })
 
@@ -1009,13 +977,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          areRequiredClaimsIncluded: true,
-        },
       })
     })
 
@@ -1051,13 +1012,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Status is not valid'),
       })
     })
@@ -1094,13 +1048,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new Error('Index out of bounds'),
       })
     })
@@ -1125,16 +1072,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-          containsExpectedKeyBinding: true,
-        },
       })
     })
 
@@ -1189,16 +1126,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          containsExpectedKeyBinding: true,
-          containsRequiredVcProperties: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -1215,24 +1142,20 @@ describe('SdJwtVcService', () => {
         }
       )
 
-      expect(verificationResult.verification.isValid).toBe(true)
+      expect(verificationResult.isValid).toBe(true)
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
+      Date.prototype.getTime = vi.fn(() => 1716111919 * 1000 + 1000)
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
+
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT expired at 1716111919'),
+        error: new SDJWTException('Verify Error: JWT is expired'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1244,14 +1167,7 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT not valid before 4078944000'),
+        error: new SDJWTException('Verify Error: JWT is not yet valid'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1263,13 +1179,6 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
@@ -1282,13 +1191,6 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })

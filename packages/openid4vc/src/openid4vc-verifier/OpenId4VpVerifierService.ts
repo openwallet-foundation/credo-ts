@@ -63,7 +63,6 @@ import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
-  addSecondsToDate,
   dcqlCredentialQueryToPresentationFormat,
   getSupportedJwaSignatureAlgorithms,
   requestSignerToJwtIssuer,
@@ -321,7 +320,7 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
@@ -1146,7 +1145,7 @@ export class OpenId4VpVerifierService {
           trustedCertificates,
         })
 
-        isValid = verificationResult.verification.isValid
+        isValid = verificationResult.isValid
         cause = verificationResult.isValid ? undefined : verificationResult.error
         verifiablePresentation = sdJwtVc
       } else if (format === ClaimFormat.MsoMdoc) {

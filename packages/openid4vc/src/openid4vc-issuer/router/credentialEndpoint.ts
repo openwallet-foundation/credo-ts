@@ -19,7 +19,6 @@ import {
   sendUnauthorizedError,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
@@ -149,7 +148,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
 
       const expiresAt =
         issuanceSession.expiresAt ??
-        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+        utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       // Verify the issuance session subject
       if (issuanceSession.authorization?.subject) {
@@ -254,7 +253,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
       }
 
       const createdAt = new Date()
-      const expiresAt = addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
+      const expiresAt = utils.addSecondsToDate(createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       issuanceSession = new OpenId4VcIssuanceSessionRecord({
         createdAt,

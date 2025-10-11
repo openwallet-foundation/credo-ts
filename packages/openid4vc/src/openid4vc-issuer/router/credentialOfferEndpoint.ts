@@ -2,8 +2,7 @@ import type { Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { joinUriParts } from '@credo-ts/core'
-import { addSecondsToDate } from '@openid4vc/utils'
+import { joinUriParts, utils } from '@credo-ts/core'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -71,7 +70,7 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
 
         const expiresAt =
           openId4VcIssuanceSession.expiresAt ??
-          addSecondsToDate(openId4VcIssuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+          utils.addSecondsToDate(openId4VcIssuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
         if (Date.now() > expiresAt.getTime()) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')

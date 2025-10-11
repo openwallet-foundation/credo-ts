@@ -9,7 +9,7 @@ import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../
 import type { OpenId4VcIssuerRecord } from '../repository'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { Kms, TypedArrayEncoder, joinUriParts } from '@credo-ts/core'
+import { Kms, TypedArrayEncoder, joinUriParts, utils } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 
 import {
@@ -29,7 +29,6 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
@@ -397,7 +396,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   // Grant authorization
   const kms = agentContext.resolve(Kms.KeyManagementApi)
   const authorizationCode = TypedArrayEncoder.toBase64URL(kms.randomBytes({ length: 32 }))
-  const authorizationCodeExpiresAt = addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
+  const authorizationCodeExpiresAt = utils.addSecondsToDate(new Date(), config.authorizationCodeExpiresInSeconds)
 
   issuanceSession.authorization = {
     ...issuanceSession.authorization,
