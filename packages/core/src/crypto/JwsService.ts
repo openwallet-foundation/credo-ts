@@ -13,8 +13,8 @@ import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
 import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
 import { X509Service } from './../modules/x509/X509Service'
 import { injectable } from '../plugins'
-import { isJsonObject } from '../types'
-import { Buffer, JsonEncoder, TypedArrayEncoder } from '../utils'
+import { type AnyUint8Array, isJsonObject } from '../types'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
 import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import type {
   Jws,
@@ -360,7 +360,7 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  payload: Buffer | JwtPayload
+  payload: AnyUint8Array | JwtPayload
   keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions

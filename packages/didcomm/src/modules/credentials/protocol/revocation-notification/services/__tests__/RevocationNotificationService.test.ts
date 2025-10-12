@@ -62,7 +62,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // @ts-expect-error
       const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
@@ -178,7 +177,6 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // @ts-expect-error
       const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({

@@ -28,7 +28,6 @@ import {
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
 import type { DidCommRouting } from '../../models'
 import { DidCommInboundMessageContext } from '../../models'
-import { DidCommDocumentService } from '../../services'
 import type { ParsedMessageType } from '../../util/messageType'
 import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
@@ -72,13 +71,11 @@ export class DidExchangeProtocol {
     connectionService: DidCommConnectionService,
     didRepository: DidRepository,
     jwsService: JwsService,
-    didcommDocumentService: DidCommDocumentService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.didRepository = didRepository
     this.jwsService = jwsService
-    this.didcommDocumentService = didcommDocumentService
     this.logger = logger
   }
 

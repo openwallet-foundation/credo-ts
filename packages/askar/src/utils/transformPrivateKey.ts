@@ -1,4 +1,4 @@
-import { Buffer, CredoError, Kms } from '@credo-ts/core'
+import { type AnyUint8Array, CredoError, Kms } from '@credo-ts/core'
 import { Key as AskarKey } from '@openwallet-foundation/askar-shared'
 import { jwkCrvToAskarAlg } from './askarKeyTypes'
 
@@ -31,7 +31,7 @@ export function transformPrivateKeyToPrivateJwk<Type extends Kms.KmsCreateKeyTyp
   privateKey,
 }: {
   type: Type
-  privateKey: Buffer
+  privateKey: AnyUint8Array
 }): { privateJwk: Kms.KmsJwkPrivateFromKmsJwkPublic<Kms.KmsJwkPublicFromCreateType<Type>> } {
   const askarAlgorithm = jwkCrvToAskarAlg[type.crv]
   if (!askarAlgorithm) {
@@ -78,7 +78,7 @@ export function transformSeedToPrivateJwk<Type extends Kms.KmsCreateKeyTypeOkp |
   seed,
 }: {
   type: Type
-  seed: Buffer
+  seed: AnyUint8Array
 }): { privateJwk: Kms.KmsJwkPrivateFromKmsJwkPublic<Kms.KmsJwkPublicFromCreateType<Type>> } {
   const askarAlgorithm = jwkCrvToAskarAlg[type.crv]
   if (!askarAlgorithm) {

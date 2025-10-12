@@ -1,8 +1,8 @@
 import type { HashName } from '../crypto/hashes'
 
 import { Hasher } from '../crypto/hashes'
-import type { AnyUint8Array } from '../types'
-import { Buffer } from './buffer'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
 import { VarintEncoder } from './VarintEncoder'
 
 type MultiHashNameMap = {
@@ -37,14 +37,14 @@ export class MultiHashEncoder {
    *
    * @returns a multihash
    */
-  public static encode(data: AnyUint8Array, hashName: HashName): Buffer {
+  public static encode(data: AnyUint8Array, hashName: HashName): Uint8ArrayBuffer {
     const hash = Hasher.hash(data, hashName)
     const hashCode = multiHashNameMap[hashName]
 
     const hashPrefix = VarintEncoder.encode(hashCode)
     const hashLengthPrefix = VarintEncoder.encode(hash.length)
 
-    return Buffer.concat([hashPrefix, hashLengthPrefix, hash])
+    return TypedArrayEncoder.concat([hashPrefix, hashLengthPrefix, hash])
   }
 
   /**
@@ -55,7 +55,7 @@ export class MultiHashEncoder {
    *
    * @returns object with the data and the hashing algorithm
    */
-  public static decode(data: AnyUint8Array): { data: Buffer; hashName: string } {
+  public static decode(data: AnyUint8Array): { data: Uint8ArrayBuffer; hashName: string } {
     const [hashPrefix, hashPrefixByteLength] = VarintEncoder.decode(data)
     const withoutHashPrefix = data.slice(hashPrefixByteLength)
 
@@ -69,7 +69,7 @@ export class MultiHashEncoder {
     }
 
     return {
-      data: Buffer.from(withoutLengthPrefix),
+      data: new Uint8Array(withoutLengthPrefix),
       hashName: multiHashCodeMap[hashPrefix],
     }
   }

@@ -1,5 +1,7 @@
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
+import { TypedArrayEncoder } from './TypedArrayEncoder'
 
 // biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class JsonEncoder {
@@ -9,7 +11,7 @@ export class JsonEncoder {
    * @param json the json object to encode into base64 string
    */
   public static toBase64(json: unknown) {
-    return JsonEncoder.toBuffer(json).toString('base64')
+    return Buffer.from(JsonEncoder.toString(json)).toString('base64')
   }
 
   /**
@@ -27,7 +29,7 @@ export class JsonEncoder {
    * @param base64 the base64 or base64url string to decode into json
    */
   public static fromBase64(base64: string) {
-    return JsonEncoder.fromBuffer(Buffer.from(base64, 'base64'))
+    return JsonEncoder.fromBuffer(TypedArrayEncoder.fromBase64(base64))
   }
 
   /**
@@ -53,7 +55,7 @@ export class JsonEncoder {
    *
    * @param json the json object to encode into buffer format
    */
-  public static toBuffer(json: unknown) {
+  public static toBuffer(json: unknown): Uint8ArrayBuffer {
     return Buffer.from(JsonEncoder.toString(json))
   }
 
@@ -62,7 +64,7 @@ export class JsonEncoder {
    *
    * @param buffer the buffer to decode into json
    */
-  public static fromBuffer(buffer: Buffer | Uint8Array) {
+  public static fromBuffer(buffer: Buffer | AnyUint8Array) {
     return JsonEncoder.fromString(Buffer.from(buffer).toString('utf-8'))
   }
 }

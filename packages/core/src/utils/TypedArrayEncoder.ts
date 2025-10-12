@@ -1,4 +1,4 @@
-import type { AnyUint8Array } from '../types'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { decodeFromBase58, encodeToBase58 } from './base58'
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
@@ -73,12 +73,20 @@ export class TypedArrayEncoder {
    *
    * @param str the string to decode into buffer format
    */
-  public static fromString(str: string): Buffer {
+  public static fromString(str: string): Uint8ArrayBuffer {
     return Buffer.from(str)
   }
 
   public static toUtf8String(buffer: Buffer | AnyUint8Array) {
     return Buffer.from(buffer).toString()
+  }
+
+  public static concat(entries: AnyUint8Array[]): Uint8ArrayBuffer {
+    return Buffer.concat(entries)
+  }
+
+  public static equals(firstBuffer: AnyUint8Array, otherBuffer: AnyUint8Array): boolean {
+    return Buffer.from(firstBuffer).equals(otherBuffer)
   }
 
   /**

@@ -528,7 +528,6 @@ describe('HederaLedgerService', () => {
       const result = await (service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
 
       expect(mockDidRepository.findCreatedDid).toHaveBeenCalledWith(mockAgentContext, 'issuer-id')
-      // @ts-expect-error
       expect(mockKms.getPublicKey).toHaveBeenCalledWith({ keyId: 'kms-key-id' })
       expect(await result.publicKey()).toEqual(privateKey.publicKey.toStringDer())
     })

@@ -55,8 +55,8 @@ import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementS
 import type {
   Agent,
   AgentDependencies,
+  AnyUint8Array,
   BaseEvent,
-  Buffer,
   InitConfig,
   InjectionToken,
   KeyDidCreateOptions,
@@ -190,7 +190,7 @@ export function getAgentOptions<
   } as const
 }
 
-export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: AnyUint8Array) {
   const { privateJwk } = transformPrivateKeyToPrivateJwk({
     privateKey,
     type: {

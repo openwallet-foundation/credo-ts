@@ -152,12 +152,10 @@ describe('IndyVdrIndyDidRegistrar', () => {
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-expect-error type check fails because method is private
     createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-expect-error type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -215,12 +213,10 @@ describe('IndyVdrIndyDidRegistrar', () => {
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-expect-error type check fails because method is private
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-expect-error type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-expect-error - method is private
@@ -228,12 +224,10 @@ describe('IndyVdrIndyDidRegistrar', () => {
       indyVdrIndyDidRegistrar,
       'createSetDidEndpointsRequest'
     )
-    // @ts-expect-error type check fails because method is private
     createSetDidEndpointsRequestSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     // @ts-expect-error - method is private
     const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
-    // @ts-expect-error type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -367,17 +361,14 @@ describe('IndyVdrIndyDidRegistrar', () => {
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-expect-error type check fails because method is private
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-expect-error type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     // @ts-expect-error - method is private
     const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
-    // @ts-expect-error type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const saveCalled = vi.fn()

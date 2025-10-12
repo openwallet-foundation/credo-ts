@@ -445,7 +445,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for wrong proof type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-expect-error
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -524,7 +523,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false when verification method not found in DID document', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-expect-error
       testProof.verificationMethod = `${issuerId}#key-01`
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)

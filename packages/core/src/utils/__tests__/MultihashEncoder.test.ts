@@ -1,6 +1,7 @@
 import { Hasher } from '../../crypto'
 import { Buffer } from '../buffer'
 import { MultiHashEncoder } from '../MultiHashEncoder'
+import { TypedArrayEncoder } from '../TypedArrayEncoder'
 
 const validData = Buffer.from('Hello World!')
 const validMultiHash = new Uint8Array([
@@ -14,7 +15,7 @@ describe('MultiHashEncoder', () => {
   describe('encode()', () => {
     it('encodes multihash', () => {
       const multihash = MultiHashEncoder.encode(validData, 'sha-256')
-      expect(multihash.equals(Buffer.from(validMultiHash))).toBe(true)
+      expect(TypedArrayEncoder.equals(multihash, validMultiHash)).toBe(true)
     })
   })
 
@@ -22,7 +23,7 @@ describe('MultiHashEncoder', () => {
     it('Decodes multihash', () => {
       const { data, hashName } = MultiHashEncoder.decode(validMultiHash)
       expect(hashName).toEqual('sha-256')
-      expect(data.equals(Buffer.from(validHash))).toBe(true)
+      expect(TypedArrayEncoder.equals(data, validHash)).toBe(true)
     })
 
     it('Decodes invalid multihash', () => {

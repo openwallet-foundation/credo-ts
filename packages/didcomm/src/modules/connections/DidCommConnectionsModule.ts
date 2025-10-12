@@ -113,7 +113,7 @@ export class DidCommConnectionsModule implements Module {
     messageHandlerRegistry.registerMessageHandler(
       new DidCommDidExchangeCompleteHandler(didExchangeProtocol, outOfBandService)
     )
-    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateHandler(didRotateService, connectionService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateAckHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommHangupHandler(didRotateService))
     messageHandlerRegistry.registerMessageHandler(new DidCommDidRotateProblemReportHandler(didRotateService))
