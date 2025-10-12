@@ -124,6 +124,9 @@ describe('W3cV2SdJwtCredentialService', () => {
     test('signs an ES256 JWT vc', async () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
 
+      const nowMock = vi.spyOn(Date, 'now')
+      nowMock.mockReturnValueOnce(1698151532000)
+
       const vcJwt = await w3cV2JwtCredentialService.signCredential(agentContext, {
         alg: KnownJwaSignatureAlgorithms.ES256,
         format: ClaimFormat.SdJwtW3cVc,
