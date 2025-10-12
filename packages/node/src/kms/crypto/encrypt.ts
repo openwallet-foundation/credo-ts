@@ -2,7 +2,7 @@ import type { CipherGCM } from 'node:crypto'
 
 import { Buffer } from 'node:buffer'
 import { createCipheriv, createSecretKey, randomBytes } from 'node:crypto'
-import { Kms } from '@credo-ts/core'
+import { type AnyUint8Array, Kms, type Uint8ArrayBuffer } from '@credo-ts/core'
 
 import { performSign } from './sign'
 
@@ -21,8 +21,8 @@ export const nodeSupportedEncryptionAlgorithms = [
 export async function performEncrypt(
   key: Kms.KmsJwkPrivateOct,
   dataEncryption: Kms.KmsEncryptDataEncryption,
-  data: Uint8Array
-): Promise<{ encrypted: Uint8Array; tag?: Uint8Array; iv: Uint8Array }> {
+  data: AnyUint8Array
+): Promise<{ encrypted: Uint8ArrayBuffer; tag?: Uint8ArrayBuffer; iv: AnyUint8Array }> {
   const secretKeyBytes = Buffer.from(key.k, 'base64url')
   const nodeKey = createSecretKey(secretKeyBytes)
 
@@ -109,7 +109,7 @@ export async function performEncrypt(
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
-    const tag = cipher.getAuthTag()
+    const tag = cipher.getAuthTag() as Uint8ArrayBuffer
 
     return {
       encrypted,
@@ -134,7 +134,7 @@ export async function performEncrypt(
     const encrypted = Buffer.concat([cipher.update(data), cipher.final()])
 
     // Get auth tag - must be saved to verify decryption
-    const tag = cipher.getAuthTag()
+    const tag = cipher.getAuthTag() as Uint8ArrayBuffer
 
     return {
       encrypted,

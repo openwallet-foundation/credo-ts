@@ -2,6 +2,7 @@ import { CheqdNetwork, type DIDDocument, type DidStdFee, VerificationMethods } f
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import {
   AgentContext,
+  type AnyUint8Array,
   DID_V1_CONTEXT_URL,
   type DidCreateOptions,
   type DidCreateResult,
@@ -12,6 +13,7 @@ import {
   type DidUpdateResult,
   Kms,
   SECURITY_JWS_CONTEXT_URL,
+  type Uint8ArrayBuffer,
   type XOR,
   getKmsKeyIdForVerifiacationMethod,
   getPublicJwkFromVerificationMethod,
@@ -582,7 +584,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
     }
 
     try {
-      let data: Uint8Array
+      let data: Uint8ArrayBuffer
       if (typeof resource.data === 'string') {
         data = TypedArrayEncoder.fromBase64(resource.data)
       } else if (typeof resource.data === 'object') {
@@ -637,7 +639,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
 
   private async signPayload(
     agentContext: AgentContext,
-    payload: Uint8Array,
+    payload: AnyUint8Array,
     verificationMethod: VerificationMethod[] = [],
     keys?: DidDocumentKey[]
   ) {
@@ -648,7 +650,7 @@ export class CheqdDidRegistrar implements DidRegistrar {
         const kmsKeyId = getKmsKeyIdForVerifiacationMethod(method, keys) ?? publicJwk.legacyKeyId
 
         const { signature } = await kms.sign({
-          data: payload as Uint8Array<ArrayBuffer>,
+          data: payload,
           algorithm: publicJwk.signatureAlgorithm,
           keyId: kmsKeyId,
         })

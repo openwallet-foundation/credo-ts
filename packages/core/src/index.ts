@@ -21,6 +21,8 @@ export type {
   SingleOrArray,
   Optional,
   NonEmptyArray,
+  Uint8ArrayBuffer,
+  AnyUint8Array,
 } from './types'
 export { mapNonEmptyArray, isNonEmptyArray } from './types'
 export { isJsonObject } from './types'

@@ -164,8 +164,8 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
   if (publicKey.kty === 'RSA') {
     const rsaPublicKey = new RSAPublicKey({
-      modulus: publicKey.modulus,
-      publicExponent: publicKey.exponent,
+      modulus: new Uint8Array(publicKey.modulus).buffer,
+      publicExponent: new Uint8Array(publicKey.exponent).buffer,
     })
 
     // 2. Encode the RSA public key to DER
@@ -173,7 +173,7 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
     return new SubjectPublicKeyInfo({
       algorithm: rsaKeyAlgorithmIdentifier,
-      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]),
+      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]).buffer,
     })
   }
 
@@ -188,6 +188,6 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
   return new SubjectPublicKeyInfo({
     algorithm: crvToAlgorithm[publicKey.crv],
-    subjectPublicKey: publicKey.publicKey,
+    subjectPublicKey: new Uint8Array(publicKey.publicKey).buffer,
   })
 }

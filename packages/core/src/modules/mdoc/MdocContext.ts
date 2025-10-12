@@ -18,7 +18,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input
-        return new Uint8Array(crypto.digest(digestAlgorithm, bytes))
+        return new Uint8Array(crypto.digest(digestAlgorithm, bytes.buffer as ArrayBuffer))
       },
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))

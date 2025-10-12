@@ -3,7 +3,7 @@ import type { NodeKmsSupportedEcCrvs } from './createKey'
 
 import { createECDH, createHash, getRandomValues, subtle } from 'node:crypto'
 
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { type AnyUint8Array, Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 const nodeSupportedEcdhKeyDerivationEcCrv = [
   'P-256',
@@ -163,8 +163,8 @@ async function deriveKeyEcdhEs(options: {
    * This is only used for the AlgorithmID in KDF
    */
   usageAlgorithm: string
-  apv?: Uint8Array
-  apu?: Uint8Array
+  apv?: AnyUint8Array
+  apu?: AnyUint8Array
   privateJwk: Kms.KmsJwkPrivateEc | Kms.KmsJwkPrivateOkp
   publicJwk: Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp
 }): Promise<Buffer> {

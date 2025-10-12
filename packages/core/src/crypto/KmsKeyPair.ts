@@ -6,6 +6,7 @@ import { VerificationMethod } from '../modules/dids'
 import { getPublicJwkFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi, PublicJwk } from '../modules/kms'
 import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { JsonTransformer, MessageValidator } from '../utils'
 import { Buffer } from '../utils/buffer'
 
@@ -50,9 +51,9 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
     /**
      * This method returns a wrapped wallet.sign method. The method is being wrapped so we can covert between Uint8Array and Buffer. This is to make it compatible with the external signature libraries.
      */
-    public signer(): { sign: (data: { data: Uint8Array | Uint8Array[] }) => Promise<Uint8Array> } {
+    public signer(): { sign: (data: { data: AnyUint8Array | AnyUint8Array[] }) => Promise<Uint8ArrayBuffer> } {
       // wrap function for conversion
-      const wrappedSign = async (data: { data: Uint8Array | Uint8Array[] }): Promise<Uint8Array> => {
+      const wrappedSign = async (data: { data: AnyUint8Array | AnyUint8Array[] }): Promise<Uint8ArrayBuffer> => {
         if (Array.isArray(data.data)) {
           throw new CredoError('Signing array of data entries is not supported')
         }
@@ -76,11 +77,11 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
      * This method returns a wrapped wallet.verify method. The method is being wrapped so we can covert between Uint8Array and Buffer. This is to make it compatible with the external signature libraries.
      */
     public verifier(): {
-      verify: (data: { data: Uint8Array | Uint8Array[]; signature: Uint8Array }) => Promise<boolean>
+      verify: (data: { data: AnyUint8Array | AnyUint8Array[]; signature: AnyUint8Array }) => Promise<boolean>
     } {
       const wrappedVerify = async (data: {
-        data: Uint8Array | Uint8Array[]
-        signature: Uint8Array
+        data: AnyUint8Array | AnyUint8Array[]
+        signature: AnyUint8Array
       }): Promise<boolean> => {
         if (Array.isArray(data.data)) {
           throw new CredoError('Verifying array of data entries is not supported')
@@ -103,14 +104,14 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
       }
     }
 
-    public get publicKeyBuffer(): Uint8Array {
+    public get publicKeyBuffer(): Uint8ArrayBuffer {
       const publicKey = this.publicJwk.publicKey
 
       if (publicKey.kty === 'RSA') {
         throw new CredoError(`kty 'RSA' not supported for publicKeyBuffer`)
       }
 
-      return publicKey.publicKey
+      return publicKey.publicKey as Uint8ArrayBuffer
     }
   }
 }

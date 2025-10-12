@@ -1,3 +1,4 @@
+import type { AnyUint8Array } from '../../../../../types'
 import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
 import type { KmsJwkPublicOkp } from './okpJwk'
@@ -35,12 +36,12 @@ export class X25519PublicJwk implements PublicJwkType<Jwk> {
     return okpPublicJwkToPublicKey(this.jwk)
   }
 
-  public static fromPublicKey(publicKey: Uint8Array) {
+  public static fromPublicKey(publicKey: AnyUint8Array) {
     const jwk = okpPublicKeyToPublicJwk(publicKey, 'X25519')
     return new X25519PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: Uint8Array) {
+  public static fromMulticodec(multicodec: AnyUint8Array) {
     const jwk = okpPublicKeyToPublicJwk(multicodec, 'X25519')
     return new X25519PublicJwk(jwk)
   }

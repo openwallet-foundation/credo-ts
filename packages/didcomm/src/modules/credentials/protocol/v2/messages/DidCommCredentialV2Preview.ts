@@ -21,13 +21,14 @@ export class DidCommCredentialV2Preview {
     }
   }
 
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/credential-preview')
+
   @Expose({ name: '@type' })
   @IsValidMessageType(DidCommCredentialV2Preview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
   public readonly type = DidCommCredentialV2Preview.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/2.0/credential-preview')
 
   @Type(() => DidCommCredentialPreviewAttribute)
   @ValidateNested({ each: true })

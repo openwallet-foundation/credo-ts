@@ -16,6 +16,7 @@ import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
 import { TypedArrayEncoder } from '../../utils'
 
+import type { AnyUint8Array } from '../../types'
 import { PublicJwk, assymetricPublicJwkMatches } from '../kms'
 import { X509Error } from './X509Error'
 import {
@@ -54,13 +55,13 @@ export enum X509ExtendedKeyUsage {
 
 export type X509CertificateOptions = {
   publicJwk: PublicJwk
-  privateKey?: Uint8Array
+  privateKey?: AnyUint8Array
   x509Certificate: x509.X509Certificate
 }
 
 export class X509Certificate {
   public publicJwk: PublicJwk
-  public privateKey?: Uint8Array
+  public privateKey?: AnyUint8Array
   private x509Certificate: x509.X509Certificate
 
   private constructor(options: X509CertificateOptions) {
@@ -81,7 +82,7 @@ export class X509Certificate {
     return this.publicJwk.hasKeyId
   }
 
-  public static fromRawCertificate(rawCertificate: Uint8Array): X509Certificate {
+  public static fromRawCertificate(rawCertificate: AnyUint8Array): X509Certificate {
     const certificate = new x509.X509Certificate(rawCertificate)
     return X509Certificate.parseCertificate(certificate)
   }

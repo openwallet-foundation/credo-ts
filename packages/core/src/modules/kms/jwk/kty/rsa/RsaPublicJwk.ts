@@ -1,3 +1,4 @@
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from '../../jwa'
@@ -47,15 +48,15 @@ export class RsaPublicJwk implements PublicJwkType<KmsJwkPublicRsa> {
     return null
   }
 
-  public get multicodec(): Uint8Array {
+  public get multicodec(): Uint8ArrayBuffer {
     throw new KeyManagementError('multicodec not supported for RsaPublicJwk')
   }
 
-  public static fromPublicKey(publicKey: { modulus: Uint8Array; exponent: Uint8Array }) {
+  public static fromPublicKey(publicKey: { modulus: AnyUint8Array; exponent: AnyUint8Array }) {
     return new RsaPublicJwk(rsaPublicKeyToPublicJwk(publicKey))
   }
 
-  public static fromMulticodec(_multicodec: Uint8Array): RsaPublicJwk {
+  public static fromMulticodec(_multicodec: AnyUint8Array): RsaPublicJwk {
     throw new KeyManagementError('fromMulticodec not supported for RsaPublicJwk')
   }
 }

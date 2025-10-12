@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { ZodValidationError } from '../error'
+import type { AnyUint8Array } from '../types'
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export type zBaseSchema = z.Schema<any, any, any>
@@ -30,4 +31,6 @@ const zOptionalToUndefined = <const TItem extends zBaseSchema>(item: TItem) =>
 
 const zBase64Url = z.string().regex(/[a-zA-Z0-9_-]+/, 'Must be a base64url string')
 
-export { zUniqueArray, zOptionalToUndefined, zBase64Url }
+const zAnyUint8Array = z.instanceof<{ new (): AnyUint8Array }>(Uint8Array)
+
+export { zUniqueArray, zOptionalToUndefined, zBase64Url, zAnyUint8Array }

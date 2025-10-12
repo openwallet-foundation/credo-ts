@@ -1,4 +1,4 @@
-import { type CanBePromise, Kms } from '@credo-ts/core'
+import { type AnyUint8Array, type CanBePromise, Kms } from '@credo-ts/core'
 
 import { Buffer } from 'node:buffer'
 import {
@@ -19,8 +19,8 @@ const verify = promisify(_verify)
 export function performVerify(
   key: Kms.KmsJwkPrivate | Kms.KmsJwkPublicEc | Kms.KmsJwkPublicOkp | Kms.KmsJwkPublicRsa,
   algorithm: Kms.KnownJwaSignatureAlgorithm,
-  data: Uint8Array,
-  signature: Uint8Array
+  data: AnyUint8Array,
+  signature: AnyUint8Array
 ): CanBePromise<boolean> {
   const nodeAlgorithm = mapJwaSignatureAlgorithmToNode(algorithm)
   const nodeKey =

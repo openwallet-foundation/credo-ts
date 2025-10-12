@@ -70,8 +70,8 @@ catalogs:
       specifier: ^4.10.0
       version: 4.10.0
     typescript:
-      specifier: ~5.8.3
-      version: 5.8.3
+      specifier: ~5.9.3
+      version: 5.9.3
     vitest:
       specifier: ^3.2.4
       version: 3.2.4
@@ -205,13 +205,13 @@ importers:
         version: 7.1.4
       tsdown:
         specifier: ^0.15.6
-        version: 0.15.6(oxc-resolver@11.9.0)(typescript@5.8.3)
+        version: 0.15.6(oxc-resolver@11.9.0)(typescript@5.9.3)
       tsyringe:
         specifier: 'catalog:'
         version: 4.10.0
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
       undici:
         specifier: ^6.20.1
         version: 6.21.0
@@ -364,7 +364,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/anoncreds:
     dependencies:
@@ -404,7 +404,7 @@ importers:
         version: 7.8.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/askar:
     dependencies:
@@ -444,7 +444,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/askar-to-drizzle-storage-migration:
     dependencies:
@@ -457,13 +457,16 @@ importers:
       '@credo-ts/drizzle-storage':
         specifier: workspace:*
         version: link:../drizzle-storage
+      '@credo-ts/tenants':
+        specifier: workspace:*
+        version: link:../tenants
     devDependencies:
       '@openwallet-foundation/askar-shared':
         specifier: 'catalog:'
         version: 0.4.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/cheqd:
     dependencies:
@@ -506,7 +509,7 @@ importers:
     devDependencies:
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/core:
     dependencies:
@@ -599,7 +602,7 @@ importers:
         version: 0.14.1
       dcql:
         specifier: 2.0.0-alpha-20250916080434
-        version: 2.0.0-alpha-20250916080434(typescript@5.8.3)
+        version: 2.0.0-alpha-20250916080434(typescript@5.9.3)
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
@@ -657,7 +660,7 @@ importers:
         version: 4.10.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/didcomm:
     dependencies:
@@ -694,7 +697,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/drizzle-storage:
     dependencies:
@@ -758,7 +761,7 @@ importers:
         version: 8.16.3
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/drpc:
     dependencies:
@@ -783,7 +786,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/hedera:
     dependencies:
@@ -854,7 +857,7 @@ importers:
         version: 0.4.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/indy-vdr:
     dependencies:
@@ -885,7 +888,7 @@ importers:
         version: 7.8.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/node:
     dependencies:
@@ -925,7 +928,7 @@ importers:
         version: 14.0.10
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/openid4vc:
     dependencies:
@@ -968,7 +971,7 @@ importers:
         version: 14.0.10
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/question-answer:
     dependencies:
@@ -996,7 +999,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/react-native:
     dependencies:
@@ -1024,7 +1027,7 @@ importers:
         version: 1.11.0(react-native@0.82.0(@babel/core@7.28.4)(@react-native-community/cli@10.2.7(@babel/core@7.28.4))(react@18.3.1))
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/redis-cache:
     dependencies:
@@ -1037,7 +1040,7 @@ importers:
     devDependencies:
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/tenants:
     dependencies:
@@ -1059,7 +1062,7 @@ importers:
         version: 0.2.2
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   packages/webvh:
     dependencies:
@@ -1087,7 +1090,7 @@ importers:
     devDependencies:
       typescript:
         specifier: 'catalog:'
-        version: 5.8.3
+        version: 5.9.3
 
   samples/extension-module:
     dependencies:
@@ -8082,8 +8085,8 @@ packages:
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
 
-  typescript@5.8.3:
-    resolution: {integrity: sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==}
+  typescript@5.9.3:
+    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -13032,9 +13035,9 @@ snapshots:
   dayjs@1.11.18:
     optional: true
 
-  dcql@2.0.0-alpha-20250916080434(typescript@5.8.3):
+  dcql@2.0.0-alpha-20250916080434(typescript@5.9.3):
     dependencies:
-      valibot: 1.0.0-beta.8(typescript@5.8.3)
+      valibot: 1.0.0-beta.8(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
@@ -16394,7 +16397,7 @@ snapshots:
     dependencies:
       glob: 10.4.5
 
-  rolldown-plugin-dts@0.16.11(oxc-resolver@11.9.0)(rolldown@1.0.0-beta.42)(typescript@5.8.3):
+  rolldown-plugin-dts@0.16.11(oxc-resolver@11.9.0)(rolldown@1.0.0-beta.42)(typescript@5.9.3):
     dependencies:
       '@babel/generator': 7.28.3
       '@babel/parser': 7.28.4
@@ -16407,7 +16410,7 @@ snapshots:
       magic-string: 0.30.19
       rolldown: 1.0.0-beta.42
     optionalDependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
     transitivePeerDependencies:
       - oxc-resolver
       - supports-color
@@ -17042,7 +17045,7 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  tsdown@0.15.6(oxc-resolver@11.9.0)(typescript@5.8.3):
+  tsdown@0.15.6(oxc-resolver@11.9.0)(typescript@5.9.3):
     dependencies:
       ansis: 4.2.0
       cac: 6.7.14
@@ -17052,14 +17055,14 @@ snapshots:
       empathic: 2.0.0
       hookable: 5.5.3
       rolldown: 1.0.0-beta.42
-      rolldown-plugin-dts: 0.16.11(oxc-resolver@11.9.0)(rolldown@1.0.0-beta.42)(typescript@5.8.3)
+      rolldown-plugin-dts: 0.16.11(oxc-resolver@11.9.0)(rolldown@1.0.0-beta.42)(typescript@5.9.3)
       semver: 7.7.2
       tinyexec: 1.0.1
       tinyglobby: 0.2.15
       tree-kill: 1.2.2
       unconfig: 7.3.3
     optionalDependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
     transitivePeerDependencies:
       - '@ts-macro/tsc'
       - '@typescript/native-preview'
@@ -17167,7 +17170,7 @@ snapshots:
 
   typedarray@0.0.6: {}
 
-  typescript@5.8.3: {}
+  typescript@5.9.3: {}
 
   ua-parser-js@1.0.41: {}
 
@@ -17272,9 +17275,9 @@ snapshots:
 
   uuid@8.3.2: {}
 
-  valibot@1.0.0-beta.8(typescript@5.8.3):
+  valibot@1.0.0-beta.8(typescript@5.9.3):
     optionalDependencies:
-      typescript: 5.8.3
+      typescript: 5.9.3
 
   valid-url@1.0.9: {}
 

@@ -1,4 +1,4 @@
-import { type AgentContext, CredoError } from '@credo-ts/core'
+import { type AgentContext, type AnyUint8Array, CredoError } from '@credo-ts/core'
 import {
   DidsApi,
   Hasher,
@@ -79,7 +79,7 @@ export class EddsaJcs2022Cryptosuite {
     return hashData
   }
 
-  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
+  public async proofVerification(hashData: AnyUint8Array, proofBytes: AnyUint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicJwk = await this._publicJwkFromId(options.verificationMethod)
     const verificationResult = await this.keyApi.verify({

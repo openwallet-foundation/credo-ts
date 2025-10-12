@@ -1,6 +1,8 @@
+import type { Uint8ArrayBuffer } from '../types'
+
 // Question: Spec isn't clear about the endianness. Assumes big-endian here
 // since ACA-Py uses big-endian.
-export default function timestamp(): Uint8Array {
+export default function timestamp(): Uint8ArrayBuffer {
   let time = Date.now()
   const bytes = []
   for (let i = 0; i < 8; i++) {

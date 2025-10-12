@@ -15,6 +15,7 @@ import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
 import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 
 import { KeyManagementApi, PublicJwk } from '../../modules/kms'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../types'
 import { Hasher } from '../hashes'
 import { CredoWebCryptoError } from './CredoWebCryptoError'
 import { CredoWebCryptoKey } from './CredoWebCryptoKey'
@@ -33,7 +34,11 @@ export class CredoWalletWebCrypto {
     return this.kms.randomBytes({ length: array.byteLength }) as unknown as T
   }
 
-  public async sign(key: CredoWebCryptoKey, message: Uint8Array, algorithm: KeySignParams): Promise<Uint8Array> {
+  public async sign(
+    key: CredoWebCryptoKey,
+    message: AnyUint8Array,
+    algorithm: KeySignParams
+  ): Promise<Uint8ArrayBuffer> {
     const jwaAlgorithm = keyParamsToJwaAlgorithm(algorithm, key)
 
     const keyId = key.publicJwk.keyId
@@ -49,8 +54,8 @@ export class CredoWalletWebCrypto {
   public async verify(
     key: CredoWebCryptoKey,
     algorithm: KeyVerifyParams,
-    message: Uint8Array,
-    signature: Uint8Array
+    message: AnyUint8Array,
+    signature: AnyUint8Array
   ): Promise<boolean> {
     const publicKey = key.publicJwk.publicKey
 
@@ -108,7 +113,7 @@ export class CredoWalletWebCrypto {
 
   public async importKey(
     format: KeyFormat,
-    keyData: Uint8Array | JsonWebKey,
+    keyData: AnyUint8Array | JsonWebKey,
     algorithm: KeyImportParams,
     extractable: boolean,
     keyUsages: Array<KeyUsage>
@@ -127,7 +132,7 @@ export class CredoWalletWebCrypto {
         return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
       }
       case 'spki': {
-        const subjectPublicKey = AsnParser.parse(keyData as Uint8Array, SubjectPublicKeyInfo)
+        const subjectPublicKey = AsnParser.parse(keyData as AnyUint8Array, SubjectPublicKeyInfo)
         const publicJwk = spkiToPublicJwk(subjectPublicKey)
 
         return new CredoWebCryptoKey(publicJwk, algorithm as KeyGenAlgorithm, extractable, 'public', keyUsages)
@@ -137,7 +142,7 @@ export class CredoWalletWebCrypto {
     }
   }
 
-  public async exportKey(format: KeyFormat, key: CredoWebCryptoKey): Promise<Uint8Array | JsonWebKey> {
+  public async exportKey(format: KeyFormat, key: CredoWebCryptoKey): Promise<Uint8ArrayBuffer | JsonWebKey> {
     switch (format.toLowerCase()) {
       case 'jwk': {
         return key.publicJwk.toJson()

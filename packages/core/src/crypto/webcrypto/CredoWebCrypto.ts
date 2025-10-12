@@ -22,6 +22,6 @@ export class CredoWebCrypto extends core.Crypto {
   }
 
   public digest(algorithm: string, data: ArrayBuffer): ArrayBuffer {
-    return Hasher.hash(new Uint8Array(data), algorithm)
+    return Hasher.hash(new Uint8Array(data), algorithm).buffer
   }
 }

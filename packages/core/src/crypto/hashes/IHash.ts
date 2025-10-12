@@ -1,3 +1,5 @@
+import type { Uint8ArrayBuffer } from '../../types'
+
 export interface IHash {
-  hash(data: Uint8Array): Uint8Array
+  hash(data: Uint8ArrayBuffer): Uint8ArrayBuffer
 }

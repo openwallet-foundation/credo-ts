@@ -5,6 +5,7 @@ import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import type { LdKeyPair } from '../models/LdKeyPair'
 
 import { CredoError } from '../../../../error'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../types'
 import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
 import { suites } from '../libraries/jsonld-signatures'
 
@@ -72,7 +73,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    *
    * @returns The proof containing the signature value.
    */
-  public async sign(options: { verifyData: Uint8Array; proof: Proof }) {
+  public async sign(options: { verifyData: AnyUint8Array; proof: Proof }) {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
       throw new Error('A signer API has not been specified.')
     }
@@ -117,7 +118,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
    * @returns Resolves with the verification result.
    */
   public async verifySignature(options: {
-    verifyData: Uint8Array
+    verifyData: AnyUint8Array
     verificationMethod: VerificationMethod
     proof: Proof
   }) {
@@ -251,7 +252,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
  * @param {Uint8Array} options.verifyData - Payload to sign/verify.
  * @returns {Uint8Array} A combined byte array for signing.
  */
-function _createJws(options: { encodedHeader: string; verifyData: Uint8Array }): Uint8Array {
+function _createJws(options: { encodedHeader: string; verifyData: AnyUint8Array }): Uint8ArrayBuffer {
   const encodedHeaderBytes = TypedArrayEncoder.fromString(`${options.encodedHeader}.`)
 
   // concatenate the two uint8arrays

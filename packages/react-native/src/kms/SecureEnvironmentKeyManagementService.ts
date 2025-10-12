@@ -1,4 +1,4 @@
-import type { AgentContext } from '@credo-ts/core'
+import type { AgentContext, AnyUint8Array, Uint8ArrayBuffer } from '@credo-ts/core'
 
 import { Kms, utils } from '@credo-ts/core'
 
@@ -117,7 +117,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       // Kms.assertKeyAllowsSign(publicJwk)
 
       // Perform the signing operation
-      const signature = await secureEnvironment.sign(options.keyId, options.data)
+      const signature = (await secureEnvironment.sign(options.keyId, options.data)) as Uint8ArrayBuffer
 
       return {
         signature,
@@ -135,7 +135,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     throw new Kms.KeyManagementError(`verification of signatures is not supported for backend '${this.backend}'`)
   }
 
-  private publicJwkFromPublicKeyBytes(key: Uint8Array, keyId: string) {
+  private publicJwkFromPublicKeyBytes(key: AnyUint8Array, keyId: string) {
     const publicJwk = Kms.PublicJwk.fromPublicKey<Kms.P256PublicJwk['publicKey']>({
       kty: 'EC',
       crv: 'P-256',
@@ -152,7 +152,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     const secureEnvironment = await this.secureEnvironment
 
     try {
-      const publicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(keyId)
+      const publicKeyBytes = (await secureEnvironment.getPublicBytesForKeyId(keyId)) as Uint8ArrayBuffer
       return this.publicJwkFromPublicKeyBytes(publicKeyBytes, keyId)
     } catch (error) {
       if (error instanceof secureEnvironment.KeyNotFoundError) {

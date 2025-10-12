@@ -1,6 +1,6 @@
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
 
-import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
+import { type AgentContext, type AnyUint8Array, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import {
   CryptoBox,
   Jwk,
@@ -692,7 +692,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private keyFromSecretBytesAndEncryptionAlgorithm(
-    secretBytes: Uint8Array,
+    secretBytes: AnyUint8Array,
     algorithm: AskarSupportedEncryptionOptions['algorithm']
   ) {
     const askarEncryptionAlgorithm = jwkEncToAskarAlg[algorithm]

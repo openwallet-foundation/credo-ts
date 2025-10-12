@@ -6,6 +6,7 @@ import jsonld from '../../libraries/jsonld'
 import type { JwsLinkedDataSignatureOptions } from '../JwsLinkedDataSignature'
 import { JwsLinkedDataSignature } from '../JwsLinkedDataSignature'
 
+import type { AnyUint8Array } from '../../../../../types'
 import { Ed25519PublicJwk, PublicJwk } from '../../../../kms'
 import { ED25519_SUITE_CONTEXT_URL_2020 } from './constants'
 import { ed25519Signature2020Context } from './context2020'
@@ -177,7 +178,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    *
    * @returns The proof containing the signature value.
    */
-  public async sign(options: { verifyData: Uint8Array; proof: Proof }) {
+  public async sign(options: { verifyData: AnyUint8Array; proof: Proof }) {
     if (!(this.signer && typeof this.signer.sign === 'function')) {
       throw new Error('A signer API has not been specified.')
     }
@@ -198,7 +199,7 @@ export class Ed25519Signature2020 extends JwsLinkedDataSignature {
    * @returns Resolves with the verification result.
    */
   public async verifySignature(options: {
-    verifyData: Uint8Array
+    verifyData: AnyUint8Array
     verificationMethod: VerificationMethod
     proof: Proof
   }) {
