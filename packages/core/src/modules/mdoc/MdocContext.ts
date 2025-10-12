@@ -4,7 +4,7 @@ import { hkdf } from '@noble/hashes/hkdf.js'
 import { sha256 } from '@noble/hashes/sha2.js'
 import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
-import { Buffer, TypedArrayEncoder } from '../../utils'
+import { TypedArrayEncoder } from '../../utils'
 import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { X509Certificate, X509Service } from '../x509'
 
@@ -16,7 +16,15 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
     crypto: {
       digest: async (input) => {
         const { bytes, digestAlgorithm } = input
-        return new Uint8Array(crypto.digest(digestAlgorithm, bytes.buffer as ArrayBuffer))
+
+        return new Uint8Array(
+          crypto.digest(
+            digestAlgorithm,
+            // NOTE: extra Uint8Array wrapping is needed here, somehow if we use `bytes.buffer` directly
+            // it's not working. Maybe due to Uint8array lengt
+            new Uint8Array(bytes).buffer
+          )
+        )
       },
       random: (length) => {
         return crypto.getRandomValues(new Uint8Array(length))
@@ -25,7 +33,7 @@ export const getMdocContext = (agentContext: AgentContext): MdocContext => {
         const { privateKey, publicKey, sessionTranscriptBytes } = input
         const ikm = p256.getSharedSecret(privateKey, publicKey, true).slice(1)
         const salt = Hasher.hash(sessionTranscriptBytes, 'sha-256')
-        const info = Buffer.from('EMacKey', 'utf-8')
+        const info = TypedArrayEncoder.fromString('EMacKey')
         const hk1 = hkdf(sha256, ikm, salt, info, 32)
 
         return {

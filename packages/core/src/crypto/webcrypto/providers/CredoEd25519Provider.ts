@@ -18,7 +18,7 @@ export class CredoEd25519Provider extends core.Ed25519Provider {
   }
 
   public async onSign(algorithm: Ed25519Params, key: CredoWebCryptoKey, data: ArrayBuffer): Promise<ArrayBuffer> {
-    return (await this.walletWebCrypto.sign(key, new Uint8Array(data), algorithm)).buffer
+    return new Uint8Array(await this.walletWebCrypto.sign(key, new Uint8Array(data), algorithm)).buffer
   }
 
   public async onVerify(
@@ -46,7 +46,7 @@ export class CredoEd25519Provider extends core.Ed25519Provider {
 
   public async onExportKey(format: KeyFormat, key: CredoWebCryptoKey): Promise<JsonWebKey | ArrayBuffer> {
     const exported = await this.walletWebCrypto.exportKey(format, key)
-    if (exported instanceof Uint8Array) return exported.buffer
+    if (exported instanceof Uint8Array) return new Uint8Array(exported).buffer
     return exported
   }
 

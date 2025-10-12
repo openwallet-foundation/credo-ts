@@ -7,7 +7,6 @@ import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKey
 import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
 import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { JsonTransformer, MessageValidator } from '../utils'
-import { Buffer } from '../utils/buffer'
 
 interface KmsKeyPairOptions extends LdKeyPairOptions {
   publicJwk: PublicJwk
@@ -89,7 +88,7 @@ export function createKmsKeyPairClass(agentContext: AgentContext) {
 
         const { verified } = await kms.verify({
           data: data.data,
-          signature: Buffer.from(data.signature),
+          signature: data.signature,
           key: {
             publicJwk: this.publicJwk.toJson(),
           },
