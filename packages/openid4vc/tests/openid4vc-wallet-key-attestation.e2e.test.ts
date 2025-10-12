@@ -58,111 +58,119 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule({
-        issuer: {
-          baseUrl: issuerBaseUrl,
-          getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
-            if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
-              const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
-                verifierId: issuanceSession.issuerId,
-                requestSigner: {
-                  method: 'x5c',
-                  x5c: [issuer.certificate],
-                },
-                responseMode: 'direct_post.jwt',
-                dcql: {
-                  query: {
-                    credentials: [
-                      {
-                        id: 'e498bd12-be8f-4884-8ffe-2704176b99be',
-                        format: 'vc+sd-jwt',
-                        claims: [
-                          {
-                            path: ['given_name'],
-                          },
-                          {
-                            path: ['family_name'],
-                          },
-                        ],
-                        meta: {
-                          vct_values: ['urn:eu.europa.ec.eudi:pid:1'],
-                        },
-                      },
-                    ],
+    issuer = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule({
+          issuer: {
+            baseUrl: issuerBaseUrl,
+            getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
+              if (scopes.includes(universityDegreeCredentialConfigurationSupportedMdoc.scope)) {
+                const createRequestReturn = await issuer.agent.openid4vc.verifier.createAuthorizationRequest({
+                  verifierId: issuanceSession.issuerId,
+                  requestSigner: {
+                    method: 'x5c',
+                    x5c: [issuer.certificate],
                   },
-                },
-              })
-
-              return {
-                ...createRequestReturn,
-                scopes: [universityDegreeCredentialConfigurationSupportedMdoc.scope],
-              }
-            }
-
-            throw new Error('Unsupported scope values')
-          },
-          credentialRequestToCredentialMapper: async ({ holderBinding, credentialConfiguration }) => {
-            if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-              if (holderBinding.bindingMethod !== 'jwk') {
-                throw new CredoError('Expected jwk binding method')
-              }
-              expect(holderBinding.keyAttestation?.payload.attested_keys).toHaveLength(10)
-              expect(holderBinding.keyAttestation).toEqual({
-                payload: {
-                  iat: expect.any(Number),
-                  exp: expect.any(Number),
-                  attested_keys: expect.any(Array),
-                  key_storage: ['iso_18045_high'],
-                  user_authentication: ['iso_18045_high'],
-                },
-                header: {
-                  alg: 'ES256',
-                  typ: 'keyattestation+jwt',
-                  x5c: [expect.any(String)],
-                },
-                signer: {
-                  method: 'x5c',
-                  x5c: [expect.any(String)],
-                  alg: Kms.KnownJwaSignatureAlgorithms.ES256,
-                  publicJwk: expect.any(Object),
-                },
-              })
-
-              return {
-                type: 'credentials',
-                format: OpenId4VciCredentialFormatProfile.MsoMdoc,
-                credentials: holderBinding.keys.map((holderBinding, index) => ({
-                  docType: credentialConfiguration.doctype,
-                  holderKey: holderBinding.jwk,
-                  issuerCertificate: issuer.certificate,
-                  namespaces: {
-                    [credentialConfiguration.doctype]: {
-                      index,
+                  responseMode: 'direct_post.jwt',
+                  dcql: {
+                    query: {
+                      credentials: [
+                        {
+                          id: 'e498bd12-be8f-4884-8ffe-2704176b99be',
+                          format: 'vc+sd-jwt',
+                          claims: [
+                            {
+                              path: ['given_name'],
+                            },
+                            {
+                              path: ['family_name'],
+                            },
+                          ],
+                          meta: {
+                            vct_values: ['urn:eu.europa.ec.eudi:pid:1'],
+                          },
+                        },
+                      ],
                     },
                   },
-                  validityInfo: {
-                    validFrom: new Date('2024-01-01'),
-                    validUntil: new Date('2050-01-01'),
-                  },
-                })),
+                })
+
+                return {
+                  ...createRequestReturn,
+                  scopes: [universityDegreeCredentialConfigurationSupportedMdoc.scope],
+                }
               }
-            }
 
-            throw new Error('not supported')
+              throw new Error('Unsupported scope values')
+            },
+            credentialRequestToCredentialMapper: async ({ holderBinding, credentialConfiguration }) => {
+              if (credentialConfiguration.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+                if (holderBinding.bindingMethod !== 'jwk') {
+                  throw new CredoError('Expected jwk binding method')
+                }
+                expect(holderBinding.keyAttestation?.payload.attested_keys).toHaveLength(10)
+                expect(holderBinding.keyAttestation).toEqual({
+                  payload: {
+                    iat: expect.any(Number),
+                    exp: expect.any(Number),
+                    attested_keys: expect.any(Array),
+                    key_storage: ['iso_18045_high'],
+                    user_authentication: ['iso_18045_high'],
+                  },
+                  header: {
+                    alg: 'ES256',
+                    typ: 'keyattestation+jwt',
+                    x5c: [expect.any(String)],
+                  },
+                  signer: {
+                    method: 'x5c',
+                    x5c: [expect.any(String)],
+                    alg: Kms.KnownJwaSignatureAlgorithms.ES256,
+                    publicJwk: expect.any(Object),
+                  },
+                })
+
+                return {
+                  type: 'credentials',
+                  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+                  credentials: holderBinding.keys.map((holderBinding, index) => ({
+                    docType: credentialConfiguration.doctype,
+                    holderKey: holderBinding.jwk,
+                    issuerCertificate: issuer.certificate,
+                    namespaces: {
+                      [credentialConfiguration.doctype]: {
+                        index,
+                      },
+                    },
+                    validityInfo: {
+                      validFrom: new Date('2024-01-01'),
+                      validUntil: new Date('2050-01-01'),
+                    },
+                  })),
+                }
+              }
+
+              throw new Error('not supported')
+            },
           },
-        },
-        verifier: {
-          baseUrl: verifierBaseUrl,
-        },
-      }),
-      inMemory: new InMemoryWalletModule({}),
-    })
+          verifier: {
+            baseUrl: verifierBaseUrl,
+          },
+        }),
+        inMemory: new InMemoryWalletModule({}),
+      },
+      undefined,
+      global.fetch
+    )
 
-    holder = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule(),
-      inMemory: new InMemoryWalletModule({}),
-    })
+    holder = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule(),
+        inMemory: new InMemoryWalletModule({}),
+      },
+      undefined,
+      global.fetch
+    )
 
     const walletProviderCertificate = await holder.agent.x509.createCertificate({
       authorityKey: Kms.PublicJwk.fromPublicJwk(

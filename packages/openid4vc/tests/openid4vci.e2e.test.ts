@@ -37,7 +37,6 @@ import {
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
-const _verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express
