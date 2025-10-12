@@ -58,6 +58,7 @@ const agent = new Agent(
 
 agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
 Date.prototype.getTime = vi.fn(() => 1698151532000)
+Date.now = vi.fn(() => 1698151532000)
 
 vi.mock('../repository/SdJwtVcRepository')
 const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
@@ -923,6 +924,7 @@ describe('SdJwtVcService', () => {
       x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
 
       Date.prototype.getTime = vi.fn(() => 1717498204 * 1000)
+      Date.now = vi.fn(() => 1717498204 * 1000)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
@@ -930,6 +932,7 @@ describe('SdJwtVcService', () => {
       })
 
       Date.prototype.getTime = vi.fn(() => 1698151532000)
+      Date.now = vi.fn(() => 1698151532000)
 
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
       expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
@@ -1143,11 +1146,13 @@ describe('SdJwtVcService', () => {
 
     test('verify expired sd-jwt-vc and fails', async () => {
       Date.prototype.getTime = vi.fn(() => 1716111919 * 1000 + 1000)
+      Date.now = vi.fn(() => 1716111919 * 1000 + 1000)
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
       Date.prototype.getTime = vi.fn(() => 1698151532000)
+      Date.now = vi.fn(() => 1698151532000)
 
       expect(verificationResult).toEqual({
         isValid: false,
