@@ -49,7 +49,7 @@
     "@peculiar/asn1-rsa": "^2.5.0",
     "@peculiar/asn1-schema": "^2.5.0",
     "@peculiar/asn1-x509": "^2.5.0",
-    "@peculiar/x509": "^1.14.0",
+    "@peculiar/x509": "catalog:",
     "@sd-jwt/core": "^0.16.0",
     "@sd-jwt/decode": "^0.16.0",
     "@sd-jwt/jwt-status-list": "^0.16.0",

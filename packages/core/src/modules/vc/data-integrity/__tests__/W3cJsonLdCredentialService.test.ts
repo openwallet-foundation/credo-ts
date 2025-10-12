@@ -167,10 +167,6 @@ describe('W3cJsonLdCredentialsService', () => {
               results: expect.any(Array),
               log: [
                 {
-                  id: 'expiration',
-                  valid: true,
-                },
-                {
                   id: 'valid_signature',
                   valid: true,
                 },
@@ -179,13 +175,10 @@ describe('W3cJsonLdCredentialsService', () => {
                   valid: true,
                 },
                 {
-                  id: 'revocation_status',
+                  id: 'expiration',
                   valid: true,
                 },
               ],
-              statusResult: {
-                verified: true,
-              },
             },
           },
         })

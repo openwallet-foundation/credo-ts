@@ -30,6 +30,9 @@ catalogs:
     '@openwallet-foundation/askar-shared':
       specifier: ^0.4.2
       version: 0.4.2
+    '@peculiar/x509':
+      specifier: ~1.13.0
+      version: 1.13.0
     '@sphereon/pex-models':
       specifier: ^2.3.2
       version: 2.3.2
@@ -547,8 +550,8 @@ importers:
         specifier: ^2.5.0
         version: 2.5.0
       '@peculiar/x509':
-        specifier: ^1.14.0
-        version: 1.14.0
+        specifier: 'catalog:'
+        version: 1.13.0
       '@sd-jwt/core':
         specifier: ^0.16.0
         version: 0.16.0
@@ -3115,8 +3118,8 @@ packages:
     resolution: {integrity: sha512-coUfuoMeIB7B8/NMekxaDzLhaYmp0HZNPEjYRm9goRou8UZIC3z21s0sL9AWoCw4EG876QyO3kYrc61WNF9B/w==}
     engines: {node: '>=8.0.0'}
 
-  '@peculiar/x509@1.14.0':
-    resolution: {integrity: sha512-Yc4PDxN3OrxUPiXgU63c+ZRXKGE8YKF2McTciYhUHFtHVB0KMnjeFSU0qpztGhsp4P0uKix4+J2xEpIEDu8oXg==}
+  '@peculiar/x509@1.13.0':
+    resolution: {integrity: sha512-r9BOb1GZ3gx58Pog7u9x70spnHlCQPFm7u/ZNlFv+uBsU7kTDY9QkUD+l+X0awopDuCK1fkH3nEIZeMDSG/jlw==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -11216,7 +11219,7 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
-  '@peculiar/x509@1.14.0':
+  '@peculiar/x509@1.13.0':
     dependencies:
       '@peculiar/asn1-cms': 2.5.0
       '@peculiar/asn1-csr': 2.5.0

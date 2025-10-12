@@ -240,6 +240,13 @@ export class DifPresentationExchangeService {
           getSphereonOriginalVerifiableCredential(c.credential)
         )
 
+        const extraProofOptions = this.shouldSignUsingAnonCredsDataIntegrity(presentationToCreate)
+          ? {
+              typeSupportsSelectiveDisclosure: true,
+              type: `DataIntegrityProof.${ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE}`,
+            }
+          : {}
+
         const verifiablePresentationResult = await this.pex.verifiablePresentationFrom(
           presentationDefinitionForSubject,
           credentialsForPresentation,
@@ -248,8 +255,9 @@ export class DifPresentationExchangeService {
             proofOptions: {
               challenge,
               domain,
+
+              ...extraProofOptions,
             },
-            signatureOptions: {},
             presentationSubmissionLocation,
           }
         )
@@ -457,15 +465,17 @@ export class DifPresentationExchangeService {
    */
   private shouldSignUsingAnonCredsDataIntegrity(
     presentationToCreate: PresentationToCreate,
-    presentationSubmission: DifPresentationExchangeSubmission
+    presentationSubmission?: DifPresentationExchangeSubmission
   ) {
     if (presentationToCreate.claimFormat !== ClaimFormat.LdpVp) return undefined
 
-    const validDescriptorFormat = presentationSubmission.descriptor_map.every((descriptor) =>
-      [ClaimFormat.DiVc, ClaimFormat.DiVp, ClaimFormat.LdpVc, ClaimFormat.LdpVp].includes(
-        descriptor.format as ClaimFormat
+    const validDescriptorFormat =
+      !presentationSubmission ||
+      presentationSubmission.descriptor_map.every((descriptor) =>
+        [ClaimFormat.DiVc, ClaimFormat.DiVp, ClaimFormat.LdpVc, ClaimFormat.LdpVp].includes(
+          descriptor.format as ClaimFormat
+        )
       )
-    )
 
     const credentialAreSignedUsingAnonCredsDataIntegrity = presentationToCreate.verifiableCredentials.every(
       ({ credential }) => {

@@ -5,6 +5,8 @@ packages:
   - samples/*
 
 catalog:
+  # NOTE: keep at 1.13 until https://github.com/PeculiarVentures/x509/pull/108 is merged and released
+  "@peculiar/x509": ~1.13.0
   "@types/node": ^20.19.0
   tsyringe: ^4.10.0
   rxjs: ^7.8.2
