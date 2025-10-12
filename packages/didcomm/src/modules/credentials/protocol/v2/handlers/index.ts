@@ -1,6 +1,6 @@
 export * from './DidCommCredentialV2AckHandler'
+export * from './DidCommCredentialV2ProblemReportHandler'
 export * from './DidCommIssueCredentialV2Handler'
 export * from './DidCommOfferCredentialV2Handler'
 export * from './DidCommProposeCredentialV2Handler'
 export * from './DidCommRequestCredentialV2Handler'
-export * from './DidCommCredentialV2ProblemReportHandler'

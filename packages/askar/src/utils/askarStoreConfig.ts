@@ -1,6 +1,5 @@
-import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
-
 import { KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
+import type { AskarModuleConfigStoreOptions } from '../AskarModuleConfig'
 
 import { isAskarPostgresStorageConfig, isAskarSqliteStorageConfig } from '../AskarStorageConfig'
 import { AskarError } from '../error'

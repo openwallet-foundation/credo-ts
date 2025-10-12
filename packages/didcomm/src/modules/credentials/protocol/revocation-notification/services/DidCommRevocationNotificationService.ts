@@ -1,14 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
-import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
-import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
-import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
-
-import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
 import { DidCommConnectionRecord } from '../../../../connections'
+import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
+import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
 import {
   v1ThreadRegex,
@@ -17,6 +15,7 @@ import {
   v2IndyRevocationFormat,
   v2IndyRevocationIdentifierRegex,
 } from '../util/revocationIdentifier'
+import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
 
 @injectable()
 export class DidCommRevocationNotificationService {

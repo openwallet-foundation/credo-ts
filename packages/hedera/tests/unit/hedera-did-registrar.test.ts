@@ -1,6 +1,4 @@
-import { AgentContext, type DidDocumentKey, DidRecord, DidRepository } from '@credo-ts/core'
-
-import { DidDocumentRole } from '@credo-ts/core'
+import { AgentContext, type DidDocumentKey, DidDocumentRole, DidRecord, DidRepository } from '@credo-ts/core'
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaDidRegistrar } from '../../src/dids/HederaDidRegistrar'
 import { type HederaDidUpdateOptions, HederaLedgerService } from '../../src/ledger/HederaLedgerService'
@@ -58,7 +56,7 @@ describe('HederaDidRegistrar', () => {
       expect(savedRecord.role).toBe(DidDocumentRole.Created)
       expect(savedRecord.didDocument).toBeInstanceOf(Object)
       expect(savedRecord.didDocument?.service).toBeDefined()
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(savedRecord.didDocument?.service![0]).toBeInstanceOf(Object)
 
       expect(result.didState.state).toBe('finished')
@@ -223,7 +221,7 @@ describe('HederaDidRegistrar', () => {
       })
 
       expect(result.didState.state).toBe('failed')
-      // @ts-ignore
+      // @ts-expect-error
       expect(result.didState.reason).toBe('Did not found')
     })
 
@@ -244,7 +242,7 @@ describe('HederaDidRegistrar', () => {
       const keys1 = [{ didDocumentRelativeKeyId: 'key1' }, { didDocumentRelativeKeyId: 'key2' }] as DidDocumentKey[]
       const keys2 = [{ didDocumentRelativeKeyId: 'key2' }, { didDocumentRelativeKeyId: 'key3' }] as DidDocumentKey[]
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const result = (registrar as any).concatKeys(keys1, keys2)
 
       expect(result).toHaveLength(3)
@@ -258,7 +256,7 @@ describe('HederaDidRegistrar', () => {
     })
 
     it('should handle undefined arguments and return empty array', () => {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const result = (registrar as any).concatKeys(undefined, undefined)
       expect(result).toEqual([])
     })

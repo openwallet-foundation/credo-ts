@@ -1,12 +1,10 @@
+import { AskarModule } from '@credo-ts/askar'
 import type { InitConfig } from '@credo-ts/core'
-
+import { Agent } from '@credo-ts/core'
+import { agentDependencies } from '@credo-ts/node'
 import { copyFileSync, existsSync, mkdirSync, unlinkSync } from 'fs'
 import { homedir } from 'os'
 import path from 'path'
-import { Agent } from '@credo-ts/core'
-import { agentDependencies } from '@credo-ts/node'
-
-import { AskarModule } from '@credo-ts/askar'
 import { askar } from '../../askar/tests/helpers'
 import { IndySdkToAskarMigrationUpdater } from '../src'
 import { IndySdkToAskarMigrationError } from '../src/errors/IndySdkToAskarMigrationError'

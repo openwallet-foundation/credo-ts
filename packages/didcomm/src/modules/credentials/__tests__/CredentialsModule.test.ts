@@ -1,6 +1,4 @@
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
-import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
-
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
@@ -8,6 +6,7 @@ import { DidCommProtocol } from '../../../models'
 import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommCredentialV2Protocol } from '../protocol'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 

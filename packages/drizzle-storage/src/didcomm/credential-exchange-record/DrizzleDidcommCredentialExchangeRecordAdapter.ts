@@ -1,12 +1,10 @@
 import { type JsonObject, JsonTransformer, type TagsBase } from '@credo-ts/core'
-
+import { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import {
   BaseDrizzleRecordAdapter,
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
-
-import { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
@@ -54,6 +52,7 @@ export class DrizzleDidcommCredentialExchangeRecordAdapter extends BaseDrizzleRe
   }
 
   public toRecord(values: DrizzleDidcommCredentialExchangeAdapterValues): DidCommCredentialExchangeRecord {
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, credentialIds, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, DidCommCredentialExchangeRecord)

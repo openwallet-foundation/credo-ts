@@ -1,14 +1,5 @@
-import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
-import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
-import type { DidCommCredentialFormatService } from '../../DidCommCredentialFormatService'
-import type {
-  DidCommJsonLdCredentialDetailFormat,
-  DidCommJsonLdCredentialFormat,
-  JsonCredential,
-} from '../DidCommJsonLdCredentialFormat'
-
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import { DidDocument } from '../../../../../../../core/src/modules/dids'
 import { DidResolverService } from '../../../../../../../core/src/modules/dids/services/DidResolverService'
 import {
@@ -17,15 +8,23 @@ import {
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '../../../../../../../core/src/modules/vc'
-import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../../../../core/src/modules/vc/data-integrity/__tests__/fixtures'
+import { W3cJsonLdCredentialService } from '../../../../../../../core/src/modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import { JsonEncoder } from '../../../../../../../core/src/utils/JsonEncoder'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../../core/tests/helpers'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { DidCommCredentialRole, DidCommCredentialState } from '../../../models'
+import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialV2Preview } from '../../../protocol/v2/messages'
+import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
+import type { DidCommCredentialFormatService } from '../../DidCommCredentialFormatService'
+import type {
+  DidCommJsonLdCredentialDetailFormat,
+  DidCommJsonLdCredentialFormat,
+  JsonCredential,
+} from '../DidCommJsonLdCredentialFormat'
 import { DidCommJsonLdCredentialFormatService } from '../DidCommJsonLdCredentialFormatService'
 
 vi.mock('../../../../../../../core/src/modules/vc/W3cCredentialService')

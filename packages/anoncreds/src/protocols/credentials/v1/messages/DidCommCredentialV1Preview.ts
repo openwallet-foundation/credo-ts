@@ -1,6 +1,5 @@
-import type { CredentialPreviewOptions } from '@credo-ts/didcomm'
-
 import { JsonTransformer } from '@credo-ts/core'
+import type { CredentialPreviewOptions } from '@credo-ts/didcomm'
 import {
   DidCommCredentialPreviewAttribute,
   IsValidMessageType,

@@ -1,22 +1,18 @@
 import type { AgentContext } from '@credo-ts/core'
+import { joinUriParts, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type {
   HttpMethod,
   ParseAuthorizationChallengeRequestOptions,
   ParseAuthorizationChallengeRequestResult,
 } from '@openid4vc/oauth2'
-import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
-import type { OpenId4VcIssuerRecord } from '../repository'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-import { Kms, TypedArrayEncoder, joinUriParts, utils } from '@credo-ts/core'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
-
+import type { NextFunction, Response, Router } from 'express'
 import {
   OpenId4VcVerificationSessionRepository,
   OpenId4VcVerificationSessionState,
   OpenId4VcVerifierApi,
 } from '../../openid4vc-verifier'
+import type { OpenId4VciCredentialConfigurationsSupportedWithFormats } from '../../shared'
 import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
@@ -32,6 +28,8 @@ import {
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import type { OpenId4VcIssuerRecord } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureAuthorizationChallengeEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(

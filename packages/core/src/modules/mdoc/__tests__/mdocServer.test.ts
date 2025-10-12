@@ -1,8 +1,7 @@
 import { getAgentConfig, getAgentContext } from '../../../../tests'
+import { KeyManagementApi, P256PublicJwk, PublicJwk } from '../../kms'
 import { X509ModuleConfig, X509Service } from '../../x509'
 import { Mdoc } from '../Mdoc'
-
-import { KeyManagementApi, P256PublicJwk, PublicJwk } from '../../kms'
 import { MdocDeviceResponse } from '../MdocDeviceResponse'
 import { sprindFunkeTestVectorBase64Url, sprindFunkeX509TrustedCertificate } from './mdoc.fixtures'
 

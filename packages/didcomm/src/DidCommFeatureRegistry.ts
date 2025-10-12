@@ -1,6 +1,5 @@
-import type { DidCommFeature, DidCommFeatureQuery } from './models'
-
 import { injectable } from '@credo-ts/core'
+import type { DidCommFeature, DidCommFeatureQuery } from './models'
 
 @injectable()
 export class DidCommFeatureRegistry {

@@ -1,6 +1,5 @@
-import type { ResolvedDidCommService } from '../../../../types'
-
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import type { ResolvedDidCommService } from '../../../../types'
 
 import { PublicJwk } from '../../../kms'
 import type { DidDocumentKey } from '../../DidsApiOptions'

@@ -1,4 +1,7 @@
+import * as core from 'webcrypto-core'
+import { PublicJwk } from '../../../modules/kms'
 import type { CredoWalletWebCrypto } from '../CredoWalletWebCrypto'
+import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
 import type {
   CredoWebCryptoKeyPair,
   Ed25519KeyGenParams,
@@ -8,11 +11,6 @@ import type {
   KeyFormat,
   KeyUsage,
 } from '../types'
-
-import * as core from 'webcrypto-core'
-
-import { PublicJwk } from '../../../modules/kms'
-import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
 
 export class CredoEd25519Provider extends core.Ed25519Provider {
   public constructor(private walletWebCrypto: CredoWalletWebCrypto) {

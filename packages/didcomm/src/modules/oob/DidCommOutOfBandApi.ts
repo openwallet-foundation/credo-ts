@@ -1,32 +1,29 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../DidCommMessage'
-import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
-import type { DidCommRouting } from '../../models'
-import type { DidCommPlaintextMessage } from '../../types'
-import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
-
 import {
   AgentContext,
   CredoError,
   DidKey,
   EventEmitter,
+  filterContextCorrelationId,
   InjectionSymbols,
+  inject,
+  injectable,
   JsonEncoder,
   JsonTransformer,
   Kms,
   type Logger,
-  filterContextCorrelationId,
-  inject,
-  injectable,
 } from '@credo-ts/core'
-import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
-
+import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
+import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
+import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
+import type { DidCommPlaintextMessage } from '../../types'
 import {
   parseDidCommProtocolUri,
   parseMessageType,
@@ -42,9 +39,10 @@ import {
 } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { convertToNewInvitation, convertToOldInvitation } from './converters'
 
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
-import { convertToNewInvitation, convertToOldInvitation } from './converters'
+import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
@@ -195,7 +193,7 @@ export class DidCommOutOfBandApi {
       )
     }
 
-    let mediatorId: string | undefined = undefined
+    let mediatorId: string | undefined
     let services: [string] | OutOfBandDidCommService[]
     if (config.routing && config.invitationDid) {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
@@ -575,7 +573,7 @@ export class DidCommOutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
-      let connectionRecord: DidCommConnectionRecord | undefined = undefined
+      let connectionRecord: DidCommConnectionRecord | undefined
       if (existingConnection && reuseConnection) {
         this.logger.debug(
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
@@ -988,7 +986,7 @@ export class DidCommOutOfBandApi {
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
             .reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
-              // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+              // biome-ignore lint/performance/noAccumulatingSpread: no explanation
               (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
               []
             )

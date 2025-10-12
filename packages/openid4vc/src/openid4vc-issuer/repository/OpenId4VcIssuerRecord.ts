@@ -1,14 +1,11 @@
-import { Kms, type RecordTags, type TagsBase } from '@credo-ts/core'
+import { BaseRecord, CredoError, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import { Transform, TransformationType } from 'class-transformer'
 import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
-
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
-import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
-import { Transform, TransformationType } from 'class-transformer'
 
 export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
@@ -62,18 +59,6 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
    */
   public accessTokenPublicKeyFingerprint?: string
   public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
-
-  /**
-   * Only here for class transformation. If credentialsSupported is set we transform
-   * it to the new credentialConfigurationsSupported format
-   */
-  private set credentialsSupported(credentialsSupported: Array<unknown>) {
-    if (this.credentialConfigurationsSupported) return
-
-    this.credentialConfigurationsSupported =
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      credentialsSupportedToCredentialConfigurationsSupported(credentialsSupported as any) as any
-  }
 
   public credentialConfigurationsSupported!: OpenId4VciCredentialConfigurationsSupportedWithFormats
 

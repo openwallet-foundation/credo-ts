@@ -1,8 +1,7 @@
-import type { DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
-import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
-
 import { CredoError, Hasher, TypedArrayEncoder } from '@credo-ts/core'
+import type { DidCommCredentialPreviewAttributeOptions, DidCommLinkedAttachment } from '@credo-ts/didcomm'
 import { encodeAttachment } from '@credo-ts/didcomm'
+import type { AnonCredsCredentialValues, AnonCredsSchema } from '../models'
 
 import { bytesToBigint } from './bytesToBigint'
 
@@ -63,13 +62,11 @@ export function encodeCredentialValue(value: unknown) {
   }
 
   if (isNumber(value)) {
-    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = value.toString()
   }
 
   // If value is null we must use the string value 'None'
   if (value === null || value === undefined) {
-    // biome-ignore lint/style/noParameterAssign: <explanation>
     value = 'None'
   }
 

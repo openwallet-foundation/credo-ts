@@ -116,6 +116,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
 
   // This destructuring removes the ~service property from the message, and
   // we can can use messageWithoutService to create the out of band invitation
+  // biome-ignore lint/correctness/noUnusedVariables: no explanation
   const { '~service': service, ...messageWithoutService } = messageJson
 
   // transform into out of band invitation

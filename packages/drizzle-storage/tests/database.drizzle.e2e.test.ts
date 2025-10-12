@@ -6,15 +6,15 @@ import { anoncredsBundle } from '../src/anoncreds/bundle'
 import { coreBundle } from '../src/core/bundle'
 import { didcommBundle } from '../src/didcomm/bundle'
 import {
-  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
 } from './testDatabase'
 
 describe.each(['postgres', 'sqlite'] as const)('Drizzle storage with %s', (type) => {
   let agent: Agent
-  let postgresDatabase: DrizzlePostgresTestDatabase | undefined = undefined
+  let postgresDatabase: DrizzlePostgresTestDatabase | undefined
 
   beforeAll(async () => {
     if (type === 'postgres') {

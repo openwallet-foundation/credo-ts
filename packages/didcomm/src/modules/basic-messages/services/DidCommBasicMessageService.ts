@@ -1,10 +1,8 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
-
 import { EventEmitter, injectable } from '@credo-ts/core'
-
+import type { DidCommInboundMessageContext } from '../../../models'
 import { DidCommConnectionRecord } from '../../connections'
+import type { DidCommBasicMessageStateChangedEvent } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageEventTypes } from '../DidCommBasicMessageEvents'
 import { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 import { DidCommBasicMessage } from '../messages'

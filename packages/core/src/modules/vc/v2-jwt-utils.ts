@@ -5,9 +5,9 @@ import {
   type DidPurpose,
   DidResolverService,
   DidsApi,
-  VerificationMethod,
   getPublicJwkFromVerificationMethod,
   parseDid,
+  VerificationMethod,
 } from '../dids'
 import { getSupportedVerificationMethodTypesForPublicJwk } from '../dids/domain/key-type/keyDidMapping'
 import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'

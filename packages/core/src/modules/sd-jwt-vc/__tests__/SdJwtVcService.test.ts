@@ -1,16 +1,29 @@
 import type { AgentContext, Constructable } from '@credo-ts/core'
-import { vi } from 'vitest'
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-
-import { randomUUID } from 'crypto'
-import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
+import {
+  Agent,
+  DidKey,
+  DidsModule,
+  getDomainFromUrl,
+  JwsService,
+  JwtPayload,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  parseDid,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+} from '@credo-ts/core'
+import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
-
+import { randomUUID } from 'crypto'
+import { vi } from 'vitest'
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { agentDependencies, getAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
-import { SdJwtVcService } from '../SdJwtVcService'
+import { PublicJwk } from '../../kms'
 import { SdJwtVcRepository } from '../repository'
-
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
+import { SdJwtVcService } from '../SdJwtVcService'
 import {
   complexSdJwtVc,
   complexSdJwtVcPresentation,
@@ -28,23 +41,6 @@ import {
   simpleSdJwtVcWithStatus,
   simpleX509,
 } from './sdjwtvc.fixtures'
-
-import {
-  Agent,
-  DidKey,
-  DidsModule,
-  JwsService,
-  JwtPayload,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  TypedArrayEncoder,
-  X509Certificate,
-  X509ModuleConfig,
-  getDomainFromUrl,
-  parseDid,
-} from '@credo-ts/core'
-import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { PublicJwk } from '../../kms'
 
 const agent = new Agent(
   getAgentOptions(
@@ -86,7 +82,7 @@ const generateStatusList = async (
     {
       iss: did,
       sub: 'https://example.com/status/1',
-      iat: new Date().getTime() / 1000,
+      iat: Date.now() / 1000,
     },
     {
       alg: 'EdDSA',
@@ -235,7 +231,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: simpleX509.certificateIssuer,
         cnf: { jwk: holderKey.toJson() },
       })
@@ -273,7 +269,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
           jwk: holderKey.toJson(),
@@ -307,7 +303,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
       })
     })
@@ -341,7 +337,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         value: false,
         discloseableValue: false,
@@ -376,7 +372,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -387,7 +383,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
@@ -442,7 +438,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
@@ -467,7 +463,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -532,7 +528,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         phone_number: '+1-202-555-0101',
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
@@ -553,7 +549,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -591,7 +587,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
           jwk: holderKey.toJson(),
@@ -613,7 +609,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
       })
     })
@@ -629,7 +625,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -652,7 +648,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         address: {
@@ -691,7 +687,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         phone_number: '+1-202-555-0101',
@@ -776,7 +772,7 @@ describe('SdJwtVcService', () => {
         compactSdJwtVc: simpleJwtVc,
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -814,7 +810,7 @@ describe('SdJwtVcService', () => {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         presentationFrame: { claim: true },
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -833,7 +829,7 @@ describe('SdJwtVcService', () => {
       }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -859,7 +855,7 @@ describe('SdJwtVcService', () => {
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -883,7 +879,7 @@ describe('SdJwtVcService', () => {
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1056,7 +1052,7 @@ describe('SdJwtVcService', () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1085,7 +1081,7 @@ describe('SdJwtVcService', () => {
       }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },

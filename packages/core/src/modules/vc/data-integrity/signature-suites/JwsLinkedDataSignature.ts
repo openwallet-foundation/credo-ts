@@ -1,13 +1,13 @@
 /*!
  * Copyright (c) 2020-2021 Digital Bazaar, Inc. All rights reserved.
  */
-import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
-import type { LdKeyPair } from '../models/LdKeyPair'
 
 import { CredoError } from '../../../../error'
 import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../types'
 import { JsonEncoder, TypedArrayEncoder } from '../../../../utils'
+import type { DocumentLoader, Proof, VerificationMethod } from '../jsonldUtil'
 import { suites } from '../libraries/jsonld-signatures'
+import type { LdKeyPair } from '../models/LdKeyPair'
 
 const LinkedDataSignature = suites.LinkedDataSignature
 export interface JwsLinkedDataSignatureOptions {
@@ -128,7 +128,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
     // add payload into detached content signature
     const [encodedHeader /*payload*/, , encodedSignature] = options.proof.jws.split('.')
 
-    // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+    // biome-ignore lint/suspicious/noImplicitAnyLet: no explanation
     let header
     try {
       header = JsonEncoder.fromBase64(encodedHeader)
@@ -214,7 +214,7 @@ export class JwsLinkedDataSignature extends LinkedDataSignature {
   public async matchProof(options: {
     proof: Proof
     document: VerificationMethod
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     purpose: any
     documentLoader?: DocumentLoader
   }) {

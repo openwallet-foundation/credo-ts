@@ -1,12 +1,12 @@
 import {
   AffinePoint,
   CurveParams,
+  isValidCompressedPublicKeyFormat,
+  isValidDecompressedPublicKeyFormat,
   Secp256k1,
   Secp256r1,
   Secp384r1,
   Secp521r1,
-  isValidCompressedPublicKeyFormat,
-  isValidDecompressedPublicKeyFormat,
 } from 'ec-compression'
 import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import { TypedArrayEncoder } from '../../../../../utils'

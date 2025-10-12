@@ -19,7 +19,7 @@ const multibaseDecodingMap: DecodingMap = {
   z: (data) => ({ data: decodeFromBase58(data.substring(1)), baseName: 'base58btc' }),
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class MultiBaseEncoder {
   /**
    *

@@ -1,12 +1,12 @@
 import {
-  Transform,
-  TransformationType,
   instanceToPlain,
   plainToClassFromExist,
   plainToInstance,
+  Transform,
+  TransformationType,
 } from 'class-transformer'
 import type { ValidationOptions } from 'class-validator'
-import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
+import { buildMessage, isInstance, isString, ValidateBy } from 'class-validator'
 import { IsUri, isUri } from '../../../../utils'
 
 export interface W3cV2HolderOptions {

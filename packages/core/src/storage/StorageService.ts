@@ -3,7 +3,7 @@ import type { Constructor } from '../utils/mixins'
 import type { BaseRecord, TagsBase } from './BaseRecord'
 
 // https://stackoverflow.com/questions/51954558/how-can-i-remove-a-wider-type-from-a-union-type-without-removing-its-subtypes-in/51955852#51955852
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type SimpleQuery<T extends BaseRecord<any, any, any>> = T extends BaseRecord<infer DefaultTags, infer CustomTags>
   ? DefaultTags extends TagsBase
     ? Partial<ReturnType<T['getTags']>> & TagsBase
@@ -12,7 +12,7 @@ export type SimpleQuery<T extends BaseRecord<any, any, any>> = T extends BaseRec
       : Partial<DefaultTags & CustomTags> & TagsBase
   : Partial<ReturnType<T['getTags']>> & TagsBase
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 interface AdvancedQuery<T extends BaseRecord<any, any, any>> {
   $and?: Query<T>[]
   $or?: Query<T>[]
@@ -24,7 +24,7 @@ export type QueryOptions = {
   offset?: number
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type Query<T extends BaseRecord<any, any, any>> = AdvancedQuery<T> | SimpleQuery<T>
 
 export interface BaseRecordConstructor<T> extends Constructor<T> {
@@ -32,7 +32,7 @@ export interface BaseRecordConstructor<T> extends Constructor<T> {
   allowCache: boolean
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export interface StorageService<T extends BaseRecord<any, any, any>> {
   /**
    * Save record in storage

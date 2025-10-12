@@ -6,7 +6,9 @@
   },
   "version": "0.5.13",
   "description": "Credo WebVH DID method implementation",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",

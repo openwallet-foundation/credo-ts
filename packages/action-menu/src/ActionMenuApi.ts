@@ -1,3 +1,5 @@
+import { AgentContext, CredoError, injectable } from '@credo-ts/core'
+import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 import type {
   ClearActiveMenuOptions,
   FindActiveMenuOptions,
@@ -5,9 +7,6 @@ import type {
   RequestMenuOptions,
   SendMenuOptions,
 } from './ActionMenuApiOptions'
-
-import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 
 import { ActionMenuRole } from './ActionMenuRole'
 import { ActionMenuService } from './services'

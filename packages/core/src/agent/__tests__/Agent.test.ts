@@ -1,7 +1,4 @@
-import type { Module } from '../../plugins'
-
 import { injectable } from 'tsyringe'
-
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import {
   DidCommBasicMessageRepository,
@@ -31,6 +28,7 @@ import {
 } from '../../../../didcomm/src/modules/routing'
 import { getAgentOptions } from '../../../tests/helpers'
 import { InjectionSymbols } from '../../constants'
+import type { Module } from '../../plugins'
 import { Agent } from '../Agent'
 
 const agentOptions = getAgentOptions('Agent Class Test', undefined, undefined, undefined, { requireDidcomm: true })

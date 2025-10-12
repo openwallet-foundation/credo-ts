@@ -12,10 +12,7 @@ export function rsaPublicJwkToPublicKey(publicJwk: KmsJwkPublicRsa) {
   }
 }
 
-export function rsaPublicKeyToPublicJwk(options: {
-  modulus: AnyUint8Array
-  exponent: AnyUint8Array
-}): KmsJwkPublicRsa {
+export function rsaPublicKeyToPublicJwk(options: { modulus: AnyUint8Array; exponent: AnyUint8Array }): KmsJwkPublicRsa {
   const jwk: KmsJwkPublicRsa = {
     kty: 'RSA',
     n: TypedArrayEncoder.toBase64URL(options.modulus),

@@ -30,9 +30,6 @@ export class DrizzleW3cV2CredentialRecordAdapter extends BaseDrizzleRecordAdapte
       claimFormat,
       cryptosuites,
       algs,
-
-      // Custom Tags
-      expandedTypes,
       ...customTags
     } = record.getTags()
 

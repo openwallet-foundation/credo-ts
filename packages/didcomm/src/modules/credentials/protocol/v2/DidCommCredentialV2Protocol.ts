@@ -1,17 +1,33 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, utils } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommMessageHandlerInboundMessage } from '../../../../handlers'
 import type { DidCommProblemReportMessage } from '../../../../messages'
+import { AckStatus } from '../../../../messages'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
+import { DidCommConnectionService } from '../../../connections'
+import { DidCommCredentialsModuleConfig } from '../../DidCommCredentialsModuleConfig'
 import type {
   DidCommCredentialFormat,
   DidCommCredentialFormatPayload,
   DidCommCredentialFormatService,
   ExtractCredentialFormats,
 } from '../../formats'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialProblemReportReason,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+} from '../../models'
 import type { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
+import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../repository'
+import { composeAutoAccept } from '../../util/composeAutoAccept'
+import { arePreviewAttributesEqual } from '../../util/previewAttributes'
+import { DidCommBaseCredentialProtocol } from '../DidCommBaseCredentialProtocol'
 import type { DidCommCredentialProtocol } from '../DidCommCredentialProtocol'
 import type {
   AcceptCredentialOfferOptions,
@@ -28,24 +44,6 @@ import type {
   NegotiateCredentialOfferOptions,
   NegotiateCredentialProposalOptions,
 } from '../DidCommCredentialProtocolOptions'
-
-import { CredoError, utils } from '@credo-ts/core'
-
-import { AckStatus } from '../../../../messages'
-import { DidCommProtocol } from '../../../../models'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
-import { DidCommConnectionService } from '../../../connections'
-import { DidCommCredentialsModuleConfig } from '../../DidCommCredentialsModuleConfig'
-import {
-  DidCommAutoAcceptCredential,
-  DidCommCredentialProblemReportReason,
-  DidCommCredentialRole,
-  DidCommCredentialState,
-} from '../../models'
-import { DidCommCredentialExchangeRecord, DidCommCredentialExchangeRepository } from '../../repository'
-import { composeAutoAccept } from '../../util/composeAutoAccept'
-import { arePreviewAttributesEqual } from '../../util/previewAttributes'
-import { DidCommBaseCredentialProtocol } from '../DidCommBaseCredentialProtocol'
 
 import { DidCommCredentialFormatCoordinator } from './DidCommCredentialFormatCoordinator'
 import {

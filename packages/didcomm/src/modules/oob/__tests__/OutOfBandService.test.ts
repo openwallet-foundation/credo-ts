@@ -1,8 +1,6 @@
-import type { DidCommDocumentService } from '../../../services'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
-
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../core/src/error'
@@ -14,6 +12,7 @@ import {
   mockFunction,
 } from '../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommDocumentService } from '../../../services'
 import { DidCommDidExchangeState } from '../../connections'
 import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 import { DidCommOutOfBandEventTypes } from '../domain/DidCommOutOfBandEvents'

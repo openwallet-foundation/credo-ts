@@ -1,5 +1,22 @@
 import type { AgentContext } from '../../agent/context'
+import { CredoError } from '../../error'
+import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
+import { W3cJsonLdVerifiableCredential } from './data-integrity'
+import { W3cJsonLdVerifiablePresentation } from './data-integrity/models/W3cJsonLdVerifiablePresentation'
+import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
+import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
+import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
+import type {
+  W3cVerifiableCredential,
+  W3cVerifiablePresentation,
+  W3cVerifyCredentialResult,
+  W3cVerifyPresentationResult,
+} from './models'
+import { ClaimFormat } from './models'
+import { W3cPresentation } from './models/presentation/W3cPresentation'
+import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 import type {
   W3cCreatePresentationOptions,
   W3cJsonLdVerifyCredentialOptions,
@@ -12,25 +29,6 @@ import type {
   W3cVerifyCredentialOptions,
   W3cVerifyPresentationOptions,
 } from './W3cCredentialServiceOptions'
-import type {
-  W3cVerifiableCredential,
-  W3cVerifiablePresentation,
-  W3cVerifyCredentialResult,
-  W3cVerifyPresentationResult,
-} from './models'
-
-import { CredoError } from '../../error'
-import { injectable } from '../../plugins'
-
-import { CREDENTIALS_CONTEXT_V1_URL } from './constants'
-import { W3cJsonLdVerifiableCredential } from './data-integrity'
-import { W3cJsonLdCredentialService } from './data-integrity/W3cJsonLdCredentialService'
-import { W3cJsonLdVerifiablePresentation } from './data-integrity/models/W3cJsonLdVerifiablePresentation'
-import { W3cJwtVerifiableCredential, W3cJwtVerifiablePresentation } from './jwt-vc'
-import { W3cJwtCredentialService } from './jwt-vc/W3cJwtCredentialService'
-import { ClaimFormat } from './models'
-import { W3cPresentation } from './models/presentation/W3cPresentation'
-import { W3cCredentialRecord, W3cCredentialRepository } from './repository'
 
 @injectable()
 export class W3cCredentialService {

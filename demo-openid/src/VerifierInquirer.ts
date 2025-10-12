@@ -2,8 +2,8 @@ import { clear } from 'console'
 import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { Title, purpleText } from './OutputClass'
-import { Verifier, dcqls, presentationDefinitions } from './Verifier'
+import { purpleText, Title } from './OutputClass'
+import { dcqls, presentationDefinitions, Verifier } from './Verifier'
 
 export const runVerifier = async () => {
   clear()

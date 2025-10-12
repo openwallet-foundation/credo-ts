@@ -1,7 +1,6 @@
-import type { AnyUint8Array, CanBePromise, Uint8ArrayBuffer } from '@credo-ts/core'
-
-import { constants, sign as _sign, createHmac, createPrivateKey, createSecretKey } from 'node:crypto'
+import { sign as _sign, constants, createHmac, createPrivateKey, createSecretKey } from 'node:crypto'
 import { promisify } from 'node:util'
+import type { AnyUint8Array, CanBePromise, Uint8ArrayBuffer } from '@credo-ts/core'
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 const sign = promisify(_sign)
@@ -23,7 +22,7 @@ export function performSign(
           {
             key: nodeKey,
             padding: constants.RSA_PKCS1_PSS_PADDING,
-            saltLength: Number.parseInt(algorithm.slice(2)) / 8,
+            saltLength: Number.parseInt(algorithm.slice(2), 10) / 8,
           }
         : nodeKey
 

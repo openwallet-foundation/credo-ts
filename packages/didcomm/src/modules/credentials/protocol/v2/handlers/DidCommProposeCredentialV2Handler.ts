@@ -1,9 +1,8 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommInboundMessageContext } from '../../../../../models'
+import { DidCommOutboundMessageContext } from '../../../../../models'
 import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
-
-import { DidCommOutboundMessageContext } from '../../../../../models'
 import { DidCommProposeCredentialV2Message } from '../messages/DidCommProposeCredentialV2Message'
 
 export class DidCommProposeCredentialV2Handler implements DidCommMessageHandler {

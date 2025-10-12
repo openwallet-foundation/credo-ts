@@ -1,18 +1,13 @@
-import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
-import type { ResolvedDidCommService } from '../../../core/src/types'
-import type { DidCommMessageSentEvent } from '../DidCommEvents'
-import type { DidCommConnectionRecord } from '../modules'
-import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
-import type { DidCommEncryptedMessage } from '../types'
-
 import { Subject } from 'rxjs'
-
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { EventEmitter } from '../../../core/src/agent/EventEmitter'
+import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core/src/index'
+import type { DidDocumentService, IndyAgentService } from '../../../core/src/modules/dids'
 import { DidDocument, VerificationMethod } from '../../../core/src/modules/dids'
 import { DidsApi } from '../../../core/src/modules/dids/DidsApi'
 import { DidCommV1Service } from '../../../core/src/modules/dids/domain/service/DidCommV1Service'
 import { verkeyToPublicJwk } from '../../../core/src/modules/dids/helpers'
-import { TestMessage } from '../../../core/tests/TestMessage'
+import type { ResolvedDidCommService } from '../../../core/src/types'
 import {
   agentDependencies,
   getAgentConfig,
@@ -20,17 +15,19 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../core/tests/helpers'
+import { TestMessage } from '../../../core/tests/TestMessage'
 import { DidCommEnvelopeService } from '../DidCommEnvelopeService'
+import type { DidCommMessageSentEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommMessageSender } from '../DidCommMessageSender'
+import { DidCommModuleConfig } from '../DidCommModuleConfig'
 import { DidCommTransportService } from '../DidCommTransportService'
 import { ReturnRouteTypes } from '../decorators/transport/TransportDecorator'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from '../models'
+import type { DidCommConnectionRecord } from '../modules'
 import { DidCommDocumentService } from '../services/DidCommDocumentService'
-
-import type { MockedClassConstructor } from '../../../../tests/types'
-import { AgentConfig, Kms, TypedArrayEncoder } from '../../../core/src/index'
-import { DidCommModuleConfig } from '../DidCommModuleConfig'
+import { type DidCommOutboundTransport, InMemoryQueueTransportRepository } from '../transport'
+import type { DidCommEncryptedMessage } from '../types'
 import { DummyTransportSession } from './stubs'
 
 vi.mock('../DidCommTransportService')
@@ -351,7 +348,7 @@ describe('DidCommMessageSender', () => {
       transportServiceFindSessionByIdMock.mockReturnValue(session)
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      // @ts-ignore
+      // @ts-expect-error
       const sendMessageToServiceSpy = vi.spyOn(messageSender, 'sendMessageToService')
 
       const contextWithSessionId = new DidCommOutboundMessageContext(outboundMessageContext.message, {
@@ -383,12 +380,12 @@ describe('DidCommMessageSender', () => {
     test('call send message on session when there is a session for a given connection', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      //@ts-ignore
+      //@ts-expect-error
       const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       await messageSender.sendMessage(outboundMessageContext)
 
-      //@ts-ignore
+      //@ts-expect-error
       const [[sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(eventListenerMock).toHaveBeenCalledWith({
@@ -414,12 +411,12 @@ describe('DidCommMessageSender', () => {
         },
       })
 
-      //@ts-ignore
+      //@ts-expect-error
       expect(sendMessage.serviceParams.senderKey.fingerprint).toEqual(
         'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1'
       )
 
-      //@ts-ignore
+      //@ts-expect-error
       expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.fingerprint)).toEqual([
         'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1',
       ])
@@ -431,7 +428,7 @@ describe('DidCommMessageSender', () => {
     test('calls sendToService with payload and endpoint from second DidComm service when the first fails', async () => {
       didCommModuleConfig.outboundTransports = [outboundTransport]
       const sendMessageSpy = vi.spyOn(outboundTransport, 'sendMessage')
-      //@ts-ignore
+      //@ts-expect-error
       const sendToServiceSpy = vi.spyOn(messageSender, 'sendToService')
 
       // Simulate the case when the first call fails
@@ -450,7 +447,7 @@ describe('DidCommMessageSender', () => {
         },
       })
 
-      //@ts-ignore
+      //@ts-expect-error
       const [, [sendMessage]] = sendToServiceSpy.mock.calls
 
       expect(sendMessage).toMatchObject({
@@ -467,11 +464,11 @@ describe('DidCommMessageSender', () => {
         },
       })
 
-      //@ts-ignore
+      //@ts-expect-error
       expect(sendMessage.serviceParams.senderKey.fingerprint).toEqual(
         'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1'
       )
-      //@ts-ignore
+      //@ts-expect-error
       expect(sendMessage.serviceParams.service.recipientKeys.map((key) => key.fingerprint)).toEqual([
         'z6MktFXxTu8tHkoE1Jtqj4ApYEg1c44qmU1p7kq7QZXBtJv1',
       ])

@@ -1,18 +1,16 @@
 import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRecord } from '@credo-ts/core'
+import { Mdoc } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VpResolvedAuthorizationRequest,
 } from '@credo-ts/openid4vc'
-
-import { Mdoc } from '@credo-ts/core'
 import { preAuthorizedCodeGrantIdentifier } from '@credo-ts/openid4vc'
-import figlet from 'figlet'
-
 import { clear } from 'console'
+import figlet from 'figlet'
 import { BaseInquirer } from './BaseInquirer'
 import { Holder } from './Holder'
-import { Title, greenText, redText } from './OutputClass'
+import { greenText, redText, Title } from './OutputClass'
 
 export const runHolder = async () => {
   clear()
@@ -152,9 +150,9 @@ export class HolderInquirer extends BaseInquirer {
       this.resolvedCredentialOffer,
       credentialsToRequest
     )
-    let authorizationCode: string | undefined = undefined
-    let codeVerifier: string | undefined = undefined
-    let txCode: string | undefined = undefined
+    let authorizationCode: string | undefined
+    let codeVerifier: string | undefined
+    let txCode: string | undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
       console.log(redText('Authorization required for credential issuance', true))

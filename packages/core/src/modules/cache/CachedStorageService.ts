@@ -7,7 +7,7 @@ import { JsonTransformer } from '../../utils'
 import { CacheModuleConfig } from './CacheModuleConfig'
 
 @injectable()
-// biome-ignore lint/suspicious/noExplicitAny:
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class CachedStorageService<T extends BaseRecord<any, any, any>> implements StorageService<T> {
   public constructor(@inject(InjectionSymbols.StorageService) private storageService: StorageService<T>) {}
 

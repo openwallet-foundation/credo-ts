@@ -1,16 +1,4 @@
 import type { DidCommMessageProcessedEvent, DidCommMessageSentEvent } from '@credo-ts/didcomm'
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-
-import { filter, map } from 'rxjs'
-
-import { issueAnonCredsCredential, presentAnonCredsProof } from '../packages/anoncreds/tests/anoncredsSetup'
-import {
-  anoncredsDefinitionFourAttributesNoRevocation,
-  storePreCreatedAnonCredsDefinition,
-} from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
-import { setupEventReplaySubjects } from '../packages/core/tests'
-import { firstValueWithStackTrace, makeConnection } from '../packages/core/tests/helpers'
-
 import {
   DidCommBatchMessage,
   DidCommBatchPickupMessage,
@@ -24,6 +12,16 @@ import {
   DidCommProofEventTypes,
   DidCommProofState,
 } from '@credo-ts/didcomm'
+
+import { filter, map } from 'rxjs'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { issueAnonCredsCredential, presentAnonCredsProof } from '../packages/anoncreds/tests/anoncredsSetup'
+import {
+  anoncredsDefinitionFourAttributesNoRevocation,
+  storePreCreatedAnonCredsDefinition,
+} from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
+import { setupEventReplaySubjects } from '../packages/core/tests'
+import { firstValueWithStackTrace, makeConnection } from '../packages/core/tests/helpers'
 
 export async function e2eTest({
   mediatorAgent,
@@ -140,14 +138,14 @@ export async function e2eTest({
     DidCommBatchMessage.type.messageTypeUri,
   ]
 
-  let lastSentPickupMessageThreadId: undefined | string = undefined
+  let lastSentPickupMessageThreadId: undefined | string
   recipientReplay
     .pipe(
       filter((e): e is DidCommMessageSentEvent => e.type === DidCommEventTypes.DidCommMessageSent),
       filter((e) => pickupRequestMessages.includes(e.payload.message.message.type)),
       map((e) => e.payload.message.message.threadId)
     )
-    // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+    // biome-ignore lint/suspicious/noAssignInExpressions: no explanation
     .subscribe((threadId) => (lastSentPickupMessageThreadId = threadId))
 
   // Wait for the response to the pickup message to be processed

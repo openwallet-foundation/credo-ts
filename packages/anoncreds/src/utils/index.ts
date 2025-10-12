@@ -1,35 +1,34 @@
-export { createRequestFromPreview } from './createRequestFromPreview'
-export { sortRequestedCredentialsMatches } from './sortRequestedCredentialsMatches'
-export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupNames'
+export {
+  fetchCredentialDefinition,
+  fetchRevocationRegistryDefinition,
+  fetchRevocationStatusList,
+  fetchSchema,
+} from './anonCredsObjects'
 export { areAnonCredsProofRequestsEqual } from './areRequestsEqual'
-export { assertBestPracticeRevocationInterval } from './revocationInterval'
-export { getRevocationRegistriesForRequest, getRevocationRegistriesForProof } from './getRevocationRegistries'
-export { checkValidCredentialValueEncoding, type AnonCredsCredentialValue } from './credential'
-export { IsMap } from './isMap'
 export { composeCredentialAutoAccept, composeProofAutoAccept } from './composeAutoAccept'
+export { createRequestFromPreview } from './createRequestFromPreview'
+export { type AnonCredsCredentialValue, checkValidCredentialValueEncoding } from './credential'
 export { areCredentialPreviewAttributesEqual } from './credentialPreviewAttributes'
-export { dateToTimestamp } from './timestamp'
-export { storeLinkSecret } from './linkSecret'
+export { getCredentialsForAnonCredsProofRequest } from './getCredentialsForAnonCredsRequest'
+export { getRevocationRegistriesForProof, getRevocationRegistriesForRequest } from './getRevocationRegistries'
+export { assertNoDuplicateGroupsNamesInProofRequest } from './hasDuplicateGroupNames'
 export {
   unqualifiedCredentialDefinitionIdRegex,
   unqualifiedIndyDidRegex,
   unqualifiedSchemaIdRegex,
   unqualifiedSchemaVersionRegex,
 } from './indyIdentifiers'
-
+export { IsMap } from './isMap'
+export { storeLinkSecret } from './linkSecret'
 export {
-  fetchCredentialDefinition,
-  fetchRevocationRegistryDefinition,
-  fetchSchema,
-  fetchRevocationStatusList,
-} from './anonCredsObjects'
-export {
-  AnonCredsCredentialMetadataKey,
-  AnonCredsCredentialRequestMetadataKey,
-  W3cAnonCredsCredentialMetadataKey,
   type AnonCredsCredentialMetadata,
+  AnonCredsCredentialMetadataKey,
   type AnonCredsCredentialRequestMetadata,
+  AnonCredsCredentialRequestMetadataKey,
   type W3cAnonCredsCredentialMetadata,
+  W3cAnonCredsCredentialMetadataKey,
 } from './metadata'
+export { assertBestPracticeRevocationInterval } from './revocationInterval'
+export { sortRequestedCredentialsMatches } from './sortRequestedCredentialsMatches'
+export { dateToTimestamp } from './timestamp'
 export { getW3cRecordAnonCredsTags } from './w3cAnonCredsUtils'
-export { getCredentialsForAnonCredsProofRequest } from './getCredentialsForAnonCredsRequest'

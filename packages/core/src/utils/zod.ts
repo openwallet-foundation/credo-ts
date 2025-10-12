@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { ZodValidationError } from '../error'
 import type { AnyUint8Array } from '../types'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type zBaseSchema = z.Schema<any, any, any>
 
 export function zParseWithErrorHandling<Schema extends zBaseSchema>(

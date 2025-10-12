@@ -3,21 +3,21 @@ import { JwsService, JwtPayload } from '../../../crypto'
 import type { VerifyJwsResult } from '../../../crypto/JwsService'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { JsonTransformer, MessageValidator, asArray, nowInSeconds } from '../../../utils'
+import { asArray, JsonTransformer, MessageValidator, nowInSeconds } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { extractKeyFromHolderBinding } from '../../sd-jwt-vc/utils'
-import type {
-  W3cV2JwtSignCredentialOptions,
-  W3cV2JwtSignPresentationOptions,
-  W3cV2JwtVerifyCredentialOptions,
-  W3cV2JwtVerifyPresentationOptions,
-} from '../W3cV2CredentialServiceOptions'
 import type { SingleValidationResult, W3cV2VerifyCredentialResult, W3cV2VerifyPresentationResult } from '../models'
 import {
   extractHolderFromPresentationCredentials,
   getVerificationMethodForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
+import type {
+  W3cV2JwtSignCredentialOptions,
+  W3cV2JwtSignPresentationOptions,
+  W3cV2JwtVerifyCredentialOptions,
+  W3cV2JwtVerifyPresentationOptions,
+} from '../W3cV2CredentialServiceOptions'
 import { W3cV2JwtVerifiableCredential } from './W3cV2JwtVerifiableCredential'
 import { W3cV2JwtVerifiablePresentation } from './W3cV2JwtVerifiablePresentation'
 
@@ -123,7 +123,7 @@ export class W3cV2JwtCredentialService {
       const issuerVerificationMethod = await getVerificationMethodForJwt(agentContext, credential, ['assertionMethod'])
       const issuerPublicKey = getPublicJwkFromVerificationMethod(issuerVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined = undefined
+      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
         signatureResult = await this.jwsService.verifyJws(agentContext, {
@@ -286,7 +286,7 @@ export class W3cV2JwtCredentialService {
       const proverVerificationMethod = await getVerificationMethodForJwt(agentContext, presentation, ['authentication'])
       const proverPublicKey = getPublicJwkFromVerificationMethod(proverVerificationMethod)
 
-      let signatureResult: VerifyJwsResult | undefined = undefined
+      let signatureResult: VerifyJwsResult | undefined
       try {
         // Verify the JWS signature
         signatureResult = await this.jwsService.verifyJws(agentContext, {

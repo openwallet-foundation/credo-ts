@@ -1,13 +1,12 @@
-import type { Socket } from 'net'
-import type { DummyStateChangedEvent } from './dummy'
-
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, LogLevel } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
-import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import express from 'express'
+import type { Socket } from 'net'
 import { WebSocketServer } from 'ws'
+import type { DummyStateChangedEvent } from './dummy'
 
 import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 

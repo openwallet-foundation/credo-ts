@@ -1,21 +1,23 @@
 import type { DcqlQuery, X509Certificate } from '@credo-ts/core'
-import { OpenId4VcModule, type OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '../src'
-import type { AgentType } from './utils'
-
 import {
   ClaimFormat,
   DateOnly,
   Kms,
   MdocDeviceResponse,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
   X509Service,
-  parseDid,
 } from '@credo-ts/core'
-import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcVerificationSessionState } from '../src'
-
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { TenantsModule } from '../../tenants/src'
+import {
+  OpenId4VcModule,
+  OpenId4VcVerificationSessionState,
+  type OpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierRecord,
+} from '../src'
+import type { AgentType } from './utils'
 import { createAgentFromModules } from './utils'
 
 const baseUrl = 'http://localhost:1234'

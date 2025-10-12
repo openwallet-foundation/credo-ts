@@ -1,16 +1,14 @@
+import { AgentContext, injectable } from '@credo-ts/core'
+import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
+import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import type {
-  OpenId4VcUpdateIssuerRecordOptions,
   OpenId4VciCreateCredentialOfferOptions,
   OpenId4VciCreateCredentialResponseOptions,
   OpenId4VciCreateDeferredCredentialResponseOptions,
   OpenId4VciCreateIssuerOptions,
   OpenId4VciCreateStatelessCredentialOfferOptions,
+  OpenId4VcUpdateIssuerRecordOptions,
 } from './OpenId4VcIssuerServiceOptions'
-
-import { AgentContext, injectable } from '@credo-ts/core'
-
-import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
-import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 
 /**
  * @public

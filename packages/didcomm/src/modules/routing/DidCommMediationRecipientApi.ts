@@ -1,42 +1,40 @@
-import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
-import type { DidCommConnectionRecord } from '../connections/repository'
-import type { DidCommMediationStateChangedEvent } from './DidCommRoutingEvents'
-import type { DidCommMediationRecord } from './repository'
-import type { GetRoutingOptions } from './services/DidCommRoutingService'
-
 import {
   AgentContext,
   CredoError,
   DidDocument,
   DidsApi,
   EventEmitter,
-  InjectionSymbols,
-  type Logger,
   filterContextCorrelationId,
+  InjectionSymbols,
   inject,
   injectable,
+  type Logger,
   verkeyToDidKey,
 } from '@credo-ts/core'
-import { ReplaySubject, Subject, firstValueFrom, interval, merge, timer } from 'rxjs'
+import { firstValueFrom, interval, merge, ReplaySubject, Subject, timer } from 'rxjs'
 import { delayWhen, filter, first, takeUntil, tap, throttleTime, timeout } from 'rxjs/operators'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../DidCommModuleConfig'
 import { DidCommOutboundMessageContext } from '../../models'
+import type { DidCommOutboundWebSocketClosedEvent, DidCommOutboundWebSocketOpenedEvent } from '../../transport'
 import { DidCommTransportEventTypes } from '../../transport'
+import type { DidCommConnectionRecord } from '../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../connections/services'
 import { DidCommDiscoverFeaturesApi } from '../discover-features'
 import { DidCommMessagePickupApi } from '../message-pickup/DidCommMessagePickupApi'
 import { DidCommBatchPickupMessage } from '../message-pickup/protocol/v1'
 import { DidCommStatusV2Message } from '../message-pickup/protocol/v2'
-
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediatorPickupStrategy } from './DidCommMediatorPickupStrategy'
+import type { DidCommMediationStateChangedEvent } from './DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from './DidCommRoutingEvents'
 import { DidCommKeylistUpdate, DidCommKeylistUpdateAction, DidCommKeylistUpdateMessage } from './messages'
 import { DidCommMediationState } from './models/DidCommMediationState'
+import type { DidCommMediationRecord } from './repository'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService } from './services/DidCommMediationRecipientService'
+import type { GetRoutingOptions } from './services/DidCommRoutingService'
 import { DidCommRoutingService } from './services/DidCommRoutingService'
 
 @injectable()

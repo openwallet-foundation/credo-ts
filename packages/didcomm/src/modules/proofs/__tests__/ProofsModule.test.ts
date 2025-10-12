@@ -1,11 +1,10 @@
 import type { DependencyManager } from '../../../../../core/src/index'
-import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
-
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProofsModule } from '../DidCommProofsModule'
 import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
+import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
 import { DidCommProofV2Protocol } from '../protocol/v2/DidCommProofV2Protocol'
 import { DidCommProofExchangeRepository } from '../repository'
 

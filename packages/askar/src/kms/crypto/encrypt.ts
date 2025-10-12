@@ -6,11 +6,7 @@ export type AskarSupportedEncryptionOptions = Kms.KmsEncryptDataEncryption & {
   algorithm: keyof typeof jwkEncToAskarAlg
 }
 
-export function aeadEncrypt(options: {
-  key: Key
-  encryption: AskarSupportedEncryptionOptions
-  data: AnyUint8Array
-}) {
+export function aeadEncrypt(options: { key: Key; encryption: AskarSupportedEncryptionOptions; data: AnyUint8Array }) {
   const { key, encryption, data } = options
 
   const askarEncryptionAlgorithm = jwkEncToAskarAlg[encryption.algorithm]

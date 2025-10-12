@@ -1,3 +1,17 @@
+import {
+  AgentContext,
+  CredoError,
+  EventEmitter,
+  InjectionSymbols,
+  inject,
+  injectable,
+  type Logger,
+} from '@credo-ts/core'
+import { filter, first, firstValueFrom, ReplaySubject, Subject, takeUntil, timeout } from 'rxjs'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { DidCommModuleConfig } from '../../DidCommModuleConfig'
+import { DidCommOutboundMessageContext } from '../../models'
+import { DidCommConnectionService } from '../connections/services'
 import type {
   DeliverMessagesFromQueueOptions,
   DeliverMessagesFromQueueReturnType,
@@ -11,28 +25,11 @@ import type {
   SetLiveDeliveryModeReturnType,
 } from './DidCommMessagePickupApiOptions'
 import type { MessagePickupCompletedEvent } from './DidCommMessagePickupEvents'
+import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
+import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from './DidCommMessagePickupSession'
 import type { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
 import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
-
-import {
-  AgentContext,
-  CredoError,
-  EventEmitter,
-  InjectionSymbols,
-  type Logger,
-  inject,
-  injectable,
-} from '@credo-ts/core'
-import { ReplaySubject, Subject, filter, first, firstValueFrom, takeUntil, timeout } from 'rxjs'
-
-import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommOutboundMessageContext } from '../../models'
-import { DidCommConnectionService } from '../connections/services'
-
-import { DidCommModuleConfig } from '../../DidCommModuleConfig'
-import { DidCommMessagePickupEventTypes } from './DidCommMessagePickupEvents'
-import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupSessionService } from './services/DidCommMessagePickupSessionService'
 
 export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtocol[]> {
@@ -48,7 +45,7 @@ export interface DidCommMessagePickupApi<MPPs extends DidCommMessagePickupProtoc
 }
 
 @injectable()
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: no explanation
 export class DidCommMessagePickupApi<
   MPPs extends DidCommMessagePickupProtocol[] = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol],
 > implements DidCommMessagePickupApi<MPPs>

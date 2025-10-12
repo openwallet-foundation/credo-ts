@@ -1,16 +1,14 @@
 import type { AgentContext } from '@credo-ts/core'
+import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
+import { type Subject, takeUntil } from 'rxjs'
 import type { DidCommTransportSessionRemovedEvent } from '../../../transport'
+import { DidCommTransportEventTypes } from '../../../transport'
 import type {
   DidCommMessagePickupLiveSessionSavedEvent,
   MessagePickupLiveSessionRemovedEvent,
 } from '../DidCommMessagePickupEvents'
-import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
-
-import { EventEmitter, InjectionSymbols, injectable, utils } from '@credo-ts/core'
-import { type Subject, takeUntil } from 'rxjs'
-
-import { DidCommTransportEventTypes } from '../../../transport'
 import { DidCommMessagePickupEventTypes } from '../DidCommMessagePickupEvents'
+import type { DidCommMessagePickupSession, DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
 
 /**
  * @internal

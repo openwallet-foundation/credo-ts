@@ -1,7 +1,7 @@
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class JsonEncoder {
   /**
    * Encode json object into base64 string.

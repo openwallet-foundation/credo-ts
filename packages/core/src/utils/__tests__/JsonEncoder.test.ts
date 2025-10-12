@@ -1,5 +1,5 @@
-import { JsonEncoder } from '../JsonEncoder'
 import { Buffer } from '../buffer'
+import { JsonEncoder } from '../JsonEncoder'
 
 describe('JsonEncoder', () => {
   const mockCredentialRequest = {

@@ -1,8 +1,8 @@
 import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSQLiteSchema } from 'drizzle-kit/api'
 import { drizzle } from 'drizzle-orm/libsql'
-import type { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
 import * as coreContextSchema from '../../core/context-record/sqlite'
+import type { DrizzleSqliteDatabase } from '../../DrizzleDatabase'
 import * as didcommConnectionSchema from '../../didcomm/connection-record/sqlite'
 import { queryToDrizzleSqlite } from '../queryToDrizzleSqlite'
 
@@ -15,7 +15,7 @@ const db = drizzle(':memory:', {
 
 describe('queryToDrizzleSqlite', () => {
   beforeAll(async () => {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const { apply } = await pushSQLiteSchema({ ...didcommConnectionSchema, ...coreContextSchema }, db as any)
     await apply()
 

@@ -1,10 +1,9 @@
-import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
-
 import { AgentContext } from '../agent'
 import { CredoError } from '../error'
 import { VerificationMethod } from '../modules/dids'
 import { getPublicJwkFromVerificationMethod } from '../modules/dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi, PublicJwk } from '../modules/kms'
+import type { LdKeyPairOptions } from '../modules/vc/data-integrity/models/LdKeyPair'
 import { LdKeyPair } from '../modules/vc/data-integrity/models/LdKeyPair'
 import type { AnyUint8Array, Uint8ArrayBuffer } from '../types'
 import { JsonTransformer, MessageValidator } from '../utils'

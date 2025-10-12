@@ -1,10 +1,7 @@
+import { Subject } from 'rxjs'
+import type { MockedClassConstructor } from '../../../../../../../../../tests/types'
 import type { AnonCredsCredentialMetadata } from '../../../../../../../../anoncreds/src/index'
 import type { AgentContext } from '../../../../../../../../core/src/agent'
-import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
-
-import { Subject } from 'rxjs'
-
-import type { MockedClassConstructor } from '../../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../../core/src/agent/EventEmitter'
 import {
   getAgentConfig,
@@ -14,6 +11,7 @@ import {
 } from '../../../../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../../../../models'
 import { DidCommDidExchangeState } from '../../../../../connections'
+import type { DidCommRevocationNotificationReceivedEvent } from '../../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../../DidCommCredentialEvents'
 import { DidCommCredentialRole, DidCommCredentialState } from '../../../../models'
 import { DidCommCredentialExchangeRecord } from '../../../../repository'
@@ -64,7 +62,7 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // @ts-ignore
+      // @ts-expect-error
       const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({
@@ -180,7 +178,7 @@ describe('RevocationNotificationService', () => {
 
       const date = new Date('2020-01-01T00:00:00.000Z')
 
-      // @ts-ignore
+      // @ts-expect-error
       const dateSpy = vi.spyOn(global, 'Date').mockImplementation(() => date)
 
       const credentialRecord = new DidCommCredentialExchangeRecord({

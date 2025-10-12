@@ -1,6 +1,5 @@
-import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
-
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
+import type { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommMediationState, DidCommMediatorPickupStrategy } from '../../didcomm/src/modules/routing'
 import { Agent } from '../src/agent/Agent'
 
@@ -71,9 +70,9 @@ describe('out of band with mediation set up with provision method', () => {
     let { connectionRecord } = await aliceAgent.didcomm.oob.receiveInvitation(mediatorOutOfBandInvitation, {
       label: 'alice',
     })
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     connectionRecord = await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord?.id!)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.mediationRecipient.provision(connectionRecord!)
   })
 
@@ -98,7 +97,7 @@ describe('out of band with mediation set up with provision method', () => {
       label: 'alice',
     })
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -121,7 +120,7 @@ describe('out of band with mediation set up with provision method', () => {
     const [reusedAliceMediatorConnection] = reusedOutOfBandRecord
       ? await aliceAgent.didcomm.connections.findAllByOutOfBandId(reusedOutOfBandRecord.id)
       : []
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     await aliceAgent.didcomm.mediationRecipient.provision(reusedAliceMediatorConnection!)
     const mediators = await aliceAgent.didcomm.mediationRecipient.getMediators()
     expect(mediators).toHaveLength(1)

@@ -1,7 +1,6 @@
+import { AskarModule } from '@credo-ts/askar'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2 } from '@credo-ts/core'
 import type { OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
-
-import { AskarModule } from '@credo-ts/askar'
 import { OpenId4VcModule } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Router } from 'express'

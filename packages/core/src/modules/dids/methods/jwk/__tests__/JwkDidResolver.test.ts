@@ -1,6 +1,5 @@
-import type { AgentContext } from '../../../../../agent'
-
 import { getAgentContext } from '../../../../../../tests/helpers'
+import type { AgentContext } from '../../../../../agent'
 import { JsonTransformer } from '../../../../../utils/JsonTransformer'
 import { DidJwk } from '../DidJwk'
 import { JwkDidResolver } from '../JwkDidResolver'

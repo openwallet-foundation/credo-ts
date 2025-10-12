@@ -1,16 +1,13 @@
 import type { FileSystem, InitConfig } from '@credo-ts/core'
-
-import path from 'path'
-import { Agent, CacheModule, InMemoryLruCache, InjectionSymbols, UpdateAssistant } from '@credo-ts/core'
+import { Agent, CacheModule, InjectionSymbols, InMemoryLruCache, UpdateAssistant } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-
+import { TenantsModule } from '@credo-ts/tenants'
+import path from 'path'
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
 import { askar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
 import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinator'
-
-import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig = {
   logger: testLogger,

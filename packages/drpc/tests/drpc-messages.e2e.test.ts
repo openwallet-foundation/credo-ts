@@ -1,11 +1,10 @@
 import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
-import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
-
 import { Agent } from '../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../core/tests'
 import { getAgentOptions, makeConnection } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
 import { DrpcModule } from '../src/DrpcModule'
+import type { DrpcRequest, DrpcRequestObject, DrpcResponseObject } from '../src/messages'
 import { DrpcErrorCode } from '../src/models'
 
 const modules = {

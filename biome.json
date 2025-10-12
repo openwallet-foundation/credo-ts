@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -11,7 +11,15 @@
   "formatter": {
     "indentStyle": "space",
     "lineWidth": 120,
-    "ignore": ["**/node_modules", "**/build", "**/.idea", "**/coverage", "**/pnpm-lock.yaml", "**/.changeset"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/build",
+      "!**/.idea",
+      "!**/coverage",
+      "!**/pnpm-lock.yaml",
+      "!**/.changeset"
+    ]
   },
   "javascript": {
     "parser": {
@@ -30,9 +38,7 @@
       "allowComments": true
     }
   },
-  "organizeImports": {
-    "enabled": true
-  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "linter": {
     "rules": {
       "style": {
@@ -42,7 +48,15 @@
         "noRestrictedGlobals": {
           "level": "error",
           "options": {
-            "deniedGlobals": ["Buffer"]
+            "deniedGlobals": { "Buffer": "TODO: Add a custom message here." }
+          }
+        },
+        "noRestrictedImports": {
+          "level": "error",
+          "options": {
+            "paths": {
+              "packages/*": "using imports from packages/* is not allowed"
+            }
           }
         }
       },
@@ -62,16 +76,7 @@
       "complexity": {
         "noBannedTypes": "error"
       },
-      "nursery": {
-        "noRestrictedImports": {
-          "level": "error",
-          "options": {
-            "paths": {
-              "packages/*": "using imports from packages/* is not allowed"
-            }
-          }
-        }
-      },
+      "nursery": {},
       "performance": {
         "noDelete": {
           "fix": "none",
@@ -82,7 +87,7 @@
   },
   "overrides": [
     {
-      "include": ["./scripts/**"],
+      "includes": ["scripts/**"],
       "linter": {
         "rules": {
           "correctness": {
@@ -92,7 +97,7 @@
       }
     },
     {
-      "include": ["demo/**", "demo-openid/**"],
+      "includes": ["**/demo/**", "**/demo-openid/**"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -102,24 +107,21 @@
       }
     },
     {
-      "include": [
-        "*.test.ts",
+      "includes": [
+        "**/*.test.ts",
         "**/__tests__/**",
-        "vitest.*.ts",
-        "samples/**",
-        "demo/**",
-        "demo-openid/**",
-        "scripts/**",
+        "**/vitest.*.ts",
+        "**/samples/**",
+        "**/demo/**",
+        "**/demo-openid/**",
+        "**/scripts/**",
         "**/tests/**",
-        "tests/**"
+        "**/tests/**"
       ],
       "linter": {
         "rules": {
           "correctness": {
             "noUndeclaredDependencies": "off"
-          },
-          "nursery": {
-            "useImportRestrictions": "off"
           }
         }
       }

@@ -1,12 +1,9 @@
 import type { DefaultW3cCredentialTags, W3cCredentialSubject } from '@credo-ts/core'
+import { CredoError, utils, W3cCredentialRecord } from '@credo-ts/core'
 import type { AnonCredsCredentialInfo, AnonCredsSchema } from '../models'
 import type { AnonCredsCredentialRecord } from '../repository'
 import type { StoreCredentialOptions } from '../services'
 import type { AnonCredsClaimRecord } from './credential'
-import type { W3cAnonCredsCredentialMetadata } from './metadata'
-
-import { CredoError, W3cCredentialRecord, utils } from '@credo-ts/core'
-
 import { mapAttributeRawValuesToAnonCredsCredentialValues } from './credential'
 import {
   getQualifiedDidIndyCredentialDefinition,
@@ -22,6 +19,7 @@ import {
   isUnqualifiedIndyDid,
   isUnqualifiedRevocationRegistryId,
 } from './indyIdentifiers'
+import type { W3cAnonCredsCredentialMetadata } from './metadata'
 import { W3cAnonCredsCredentialMetadataKey } from './metadata'
 
 export type AnonCredsCredentialTags = {

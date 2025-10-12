@@ -1,6 +1,5 @@
-import type { CredentialProtocolOptions, DidCommCredentialStateChangedEvent } from '@credo-ts/didcomm'
-
 import { AgentContext, EventEmitter, JsonTransformer } from '@credo-ts/core'
+import type { CredentialProtocolOptions, DidCommCredentialStateChangedEvent } from '@credo-ts/didcomm'
 import {
   DidCommAttachment,
   DidCommAttachmentData,
@@ -86,7 +85,7 @@ describe('V1CredentialProtocolProposeOffer', () => {
     credentialRepository = new CredentialRepositoryMock()
     indyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
 
-    // @ts-ignore
+    // @ts-expect-error
     indyCredentialFormatService.credentialRecordType = 'w3c'
 
     agentContext = getAgentContext({

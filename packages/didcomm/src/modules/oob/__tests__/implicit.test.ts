@@ -5,9 +5,9 @@ import {
   DidDocumentBuilder,
   DidDocumentService,
   DidsModule,
+  getEd25519VerificationKey2018,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
-  getEd25519VerificationKey2018,
 } from '../../../../../core/src/modules/dids'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { getAgentOptions, waitForConnectionRecord } from '../../../../../core/tests/helpers'
@@ -91,7 +91,7 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -111,7 +111,7 @@ describe('out of band implicit', () => {
     const serviceUrl = inMemoryDidDocument.service?.[1].id
 
     let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       did: serviceUrl!,
       alias: 'Faber public',
       label: 'alice',
@@ -127,7 +127,7 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -138,7 +138,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(serviceUrl)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     expect(await aliceAgent.didcomm.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
   })
 
@@ -161,7 +161,7 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -205,7 +205,7 @@ describe('out of band implicit', () => {
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -232,7 +232,7 @@ describe('out of band implicit', () => {
     expect(faberAliceNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberNewConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberNewConnection?.id!)
     expect(aliceFaberNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 

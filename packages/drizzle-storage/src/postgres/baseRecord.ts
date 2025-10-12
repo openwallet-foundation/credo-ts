@@ -26,7 +26,7 @@ export const getPostgresBaseRecordTable = () =>
 
 // Define common base indexes that all tables should have
 export const postgresBaseRecordIndexes = <
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   Table extends { contextCorrelationId: ExtraConfigColumn<any>; id: ExtraConfigColumn<any> },
 >(
   table: Table,

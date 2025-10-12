@@ -44,7 +44,7 @@ export function transformPrivateKeyToPrivateJwk<Type extends Kms.KmsCreateKeyTyp
   }).jwkSecret
 
   return {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     privateJwk: privateJwk as any,
   }
 }
@@ -91,7 +91,7 @@ export function transformSeedToPrivateJwk<Type extends Kms.KmsCreateKeyTypeOkp |
   }).jwkSecret
 
   return {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     privateJwk: privateJwk as any,
   }
 }

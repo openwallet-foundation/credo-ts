@@ -9,7 +9,7 @@ export async function resolveBundle(bundle: string) {
 
   let lastError: Error | undefined
   for (const option of options) {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     let module: any
 
     try {
@@ -69,11 +69,11 @@ export function getDrizzleConfigPath() {
 }
 
 export function log(message: string, ...optionalParams: unknown[]) {
-  // biome-ignore lint/suspicious/noConsole: <explanation>
+  // biome-ignore lint/suspicious/noConsole: no explanation
   console.log(message, ...optionalParams)
 }
 
 export function errorLog(message: string, ...optionalParams: unknown[]) {
-  // biome-ignore lint/suspicious/noConsole: <explanation>
+  // biome-ignore lint/suspicious/noConsole: no explanation
   console.error(message, ...optionalParams)
 }

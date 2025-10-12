@@ -1,14 +1,13 @@
 import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
-import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
-
 import {
-  DIDModule,
-  VerificationMethods,
   createDidPayload,
   createDidVerificationMethod,
   createVerificationKeys,
+  DIDModule,
+  VerificationMethods,
 } from '@cheqd/sdk'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
+import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import { EnglishMnemonic as _ } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
 import {
@@ -122,7 +121,7 @@ export interface IDidDocOptions {
 
 export function getClosestResourceVersion(resources: Metadata[], date: Date) {
   let minDiff = Number.POSITIVE_INFINITY
-  let closest: Metadata | undefined = undefined
+  let closest: Metadata | undefined
 
   // TODO: if the cheqd/sdk returns sorted resources, change this to binary search
   for (const resource of resources) {

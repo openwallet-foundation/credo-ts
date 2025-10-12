@@ -2,8 +2,8 @@ import { clear } from 'console'
 import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { Issuer, credentialConfigurationsSupported } from './Issuer'
-import { Title, greenText, purpleText, redText } from './OutputClass'
+import { credentialConfigurationsSupported, Issuer } from './Issuer'
+import { greenText, purpleText, redText, Title } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()

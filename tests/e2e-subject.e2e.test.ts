@@ -1,17 +1,14 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-import type { SubjectMessage } from './transport/SubjectInboundTransport'
-
-import { Subject } from 'rxjs'
-
-import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
-
-import { e2eTest } from './e2e-test'
-import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
-import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
-
 import { Agent } from '@credo-ts/core'
 import { DidCommAutoAcceptCredential, DidCommMediatorPickupStrategy } from '@credo-ts/didcomm'
+
+import { Subject } from 'rxjs'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAgentOptions } from '../packages/core/tests/helpers'
+import { e2eTest } from './e2e-test'
+import type { SubjectMessage } from './transport/SubjectInboundTransport'
+import { SubjectInboundTransport } from './transport/SubjectInboundTransport'
+import { SubjectOutboundTransport } from './transport/SubjectOutboundTransport'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E Subject Recipient',

@@ -1,11 +1,10 @@
-import type { DidCommMediationRecordProps } from '../../../modules'
-import type { CustomDidCommConnectionTags, DidCommConnectionRecordProps } from '../../../modules/connections'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../..//core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
+import type { DidCommMediationRecordProps } from '../../../modules'
 import { DidCommMediationRecord, DidCommMediationRole, DidCommMediationState } from '../../../modules'
+import type { CustomDidCommConnectionTags, DidCommConnectionRecordProps } from '../../../modules/connections'
 import {
   DidCommConnectionRecord,
   DidCommConnectionType,

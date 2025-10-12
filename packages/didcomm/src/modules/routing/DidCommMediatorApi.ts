@@ -1,11 +1,9 @@
-import type { DidCommMediationRecord } from './repository'
-
 import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
-
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
+import type { DidCommMediationRecord } from './repository'
 import { DidCommMediatorService } from './services/DidCommMediatorService'
 
 @injectable()

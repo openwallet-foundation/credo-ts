@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommMediatorService } from '../services'
-
 import { DidCommForwardMessage } from '../messages'
+import type { DidCommMediatorService } from '../services'
 
 export class DidCommForwardHandler implements DidCommMessageHandler {
   private mediatorService: DidCommMediatorService

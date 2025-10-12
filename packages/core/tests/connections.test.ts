@@ -1,7 +1,7 @@
-import type { DidCommKeylistUpdate, DidCommMessageProcessedEvent } from '../../didcomm/src'
+import { TypedArrayEncoder } from '@credo-ts/core'
 
 import { filter, map, timeout } from 'rxjs'
-
+import type { DidCommKeylistUpdate, DidCommMessageProcessedEvent } from '../../didcomm/src'
 import {
   DidCommDidExchangeState,
   DidCommEventTypes,
@@ -12,12 +12,9 @@ import {
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { Agent } from '../src/agent/Agent'
 import { didKeyToVerkey } from '../src/modules/dids/helpers'
-
+import { Ed25519PublicJwk, PublicJwk } from '../src/modules/kms'
 import { firstValueWithStackTrace, getAgentOptions, waitForTrustPingResponseReceivedEvent } from './helpers'
 import { setupSubjectTransports } from './transport'
-
-import { TypedArrayEncoder } from '@credo-ts/core'
-import { Ed25519PublicJwk, PublicJwk } from '../src/modules/kms'
 
 const faberAgent = new Agent(
   getAgentOptions(
@@ -98,7 +95,7 @@ describe('connections', () => {
       invitationUrl,
       { label: 'alice' }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -121,7 +118,7 @@ describe('connections', () => {
       invitationUrl,
       { label: 'alice' }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -133,13 +130,13 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     acmeFaberConnection = await acmeAgent.didcomm.connections.returnWhenIsConnected(acmeFaberConnection?.id!)
     expect(acmeFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAliceConnection = await faberAgent.didcomm.connections.getByThreadId(aliceFaberConnection.threadId!)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAcmeConnection = await faberAgent.didcomm.connections.getByThreadId(acmeFaberConnection.threadId!)
 
     faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection.id)
@@ -167,7 +164,7 @@ describe('connections', () => {
       invitationUrl,
       { label: 'alice' }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -221,7 +218,7 @@ describe('connections', () => {
       { label: 'alice' }
     )
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection1 = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection1?.id!)
     expect(aliceFaberConnection1.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -233,13 +230,13 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection2 = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection2?.id!)
     expect(aliceFaberConnection2.state).toBe(DidCommDidExchangeState.Completed)
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAliceConnection1 = await faberAgent.didcomm.connections.getByThreadId(aliceFaberConnection1.threadId!)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAliceConnection2 = await faberAgent.didcomm.connections.getByThreadId(aliceFaberConnection2.threadId!)
 
     faberAliceConnection1 = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection1.id)
@@ -259,10 +256,10 @@ describe('connections', () => {
     let { connectionRecord } = await faberAgent.didcomm.oob.receiveInvitation(mediatorOutOfBandInvitation, {
       label: 'faber',
     })
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     connectionRecord = await faberAgent.didcomm.connections.returnWhenIsConnected(connectionRecord?.id!)
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     const mediationRecord = await faberAgent.didcomm.mediationRecipient.provision(connectionRecord!)
     faberAgent.didcomm.mediationRecipient.initiateMessagePickup(mediationRecord)
 
@@ -296,7 +293,7 @@ describe('connections', () => {
       invitationUrl,
       { label: 'alice' }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -308,13 +305,13 @@ describe('connections', () => {
         reuseConnection: false,
       }
     )
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     acmeFaberConnection = await acmeAgent.didcomm.connections.returnWhenIsConnected(acmeFaberConnection?.id!)
     expect(acmeFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAliceConnection = await faberAgent.didcomm.connections.getByThreadId(aliceFaberConnection.threadId!)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     let faberAcmeConnection = await faberAgent.didcomm.connections.getByThreadId(acmeFaberConnection.threadId!)
 
     faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection.id)
@@ -345,14 +342,14 @@ describe('connections', () => {
         {
           action: DidCommKeylistUpdateAction.add,
           recipientKey: TypedArrayEncoder.toBase58(
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            // biome-ignore lint/style/noNonNullAssertion: no explanation
             (await faberAgent.dids.resolveDidDocument(faberAliceConnection.did!)).recipientKeys[0].publicKey.publicKey
           ),
         },
         {
           action: DidCommKeylistUpdateAction.add,
           recipientKey: TypedArrayEncoder.toBase58(
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            // biome-ignore lint/style/noNonNullAssertion: no explanation
             (await faberAgent.dids.resolveDidDocument(faberAcmeConnection.did!)).recipientKeys[0].publicKey.publicKey
           ),
         },
@@ -381,7 +378,7 @@ describe('connections', () => {
       ).toEqual({
         action: DidCommKeylistUpdateAction.remove,
         recipientKey: TypedArrayEncoder.toBase58(
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          // biome-ignore lint/style/noNonNullAssertion: no explanation
           (await faberAgent.dids.resolveDidDocument(connection.did!)).recipientKeys[0].publicKey.publicKey
         ),
       })

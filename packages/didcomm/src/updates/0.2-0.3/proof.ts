@@ -1,12 +1,11 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { DidCommPlaintextMessage } from '../../types'
-
 import {
   type DidCommProofExchangeRecord,
   DidCommProofExchangeRepository,
   DidCommProofState,
 } from '../../modules/proofs'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
+import type { DidCommPlaintextMessage } from '../../types'
 
 /**
  * Migrates the {@link DidCommProofExchangeRecord} to 0.3 compatible format. It fetches all records from storage

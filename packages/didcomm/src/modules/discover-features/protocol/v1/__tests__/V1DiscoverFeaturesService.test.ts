@@ -1,11 +1,4 @@
-import type {
-  DidCommDiscoverFeaturesDisclosureReceivedEvent,
-  DidCommDiscoverFeaturesQueryReceivedEvent,
-} from '../../../DidCommDiscoverFeaturesEvents'
-import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDiscoverFeaturesServiceOptions'
-
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { ConsoleLogger } from '../../../../../../../core/src/logger'
@@ -13,8 +6,13 @@ import { agentDependencies, getAgentContext, getMockConnection } from '../../../
 import { DidCommFeatureRegistry } from '../../../../../DidCommFeatureRegistry'
 import { DidCommInboundMessageContext, DidCommProtocol } from '../../../../../models'
 import { DidCommDidExchangeState } from '../../../../connections'
+import type {
+  DidCommDiscoverFeaturesDisclosureReceivedEvent,
+  DidCommDiscoverFeaturesQueryReceivedEvent,
+} from '../../../DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesEventTypes } from '../../../DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesModuleConfig } from '../../../DidCommDiscoverFeaturesModuleConfig'
+import type { DiscoverFeaturesProtocolMsgReturnType } from '../../../DidCommDiscoverFeaturesServiceOptions'
 import { DidCommDiscoverFeaturesV1Service } from '../DidCommDiscoverFeaturesV1Service'
 import { DidCommFeaturesDiscloseMessage, DidCommFeaturesQueryMessage } from '../messages'
 

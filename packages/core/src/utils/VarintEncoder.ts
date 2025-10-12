@@ -3,7 +3,7 @@ import varint from 'varint'
 import type { AnyUint8Array } from '../types'
 import { Buffer } from './buffer'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class VarintEncoder {
   public static decode(data: AnyUint8Array | number[] | Buffer) {
     const code = varint.decode(data)

@@ -1,5 +1,13 @@
-import { CheqdNetwork, type DIDDocument, type DidStdFee, VerificationMethods } from '@cheqd/sdk'
+import {
+  CheqdNetwork,
+  createDidVerificationMethod,
+  type DIDDocument,
+  type DidStdFee,
+  MethodSpecificIdAlgo,
+  VerificationMethods,
+} from '@cheqd/sdk'
 import type { SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
+import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
 import {
   AgentContext,
   type AnyUint8Array,
@@ -7,29 +15,24 @@ import {
   type DidCreateOptions,
   type DidCreateResult,
   type DidDeactivateResult,
-  type DidDocumentKey,
-  type DidRegistrar,
-  type DidUpdateOptions,
-  type DidUpdateResult,
-  Kms,
-  SECURITY_JWS_CONTEXT_URL,
-  type Uint8ArrayBuffer,
-  type XOR,
-  getKmsKeyIdForVerifiacationMethod,
-  getPublicJwkFromVerificationMethod,
-} from '@credo-ts/core'
-
-import { MethodSpecificIdAlgo, createDidVerificationMethod } from '@cheqd/sdk'
-import { MsgCreateResourcePayload } from '@cheqd/ts-proto/cheqd/resource/v2'
-import {
   DidDocument,
+  type DidDocumentKey,
   DidDocumentRole,
   DidRecord,
+  type DidRegistrar,
   DidRepository,
+  type DidUpdateOptions,
+  type DidUpdateResult,
+  getKmsKeyIdForVerifiacationMethod,
+  getPublicJwkFromVerificationMethod,
   JsonTransformer,
+  Kms,
+  SECURITY_JWS_CONTEXT_URL,
   TypedArrayEncoder,
-  VerificationMethod,
+  type Uint8ArrayBuffer,
   utils,
+  VerificationMethod,
+  type XOR,
 } from '@credo-ts/core'
 
 import {

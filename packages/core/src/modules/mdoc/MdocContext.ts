@@ -1,10 +1,8 @@
 import type { MdocContext, X509Context } from '@animo-id/mdoc'
-import type { AgentContext } from '../../agent'
-
 import { p256 } from '@noble/curves/nist.js'
 import { hkdf } from '@noble/hashes/hkdf.js'
-
 import { sha256 } from '@noble/hashes/sha2.js'
+import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, Hasher } from '../../crypto'
 import { Buffer, TypedArrayEncoder } from '../../utils'
 import { KeyManagementApi, type KmsJwkPublicAsymmetric, type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'

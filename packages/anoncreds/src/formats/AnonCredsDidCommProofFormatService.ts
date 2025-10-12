@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import type {
   DidCommFormatCreateRequestOptions,
   DidCommProofFormatAcceptProposalOptions,
@@ -16,6 +17,7 @@ import type {
   DidCommProofFormatSelectCredentialsForRequestReturn,
   DidCommProofFormatService,
 } from '@credo-ts/didcomm'
+import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsProof,
@@ -23,16 +25,8 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '../models'
-import type { AnonCredsHolderService, AnonCredsVerifierService } from '../services'
-import type {
-  AnonCredsDidCommProofFormat,
-  AnonCredsGetCredentialsForProofRequestOptions,
-} from './AnonCredsDidCommProofFormat'
-
-import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
-
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
+import type { AnonCredsHolderService, AnonCredsVerifierService } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import {
   areAnonCredsProofRequestsEqual,
@@ -47,6 +41,10 @@ import {
 import { encodeCredentialValue } from '../utils/credential'
 import { getCredentialsForAnonCredsProofRequest } from '../utils/getCredentialsForAnonCredsRequest'
 import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
+import type {
+  AnonCredsDidCommProofFormat,
+  AnonCredsGetCredentialsForProofRequestOptions,
+} from './AnonCredsDidCommProofFormat'
 
 const ANONCREDS_PRESENTATION_PROPOSAL = 'anoncreds/proof-request@v1.0'
 const ANONCREDS_PRESENTATION_REQUEST = 'anoncreds/proof-request@v1.0'

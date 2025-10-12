@@ -12,7 +12,7 @@ const testPath = expect.getState().testPath
 const relativeTestPath = testPath ? path.relative(process.cwd(), testPath) : undefined
 
 // Create a log file name based on test file
-const logFileName = relativeTestPath?.replace(/[\/\\]/g, '_').replace(/\.[^.]+$/, '.log')
+const logFileName = relativeTestPath?.replace(/[/\\]/g, '_').replace(/\.[^.]+$/, '.log')
 const logDir = path.join(process.cwd(), 'testlogs')
 const logPath = logFileName ? path.join(logDir, logFileName) : undefined
 
@@ -40,7 +40,7 @@ if (logPath && process.env.COLLECT_FAILED_TEST_LOGS === 'true') {
 }
 
 process.on('unhandledRejection', (reason) => {
-  // biome-ignore lint/suspicious/noConsole: <explanation>
+  // biome-ignore lint/suspicious/noConsole: no explanation
   console.error('Unhandled rejection in test', {
     reason,
     relativeTestPath,
@@ -66,7 +66,7 @@ process.on('unhandledRejection', (reason) => {
 })
 
 process.on('uncaughtException', (reason) => {
-  // biome-ignore lint/suspicious/noConsole: <explanation>
+  // biome-ignore lint/suspicious/noConsole: no explanation
   console.error('Uncaught exception in test', {
     reason,
     relativeTestPath,
@@ -126,6 +126,6 @@ interface CustomMatchers<R = unknown> {
 }
 
 declare module 'vitest' {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   interface Matchers<T = any> extends CustomMatchers<T> {}
 }

@@ -1,10 +1,7 @@
 import { RSAPublicKey } from '@peculiar/asn1-rsa'
-import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
-import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
-
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
-import { type KmsCreateKeyType, PublicJwk, getJwkHumanDescription } from '../../../modules/kms'
-import { CredoWebCryptoError } from '../CredoWebCryptoError'
+import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
+import { getJwkHumanDescription, type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
   ecPublicKeyWithP256AlgorithmIdentifier,
@@ -14,6 +11,8 @@ import {
   rsaKeyAlgorithmIdentifier,
   x25519AlgorithmIdentifier,
 } from '../algorithmIdentifiers'
+import { CredoWebCryptoError } from '../CredoWebCryptoError'
+import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
 
 export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm => {
   const publicJwk = key.toJson()

@@ -21,9 +21,9 @@ import {
   type DidDocumentKey,
   DidRepository,
   type DidUpdateOptions,
+  injectable,
   Kms,
   type Uint8ArrayBuffer,
-  injectable,
 } from '@credo-ts/core'
 import { Client } from '@hashgraph/sdk'
 import { HederaAnoncredsRegistry } from '@hiero-did-sdk/anoncreds'
@@ -31,25 +31,25 @@ import { LRUMemoryCache } from '@hiero-did-sdk/cache'
 import { HederaClientService, type HederaNetwork } from '@hiero-did-sdk/client'
 import {
   type Cache,
-  type DIDResolution,
   DID_ROOT_KEY_ID,
+  type DIDResolution,
+  parseDID,
   type Service,
   type VerificationMethod,
-  parseDID,
 } from '@hiero-did-sdk/core'
 import {
   type CreateDIDResult,
-  DIDUpdateBuilder,
   type DeactivateDIDResult,
-  type UpdateDIDResult,
+  DIDUpdateBuilder,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
   generateUpdateDIDRequest,
   submitCreateDIDRequest,
   submitDeactivateDIDRequest,
   submitUpdateDIDRequest,
+  type UpdateDIDResult,
 } from '@hiero-did-sdk/registrar'
-import { TopicReaderHederaHcs, resolveDID } from '@hiero-did-sdk/resolver'
+import { resolveDID, TopicReaderHederaHcs } from '@hiero-did-sdk/resolver'
 import { HederaModuleConfig } from '../HederaModuleConfig'
 import { KmsPublisher } from './publisher/KmsPublisher'
 import { KmsSigner } from './signer/KmsSigner'
@@ -488,9 +488,9 @@ export class HederaLedgerService {
     builder: DIDUpdateBuilder,
     property: string,
     action: 'add' | 'remove'
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
   ): (item: any) => DIDUpdateBuilder {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const methodMap: Record<string, Record<'add' | 'remove', (item: any) => DIDUpdateBuilder>> = {
       service: {
         add: (item: Service) => builder.addService(item),

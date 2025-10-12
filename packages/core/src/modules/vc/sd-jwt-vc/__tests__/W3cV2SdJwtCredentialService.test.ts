@@ -31,7 +31,7 @@ import {
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-sd-jwt-vc'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2SdJwtCredentialService')
 const agentContext = getAgentContext({
@@ -248,7 +248,7 @@ describe('W3cV2SdJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.issuer = undefined
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
@@ -271,7 +271,7 @@ describe('W3cV2SdJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.vc = 'mamma mia'
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {

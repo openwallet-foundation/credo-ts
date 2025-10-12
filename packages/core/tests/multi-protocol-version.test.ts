@@ -1,6 +1,5 @@
-import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
-
 import { filter, timeout } from 'rxjs'
+import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 
 import {
   DidCommEventTypes,

@@ -1,9 +1,8 @@
-import type { DidDocument, DidRegistrar } from '../../domain'
-import type { DidResolverService } from '../DidResolverService'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { DidsModuleConfig } from '../../DidsModuleConfig'
+import type { DidDocument, DidRegistrar } from '../../domain'
 import { DidRegistrarService } from '../DidRegistrarService'
+import type { DidResolverService } from '../DidResolverService'
 
 const agentConfig = getAgentConfig('DidResolverService')
 const agentContext = getAgentContext()

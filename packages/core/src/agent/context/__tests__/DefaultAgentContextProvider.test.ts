@@ -1,6 +1,5 @@
-import type { AgentContextProvider } from '../AgentContextProvider'
-
 import { getAgentContext } from '../../../../tests/helpers'
+import type { AgentContextProvider } from '../AgentContextProvider'
 import { DefaultAgentContextProvider } from '../DefaultAgentContextProvider'
 
 const agentContext = getAgentContext()

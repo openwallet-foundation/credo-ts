@@ -1,4 +1,12 @@
+import { p256, p384 } from '@noble/curves/nist.js'
+import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
+import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
 import type { AgentContext } from '../../agent'
+import { KeyManagementApi, PublicJwk } from '../../modules/kms'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../types'
+import { Hasher } from '../hashes'
+import { CredoWebCryptoError } from './CredoWebCryptoError'
+import { CredoWebCryptoKey } from './CredoWebCryptoKey'
 import {
   type JsonWebKey,
   type KeyFormat,
@@ -9,22 +17,12 @@ import {
   type KeyVerifyParams,
   keyParamsToJwaAlgorithm,
 } from './types'
-
-import { p256, p384 } from '@noble/curves/nist.js'
-import { AsnConvert, AsnParser } from '@peculiar/asn1-schema'
-import { SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
-
-import { KeyManagementApi, PublicJwk } from '../../modules/kms'
-import type { AnyUint8Array, Uint8ArrayBuffer } from '../../types'
-import { Hasher } from '../hashes'
-import { CredoWebCryptoError } from './CredoWebCryptoError'
-import { CredoWebCryptoKey } from './CredoWebCryptoKey'
 import { cryptoKeyAlgorithmToCreateKeyOptions, publicJwkToSpki, spkiToPublicJwk } from './utils'
 
 export class CredoWalletWebCrypto {
   private kms: KeyManagementApi
 
-  public constructor(private agentContext: AgentContext) {
+  public constructor(agentContext: AgentContext) {
     this.kms = agentContext.resolve(KeyManagementApi)
   }
 

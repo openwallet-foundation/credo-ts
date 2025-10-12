@@ -2,21 +2,21 @@ import { injectable } from 'tsyringe'
 
 import { AgentContext } from '../../agent'
 import { zParseWithErrorHandling } from '../../utils/zod'
-
-import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import { KeyManagementError } from './error/KeyManagementError'
 import { KeyManagementKeyNotFoundError } from './error/KeyManagementKeyNotFoundError'
-import { type KmsJwkPrivate, getJwkHumanDescription } from './jwk'
+import { getJwkHumanDescription, type KmsJwkPrivate } from './jwk'
 import { createKeyTypeForSigningAlgorithm } from './jwk/alg/signing'
+import { KeyManagementModuleConfig } from './KeyManagementModuleConfig'
 import {
+  getKmsOperationHumanDescription,
   type KmsDecryptOptions,
   type KmsDeleteKeyOptions,
   type KmsGetPublicKeyOptions,
   type KmsImportKeyOptions,
   type KmsOperation,
   type KmsRandomBytesOptions,
-  getKmsOperationHumanDescription,
 } from './options'
+import { type WithBackend, zWithBackend } from './options/backend'
 import {
   type KmsCreateKeyForSignatureAlgorithmOptions,
   type KmsCreateKeyOptions,
@@ -34,7 +34,6 @@ import { type KmsImportKeyReturn, zKmsImportKeyOptions } from './options/KmsImpo
 import { zKmsRandomBytesOptions } from './options/KmsRandomBytesOptions'
 import { type KmsSignOptions, zKmsSignOptions } from './options/KmsSignOptions'
 import { type KmsVerifyOptions, zKmsVerifyOptions } from './options/KmsVerifyOptions'
-import { type WithBackend, zWithBackend } from './options/backend'
 
 @injectable()
 export class KeyManagementApi {
@@ -101,7 +100,7 @@ export class KeyManagementApi {
       'Invalid options provided to createKeyForSignatureAlgorithm method'
     )
 
-    const type = createKeyTypeForSigningAlgorithm(options.algorithm)
+    const type = createKeyTypeForSigningAlgorithm(algorithm)
     const kms = this.getKms(this.agentContext, backend, {
       operation: 'createKey',
       type,

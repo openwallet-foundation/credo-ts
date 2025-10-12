@@ -60,7 +60,7 @@ describe('createOrGetKey', () => {
   })
 
   it('should throw an error if key with given keyId is not found', async () => {
-    // @ts-ignore
+    // @ts-expect-error
     kmsMock.getPublicKey.mockResolvedValue(null)
 
     // Expect the function to throw an error for a missing key

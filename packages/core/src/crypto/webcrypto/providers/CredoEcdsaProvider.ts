@@ -1,18 +1,16 @@
+import * as core from 'webcrypto-core'
+import { PublicJwk } from '../../../modules/kms'
 import type { CredoWalletWebCrypto } from '../CredoWalletWebCrypto'
+import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
 import type {
   CredoWebCryptoKeyPair,
+  EcdsaParams,
   EcKeyGenParams,
   EcKeyImportParams,
-  EcdsaParams,
   JsonWebKey,
   KeyFormat,
   KeyUsage,
 } from '../types'
-
-import * as core from 'webcrypto-core'
-
-import { PublicJwk } from '../../../modules/kms'
-import { CredoWebCryptoKey } from '../CredoWebCryptoKey'
 
 export class CredoEcdsaProvider extends core.EcdsaProvider {
   public constructor(private walletWebCrypto: CredoWalletWebCrypto) {

@@ -1,6 +1,5 @@
-import { Subject } from 'rxjs'
-
 import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { Subject } from 'rxjs'
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../core/src/agent/EventEmitter'
 import { isDidKey } from '../../../../../../core/src/modules/dids/helpers'

@@ -2,12 +2,12 @@ import { CredoError } from '../../../../error'
 import { X25519PublicJwk } from '../../../kms'
 import type { VerificationMethod } from '../verificationMethod'
 import {
-  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
-  VERIFICATION_METHOD_TYPE_MULTIKEY,
-  VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
   getPublicJwkFrommX25519KeyAgreementKey2019,
   getX25519KeyAgreementKey2019,
   isX25519KeyAgreementKey2019,
+  VERIFICATION_METHOD_TYPE_JSON_WEB_KEY_2020,
+  VERIFICATION_METHOD_TYPE_MULTIKEY,
+  VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,
 } from '../verificationMethod'
 import type { KeyDidMapping } from './keyDidMapping'
 

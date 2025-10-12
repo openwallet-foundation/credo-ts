@@ -1,13 +1,11 @@
-import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommTrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../DidCommTrustPingEvents'
-import type { DidCommTrustPingMessage } from '../messages'
-import type { DidCommConnectionRecord } from '../repository'
-
 import { EventEmitter, injectable } from '@credo-ts/core'
-
+import type { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutboundMessageContext } from '../../../models'
+import type { DidCommTrustPingReceivedEvent, TrustPingResponseReceivedEvent } from '../DidCommTrustPingEvents'
 import { DidCommTrustPingEventTypes } from '../DidCommTrustPingEvents'
+import type { DidCommTrustPingMessage } from '../messages'
 import { DidCommTrustPingResponseMessage } from '../messages'
+import type { DidCommConnectionRecord } from '../repository'
 
 @injectable()
 export class DidCommTrustPingService {

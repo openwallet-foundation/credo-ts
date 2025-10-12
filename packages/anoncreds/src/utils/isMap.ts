@@ -1,6 +1,6 @@
 import type { ValidationOptions } from 'class-validator'
 
-import { ValidateBy, buildMessage } from 'class-validator'
+import { buildMessage, ValidateBy } from 'class-validator'
 
 /**
  * Checks if a given value is a Map

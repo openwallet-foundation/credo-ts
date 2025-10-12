@@ -1,18 +1,15 @@
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType } from './utils'
-
 import { CredoError, Kms } from '@credo-ts/core'
 import express, { type Express } from 'express'
-
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcModule,
   OpenId4VciCredentialFormatProfile,
+  OpenId4VcModule,
 } from '../src'
-
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 

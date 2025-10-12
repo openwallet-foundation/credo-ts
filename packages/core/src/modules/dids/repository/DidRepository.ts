@@ -1,16 +1,14 @@
 import type { AgentContext } from '../../../agent'
-import type { DidDocument } from '../domain'
-import type { CustomDidTags } from './DidRecord'
-
 import { EventEmitter } from '../../../agent/EventEmitter'
 import { InjectionSymbols } from '../../../constants'
 import { inject, injectable } from '../../../plugins'
 import { Repository } from '../../../storage/Repository'
 import type { StorageService } from '../../../storage/StorageService'
-import { DidDocumentRole } from '../domain/DidDocumentRole'
-
 import { PublicJwk } from '../../kms'
 import type { DidDocumentKey } from '../DidsApiOptions'
+import type { DidDocument } from '../domain'
+import { DidDocumentRole } from '../domain/DidDocumentRole'
+import type { CustomDidTags } from './DidRecord'
 import { DidRecord } from './DidRecord'
 
 @injectable()

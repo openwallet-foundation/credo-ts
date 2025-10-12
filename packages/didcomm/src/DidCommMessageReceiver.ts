@@ -1,29 +1,27 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
-import type { DidCommTransportSession } from './DidCommTransportService'
-import type { DidCommConnectionRecord } from './modules/connections/repository'
-import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
-
 import {
   type AgentContextProvider,
   CredoError,
   InjectionSymbols,
-  JsonTransformer,
-  type Logger,
   inject,
   injectable,
+  JsonTransformer,
+  type Logger,
 } from '@credo-ts/core'
-
 import { DidCommDispatcher } from './DidCommDispatcher'
+import type { DecryptedDidCommMessageContext } from './DidCommEnvelopeService'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
 import { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
+import type { DidCommTransportSession } from './DidCommTransportService'
 import { DidCommTransportService } from './DidCommTransportService'
 import { DidCommProblemReportError } from './errors'
 import { DidCommProblemReportMessage } from './messages'
 import { DidCommInboundMessageContext, DidCommOutboundMessageContext, DidCommProblemReportReason } from './models'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
 import { DidCommConnectionService } from './modules/connections/services'
+import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 import { isValidJweStructure } from './util/JWE'
 import { canHandleMessageType, parseMessageType, replaceLegacyDidSovPrefixOnMessage } from './util/messageType'
 

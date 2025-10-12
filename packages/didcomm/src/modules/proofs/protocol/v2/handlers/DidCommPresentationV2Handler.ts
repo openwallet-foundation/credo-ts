@@ -1,9 +1,8 @@
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import type { DidCommProofExchangeRecord } from '../../../repository'
 import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
-
-import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
 import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 export class DidCommPresentationV2Handler implements DidCommMessageHandler {

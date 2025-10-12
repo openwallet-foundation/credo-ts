@@ -1,16 +1,15 @@
+import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import type { AnonCredsProofRequest } from '../../../../../../../anoncreds/src/models/exchange'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-import type { DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
-
-import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../../../../../../../anoncreds/src/models/AnonCredsProofRequest'
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils/JsonTransformer'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { testLogger, waitForProofExchangeRecordSubject } from '../../../../../../../core/tests'
 import { DidCommProofState } from '../../../models/DidCommProofState'
+import type { DidCommProposePresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 
 describe('V2 Proofs Negotiation - Indy', () => {
   let faberAgent: AnonCredsTestsAgent
@@ -377,7 +376,7 @@ describe('V2 Proofs Negotiation - Indy', () => {
       proofRequestMessage.requestAttachments[0].getDataAsJson(),
       AnonCredsProofRequestClass
     )
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const predicateKey = proofRequest.requestedPredicates?.keys().next().value as any
 
     expect(JsonTransformer.toJSON(proofRequest)).toMatchObject({

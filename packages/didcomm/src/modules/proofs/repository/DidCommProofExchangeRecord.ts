@@ -1,8 +1,7 @@
 import type { TagsBase } from '@credo-ts/core'
+import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import type { DidCommProofRole, DidCommProofState } from '../models'
 import type { DidCommAutoAcceptProof } from '../models/DidCommProofAutoAcceptType'
-
-import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 
 export interface DidCommProofExchangeRecordProps {
   id?: string
@@ -78,7 +77,6 @@ export class DidCommProofExchangeRecord extends BaseRecord<
 
   public assertState(expectedStates: DidCommProofState | DidCommProofState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

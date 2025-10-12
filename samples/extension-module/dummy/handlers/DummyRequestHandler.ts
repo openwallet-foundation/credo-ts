@@ -1,9 +1,7 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { DummyService } from '../services'
-
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
-
 import { DummyRequestMessage } from '../messages'
+import type { DummyService } from '../services'
 
 export class DummyRequestHandler implements DidCommMessageHandler {
   public supportedMessages = [DummyRequestMessage]

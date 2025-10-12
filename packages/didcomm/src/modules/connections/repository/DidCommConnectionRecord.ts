@@ -1,16 +1,14 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { DidCommConnectionType } from '../models'
-import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
-
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
-
+import type { DidCommConnectionType } from '../models'
 import {
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
   rfc0160StateFromDidExchangeState,
 } from '../models'
+import type { DidCommConnectionMetadata } from './DidCommConnectionMetadataTypes'
 
 export interface DidCommConnectionRecordProps {
   id?: string
@@ -162,7 +160,6 @@ export class DidCommConnectionRecord extends BaseRecord<
 
   public assertState(expectedStates: DidCommDidExchangeState | DidCommDidExchangeState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

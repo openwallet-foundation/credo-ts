@@ -1,13 +1,11 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
-import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
-import type { DidCommOutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
-
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
-
 import { getThreadIdFromPlainTextMessage } from '../../../util/thread'
+import type { DidCommOutOfBandRole } from '../domain/DidCommOutOfBandRole'
+import type { DidCommOutOfBandState } from '../domain/DidCommOutOfBandState'
 import { DidCommOutOfBandInvitation } from '../messages'
+import type { DidCommOutOfBandRecordMetadata } from './outOfBandRecordMetadataTypes'
 
 export interface DidCommOutOfBandInlineServiceKey {
   recipientKeyFingerprint: string
@@ -126,7 +124,6 @@ export class DidCommOutOfBandRecord extends BaseRecord<
 
   public assertState(expectedStates: DidCommOutOfBandState | DidCommOutOfBandState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

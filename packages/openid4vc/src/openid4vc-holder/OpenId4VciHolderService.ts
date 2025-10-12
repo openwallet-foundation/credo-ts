@@ -1,48 +1,55 @@
-import { AgentContext, DidsApi, W3cV2CredentialService, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import {
+  AgentContext,
   CredoError,
+  DidsApi,
   InjectionSymbols,
+  inject,
+  injectable,
   Kms,
   type Logger,
   Mdoc,
   MdocApi,
+  parseDid,
+  replaceError,
   SdJwtVcApi,
   SignatureSuiteRegistry,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
-  inject,
-  injectable,
-  parseDid,
+  W3cV2CredentialService,
+  W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
 import {
   type AccessTokenResponse,
-  type CallbackContext,
-  type Jwk,
-  Oauth2Client,
-  type RequestDpopOptions,
   authorizationCodeGrantIdentifier,
+  type CallbackContext,
   clientAuthenticationAnonymous,
   clientAuthenticationClientAttestationJwt,
   clientAuthenticationNone,
   getAuthorizationServerMetadataFromList,
+  type Jwk,
+  Oauth2Client,
   preAuthorizedCodeGrantIdentifier,
+  type RequestDpopOptions,
   refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
-  type DeferredCredentialResponse,
-  determineAuthorizationServerForCredentialOffer,
-  parseKeyAttestationJwt,
-} from '@openid4vc/openid4vci'
-import {
   AuthorizationFlow,
   type CredentialResponse,
+  type DeferredCredentialResponse,
+  determineAuthorizationServerForCredentialOffer,
   type IssuerMetadataResult,
   Openid4vciClient,
   Openid4vciDraftVersion,
   Openid4vciRetrieveCredentialsError,
+  parseKeyAttestationJwt,
 } from '@openid4vc/openid4vci'
 import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciMetadata } from '../shared'
+
+import { OpenId4VciCredentialFormatProfile } from '../shared'
+import { getOid4vcCallbacks } from '../shared/callbacks'
+import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -60,13 +67,6 @@ import type {
   OpenId4VciTokenRefreshOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-
-import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOid4vcCallbacks } from '../shared/callbacks'
-import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
-import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
-
-import { replaceError } from '@credo-ts/core'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()

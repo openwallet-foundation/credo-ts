@@ -1,16 +1,15 @@
-import type { CredentialRecordBinding, DidCommCredentialState } from '../../../../../didcomm/src'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import type { CredentialRecordBinding, DidCommCredentialState } from '../../../../../didcomm/src'
 import { DidCommCredentialExchangeRecord } from '../../../../../didcomm/src'
 import { DidCommCredentialExchangeRepository } from '../../../../../didcomm/src/modules/credentials/repository/DidCommCredentialExchangeRepository'
+import * as testModule from '../credentialExchangeRecord'
 import {
   migrateIndyCredentialMetadataToAnonCredsMetadata,
   migrateIndyCredentialTypeToAnonCredsCredential,
 } from '../credentialExchangeRecord'
-import * as testModule from '../credentialExchangeRecord'
 
 const agentConfig = getAgentConfig('AnonCreds Migration - Credential Exchange Record - 0.3.1-0.4.0')
 const agentContext = getAgentContext()

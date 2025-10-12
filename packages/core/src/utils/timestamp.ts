@@ -17,7 +17,7 @@ export default function timestamp(): Uint8ArrayBuffer {
  * Returns the current time in seconds
  */
 export function nowInSeconds() {
-  return Math.floor(new Date().getTime() / 1000)
+  return Math.floor(Date.now() / 1000)
 }
 
 export function addSecondsToDate(date: Date, seconds: number) {

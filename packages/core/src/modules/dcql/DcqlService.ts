@@ -1,6 +1,3 @@
-import type { AgentContext } from '../../agent'
-import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
-
 import {
   DcqlCredential,
   DcqlCredentialQuery,
@@ -11,9 +8,11 @@ import {
   DcqlW3cVcCredential,
 } from 'dcql'
 import { injectable } from 'tsyringe'
-import { type JsonObject, type JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
-import { TypedArrayEncoder, asArray } from '../../utils'
-import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
+import type { AgentContext } from '../../agent'
+import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
+import { asArray, TypedArrayEncoder } from '../../utils'
+import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
+import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
 import {
   Mdoc,
   MdocApi,

@@ -1,14 +1,12 @@
 import type { DependencyManager, Module } from '@credo-ts/core'
-import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
-
 import { AgentConfig, AgentContext } from '@credo-ts/core'
 import { Mutex, withTimeout } from 'async-mutex'
-
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
 import testLogger from '../../../../core/tests/logger'
-import { TenantsModuleConfig } from '../../TenantsModuleConfig'
 import { TenantRecord } from '../../repository'
+import { TenantsModuleConfig } from '../../TenantsModuleConfig'
+import type { TenantAgentContextMapping } from '../TenantSessionCoordinator'
 import { TenantSessionCoordinator } from '../TenantSessionCoordinator'
 import { TenantSessionMutex } from '../TenantSessionMutex'
 
@@ -184,7 +182,7 @@ describe('TenantSessionCoordinator', () => {
       // Initialize should only be called once
       expect(hasBeenCalledTimes).toEqual(1)
 
-      // @ts-ignore
+      // @ts-expect-error
       agentContext.dependencyManager.registeredModules = originalModules
       expect(tenantAgentContext1).toBe(tenantAgentContext2)
     })

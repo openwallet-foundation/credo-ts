@@ -1,4 +1,4 @@
-export * from './InMemoryQueueTransportRepository'
 export * from './DidCommQueueTransportRepository'
-export * from './QueueTransportRepositoryOptions'
+export * from './InMemoryQueueTransportRepository'
 export * from './QueuedDidCommMessage'
+export * from './QueueTransportRepositoryOptions'

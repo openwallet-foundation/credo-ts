@@ -9,7 +9,7 @@ import { Sha512 } from './Sha512'
 
 export type HashName = 'sha-512' | 'sha-384' | 'sha-256' | 'sha-1'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class Hasher {
   public static hash(data: AnyUint8Array | string, hashName: HashName | ({} & string)): Uint8ArrayBuffer {
     const dataInput = typeof data === 'string' ? TypedArrayEncoder.fromString(data) : data

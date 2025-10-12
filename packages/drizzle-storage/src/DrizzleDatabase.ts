@@ -3,11 +3,11 @@ import { PgDatabase } from 'drizzle-orm/pg-core'
 import { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 
 export type DrizzleSqliteDatabase<Schema extends Record<string, unknown> = Record<string, unknown>> =
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   BaseSQLiteDatabase<'sync' | 'async', any, Schema>
 
 export type DrizzlePostgresDatabase<Schema extends Record<string, unknown> = Record<string, unknown>> = PgDatabase<
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   any,
   Schema
 >

@@ -1,9 +1,7 @@
 import type { DependencyManager } from '@credo-ts/core'
-import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierModuleConfig'
-
 import { Router } from 'express'
-
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
+import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from '../repository'

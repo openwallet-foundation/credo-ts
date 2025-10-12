@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import type {
   DidCommCredentialExchangeRecord,
   DidCommCredentialFormatAcceptOfferOptions,
@@ -19,33 +20,25 @@ import type {
   DidCommCredentialPreviewAttributeOptions,
   DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
-import type {
-  AnonCredsCredential,
-  AnonCredsCredentialOffer,
-  AnonCredsCredentialRequest,
-  AnonCredsRevocationStatusList,
-} from '../models'
-import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import type {
-  AnonCredsDidCommCredentialFormat,
-  AnonCredsDidCommCredentialProposalFormat,
-} from './AnonCredsDidCommCredentialFormat'
-
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   DidCommAttachment,
   DidCommCredentialFormatSpec,
   DidCommCredentialProblemReportReason,
   DidCommProblemReportError,
 } from '@credo-ts/didcomm'
-
+import type {
+  AnonCredsCredential,
+  AnonCredsCredentialOffer,
+  AnonCredsCredentialRequest,
+  AnonCredsRevocationStatusList,
+} from '../models'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
 import {
   AnonCredsCredentialDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import {
   dateToTimestamp,
@@ -61,8 +54,13 @@ import {
   convertAttributesToCredentialValues,
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { getStoreCredentialOptions } from '../utils/w3cAnonCredsUtils'
+import type {
+  AnonCredsDidCommCredentialFormat,
+  AnonCredsDidCommCredentialProposalFormat,
+} from './AnonCredsDidCommCredentialFormat'
 
 const ANONCREDS_CREDENTIAL_OFFER = 'anoncreds/credential-offer@v1.0'
 const ANONCREDS_CREDENTIAL_REQUEST = 'anoncreds/credential-request@v1.0'
@@ -107,6 +105,7 @@ export class AnonCredsDidCommCredentialFormatService
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { attributes, linkedAttachments, ...anoncredsCredentialProposal } = anoncredsFormat
     const proposal = new AnonCredsCredentialProposal(anoncredsCredentialProposal)
 

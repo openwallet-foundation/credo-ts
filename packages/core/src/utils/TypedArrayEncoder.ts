@@ -3,7 +3,7 @@ import { decodeFromBase58, encodeToBase58 } from './base58'
 import { base64ToBase64URL } from './base64'
 import { Buffer } from './buffer'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class TypedArrayEncoder {
   /**
    * Encode buffer into base64 string.

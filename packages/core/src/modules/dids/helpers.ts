@@ -1,5 +1,5 @@
 import { CredoError } from '../../error'
-import { TypedArrayEncoder, isDid } from '../../utils'
+import { isDid, TypedArrayEncoder } from '../../utils'
 import { Ed25519PublicJwk, PublicJwk } from '../kms'
 
 import { DidKey } from './methods/key/DidKey'

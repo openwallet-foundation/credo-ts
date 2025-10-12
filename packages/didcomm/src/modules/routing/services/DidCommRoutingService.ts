@@ -1,10 +1,8 @@
 import type { AgentContext } from '@credo-ts/core'
+import { EventEmitter, injectable, Kms } from '@credo-ts/core'
+import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import type { DidCommRouting } from '../../../models'
 import type { DidCommRoutingCreatedEvent } from '../DidCommRoutingEvents'
-
-import { EventEmitter, Kms, injectable } from '@credo-ts/core'
-
-import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
 
 import { DidCommMediationRecipientService } from './DidCommMediationRecipientService'

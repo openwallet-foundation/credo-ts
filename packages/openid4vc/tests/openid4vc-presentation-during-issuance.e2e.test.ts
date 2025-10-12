@@ -1,22 +1,20 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
-import {
-  type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcModule,
-  type OpenId4VcVerifierModuleConfigOptions,
-  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
-  type OpenId4VciSignSdJwtCredentials,
-} from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType } from './utils'
-
 import { ClaimFormat } from '@credo-ts/core'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-
-import { setupNockToExpress } from '../../../tests/nockToExpress'
-import { OpenId4VcIssuanceSessionState, getScopesFromCredentialConfigurationsSupported } from '../src'
-
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { setupNockToExpress } from '../../../tests/nockToExpress'
+import {
+  getScopesFromCredentialConfigurationsSupported,
+  OpenId4VcIssuanceSessionState,
+  type OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  type OpenId4VciSignSdJwtCredentials,
+  OpenId4VcModule,
+  type OpenId4VcVerifierModuleConfigOptions,
+} from '../src'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 

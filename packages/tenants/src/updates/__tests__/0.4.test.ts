@@ -1,8 +1,8 @@
-import { readFileSync } from 'fs'
-import path from 'path'
 import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 import { DidCommMediatorRoutingRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { TenantsModule } from '../../TenantsModule'

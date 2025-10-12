@@ -1,19 +1,17 @@
 import type { AgentContext, Constructor, DependencyManager, Module, Update } from '@credo-ts/core'
-import type { Subject } from 'rxjs'
-import type { DidCommMessageReceivedEvent } from './DidCommEvents'
-import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
-
 import { EventEmitter, InjectionSymbols } from '@credo-ts/core'
+import type { Subject } from 'rxjs'
 import { mergeMap, takeUntil } from 'rxjs'
-
 import { DidCommApi } from './DidCommApi'
 import { DidCommDispatcher } from './DidCommDispatcher'
 import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import type { DidCommMessageReceivedEvent } from './DidCommEvents'
 import { DidCommEventTypes } from './DidCommEvents'
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageReceiver } from './DidCommMessageReceiver'
 import { DidCommMessageSender } from './DidCommMessageSender'
+import type { DidCommModuleConfigOptions } from './DidCommModuleConfig'
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { DidCommTransportService } from './DidCommTransportService'
 import {
@@ -43,7 +41,7 @@ import { updateV0_1ToV0_2 } from './updates/0.1-0.2'
 import { updateV0_2ToV0_3 } from './updates/0.2-0.3'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
 
-// biome-ignore lint/complexity/noBannedTypes: <explanation>
+// biome-ignore lint/complexity/noBannedTypes: no explanation
 type ModuleOrEmpty<Config, Module> = Config extends false ? {} : Module
 
 type DidCommModules<Options extends DidCommModuleConfigOptions> = {

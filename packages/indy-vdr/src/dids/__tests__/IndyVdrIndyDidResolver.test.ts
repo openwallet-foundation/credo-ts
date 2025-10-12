@@ -1,12 +1,10 @@
 import '@hyperledger/indy-vdr-nodejs'
 import { JsonTransformer } from '@credo-ts/core'
-
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockProperty } from '../../../../core/tests/helpers'
 import { IndyVdrPoolService } from '../../pool'
 import { IndyVdrPool } from '../../pool/IndyVdrPool'
 import { IndyVdrIndyDidResolver } from '../IndyVdrIndyDidResolver'
-
-import type { MockedClassConstructor } from '../../../../../tests/types'
 import didIndyLjgpST2rjsoxYegQDRm7EL from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7EL.json'
 import didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent from './__fixtures__/didIndyLjgpST2rjsoxYegQDRm7ELdiddocContent.json'
 import didIndyR1xKJw17sUoXhejEpugMYJFixture from './__fixtures__/didIndyR1xKJw17sUoXhejEpugMYJ.json'

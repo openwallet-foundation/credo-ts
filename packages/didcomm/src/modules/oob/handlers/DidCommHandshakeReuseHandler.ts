@@ -1,8 +1,7 @@
 import type { DidCommMessageHandler } from '../../../handlers'
 import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommOutOfBandService } from '../DidCommOutOfBandService'
-
 import { DidCommOutboundMessageContext } from '../../../models'
+import type { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 import { DidCommHandshakeReuseMessage } from '../messages/DidCommHandshakeReuseMessage'
 
 export class DidCommHandshakeReuseHandler implements DidCommMessageHandler {

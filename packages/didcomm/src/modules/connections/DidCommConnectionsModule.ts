@@ -5,15 +5,13 @@ import {
   DidResolverService,
   type Module,
 } from '@credo-ts/core'
-import type { DidCommConnectionsModuleConfigOptions } from './DidCommConnectionsModuleConfig'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
-import { DidCommProtocol } from '../../models'
-
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import { DidCommConnectionsApi } from './DidCommConnectionsApi'
+import type { DidCommConnectionsModuleConfigOptions } from './DidCommConnectionsModuleConfig'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import {

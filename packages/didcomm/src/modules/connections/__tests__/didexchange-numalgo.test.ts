@@ -1,11 +1,10 @@
 import { filter, first, map, timeout } from 'rxjs/operators'
-import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
-
 import { Agent } from '../../../../../core/src/agent/Agent'
-import { DidsModule, PeerDidNumAlgo, createPeerDidDocumentFromServices } from '../../../../../core/src/modules/dids'
+import { createPeerDidDocumentFromServices, DidsModule, PeerDidNumAlgo } from '../../../../../core/src/modules/dids'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { firstValueWithStackTrace, getAgentOptions } from '../../../../../core/tests/helpers'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommDidExchangeState } from '../models'
 
@@ -141,7 +140,7 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   const waitForAliceRequest = waitForRequest(faberAgent, 'alice')
 
-  let ourDid: string | undefined = undefined
+  let ourDid: string | undefined
 
   if (options.createExternalDidForRequester) {
     // Create did externally
@@ -181,7 +180,7 @@ async function didExchangeNumAlgoBaseTest(options: {
 
   let faberAliceConnectionRecord = await waitForAliceRequest
 
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  // biome-ignore lint/style/noNonNullAssertion: no explanation
   const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
 
   await faberAgent.didcomm.connections.acceptRequest(faberAliceConnectionRecord.id)

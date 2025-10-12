@@ -1,7 +1,5 @@
 import type { AnonCredsDidCommProposeCredentialFormat, AnonCredsHolderService } from '@credo-ts/anoncreds'
-import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-
+import { AnonCredsHolderServiceSymbol } from '@credo-ts/anoncreds'
 import { JsonTransformer } from '@credo-ts/core'
 import {
   DidCommCredentialExchangeRecord,
@@ -14,14 +12,13 @@ import {
   DidCommProposeCredentialV2Message,
   DidCommRequestCredentialV2Message,
 } from '@credo-ts/didcomm'
+import type { EventReplaySubject } from '../../core/tests'
 
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
-
-import { AnonCredsHolderServiceSymbol } from '@credo-ts/anoncreds'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const credentialPreview = DidCommCredentialV2Preview.fromRecord({
   name: 'John',

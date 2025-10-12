@@ -1,4 +1,4 @@
-import { type HashName, Hasher } from '../../../crypto/hashes/Hasher'
+import { Hasher, type HashName } from '../../../crypto/hashes/Hasher'
 import type { Uint8ArrayBuffer } from '../../../types'
 import { TypedArrayEncoder } from '../../../utils'
 import { zParseWithErrorHandling } from '../../../utils/zod'

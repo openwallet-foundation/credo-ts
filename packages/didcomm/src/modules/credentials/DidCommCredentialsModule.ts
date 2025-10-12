@@ -1,13 +1,11 @@
 import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
-import type { DidCommCredentialsModuleConfigOptions } from './DidCommCredentialsModuleConfig'
-import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../models'
-
 import { DidCommCredentialsApi } from './DidCommCredentialsApi'
+import type { DidCommCredentialsModuleConfigOptions } from './DidCommCredentialsModuleConfig'
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
+import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
 import {
   DidCommRevocationNotificationV1Handler,
   DidCommRevocationNotificationV2Handler,

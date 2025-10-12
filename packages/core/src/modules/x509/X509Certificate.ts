@@ -1,24 +1,20 @@
-import type { AgentContext } from '../../agent'
-import type { X509CreateCertificateOptions } from './X509ServiceOptions'
-
 import { AsnParser } from '@peculiar/asn1-schema'
 import {
-  SubjectPublicKeyInfo,
   id_ce_authorityKeyIdentifier,
   id_ce_extKeyUsage,
   id_ce_issuerAltName,
   id_ce_keyUsage,
   id_ce_subjectAltName,
   id_ce_subjectKeyIdentifier,
+  SubjectPublicKeyInfo,
 } from '@peculiar/asn1-x509'
 import * as x509 from '@peculiar/x509'
+import type { AgentContext } from '../../agent'
 import { CredoWebCrypto, CredoWebCryptoKey } from '../../crypto/webcrypto'
 import { publicJwkToCryptoKeyAlgorithm, spkiToPublicJwk } from '../../crypto/webcrypto/utils'
-import { TypedArrayEncoder } from '../../utils'
-
 import type { AnyUint8Array } from '../../types'
-import { PublicJwk, assymetricPublicJwkMatches } from '../kms'
-import { X509Error } from './X509Error'
+import { TypedArrayEncoder } from '../../utils'
+import { assymetricPublicJwkMatches, PublicJwk } from '../kms'
 import {
   convertName,
   createAuthorityKeyIdentifierExtension,
@@ -30,6 +26,8 @@ import {
   createSubjectAlternativeNameExtension,
   createSubjectKeyIdentifierExtension,
 } from './utils'
+import { X509Error } from './X509Error'
+import type { X509CreateCertificateOptions } from './X509ServiceOptions'
 
 export enum X509KeyUsage {
   DigitalSignature = 1,
@@ -163,7 +161,7 @@ export class X509Certificate {
     return keyIds?.[0]
   }
 
-  // biome-ignore lint/suspicious/useGetterReturn: <explanation>
+  // biome-ignore lint/suspicious/useGetterReturn: no explanation
   public get keyUsage() {
     const keyUsages = this.getMatchingExtensions<x509.KeyUsagesExtension>(id_ce_keyUsage)?.map((e) => e.usages)
 
@@ -377,10 +375,6 @@ export class X509Certificate {
    */
   public toString(format?: 'asn' | 'pem' | 'hex' | 'base64' | 'text' | 'base64url') {
     return this.x509Certificate.toString(format ?? 'pem')
-  }
-
-  private toJSON() {
-    return this.toString()
   }
 
   public equal(certificate: X509Certificate) {

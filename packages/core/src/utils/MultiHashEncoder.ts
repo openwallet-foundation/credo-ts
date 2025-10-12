@@ -2,9 +2,8 @@ import type { HashName } from '../crypto/hashes'
 
 import { Hasher } from '../crypto/hashes'
 import type { AnyUint8Array } from '../types'
-
-import { VarintEncoder } from './VarintEncoder'
 import { Buffer } from './buffer'
+import { VarintEncoder } from './VarintEncoder'
 
 type MultiHashNameMap = {
   [key in HashName]: number
@@ -22,12 +21,12 @@ const multiHashNameMap: MultiHashNameMap = {
 }
 
 const multiHashCodeMap: MultiHashCodeMap = Object.entries(multiHashNameMap).reduce(
-  // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+  // biome-ignore lint/performance/noAccumulatingSpread: no explanation
   (map, [hashName, hashCode]) => ({ ...map, [hashCode]: hashName }),
   {}
 )
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class MultiHashEncoder {
   /**
    *

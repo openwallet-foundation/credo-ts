@@ -55,7 +55,7 @@ export interface DrizzleRecord {
   postgres: Record<string, unknown>
   sqlite: Record<string, unknown>
   adapter?: new (
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     database: any
   ) => AnyDrizzleAdapter
 }

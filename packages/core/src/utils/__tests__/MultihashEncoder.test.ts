@@ -1,6 +1,6 @@
 import { Hasher } from '../../crypto'
-import { MultiHashEncoder } from '../MultiHashEncoder'
 import { Buffer } from '../buffer'
+import { MultiHashEncoder } from '../MultiHashEncoder'
 
 const validData = Buffer.from('Hello World!')
 const validMultiHash = new Uint8Array([

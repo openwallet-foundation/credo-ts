@@ -6,7 +6,7 @@ import { IsValidDrpcRequest } from '../models'
 export interface DrpcRequestObject {
   jsonrpc: string
   method: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   params?: any[] | object
   id: string | number | null
 }

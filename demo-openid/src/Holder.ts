@@ -1,8 +1,4 @@
-import type {
-  OpenId4VciMetadata,
-  OpenId4VciResolvedCredentialOffer,
-  OpenId4VpResolvedAuthorizationRequest,
-} from '@credo-ts/openid4vc'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 
 import { AskarModule } from '@credo-ts/askar'
 import {
@@ -18,17 +14,20 @@ import {
   W3cV2SdJwtVerifiableCredential,
   X509Module,
 } from '@credo-ts/core'
+import type {
+  OpenId4VciMetadata,
+  OpenId4VciResolvedCredentialOffer,
+  OpenId4VpResolvedAuthorizationRequest,
+} from '@credo-ts/openid4vc'
 import {
-  OpenId4VcModule,
-  OpenId4VciAuthorizationFlow,
   authorizationCodeGrantIdentifier,
+  OpenId4VciAuthorizationFlow,
+  OpenId4VcModule,
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-
-import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
 import { BaseAgent } from './BaseAgent'
-import { Output, greenText } from './OutputClass'
+import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
   return {

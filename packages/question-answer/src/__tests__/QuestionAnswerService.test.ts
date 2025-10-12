@@ -1,13 +1,8 @@
 import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
-import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
-
 import { EventEmitter } from '@credo-ts/core'
 import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-import { Subject } from 'rxjs'
-
-import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
-
+import type { QuestionAnswerStateChangedEvent, ValidResponse } from '@credo-ts/question-answer'
 import {
   AnswerMessage,
   QuestionAnswerEventTypes,
@@ -18,8 +13,10 @@ import {
   QuestionAnswerState,
   QuestionMessage,
 } from '@credo-ts/question-answer'
+import { Subject } from 'rxjs'
 import { InMemoryStorageService } from '../../../../tests/InMemoryStorageService'
 import type { MockedClassConstructor } from '../../../../tests/types'
+import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../core/tests/helpers'
 
 vi.mock('../repository/QuestionAnswerRepository')
 const QuestionAnswerRepositoryMock = QuestionAnswerRepository as MockedClassConstructor<typeof QuestionAnswerRepository>

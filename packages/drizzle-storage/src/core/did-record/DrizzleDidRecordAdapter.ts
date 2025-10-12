@@ -25,8 +25,11 @@ export class DrizzleDidRecordAdapter extends BaseDrizzleRecordAdapter<
       method,
       methodSpecificIdentifier,
       alternativeDids,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       did,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       legacyUnqualifiedDid,
+
       role,
       ...customTags
     } = record.getTags()

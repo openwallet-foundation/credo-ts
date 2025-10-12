@@ -1,6 +1,5 @@
-import type { AgentContext } from '../../agent'
-
 import * as core from 'webcrypto-core'
+import type { AgentContext } from '../../agent'
 
 import { Hasher } from '../hashes'
 

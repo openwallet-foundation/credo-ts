@@ -1,16 +1,14 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
-import type { Constructable } from '../../../utils/mixins'
-import type { SdJwtVc } from '../SdJwtVcService'
-import type { SdJwtVcTypeMetadata } from '../typeMetadata'
-
 import { decodeSdJwtSync } from '@sd-jwt/decode'
-
 import { Hasher } from '../../../crypto'
+import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
+import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import type { KnownJwaSignatureAlgorithm } from '../../kms'
 import { decodeSdJwtVc } from '../decodeSdJwtVc'
+import type { SdJwtVc } from '../SdJwtVcService'
+import type { SdJwtVcTypeMetadata } from '../typeMetadata'
 
 export type DefaultSdJwtVcRecordTags = {
   vct: string

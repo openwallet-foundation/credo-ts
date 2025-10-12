@@ -1,23 +1,20 @@
-import type { AgentType } from './utils'
-
 import { ClaimFormat, CredoError, Kms, utils } from '@credo-ts/core'
+import type { Jwk } from '@openid4vc/oauth2'
+import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
-  OpenId4VcModule,
-  type OpenId4VcVerifierModuleConfigOptions,
   type OpenId4VciCredentialConfigurationSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
+  OpenId4VcModule,
+  type OpenId4VcVerifierModuleConfigOptions,
 } from '../src'
-
-import type { Jwk } from '@openid4vc/oauth2'
-import { AuthorizationFlow, Openid4vciWalletProvider } from '@openid4vc/openid4vci'
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 
 const universityDegreeCredentialConfigurationSupportedMdoc = {

@@ -5,7 +5,9 @@
     "import": "./src/index.ts"
   },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",

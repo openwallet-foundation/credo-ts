@@ -1,9 +1,8 @@
+import type { CredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import type {
   OpenId4VciCredentialConfigurationsSupported,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
 } from './models'
-
-import type { CredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 
 /**
  * Returns all entries from the credential offer with the associated metadata resolved.

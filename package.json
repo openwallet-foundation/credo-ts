@@ -24,7 +24,7 @@
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@biomejs/biome": "^2.2.5",
     "@changesets/cli": "^2.29.7",
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
@@ -35,6 +35,7 @@
     "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
     "@credo-ts/drpc": "workspace:*",
+    "@credo-ts/hedera": "workspace:*",
     "@credo-ts/indy-sdk-to-askar-migration": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
@@ -44,7 +45,6 @@
     "@credo-ts/redis-cache": "workspace:*",
     "@credo-ts/tenants": "workspace:*",
     "@credo-ts/webvh": "workspace:*",
-    "@credo-ts/hedera": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",

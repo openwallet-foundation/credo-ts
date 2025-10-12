@@ -1,12 +1,10 @@
 import { JsonTransformer, type TagsBase } from '@credo-ts/core'
-
+import { DidCommMediatorRoutingRecord } from '@credo-ts/didcomm'
 import {
   BaseDrizzleRecordAdapter,
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
-
-import { DidCommMediatorRoutingRecord } from '@credo-ts/didcomm'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'

@@ -1,21 +1,17 @@
+import { AskarModule, AskarModuleConfig, AskarStoreManager, recordToInstance } from '@credo-ts/askar'
 import {
   Agent,
   AgentContext,
   type AgentDependencies,
   BaseRecord,
   ConsoleLogger,
-  LogLevel,
   type Logger,
+  LogLevel,
   StorageVersionRecord,
 } from '@credo-ts/core'
-import { EntryListHandle } from '@openwallet-foundation/askar-shared'
-
-import { AskarModule, AskarModuleConfig } from '@credo-ts/askar'
-import { AskarStoreManager } from '@credo-ts/askar'
-import { recordToInstance } from '@credo-ts/askar'
 import { BaseDrizzleRecordAdapter, DrizzleStorageModule, DrizzleStorageModuleConfig } from '@credo-ts/drizzle-storage'
 import { TenantsModule } from '@credo-ts/tenants'
-import { EntryList, ScanHandle } from '@openwallet-foundation/askar-shared'
+import { EntryList, EntryListHandle, ScanHandle } from '@openwallet-foundation/askar-shared'
 import { AskarToDrizzleStorageMigrationError } from './errors/AskarToDrizzleStorageMigrationError'
 
 /**
@@ -122,7 +118,7 @@ export class AskarToDrizzleStorageMigrator {
       return null
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     return adapter as BaseDrizzleRecordAdapter<BaseRecord, any, any, any, any>
   }
 
@@ -184,7 +180,10 @@ export class AskarToDrizzleStorageMigrator {
   private async migrateForContext({
     drizzleContext,
     askarContext,
-  }: { drizzleContext: AgentContext; askarContext: AgentContext }) {
+  }: {
+    drizzleContext: AgentContext
+    askarContext: AgentContext
+  }) {
     try {
       const storeManager = askarContext.resolve(AskarStoreManager)
       const askar = askarContext.resolve(AskarModuleConfig).askar
@@ -196,7 +195,7 @@ export class AskarToDrizzleStorageMigrator {
       // but for tenants agents we need to make sure a row exists in the `Context` table
       await this.drizzleModule.onProvisionContext(drizzleContext)
 
-      let scanHandle: ScanHandle | undefined = undefined
+      let scanHandle: ScanHandle | undefined
       let entryListHandle: EntryListHandle | null = null
       let migratedRecordCount = 0
       let skippedRecordCount = 0

@@ -1,8 +1,8 @@
 export {
-  CheqdDidRegistrar,
+  type CheqdCreateResourceOptions,
   type CheqdDidCreateOptions,
   type CheqdDidDeactivateOptions,
+  CheqdDidRegistrar,
   type CheqdDidUpdateOptions,
-  type CheqdCreateResourceOptions,
 } from './CheqdDidRegistrar'
 export { CheqdDidResolver } from './CheqdDidResolver'

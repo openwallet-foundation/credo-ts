@@ -8,6 +8,26 @@ import type {
   W3cVerifiablePresentation,
   W3cVerifyPresentationResult,
 } from '@credo-ts/core'
+import {
+  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
+  AnonCredsDataIntegrityServiceSymbol,
+  ClaimFormat,
+  CredoError,
+  DifPresentationExchangeService,
+  DifPresentationExchangeSubmissionLocation,
+  deepEquality,
+  extractX509CertificatesFromJwt,
+  JsonTransformer,
+  Kms,
+  MdocDeviceResponse,
+  TypedArrayEncoder,
+  W3cCredentialService,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+  X509ModuleConfig,
+} from '@credo-ts/core'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommProofFormatSpec } from '../../models'
 import type { DidCommProofFormatService } from '../DidCommProofFormatService'
 import type {
   DidCommFormatCreateRequestOptions,
@@ -29,28 +49,6 @@ import type {
   DifPresentationExchangeProposal,
   DifPresentationExchangeRequest,
 } from './DidCommDifPresentationExchangeProofFormat'
-
-import {
-  ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
-  AnonCredsDataIntegrityServiceSymbol,
-  ClaimFormat,
-  CredoError,
-  DifPresentationExchangeService,
-  DifPresentationExchangeSubmissionLocation,
-  JsonTransformer,
-  Kms,
-  MdocDeviceResponse,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation,
-  X509ModuleConfig,
-  deepEquality,
-  extractX509CertificatesFromJwt,
-} from '@credo-ts/core'
-
-import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommProofFormatSpec } from '../../models'
 
 const PRESENTATION_EXCHANGE_PRESENTATION_PROPOSAL = 'dif/presentation-exchange/definitions@v1.0'
 const PRESENTATION_EXCHANGE_PRESENTATION_REQUEST = 'dif/presentation-exchange/definitions@v1.0'
@@ -372,7 +370,7 @@ export class DidCommDifPresentationExchangeProofFormatService
       } else {
         agentContext.config.logger.error(
           `Received presentation in PEX proof format with unsupported format ${
-            // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+            // biome-ignore lint/suspicious/noExplicitAny: no explanation
             (parsedPresentation as any).claimFormat
           }.`
         )

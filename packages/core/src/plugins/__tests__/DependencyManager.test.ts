@@ -1,9 +1,7 @@
 import type { DependencyContainer } from 'tsyringe'
-import type { Module } from '../Module'
-
-import { Lifecycle, injectable, container as rootContainer } from 'tsyringe'
-
+import { injectable, Lifecycle, container as rootContainer } from 'tsyringe'
 import { DependencyManager } from '../DependencyManager'
+import type { Module } from '../Module'
 
 class Instance {
   public random = Math.random()

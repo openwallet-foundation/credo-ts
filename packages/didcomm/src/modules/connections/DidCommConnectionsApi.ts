@@ -1,21 +1,19 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommRouting } from '../../models'
-import type { DidCommOutOfBandRecord } from '../oob/repository'
-import type { DidCommConnectionType } from './models'
-import type { DidCommConnectionRecord } from './repository'
-
 import { AgentContext, CredoError, DidResolverService, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { ReturnRouteTypes } from '../../decorators/transport/TransportDecorator'
+import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommOutOfBandService } from '../oob/DidCommOutOfBandService'
+import type { DidCommOutOfBandRecord } from '../oob/repository'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
-
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from './DidExchangeProtocol'
 import { DidCommConnectionRequestMessage, DidCommDidExchangeRequestMessage } from './messages'
+import type { DidCommConnectionType } from './models'
 import { DidCommHandshakeProtocol } from './models'
+import type { DidCommConnectionRecord } from './repository'
 import { DidCommConnectionService, DidCommDidRotateService } from './services'
 
 export interface SendPingOptions {

@@ -1,6 +1,5 @@
-import type { DummyState } from './DummyState'
-
 import { BaseRecord, utils } from '@credo-ts/core'
+import type { DummyState } from './DummyState'
 
 export interface DummyStorageProps {
   id?: string

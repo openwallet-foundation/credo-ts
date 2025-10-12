@@ -1,7 +1,6 @@
-import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
 import { DidCommProofState } from '../../../../../../didcomm/src'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
 
 describe('Present Proof | DidCommProofV1Protocol', () => {

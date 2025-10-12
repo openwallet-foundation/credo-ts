@@ -1,14 +1,12 @@
 import type { AgentContext } from '../../agent'
-import type { VersionString } from '../../utils/version'
-import type { UpdateToVersion } from './updates'
-
 import { InjectionSymbols } from '../../constants'
 import type { Logger } from '../../logger'
 import { inject, injectable } from '../../plugins'
-
+import type { VersionString } from '../../utils/version'
 import { isStorageUpToDate } from './isUpToDate'
 import { StorageVersionRecord } from './repository/StorageVersionRecord'
 import { StorageVersionRepository } from './repository/StorageVersionRepository'
+import type { UpdateToVersion } from './updates'
 import { CURRENT_FRAMEWORK_STORAGE_VERSION, INITIAL_STORAGE_VERSION } from './updates'
 
 @injectable()

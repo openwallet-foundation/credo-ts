@@ -1,13 +1,11 @@
 import type { DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
-import type { AgentType } from './utils'
-
-import { ClaimFormat, Kms, X509Service, parseDid } from '@credo-ts/core'
+import { ClaimFormat, Kms, parseDid, X509Service } from '@credo-ts/core'
 import express, { type Express } from 'express'
-import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
-
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
+import { TenantsModule } from '../../tenants/src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForVerificationSessionRecordSubject } from './utils'
 
 const serverPort = 1236

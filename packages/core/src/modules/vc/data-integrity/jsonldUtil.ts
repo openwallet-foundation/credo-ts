@@ -1,12 +1,10 @@
+import { CredoError } from '../../../error'
 import type { JsonObject, JsonValue } from '../../../types'
+import { SECURITY_CONTEXT_URL } from '../constants'
+import jsonld from './libraries/jsonld'
 import type { GetProofsOptions } from './models/GetProofsOptions'
 import type { GetProofsResult } from './models/GetProofsResult'
 import type { GetTypeOptions } from './models/GetTypeOptions'
-
-import { CredoError } from '../../../error'
-import { SECURITY_CONTEXT_URL } from '../constants'
-
-import jsonld from './libraries/jsonld'
 import { W3cJsonLdVerifiableCredential } from './models/W3cJsonLdVerifiableCredential'
 
 export type JsonLdDoc = Record<string, unknown>
@@ -70,7 +68,7 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
   const { proofType, skipProofCompaction, documentLoader } = options
   let { document } = options
 
-  // biome-ignore lint/suspicious/noImplicitAnyLet: <explanation>
+  // biome-ignore lint/suspicious/noImplicitAnyLet: no explanation
   let proofs
   if (!skipProofCompaction) {
     // If we must compact the proof then we must first compact the input
@@ -81,7 +79,7 @@ export const getProofs = async (options: GetProofsOptions): Promise<GetProofsRes
     })
   }
 
-  // @ts-ignore - needed because getValues is not part of the public API.
+  // @ts-expect-error - needed because getValues is not part of the public API.
   proofs = jsonld.getValues(document, PROOF_PROPERTY)
   delete document[PROOF_PROPERTY]
 
@@ -117,14 +115,14 @@ export const getTypeInfo = async (
   const { documentLoader } = options
 
   // determine `@type` alias, if any
-  // @ts-ignore - needed because getValues is not part of the public API.
+  // @ts-expect-error - needed because getValues is not part of the public API.
   const context = jsonld.getValues(document, '@context')
 
   const compacted = await jsonld.compact({ '@type': '_:b0' }, context, {
     documentLoader,
   })
 
-  // biome-ignore lint/performance/noDelete: <explanation>
+  // biome-ignore lint/performance/noDelete: no explanation
   delete compacted['@context']
 
   const alias = Object.keys(compacted)[0]
@@ -132,11 +130,11 @@ export const getTypeInfo = async (
   // optimize: expand only `@type` and `type` values
   const toExpand: Record<string, unknown> = { '@context': context }
 
-  // @ts-ignore - needed because getValues is not part of the public API.
+  // @ts-expect-error - needed because getValues is not part of the public API.
   toExpand['@type'] = jsonld.getValues(document, '@type').concat(jsonld.getValues(document, alias))
 
   const expanded = (await jsonld.expand(toExpand, { documentLoader }))[0] || {}
 
-  // @ts-ignore - needed because getValues is not part of the public API.
+  // @ts-expect-error - needed because getValues is not part of the public API.
   return { types: jsonld.getValues(expanded, '@type'), alias }
 }

@@ -1,10 +1,9 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
-
+import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { QuestionAnswerApi } from './QuestionAnswerApi'
 import { QuestionAnswerRole } from './QuestionAnswerRole'
-import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
 import { QuestionAnswerRepository } from './repository'
 import { QuestionAnswerService } from './services'
 

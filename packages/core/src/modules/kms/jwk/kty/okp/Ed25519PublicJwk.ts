@@ -6,9 +6,9 @@ import {
   KnownJwaSignatureAlgorithms,
 } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
-import { X25519PublicJwk } from './X25519PublicJwk'
 import type { KmsJwkPublicOkp } from './okpJwk'
 import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
+import { X25519PublicJwk } from './X25519PublicJwk'
 
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }
 

@@ -1,7 +1,8 @@
+import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import type { Agent } from '../../../../../../../core/src/index'
-import type { getJsonLdModules } from '../../../../../../../core/tests'
 
 import { CREDENTIALS_CONTEXT_V1_URL, TypedArrayEncoder } from '../../../../../../../core/src/index'
+import type { getJsonLdModules } from '../../../../../../../core/tests'
 import { setupJsonLdTests, waitForCredentialRecord, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'
@@ -9,8 +10,6 @@ import { DidCommAutoAcceptCredential, DidCommCredentialState } from '../../../..
 import { DidCommProofState } from '../../../models/DidCommProofState'
 import { DidCommPresentationV2Message, DidCommRequestPresentationV2Message } from '../messages'
 import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
-
-import { transformPrivateKeyToPrivateJwk } from '../../../../../../../askar/src'
 import { TEST_INPUT_DESCRIPTORS_CITIZENSHIP } from './fixtures'
 
 const jsonld = {

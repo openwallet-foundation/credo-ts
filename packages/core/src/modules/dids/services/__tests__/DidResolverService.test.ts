@@ -1,13 +1,12 @@
-import type { DidResolver } from '../../domain'
-import type { DidRepository } from '../../repository'
-
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../tests/helpers'
 import { JsonTransformer } from '../../../../utils/JsonTransformer'
 import { CacheModuleConfig, InMemoryLruCache } from '../../../cache'
-import { DidsModuleConfig } from '../../DidsModuleConfig'
 import didKeyEd25519Fixture from '../../__tests__/__fixtures__/didKeyEd25519.json'
+import { DidsModuleConfig } from '../../DidsModuleConfig'
+import type { DidResolver } from '../../domain'
 import { DidDocument, DidDocumentRole } from '../../domain'
 import { parseDid } from '../../domain/parse'
+import type { DidRepository } from '../../repository'
 import { DidRecord } from '../../repository'
 import { DidResolverService } from '../DidResolverService'
 

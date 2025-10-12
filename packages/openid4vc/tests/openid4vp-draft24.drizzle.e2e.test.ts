@@ -1,33 +1,33 @@
-import { randomUUID } from 'crypto'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   DateOnly,
   Kms,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
+  w3cDate,
   X509Module,
   X509Service,
-  parseDid,
-  w3cDate,
 } from '@credo-ts/core'
+import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
 import { openid4vcBundle } from '../../drizzle-storage/src/openid4vc/bundle'
 import { tenantsBundle } from '../../drizzle-storage/src/tenants/bundle'
-import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
 import {
-  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
 } from '../../drizzle-storage/tests/testDatabase'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, type OpenId4VcVerifierModuleConfigOptions } from '../src'
-import { OpenId4VcVerificationSessionState } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
