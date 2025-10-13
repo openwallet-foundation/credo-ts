@@ -1,7 +1,6 @@
 import type { BaseName, HashName } from '@credo-ts/core'
-import type { DidCommAttachment } from '../decorators/attachment/DidCommAttachment'
-
 import { CredoError, HashlinkEncoder, TypedArrayEncoder } from '@credo-ts/core'
+import type { DidCommAttachment } from '../decorators/attachment/DidCommAttachment'
 
 /**
  * Encodes an attachment based on the `data` property

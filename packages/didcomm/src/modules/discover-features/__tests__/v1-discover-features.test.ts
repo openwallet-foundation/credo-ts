@@ -1,14 +1,12 @@
+import { ReplaySubject } from 'rxjs'
+import { Agent } from '../../../../../core/src/agent/Agent'
+import { setupSubjectTransports } from '../../../../../core/tests'
+import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
 import type { DidCommConnectionRecord } from '../../connections'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../DidCommDiscoverFeaturesEvents'
-
-import { ReplaySubject } from 'rxjs'
-
-import { Agent } from '../../../../../core/src/agent/Agent'
-import { setupSubjectTransports } from '../../../../../core/tests'
-import { getAgentOptions, makeConnection } from '../../../../../core/tests/helpers'
 import { DidCommDiscoverFeaturesEventTypes } from '../DidCommDiscoverFeaturesEvents'
 
 import { waitForDisclosureSubject, waitForQuerySubject } from './helpers'

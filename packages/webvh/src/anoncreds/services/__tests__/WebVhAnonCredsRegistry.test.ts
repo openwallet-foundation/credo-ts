@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import {
   AgentContext,
   DidDocument,
@@ -9,6 +8,7 @@ import {
   TypedArrayEncoder,
   VerificationMethod,
 } from '@credo-ts/core'
+import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -417,7 +417,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for null proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = null
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -426,7 +426,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for undefined proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = undefined
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -435,7 +435,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for non-object proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = testInput.proof.proofValue
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -445,7 +445,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for wrong proof type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -466,7 +465,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing verificationMethod', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -477,7 +476,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid verificationMethod type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -487,7 +486,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing proofValue', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -498,7 +497,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid proofValue type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -524,7 +523,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false when verification method not found in DID document', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.verificationMethod = `${issuerId}#key-01`
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)

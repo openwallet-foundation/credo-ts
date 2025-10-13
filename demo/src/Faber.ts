@@ -1,15 +1,13 @@
 import type { RegisterCredentialDefinitionReturnStateFinished } from '@credo-ts/anoncreds'
-import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
-import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
-
-import { TypedArrayEncoder, utils } from '@credo-ts/core'
-import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
-import { ui } from 'inquirer'
-
 import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
+import { TypedArrayEncoder, utils } from '@credo-ts/core'
+import type { DidCommConnectionRecord, DidCommConnectionStateChangedEvent } from '@credo-ts/didcomm'
+import { DidCommConnectionEventTypes } from '@credo-ts/didcomm'
+import type { IndyVdrRegisterCredentialDefinitionOptions, IndyVdrRegisterSchemaOptions } from '@credo-ts/indy-vdr'
+import { ui } from 'inquirer'
+import type BottomBar from 'inquirer/lib/ui/bottom-bar'
 import { BaseAgent, indyNetworkConfig } from './BaseAgent'
-import { Color, Output, greenText, purpleText, redText } from './OutputClass'
+import { Color, greenText, Output, purpleText, redText } from './OutputClass'
 
 export enum RegistryOptions {
   indy = 'did:indy',

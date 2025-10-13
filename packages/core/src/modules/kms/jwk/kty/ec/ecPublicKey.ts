@@ -1,13 +1,14 @@
 import {
   AffinePoint,
   CurveParams,
+  isValidCompressedPublicKeyFormat,
+  isValidDecompressedPublicKeyFormat,
   Secp256k1,
   Secp256r1,
   Secp384r1,
   Secp521r1,
-  isValidCompressedPublicKeyFormat,
-  isValidDecompressedPublicKeyFormat,
 } from 'ec-compression'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import { TypedArrayEncoder } from '../../../../../utils'
 import { KeyManagementError } from '../../../error/KeyManagementError'
 import type { KmsJwkPublicEc } from './ecJwk'
@@ -23,16 +24,18 @@ export const ecCrvToCurveParams: Record<KmsJwkPublicEc['crv'], CurveParams> = {
 export function ecPublicJwkToPublicKey(
   publicJwk: KmsJwkPublicEc,
   { compressed = false }: { compressed?: boolean } = {}
-): Uint8Array {
+): AnyUint8Array {
   const xAsBytes = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.x))
   const yAsBytes = Uint8Array.from(TypedArrayEncoder.fromBase64(publicJwk.y))
 
   const affinePoint = new AffinePoint(xAsBytes, yAsBytes)
 
-  return compressed ? affinePoint.compressedForm : affinePoint.decompressedForm
+  return compressed
+    ? (affinePoint.compressedForm as Uint8ArrayBuffer)
+    : (affinePoint.decompressedForm as Uint8ArrayBuffer)
 }
 
-export function ecPublicKeyToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publicKey: Uint8Array, crv: Crv) {
+export function ecPublicKeyToPublicJwk<Crv extends KmsJwkPublicEc['crv']>(publicKey: AnyUint8Array, crv: Crv) {
   const curveParams = ecCrvToCurveParams[crv]
 
   if (!curveParams) {

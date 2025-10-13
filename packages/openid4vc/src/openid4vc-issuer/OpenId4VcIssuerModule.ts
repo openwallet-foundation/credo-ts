@@ -1,15 +1,13 @@
 import type { AgentContext, DependencyManager } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
-import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './router'
-
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
-
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
+import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from './repository'
 import { OpenId4VcIssuerRepository } from './repository/OpenId4VcIssuerRepository'
+import type { OpenId4VcIssuanceRequest } from './router'
 import {
   configureAccessTokenEndpoint,
   configureAuthorizationChallengeEndpoint,
@@ -85,7 +83,7 @@ export class OpenId4VcIssuerModule {
         _res.status(404).send('Not found')
       }
 
-      let agentContext: AgentContext | undefined = undefined
+      let agentContext: AgentContext | undefined
 
       try {
         // FIXME: should we create combined openId actor record?

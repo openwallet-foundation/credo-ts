@@ -1,13 +1,11 @@
 import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
-import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
-import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
-
 import { DidCommMessagePickupApi } from './DidCommMessagePickupApi'
+import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
+import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
 
 /**

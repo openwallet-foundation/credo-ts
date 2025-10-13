@@ -26,6 +26,19 @@ export interface JsonObject {
 }
 
 /**
+ * Typescript 5.7/5.9 made the Uint8Array generic. This causes a lot of type errors
+ * and is also not backwards compatible with older TypeScript versions.
+ *
+ * This type util infers the return type, so that in older versions the non generic
+ * Uint8Array is used, and in newer version the generic Uint8Array is used.
+ *
+ * See https://github.com/microsoft/typescript/issues/62240
+ */
+export type Uint8ArrayBuffer = ReturnType<typeof Uint8Array.from>
+
+export type AnyUint8Array = Uint8Array
+
+/**
  * Flatten an array of arrays
  * @example
  * ```

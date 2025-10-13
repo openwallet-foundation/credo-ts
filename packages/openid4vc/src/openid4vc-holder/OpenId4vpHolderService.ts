@@ -8,15 +8,6 @@ import type {
   HashName,
   MdocSessionTranscriptOptions,
 } from '@credo-ts/core'
-import type {
-  OpenId4VpAcceptAuthorizationRequestOptions,
-  OpenId4VpFetchEntityConfigurationOptions,
-  OpenId4VpResolveTrustChainsOptions,
-  OpenId4VpResolvedAuthorizationRequest,
-  ParsedTransactionDataEntry,
-  ResolveOpenId4VpAuthorizationRequestOptions,
-} from './OpenId4vpHolderServiceOptions'
-
 import {
   ClaimFormat,
   CredoError,
@@ -24,30 +15,37 @@ import {
   DifPresentationExchangeService,
   DifPresentationExchangeSubmissionLocation,
   Hasher,
+  injectable,
   JwsService,
   Kms,
   TypedArrayEncoder,
-  injectable,
 } from '@credo-ts/core'
 import {
   fetchEntityConfiguration as federationFetchEntityConfiguration,
   resolveTrustChains as federationResolveTrustChains,
 } from '@openid-federation/core'
+import type { Jwk } from '@openid4vc/oauth2'
 import {
-  type Openid4vpAuthorizationResponse,
-  Openid4vpClient,
-  type VpToken,
   extractEncryptionJwkFromJwks,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  type Openid4vpAuthorizationResponse,
+  Openid4vpClient,
   parseAuthorizationRequestVersion,
   parseTransactionData,
+  type VpToken,
 } from '@openid4vc/openid4vp'
-
-import type { Jwk } from '@openid4vc/oauth2'
 import type { OpenId4VpVersion } from '../openid4vc-verifier'
 import { getOid4vcCallbacks } from '../shared/callbacks'
+import type {
+  OpenId4VpAcceptAuthorizationRequestOptions,
+  OpenId4VpFetchEntityConfigurationOptions,
+  OpenId4VpResolvedAuthorizationRequest,
+  OpenId4VpResolveTrustChainsOptions,
+  ParsedTransactionDataEntry,
+  ResolveOpenId4VpAuthorizationRequestOptions,
+} from './OpenId4vpHolderServiceOptions'
 
 @injectable()
 export class OpenId4VpHolderService {
@@ -186,11 +184,11 @@ export class OpenId4VpHolderService {
 
       // FIXME: we probably don't want to override this, but otherwise the accept logic doesn't have
       // access to the correct metadata. Should we also pass client to accept?
-      // @ts-ignore
+      // @ts-expect-error
       verifiedAuthorizationRequest.authorizationRequestPayload.client_metadata = openidRelyingPartyMetadata
       // FIXME: we should not just override the metadata?
       // When federation is used we need to use the federation metadata
-      // @ts-ignore
+      // @ts-expect-error
       client.clientMetadata = openidRelyingPartyMetadata
     }
 
@@ -394,7 +392,7 @@ export class OpenId4VpHolderService {
     // NOTE: in v1 DC API request the audience is always origin: (not the client id)
     const audience = openid4vpVersion === 'v1' && isDcApiRequest ? `origin:${options.origin}` : clientId
 
-    let encryptionJwk: Jwk | undefined = undefined
+    let encryptionJwk: Jwk | undefined
     if (shouldEncryptResponse) {
       // NOTE: Once we add support for federation we need to require the clientMetadata as input to the accept method.
       const clientMetadata = authorizationRequestPayload.client_metadata
@@ -468,7 +466,7 @@ export class OpenId4VpHolderService {
     }
 
     let vpToken: VpToken
-    let presentationSubmission: DifPresentationExchangeSubmission | undefined = undefined
+    let presentationSubmission: DifPresentationExchangeSubmission | undefined
 
     const parsedTransactionData = authorizationRequestPayload.transaction_data
       ? parseTransactionData({

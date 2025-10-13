@@ -1,10 +1,9 @@
-import { DidRecord, type RecordSavedEvent } from '@credo-ts/core'
-
 import {
   DidCommV1Service,
   DidDocument,
   DidDocumentRole,
   DidDocumentService,
+  DidRecord,
   DidRepository,
   DidsApi,
   EventEmitter,
@@ -12,6 +11,7 @@ import {
   Kms,
   NewDidCommV2Service,
   NewDidCommV2ServiceEndpoint,
+  type RecordSavedEvent,
   RepositoryEventTypes,
   TypedArrayEncoder,
   VerificationMethod,
@@ -147,17 +147,15 @@ describe('IndyVdrIndyDidRegistrar', () => {
   })
 
   test('creates a did:indy document without services', async () => {
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const createRegisterDidWriteRequest = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-ignore type check fails because method is private
     createRegisterDidWriteRequest.mockImplementationOnce(() => Promise.resolve())
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -210,30 +208,26 @@ describe('IndyVdrIndyDidRegistrar', () => {
   })
 
   test('creates a did:indy document with services using attrib', async () => {
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const createRegisterDidWriteRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-ignore type check fails because method is private
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const createSetDidEndpointsRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createSetDidEndpointsRequest'
     )
-    // @ts-ignore type check fails because method is private
     createSetDidEndpointsRequestSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
-    // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const result = await indyVdrIndyDidRegistrar.create(agentContext, {
@@ -362,22 +356,19 @@ describe('IndyVdrIndyDidRegistrar', () => {
   })
 
   test('stores the did document', async () => {
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const createRegisterDidWriteRequestSpy = vi.spyOn<undefined, undefined>(
       indyVdrIndyDidRegistrar,
       'createRegisterDidWriteRequest'
     )
-    // @ts-ignore type check fails because method is private
     createRegisterDidWriteRequestSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const registerPublicDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'registerPublicDid')
-    // @ts-ignore type check fails because method is private
     registerPublicDidSpy.mockImplementationOnce(() => Promise.resolve())
 
-    // @ts-ignore - method is private
+    // @ts-expect-error - method is private
     const setEndpointsForDidSpy = vi.spyOn<undefined, undefined>(indyVdrIndyDidRegistrar, 'setEndpointsForDid')
-    // @ts-ignore type check fails because method is private
     setEndpointsForDidSpy.mockImplementationOnce(() => Promise.resolve(undefined))
 
     const saveCalled = vi.fn()

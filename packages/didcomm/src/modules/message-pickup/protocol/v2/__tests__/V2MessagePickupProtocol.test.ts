@@ -1,5 +1,3 @@
-import type { DidCommEncryptedMessage } from '../../../../../types'
-
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { verkeyToDidKey } from '../../../../../../../core/src/modules/dids/helpers'
@@ -12,6 +10,7 @@ import { DidCommAttachment } from '../../../../../decorators/attachment/DidCommA
 import { DidCommProblemReportError } from '../../../../../errors/problem-reports/DidCommProblemReportError'
 import { DidCommInboundMessageContext } from '../../../../../models'
 import { InMemoryQueueTransportRepository } from '../../../../../transport/queue/InMemoryQueueTransportRepository'
+import type { DidCommEncryptedMessage } from '../../../../../types'
 import { DidCommConnectionService, DidCommDidExchangeState, DidCommTrustPingMessage } from '../../../../connections'
 import { DidCommMessagePickupModuleConfig } from '../../../DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupV1Protocol } from '../../v1'

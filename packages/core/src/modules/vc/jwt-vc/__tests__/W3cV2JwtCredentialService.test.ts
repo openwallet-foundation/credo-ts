@@ -32,7 +32,7 @@ import {
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-jwt-vc-v2'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2JwtCredentialService')
 const agentContext = getAgentContext({
@@ -127,6 +127,9 @@ describe('W3cV2JwtCredentialService', () => {
   describe('signCredential', () => {
     test('signs an ES256 JWT vc', async () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
+
+      const nowMock = vi.spyOn(Date, 'now')
+      nowMock.mockReturnValueOnce(1698151532000)
 
       const vcJwt = await w3cV2JwtCredentialService.signCredential(agentContext, {
         alg: KnownJwaSignatureAlgorithms.ES256,
@@ -239,7 +242,7 @@ describe('W3cV2JwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.issuer = undefined
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
@@ -262,7 +265,7 @@ describe('W3cV2JwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.vc = 'HELLO'
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {

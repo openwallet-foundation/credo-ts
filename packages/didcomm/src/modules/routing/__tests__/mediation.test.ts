@@ -1,12 +1,10 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { AgentDependencies } from '../../../../../core/src/agent/AgentDependencies'
-import type { InitConfig } from '../../../../../core/src/types'
-
 import { Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { Agent } from '../../../../../core/src/agent/Agent'
+import type { AgentDependencies } from '../../../../../core/src/agent/AgentDependencies'
+import type { InitConfig } from '../../../../../core/src/types'
 import { sleep } from '../../../../../core/src/utils/sleep'
 import { getAgentOptions, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import { DidCommModule } from '../../../DidCommModule'
@@ -109,7 +107,7 @@ describe('mediator establishment', () => {
       modules: {
         ...recipientAgentOptions.modules,
         didcomm: new DidCommModule({
-          // @ts-ignore
+          // @ts-expect-error
           ...recipientAgentOptions.modules.didcomm.config.options,
           transports: {
             inbound: [new SubjectInboundTransport(recipientMessages)],
@@ -141,7 +139,7 @@ describe('mediator establishment', () => {
     expect(mediatorRecipientConnection?.isReady).toBe(true)
 
     expect(mediatorRecipientConnection).toBeConnectedWith(recipientMediatorConnection)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     expect(recipientMediatorConnection).toBeConnectedWith(mediatorRecipientConnection!)
 
     expect(recipientMediator?.state).toBe(DidCommMediationState.Granted)
@@ -175,7 +173,7 @@ describe('mediator establishment', () => {
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
     expect(recipientSenderConnection?.isReady).toBe(true)
     expect(senderRecipientConnection.isReady).toBe(true)
@@ -302,7 +300,7 @@ describe('mediator establishment', () => {
       recipientOutOfBandRecord.id
     )
     expect(recipientSenderConnection).toBeConnectedWith(senderRecipientConnection)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     expect(senderRecipientConnection).toBeConnectedWith(recipientSenderConnection!)
 
     expect(recipientSenderConnection?.isReady).toBe(true)

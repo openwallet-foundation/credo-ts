@@ -1,9 +1,8 @@
-import type { CredentialRecordBinding } from '../../../modules/credentials'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import type { CredentialRecordBinding } from '../../../modules/credentials'
 import {
   DidCommCredentialExchangeRecord,
   DidCommCredentialRole,

@@ -1,9 +1,6 @@
-import type { AgentContext } from '../../../../../core/src/agent'
-import type { DidCommRouting } from '../../../models'
-
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
+import type { AgentContext } from '../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
@@ -11,8 +8,8 @@ import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/Did
 import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../../../../core/src/modules/dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
-import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../../../core/src/utils/did'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import {
   getAgentConfig,
@@ -25,6 +22,7 @@ import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AckStatus, DidCommAckMessage } from '../../../messages'
+import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
@@ -32,6 +30,7 @@ import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
 import {
+  authenticationTypes,
   DidCommConnection,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
@@ -39,7 +38,6 @@ import {
   Ed25119Sig2018,
   EmbeddedAuthentication,
   ReferencedAuthentication,
-  authenticationTypes,
 } from '../models'
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService } from '../services'
@@ -600,7 +598,7 @@ describe('DidCommConnectionService', () => {
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
       const peerDid = didDocumentJsonToNumAlgo1Did(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         convertToNewDidDocument(otherPartyConnection.didDoc!).didDocument.toJSON()
       )
 

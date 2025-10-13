@@ -1,12 +1,10 @@
 import { JsonTransformer, type TagsBase } from '@credo-ts/core'
-
+import { DidCommMessageRecord } from '@credo-ts/didcomm'
 import {
   BaseDrizzleRecordAdapter,
   type DrizzleAdapterRecordValues,
   type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
-
-import { DidCommMessageRecord } from '@credo-ts/didcomm'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
@@ -32,8 +30,10 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
     const {
       role,
       associatedRecordId,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       messageId,
       messageName,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       messageType,
       protocolMajorVersion,
       protocolMinorVersion,
@@ -48,7 +48,7 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
 
       associatedRecordId,
 
-      // These are access on message['@type'] and message['@id']
+      // These are accessed on message['@type'] and message['@id']
       // messageType,
       // messageId,
 
@@ -64,6 +64,7 @@ export class DrizzleDidcommMessageRecordAdapter extends BaseDrizzleRecordAdapter
   }
 
   public toRecord(values: DrizzleDidcommMessageAdapterValues): DidCommMessageRecord {
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, messageName, protocolMajorVersion, protocolMinorVersion, protocolName, ...remainingValues } =
       values
 

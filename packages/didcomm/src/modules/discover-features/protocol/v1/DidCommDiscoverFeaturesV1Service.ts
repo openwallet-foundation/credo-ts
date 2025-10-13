@@ -1,22 +1,20 @@
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
+import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesEventTypes } from '../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesModuleConfig } from '../../DidCommDiscoverFeaturesModuleConfig'
 import type {
   CreateDisclosureOptions,
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DidCommDiscoverFeaturesServiceOptions'
-
-import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
-
-import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
-import { DidCommProtocol } from '../../../../models'
-import { DidCommDiscoverFeaturesEventTypes } from '../../DidCommDiscoverFeaturesEvents'
-import { DidCommDiscoverFeaturesModuleConfig } from '../../DidCommDiscoverFeaturesModuleConfig'
 import { DidCommDiscoverFeaturesService } from '../../services'
 
 import { DidCommFeaturesDiscloseMessageHandler, DidCommFeaturesQueryMessageHandler } from './handlers'

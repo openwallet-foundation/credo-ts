@@ -9,29 +9,26 @@ import type {
   SubmissionRequirementMatchFrom,
   SubmissionRequirementMatchInputDescriptor,
 } from '@animo-id/pex/dist/main/lib/evaluation/core'
-import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
-import type {
-  DifPexCredentialsForRequest,
-  DifPexCredentialsForRequestRequirement,
-  DifPexCredentialsForRequestSubmissionEntry,
-  SubmissionEntryCredential,
-} from '../models'
-
 import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core/index.js'
 import { JSONPath } from '@astronautlabs/jsonpath'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
+import type { InputDescriptorV1, InputDescriptorV2, SubmissionRequirement } from '@sphereon/pex-models'
 import { Rules } from '@sphereon/pex-models'
-
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
+import type { JsonObject } from '../../../types'
 import { MdocRecord } from '../../mdoc'
 import { Mdoc } from '../../mdoc/Mdoc'
 import { MdocDeviceResponse } from '../../mdoc/MdocDeviceResponse'
 import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
-
-import type { JsonObject } from '../../../types'
+import type {
+  DifPexCredentialsForRequest,
+  DifPexCredentialsForRequestRequirement,
+  DifPexCredentialsForRequestSubmissionEntry,
+  SubmissionEntryCredential,
+} from '../models'
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(

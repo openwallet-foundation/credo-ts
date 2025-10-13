@@ -1,10 +1,6 @@
 import type { Constructor } from '@credo-ts/core'
-import type { DidCommPlaintextMessage } from './types'
-import type { ParsedMessageType } from './util/messageType'
-
 import { JsonTransformer } from '@credo-ts/core'
 import { Exclude } from 'class-transformer'
-
 import { BaseDidCommMessage } from './BaseDidCommMessage'
 import { AckDecorated } from './decorators/ack/AckDecoratorExtension'
 import { AttachmentDecorated } from './decorators/attachment/AttachmentExtension'
@@ -13,6 +9,8 @@ import { ServiceDecorated } from './decorators/service/ServiceDecoratorExtension
 import { ThreadDecorated } from './decorators/thread/ThreadDecoratorExtension'
 import { TimingDecorated } from './decorators/timing/TimingDecoratorExtension'
 import { TransportDecorated } from './decorators/transport/TransportDecoratorExtension'
+import type { DidCommPlaintextMessage } from './types'
+import type { ParsedMessageType } from './util/messageType'
 import { replaceNewDidCommPrefixWithLegacyDidSovOnMessage } from './util/messageType'
 
 export type ConstructableAgentMessage = Constructor<DidCommMessage> & { type: ParsedMessageType }
@@ -44,7 +42,9 @@ export class DidCommMessage extends Decorated {
 
   public toJSON({
     useDidSovPrefixWhereAllowed,
-  }: { useDidSovPrefixWhereAllowed?: boolean } = {}): DidCommPlaintextMessage {
+  }: {
+    useDidSovPrefixWhereAllowed?: boolean
+  } = {}): DidCommPlaintextMessage {
     const json = JsonTransformer.toJSON(this)
 
     // If we have `useDidSovPrefixWhereAllowed` enabled, we want to replace the new https://didcomm.org prefix with the legacy did:sov prefix.

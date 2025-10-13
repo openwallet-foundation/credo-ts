@@ -1,10 +1,4 @@
 import type { AgentContext } from '../../../../agent'
-import type { DidRegistrar } from '../../domain/DidRegistrar'
-import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
-
-import { DidDocumentRole } from '../../domain/DidDocumentRole'
-import { DidRecord, DidRepository } from '../../repository'
-
 import type { XOR } from '../../../../types'
 import {
   KeyManagementApi,
@@ -13,6 +7,11 @@ import {
   type KmsJwkPublicAsymmetric,
   PublicJwk,
 } from '../../../kms'
+
+import { DidDocumentRole } from '../../domain/DidDocumentRole'
+import type { DidRegistrar } from '../../domain/DidRegistrar'
+import { DidRecord, DidRepository } from '../../repository'
+import type { DidCreateOptions, DidCreateResult, DidDeactivateResult, DidUpdateResult } from '../../types'
 import { DidJwk } from './DidJwk'
 
 export class JwkDidRegistrar implements DidRegistrar {

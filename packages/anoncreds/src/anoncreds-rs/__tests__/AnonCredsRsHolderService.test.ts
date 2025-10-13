@@ -5,12 +5,13 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '@credo-ts/anoncreds'
+import {
+  AnonCredsCredentialRepository,
+  AnonCredsHolderServiceSymbol,
+  AnonCredsLinkSecretRecord,
+  AnonCredsModuleConfig,
+} from '@credo-ts/anoncreds'
 import type { DidRepository } from '@credo-ts/core'
-import type { JsonObject } from '@hyperledger/anoncreds-shared'
-import type { MockedClassConstructor } from '../../../../../tests/types'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
-
 import {
   DidResolverService,
   DidsModuleConfig,
@@ -23,17 +24,19 @@ import {
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { AnonCredsCredentialDefinitionRepository } from '../../../../anoncreds/src/repository/AnonCredsCredentialDefinitionRepository'
 import { AnonCredsLinkSecretRepository } from '../../../../anoncreds/src/repository/AnonCredsLinkSecretRepository'
 import { InMemoryAnonCredsRegistry } from '../../../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { testLogger } from '../../../../core/tests'
 import { agentDependencies, getAgentConfig, getAgentContext, mockFunction } from '../../../../core/tests/helpers'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 import { AnonCredsRsHolderService } from '../AnonCredsRsHolderService'
-
 import {
   createCredentialDefinition,
   createCredentialForHolder,
@@ -41,13 +44,6 @@ import {
   createLinkSecret,
   storeCredential,
 } from './helpers'
-
-import {
-  AnonCredsCredentialRepository,
-  AnonCredsHolderServiceSymbol,
-  AnonCredsLinkSecretRecord,
-  AnonCredsModuleConfig,
-} from '@credo-ts/anoncreds'
 
 const agentConfig = getAgentConfig('AnonCredsRsHolderServiceTest')
 const anonCredsHolderService = new AnonCredsRsHolderService()

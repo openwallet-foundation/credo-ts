@@ -1,4 +1,4 @@
-import { ReplaySubject, first, timeout } from 'rxjs'
+import { first, ReplaySubject, timeout } from 'rxjs'
 
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { RecordNotFoundError } from '../../../../../core/src/error'
@@ -68,13 +68,13 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection?.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
       // Do did rotate
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       const { newDid } = await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
@@ -83,9 +83,9 @@ describe('Rotation E2E tests', () => {
       })
 
       // Check that new did is taken into account by both parties
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       const newAliceBobConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       const newBobAliceConnection = await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)
 
       expect(newAliceBobConnection.did).toEqual(newDid)
@@ -96,7 +96,7 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello new did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection?.id })
@@ -104,7 +104,7 @@ describe('Rotation E2E tests', () => {
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -115,7 +115,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id! })
 
       // Wait for acknowledge
@@ -139,7 +139,7 @@ describe('Rotation E2E tests', () => {
       expect(bobAliceConnection?.theirDid).toEqual(oldDid)
 
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -178,7 +178,7 @@ describe('Rotation E2E tests', () => {
 
       // Do did rotate
       const { newDid } = await aliceAgent.didcomm.connections.rotate({
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         connectionId: aliceBobConnection?.id!,
         toDid: did,
       })
@@ -189,9 +189,9 @@ describe('Rotation E2E tests', () => {
       })
 
       // Check that new did is taken into account by both parties
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       const newAliceBobConnection = await aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       const newBobAliceConnection = await bobAgent.didcomm.connections.getById(bobAliceConnection?.id!)
 
       expect(newAliceBobConnection.did).toEqual(newDid)
@@ -202,7 +202,7 @@ describe('Rotation E2E tests', () => {
       expect(newBobAliceConnection.previousTheirDids).toContain(oldDid)
 
       // Send message to new did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello new did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello new did', connectionId: aliceBobConnection?.id })
@@ -210,7 +210,7 @@ describe('Rotation E2E tests', () => {
 
     test('Rotate succesfully and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -256,7 +256,7 @@ describe('Rotation E2E tests', () => {
 
       // Do did rotate
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for acknowledge
@@ -295,7 +295,7 @@ describe('Rotation E2E tests', () => {
 
     test('Rotate failed and send messages to previous did afterwards', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -336,7 +336,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Do did rotate
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.rotate({ connectionId: aliceBobConnection?.id!, toDid: did })
 
       // Wait for a problem report
@@ -353,7 +353,7 @@ describe('Rotation E2E tests', () => {
       })
 
       // Send message to stored did (should be the previous one)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after did rotation failure')
 
       await waitForBasicMessage(aliceAgent, {
@@ -366,7 +366,7 @@ describe('Rotation E2E tests', () => {
   describe('Hangup', () => {
     test('Hangup without record deletion', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -378,7 +378,7 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection?.clone(),
       })
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
       // Wait for hangup
@@ -388,7 +388,7 @@ describe('Rotation E2E tests', () => {
 
       // If Bob attempts to send a message to Alice after they received the hangup, framework should reject it
       await expect(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Message after hangup')
       ).rejects.toThrow()
 
@@ -403,7 +403,7 @@ describe('Rotation E2E tests', () => {
 
     test('Hangup and delete connection record', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
@@ -415,11 +415,11 @@ describe('Rotation E2E tests', () => {
         connectionRecord: bobAliceConnection?.clone(),
       })
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id!, deleteAfterHangup: true })
 
       // Verify that alice connection has been effectively deleted
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await expect(aliceAgent.didcomm.connections.getById(aliceBobConnection?.id!)).rejects.toThrow(RecordNotFoundError)
 
       // Wait for hangup
@@ -443,12 +443,12 @@ describe('Rotation E2E tests', () => {
 
     test('Event emitted after processing hangup', async () => {
       // Send message to initial did
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await bobAgent.didcomm.basicMessages.sendMessage(bobAliceConnection?.id!, 'Hello initial did')
 
       await waitForBasicMessage(aliceAgent, { content: 'Hello initial did' })
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.hangup({ connectionId: aliceBobConnection?.id! })
 
       // Catch did rotation event message from processHangup()

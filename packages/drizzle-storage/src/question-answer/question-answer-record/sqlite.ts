@@ -1,6 +1,5 @@
-import { foreignKey, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
-
 import type { QuestionAnswerRole, QuestionAnswerState, ValidResponse } from '@credo-ts/question-answer'
+import { foreignKey, integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { didcommConnection } from '../../didcomm/connection-record/sqlite'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

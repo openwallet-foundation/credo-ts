@@ -5,7 +5,9 @@
     "import": "./src/index.ts"
   },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
@@ -33,6 +35,7 @@
   },
   "dependencies": {
     "@credo-ts/askar": "workspace:*",
+    "@credo-ts/tenants": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
     "@credo-ts/core": "workspace:*"
   },

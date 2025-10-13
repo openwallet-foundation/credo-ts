@@ -1,10 +1,8 @@
-import type { Response, Router } from 'express'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
 import { getAuthorizationServerMetadataFromList } from '@openid4vc/oauth2'
-
+import type { Response, Router } from 'express'
 import { getRequestContext, sendJsonResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 /**
  * This is the credo authorization server metadata. It is only used for pre-authorized

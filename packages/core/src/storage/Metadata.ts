@@ -1,5 +1,5 @@
 // Any is used to prevent frustrating TS errors if we just want to store arbitrary json data
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 type MetadataValue = Record<string, any>
 
 export type MetadataBase = {

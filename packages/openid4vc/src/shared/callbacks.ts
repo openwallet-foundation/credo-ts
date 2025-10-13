@@ -1,4 +1,19 @@
-import { AgentContext, type JwsSignerWithJwk, Kms } from '@credo-ts/core'
+import {
+  AgentContext,
+  Buffer,
+  CredoError,
+  Hasher,
+  JsonEncoder,
+  JwsService,
+  type JwsSignerWithJwk,
+  JwtPayload,
+  Kms,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+  X509Service,
+} from '@credo-ts/core'
+import { resolveTrustChains } from '@openid-federation/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,
@@ -8,23 +23,8 @@ import type {
   SignJwtCallback,
   VerifyJwtCallback,
 } from '@openid4vc/oauth2'
-import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
-
-import {
-  Buffer,
-  CredoError,
-  Hasher,
-  JsonEncoder,
-  JwsService,
-  JwtPayload,
-  TypedArrayEncoder,
-  X509Certificate,
-  X509ModuleConfig,
-  X509Service,
-} from '@credo-ts/core'
 import { clientAuthenticationDynamic, decodeJwtHeader } from '@openid4vc/oauth2'
-
-import { resolveTrustChains } from '@openid-federation/core'
+import type { OpenId4VcIssuerRecord } from '../openid4vc-issuer/repository'
 import { getPublicJwkFromDid } from './utils'
 
 export function getOid4vcJwtVerifyCallback(

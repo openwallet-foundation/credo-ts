@@ -1,10 +1,3 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-
-import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
-
-import { e2eTest } from './e2e-test'
-
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
@@ -12,6 +5,10 @@ import {
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
 import { DidCommWsInboundTransport } from '@credo-ts/node'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAgentOptions } from '../packages/core/tests/helpers'
+import { e2eTest } from './e2e-test'
 
 // FIXME: somehow if we use the in memory wallet and storage service in the WS test it will fail,
 // but it succeeds with Askar. We should look into this at some point

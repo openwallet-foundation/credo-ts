@@ -1,10 +1,9 @@
-import type { AcceptProofProposalOptions } from '../../../../../../didcomm/src'
-import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
-import type { DidCommRequestPresentationV1Message } from '../messages'
-
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../core/tests'
+import type { AcceptProofProposalOptions } from '../../../../../../didcomm/src'
 import { DidCommProofState } from '../../../../../../didcomm/src'
+import type { AnonCredsTestsAgent } from '../../../../../tests/legacyAnonCredsSetup'
 import { setupAnonCredsTests } from '../../../../../tests/legacyAnonCredsSetup'
+import type { DidCommRequestPresentationV1Message } from '../messages'
 
 describe('Present Proof', () => {
   let faberAgent: AnonCredsTestsAgent

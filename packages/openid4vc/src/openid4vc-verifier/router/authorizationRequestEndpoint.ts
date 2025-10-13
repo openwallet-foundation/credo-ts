@@ -1,8 +1,5 @@
-import type { Response, Router } from 'express'
-import type { OpenId4VcVerificationRequest } from './requestContext'
-
 import { joinUriParts } from '@credo-ts/core'
-
+import type { Response, Router } from 'express'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -12,6 +9,7 @@ import {
 import { OpenId4VcVerificationSessionState } from '../OpenId4VcVerificationSessionState'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 export function configureAuthorizationRequestEndpoint(router: Router, config: OpenId4VcVerifierModuleConfig) {
   router.get(

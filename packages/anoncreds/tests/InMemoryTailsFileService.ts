@@ -1,9 +1,7 @@
 import type { AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
-import type { AgentContext, FileSystem } from '@credo-ts/core'
-
-import { InjectionSymbols } from '@credo-ts/core'
-
 import { BasicTailsFileService } from '@credo-ts/anoncreds'
+import type { AgentContext, FileSystem } from '@credo-ts/core'
+import { InjectionSymbols } from '@credo-ts/core'
 
 export class InMemoryTailsFileService extends BasicTailsFileService {
   private tailsFilePaths: Record<string, string> = {}

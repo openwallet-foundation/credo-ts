@@ -1,22 +1,20 @@
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, SdJwtVc, SdJwtVcIssuer } from '@credo-ts/core'
-import {
-  type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcModule,
-  type OpenId4VcVerifierModuleConfigOptions,
-  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
-  type OpenId4VciSignSdJwtCredentials,
-} from '../src'
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType } from './utils'
-
 import { ClaimFormat } from '@credo-ts/core'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
 import express, { type Express } from 'express'
-
-import { setupNockToExpress } from '../../../tests/nockToExpress'
-import { OpenId4VcIssuanceSessionState, getScopesFromCredentialConfigurationsSupported } from '../src'
-
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { setupNockToExpress } from '../../../tests/nockToExpress'
+import {
+  getScopesFromCredentialConfigurationsSupported,
+  OpenId4VcIssuanceSessionState,
+  type OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
+  type OpenId4VciSignSdJwtCredentials,
+  OpenId4VcModule,
+  type OpenId4VcVerifierModuleConfigOptions,
+} from '../src'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupported } from './utilsVci'
 
@@ -129,72 +127,80 @@ describe('OpenId4Vc Presentation During Issuance', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule({
-        verifier: {
-          baseUrl: verifierBaseUrl,
-        },
-        issuer: {
-          baseUrl: issuerBaseUrl,
-          getVerificationSessionForIssuanceSessionAuthorization:
-            getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
-          credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
-            if (!verification) {
-              throw new Error('Expected verification in credential request mapper')
-            }
-
-            let credential: SdJwtVc
-
-            if (verification.presentationExchange) {
-              const descriptor = verification.presentationExchange.descriptors.find(
-                (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
-              )
-
-              if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtDc) {
-                throw new Error('Expected descriptor with sd-jwt vc format')
-              }
-
-              credential = descriptor.credential
-            } else {
-              const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
-              if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
-                throw new Error('Expected preentation with sd-jwt vc format')
-              }
-
-              credential = presentation
-            }
-
-            const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
-
-            if (credentialRequest.format === 'vc+sd-jwt') {
-              return {
-                type: 'credentials',
-                format: 'dc+sd-jwt',
-                credentials: holderBinding.keys.map((holderBinding) => ({
-                  payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
-                  holder: holderBinding,
-                  issuer: {
-                    method: 'x5c',
-                    x5c: [issuer.certificate],
-                    issuer: baseUrl,
-                  },
-                  disclosureFrame: {
-                    _sd: ['full_name'],
-                  },
-                })),
-              } satisfies OpenId4VciSignSdJwtCredentials
-            }
-            throw new Error('Invalid request')
+    issuer = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule({
+          verifier: {
+            baseUrl: verifierBaseUrl,
           },
-        },
-      }),
-      inMemory: new InMemoryWalletModule(),
-    })
+          issuer: {
+            baseUrl: issuerBaseUrl,
+            getVerificationSessionForIssuanceSessionAuthorization:
+              getVerificationSessionForIssuanceSessionAuthorization('presentationDefinition'),
+            credentialRequestToCredentialMapper: async ({ credentialRequest, holderBinding, verification }) => {
+              if (!verification) {
+                throw new Error('Expected verification in credential request mapper')
+              }
 
-    holder = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule(),
-      inMemory: new InMemoryWalletModule(),
-    })
+              let credential: SdJwtVc
+
+              if (verification.presentationExchange) {
+                const descriptor = verification.presentationExchange.descriptors.find(
+                  (descriptor) => descriptor.descriptor.id === presentationDefinition.input_descriptors[0].id
+                )
+
+                if (!descriptor || descriptor.claimFormat !== ClaimFormat.SdJwtDc) {
+                  throw new Error('Expected descriptor with sd-jwt vc format')
+                }
+
+                credential = descriptor.credential
+              } else {
+                const [presentation] = verification.dcql.presentations[verification.dcql.query.credentials[0].id]
+                if (presentation.claimFormat !== ClaimFormat.SdJwtDc) {
+                  throw new Error('Expected preentation with sd-jwt vc format')
+                }
+
+                credential = presentation
+              }
+
+              const fullName = `${credential.prettyClaims.given_name} ${credential.prettyClaims.family_name}`
+
+              if (credentialRequest.format === 'vc+sd-jwt') {
+                return {
+                  type: 'credentials',
+                  format: 'dc+sd-jwt',
+                  credentials: holderBinding.keys.map((holderBinding) => ({
+                    payload: { vct: credentialRequest.vct, full_name: fullName, degree: 'Software Engineer' },
+                    holder: holderBinding,
+                    issuer: {
+                      method: 'x5c',
+                      x5c: [issuer.certificate],
+                      issuer: baseUrl,
+                    },
+                    disclosureFrame: {
+                      _sd: ['full_name'],
+                    },
+                  })),
+                } satisfies OpenId4VciSignSdJwtCredentials
+              }
+              throw new Error('Invalid request')
+            },
+          },
+        }),
+        inMemory: new InMemoryWalletModule(),
+      },
+      undefined,
+      global.fetch
+    )
+
+    holder = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule(),
+        inMemory: new InMemoryWalletModule(),
+      },
+      undefined,
+      global.fetch
+    )
 
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)

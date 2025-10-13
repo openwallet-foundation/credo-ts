@@ -1,14 +1,12 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { DidCommCredentialRole } from '../models'
-import type { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
-import type { DidCommCredentialState } from '../models/DidCommCredentialState'
-import { DidCommRevocationNotification } from '../models/DidCommRevocationNotification'
-
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Type } from 'class-transformer'
-
 import { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
+import type { DidCommCredentialRole } from '../models'
+import type { DidCommAutoAcceptCredential } from '../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialPreviewAttribute } from '../models/DidCommCredentialPreviewAttribute'
+import type { DidCommCredentialState } from '../models/DidCommCredentialState'
+import { DidCommRevocationNotification } from '../models/DidCommRevocationNotification'
 
 export interface DidCommCredentialExchangeRecordProps {
   id?: string
@@ -117,7 +115,6 @@ export class DidCommCredentialExchangeRecord extends BaseRecord<
 
   public assertState(expectedStates: DidCommCredentialState | DidCommCredentialState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

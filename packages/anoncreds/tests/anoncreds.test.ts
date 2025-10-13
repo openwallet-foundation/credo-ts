@@ -2,9 +2,8 @@ import { Agent } from '@credo-ts/core'
 
 import { getAgentOptions } from '../../core/tests'
 import { AnonCredsModule } from '../src'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const existingSchemas = {
   '7Cd2Yj9yEZNcmNoH54tq9i:2:Test Schema:1.0.0': {

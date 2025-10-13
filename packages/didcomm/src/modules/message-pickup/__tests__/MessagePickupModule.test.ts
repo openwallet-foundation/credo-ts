@@ -1,11 +1,10 @@
 import type { DependencyManager } from '../../../../../core/src/plugins'
-import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommMessagePickupModule } from '../DidCommMessagePickupModule'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
+import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from '../services'
 
 describe('DidCommMessagePickupModule', () => {

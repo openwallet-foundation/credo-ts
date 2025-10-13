@@ -1,9 +1,8 @@
-import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { AskarError, askar } from '@openwallet-foundation/askar-shared'
-
 import { Buffer } from 'node:buffer'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { InjectionSymbols, JsonEncoder, Kms, TypedArrayEncoder } from '@credo-ts/core'
+import { AskarError, askar } from '@openwallet-foundation/askar-shared'
 import { getAgentConfig, getAgentContext } from '../../../../core/tests'
 import { NodeFileSystem } from '../../../../node/src/NodeFileSystem'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from '../../AskarModuleConfig'

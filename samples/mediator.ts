@@ -12,16 +12,8 @@
  * to the mediator, request mediation and set the mediator as default.
  */
 
-import type { Socket } from 'net'
-import type { InitConfig } from '@credo-ts/core'
-
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import express from 'express'
-import { WebSocketServer } from 'ws'
-
-import { TestLogger } from '../packages/core/tests/logger'
-
 import { AskarModule } from '@credo-ts/askar'
+import type { InitConfig } from '@credo-ts/core'
 import { Agent, LogLevel } from '@credo-ts/core'
 import {
   DidCommConnectionInvitationMessage,
@@ -29,7 +21,12 @@ import {
   DidCommModule,
   DidCommWsOutboundTransport,
 } from '@credo-ts/didcomm'
-import { DidCommHttpInboundTransport, DidCommWsInboundTransport, agentDependencies } from '@credo-ts/node'
+import { agentDependencies, DidCommHttpInboundTransport, DidCommWsInboundTransport } from '@credo-ts/node'
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import express from 'express'
+import type { Socket } from 'net'
+import { WebSocketServer } from 'ws'
+import { TestLogger } from '../packages/core/tests/logger'
 
 const port = process.env.AGENT_PORT ? Number(process.env.AGENT_PORT) : 3001
 

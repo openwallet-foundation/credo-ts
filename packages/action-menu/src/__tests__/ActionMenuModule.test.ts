@@ -1,7 +1,5 @@
 import type { DependencyManager } from '@credo-ts/core'
-import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry } from '@credo-ts/didcomm'
-
-import { DidCommProtocol } from '@credo-ts/didcomm'
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 
 import { getAgentContext } from '../../../core/tests'
 import { ActionMenuModule } from '../ActionMenuModule'

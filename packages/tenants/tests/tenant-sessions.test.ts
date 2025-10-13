@@ -3,11 +3,9 @@ import type { InitConfig } from '@credo-ts/core'
 import { Agent } from '@credo-ts/core'
 import { DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-
+import { TenantsModule } from '@credo-ts/tenants'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { testLogger } from '../../core/tests'
-
-import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig: InitConfig = {
   logger: testLogger,

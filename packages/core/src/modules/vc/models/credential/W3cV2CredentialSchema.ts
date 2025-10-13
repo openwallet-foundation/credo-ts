@@ -20,8 +20,8 @@ export class W3cV2CredentialSchema {
 
       plainToClassFromExist(this, rest)
 
-      this.id = options.id
-      this.type = options.type
+      this.id = id
+      this.type = type
     }
   }
 

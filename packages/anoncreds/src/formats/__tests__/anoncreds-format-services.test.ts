@@ -4,8 +4,8 @@ import {
   DidResolverService,
   DidsModuleConfig,
   EventEmitter,
-  InMemoryLruCache,
   InjectionSymbols,
+  InMemoryLruCache,
   Kms,
   SignatureSuiteToken,
   TypedArrayEncoder,
@@ -21,8 +21,6 @@ import {
   DidCommProofState,
 } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-import type { AnonCredsCredentialRequest } from '../../models'
-
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { anoncreds } from '../../../../anoncreds/tests/helpers'
 import { indyDidFromPublicKeyBase58 } from '../../../../core/src/utils/did'
@@ -31,6 +29,7 @@ import { agentDependencies, getAgentConfig, getAgentContext } from '../../../../
 import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModuleConfig } from '../../AnonCredsModuleConfig'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../../anoncreds-rs'
+import type { AnonCredsCredentialRequest } from '../../models'
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -64,7 +63,7 @@ const anonCredsVerifierService = new AnonCredsRsVerifierService()
 const anonCredsHolderService = new AnonCredsRsHolderService()
 const anonCredsIssuerService = new AnonCredsRsIssuerService()
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const eventEmitter = new EventEmitter(agentDependencies, new Subject())
 const anonCredsLinkSecretRepository = new AnonCredsLinkSecretRepository(storageService, eventEmitter)

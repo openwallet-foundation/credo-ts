@@ -1,6 +1,5 @@
-import type { DidCommFeatureOptions } from './DidCommFeature'
-
 import { IsOptional, IsString } from 'class-validator'
+import type { DidCommFeatureOptions } from './DidCommFeature'
 
 import { DidCommFeature } from './DidCommFeature'
 

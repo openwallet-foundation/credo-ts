@@ -1,5 +1,5 @@
 import { validateOrReject } from 'class-validator'
-import { parseUrl } from 'query-string'
+import queryString from 'query-string'
 
 import { ClassValidationError } from '../../../../../core/src/error/ClassValidationError'
 import { JsonEncoder } from '../../../../../core/src/utils/JsonEncoder'
@@ -89,7 +89,7 @@ describe('DidCommConnectionInvitationMessage', () => {
         useDidSovPrefixWhereAllowed: true,
       })
 
-      const parsedUrl = parseUrl(invitationUrl).query
+      const parsedUrl = queryString.parseUrl(invitationUrl).query
       const encodedInvitation = (parsedUrl.c_i ?? parsedUrl.d_m) as string
 
       expect(JsonEncoder.fromBase64(encodedInvitation)['@type']).toBe(

@@ -1,10 +1,9 @@
-import type { AnonCredsCredentialDefinition } from '../../../models'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
 import { InMemoryAnonCredsRegistry } from '../../../../tests/InMemoryAnonCredsRegistry'
+import type { AnonCredsCredentialDefinition } from '../../../models'
 import { AnonCredsCredentialDefinitionRecord } from '../../../repository'
 import { AnonCredsCredentialDefinitionRepository } from '../../../repository/AnonCredsCredentialDefinitionRepository'
 import * as testModule from '../credentialDefinition'

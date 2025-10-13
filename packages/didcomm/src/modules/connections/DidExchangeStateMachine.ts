@@ -1,18 +1,15 @@
-import type { ParsedMessageType } from '../../util/messageType'
-import type { DidCommConnectionRecord } from './repository'
-
 import { CredoError } from '@credo-ts/core'
-
+import type { ParsedMessageType } from '../../util/messageType'
 import { canHandleMessageType } from '../../util/messageType'
-
 import {
   DidCommDidExchangeCompleteMessage,
   DidCommDidExchangeRequestMessage,
   DidCommDidExchangeResponseMessage,
 } from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState } from './models'
+import type { DidCommConnectionRecord } from './repository'
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class DidExchangeStateMachine {
   private static createMessageStateRules = [
     {

@@ -1,8 +1,7 @@
 import type { DependencyManager } from '@credo-ts/core'
-
+import { SdJwtVcRepository } from '../repository'
 import { SdJwtVcModule } from '../SdJwtVcModule'
 import { SdJwtVcService } from '../SdJwtVcService'
-import { SdJwtVcRepository } from '../repository'
 
 const dependencyManager = {
   registerInstance: vi.fn(),

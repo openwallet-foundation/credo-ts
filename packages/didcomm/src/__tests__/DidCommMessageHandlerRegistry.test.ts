@@ -1,7 +1,6 @@
-import type { DidCommMessageHandler } from '../handlers/DidCommMessageHandler'
-
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../DidCommMessageHandlerRegistry'
+import type { DidCommMessageHandler } from '../handlers/DidCommMessageHandler'
 import { parseDidCommProtocolUri, parseMessageType } from '../util/messageType'
 
 class ConnectionInvitationTestMessage extends DidCommMessage {
@@ -30,7 +29,7 @@ class CustomProtocolMessage extends DidCommMessage {
 
 class TestHandler implements DidCommMessageHandler {
   // We want to pass various classes to test various behaviours so we dont need to strictly type it.
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public constructor(classes: any[]) {
     this.supportedMessages = classes
   }

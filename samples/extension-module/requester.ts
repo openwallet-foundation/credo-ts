@@ -1,11 +1,10 @@
-import type { DummyRecord, DummyStateChangedEvent } from './dummy'
-
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
 import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { ReplaySubject, filter, first, firstValueFrom, map, timeout } from 'rxjs'
+import { filter, first, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
+import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
 import { DummyEventTypes, DummyModule, DummyState } from './dummy'
 

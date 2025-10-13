@@ -1,7 +1,6 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-
 import { Agent } from '@credo-ts/core'
 import { Subject } from 'rxjs'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'

@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import type { Uint8ArrayBuffer } from '../../../types'
+import { zAnyUint8Array } from '../../../utils/zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
 import { zKmsKeyId } from './common'
 
@@ -16,10 +18,10 @@ export const zKmsSignOptions = z.object({
   /**
    * The data to sign
    */
-  data: z.instanceof(Uint8Array).describe('The data to sign'),
+  data: zAnyUint8Array.describe('The data to sign'),
 })
 
 export type KmsSignOptions = z.output<typeof zKmsSignOptions>
 export interface KmsSignReturn {
-  signature: Uint8Array
+  signature: Uint8ArrayBuffer
 }

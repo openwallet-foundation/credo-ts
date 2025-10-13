@@ -2,8 +2,8 @@ import type { MockedClassConstructor } from '../../../../../../../../tests/types
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../../tests/helpers'
 import { Agent } from '../../../../../agent/Agent'
 import { W3cCredentialRecord, W3cCredentialRepository, W3cJsonLdVerifiableCredential } from '../../../../../modules/vc'
-import { W3cJsonLdCredentialService } from '../../../../../modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { Ed25519Signature2018Fixtures } from '../../../../../modules/vc/data-integrity/__tests__/fixtures'
+import { W3cJsonLdCredentialService } from '../../../../../modules/vc/data-integrity/W3cJsonLdCredentialService'
 import { JsonTransformer } from '../../../../../utils'
 import * as testModule from '../w3cCredentialRecord'
 

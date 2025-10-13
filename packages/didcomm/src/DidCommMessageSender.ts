@@ -1,36 +1,34 @@
-import type { EnvelopeKeys } from './DidCommEnvelopeService'
-import type { DidCommMessageSentEvent } from './DidCommEvents'
-import type { DidCommMessage } from './DidCommMessage'
-import type { DidCommTransportSession } from './DidCommTransportService'
-import type { DidCommConnectionRecord } from './modules/connections/repository'
-import type { DidCommOutOfBandRecord } from './modules/oob/repository'
-import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
-
 import {
   AgentContext,
   CredoError,
   DidKey,
   DidsApi,
+  didKeyToEd25519PublicJwk,
   EventEmitter,
+  getPublicJwkFromVerificationMethod,
+  injectable,
   Kms,
   MessageValidator,
   type ResolvedDidCommService,
-  didKeyToEd25519PublicJwk,
-  getPublicJwkFromVerificationMethod,
-  injectable,
   utils,
   verkeyToDidKey,
 } from '@credo-ts/core'
-
-import { DidCommEnvelopeService } from './DidCommEnvelopeService'
-import { DidCommEventTypes } from './DidCommEvents'
-import { DidCommModuleConfig } from './DidCommModuleConfig'
-import { DidCommTransportService } from './DidCommTransportService'
 import { DID_COMM_TRANSPORT_QUEUE } from './constants'
+import type { EnvelopeKeys } from './DidCommEnvelopeService'
+import { DidCommEnvelopeService } from './DidCommEnvelopeService'
+import type { DidCommMessageSentEvent } from './DidCommEvents'
+import { DidCommEventTypes } from './DidCommEvents'
+import type { DidCommMessage } from './DidCommMessage'
+import { DidCommModuleConfig } from './DidCommModuleConfig'
+import type { DidCommTransportSession } from './DidCommTransportService'
+import { DidCommTransportService } from './DidCommTransportService'
 import { ReturnRouteTypes } from './decorators/transport/TransportDecorator'
 import { MessageSendingError } from './errors'
 import { DidCommOutboundMessageContext, OutboundMessageSendStatus } from './models'
+import type { DidCommConnectionRecord } from './modules/connections/repository'
+import type { DidCommOutOfBandRecord } from './modules/oob/repository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
+import type { DidCommEncryptedMessage, DidCommOutboundPackage } from './types'
 
 export interface TransportPriorityOptions {
   schemes: string[]
@@ -137,7 +135,7 @@ export class DidCommMessageSender {
     }
 
     // Loop trough all available services and try to send the message
-    for await (const service of services) {
+    for (const service of services) {
       agentContext.config.logger.debug('Sending outbound message to service:', { service })
       try {
         const protocolScheme = utils.getProtocolScheme(service.serviceEndpoint)
@@ -312,7 +310,7 @@ export class DidCommMessageSender {
       message.transport?.returnRoute === undefined && !this.transportService.hasInboundEndpoint(didDocument)
 
     // Loop trough all available services and try to send the message
-    for await (const service of services) {
+    for (const service of services) {
       try {
         // Enable return routing if the our did document does not have any inbound endpoint for given sender key
         await this.sendToService(
@@ -480,7 +478,7 @@ export class DidCommMessageSender {
   }
 
   private findSessionForOutboundContext(outboundContext: DidCommOutboundMessageContext) {
-    let session: DidCommTransportSession | undefined = undefined
+    let session: DidCommTransportSession | undefined
 
     // Use session id from outbound context if present, or use the session from the inbound message context
     const sessionId = outboundContext.sessionId ?? outboundContext.inboundMessageContext?.sessionId

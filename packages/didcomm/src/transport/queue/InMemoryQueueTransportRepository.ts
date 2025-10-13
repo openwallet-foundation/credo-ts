@@ -1,13 +1,12 @@
+import { AgentContext, injectable, utils } from '@credo-ts/core'
 import type { DidCommQueueTransportRepository } from './DidCommQueueTransportRepository'
+import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
 import type {
   AddMessageOptions,
   GetAvailableMessageCountOptions,
   RemoveMessagesOptions,
   TakeFromQueueOptions,
 } from './QueueTransportRepositoryOptions'
-import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
-
-import { AgentContext, injectable, utils } from '@credo-ts/core'
 
 interface InMemoryQueuedMessage extends QueuedDidCommMessage {
   connectionId: string

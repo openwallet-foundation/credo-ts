@@ -1,20 +1,18 @@
 import type { Buffer } from '@credo-ts/core'
-import type { Response, Router } from 'express'
-import type { OpenId4VcVerificationRequest } from './requestContext'
-
 import { JwsService, Kms } from '@credo-ts/core'
 import {
-  type EntityConfigurationClaimsOptions,
-  type JsonWebKey,
   createEntityConfiguration,
   createEntityStatement,
+  type EntityConfigurationClaimsOptions,
   fetchEntityConfiguration,
+  type JsonWebKey,
 } from '@openid-federation/core'
-
 import { addSecondsToDate } from '@openid4vc/utils'
+import type { Response, Router } from 'express'
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 export function configureFederationEndpoint(
   router: Router,

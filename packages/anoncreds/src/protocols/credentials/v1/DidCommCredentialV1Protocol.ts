@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonTransformer, utils } from '@credo-ts/core'
 import type {
   CredentialProtocolOptions,
   DidCommCredentialProtocol,
@@ -9,9 +10,6 @@ import type {
   DidCommProblemReportMessage,
   ExtractCredentialFormats,
 } from '@credo-ts/didcomm'
-import type { LegacyIndyDidCommCredentialFormatService } from '../../../formats'
-
-import { CredoError, JsonTransformer, utils } from '@credo-ts/core'
 import {
   AckStatus,
   BaseDidCommCredentialProtocol,
@@ -30,6 +28,7 @@ import {
   DidCommProtocol,
   isLinkedAttachment,
 } from '@credo-ts/didcomm'
+import type { LegacyIndyDidCommCredentialFormatService } from '../../../formats'
 
 import { AnonCredsCredentialProposal } from '../../../models/AnonCredsCredentialProposal'
 import { areCredentialPreviewAttributesEqual, composeCredentialAutoAccept } from '../../../utils'

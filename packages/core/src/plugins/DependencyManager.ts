@@ -1,11 +1,9 @@
 import type { DependencyContainer } from 'tsyringe'
+import { type InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
 import type { AgentContext } from '../agent'
 import type { ModulesMap } from '../agent/AgentModules'
-import type { Constructor } from '../utils/mixins'
-
-import { type InjectionToken, Lifecycle, container as rootContainer } from 'tsyringe'
-
 import { CredoError } from '../error'
+import type { Constructor } from '../utils/mixins'
 
 export type { InjectionToken }
 
@@ -194,7 +192,7 @@ export class DependencyManager {
 
   public registerSingleton<T>(from: InjectionToken<T>, to: InjectionToken<T>): void
   public registerSingleton<T>(token: Constructor<T>): void
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public registerSingleton<T = any>(fromOrToken: InjectionToken<T> | Constructor<T>, to?: any) {
     this.container.registerSingleton(fromOrToken, to)
   }
@@ -211,12 +209,12 @@ export class DependencyManager {
     return this.container.isRegistered(token, recursive)
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public registerContextScoped<T = any>(token: Constructor<T>): void
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public registerContextScoped<T = any>(token: InjectionToken<T>, provider: Constructor<T>): void
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public registerContextScoped(token: any, provider?: any) {
     if (provider) this.container.register(token, provider, { lifecycle: Lifecycle.ContainerScoped })
     else this.container.register(token, token, { lifecycle: Lifecycle.ContainerScoped })

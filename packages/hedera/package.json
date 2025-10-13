@@ -5,7 +5,9 @@
     "import": "./src/index.ts"
   },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
@@ -47,6 +49,6 @@
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
     "@hyperledger/anoncreds-nodejs": "^0.3.1",
-    "zstd-napi": "^0.0.10"
+    "zstd-napi": "^0.0.12"
   }
 }

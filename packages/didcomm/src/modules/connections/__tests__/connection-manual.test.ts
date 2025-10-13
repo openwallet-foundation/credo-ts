@@ -1,9 +1,8 @@
 import { filter, first, map, timeout } from 'rxjs/operators'
-import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
-
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { setupSubjectTransports } from '../../../../../core/tests'
 import { firstValueWithStackTrace, getAgentOptions } from '../../../../../core/tests/helpers'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommDidExchangeState } from '../models'
 
@@ -122,9 +121,9 @@ describe('Manual Connection Flow', () => {
     let faberAliceConnectionRecord = await waitForAliceRequest
     let faberBobConnectionRecord = await waitForBobRequest
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     const waitForAliceResponse = waitForResponse(aliceAgent, aliceConnectionRecord?.id!)
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     const waitForBobResponse = waitForResponse(bobAgent, bobConnectionRecord?.id!)
 
     await faberAgent.didcomm.connections.acceptRequest(faberAliceConnectionRecord.id)

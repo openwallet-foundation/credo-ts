@@ -94,7 +94,7 @@ describe('DidRegistrar', () => {
     it('should return an error state if no key or key type is provided', async () => {
       const result = await jwkDidRegistrar.create(agentContext, {
         method: 'jwk',
-        // @ts-ignore
+        // @ts-expect-error
         options: {},
       })
 

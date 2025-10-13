@@ -1,4 +1,14 @@
+import { askar } from '@openwallet-foundation/askar-nodejs'
+import { readFileSync } from 'fs'
+import path from 'path'
 import type { Observable } from 'rxjs'
+import { firstValueFrom, lastValueFrom, ReplaySubject } from 'rxjs'
+import { catchError, filter, map, take, timeout } from 'rxjs/operators'
+import type { MockedFunction } from 'vitest'
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { AskarModule } from '../../askar/src/AskarModule'
+import type { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
 import type {
   DidCommBasicMessage,
   DidCommBasicMessageStateChangedEvent,
@@ -13,29 +23,6 @@ import type {
   DidCommProofStateChangedEvent,
   DidCommRevocationNotificationReceivedEvent,
 } from '../../didcomm/src'
-import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
-import type {
-  DidCommTrustPingReceivedEvent,
-  TrustPingResponseReceivedEvent,
-} from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
-import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
-import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
-import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
-import type {
-  Agent,
-  AgentDependencies,
-  BaseEvent,
-  Buffer,
-  InitConfig,
-  InjectionToken,
-  KeyDidCreateOptions,
-} from '../src'
-import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
-
-import { readFileSync } from 'fs'
-import path from 'path'
-import { ReplaySubject, firstValueFrom, lastValueFrom } from 'rxjs'
-import { catchError, filter, map, take, timeout } from 'rxjs/operators'
 import {
   DidCommBasicMessageEventTypes,
   DidCommConnectionEventTypes,
@@ -50,25 +37,36 @@ import {
   DidCommTrustPingEventTypes,
   OutOfBandDidCommService,
 } from '../../didcomm/src'
+import type { DidCommModuleConfigOptions } from '../../didcomm/src/DidCommModuleConfig'
+import type {
+  DidCommTrustPingReceivedEvent,
+  TrustPingResponseReceivedEvent,
+} from '../../didcomm/src/modules/connections/DidCommTrustPingEvents'
 import { DidCommOutOfBandRole } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../didcomm/src/modules/oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { DidCommOutOfBandRecord } from '../../didcomm/src/modules/oob/repository'
+import type { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService, agentDependencies } from '../../node/src'
+import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
+import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
+import { didcommBundle } from '../../drizzle-storage/src/didcomm/bundle'
+import { agentDependencies, NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../node/src'
+import type {
+  Agent,
+  AgentDependencies,
+  AnyUint8Array,
+  BaseEvent,
+  InitConfig,
+  InjectionToken,
+  KeyDidCreateOptions,
+} from '../src'
 import { AgentConfig, AgentContext, DependencyManager, DidsApi, Kms, TypedArrayEncoder, X509Api } from '../src'
+import type { AgentModulesInput, EmptyModuleMap } from '../src/agent/AgentModules'
 import { DidKey } from '../src/modules/dids/methods/key'
+import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
 import { sleep } from '../src/utils/sleep'
 import { uuid } from '../src/utils/uuid'
-
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import type { MockedFunction } from 'vitest'
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
-import { AskarModule } from '../../askar/src/AskarModule'
-import type { AskarModuleConfigStoreOptions } from '../../askar/src/AskarModuleConfig'
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
-import type { AnyDrizzleDatabase } from '../../drizzle-storage/src/DrizzleStorageModuleConfig'
-import { KeyManagementApi, type KeyManagementService, PublicJwk } from '../src/modules/kms'
 import testLogger, { TestLogger } from './logger'
 
 export const genesisPath = process.env.GENESIS_TXN_PATH
@@ -107,7 +105,7 @@ export function getAskarStoreConfig(
 export function getAgentOptions<
   AgentModules extends AgentModulesInput | EmptyModuleMap,
   RequireDidComm extends boolean | undefined = undefined,
-  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  // biome-ignore lint/complexity/noBannedTypes: no explanation
   DidCommConfig extends DidCommModuleConfigOptions = {},
 >(
   name: string,
@@ -121,7 +119,7 @@ export function getAgentOptions<
   }: { requireDidcomm?: RequireDidComm; inMemory?: boolean; drizzle?: AnyDrizzleDatabase } = {}
 ): {
   config: InitConfig
-  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  // biome-ignore lint/complexity/noBannedTypes: no explanation
   modules: (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) &
     AgentModules & { drizzle?: DrizzleStorageModule }
   dependencies: AgentDependencies
@@ -185,14 +183,14 @@ export function getAgentOptions<
   return {
     config,
     modules:
-      // biome-ignore lint/complexity/noBannedTypes: <explanation>
+      // biome-ignore lint/complexity/noBannedTypes: no explanation
       _modules as unknown as (RequireDidComm extends true ? { didcomm: DidCommModule<DidCommConfig> } : {}) &
         AgentModules & { drizzle?: DrizzleStorageModule },
     dependencies: agentDependencies,
   } as const
 }
 
-export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: Buffer) {
+export async function importExistingIndyDidFromPrivateKey(agent: Agent, privateKey: AnyUint8Array) {
   const { privateJwk } = transformPrivateKeyToPrivateJwk({
     privateKey,
     type: {
@@ -782,9 +780,9 @@ export function getMockOutOfBand({
 }
 
 export async function makeConnection(
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   agentA: Agent<{ didcomm: DidCommModule<any> }>,
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   agentB: Agent<{ didcomm: DidCommModule<any> }>
 ) {
   const agentAOutOfBand = await agentA.didcomm.oob.createInvitation({
@@ -796,7 +794,7 @@ export async function makeConnection(
     { label: '' }
   )
 
-  // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  // biome-ignore lint/style/noNonNullAssertion: no explanation
   agentBConnection = await agentB.didcomm.connections.returnWhenIsConnected(agentBConnection?.id!)
   let [agentAConnection] = await agentA.didcomm.connections.findAllByOutOfBandId(agentAOutOfBand.id)
   agentAConnection = await agentA.didcomm.connections.returnWhenIsConnected(agentAConnection?.id)
@@ -811,7 +809,7 @@ export async function makeConnection(
  * @param fn function you want to mock
  * @returns mock function with type annotations
  */
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function mockFunction<T extends (...args: any[]) => any>(fn: T): MockedFunction<T> {
   return fn as MockedFunction<T>
 }

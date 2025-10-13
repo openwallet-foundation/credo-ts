@@ -1,10 +1,9 @@
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { testLogger, waitForProofExchangeRecord } from '../../../../../../../core/tests'
 import { DidCommAutoAcceptProof, DidCommProofState } from '../../../models'
 

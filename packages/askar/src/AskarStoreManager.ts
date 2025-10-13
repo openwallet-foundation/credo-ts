@@ -326,7 +326,7 @@ export class AskarStoreManager {
     const sourceAskarStoreConfig = this.getAskarStoreConfig(options.importFromStore)
     const destinationAskarStoreConfig = this.getAskarStoreConfig(destinationStoreConfig)
 
-    let sourceWalletStore: Store | undefined = undefined
+    let sourceWalletStore: Store | undefined
     try {
       if (destinationAskarStoreConfig.path) {
         // Import path already exists
@@ -498,7 +498,7 @@ export class AskarStoreManager {
     callback: (session: Session) => Return,
     transaction = false
   ): Promise<Awaited<Return>> {
-    let session: Session | undefined = undefined
+    let session: Session | undefined
     try {
       const { store, profile } = await this.getInitializedStoreWithProfile(agentContext)
 

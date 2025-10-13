@@ -1,13 +1,11 @@
 import type { Agent, InitConfig } from '@credo-ts/core'
-import type { DidCommModuleConfigOptions } from '../../didcomm/src'
-
-import path from 'path'
 import { LogLevel, utils } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { registerAskar } from '@openwallet-foundation/askar-shared'
-
+import path from 'path'
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
+import type { DidCommModuleConfigOptions } from '../../didcomm/src'
 import { DidCommHandshakeProtocol, DidCommModule } from '../../didcomm/src'
 import { agentDependencies } from '../../node/src'
 import type { AskarPostgresStorageConfig } from '../src'

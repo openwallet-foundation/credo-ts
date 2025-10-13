@@ -1,8 +1,6 @@
-import { JsonTransformer, type TagsBase } from '@credo-ts/core'
-
-import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
-
 import { AnonCredsCredentialRecord } from '@credo-ts/anoncreds'
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
+import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
@@ -39,6 +37,7 @@ export class DrizzleAnonCredsCredentialRecordAdapter extends BaseDrizzleRecordAd
       ...customTags
     } = record.getTags()
 
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { schema_id, cred_def_id, rev_reg_id, ...credentialRest } = record.credential
 
     return {

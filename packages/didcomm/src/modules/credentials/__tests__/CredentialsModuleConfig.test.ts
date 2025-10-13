@@ -1,7 +1,6 @@
-import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
-
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommAutoAcceptCredential } from '../models'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 
 describe('CredentialsModuleConfig', () => {
   test('sets default values', () => {

@@ -1,8 +1,7 @@
 import type { Logger } from '../logger'
+import { ConsoleLogger, LogLevel } from '../logger'
 import type { InitConfig } from '../types'
 import type { AgentDependencies } from './AgentDependencies'
-
-import { ConsoleLogger, LogLevel } from '../logger'
 
 export class AgentConfig {
   private initConfig: InitConfig

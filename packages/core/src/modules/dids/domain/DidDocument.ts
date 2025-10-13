@@ -1,15 +1,13 @@
-import type { DidDocumentService } from './service'
-
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { CredoError } from '../../../error'
+import { TypedArrayEncoder } from '../../../utils'
 import { JsonTransformer } from '../../../utils/JsonTransformer'
 import { IsStringOrStringArray } from '../../../utils/transformers'
-
-import { TypedArrayEncoder } from '../../../utils'
 import { Ed25519PublicJwk, PublicJwk, X25519PublicJwk } from '../../kms'
 import { findMatchingEd25519Key } from '../findMatchingEd25519Key'
 import { getPublicJwkFromVerificationMethod } from './key-type'
+import type { DidDocumentService } from './service'
 import { DidCommV1Service, IndyAgentService } from './service'
 import { ServiceTransformer } from './service/ServiceTransformer'
 import { IsStringOrVerificationMethod, VerificationMethod, VerificationMethodTransformer } from './verificationMethod'
@@ -223,7 +221,9 @@ export class DidDocument {
    */
   public getRecipientKeysWithVerificationMethod<MapX25519ToEd25519 extends boolean>({
     mapX25519ToEd25519,
-  }: { mapX25519ToEd25519: MapX25519ToEd25519 }): Array<{
+  }: {
+    mapX25519ToEd25519: MapX25519ToEd25519
+  }): Array<{
     verificationMethod: VerificationMethod
     publicJwk: PublicJwk<MapX25519ToEd25519 extends true ? Ed25519PublicJwk : Ed25519PublicJwk | X25519PublicJwk>
   }> {
@@ -336,10 +336,10 @@ export async function findVerificationMethodByKeyType(
     'capabilityInvocation',
     'capabilityDelegation',
   ]
-  for await (const purpose of didVerificationMethods) {
+  for (const purpose of didVerificationMethods) {
     const key: VerificationMethod[] | (string | VerificationMethod)[] | undefined = didDocument[purpose]
     if (Array.isArray(key)) {
-      for await (const method of key) {
+      for (const method of key) {
         if (typeof method !== 'string') {
           if (method.type === keyType) {
             return method

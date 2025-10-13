@@ -1,19 +1,19 @@
-import { readFileSync } from 'fs'
-import path from 'path'
 import {
   Agent,
   CacheModule,
   DependencyManager,
-  InMemoryLruCache,
   InjectionSymbols,
+  InMemoryLruCache,
   UpdateAssistant,
   W3cCredentialRecord,
 } from '@credo-ts/core'
+import { readFileSync } from 'fs'
+import path from 'path'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { anoncreds } from '../../../tests/helpers'
+import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,
@@ -105,7 +105,7 @@ describe('UpdateAssistant | AnonCreds | v0.4 - v0.5', () => {
     )) {
       if (record.type !== W3cCredentialRecord.type) continue
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const recordValue = record.value as any
       recordValue.credential.issuanceDate = new Date()
     }

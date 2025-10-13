@@ -1,6 +1,40 @@
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
+import {
+  Agent,
+  CacheModule,
+  CredoError,
+  DidDocumentBuilder,
+  DidsModule,
+  InMemoryLruCache,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import type { DidCommAutoAcceptProof, DidCommConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommCredentialV2Protocol,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommModule,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofV2Protocol,
+} from '@credo-ts/didcomm'
+
+import { randomUUID } from 'crypto'
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
+import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
+import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
+import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
+import {
+  getAgentOptions,
+  makeConnection,
+  waitForCredentialRecordSubject,
+  waitForProofExchangeRecordSubject,
+} from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import type {
   AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -15,48 +49,12 @@ import type {
   RegisterRevocationStatusListReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-
-import { randomUUID } from 'crypto'
-import {
-  Agent,
-  CacheModule,
-  CredoError,
-  DidDocumentBuilder,
-  DidsModule,
-  InMemoryLruCache,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
-import {
-  DidCommAutoAcceptCredential,
-  DidCommCredentialEventTypes,
-  DidCommCredentialState,
-  DidCommCredentialV2Protocol,
-  DidCommDifPresentationExchangeProofFormatService,
-  DidCommModule,
-  DidCommProofEventTypes,
-  DidCommProofState,
-  DidCommProofV2Protocol,
-} from '@credo-ts/didcomm'
-
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
-import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
-import { sleep } from '../../core/src/utils/sleep'
-import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
-import {
-  getAgentOptions,
-  makeConnection,
-  waitForCredentialRecordSubject,
-  waitForProofExchangeRecordSubject,
-} from '../../core/tests/helpers'
-import testLogger from '../../core/tests/logger'
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
-
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { anoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
-import { anoncreds } from './helpers'
 import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests

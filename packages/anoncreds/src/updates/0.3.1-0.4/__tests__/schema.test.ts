@@ -1,9 +1,8 @@
-import type { AnonCredsSchema } from '../../../models'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { JsonTransformer } from '../../../../../core/src'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests'
+import type { AnonCredsSchema } from '../../../models'
 import { AnonCredsSchemaRecord } from '../../../repository'
 import { AnonCredsSchemaRepository } from '../../../repository/AnonCredsSchemaRepository'
 import * as testModule from '../schema'

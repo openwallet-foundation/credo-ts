@@ -1,5 +1,5 @@
+export * from './DidCommCredentialFormat'
 export * from './DidCommCredentialFormatService'
 export * from './DidCommCredentialFormatServiceOptions'
-export * from './DidCommCredentialFormat'
-export * from './jsonld'
 export * from './dataIntegrity'
+export * from './jsonld'

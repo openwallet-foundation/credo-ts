@@ -1,7 +1,6 @@
+import type { OpenId4VpVerifierClientMetadata } from '@credo-ts/openid4vc'
 import { jsonb, pgTable, text } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
-
-import type { OpenId4VpVerifierClientMetadata } from '@credo-ts/openid4vc'
 
 export const openid4vcVerifier = pgTable(
   'Openid4vcVerifier',

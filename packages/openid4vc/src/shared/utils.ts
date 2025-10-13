@@ -1,16 +1,19 @@
-import { AgentContext, ClaimFormat, type DcqlQuery, type DidPurpose, Kms } from '@credo-ts/core'
-import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
-import type { OpenId4VcJwtIssuer } from './models'
-
 import {
+  AgentContext,
+  ClaimFormat,
   CredoError,
+  type DcqlQuery,
+  type DidPurpose,
   DidsApi,
-  JwsService,
-  SignatureSuiteRegistry,
   getDomainFromUrl,
   getPublicJwkFromVerificationMethod,
+  JwsService,
+  Kms,
+  SignatureSuiteRegistry,
 } from '@credo-ts/core'
 import { fetchEntityConfiguration } from '@openid-federation/core'
+import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
+import type { OpenId4VcJwtIssuer } from './models'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.

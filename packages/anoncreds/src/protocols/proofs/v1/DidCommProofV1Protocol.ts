@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import type {
   DidCommFeatureRegistry,
   DidCommInboundMessageContext,
@@ -10,9 +11,6 @@ import type {
   GetProofFormatDataReturn,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
-import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
-
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   AckStatus,
   DidCommAttachment,
@@ -29,10 +27,10 @@ import {
   DidCommProofsModuleConfig,
   DidCommProtocol,
 } from '@credo-ts/didcomm'
-
-import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
-
+import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
+import type { AnonCredsProofRequest } from '../../../models'
 import { type AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
+import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
 import { DidCommPresentationV1ProblemReportError } from './errors'
 import {
   DidCommPresentationV1AckHandler,
@@ -1150,7 +1148,7 @@ export class DidCommProofV1Protocol
       this.findPresentationMessage(agentContext, proofExchangeRecordId),
     ])
 
-    let indyProposeProof = undefined
+    let indyProposeProof: AnonCredsProofRequest | undefined
     const indyRequestProof = requestMessage?.indyProofRequest ?? undefined
     const indyPresentProof = presentationMessage?.indyProof ?? undefined
 

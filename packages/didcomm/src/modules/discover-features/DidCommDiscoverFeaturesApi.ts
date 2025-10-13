@@ -1,23 +1,20 @@
+import { AgentContext, CredoError, EventEmitter, InjectionSymbols, inject, injectable } from '@credo-ts/core'
+import { firstValueFrom, of, ReplaySubject, Subject } from 'rxjs'
+import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
 import type { DidCommFeature } from '../../models'
+import { DidCommOutboundMessageContext } from '../../models'
+import { DidCommConnectionService } from '../connections'
 import type {
   DiscloseFeaturesOptions,
   DiscoverFeaturesServiceMap,
   QueryFeaturesOptions,
 } from './DidCommDiscoverFeaturesApiOptions'
 import type { DidCommDiscoverFeaturesDisclosureReceivedEvent } from './DidCommDiscoverFeaturesEvents'
-import type { DidCommDiscoverFeaturesService } from './services'
-
-import { AgentContext, CredoError, EventEmitter, InjectionSymbols, inject, injectable } from '@credo-ts/core'
-import { ReplaySubject, Subject, firstValueFrom, of } from 'rxjs'
-import { catchError, filter, first, map, takeUntil, timeout } from 'rxjs/operators'
-
-import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { DidCommOutboundMessageContext } from '../../models'
-import { DidCommConnectionService } from '../connections'
-
 import { DidCommDiscoverFeaturesEventTypes } from './DidCommDiscoverFeaturesEvents'
 import { DidCommDiscoverFeaturesModuleConfig } from './DidCommDiscoverFeaturesModuleConfig'
 import { DidCommDiscoverFeaturesV1Service, DidCommDiscoverFeaturesV2Service } from './protocol'
+import type { DidCommDiscoverFeaturesService } from './services'
 
 export interface QueryFeaturesReturnType {
   features?: DidCommFeature[]
@@ -28,7 +25,7 @@ export interface DidCommDiscoverFeaturesApi<DFSs extends DidCommDiscoverFeatures
   discloseFeatures(options: DiscloseFeaturesOptions<DFSs>): Promise<void>
 }
 @injectable()
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: no explanation
 export class DidCommDiscoverFeaturesApi<
   DFSs extends DidCommDiscoverFeaturesService[] = [DidCommDiscoverFeaturesV1Service, DidCommDiscoverFeaturesV2Service],
 > implements DidCommDiscoverFeaturesApi<DFSs>
@@ -65,7 +62,7 @@ export class DidCommDiscoverFeaturesApi<
     // Dynamically build service map. This will be extracted once services are registered dynamically
     this.serviceMap = [v1Service, v2Service].reduce(
       (serviceMap, service) => ({
-        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+        // biome-ignore lint/performance/noAccumulatingSpread: no explanation
         ...serviceMap,
         [service.version]: service,
       }),

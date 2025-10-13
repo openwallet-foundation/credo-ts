@@ -18,12 +18,12 @@
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "catalog:",
     "@hyperledger/indy-vdr-nodejs": "catalog:",
-    "@koa/bodyparser": "^5.1.1",
+    "@koa/bodyparser": "^6.0.0",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
     "inquirer": "^8.2.5",
-    "jose": "^5.10.0",
-    "oidc-provider": "^8.8.1"
+    "jose": "^6.1.0",
+    "oidc-provider": "^9.5.1"
   },
   "devDependencies": {
     "@credo-ts/askar": "workspace:*",
@@ -31,11 +31,10 @@
     "@credo-ts/node": "workspace:*",
     "@credo-ts/openid4vc": "workspace:*",
     "@types/express": "catalog:",
-    "@types/figlet": "^1.5.4",
+    "@types/figlet": "^1.7.0",
     "@types/inquirer": "^8.2.6",
-    "@types/oidc-provider": "^8.8.1",
-    "clear": "^0.1.0",
-    "figlet": "^1.5.2",
-    "tsx": "^4.19.4"
+    "@types/oidc-provider": "^9.5.0",
+    "figlet": "^1.9.3",
+    "tsx": "^4.20.6"
   }
 }

@@ -1,43 +1,3 @@
-import type { DidRepository } from '@credo-ts/core'
-import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
-
-import {
-  AgentContext,
-  CacheModuleConfig,
-  DidResolverService,
-  DidsModuleConfig,
-  InMemoryLruCache,
-  InjectionSymbols,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  SignatureSuiteToken,
-  W3cCredential,
-  W3cCredentialService,
-  W3cCredentialSubject,
-  W3cCredentialsModuleConfig,
-} from '@credo-ts/core'
-import {
-  DidCommCredentialExchangeRecord,
-  DidCommCredentialPreviewAttribute,
-  DidCommCredentialRole,
-  DidCommCredentialState,
-  DidCommProofExchangeRecord,
-  DidCommProofRole,
-  DidCommProofState,
-} from '@credo-ts/didcomm'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
-import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-
-import { InMemoryTailsFileService } from './InMemoryTailsFileService'
-import { anoncreds } from './helpers'
-
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -60,6 +20,43 @@ import {
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
 } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
+
+import {
+  AgentContext,
+  CacheModuleConfig,
+  DidResolverService,
+  DidsModuleConfig,
+  InjectionSymbols,
+  InMemoryLruCache,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  SignatureSuiteToken,
+  W3cCredential,
+  W3cCredentialService,
+  W3cCredentialSubject,
+  W3cCredentialsModuleConfig,
+} from '@credo-ts/core'
+import type { DataIntegrityCredentialRequest } from '@credo-ts/didcomm'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
+} from '@credo-ts/didcomm'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
+import { anoncreds } from './helpers'
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()

@@ -1,6 +1,5 @@
-import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
-
 import { DidCommAutoAcceptProof } from './models/DidCommProofAutoAcceptType'
+import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
 
 /**
  * ProofsModuleConfigOptions defines the interface for the options of the ProofsModuleConfig class.

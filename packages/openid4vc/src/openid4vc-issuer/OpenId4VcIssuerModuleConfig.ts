@@ -1,11 +1,10 @@
 import type { Router } from 'express'
+import { importExpress } from '../shared/router'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
   OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization,
 } from './OpenId4VcIssuerServiceOptions'
-
-import { importExpress } from '../shared/router'
 
 const DEFAULT_C_NONCE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute

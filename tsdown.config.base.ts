@@ -1,7 +1,9 @@
 import path from 'node:path'
 import type { UserConfig } from 'tsdown'
 
-export default [
+export type UserConfigEntry = Exclude<UserConfig, Array<unknown>>
+
+const baseConfig: UserConfigEntry[] = [
   {
     entry: ['src/index.ts'],
     outDir: 'build',
@@ -38,4 +40,6 @@ export default [
       },
     ],
   },
-] satisfies UserConfig
+]
+
+export default baseConfig

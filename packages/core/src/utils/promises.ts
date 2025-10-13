@@ -7,7 +7,7 @@ export type AllSettledFulfilled<T> = {
 
 export type AllSettledRejected = {
   status: 'rejected'
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   reason: any
 }
 

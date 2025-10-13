@@ -5,7 +5,7 @@ export type DidCommMessageHandlerMiddleware = (
   next: () => Promise<void>
 ) => Promise<void>
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class DidCommMessageHandlerMiddlewareRunner {
   public static async run(
     middlewares: DidCommMessageHandlerMiddleware[],

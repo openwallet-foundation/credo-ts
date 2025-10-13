@@ -3,9 +3,8 @@ import type {
   DidCommMessageHandler,
   DidCommMessageHandlerInboundMessage,
 } from '@credo-ts/didcomm'
-import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
-
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 
 import { V1OfferCredentialMessage as DidCommOfferCredentialV1Message } from '../messages'
 

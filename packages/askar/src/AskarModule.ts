@@ -1,9 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { AskarModuleConfigOptions } from './AskarModuleConfig'
-
 import { AgentConfig, CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
-
 import { AskarApi } from './AskarApi'
+import type { AskarModuleConfigOptions } from './AskarModuleConfig'
 import { AskarModuleConfig, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
 import { AskarStoreManager } from './AskarStoreManager'
 import { AskarKeyManagementService } from './kms/AskarKeyManagementService'

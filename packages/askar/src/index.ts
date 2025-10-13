@@ -1,3 +1,11 @@
+// Module
+export { AskarModule } from './AskarModule'
+export {
+  AskarModuleConfig,
+  type AskarModuleConfigOptions,
+  type AskarModuleConfigStoreOptions,
+  AskarMultiWalletDatabaseScheme,
+} from './AskarModuleConfig'
 export type {
   AskarPostgresConfig,
   AskarPostgresCredentials,
@@ -5,21 +13,9 @@ export type {
   AskarSqliteConfig,
   AskarSqliteStorageConfig,
 } from './AskarStorageConfig'
+export { AskarStoreManager } from './AskarStoreManager'
 export { AskarKeyManagementService } from './kms/AskarKeyManagementService'
-
 // Storage
 export { AskarStorageService } from './storage'
 export { recordToInstance } from './storage/utils'
-
-// Module
-export { AskarModule } from './AskarModule'
-export {
-  type AskarModuleConfigOptions,
-  AskarMultiWalletDatabaseScheme,
-  AskarModuleConfig,
-  type AskarModuleConfigStoreOptions,
-} from './AskarModuleConfig'
-
 export { transformPrivateKeyToPrivateJwk, transformSeedToPrivateJwk } from './utils'
-
-export { AskarStoreManager } from './AskarStoreManager'

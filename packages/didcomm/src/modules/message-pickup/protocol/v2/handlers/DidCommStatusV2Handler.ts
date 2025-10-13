@@ -1,8 +1,7 @@
 import type { DidCommMessageHandler } from '../../../../../handlers'
 import type { DidCommInboundMessageContext } from '../../../../../models'
-import type { DidCommMessagePickupV2Protocol } from '../DidCommMessagePickupV2Protocol'
-
 import { DidCommOutboundMessageContext } from '../../../../../models'
+import type { DidCommMessagePickupV2Protocol } from '../DidCommMessagePickupV2Protocol'
 import { DidCommStatusV2Message } from '../messages'
 
 export class DidCommStatusV2Handler implements DidCommMessageHandler {

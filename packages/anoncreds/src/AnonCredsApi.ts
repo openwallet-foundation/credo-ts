@@ -1,4 +1,5 @@
 import type { SimpleQuery } from '@credo-ts/core'
+import { AgentContext, inject, injectable } from '@credo-ts/core'
 import type {
   AnonCredsCreateLinkSecretOptions,
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -6,25 +7,9 @@ import type {
   AnonCredsRegisterRevocationStatusListOptions,
   AnonCredsUpdateRevocationStatusListOptions,
 } from './AnonCredsApiOptions'
-import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
-import type {
-  AnonCredsRegistry,
-  GetCredentialDefinitionReturn,
-  GetCredentialsOptions,
-  GetRevocationRegistryDefinitionReturn,
-  GetRevocationStatusListReturn,
-  GetSchemaReturn,
-  RegisterCredentialDefinitionReturn,
-  RegisterRevocationRegistryDefinitionReturn,
-  RegisterRevocationStatusListReturn,
-  RegisterSchemaReturn,
-} from './services'
-import type { Extensible } from './services/registry/base'
-
-import { AgentContext, inject, injectable } from '@credo-ts/core'
-
 import { AnonCredsModuleConfig } from './AnonCredsModuleConfig'
 import { AnonCredsStoreRecordError } from './error'
+import type { AnonCredsCredentialDefinition, AnonCredsSchema } from './models'
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -43,6 +28,18 @@ import { AnonCredsSchemaRecord } from './repository/AnonCredsSchemaRecord'
 import { AnonCredsSchemaRepository } from './repository/AnonCredsSchemaRepository'
 import { AnonCredsCredentialDefinitionRecordMetadataKeys } from './repository/anonCredsCredentialDefinitionRecordMetadataTypes'
 import { AnonCredsRevocationRegistryDefinitionRecordMetadataKeys } from './repository/anonCredsRevocationRegistryDefinitionRecordMetadataTypes'
+import type {
+  AnonCredsRegistry,
+  GetCredentialDefinitionReturn,
+  GetCredentialsOptions,
+  GetRevocationRegistryDefinitionReturn,
+  GetRevocationStatusListReturn,
+  GetSchemaReturn,
+  RegisterCredentialDefinitionReturn,
+  RegisterRevocationRegistryDefinitionReturn,
+  RegisterRevocationStatusListReturn,
+  RegisterSchemaReturn,
+} from './services'
 import {
   type AnonCredsHolderService,
   AnonCredsHolderServiceSymbol,
@@ -50,6 +47,7 @@ import {
   AnonCredsIssuerServiceSymbol,
 } from './services'
 import { AnonCredsRegistryService } from './services/registry/AnonCredsRegistryService'
+import type { Extensible } from './services/registry/base'
 import { dateToTimestamp, storeLinkSecret } from './utils'
 
 @injectable()
@@ -246,8 +244,8 @@ export class AnonCredsApi {
     }
 
     let credentialDefinition: AnonCredsCredentialDefinition
-    let credentialDefinitionPrivate: Record<string, unknown> | undefined = undefined
-    let keyCorrectnessProof: Record<string, unknown> | undefined = undefined
+    let credentialDefinitionPrivate: Record<string, unknown> | undefined
+    let keyCorrectnessProof: Record<string, unknown> | undefined
 
     try {
       if (isFullCredentialDefinitionInput(options.credentialDefinition)) {

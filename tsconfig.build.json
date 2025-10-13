@@ -8,7 +8,7 @@
     "sourceMap": true,
     "strict": true,
     "noEmitOnError": true,
-    "lib": [],
+    "lib": ["es2022"],
     "types": [],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

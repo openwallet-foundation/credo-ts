@@ -1,11 +1,3 @@
-import type { Server } from 'http'
-import type {
-  OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcVerifierModuleConfig,
-  OpenId4VcVerifierModuleConfigOptions,
-} from '../src'
-import type { AgentType, TenantType } from './utils'
-
 import {
   ClaimFormat,
   DidsApi,
@@ -17,11 +9,16 @@ import {
   w3cDate,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
-
-import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcIssuerModule, OpenId4VcModule, OpenId4VcVerificationSessionState } from '../src'
-
+import type { Server } from 'http'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import { TenantsModule } from '../../tenants/src'
+import type {
+  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcVerifierModuleConfig,
+  OpenId4VcVerifierModuleConfigOptions,
+} from '../src'
+import { OpenId4VcIssuerModule, OpenId4VcModule, OpenId4VcVerificationSessionState } from '../src'
+import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgePresentationDefinition, universityDegreePresentationDefinition } from './utilsVp'
 

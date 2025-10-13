@@ -1,11 +1,11 @@
+import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 import { readFileSync } from 'fs'
 import path from 'path'
-import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { anoncreds } from '../../../tests/helpers'
+import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,

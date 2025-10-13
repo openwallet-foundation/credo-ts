@@ -1,7 +1,6 @@
-import type { ActionMenuFormOptions } from './ActionMenuOptionForm'
-
 import { Type } from 'class-transformer'
 import { IsBoolean, IsInstance, IsOptional, IsString } from 'class-validator'
+import type { ActionMenuFormOptions } from './ActionMenuOptionForm'
 
 import { ActionMenuForm } from './ActionMenuOptionForm'
 

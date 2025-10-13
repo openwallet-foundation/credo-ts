@@ -1,6 +1,5 @@
-import type { Router } from 'express'
-
 import { AgentContext } from '@credo-ts/core'
+import type { Router } from 'express'
 import { importExpress } from '../shared/router'
 
 export interface OpenId4VcVerifierModuleConfigOptions {

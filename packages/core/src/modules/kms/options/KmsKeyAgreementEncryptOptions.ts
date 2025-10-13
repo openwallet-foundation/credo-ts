@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zAnyUint8Array } from '../../../utils/zod'
 import { zKmsJwkPublicEc } from '../jwk/kty/ec/ecJwk'
 import { zKmsJwkPublicOkp } from '../jwk/kty/okp/okpJwk'
 import { zKmsKeyId } from './common'
@@ -22,8 +23,8 @@ export const zKmsKeyAgreementEcdhEs = z.object({
 
   externalPublicJwk: zKmsJwkPublicEcdh,
 
-  apu: z.optional(z.instanceof(Uint8Array)),
-  apv: z.optional(z.instanceof(Uint8Array)),
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
 })
 export type KmsKeyAgreementEcdhEs = z.output<typeof zKmsKeyAgreementEcdhEs>
 
@@ -39,8 +40,8 @@ const zKmsKeyAgreementEncryptEcdhEsKw = z.object({
 
   externalPublicJwk: zKmsJwkPublicEcdh,
 
-  apu: z.optional(z.instanceof(Uint8Array)),
-  apv: z.optional(z.instanceof(Uint8Array)),
+  apu: z.optional(zAnyUint8Array),
+  apv: z.optional(zAnyUint8Array),
 })
 export type KmsKeyAgreementEncryptEcdhEsKw = z.output<typeof zKmsKeyAgreementEncryptEcdhEsKw>
 

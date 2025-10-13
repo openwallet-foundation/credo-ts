@@ -1,12 +1,11 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import type {
   DidCommEncryptedMessage,
   DidCommInboundTransport,
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
-
-import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
 import WebSocket, { WebSocketServer } from 'ws'
 
@@ -68,7 +67,7 @@ export class DidCommWsInboundTransport implements DidCommInboundTransport {
   }
 
   private listenOnWebSocketMessages(agentContext: AgentContext, socket: WebSocket, session: DidCommTransportSession) {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     socket.addEventListener('message', async (event: any) => {
       this.logger.debug('WebSocket message event received.', { url: event.target.url })
       try {

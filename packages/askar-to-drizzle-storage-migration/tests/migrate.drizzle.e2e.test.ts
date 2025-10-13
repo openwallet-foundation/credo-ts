@@ -1,3 +1,4 @@
+import { AskarModule, AskarMultiWalletDatabaseScheme } from '@credo-ts/askar'
 import {
   Agent,
   DidDocument,
@@ -6,11 +7,14 @@ import {
   W3cJsonLdVerifiableCredential,
   W3cV2JwtVerifiableCredential,
 } from '@credo-ts/core'
-import { agentDependencies } from '@credo-ts/node'
-
-import { AskarModule, AskarMultiWalletDatabaseScheme } from '@credo-ts/askar'
 import { DrizzleStorageModule } from '@credo-ts/drizzle-storage'
+import { agentDependencies } from '@credo-ts/node'
 import { askar, askarPostgresStorageConfig } from '../../askar/tests/helpers'
+import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
+import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
+import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
+import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
+import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import testLogger from '../../core/tests/logger'
 import { actionMenuBundle } from '../../drizzle-storage/src/action-menu/bundle'
 import { anoncredsBundle } from '../../drizzle-storage/src/anoncreds/bundle'
@@ -22,14 +26,8 @@ import {
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
 } from '../../drizzle-storage/tests/testDatabase'
-import { AskarToDrizzleStorageMigrator } from '../src'
-
-import didKeyP256 from '../../core/src/modules/dids/__tests__/__fixtures__/didKeyP256.json'
-import { sprindFunkeTestVectorBase64Url } from '../../core/src/modules/mdoc/__tests__/mdoc.fixtures'
-import { sdJwtVcWithSingleDisclosure } from '../../core/src/modules/sd-jwt-vc/__tests__/sdjwtvc.fixtures'
-import { Ed25519Signature2018Fixtures } from '../../core/src/modules/vc/data-integrity/__tests__/fixtures'
-import { CredoEs256DidJwkJwtVc } from '../../core/src/modules/vc/jwt-vc/__tests__/fixtures/credo-jwt-vc-v2'
 import { TenantAgent, TenantsModule } from '../../tenants/src'
+import { AskarToDrizzleStorageMigrator } from '../src'
 
 async function populateDatabaseWithRecords(agent: Agent | TenantAgent) {
   await agent.genericRecords.save({

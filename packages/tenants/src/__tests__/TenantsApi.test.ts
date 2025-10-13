@@ -3,11 +3,11 @@ import { Agent, AgentContext, InjectionSymbols } from '@credo-ts/core'
 import type { MockInstance } from 'vitest'
 import type { MockedClassConstructor } from '../../../../tests/types'
 import { getAgentContext, getAgentOptions, mockFunction } from '../../../core/tests'
-import { TenantAgent } from '../TenantAgent'
-import { TenantsApi } from '../TenantsApi'
 import { TenantAgentContextProvider } from '../context/TenantAgentContextProvider'
 import { TenantRecord } from '../repository'
 import { TenantRecordService } from '../services/TenantRecordService'
+import { TenantAgent } from '../TenantAgent'
+import { TenantsApi } from '../TenantsApi'
 
 vi.mock('../services/TenantRecordService')
 const TenantRecordServiceMock = TenantRecordService as MockedClassConstructor<typeof TenantRecordService>
@@ -64,7 +64,7 @@ describe('TenantsApi', () => {
       tenantDependencyManager.registerInstance(AgentContext, tenantAgentContext)
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
-      let endSessionSpy: MockInstance | undefined = undefined
+      let endSessionSpy: MockInstance | undefined
       await tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
         endSessionSpy = vi.spyOn(tenantAgent, 'endSession')
         expect(tenantAgent.isInitialized).toBe(true)
@@ -92,7 +92,7 @@ describe('TenantsApi', () => {
 
       mockFunction(agentContextProvider.getAgentContextForContextCorrelationId).mockResolvedValue(tenantAgentContext)
 
-      let endSessionSpy: MockInstance | undefined = undefined
+      let endSessionSpy: MockInstance | undefined
       await expect(
         tenantsApi.withTenantAgent({ tenantId: 'tenant-id' }, async (tenantAgent) => {
           endSessionSpy = vi.spyOn(tenantAgent, 'endSession')
@@ -129,7 +129,7 @@ describe('TenantsApi', () => {
 
       mockFunction(tenantRecordService.createTenant).mockResolvedValue(tenantRecord)
 
-      // @ts-ignore
+      // @ts-expect-error
       const getTenantAgentSpy = vi.spyOn(tenantsApi, '_getTenantAgent').mockResolvedValue(tenantAgentMock)
 
       const createdTenantRecord = await tenantsApi.createTenant({

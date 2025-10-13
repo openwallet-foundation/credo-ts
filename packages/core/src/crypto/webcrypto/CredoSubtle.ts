@@ -1,6 +1,5 @@
-import type { CredoWalletWebCrypto } from './CredoWalletWebCrypto'
-
 import * as core from 'webcrypto-core'
+import type { CredoWalletWebCrypto } from './CredoWalletWebCrypto'
 
 import { CredoEcdsaProvider, CredoSha1Provider, CredoSha256Provider } from './providers'
 import { CredoEd25519Provider } from './providers/CredoEd25519Provider'

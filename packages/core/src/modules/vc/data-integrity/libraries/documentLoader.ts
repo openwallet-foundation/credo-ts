@@ -1,11 +1,9 @@
 import type { AgentContext } from '../../../../agent/context/AgentContext'
-import type { DocumentLoader } from './jsonld'
-
 import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
 import { DidResolverService } from '../../../dids'
-
 import { DEFAULT_CONTEXTS } from './contexts'
+import type { DocumentLoader } from './jsonld'
 import jsonld from './jsonld'
 import { getNativeDocumentLoader } from './nativeDocumentLoader'
 
@@ -47,7 +45,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
           '@embed': '@never',
           id: url,
         },
-        // @ts-ignore
+        // @ts-expect-error
         { documentLoader: this }
       )
 

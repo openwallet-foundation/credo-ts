@@ -1,6 +1,5 @@
-import type { DependencyManager, Module } from '../../plugins'
-
 import { AgentConfig } from '../../agent/AgentConfig'
+import type { DependencyManager, Module } from '../../plugins'
 
 import { MdocApi } from './MdocApi'
 import { MdocService } from './MdocService'

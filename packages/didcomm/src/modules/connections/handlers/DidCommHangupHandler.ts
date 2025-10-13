@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommDidRotateService } from '../services'
-
 import { DidCommHangupMessage } from '../messages'
+import type { DidCommDidRotateService } from '../services'
 
 export class DidCommHangupHandler implements DidCommMessageHandler {
   private didRotateService: DidCommDidRotateService

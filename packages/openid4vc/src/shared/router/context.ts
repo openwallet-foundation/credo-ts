@@ -1,9 +1,8 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
-import type { NextFunction, Request, Response } from 'express'
-
 import { CredoError } from '@credo-ts/core'
+import type { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import { Oauth2ResourceUnauthorizedError, SupportedAuthenticationScheme } from '@openid4vc/oauth2'
+import type { NextFunction, Request, Response } from 'express'
 
 export interface OpenId4VcRequest<RC extends Record<string, unknown> = Record<string, never>> extends Request {
   requestContext?: RC & OpenId4VcRequestContext
@@ -110,7 +109,7 @@ export function sendErrorResponse(
 export function sendJsonResponse(
   response: Response,
   next: NextFunction,
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   body: any,
   contentType?: string,
   status?: number
@@ -123,7 +122,7 @@ export function sendJsonResponse(
   next()
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function getRequestContext<T extends OpenId4VcRequest<any>>(request: T): NonNullable<T['requestContext']> {
   const requestContext = request.requestContext
   if (!requestContext) throw new CredoError('Request context not set.')

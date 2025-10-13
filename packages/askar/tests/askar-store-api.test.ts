@@ -1,6 +1,6 @@
+import { Agent, utils } from '@credo-ts/core'
 import { tmpdir } from 'os'
 import path from 'path'
-import { Agent, utils } from '@credo-ts/core'
 
 import { DidCommBasicMessageRecord, DidCommBasicMessageRepository, DidCommBasicMessageRole } from '../../didcomm/src'
 

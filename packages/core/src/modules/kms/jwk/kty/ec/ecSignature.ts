@@ -1,5 +1,6 @@
 import { ECDSASigValue } from '@peculiar/asn1-ecc'
 import { AsnConvert } from '@peculiar/asn1-schema'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import { KeyManagementError } from '../../../error/KeyManagementError'
 import type { KmsJwkPublicEc } from './ecJwk'
 import { ecCrvToCurveParams } from './ecPublicKey'
@@ -11,7 +12,7 @@ import { ecCrvToCurveParams } from './ecPublicKey'
  * @param crv - The EC crv of the key used for the signature
  * @returns DER encoded signature
  */
-export function rawEcSignatureToDer(rawSignature: Uint8Array, crv: KmsJwkPublicEc['crv']): Uint8Array {
+export function rawEcSignatureToDer(rawSignature: AnyUint8Array, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
   const pointBitLength = ecCrvToCurveParams[crv].pointBitLength
   const pointByteLength = Math.ceil(pointBitLength / 8)
 
@@ -31,8 +32,8 @@ export function rawEcSignatureToDer(rawSignature: Uint8Array, crv: KmsJwkPublicE
 
   // Create the EcDsaSignature object
   const signature = new ECDSASigValue()
-  signature.r = new Uint8Array(ensurePositive(rValue))
-  signature.s = new Uint8Array(ensurePositive(sValue))
+  signature.r = new Uint8Array(ensurePositive(rValue)).buffer
+  signature.s = new Uint8Array(ensurePositive(sValue)).buffer
 
   // Convert to DER
   return new Uint8Array(AsnConvert.serialize(signature))
@@ -45,7 +46,7 @@ export function rawEcSignatureToDer(rawSignature: Uint8Array, crv: KmsJwkPublicE
  * @param crv - The EC crv of the key used for the signature
  * @returns Raw signature as r || s concatenated values
  */
-export function derEcSignatureToRaw(derSignature: Uint8Array, crv: KmsJwkPublicEc['crv']): Uint8Array {
+export function derEcSignatureToRaw(derSignature: AnyUint8Array, crv: KmsJwkPublicEc['crv']): Uint8ArrayBuffer {
   // Parse DER signature
   const asn = AsnConvert.parse(derSignature, ECDSASigValue)
 
@@ -70,7 +71,7 @@ export function derEcSignatureToRaw(derSignature: Uint8Array, crv: KmsJwkPublicE
  * @param data - The integer bytes
  * @returns - Data with leading zeros removed
  */
-function removeLeadingZeros(data: Uint8Array): Uint8Array {
+function removeLeadingZeros(data: AnyUint8Array): Uint8ArrayBuffer {
   let startIndex = 0
   while (startIndex < data.length - 1 && data[startIndex] === 0) {
     startIndex++
@@ -86,7 +87,7 @@ function removeLeadingZeros(data: Uint8Array): Uint8Array {
  * @param data - The integer bytes
  * @returns Data ensuring positive integer representation
  */
-function ensurePositive(data: Uint8Array): Uint8Array {
+function ensurePositive(data: Uint8ArrayBuffer): Uint8ArrayBuffer {
   // If high bit is set, prepend a zero byte to ensure it's treated as positive
   if (data.length > 0 && (data[0] & 0x80) !== 0) {
     const result = new Uint8Array(data.length + 1)
@@ -103,7 +104,7 @@ function ensurePositive(data: Uint8Array): Uint8Array {
  * @param targetLength - The desired length
  * @returns Padded data
  */
-function padToLength(data: Uint8Array, targetLength: number) {
+function padToLength(data: Uint8ArrayBuffer, targetLength: number) {
   if (data.length === targetLength) {
     return data
   }

@@ -1,10 +1,8 @@
 import { type Buffer, Kms } from '@credo-ts/core'
+import { createEntityConfiguration, type EntityConfigurationClaimsOptions } from '@openid-federation/core'
 import type { Response, Router } from 'express'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-import { type EntityConfigurationClaimsOptions, createEntityConfiguration } from '@openid-federation/core'
-
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 // TODO: It's also possible that the issuer and the verifier can have the same openid-federation endpoint. In that case we need to combine them.
 

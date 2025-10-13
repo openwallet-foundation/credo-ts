@@ -1,7 +1,6 @@
-import type { Constructable } from '../../../utils/mixins'
-
 import { BaseRecord, type Tags } from '../../../storage/BaseRecord'
 import { JsonTransformer } from '../../../utils'
+import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import { ClaimFormat, type W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../models'
 

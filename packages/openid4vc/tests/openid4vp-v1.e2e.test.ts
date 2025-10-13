@@ -1,9 +1,11 @@
 import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
+  asArray,
   ClaimFormat,
   DateOnly,
   Kms,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
   W3cCredential,
   W3cCredentialSubject,
@@ -11,11 +13,9 @@ import {
   W3cV2Credential,
   W3cV2CredentialSubject,
   W3cV2Issuer,
+  w3cDate,
   X509Module,
   X509Service,
-  asArray,
-  parseDid,
-  w3cDate,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
@@ -1478,16 +1478,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
             OpenBadgeCredentialDescriptor: [
               {
                 claimFormat: ClaimFormat.SdJwtDc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[0] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
               },
               {
                 claimFormat: ClaimFormat.SdJwtDc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[1] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
               },
             ],

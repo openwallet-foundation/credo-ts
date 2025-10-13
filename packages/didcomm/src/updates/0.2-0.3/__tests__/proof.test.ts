@@ -289,11 +289,11 @@ function getProof({
   id,
 }: {
   protocolVersion?: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   proposalMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   requestMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   presentationMessage?: any
   state?: DidCommProofState
   isVerified?: boolean

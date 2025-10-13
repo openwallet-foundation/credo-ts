@@ -19,7 +19,7 @@ export type RecordTags<Record extends BaseRecord> = ReturnType<Record['getTags']
 // able to use the BaseRecord without specifying these types. If we don't specify
 // these types, the default TagsBase will be used, but this is not compatible
 // with records that have specified a custom type.
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type BaseRecordAny = BaseRecord<any, any, any>
 
 export abstract class BaseRecord<
@@ -27,7 +27,7 @@ export abstract class BaseRecord<
   CustomTags extends TagsBase = TagsBase,
   // We want an empty object, as Record<string, unknown> will make typescript
   // not infer the types correctly
-  // biome-ignore lint/complexity/noBannedTypes: <explanation>
+  // biome-ignore lint/complexity/noBannedTypes: no explanation
   MetadataValues = {},
 > {
   protected _tags: CustomTags & TagsBase = {} as CustomTags & TagsBase

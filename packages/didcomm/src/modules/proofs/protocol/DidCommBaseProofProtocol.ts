@@ -1,13 +1,19 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { EventEmitter } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { DidCommProblemReportMessage } from '../../../messages'
 import type { DidCommInboundMessageContext } from '../../../models'
+import { DidCommMessageRepository } from '../../../repository'
+import { DidCommConnectionService } from '../../connections'
 import type { DidCommProofStateChangedEvent } from '../DidCommProofEvents'
+import { DidCommProofEventTypes } from '../DidCommProofEvents'
 import type { DidCommProofFormatService, ExtractProofFormats } from '../formats'
 import type { DidCommProofRole } from '../models'
+import { DidCommProofState } from '../models/DidCommProofState'
 import type { DidCommProofExchangeRecord } from '../repository'
+import { DidCommProofExchangeRepository } from '../repository'
 import type { DidCommProofProtocol } from './DidCommProofProtocol'
 import type {
   AcceptPresentationOptions,
@@ -26,14 +32,6 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from './DidCommProofProtocolOptions'
-
-import { EventEmitter } from '@credo-ts/core'
-
-import { DidCommMessageRepository } from '../../../repository'
-import { DidCommConnectionService } from '../../connections'
-import { DidCommProofEventTypes } from '../DidCommProofEvents'
-import { DidCommProofState } from '../models/DidCommProofState'
-import { DidCommProofExchangeRepository } from '../repository'
 
 export abstract class DidCommBaseProofProtocol<PFs extends DidCommProofFormatService[] = DidCommProofFormatService[]>
   implements DidCommProofProtocol<PFs>

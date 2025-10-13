@@ -1,10 +1,8 @@
-import type { DependencyManager, Module } from '../../plugins'
-
 import { AgentConfig } from '../../agent/AgentConfig'
-
+import type { DependencyManager, Module } from '../../plugins'
+import { SdJwtVcRepository } from './repository'
 import { SdJwtVcApi } from './SdJwtVcApi'
 import { SdJwtVcService } from './SdJwtVcService'
-import { SdJwtVcRepository } from './repository'
 
 /**
  * @public

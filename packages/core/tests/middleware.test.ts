@@ -1,8 +1,5 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm/src/index'
-
 import { Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import {
@@ -12,6 +9,7 @@ import {
   DidCommTrustPingResponseMessage,
   getOutboundDidCommMessageContext,
 } from '../../didcomm/src'
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '../../didcomm/src/index'
 import { Agent, JsonTransformer } from '../src'
 
 import { getAgentOptions, makeConnection, waitForAgentMessageProcessedEvent, waitForBasicMessage } from './helpers'

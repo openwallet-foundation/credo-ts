@@ -1,6 +1,5 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-
 import { Subject } from 'rxjs'
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
@@ -77,7 +76,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       recipientMediatorConnection!.id
     )
 
@@ -142,7 +141,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       recipientMediatorConnection!.id
     )
 
@@ -212,7 +211,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       recipientMediatorConnection!.id
     )
 
@@ -299,7 +298,7 @@ describe('E2E Pick Up protocol', () => {
     )
 
     recipientMediatorConnection = await recipientAgent.didcomm.connections.returnWhenIsConnected(
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       recipientMediatorConnection!.id
     )
 

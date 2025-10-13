@@ -1,14 +1,13 @@
 import type { AnonCredsHolderService } from '../../../../../../../anoncreds/src'
+import { AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
 import type { LegacyIndyDidCommProposeCredentialFormat } from '../../../../../../../anoncreds/src/formats/LegacyIndyDidCommCredentialFormat'
 import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from '../../../../../../../core/tests'
-
-import { AnonCredsHolderServiceSymbol } from '../../../../../../../anoncreds/src'
 import {
   issueLegacyAnonCredsCredential,
   setupAnonCredsTests,
 } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
+import type { EventReplaySubject } from '../../../../../../../core/tests'
 import { waitForCredentialRecord, waitForCredentialRecordSubject } from '../../../../../../../core/tests'
 import testLogger from '../../../../../../../core/tests/logger'
 import { DidCommMessageRepository } from '../../../../../repository'

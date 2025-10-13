@@ -1,13 +1,12 @@
-import type { DidCommTransportSessionRemovedEvent } from '../../../transport'
-
 import { Subject } from 'rxjs'
+import { AgentContext } from '../../../../../core/src/agent/context/AgentContext'
 
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
-import { AgentContext } from '../../../../../core/src/agent/context/AgentContext'
 import { InjectionSymbols } from '../../../../../core/src/constants'
 import { agentDependencies, getAgentContext } from '../../../../../core/tests/helpers'
 import { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommTransportSession } from '../../../DidCommTransportService'
+import type { DidCommTransportSessionRemovedEvent } from '../../../transport'
 import { DidCommTransportEventTypes } from '../../../transport/DidCommTransportEventTypes'
 import { DidCommMessagePickupSessionRole } from '../DidCommMessagePickupSession'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'

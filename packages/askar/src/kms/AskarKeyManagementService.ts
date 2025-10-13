@@ -1,14 +1,13 @@
+import { type AgentContext, type AnyUint8Array, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import type { JwkProps, KeyEntryObject, Session } from '@openwallet-foundation/askar-shared'
-
-import { type AgentContext, JsonEncoder, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
 import {
+  askar,
   CryptoBox,
   Jwk,
   Key,
   KeyAlgorithm,
   KeyEntryList,
   SignatureAlgorithm,
-  askar,
 } from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
@@ -121,7 +120,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
       kid: kid ?? utils.uuid(),
     }
 
-    let key: Key | undefined = undefined
+    let key: Key | undefined
     try {
       if (privateJwk.kty === 'oct') {
         // TODO: we need to look at how to import symmetric keys, as we need the alg
@@ -190,7 +189,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // FIXME: we should maybe keep the default keyId as publicKeyBase58 for a while for now, so it doesn't break
     // Or we need a way to query a key based on the public key?
     const kid = keyId ?? utils.uuid()
-    let askarKey: Key | undefined = undefined
+    let askarKey: Key | undefined
     try {
       if (type.kty === 'EC' || type.kty === 'OKP') {
         const keyAlg = this.assertAskarAlgForJwkCrv(type.kty, type.crv)
@@ -298,7 +297,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const sigType = this.assertedSigTypeForAlg(algorithm)
 
     // Retrieve the key
-    let askarKey: Key | undefined = undefined
+    let askarKey: Key | undefined
 
     try {
       if (keyInput.keyId) {
@@ -367,8 +366,8 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
 
     const keysToFree: Key[] = []
     try {
-      let encryptionKey: Key | undefined = undefined
-      let encryptedKey: Kms.KmsEncryptedKey | undefined = undefined
+      let encryptionKey: Key | undefined
+      let encryptedKey: Kms.KmsEncryptedKey | undefined
 
       // TODO: we should check if the key allows this operation
       if (key.keyId) {
@@ -517,7 +516,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     const keysToFree: Key[] = []
 
     try {
-      let decryptionKey: Key | undefined = undefined
+      let decryptionKey: Key | undefined
 
       if (key.keyId) {
         decryptionKey = (await this.getKeyAsserted(agentContext, key.keyId)).key
@@ -692,7 +691,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   }
 
   private keyFromSecretBytesAndEncryptionAlgorithm(
-    secretBytes: Uint8Array,
+    secretBytes: AnyUint8Array,
     algorithm: AskarSupportedEncryptionOptions['algorithm']
   ) {
     const askarEncryptionAlgorithm = jwkEncToAskarAlg[algorithm]
@@ -716,6 +715,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
     // TODO: the JWK class in JS Askar wrapper is too limiting
     // so we use this method directly. should update it
     // We extract alg, as Askar doesn't always use the same algs
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { alg, ...jwkSecret } = JsonEncoder.fromBuffer(
       askar.keyGetJwkSecret({
         localKeyHandle: key.handle,

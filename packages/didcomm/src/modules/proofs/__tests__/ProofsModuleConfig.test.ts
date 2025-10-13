@@ -1,7 +1,6 @@
-import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
-
 import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
 import { DidCommAutoAcceptProof } from '../models'
+import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
 
 describe('ProofsModuleConfig', () => {
   test('sets default values', () => {

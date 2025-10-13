@@ -1,7 +1,6 @@
-import type { KeyGenAlgorithm, KeySignParams } from '../types'
-
 import { getAgentConfig, getAgentContext } from '../../../../tests'
 import { CredoWebCrypto } from '../CredoWebCrypto'
+import type { KeyGenAlgorithm, KeySignParams } from '../types'
 
 const algorithmToTestName = (algorithm: Record<string, unknown> | string) =>
   typeof algorithm === 'string' ? algorithm : `${algorithm.name} - ${algorithm.namedCurve} - ${algorithm.hash}`
@@ -31,7 +30,7 @@ describe('CredoWebCrypto', () => {
   })
 
   describe('key creation', () => {
-    supportedAlgorithms.map((algorithm) => {
+    supportedAlgorithms.forEach((algorithm) => {
       it(`should create key with: ${algorithmToTestName(algorithm)}`, async () => {
         await expect(webCrypto.subtle.generateKey(algorithm, true, ['sign', 'verify'])).resolves.toBeDefined()
       })
@@ -39,7 +38,7 @@ describe('CredoWebCrypto', () => {
   })
 
   describe('key signing', () => {
-    supportedAlgorithms.map((algorithm) => {
+    supportedAlgorithms.forEach((algorithm) => {
       it(`should create signature with: ${algorithmToTestName(algorithm)}`, async () => {
         const message = new Uint8Array(10).fill(10)
         const key = await webCrypto.subtle.generateKey(algorithm, true, ['sign', 'verify'])
@@ -51,7 +50,7 @@ describe('CredoWebCrypto', () => {
   })
 
   describe('signature verification', () => {
-    supportedAlgorithms.map((algorithm) => {
+    supportedAlgorithms.forEach((algorithm) => {
       it(`should verify signature with: ${algorithmToTestName(algorithm)}`, async () => {
         const message = new Uint8Array(10).fill(10)
         const key = await webCrypto.subtle.generateKey(algorithm, true, ['sign', 'verify'])

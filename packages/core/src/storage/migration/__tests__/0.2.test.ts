@@ -1,7 +1,6 @@
+import { DidCommModule } from '@credo-ts/didcomm'
 import { readFileSync } from 'fs'
 import path from 'path'
-
-import { DidCommModule } from '@credo-ts/didcomm'
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { DidCommMediatorRoutingRecord } from '../../../../../didcomm/src/modules'

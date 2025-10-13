@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import type {
   DidCommCredentialExchangeRecord,
   DidCommCredentialFormatAcceptOfferOptions,
@@ -19,23 +20,15 @@ import type {
   DidCommCredentialPreviewAttributeOptions,
   DidCommLinkedAttachment,
 } from '@credo-ts/didcomm'
-import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
-import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-import type {
-  LegacyIndyCredentialFormat,
-  LegacyIndyDidCommCredentialProposalFormat,
-} from './LegacyIndyDidCommCredentialFormat'
-
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
 import {
   DidCommAttachment,
   DidCommCredentialFormatSpec,
   DidCommCredentialProblemReportReason,
   DidCommProblemReportError,
 } from '@credo-ts/didcomm'
-
+import type { AnonCredsCredential, AnonCredsCredentialOffer, AnonCredsCredentialRequest } from '../models'
 import { AnonCredsCredentialProposal } from '../models/AnonCredsCredentialProposal'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import { fetchCredentialDefinition, fetchRevocationRegistryDefinition, fetchSchema } from '../utils'
 import {
@@ -46,9 +39,14 @@ import {
   createAndLinkAttachmentsToPreview,
 } from '../utils/credential'
 import { isUnqualifiedCredentialDefinitionId, isUnqualifiedSchemaId } from '../utils/indyIdentifiers'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { generateLegacyProverDidLikeString } from '../utils/proverDid'
 import { getStoreCredentialOptions } from '../utils/w3cAnonCredsUtils'
+import type {
+  LegacyIndyCredentialFormat,
+  LegacyIndyDidCommCredentialProposalFormat,
+} from './LegacyIndyDidCommCredentialFormat'
 
 const INDY_CRED_ABSTRACT = 'hlindy/cred-abstract@v2.0'
 const INDY_CRED_REQUEST = 'hlindy/cred-req@v2.0'
@@ -93,6 +91,7 @@ export class LegacyIndyDidCommCredentialFormatService
 
     // We want all properties except for `attributes` and `linkedAttachments` attributes.
     // The easiest way is to destructure and use the spread operator. But that leaves the other properties unused
+    // biome-ignore lint/correctness/noUnusedVariables: remove properties from object
     const { attributes, linkedAttachments, ...indyCredentialProposal } = indyFormat
     const proposal = new AnonCredsCredentialProposal(indyCredentialProposal)
 

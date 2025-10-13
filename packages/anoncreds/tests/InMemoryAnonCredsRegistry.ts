@@ -1,4 +1,10 @@
 import type { AgentContext } from '@credo-ts/core'
+import { Hasher, utils } from '@credo-ts/core'
+import {
+  getDidIndyCredentialDefinitionId,
+  getDidIndyRevocationRegistryDefinitionId,
+  getDidIndySchemaId,
+} from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsRegistry,
@@ -18,14 +24,6 @@ import type {
   RegisterSchemaOptions,
   RegisterSchemaReturn,
 } from '../src'
-
-import { Hasher, utils } from '@credo-ts/core'
-
-import {
-  getDidIndyCredentialDefinitionId,
-  getDidIndyRevocationRegistryDefinitionId,
-  getDidIndySchemaId,
-} from '../../indy-vdr/src/anoncreds/utils/identifiers'
 import { bytesToBigint } from '../src/utils/bytesToBigint'
 import {
   getUnQualifiedDidIndyDid,
@@ -87,7 +85,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    let didIndyNamespace: string | undefined = undefined
+    let didIndyNamespace: string | undefined
     if (isUnqualifiedSchemaId(schemaId)) {
       const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(schemaId)
       const qualifiedSchemaEnding = `${namespaceIdentifier}/anoncreds/v0/SCHEMA/${schemaName}/${schemaVersion}`
@@ -152,7 +150,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    let didIndyNamespace: string | undefined = undefined
+    let didIndyNamespace: string | undefined
     if (isUnqualifiedCredentialDefinitionId(credentialDefinitionId)) {
       const { namespaceIdentifier, schemaSeqNo, tag } = parseIndyCredentialDefinitionId(credentialDefinitionId)
       const qualifiedCredDefEnding = `${namespaceIdentifier}/anoncreds/v0/CLAIM_DEF/${schemaSeqNo}/${tag}`
@@ -239,7 +237,7 @@ export class InMemoryAnonCredsRegistry implements AnonCredsRegistry {
       }
     }
 
-    let didIndyNamespace: string | undefined = undefined
+    let didIndyNamespace: string | undefined
     if (isUnqualifiedCredentialDefinitionId(revocationRegistryDefinitionId)) {
       const { namespaceIdentifier, schemaSeqNo, revocationRegistryTag } =
         parseIndyRevocationRegistryId(revocationRegistryDefinitionId)

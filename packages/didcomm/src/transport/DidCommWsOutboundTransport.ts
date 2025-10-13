@@ -1,17 +1,15 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
+import { Buffer, CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 import type { WebSocket } from 'ws'
 import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
+import { DidCommEventTypes } from '../DidCommEvents'
 import type { DidCommOutboundPackage } from '../types'
+import { isValidJweStructure } from '../util/JWE'
 import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
 import type {
   DidCommOutboundWebSocketClosedEvent,
   DidCommOutboundWebSocketOpenedEvent,
 } from './DidCommTransportEventTypes'
-
-import { Buffer, CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
-
-import { DidCommEventTypes } from '../DidCommEvents'
-import { isValidJweStructure } from '../util/JWE'
 
 import { DidCommTransportEventTypes } from './DidCommTransportEventTypes'
 
@@ -128,7 +126,7 @@ export class DidCommWsOutboundTransport implements DidCommOutboundTransport {
 
   // NOTE: Because this method is passed to the event handler this must be a lambda method
   // so 'this' is scoped to the 'WsDidCommOutboundTransport' class instance
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   private handleMessageEvent = (event: any) => {
     this.logger.trace('WebSocket message event received.', { url: event.target.url })
     const payload = JsonEncoder.fromBuffer(event.data)

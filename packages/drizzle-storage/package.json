@@ -32,14 +32,30 @@
       "import": "./src/index.ts",
       "cli": "./build/index.mjs"
     },
-    "./didcomm": { "import": "./build/didcomm/bundle.mjs" },
-    "./action-menu": { "import": "./build/action-menu/bundle.mjs" },
-    "./core": { "import": "./build/core/bundle.mjs" },
-    "./drpc": { "import": "./build/drpc/bundle.mjs" },
-    "./tenants": { "import": "./build/tenants/bundle.mjs" },
-    "./openid4vc": { "import": "./build/openid4vc/bundle.mjs" },
-    "./anoncreds": { "import": "./build/anoncreds/bundle.mjs" },
-    "./question-answer": { "import": "./build/question-answer/bundle.mjs" }
+    "./didcomm": {
+      "import": "./build/didcomm/bundle.mjs"
+    },
+    "./action-menu": {
+      "import": "./build/action-menu/bundle.mjs"
+    },
+    "./core": {
+      "import": "./build/core/bundle.mjs"
+    },
+    "./drpc": {
+      "import": "./build/drpc/bundle.mjs"
+    },
+    "./tenants": {
+      "import": "./build/tenants/bundle.mjs"
+    },
+    "./openid4vc": {
+      "import": "./build/openid4vc/bundle.mjs"
+    },
+    "./anoncreds": {
+      "import": "./build/anoncreds/bundle.mjs"
+    },
+    "./question-answer": {
+      "import": "./build/question-answer/bundle.mjs"
+    }
   },
   "publishConfig": {
     "access": "public",
@@ -52,16 +68,37 @@
         "require": "./build/index.js",
         "types": "./build/index.d.ts"
       },
-      "./didcomm": { "import": "./build/didcomm/bundle.mjs", "require": "./build/didcomm/bundle.js" },
+      "./didcomm": {
+        "import": "./build/didcomm/bundle.mjs",
+        "require": "./build/didcomm/bundle.js"
+      },
       "./*/migrations/sqlite": {
         "import": "./migrations/*/sqlite/migrations.js"
       },
-      "./action-menu": { "import": "./build/action-menu/bundle.mjs", "require": "./build/action-menu/bundle.js" },
-      "./core": { "import": "./build/core/bundle.mjs", "require": "./build/core/bundle.js" },
-      "./drpc": { "import": "./build/drpc/bundle.mjs", "require": "./build/drpc/bundle.js" },
-      "./tenants": { "import": "./build/tenants/bundle.mjs", "require": "./build/tenants/bundle.js" },
-      "./openid4vc": { "import": "./build/openid4vc/bundle.mjs", "require": "./build/openid4vc/bundle.js" },
-      "./anoncreds": { "import": "./build/anoncreds/bundle.mjs", "require": "./build/anoncreds/bundle.js" },
+      "./action-menu": {
+        "import": "./build/action-menu/bundle.mjs",
+        "require": "./build/action-menu/bundle.js"
+      },
+      "./core": {
+        "import": "./build/core/bundle.mjs",
+        "require": "./build/core/bundle.js"
+      },
+      "./drpc": {
+        "import": "./build/drpc/bundle.mjs",
+        "require": "./build/drpc/bundle.js"
+      },
+      "./tenants": {
+        "import": "./build/tenants/bundle.mjs",
+        "require": "./build/tenants/bundle.js"
+      },
+      "./openid4vc": {
+        "import": "./build/openid4vc/bundle.mjs",
+        "require": "./build/openid4vc/bundle.js"
+      },
+      "./anoncreds": {
+        "import": "./build/anoncreds/bundle.mjs",
+        "require": "./build/anoncreds/bundle.js"
+      },
       "./question-answer": {
         "import": "./build/question-answer/bundle.mjs",
         "require": "./build/question-answer/bundle.mjs"
@@ -96,19 +133,19 @@
     "@credo-ts/tenants": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "drizzle-kit": "^0.31.4",
+    "drizzle-kit": "^0.31.5",
     "shell": "^0.12.0",
     "tsyringe": "catalog:",
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "drizzle-orm": "^0.44.5"
+    "drizzle-orm": "^0.44.6"
   },
   "devDependencies": {
-    "@libsql/client": "^0.15.6",
-    "@types/pg": "^8.15.4",
+    "@libsql/client": "^0.15.15",
+    "@types/pg": "^8.15.5",
     "@types/yargs": "^17.0.33",
-    "drizzle-orm": "^0.44.5",
+    "drizzle-orm": "^0.44.6",
     "pg": "^8.16.3",
     "typescript": "catalog:"
   }

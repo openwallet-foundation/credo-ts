@@ -1,11 +1,10 @@
 import type { AgentContext, Kms } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommMessageHandler } from '../handlers'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { DidCommEncryptedMessage } from '../types'
 import type { DidCommOutboundMessageContext } from './DidCommOutboundMessageContext'
-
-import { CredoError } from '@credo-ts/core'
 
 export interface MessageContextParams {
   connection?: DidCommConnectionRecord

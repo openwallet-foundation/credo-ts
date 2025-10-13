@@ -5,7 +5,7 @@ import type {
 } from '@credo-ts/didcomm'
 
 import { BaseAgent } from './BaseAgent'
-import { Output, greenText, redText } from './OutputClass'
+import { greenText, Output, redText } from './OutputClass'
 
 export class Alice extends BaseAgent {
   public connected: boolean

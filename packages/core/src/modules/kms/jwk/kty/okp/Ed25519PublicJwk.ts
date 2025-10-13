@@ -1,13 +1,14 @@
 import { convertPublicKeyToX25519 } from '@stablelib/ed25519'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../../types'
 import {
   type KnownJwaKeyAgreementAlgorithm,
   type KnownJwaSignatureAlgorithm,
   KnownJwaSignatureAlgorithms,
 } from '../../jwa'
 import type { PublicJwkType } from '../PublicJwk'
-import { X25519PublicJwk } from './X25519PublicJwk'
 import type { KmsJwkPublicOkp } from './okpJwk'
 import { okpPublicJwkToPublicKey, okpPublicKeyToPublicJwk } from './okpPublicKey'
+import { X25519PublicJwk } from './X25519PublicJwk'
 
 type Jwk = KmsJwkPublicOkp & { crv: 'Ed25519' }
 
@@ -41,17 +42,17 @@ export class Ed25519PublicJwk implements PublicJwkType<Jwk> {
     return okpPublicJwkToPublicKey(this.jwk)
   }
 
-  public static fromPublicKey(publicKey: Uint8Array) {
+  public static fromPublicKey(publicKey: AnyUint8Array) {
     const jwk = okpPublicKeyToPublicJwk(publicKey, 'Ed25519')
     return new Ed25519PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: Uint8Array) {
+  public static fromMulticodec(multicodec: AnyUint8Array) {
     const jwk = okpPublicKeyToPublicJwk(multicodec, 'Ed25519')
     return new Ed25519PublicJwk(jwk)
   }
 
   public toX25519PublicJwk() {
-    return X25519PublicJwk.fromPublicKey(convertPublicKeyToX25519(this.publicKey.publicKey)).jwk
+    return X25519PublicJwk.fromPublicKey(convertPublicKeyToX25519(this.publicKey.publicKey) as Uint8ArrayBuffer).jwk
   }
 }

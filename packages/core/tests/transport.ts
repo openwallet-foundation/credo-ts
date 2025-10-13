@@ -1,10 +1,8 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { Agent } from '../src'
-
 import { Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import type { Agent } from '../src'
 
 export function setupSubjectTransports(agents: Agent[]) {
   const subjectMap: Record<string, Subject<SubjectMessage>> = {}

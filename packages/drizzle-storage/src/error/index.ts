@@ -1,2 +1,2 @@
-export { CredoDrizzleStorageError } from './CredoDrizzleStorageError'
 export { CredoDrizzleColumnDoesNotExistError } from './CredoDrizzleColumnDoesNotExistError'
+export { CredoDrizzleStorageError } from './CredoDrizzleStorageError'

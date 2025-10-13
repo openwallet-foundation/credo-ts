@@ -1,6 +1,3 @@
-import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-
 import { W3cCredential, W3cCredentialService, W3cCredentialSubject } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
@@ -8,16 +5,16 @@ import {
   DidCommCredentialState,
   DidCommProofState,
 } from '@credo-ts/didcomm'
-
+import type { EventReplaySubject } from '../../core/tests'
 import {
   createDidKidVerificationMethod,
   waitForCredentialRecordSubject,
   waitForProofExchangeRecord,
 } from '../../core/tests'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import { setupAnonCredsTests } from './anoncredsSetup'
 import { presentationDefinition } from './fixtures/presentation-definition'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 const issuerId = 'did:indy:local:LjgpST2rjsoxYegQDRm7EL'
 
@@ -243,7 +240,7 @@ async function anonCredsFlowTest(options: {
   const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
   if (!revocationRegistryDefinitionId) {
     for (const ide of pdCopy.input_descriptors) {
-      // biome-ignore lint/performance/noDelete: <explanation>
+      // biome-ignore lint/performance/noDelete: no explanation
       delete ide.constraints?.statuses
     }
   }

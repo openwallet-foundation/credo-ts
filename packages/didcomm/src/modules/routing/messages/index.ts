@@ -1,6 +1,6 @@
 export * from './DidCommForwardMessage'
 export * from './DidCommKeylistUpdateMessage'
 export * from './DidCommKeylistUpdateResponseMessage'
-export * from './DidCommMediationGrantMessage'
 export * from './DidCommMediationDenyMessage'
+export * from './DidCommMediationGrantMessage'
 export * from './DidCommMediationRequestMessage'

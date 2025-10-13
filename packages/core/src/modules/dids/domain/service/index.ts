@@ -5,8 +5,8 @@ import { IndyAgentService } from './IndyAgentService'
 import { ServiceTransformer, serviceTypes } from './ServiceTransformer'
 
 export {
-  type LegacyDidCommV2ServiceOptions as DidCommV2ServiceOptions,
   LegacyDidCommV2Service as DidCommV2Service,
+  type LegacyDidCommV2ServiceOptions as DidCommV2ServiceOptions,
 } from './LegacyDidCommV2Service'
 
 export {

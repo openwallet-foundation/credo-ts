@@ -1,10 +1,8 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommConnectionService, DidCommTrustPingService } from '../services'
-
 import { CredoError } from '@credo-ts/core'
-
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommTrustPingMessage } from '../messages'
 import { DidCommDidExchangeState } from '../models'
+import type { DidCommConnectionService, DidCommTrustPingService } from '../services'
 
 export class DidCommTrustPingMessageHandler implements DidCommMessageHandler {
   private trustPingService: DidCommTrustPingService

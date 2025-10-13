@@ -1,14 +1,12 @@
 import type { AgentContext, Logger } from '@credo-ts/core'
-import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
-import type { DidCommOutboundPackage } from '../types'
-import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
-
 import { CredoError, EventEmitter, JsonEncoder } from '@credo-ts/core'
 import { Subject } from 'rxjs'
-
+import type { DidCommMessageReceivedEvent } from '../DidCommEvents'
 import { DidCommEventTypes } from '../DidCommEvents'
 import { DidCommModuleConfig } from '../DidCommModuleConfig'
+import type { DidCommOutboundPackage } from '../types'
 import { isValidJweStructure } from '../util/JWE'
+import type { DidCommOutboundTransport } from './DidCommOutboundTransport'
 
 export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
   private agentContext!: AgentContext
@@ -78,8 +76,8 @@ export class DidCommHttpOutboundTransport implements DidCommOutboundTransport {
       const id = setTimeout(() => abortController.abort(), 15000)
       this.outboundSessionCount++
 
-      let response: Response | undefined = undefined
-      let responseMessage: string | undefined = undefined
+      let response: Response | undefined
+      let responseMessage: string | undefined
       try {
         response = await this.fetch(endpoint, {
           method: 'POST',

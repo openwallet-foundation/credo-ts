@@ -1,10 +1,8 @@
 import type { ActionMenuRole, ActionMenuState, ActionMenuStateChangedEvent } from '@credo-ts/action-menu'
+import { ActionMenuEventTypes } from '@credo-ts/action-menu'
 import type { Agent } from '@credo-ts/core'
 import type { Observable } from 'rxjs'
-
-import { ReplaySubject, catchError, filter, map, timeout } from 'rxjs'
-
-import { ActionMenuEventTypes } from '@credo-ts/action-menu'
+import { catchError, filter, map, ReplaySubject, timeout } from 'rxjs'
 import { firstValueWithStackTrace } from '../../core/tests'
 
 export async function waitForActionMenuRecord(

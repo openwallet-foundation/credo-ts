@@ -1,34 +1,34 @@
-import type { DidKey, X509Certificate } from '@credo-ts/core'
-import {
-  type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcIssuerRecord,
-  OpenId4VcModule,
-  type OpenId4VcVerifierModuleConfigOptions,
-  OpenId4VcVerifierRecord,
-  type OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  type OpenId4VciCredentialRequestToCredentialMapper,
-  type OpenId4VciSignMdocCredentials,
-  type OpenId4VciSignSdJwtCredentials,
-  type OpenId4VciSignW3cCredentials,
-  type VerifiedOpenId4VcCredentialHolderBinding,
-} from '@credo-ts/openid4vc'
-
 import { AskarModule, transformSeedToPrivateJwk } from '@credo-ts/askar'
+import type { DidKey, X509Certificate } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   JsonTransformer,
   Kms,
+  parseDid,
   TypedArrayEncoder,
+  utils,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
-  X509Service,
-  parseDid,
-  utils,
   w3cDate,
+  X509Service,
 } from '@credo-ts/core'
-import { OpenId4VcVerifierApi, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
+import {
+  type OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcIssuerRecord,
+  type OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciCredentialFormatProfile,
+  type OpenId4VciCredentialRequestToCredentialMapper,
+  type OpenId4VciSignMdocCredentials,
+  type OpenId4VciSignSdJwtCredentials,
+  type OpenId4VciSignW3cCredentials,
+  OpenId4VcModule,
+  OpenId4VcVerifierApi,
+  type OpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierRecord,
+  type VerifiedOpenId4VcCredentialHolderBinding,
+} from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Router } from 'express'
 

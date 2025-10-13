@@ -1,8 +1,7 @@
-import type { AnonCredsCredentialOffer } from '../../../../models'
-
 import { DidCommAttachment, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import type { AnonCredsCredentialOffer } from '../../../../models'
 
 import { DidCommCredentialV1Preview } from './DidCommCredentialV1Preview'
 

@@ -1,7 +1,7 @@
 import {
   Agent,
-  CacheModule,
   CachedStorageService,
+  CacheModule,
   InjectionSymbols,
   SingleContextStorageLruCache,
   type StorageService,

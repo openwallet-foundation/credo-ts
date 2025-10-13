@@ -1,8 +1,7 @@
+import { CredoError, tryParseDid } from '@credo-ts/core'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import type { DidExchangeProtocol } from '../DidExchangeProtocol'
-
-import { CredoError, tryParseDid } from '@credo-ts/core'
 import { DidCommDidExchangeCompleteMessage } from '../messages'
 import { DidCommHandshakeProtocol } from '../models'
 

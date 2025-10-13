@@ -1,40 +1,38 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommConnectionRecord } from '../../connections/repository'
-import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
-
 import {
   CredoError,
   DidKey,
+  didKeyToVerkey,
   EventEmitter,
   InjectionSymbols,
+  inject,
+  injectable,
+  isDidKey,
   Kms,
   type Logger,
   RecordDuplicateError,
   TypedArrayEncoder,
-  didKeyToVerkey,
-  inject,
-  injectable,
-  isDidKey,
   verkeyToDidKey,
 } from '@credo-ts/core'
-
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import type { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
 import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
+import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
 import {
   DidCommKeylistUpdateAction,
+  DidCommKeylistUpdated,
   DidCommKeylistUpdateMessage,
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
-  DidCommKeylistUpdated,
   DidCommMediationGrantMessage,
 } from '../messages'
 import { DidCommMediationRole } from '../models/DidCommMediationRole'

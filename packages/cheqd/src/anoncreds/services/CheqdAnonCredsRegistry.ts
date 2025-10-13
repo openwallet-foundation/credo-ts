@@ -14,9 +14,8 @@ import type {
   RegisterSchemaReturn,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { CheqdCreateResourceOptions } from '../../dids'
-
 import { CredoError, Hasher, JsonTransformer, TypedArrayEncoder, utils } from '@credo-ts/core'
+import type { CheqdCreateResourceOptions } from '../../dids'
 
 import { CheqdDidRegistrar, CheqdDidResolver } from '../../dids'
 import {

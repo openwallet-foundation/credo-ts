@@ -1,11 +1,9 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { DidCommDiscoverFeaturesModuleConfigOptions } from './DidCommDiscoverFeaturesModuleConfig'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
-import { DidCommProtocol } from '../../models'
-
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../models'
 import { DidCommDiscoverFeaturesApi } from './DidCommDiscoverFeaturesApi'
+import type { DidCommDiscoverFeaturesModuleConfigOptions } from './DidCommDiscoverFeaturesModuleConfig'
 import { DidCommDiscoverFeaturesModuleConfig } from './DidCommDiscoverFeaturesModuleConfig'
 import { DidCommDiscoverFeaturesV1Service } from './protocol/v1'
 import { DidCommDiscoverFeaturesV2Service } from './protocol/v2'

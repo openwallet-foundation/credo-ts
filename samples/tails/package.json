@@ -15,7 +15,7 @@
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@types/express": "catalog:",
-    "@types/multer": "^1.4.13",
+    "@types/multer": "^2.0.0",
     "@types/ws": "catalog:",
     "form-data": "^4.0.4",
     "multer": "^2.0.2"

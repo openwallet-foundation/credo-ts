@@ -1,16 +1,13 @@
+import { CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
-import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-import { CredoError, type Query, joinUriParts, utils } from '@credo-ts/core'
 import {
+  authorizationCodeGrantIdentifier,
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
-  authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
   refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
+import type { NextFunction, Response, Router } from 'express'
 import {
   getRequestContext,
   sendJsonResponse,
@@ -18,8 +15,10 @@ import {
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureAccessTokenEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.accessTokenEndpointPath, handleTokenRequest(config))

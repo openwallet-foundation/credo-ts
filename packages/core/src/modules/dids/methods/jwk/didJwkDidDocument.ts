@@ -1,8 +1,7 @@
-import type { DidJwk } from './DidJwk'
-
 import { CredoError } from '../../../../error'
 import { SECURITY_JWS_CONTEXT_URL } from '../../../vc/constants'
 import { DidDocumentBuilder, getJsonWebKey2020 } from '../../domain'
+import type { DidJwk } from './DidJwk'
 
 export function getDidJwkDocument(didJwk: DidJwk) {
   if (!didJwk.allowsEncrypting && !didJwk.allowsSigning) {
