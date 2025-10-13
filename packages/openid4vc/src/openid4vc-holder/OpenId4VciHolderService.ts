@@ -252,10 +252,17 @@ export class OpenId4VciHolderService {
       }
     }
 
-    const alg = dpopSigningAlgValuesSupported.find((alg): alg is Kms.KnownJwaSignatureAlgorithm => {
+    const alg = dpopSigningAlgValuesSupported.find((algorithm): algorithm is Kms.KnownJwaSignatureAlgorithm => {
       try {
         Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(alg as Kms.KnownJwaSignatureAlgorithm)
-        return true
+
+        // TODO: we should allow providing allowed backends to OID4VC API so you can limit which
+        // KMS backends can be used for DPOP
+        const supportedBackends = kms.supportedBackendsForOperation({
+          operation: 'sign',
+          algorithm: algorithm as Kms.KnownJwaSignatureAlgorithm,
+        })
+        return supportedBackends.length > 0
       } catch {
         return false
       }
