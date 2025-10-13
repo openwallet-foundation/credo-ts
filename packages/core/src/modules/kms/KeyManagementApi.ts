@@ -317,12 +317,17 @@ export class KeyManagementApi {
     }
 
     if (operation) {
-      throw new KeyManagementError(
-        `No key management service supports ${getKmsOperationHumanDescription(operation)} that has a key with keyId '${keyId}'`
+      throw new KeyManagementKeyNotFoundError(
+        keyId,
+        this.keyManagementConfig.backends.map((b) => b.backend),
+        `It may be the key exists, but the key management servcie doe not support the operation ${getKmsOperationHumanDescription(operation)}`
       )
     }
 
-    throw new KeyManagementError(`No key management service has a key with keyId '${keyId}'`)
+    throw new KeyManagementKeyNotFoundError(
+      keyId,
+      this.keyManagementConfig.backends.map((b) => b.backend)
+    )
   }
 
   /**
