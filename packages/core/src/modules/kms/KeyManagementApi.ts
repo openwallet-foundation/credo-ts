@@ -249,7 +249,7 @@ export class KeyManagementApi {
       const publicKey = await kms.getPublicKey(this.agentContext, keyId)
 
       if (!publicKey) {
-        throw new KeyManagementKeyNotFoundError(keyId, backend)
+        throw new KeyManagementKeyNotFoundError(keyId, [backend])
       }
     }
 
@@ -316,12 +316,17 @@ export class KeyManagementApi {
     }
 
     if (operation) {
-      throw new KeyManagementError(
-        `No key management service supports ${getKmsOperationHumanDescription(operation)} that has a key with keyId '${keyId}'`
+      throw new KeyManagementKeyNotFoundError(
+        keyId,
+        this.keyManagementConfig.backends.map((b) => b.backend),
+        `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
       )
     }
 
-    throw new KeyManagementError(`No key management service has a key with keyId '${keyId}'`)
+    throw new KeyManagementKeyNotFoundError(
+      keyId,
+      this.keyManagementConfig.backends.map((b) => b.backend)
+    )
   }
 
   /**

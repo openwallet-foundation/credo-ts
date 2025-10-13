@@ -124,7 +124,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       }
     } catch (error) {
       if (error instanceof secureEnvironment.KeyNotFoundError) {
-        throw new Kms.KeyManagementKeyNotFoundError(options.keyId, this.backend)
+        throw new Kms.KeyManagementKeyNotFoundError(options.keyId, [this.backend])
       }
 
       throw new Kms.KeyManagementError('Error signing with key', { cause: error })
@@ -156,7 +156,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       return this.publicJwkFromPublicKeyBytes(publicKeyBytes, keyId)
     } catch (error) {
       if (error instanceof secureEnvironment.KeyNotFoundError) {
-        throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+        throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
       }
 
       throw new Kms.KeyManagementError(`Error retrieving key with id '${keyId}' from backend ${this.backend}`, {

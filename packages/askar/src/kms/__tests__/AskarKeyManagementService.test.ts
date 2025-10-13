@@ -286,7 +286,7 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'RS256',
           data: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('signs with ES256', async () => {
@@ -420,7 +420,7 @@ describe('AskarKeyManagementService', () => {
           data: new Uint8Array([1, 2, 3]),
           signature: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('verifies ES256 signature', async () => {
@@ -970,7 +970,7 @@ describe('AskarKeyManagementService', () => {
           algorithm: 'ES256',
           data: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError(keyId, service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError(keyId, [service.backend]))
     })
   })
 
@@ -994,7 +994,7 @@ describe('AskarKeyManagementService', () => {
           },
           data: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('throws error for unsupported ECDH-EH+A192KW key agreement', async () => {
@@ -1129,7 +1129,7 @@ describe('AskarKeyManagementService', () => {
           },
           encrypted: new Uint8Array([1, 2, 3]),
         })
-      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', service.backend))
+      ).rejects.toThrow(new Kms.KeyManagementKeyNotFoundError('nonexistent', [service.backend]))
     })
 
     it('throws error for unsupported ECDH-EH+A192KW key agreement', async () => {
