@@ -190,13 +190,13 @@ export class OpenId4VpHolderService {
 
     if (!selectedTransactionDataCredentials) {
       throw new CredoError(
-        'Autohrization request contains transaction data entries, but no credential ids to sign transaction data hashes provided in acceptAuthorizationRequest method.'
+        'Authorization request contains transaction data entries, but no credential ids to sign transaction data hashes provided in acceptAuthorizationRequest method.'
       )
     }
 
     if (!transactionData) {
       throw new CredoError(
-        'Autohrization request doe not contains transaction data entries, but credentail ids were provided to sign transaction data hashes in acceptAuthorizationRequest method.'
+        'Authorization request doe not contains transaction data entries, but credentail ids were provided to sign transaction data hashes in acceptAuthorizationRequest method.'
       )
     }
 
