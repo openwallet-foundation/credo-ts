@@ -1,11 +1,10 @@
 import type { AgentConfig, AgentContext } from '@credo-ts/core'
+import { CredoError, EventEmitter, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import type {
   CustomDidCommCredentialExchangeTags,
   DidCommCredentialPreviewAttribute,
   DidCommCredentialStateChangedEvent,
 } from '@credo-ts/didcomm'
-
-import { CredoError, EventEmitter, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import {
   AckStatus,
   DidCommAttachment,
@@ -122,7 +121,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
   role: DidCommMessageRole.Receiver,
 })
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const getAgentMessageMock = async (_agentContext: AgentContext, options: { messageClass: any }) => {
   if (options.messageClass === DidCommProposeCredentialV1Message) {
     return credentialProposalMessage
@@ -200,7 +199,7 @@ describe('DidCommCredentialV1Protocol', () => {
     legacyIndyCredentialFormatService = new LegacyIndyCredentialFormatServiceMock()
     const connectionService = new ConnectionServiceMock()
 
-    // @ts-ignore
+    // @ts-expect-error
     legacyIndyCredentialFormatService.credentialRecordType = 'w3c'
 
     agentContext = getAgentContext({

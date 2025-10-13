@@ -1,17 +1,23 @@
 import type { CheqdNetwork, DIDDocument, MethodSpecificIdAlgo, TVerificationKey } from '@cheqd/sdk'
-import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
-
 import {
-  DIDModule,
-  VerificationMethods,
   createDidPayload,
   createDidVerificationMethod,
   createVerificationKeys,
+  DIDModule,
+  VerificationMethods,
 } from '@cheqd/sdk'
 import { MsgCreateDidDocPayload, MsgDeactivateDidDocPayload } from '@cheqd/ts-proto/cheqd/did/v2'
+import type { Metadata } from '@cheqd/ts-proto/cheqd/resource/v2'
 import { EnglishMnemonic as _ } from '@cosmjs/crypto'
 import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
-import { CredoError, DidDocument, JsonEncoder, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  type AnyUint8Array,
+  CredoError,
+  DidDocument,
+  JsonEncoder,
+  JsonTransformer,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 
 export function validateSpecCompliantPayload(didDocument: DidDocument): SpecValidationResult {
   // id is required, validated on both compile and runtime
@@ -115,7 +121,7 @@ export interface IDidDocOptions {
 
 export function getClosestResourceVersion(resources: Metadata[], date: Date) {
   let minDiff = Number.POSITIVE_INFINITY
-  let closest: Metadata | undefined = undefined
+  let closest: Metadata | undefined
 
   // TODO: if the cheqd/sdk returns sorted resources, change this to binary search
   for (const resource of resources) {
@@ -138,7 +144,7 @@ export function filterResourcesByNameAndType(resources: Metadata[], name: string
   return resources.filter((resource) => resource.name === name && resource.resourceType === type)
 }
 
-export async function renderResourceData(data: Uint8Array, mimeType: string) {
+export async function renderResourceData(data: AnyUint8Array, mimeType: string) {
   if (mimeType === 'application/json') {
     return await JsonEncoder.fromBuffer(data)
   }

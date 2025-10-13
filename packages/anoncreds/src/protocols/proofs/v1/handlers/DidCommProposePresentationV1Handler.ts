@@ -3,9 +3,8 @@ import type {
   DidCommMessageHandlerInboundMessage,
   DidCommProofExchangeRecord,
 } from '@credo-ts/didcomm'
-import type { DidCommProofV1Protocol } from '../DidCommProofV1Protocol'
-
 import { DidCommOutboundMessageContext } from '@credo-ts/didcomm'
+import type { DidCommProofV1Protocol } from '../DidCommProofV1Protocol'
 
 import { DidCommProposePresentationV1Message } from '../messages'
 

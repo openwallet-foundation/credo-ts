@@ -1,11 +1,8 @@
 import type { InitConfig } from '@credo-ts/core'
-import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
-import type { TenantAgent } from '../src/TenantAgent'
-
 import { Agent, CacheModule, InMemoryLruCache } from '@credo-ts/core'
+import type { DidCommModuleConfigOptions } from '@credo-ts/didcomm'
 import { DidCommModule, DidCommOutOfBandRecord } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
@@ -13,6 +10,7 @@ import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutbou
 import { AskarModule } from '../../askar/src'
 import { getAskarStoreConfig, testLogger } from '../../core/tests'
 import { TenantsModule } from '../src'
+import type { TenantAgent } from '../src/TenantAgent'
 
 const agent1Config: InitConfig = {
   logger: testLogger,

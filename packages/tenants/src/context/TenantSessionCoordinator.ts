@@ -1,16 +1,15 @@
-import type { MutexInterface } from 'async-mutex'
-import type { TenantRecord } from '../repository'
-
 import {
   AgentConfig,
   AgentContext,
   CredoError,
   InjectionSymbols,
-  type Logger,
   inject,
   injectable,
+  type Logger,
 } from '@credo-ts/core'
+import type { MutexInterface } from 'async-mutex'
 import { Mutex, withTimeout } from 'async-mutex'
+import type { TenantRecord } from '../repository'
 
 import { TenantsModuleConfig } from '../TenantsModuleConfig'
 

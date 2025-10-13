@@ -1,7 +1,6 @@
 import type { Logger } from '@credo-ts/core'
-import type { MutexInterface } from 'async-mutex'
-
 import { CredoError } from '@credo-ts/core'
+import type { MutexInterface } from 'async-mutex'
 import { Mutex, withTimeout } from 'async-mutex'
 
 /**

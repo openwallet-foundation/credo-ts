@@ -1,4 +1,9 @@
+import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { ClaimFormat, W3cV2VerifiableCredential } from './models'
+import type { W3cV2CredentialRecord } from './repository'
+import { W3cV2CredentialService } from './W3cV2CredentialService'
 import type {
   W3cV2SignCredentialOptions,
   W3cV2SignPresentationOptions,
@@ -6,13 +11,6 @@ import type {
   W3cV2VerifyCredentialOptions,
   W3cV2VerifyPresentationOptions,
 } from './W3cV2CredentialServiceOptions'
-import type { ClaimFormat, W3cV2VerifiableCredential } from './models'
-import type { W3cV2CredentialRecord } from './repository'
-
-import { AgentContext } from '../../agent'
-import { injectable } from '../../plugins'
-
-import { W3cV2CredentialService } from './W3cV2CredentialService'
 
 /**
  * @public

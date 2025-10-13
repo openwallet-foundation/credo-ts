@@ -1,9 +1,8 @@
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/legacyAnonCredsSetup'
-import type { EventReplaySubject } from './events'
-
 import { issueLegacyAnonCredsCredential, setupAnonCredsTests } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import { DidCommProofState } from '../../didcomm/src/modules/proofs'
 import { uuid } from '../src/utils/uuid'
+import type { EventReplaySubject } from './events'
 
 import { waitForProofExchangeRecord } from './helpers'
 import testLogger from './logger'

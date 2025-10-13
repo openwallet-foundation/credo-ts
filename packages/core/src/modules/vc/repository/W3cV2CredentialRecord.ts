@@ -1,5 +1,5 @@
 import { BaseRecord, type Tags, type TagsBase } from '../../../storage/BaseRecord'
-import { JsonTransformer, asArray } from '../../../utils'
+import { asArray, JsonTransformer } from '../../../utils'
 import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
 import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, type W3cV2VerifiableCredential } from '../models'

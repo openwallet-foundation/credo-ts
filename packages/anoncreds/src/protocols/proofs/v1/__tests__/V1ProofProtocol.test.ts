@@ -1,11 +1,9 @@
-import type { AgentConfig, AgentContext } from '../../../../../../core/src'
-import type { CustomDidCommProofExchangeTags, DidCommProofStateChangedEvent } from '../../../../../../didcomm/src'
-
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../../tests/types'
+import type { AgentConfig, AgentContext } from '../../../../../../core/src'
 import { EventEmitter } from '../../../../../../core/src'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests'
+import type { CustomDidCommProofExchangeTags, DidCommProofStateChangedEvent } from '../../../../../../didcomm/src'
 import {
   DidCommAttachment,
   DidCommAttachmentData,

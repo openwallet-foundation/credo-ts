@@ -1,14 +1,20 @@
 import '@openwallet-foundation/askar-nodejs'
-import { type KeyDidCreateOptions, Kms, type SdJwtVc } from '@credo-ts/core'
-
-import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
+import {
+  Agent,
+  DidKey,
+  type KeyDidCreateOptions,
+  Kms,
+  type SdJwtVc,
+  TypedArrayEncoder,
+  W3cCredentialService,
+  W3cJwtVerifiableCredential,
+} from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-import { agentDependencies } from '../../../../node/src'
-import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
-
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({

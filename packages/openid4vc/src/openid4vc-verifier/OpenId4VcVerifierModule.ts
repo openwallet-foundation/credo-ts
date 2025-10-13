@@ -1,14 +1,12 @@
 import type { AgentContext, DependencyManager } from '@credo-ts/core'
 import type { NextFunction } from 'express'
-import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
-import type { OpenId4VcVerificationRequest } from './router'
-
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
-
 import { OpenId4VcVerifierApi } from './OpenId4VcVerifierApi'
+import type { OpenId4VcVerifierModuleConfigOptions } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from './OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from './repository'
+import type { OpenId4VcVerificationRequest } from './router'
 import { configureAuthorizationEndpoint } from './router'
 import { configureAuthorizationRequestEndpoint } from './router/authorizationRequestEndpoint'
 
@@ -75,7 +73,7 @@ export class OpenId4VcVerifierModule {
         _res.status(404).send('Not found')
       }
 
-      let agentContext: AgentContext | undefined = undefined
+      let agentContext: AgentContext | undefined
 
       try {
         agentContext = await getAgentContextForActorId(rootAgentContext, verifierId)

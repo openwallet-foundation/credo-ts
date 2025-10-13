@@ -1,9 +1,7 @@
-import nock, { cleanAll } from 'nock'
-
-import { getAgentOptions } from '../../../../tests'
-
 import { Agent, DidKey, TypedArrayEncoder } from '@credo-ts/core'
+import nock, { cleanAll } from 'nock'
 import { transformSeedToPrivateJwk } from '../../../../../askar/src'
+import { getAgentOptions } from '../../../../tests'
 import { PublicJwk } from '../../kms'
 
 const issuer = new Agent(getAgentOptions('sd-jwt-vc-issuer-agent'))
@@ -216,7 +214,7 @@ describe('sd-jwt-vc end to end test', () => {
     // Metadata created by the verifier and send out of band by the verifier to the holder
     const verifierMetadata = {
       audience: verifierDid,
-      issuedAt: new Date().getTime() / 1000,
+      issuedAt: Date.now() / 1000,
       nonce: TypedArrayEncoder.toBase64URL(verifier.kms.randomBytes({ length: 32 })),
     }
 

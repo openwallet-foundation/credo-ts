@@ -1,9 +1,16 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, utils } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommProblemReportMessage } from '../../../../messages'
+import { AckStatus } from '../../../../messages'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
+import { DidCommConnectionService } from '../../../connections'
+import { DidCommProofsModuleConfig } from '../../DidCommProofsModuleConfig'
+import { DidCommPresentationProblemReportReason } from '../../errors/DidCommPresentationProblemReportReason'
 import type {
   DidCommProofFormat,
   DidCommProofFormatCredentialForRequestPayload,
@@ -11,7 +18,11 @@ import type {
   ExtractProofFormats,
 } from '../../formats'
 import type { DidCommProofFormatService } from '../../formats/DidCommProofFormatService'
+import { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '../../models'
 import type { DidCommProofFormatSpec } from '../../models/DidCommProofFormatSpec'
+import { DidCommProofExchangeRecord, DidCommProofExchangeRepository } from '../../repository'
+import { composeAutoAccept } from '../../utils'
+import { DidCommBaseProofProtocol } from '../DidCommBaseProofProtocol'
 import type { DidCommProofProtocol } from '../DidCommProofProtocol'
 import type {
   AcceptPresentationOptions,
@@ -30,19 +41,6 @@ import type {
   SelectCredentialsForRequestOptions,
   SelectCredentialsForRequestReturn,
 } from '../DidCommProofProtocolOptions'
-
-import { CredoError, utils } from '@credo-ts/core'
-
-import { AckStatus } from '../../../../messages'
-import { DidCommProtocol } from '../../../../models'
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
-import { DidCommConnectionService } from '../../../connections'
-import { DidCommProofsModuleConfig } from '../../DidCommProofsModuleConfig'
-import { DidCommPresentationProblemReportReason } from '../../errors/DidCommPresentationProblemReportReason'
-import { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '../../models'
-import { DidCommProofExchangeRecord, DidCommProofExchangeRepository } from '../../repository'
-import { composeAutoAccept } from '../../utils'
-import { DidCommBaseProofProtocol } from '../DidCommBaseProofProtocol'
 
 import { DidCommProofFormatCoordinator } from './DidCommProofFormatCoordinator'
 import { V2PresentationProblemReportError } from './errors'

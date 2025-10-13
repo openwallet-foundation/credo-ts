@@ -1,4 +1,4 @@
-export * from './DidCommMediationRepository'
-export * from './DidCommMediatorRoutingRepository'
 export * from './DidCommMediationRecord'
+export * from './DidCommMediationRepository'
 export * from './DidCommMediatorRoutingRecord'
+export * from './DidCommMediatorRoutingRepository'

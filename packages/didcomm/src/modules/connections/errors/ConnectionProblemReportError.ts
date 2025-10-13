@@ -1,8 +1,7 @@
 import type { DidCommProblemReportErrorOptions } from '../../../errors'
-import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
-
 import { DidCommProblemReportError } from '../../../errors'
 import { DidCommConnectionProblemReportMessage } from '../messages'
+import type { ConnectionProblemReportReason } from './ConnectionProblemReportReason'
 
 interface ConnectionProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: ConnectionProblemReportReason

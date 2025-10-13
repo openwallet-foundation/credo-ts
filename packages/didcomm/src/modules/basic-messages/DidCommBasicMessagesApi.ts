@@ -1,10 +1,9 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommBasicMessageRecord } from './repository/DidCommBasicMessageRecord'
-
 import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections/services'
+import type { DidCommBasicMessageRecord } from './repository/DidCommBasicMessageRecord'
 import { DidCommBasicMessageService } from './services'
 
 @injectable()

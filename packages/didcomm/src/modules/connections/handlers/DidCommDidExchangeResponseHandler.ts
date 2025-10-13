@@ -1,16 +1,14 @@
 import type { DidResolverService } from '@credo-ts/core'
-import type { DidCommConnectionsModuleConfig, DidExchangeProtocol } from '..'
-import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
-import type { DidCommConnectionService } from '../services'
-
 import { CredoError } from '@credo-ts/core'
-
 import { ReturnRouteTypes } from '../../../decorators/transport/TransportDecorator'
+import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
 import { DidCommOutboundMessageContext } from '../../../models'
+import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
+import type { DidCommConnectionsModuleConfig, DidExchangeProtocol } from '..'
 import { DidCommDidExchangeResponseMessage } from '../messages'
 import { DidCommDidExchangeRole, DidCommHandshakeProtocol } from '../models'
+import type { DidCommConnectionService } from '../services'
 
 export class DidCommDidExchangeResponseHandler implements DidCommMessageHandler {
   private didExchangeProtocol: DidExchangeProtocol

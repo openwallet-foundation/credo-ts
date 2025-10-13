@@ -1,10 +1,9 @@
 import type { Observable } from 'rxjs'
+import { catchError, firstValueFrom, map, ReplaySubject, timeout } from 'rxjs'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../DidCommDiscoverFeaturesEvents'
-
-import { ReplaySubject, catchError, firstValueFrom, map, timeout } from 'rxjs'
 
 export function waitForDisclosureSubject(
   subject:

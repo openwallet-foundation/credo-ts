@@ -1,19 +1,6 @@
-import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { GetAgentMessageOptions } from '../../../../../repository'
-import type { DidCommPlaintextMessage } from '../../../../../types'
-import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type {
-  DidCommCredentialFormat,
-  DidCommCredentialFormatAcceptRequestOptions,
-  DidCommCredentialFormatCreateOfferOptions,
-  DidCommCredentialFormatService,
-} from '../../../formats'
-import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
-import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
-
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../../../core/src/error'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
@@ -27,14 +14,25 @@ import {
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { AckStatus } from '../../../../../messages'
 import { DidCommInboundMessageContext } from '../../../../../models'
+import type { GetAgentMessageOptions } from '../../../../../repository'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
+import type { DidCommPlaintextMessage } from '../../../../../types'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommConnectionService } from '../../../../connections/services/DidCommConnectionService'
-import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import type {
+  DidCommCredentialFormat,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatService,
+} from '../../../formats'
 import { DidCommCredentialFormatSpec, DidCommCredentialRole } from '../../../models'
+import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialProblemReportReason } from '../../../models/DidCommCredentialProblemReportReason'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
+import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
 import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
@@ -167,7 +165,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
   role: DidCommMessageRole.Receiver,
 })
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const getAgentMessageMock = async (_agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === DidCommProposeCredentialV2Message) {
     return credentialProposalMessage
@@ -231,7 +229,6 @@ interface TestCredentialFormat extends DidCommCredentialFormat {
 
 type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
   credentialRecordType: 'test',
   formatKey: 'test',

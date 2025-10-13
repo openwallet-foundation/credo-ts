@@ -1,11 +1,23 @@
 import type { AgentContext } from '@credo-ts/core'
+import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
 import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
+import { DidCommEventTypes } from '../../../../DidCommEvents'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
+import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommProblemReportError } from '../../../../errors'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
 import type { DidCommEncryptedMessage } from '../../../../types'
+import { DidCommRoutingProblemReportReason } from '../../../routing/error'
 import type { MessagePickupCompletedEvent } from '../../DidCommMessagePickupEvents'
+import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
+import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
+import { DidCommMessagePickupSessionRole } from '../../DidCommMessagePickupSession'
+import { DidCommMessagePickupSessionService } from '../../services'
+import { DidCommBaseMessagePickupProtocol } from '../DidCommBaseMessagePickupProtocol'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -14,21 +26,6 @@ import type {
   SetLiveDeliveryModeProtocolOptions,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../DidCommMessagePickupProtocolOptions'
-
-import { EventEmitter, injectable, verkeyToDidKey } from '@credo-ts/core'
-
-import { DidCommEventTypes } from '../../../../DidCommEvents'
-import { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommProblemReportError } from '../../../../errors'
-import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
-import { DidCommRoutingProblemReportReason } from '../../../routing/error'
-import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
-import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
-import { DidCommMessagePickupSessionRole } from '../../DidCommMessagePickupSession'
-import { DidCommMessagePickupSessionService } from '../../services'
-import { DidCommBaseMessagePickupProtocol } from '../DidCommBaseMessagePickupProtocol'
-
-import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import {
   DidCommDeliveryRequestV2Handler,
   DidCommLiveDeliveryChangeV2Handler,

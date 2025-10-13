@@ -1,10 +1,9 @@
 import type { AgentContext, BaseRecord, Kms, ResolvedDidCommService } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import type { DidCommMessage } from '../DidCommMessage'
 import type { DidCommConnectionRecord } from '../modules/connections/repository'
 import type { DidCommOutOfBandRecord } from '../modules/oob'
 import type { DidCommInboundMessageContext } from './DidCommInboundMessageContext'
-
-import { CredoError } from '@credo-ts/core'
 
 export interface ServiceMessageParams {
   senderKey: Kms.PublicJwk<Kms.Ed25519PublicJwk>
@@ -15,7 +14,7 @@ export interface ServiceMessageParams {
 export interface DidCommOutboundMessageContextParams {
   agentContext: AgentContext
   inboundMessageContext?: DidCommInboundMessageContext
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   associatedRecord?: BaseRecord<any, any, any>
   connection?: DidCommConnectionRecord
   serviceParams?: ServiceMessageParams
@@ -28,7 +27,7 @@ export class DidCommOutboundMessageContext<T extends DidCommMessage = DidCommMes
   public connection?: DidCommConnectionRecord
   public serviceParams?: ServiceMessageParams
   public outOfBand?: DidCommOutOfBandRecord
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   public associatedRecord?: BaseRecord<any, any, any>
   public sessionId?: string
   public inboundMessageContext?: DidCommInboundMessageContext

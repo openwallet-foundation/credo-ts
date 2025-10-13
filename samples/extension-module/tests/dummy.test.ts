@@ -1,11 +1,9 @@
-import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-
 import { Agent } from '@credo-ts/core'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-
 import { getAgentOptions, makeConnection } from '../../../packages/core/tests/helpers'
 import testLogger from '../../../packages/core/tests/logger'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
 import { DummyModule } from '../dummy/DummyModule'

@@ -1,9 +1,8 @@
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
-
-import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 
 export class DidCommOfferCredentialV2Handler implements DidCommMessageHandler {

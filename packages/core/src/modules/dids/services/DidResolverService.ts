@@ -1,7 +1,4 @@
 import type { AgentContext } from '../../../agent'
-import type { DidResolver } from '../domain/DidResolver'
-import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
-
 import { InjectionSymbols } from '../../../constants'
 import { CredoError } from '../../../error'
 import type { Logger } from '../../../logger'
@@ -10,8 +7,10 @@ import { JsonTransformer } from '../../../utils'
 import { CacheModuleConfig } from '../../cache'
 import { DidsModuleConfig } from '../DidsModuleConfig'
 import { DidDocument } from '../domain'
+import type { DidResolver } from '../domain/DidResolver'
 import { parseDid } from '../domain/parse'
 import { DidRepository } from '../repository'
+import type { DidResolutionOptions, DidResolutionResult, ParsedDid } from '../types'
 
 @injectable()
 export class DidResolverService {

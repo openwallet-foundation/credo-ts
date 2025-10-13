@@ -1,15 +1,8 @@
-import type { W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential } from '../../vc'
-import type {
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  VerifiablePresentation,
-} from '../models'
-
 import { JSONPath } from '@astronautlabs/jsonpath'
-
 import { CredoError } from '../../../error'
 import type { SingleOrArray } from '../../../types'
 import { MdocDeviceResponse } from '../../mdoc'
+import type { W3cJsonLdVerifiableCredential, W3cJwtVerifiableCredential } from '../../vc'
 import {
   ClaimFormat,
   W3cJsonLdVerifiablePresentation,
@@ -17,6 +10,11 @@ import {
   W3cV2JwtVerifiablePresentation,
 } from '../../vc'
 import { W3cV2SdJwtVerifiablePresentation } from '../../vc/sd-jwt-vc'
+import type {
+  DifPresentationExchangeDefinition,
+  DifPresentationExchangeSubmission,
+  VerifiablePresentation,
+} from '../models'
 
 export type DifPexPresentationWithDescriptor = ReturnType<
   typeof extractPresentationsWithDescriptorsFromSubmission

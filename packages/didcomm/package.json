@@ -5,7 +5,9 @@
     "import": "./src/index.ts"
   },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
     "access": "public",
@@ -35,14 +37,14 @@
     "@credo-ts/core": "workspace:*",
     "class-transformer": "catalog:",
     "class-validator": "catalog:",
-    "luxon": "^3.5.0",
-    "query-string": "^7.0.1",
+    "luxon": "^3.7.2",
+    "query-string": "^9.3.1",
     "rxjs": "catalog:"
   },
   "devDependencies": {
     "@animo-id/pex": "catalog:",
     "@sphereon/pex-models": "catalog:",
-    "@types/luxon": "^3.2.0",
+    "@types/luxon": "^3.7.1",
     "reflect-metadata": "catalog:",
     "typescript": "catalog:"
   }

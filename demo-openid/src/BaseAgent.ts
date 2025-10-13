@@ -1,12 +1,10 @@
-import type { Server } from 'http'
+import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
 import type { InitConfig, KeyDidCreateOptions, ModulesMap, VerificationMethod } from '@credo-ts/core'
-import type { Express } from 'express'
-
 import { Agent, Buffer, ConsoleLogger, DidKey, LogLevel } from '@credo-ts/core'
 import { agentDependencies } from '@credo-ts/node'
+import type { Express } from 'express'
 import express from 'express'
-
-import { transformPrivateKeyToPrivateJwk } from '@credo-ts/askar'
+import type { Server } from 'http'
 import { greenText } from './OutputClass'
 
 export class BaseAgent<AgentModules extends ModulesMap> {

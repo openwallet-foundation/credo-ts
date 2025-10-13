@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import type {
   DidCommFormatCreateRequestOptions,
   DidCommProofFormatAcceptProposalOptions,
@@ -16,6 +17,7 @@ import type {
   DidCommProofFormatSelectCredentialsForRequestReturn,
   DidCommProofFormatService,
 } from '@credo-ts/didcomm'
+import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
 import type {
   AnonCredsCredentialDefinition,
   AnonCredsCredentialInfo,
@@ -28,17 +30,8 @@ import type {
   AnonCredsSchema,
   AnonCredsSelectedCredentials,
 } from '../models'
-import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsForProofRequestReturn } from '../services'
-import type {
-  AnonCredsCredentialsForProofRequest,
-  AnonCredsGetCredentialsForProofRequestOptions,
-} from './AnonCredsDidCommProofFormat'
-import type { LegacyIndyDidCommProofFormat } from './LegacyIndyDidCommProofFormat'
-
-import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
-import { DidCommAttachment, DidCommAttachmentData, DidCommProofFormatSpec } from '@credo-ts/didcomm'
-
 import { AnonCredsProofRequest as AnonCredsProofRequestClass } from '../models/AnonCredsProofRequest'
+import type { AnonCredsHolderService, AnonCredsVerifierService, GetCredentialsForProofRequestReturn } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import {
   areAnonCredsProofRequestsEqual,
@@ -62,6 +55,11 @@ import {
   isUnqualifiedSchemaId,
 } from '../utils/indyIdentifiers'
 import { dateToTimestamp } from '../utils/timestamp'
+import type {
+  AnonCredsCredentialsForProofRequest,
+  AnonCredsGetCredentialsForProofRequestOptions,
+} from './AnonCredsDidCommProofFormat'
+import type { LegacyIndyDidCommProofFormat } from './LegacyIndyDidCommProofFormat'
 
 const V2_INDY_PRESENTATION_PROPOSAL = 'hlindy/proof-req@v2.0'
 const V2_INDY_PRESENTATION_REQUEST = 'hlindy/proof-req@v2.0'
@@ -547,7 +545,7 @@ export class LegacyIndyDidCommProofFormatService implements DidCommProofFormatSe
     )
 
     // Item is revoked when the value at the index is 1
-    const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId)] === 1
+    const isRevoked = revocationStatusList.revocationList[Number.parseInt(credentialRevocationId, 10)] === 1
 
     agentContext.config.logger.trace(
       `Credential with credential revocation index '${credentialRevocationId}' is ${

@@ -1,9 +1,8 @@
-import type { CredentialRecordBinding } from '../../../modules/credentials'
-
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
+import type { CredentialRecordBinding } from '../../../modules/credentials'
 import { DidCommCredentialExchangeRecord, DidCommCredentialState } from '../../../modules/credentials'
 import { DidCommCredentialExchangeRepository } from '../../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRole } from '../../../repository'
@@ -502,13 +501,13 @@ function getCredential({
   metadata?: Record<string, unknown>
   credentialId?: string
   protocolVersion?: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   proposalMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   offerMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   requestMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   credentialMessage?: any
   state?: DidCommCredentialState
   credentials?: CredentialRecordBinding[]

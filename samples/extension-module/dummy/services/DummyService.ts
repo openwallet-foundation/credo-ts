@@ -1,14 +1,12 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '@credo-ts/didcomm'
-import type { DummyStateChangedEvent } from './DummyEvents'
-
 import { EventEmitter, injectable } from '@credo-ts/core'
-
+import type { DidCommConnectionRecord, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { DummyModuleConfig } from '../DummyModuleConfig'
 import { DummyRequestMessage, DummyResponseMessage } from '../messages'
 import { DummyRecord } from '../repository/DummyRecord'
 import { DummyRepository } from '../repository/DummyRepository'
 import { DummyState } from '../repository/DummyState'
+import type { DummyStateChangedEvent } from './DummyEvents'
 
 import { DummyEventTypes } from './DummyEvents'
 

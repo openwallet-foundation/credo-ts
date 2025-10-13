@@ -1,11 +1,8 @@
-import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
-import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
-
 import { AgentContext, type InjectionToken, injectable } from '@credo-ts/core'
-
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
+import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
 import {
   type DefaultDidCommMessagePickupProtocols,
   type DefaultDidCommProofProtocols,
@@ -26,6 +23,7 @@ import type { DefaultDidCommCredentialProtocols } from './modules/credentials/Di
 import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
 import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
 import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
+import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
 
 type ApiOrUndefined<Config, Api> = Config extends false ? never : Api
 

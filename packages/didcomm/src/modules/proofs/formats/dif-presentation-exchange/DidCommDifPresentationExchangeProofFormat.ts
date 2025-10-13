@@ -8,7 +8,7 @@ import type { DidCommProofFormat } from '../DidCommProofFormat'
 
 export type DifPresentationExchangeProposal = DifPresentationExchangeDefinitionV1
 
-// biome-ignore lint/complexity/noBannedTypes: <explanation>
+// biome-ignore lint/complexity/noBannedTypes: no explanation
 export type DifPexGetCredentialsForProofRequestOptions = {}
 
 export type DifPresentationExchangeRequest = {

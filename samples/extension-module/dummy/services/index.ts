@@ -1,2 +1,2 @@
-export * from './DummyService'
 export * from './DummyEvents'
+export * from './DummyService'

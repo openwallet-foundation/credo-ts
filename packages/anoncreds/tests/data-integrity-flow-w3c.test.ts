@@ -1,6 +1,4 @@
 import type { DidRepository, SuiteInfo } from '@credo-ts/core'
-import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
-
 import {
   AgentContext,
   DidResolverService,
@@ -24,11 +22,15 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
+import { askar } from '@openwallet-foundation/askar-nodejs'
 import { Subject } from 'rxjs'
 
 import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
 import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
 import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
+import { AskarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
+import type { CreateDidKidVerificationMethodReturn } from '../../core/tests'
 import {
   agentDependencies,
   createDidKidVerificationMethod,
@@ -45,12 +47,8 @@ import {
 } from '../src'
 import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
-
-import { askar } from '@openwallet-foundation/askar-nodejs'
-import { AskarModuleConfig } from '../../askar/src/AskarModuleConfig'
-import { AskarKeyManagementService } from '../../askar/src/kms/AskarKeyManagementService'
-import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { anoncreds } from './helpers'
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()

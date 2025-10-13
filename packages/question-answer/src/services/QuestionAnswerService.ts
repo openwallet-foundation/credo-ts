@@ -1,14 +1,12 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
-import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
+import { AnswerMessage, QuestionMessage } from '../messages'
 import type { ValidResponse } from '../models'
-
-import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
-
+import { QuestionAnswerState } from '../models'
+import type { QuestionAnswerStateChangedEvent } from '../QuestionAnswerEvents'
 import { QuestionAnswerEventTypes } from '../QuestionAnswerEvents'
 import { QuestionAnswerRole } from '../QuestionAnswerRole'
-import { AnswerMessage, QuestionMessage } from '../messages'
-import { QuestionAnswerState } from '../models'
 import { QuestionAnswerRecord, QuestionAnswerRepository } from '../repository'
 
 @injectable()

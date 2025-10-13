@@ -1,5 +1,3 @@
-import type { Module } from '../../plugins'
-
 import { CacheModule } from '../../modules/cache'
 import { DcqlModule } from '../../modules/dcql'
 import { DidsModule } from '../../modules/dids'
@@ -10,6 +8,7 @@ import { MdocModule } from '../../modules/mdoc'
 import { SdJwtVcModule } from '../../modules/sd-jwt-vc'
 import { W3cCredentialsModule } from '../../modules/vc'
 import { X509Module } from '../../modules/x509'
+import type { Module } from '../../plugins'
 import { DependencyManager, injectable } from '../../plugins'
 import { extendModulesWithDefaultModules, getAgentApi } from '../AgentModules'
 

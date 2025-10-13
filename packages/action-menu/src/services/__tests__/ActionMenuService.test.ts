@@ -1,11 +1,7 @@
 import type { AgentConfig, AgentContext, Repository } from '@credo-ts/core'
-import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
-import type { ActionMenuSelection } from '../../models'
-
 import { EventEmitter } from '@credo-ts/core'
 import { DidCommDidExchangeState, DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../tests/types'
 import {
   agentDependencies,
@@ -14,11 +10,13 @@ import {
   getMockConnection,
   mockFunction,
 } from '../../../../core/tests/helpers'
+import type { ActionMenuStateChangedEvent } from '../../ActionMenuEvents'
 import { ActionMenuEventTypes } from '../../ActionMenuEvents'
 import { ActionMenuRole } from '../../ActionMenuRole'
 import { ActionMenuState } from '../../ActionMenuState'
 import { ActionMenuProblemReportError } from '../../errors/ActionMenuProblemReportError'
 import { MenuMessage, MenuRequestMessage, PerformMessage } from '../../messages'
+import type { ActionMenuSelection } from '../../models'
 import { ActionMenu } from '../../models'
 import { ActionMenuRecord, ActionMenuRepository } from '../../repository'
 import { ActionMenuService } from '../ActionMenuService'

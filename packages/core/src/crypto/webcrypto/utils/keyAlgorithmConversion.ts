@@ -1,10 +1,7 @@
 import { RSAPublicKey } from '@peculiar/asn1-rsa'
-import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
-import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
-
 import { AsnParser, AsnSerializer } from '@peculiar/asn1-schema'
-import { type KmsCreateKeyType, PublicJwk, getJwkHumanDescription } from '../../../modules/kms'
-import { CredoWebCryptoError } from '../CredoWebCryptoError'
+import { AlgorithmIdentifier, SubjectPublicKeyInfo } from '@peculiar/asn1-x509'
+import { getJwkHumanDescription, type KmsCreateKeyType, PublicJwk } from '../../../modules/kms'
 import {
   ecPublicKeyWithK256AlgorithmIdentifier,
   ecPublicKeyWithP256AlgorithmIdentifier,
@@ -14,6 +11,8 @@ import {
   rsaKeyAlgorithmIdentifier,
   x25519AlgorithmIdentifier,
 } from '../algorithmIdentifiers'
+import { CredoWebCryptoError } from '../CredoWebCryptoError'
+import type { EcKeyGenParams, KeyGenAlgorithm, RsaHashedKeyGenParams } from '../types'
 
 export const publicJwkToCryptoKeyAlgorithm = (key: PublicJwk): KeyGenAlgorithm => {
   const publicJwk = key.toJson()
@@ -164,8 +163,8 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
   if (publicKey.kty === 'RSA') {
     const rsaPublicKey = new RSAPublicKey({
-      modulus: publicKey.modulus,
-      publicExponent: publicKey.exponent,
+      modulus: new Uint8Array(publicKey.modulus).buffer,
+      publicExponent: new Uint8Array(publicKey.exponent).buffer,
     })
 
     // 2. Encode the RSA public key to DER
@@ -173,7 +172,7 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
     return new SubjectPublicKeyInfo({
       algorithm: rsaKeyAlgorithmIdentifier,
-      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]),
+      subjectPublicKey: new Uint8Array([0, ...new Uint8Array(rsaPublicKeyDer)]).buffer,
     })
   }
 
@@ -188,6 +187,6 @@ export const publicJwkToSpki = (publicJwk: PublicJwk): SubjectPublicKeyInfo => {
 
   return new SubjectPublicKeyInfo({
     algorithm: crvToAlgorithm[publicKey.crv],
-    subjectPublicKey: publicKey.publicKey,
+    subjectPublicKey: new Uint8Array(publicKey.publicKey).buffer,
   })
 }

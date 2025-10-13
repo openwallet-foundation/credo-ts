@@ -1,9 +1,8 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { QuestionAnswerRecord } from './repository'
-
 import { AgentContext, injectable } from '@credo-ts/core'
 import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 import { ValidResponse } from './models'
+import type { QuestionAnswerRecord } from './repository'
 import { QuestionAnswerService } from './services'
 
 @injectable()

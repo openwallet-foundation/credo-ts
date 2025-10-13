@@ -10,9 +10,9 @@ import type {
   VerifiablePresentation,
 } from '@credo-ts/core'
 import type {
+  createOpenid4vpAuthorizationRequest,
   TransactionDataEntry,
   VerifierAttestations,
-  createOpenid4vpAuthorizationRequest,
 } from '@openid4vc/openid4vp'
 import type { NonEmptyArray } from '@openid4vc/utils'
 import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'

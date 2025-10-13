@@ -1,15 +1,13 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-import type { DidCommConnectionRecord } from '../../connections'
-
 import { Agent, RecordNotFoundError } from '@credo-ts/core'
 import { Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
 import { getAgentOptions, makeConnection, waitForBasicMessage } from '../../../../../core/tests/helpers'
 import testLogger from '../../../../../core/tests/logger'
 import { DidCommModule } from '../../../DidCommModule'
 import { MessageSendingError } from '../../../errors'
+import type { DidCommConnectionRecord } from '../../connections'
 import { DidCommBasicMessage } from '../messages'
 import { DidCommBasicMessageRecord } from '../repository'
 

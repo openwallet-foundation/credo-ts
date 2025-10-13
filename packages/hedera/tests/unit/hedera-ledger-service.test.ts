@@ -4,9 +4,15 @@ import type {
   RegisterRevocationStatusListOptions,
   RegisterSchemaOptions,
 } from '@credo-ts/anoncreds'
-import { DidDocument, DidRecord, DidRepository, TypedArrayEncoder } from '@credo-ts/core'
-import { AgentContext } from '@credo-ts/core'
-import { type DidDocumentKey, Kms } from '@credo-ts/core'
+import {
+  AgentContext,
+  DidDocument,
+  type DidDocumentKey,
+  DidRecord,
+  DidRepository,
+  Kms,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { Client, PrivateKey } from '@hashgraph/sdk'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
@@ -38,15 +44,15 @@ vi.mock('@hiero-did-sdk/registrar', () => ({
 
 import {
   type CreateDIDRequest,
-  DIDUpdateBuilder,
   type DeactivateDIDRequest,
-  type UpdateDIDRequest,
+  DIDUpdateBuilder,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
   generateUpdateDIDRequest,
   submitCreateDIDRequest,
   submitDeactivateDIDRequest,
   submitUpdateDIDRequest,
+  type UpdateDIDRequest,
 } from '@hiero-did-sdk/registrar'
 
 vi.mock('@hiero-did-sdk/resolver', () => ({
@@ -54,9 +60,8 @@ vi.mock('@hiero-did-sdk/resolver', () => ({
   TopicReaderHederaHcs: vi.fn(),
 }))
 
-import { resolveDID } from '@hiero-did-sdk/resolver'
-
 import { DID_ROOT_KEY_ID } from '@hiero-did-sdk/core'
+import { resolveDID } from '@hiero-did-sdk/resolver'
 import type { MockInstance } from 'vitest'
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
@@ -134,22 +139,22 @@ describe('HederaLedgerService', () => {
   })
   const builder: DIDUpdateBuilder = new DIDUpdateBuilder()
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   vi.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
     const mockClient = {} as Client
-    // @ts-ignore
+    // @ts-expect-error
     return operation(mockClient)
   })
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   vi.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   vi.spyOn(service as any, 'getPublisher').mockResolvedValue({})
 
   describe('resolveDid', () =>
     it('should call resolveDID with proper args and returns result', async () => {
-      // @ts-ignore - there is a conflict with 'resolveDID' "overloaded" signatures
+      // @ts-expect-error - there is a conflict with 'resolveDID' "overloaded" signatures
       mockFunction(resolveDID).mockResolvedValueOnce(didDocument)
 
       const result = await service.resolveDid(mockAgentContext, did)
@@ -271,7 +276,7 @@ describe('HederaLedgerService', () => {
       for (const [property, action, param, spy] of testCases) {
         vi.clearAllMocks()
 
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         const builderMethod = (service as any).getUpdateMethod(builder, property, action)
 
         const result = builderMethod(param)
@@ -288,7 +293,7 @@ describe('HederaLedgerService', () => {
     it('should return builder unchanged for unknown property', () => {
       const unknownProperty = 'unknown-property'
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const builderMethod = (service as any).getUpdateMethod(builder, unknownProperty, 'add')
       const result = builderMethod({})
 
@@ -319,17 +324,17 @@ describe('HederaLedgerService', () => {
         signingRequest: { serializedPayload: new Uint8Array() },
       } as unknown as UpdateDIDRequest
 
-      // @ts-ignore - there is a conflict with 'resolveDID' "overloaded" signatures
+      // @ts-expect-error - there is a conflict with 'resolveDID' "overloaded" signatures
       mockFunction(resolveDID).mockResolvedValueOnce({ didDocument })
 
       vi
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         .spyOn(service as any, 'prepareDidUpdates')
         .mockReturnValueOnce({ build: vi.fn().mockReturnValueOnce(updatedDidDocument) })
 
       mockFunction(generateUpdateDIDRequest).mockResolvedValueOnce(updateDidRequest)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       vi.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
       mockFunction(submitUpdateDIDRequest).mockResolvedValueOnce({ did, didDocument: updatedDidDocument })
 
@@ -342,7 +347,7 @@ describe('HederaLedgerService', () => {
         })
       ).resolves.toHaveProperty('did', did)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       expect((service as any).prepareDidUpdates).toHaveBeenCalled()
       expect(generateUpdateDIDRequest).toHaveBeenCalled()
       expect(submitUpdateDIDRequest).toHaveBeenCalled()
@@ -519,11 +524,10 @@ describe('HederaLedgerService', () => {
 
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const result = await (service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
 
       expect(mockDidRepository.findCreatedDid).toHaveBeenCalledWith(mockAgentContext, 'issuer-id')
-      // @ts-ignore
       expect(mockKms.getPublicKey).toHaveBeenCalledWith({ keyId: 'kms-key-id' })
       expect(await result.publicKey()).toEqual(privateKey.publicKey.toStringDer())
     })
@@ -534,7 +538,7 @@ describe('HederaLedgerService', () => {
       } as unknown as DidRecord
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )
@@ -543,7 +547,7 @@ describe('HederaLedgerService', () => {
     it('should throw error if didRecord is null or undefined', async () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(null)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )

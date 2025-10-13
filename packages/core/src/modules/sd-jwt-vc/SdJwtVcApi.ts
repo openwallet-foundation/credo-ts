@@ -1,4 +1,7 @@
+import { AgentContext } from '../../agent'
+import { injectable } from '../../plugins'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { SdJwtVcRecord } from './repository'
 import type {
   SdJwtVcHeader,
   SdJwtVcPayload,
@@ -6,10 +9,6 @@ import type {
   SdJwtVcSignOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-import type { SdJwtVcRecord } from './repository'
-
-import { AgentContext } from '../../agent'
-import { injectable } from '../../plugins'
 
 import { SdJwtVcService } from './SdJwtVcService'
 

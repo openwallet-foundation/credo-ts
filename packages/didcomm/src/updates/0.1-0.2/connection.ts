@@ -1,6 +1,4 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { DidCommConnectionRecord } from '../../modules/connections'
-
 import {
   DidDocumentRole,
   DidKey,
@@ -10,6 +8,7 @@ import {
   JsonEncoder,
   JsonTransformer,
 } from '@credo-ts/core'
+import type { DidCommConnectionRecord } from '../../modules/connections'
 
 import {
   DidCommConnectionInvitationMessage,
@@ -202,7 +201,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(
 
     agent.config.logger.debug('Deleting old did document from connection record and storing new did:peer did')
     // Remove didDoc and assign the new did:peer did to did
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.didDoc
     connectionRecord.did = newOurDidDocument.id
   } else {
@@ -254,7 +253,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(
 
     agent.config.logger.debug('Deleting old theirDidDoc from connection record and storing new did:peer theirDid')
     // Remove theirDidDoc and assign the new did:peer did to theirDid
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.theirDidDoc
     connectionRecord.theirDid = newTheirDidDocument.id
   } else {
@@ -264,7 +263,7 @@ export async function extractDidDocument<Agent extends BaseAgent>(
   }
 
   // Delete legacy verkey property
-  // biome-ignore lint/performance/noDelete: <explanation>
+  // biome-ignore lint/performance/noDelete: no explanation
   delete untypedConnectionRecord.verkey
 }
 
@@ -331,7 +330,7 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     const recipientKeyFingerprints = outOfBandInvitation
       .getInlineServices()
       .map((s) => s.recipientKeys)
-      // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+      // biome-ignore lint/performance/noAccumulatingSpread: no explanation
       .reduce((acc, curr) => [...acc, ...curr], [])
       .map((didKey) => DidKey.fromDid(didKey).publicJwk.fingerprint)
 
@@ -402,14 +401,14 @@ export async function migrateToOobRecord<Agent extends BaseAgent>(
     connectionRecord.invitationDid = invitationDid
 
     // Remove invitation and assign the oob id to the connection record
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedConnectionRecord.invitation
     connectionRecord.outOfBandId = oobRecord.id
   }
 
   agent.config.logger.debug('Removing multiUseInvitation property from connection record')
   // multiUseInvitation is now stored as reusable in the out of band record
-  // biome-ignore lint/performance/noDelete: <explanation>
+  // biome-ignore lint/performance/noDelete: no explanation
   delete untypedConnectionRecord.multiUseInvitation
 
   return connectionRecord

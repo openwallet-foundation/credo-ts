@@ -1,11 +1,9 @@
-import type { NextFunction, Request, Response, Router } from 'express'
-import type { OpenId4VcVerificationRequest } from './requestContext'
-
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError, decodeJwtHeader } from '@openid4vc/oauth2'
-
 import { AgentContext, TypedArrayEncoder } from '@credo-ts/core'
+import { decodeJwtHeader, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 // FIXME: export parseOpenid4VpAuthorizationResponsePayload from openid4vp
 import { zOpenid4vpAuthorizationResponse } from '@openid4vc/openid4vp'
+import { ValidationError } from '@openid4vc/utils'
+import type { NextFunction, Request, Response, Router } from 'express'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -13,22 +11,21 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
+import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import {
   OpenId4VcVerificationSessionRecord,
   OpenId4VcVerificationSessionRepository,
   OpenId4VcVerifierRecord,
 } from '../repository'
-
-import { ValidationError } from '@openid4vc/utils'
-import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+import type { OpenId4VcVerificationRequest } from './requestContext'
 
 export function configureAuthorizationEndpoint(router: Router, config: OpenId4VcVerifierModuleConfig) {
   router.post(config.authorizationEndpoint, async (request: OpenId4VcVerificationRequest, response: Response, next) => {
     const { agentContext, verifier } = getRequestContext(request)
     const openId4VcVerifierService = agentContext.dependencyManager.resolve(OpenId4VpVerifierService)
 
-    let authorizationResponseRedirectUri: string | undefined = undefined
+    let authorizationResponseRedirectUri: string | undefined
 
     try {
       const result = await getVerificationSession(agentContext, request, response, next, verifier)

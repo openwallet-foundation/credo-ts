@@ -1,7 +1,7 @@
 import { BaseRecord, type Query } from '@credo-ts/core'
-import { SQL, type SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
-import { sqliteTable } from 'drizzle-orm/sqlite-core'
+import { and, eq, not, or, SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import type { AnySQLiteColumn, SQLiteColumn } from 'drizzle-orm/sqlite-core'
+import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import { CredoDrizzleStorageError } from '../error'
 import { getSqliteBaseRecordTable } from '../sqlite'
 import type { DrizzleCustomTagKeyMapping } from './queryToDrizzlePostgres'
@@ -50,7 +50,7 @@ function jsonArrayContainsAll<T extends AnySQLiteColumn>(column: T, tag: string,
  * Converts a WQL object to Drizzle SQLite where conditions
  */
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function queryToDrizzleSqlite<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
   query: Query<CredoRecord>,
   table: ReturnType<typeof sqliteTable<string, ReturnType<typeof getSqliteBaseRecordTable>>>,

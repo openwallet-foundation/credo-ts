@@ -2,17 +2,15 @@ import {
   AgentContext,
   CredoError,
   InjectionSymbols,
+  inject,
+  injectable,
   JsonEncoder,
   Kms,
+  type Logger,
   RecordNotFoundError,
   TypedArrayEncoder,
-  inject,
 } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
-import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
-
-import { type Logger, injectable } from '@credo-ts/core'
-
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
 import { DidCommOutOfBandRole } from './modules/oob/domain/DidCommOutOfBandRole'
@@ -21,6 +19,7 @@ import { DidCommOutOfBandRecordMetadataKeys } from './modules/oob/repository/out
 import { DidCommForwardMessage } from './modules/routing/messages/DidCommForwardMessage'
 import { DidCommMediatorRoutingRepository } from './modules/routing/repository/DidCommMediatorRoutingRepository'
 import { DidCommDocumentService } from './services/DidCommDocumentService'
+import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
 export interface EnvelopeKeys {
   recipientKeys: Kms.PublicJwk<Kms.Ed25519PublicJwk>[]
@@ -62,7 +61,7 @@ export class DidCommEnvelopeService {
     }> = []
 
     for (const recipientKey of recipientKeys) {
-      let encryptedSender: string | undefined = undefined
+      let encryptedSender: string | undefined
 
       if (senderKey) {
         // Encrypt the sender
@@ -183,7 +182,7 @@ export class DidCommEnvelopeService {
       throw new CredoError('Sender and iv header values are required for Authcrypt')
     }
 
-    let senderPublicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined = undefined
+    let senderPublicJwk: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined
     if (recipient.header.sender) {
       const { data } = await kms.decrypt({
         key: {

@@ -1,8 +1,7 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
+import { DidCommOutboundMessageContext } from '../../../../../models'
 import type { DidCommProofExchangeRecord } from '../../../repository/DidCommProofExchangeRecord'
 import type { DidCommProofV2Protocol } from '../DidCommProofV2Protocol'
-
-import { DidCommOutboundMessageContext } from '../../../../../models'
 import { DidCommProposePresentationV2Message } from '../messages/DidCommProposePresentationV2Message'
 
 export class DidCommProposePresentationV2Handler implements DidCommMessageHandler {

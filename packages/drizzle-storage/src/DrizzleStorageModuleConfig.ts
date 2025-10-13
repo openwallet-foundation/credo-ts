@@ -1,10 +1,10 @@
-import { type DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
-import type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 import type { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
 import { coreBundle } from './core/bundle'
+import { type DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
+import type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type AnyDrizzleDatabase = DrizzleDatabase<any, any>
 
 export interface DrizzleStorageModuleConfigOptions<Database extends AnyDrizzleDatabase = AnyDrizzleDatabase> {

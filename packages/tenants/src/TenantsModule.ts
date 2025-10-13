@@ -1,14 +1,12 @@
 import type { Constructor, DependencyManager, EmptyModuleMap, Module, ModulesMap, Update } from '@credo-ts/core'
-import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
-
 import { AgentConfig, InjectionSymbols } from '@credo-ts/core'
-
-import { TenantsApi } from './TenantsApi'
-import { TenantsModuleConfig } from './TenantsModuleConfig'
 import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
 import { TenantSessionCoordinator } from './context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from './repository'
 import { TenantRecordService } from './services'
+import { TenantsApi } from './TenantsApi'
+import type { TenantsModuleConfigOptions } from './TenantsModuleConfig'
+import { TenantsModuleConfig } from './TenantsModuleConfig'
 import { updateTenantsModuleV0_4ToV0_5 } from './updates/0.4-0.5'
 
 export class TenantsModule<AgentModules extends ModulesMap = EmptyModuleMap> implements Module {

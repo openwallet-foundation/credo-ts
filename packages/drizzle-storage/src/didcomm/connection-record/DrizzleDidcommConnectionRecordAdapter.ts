@@ -1,8 +1,6 @@
 import { JsonTransformer, type TagsBase } from '@credo-ts/core'
-
-import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
-
 import { DidCommConnectionRecord } from '@credo-ts/didcomm'
+import { BaseDrizzleRecordAdapter, type DrizzleAdapterRecordValues } from '../../adapter/BaseDrizzleRecordAdapter'
 import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
@@ -54,7 +52,7 @@ export class DrizzleDidcommConnectionRecordAdapter extends BaseDrizzleRecordAdap
       theirLabel: record.theirLabel,
       protocol: record.protocol,
       // TOOD: Fix types
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       customTags: customTags as any,
     }
   }

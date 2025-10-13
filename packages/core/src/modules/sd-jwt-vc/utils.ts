@@ -1,11 +1,10 @@
 import type { Signer, Verifier } from '@sd-jwt/types'
-import type { SdJwtVcHolderBinding } from './SdJwtVcOptions'
-
 import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { TypedArrayEncoder } from '../../utils'
 import { DidResolverService, DidsApi, getPublicJwkFromVerificationMethod, parseDid } from '../dids'
 import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
+import type { SdJwtVcHolderBinding } from './SdJwtVcOptions'
 
 export async function resolveSigningPublicJwkFromDidUrl(agentContext: AgentContext, didUrl: string) {
   const dids = agentContext.dependencyManager.resolve(DidsApi)

@@ -1,16 +1,12 @@
 import type { DependencyManager } from '@credo-ts/core'
-import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry } from '@credo-ts/didcomm'
-
-import { DidCommProtocol } from '@credo-ts/didcomm'
-
-import { getAgentContext } from '../../../core/tests'
-
+import { DidCommFeatureRegistry, DidCommMessageHandlerRegistry, DidCommProtocol } from '@credo-ts/didcomm'
 import {
   QuestionAnswerModule,
   QuestionAnswerRepository,
   QuestionAnswerRole,
   QuestionAnswerService,
 } from '@credo-ts/question-answer'
+import { getAgentContext } from '../../../core/tests'
 
 const featureRegistry = {
   register: vi.fn(),

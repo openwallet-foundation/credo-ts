@@ -1,9 +1,8 @@
 import type { Constructor } from '@credo-ts/core'
-import type { ParsedMessageType } from './util/messageType'
-
 import { utils } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { Matches } from 'class-validator'
+import type { ParsedMessageType } from './util/messageType'
 
 export const MessageIdRegExp = /[-_./a-zA-Z0-9]{8,64}/
 export const MessageTypeRegExp = /(.*?)([a-zA-Z0-9._-]+)\/(\d[^/]*)\/([a-zA-Z0-9._-]+)$/

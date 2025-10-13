@@ -1,8 +1,7 @@
-import type { LegacyIndyProofRequest } from '../../../../formats'
-
 import { DidCommAttachment, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import type { LegacyIndyProofRequest } from '../../../../formats'
 
 export interface DidCommRequestPresentationV1MessageOptions {
   id?: string

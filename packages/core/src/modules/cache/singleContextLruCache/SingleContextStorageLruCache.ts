@@ -1,10 +1,8 @@
+import LRUMap from 'lru_map'
 import type { AgentContext } from '../../../agent/context'
+import { CredoError, RecordDuplicateError } from '../../../error'
 import type { Cache } from '../Cache'
 import type { SingleContextLruCacheItem } from './SingleContextLruCacheRecord'
-
-import LRUMap from 'lru_map'
-
-import { CredoError, RecordDuplicateError } from '../../../error'
 
 import { SingleContextLruCacheRecord } from './SingleContextLruCacheRecord'
 import { SingleContextLruCacheRepository } from './SingleContextLruCacheRepository'
@@ -64,7 +62,7 @@ export class SingleContextStorageLruCache implements Cache {
   ): Promise<void> {
     this.assertContextCorrelationId(agentContext)
 
-    let expiresDate = undefined
+    let expiresDate: Date | undefined
 
     if (expiresInSeconds) {
       expiresDate = new Date()

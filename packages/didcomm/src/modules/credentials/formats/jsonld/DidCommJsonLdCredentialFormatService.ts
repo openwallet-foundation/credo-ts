@@ -1,4 +1,19 @@
 import type { AgentContext } from '@credo-ts/core'
+import {
+  ClaimFormat,
+  CredoError,
+  DidResolverService,
+  findVerificationMethodByKeyType,
+  JsonEncoder,
+  JsonTransformer,
+  utils,
+  W3cCredential,
+  W3cCredentialService,
+  W3cJsonLdCredentialService,
+  W3cJsonLdVerifiableCredential,
+} from '@credo-ts/core'
+import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
 import type { DidCommCredentialFormatService } from '../DidCommCredentialFormatService'
 import type {
   DidCommCredentialFormatAcceptOfferOptions,
@@ -17,31 +32,13 @@ import type {
   DidCommCredentialFormatProcessCredentialOptions,
   DidCommCredentialFormatProcessOptions,
 } from '../DidCommCredentialFormatServiceOptions'
+import { DidCommJsonLdCredentialDetail } from './DidCommJsonLdCredentialDetail'
 import type {
   DidCommJsonLdCredentialFormat,
   JsonCredential,
   JsonLdFormatDataCredentialDetail,
   JsonLdFormatDataVerifiableCredential,
 } from './DidCommJsonLdCredentialFormat'
-
-import {
-  ClaimFormat,
-  CredoError,
-  DidResolverService,
-  JsonEncoder,
-  JsonTransformer,
-  W3cCredential,
-  W3cCredentialService,
-  W3cJsonLdCredentialService,
-  W3cJsonLdVerifiableCredential,
-  findVerificationMethodByKeyType,
-  utils,
-} from '@credo-ts/core'
-
-import { DidCommAttachment, DidCommAttachmentData } from '../../../../decorators/attachment/DidCommAttachment'
-import { DidCommCredentialFormatSpec } from '../../models/DidCommCredentialFormatSpec'
-
-import { DidCommJsonLdCredentialDetail } from './DidCommJsonLdCredentialDetail'
 
 const JSONLD_VC_DETAIL = 'aries/ld-proof-vc-detail@v1.0'
 const JSONLD_VC = 'aries/ld-proof-vc@v1.0'

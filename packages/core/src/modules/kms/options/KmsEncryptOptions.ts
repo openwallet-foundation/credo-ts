@@ -1,8 +1,10 @@
 import { z } from 'zod'
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../types'
+import { zAnyUint8Array } from '../../../utils/zod'
 import { KnownJwaContentEncryptionAlgorithms } from '../jwk/jwa'
 import { zKmsJwkPrivateOct } from '../jwk/kty/oct/octJwk'
-import { zKmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 import { zKmsKeyId } from './common'
+import { zKmsKeyAgreementEncryptOptions } from './KmsKeyAgreementEncryptOptions'
 
 const zKmsEncryptDataEncryptionAesGcm = z.object({
   // AES-GCM Content Encryption
@@ -12,15 +14,15 @@ const zKmsEncryptDataEncryptionAesGcm = z.object({
     KnownJwaContentEncryptionAlgorithms.A256GCM,
   ]),
 
-  iv: z.optional(z.instanceof(Uint8Array).refine((iv) => iv.length === 12, 'iv must be 12 bytes for AES GCM')),
-  aad: z.optional(z.instanceof(Uint8Array)),
+  iv: z.optional(zAnyUint8Array.refine((iv) => iv.length === 12, 'iv must be 12 bytes for AES GCM')),
+  aad: z.optional(zAnyUint8Array),
 })
 export type KmsEncryptDataEncryptionAesGcm = z.output<typeof zKmsEncryptDataEncryptionAesGcm>
 
 // AES-CBC Content Encryption
 const zKmsEncryptDataEncryptionAesCbc = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms.A128CBC, KnownJwaContentEncryptionAlgorithms.A256CBC]),
-  iv: z.optional(z.instanceof(Uint8Array).refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC')),
+  iv: z.optional(zAnyUint8Array.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC')),
 })
 export type KmsEncryptDataEncryptionAesCbc = z.output<typeof zKmsEncryptDataEncryptionAesCbc>
 
@@ -31,24 +33,22 @@ const zKmsEncryptDataEncryptionAesCbcHmac = z.object({
     KnownJwaContentEncryptionAlgorithms.A192CBC_HS384,
     KnownJwaContentEncryptionAlgorithms.A256CBC_HS512,
   ]),
-  iv: z.optional(
-    z.instanceof(Uint8Array).refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC with HMAC')
-  ),
-  aad: z.optional(z.instanceof(Uint8Array)),
+  iv: z.optional(zAnyUint8Array.refine((iv) => iv.length === 16, 'iv must be 16 bytes for AES CBC with HMAC')),
+  aad: z.optional(zAnyUint8Array),
 })
 export type KmsEncryptDataEncryptionAesCbcHmac = z.output<typeof zKmsEncryptDataEncryptionAesCbcHmac>
 
 // XSalsa-Poly1305 Content Encryption
 const zKmsDecryptDataEncryptionSalsa = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms['XSALSA20-POLY1305']]),
-  iv: z.instanceof(Uint8Array).optional(),
+  iv: zAnyUint8Array.optional(),
 })
 
 // ChaCha20-Poly130 Content Encryption
 const zKmsEncryptDataEncryptionC20p = z.object({
   algorithm: z.enum([KnownJwaContentEncryptionAlgorithms.C20P, KnownJwaContentEncryptionAlgorithms.XC20P]),
-  iv: z.optional(z.instanceof(Uint8Array)),
-  aad: z.optional(z.instanceof(Uint8Array)),
+  iv: z.optional(zAnyUint8Array),
+  aad: z.optional(zAnyUint8Array),
 })
 // FIXME: if we use refine, we can't use discriminated union. and that makes the error handlnig shitty
 // .refine(
@@ -109,7 +109,7 @@ export const zKmsEncryptOptions = z.object({
   /**
    * The data to encrypt
    */
-  data: z.instanceof(Uint8Array).describe('The data to encrypt'),
+  data: zAnyUint8Array.describe('The data to encrypt'),
 })
 
 export type KmsEncryptOptions = z.output<typeof zKmsEncryptOptions>
@@ -117,18 +117,18 @@ export interface KmsEncryptReturn {
   /**
    * The encrypted data, also known as "ciphertext" in JWE
    */
-  encrypted: Uint8Array
+  encrypted: Uint8ArrayBuffer
 
   /**
    * Optional authentication tag
    */
-  tag?: Uint8Array
+  tag?: Uint8ArrayBuffer
 
   /**
    * The initialization vector. For algorithms where the iv is required
    * and not provided, this will contain the auto-generated value.
    */
-  iv?: Uint8Array
+  iv?: AnyUint8Array // may be any uint8array since the user can also provide it as input
 
   /**
    * The encrypted content encryption key, if key wrapping was used
@@ -140,17 +140,17 @@ export const zKmsEncryptedKey = z.object({
   /**
    * Optional authentication tag
    */
-  tag: z.instanceof(Uint8Array).optional(),
+  tag: zAnyUint8Array.optional(),
 
   /**
    * The initialization vector.
    */
-  iv: z.instanceof(Uint8Array).optional(),
+  iv: zAnyUint8Array.optional(),
 
   /**
    * The encrypted key
    */
-  encrypted: z.instanceof(Uint8Array),
+  encrypted: zAnyUint8Array,
 })
 
 /**

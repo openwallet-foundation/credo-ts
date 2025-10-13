@@ -1,5 +1,5 @@
 import { AgentContext, Kms } from '@credo-ts/core'
-import { PublicKey } from '@hashgraph/sdk'
+import { Client, PublicKey } from '@hashgraph/sdk'
 import { PublicJwk } from '../../../core/src/modules/kms/jwk/PublicJwk'
 import { mockFunction } from '../../../core/tests/helpers'
 import { KmsPublisher } from '../../src/ledger/publisher/KmsPublisher'
@@ -82,14 +82,17 @@ describe('KmsPublisher', () => {
   })
 
   it('should correctly create an instance via constructor', () => {
-    // biome-ignore lint/suspicious/noExplicitAny:
-    const publisher = new KmsPublisher(agentContext as any, mockClient as any, mockPublicJwk)
+    const publisher = new KmsPublisher(
+      agentContext as unknown as AgentContext,
+      mockClient as unknown as Client,
+      mockPublicJwk
+    )
     expect(agentContext.dependencyManager.resolve).toHaveBeenCalledWith(expect.anything())
     expect(publisher.publicKey()).toBe(mockPublicKey)
   })
 
   it('should correctly update key in setKeyId', async () => {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const publisher = new KmsPublisher(agentContext as unknown as AgentContext, mockClient as any, mockPublicJwk)
     await publisher.setKeyId('new-key-id')
 
@@ -98,7 +101,7 @@ describe('KmsPublisher', () => {
   })
 
   it('should return correct publicKey', () => {
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const publisher = new KmsPublisher(agentContext as unknown as AgentContext, mockClient as any, mockPublicJwk)
     expect(publisher.publicKey()).toBe(mockPublicKey)
   })

@@ -1,6 +1,5 @@
-import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
-
 import { DidCommAutoAcceptCredential } from './models'
+import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
 
 /**
  * CredentialsModuleConfigOptions defines the interface for the options of the CredentialsModuleConfig class.

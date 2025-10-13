@@ -1,16 +1,15 @@
 import type { AgentContext } from '../agent'
 import type { EventEmitter } from '../agent/EventEmitter'
+import { RecordDuplicateError, RecordNotFoundError } from '../error'
+import { CachedStorageService } from '../modules/cache/CachedStorageService'
+import { CacheModuleConfig } from '../modules/cache/CacheModuleConfig'
+import { JsonTransformer } from '../utils'
 import type { BaseRecord } from './BaseRecord'
 import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from './RepositoryEvents'
+import { RepositoryEventTypes } from './RepositoryEvents'
 import type { BaseRecordConstructor, Query, QueryOptions, StorageService } from './StorageService'
 
-import { RecordDuplicateError, RecordNotFoundError } from '../error'
-import { CacheModuleConfig } from '../modules/cache/CacheModuleConfig'
-import { CachedStorageService } from '../modules/cache/CachedStorageService'
-import { JsonTransformer } from '../utils'
-import { RepositoryEventTypes } from './RepositoryEvents'
-
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export class Repository<T extends BaseRecord<any, any, any>> {
   private storageService: StorageService<T>
   private recordClass: BaseRecordConstructor<T>

@@ -2,8 +2,7 @@ import type { HashName } from '../../crypto'
 import type { KnownJwaSignatureAlgorithm } from '../kms'
 import type { IDisclosureFrame, IPresentationFrame, SdJwtVcHolderBinding } from '../sd-jwt-vc'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
-import type { ClaimFormat, W3cV2VerifiableCredential } from './models'
-import type { W3cV2Credential, W3cV2Presentation } from './models'
+import type { ClaimFormat, W3cV2Credential, W3cV2Presentation, W3cV2VerifiableCredential } from './models'
 import { W3cV2SdJwtVerifiableCredential, W3cV2SdJwtVerifiablePresentation } from './sd-jwt-vc'
 
 export type W3cV2SignCredentialOptions<

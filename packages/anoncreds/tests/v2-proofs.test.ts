@@ -1,8 +1,5 @@
 import type { AnonCredsRequestProofFormat } from '@credo-ts/anoncreds'
 import type { DidCommCredentialExchangeRecord } from '@credo-ts/didcomm'
-import type { EventReplaySubject } from '../../core/tests'
-import type { AnonCredsTestsAgent } from './anoncredsSetup'
-
 import {
   DidCommAttachment,
   DidCommAttachmentData,
@@ -13,14 +10,14 @@ import {
   DidCommProposePresentationV2Message,
   DidCommRequestPresentationV2Message,
 } from '@credo-ts/didcomm'
-
 import { sleep } from '../../core/src/utils/sleep'
+import type { EventReplaySubject } from '../../core/tests'
 import { waitForProofExchangeRecord } from '../../core/tests'
 import testLogger from '../../core/tests/logger'
 import { dateToTimestamp } from '../src/utils/timestamp'
-
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { AnonCredsTestsAgent } from './anoncredsSetup'
 import { issueAnonCredsCredential, setupAnonCredsTests } from './anoncredsSetup'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 
 describe('PP V2 AnonCreds Proofs', () => {
   let faberAgent: AnonCredsTestsAgent

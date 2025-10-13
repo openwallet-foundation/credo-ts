@@ -1,3 +1,4 @@
+import { parseIndyDid } from '@credo-ts/anoncreds'
 import type {
   AgentContext,
   DidCreateOptions,
@@ -10,11 +11,6 @@ import type {
   DidRegistrar,
   DidUpdateResult,
 } from '@credo-ts/core'
-import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
-import type { IndyVdrPool } from '../pool'
-import type { IndyEndpointAttrib } from './didSovUtil'
-
-import { parseIndyDid } from '@credo-ts/anoncreds'
 import {
   DidCommV1Service,
   DidCommV2Service,
@@ -27,11 +23,11 @@ import {
   NewDidCommV2Service,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import type { IndyVdrRequest } from '@hyperledger/indy-vdr-shared'
 import { AttribRequest, CustomRequest, NymRequest } from '@hyperledger/indy-vdr-shared'
-
 import { IndyVdrError } from '../error'
+import type { IndyVdrPool } from '../pool'
 import { IndyVdrPoolService } from '../pool/IndyVdrPoolService'
-
 import {
   buildDidDocument,
   createKeyAgreementKey,
@@ -39,6 +35,7 @@ import {
   indyDidDocumentFromDid,
   verificationPublicJwkForIndyDid,
 } from './didIndyUtil'
+import type { IndyEndpointAttrib } from './didSovUtil'
 import { endpointsAttribFromServices } from './didSovUtil'
 
 export class IndyVdrIndyDidRegistrar implements DidRegistrar {
@@ -63,11 +60,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     }
   }
 
-  private didCreateFailedResult({
-    reason,
-  }: {
-    reason: string
-  }): IndyVdrDidCreateResult {
+  private didCreateFailedResult({ reason }: { reason: string }): IndyVdrDidCreateResult {
     return {
       didDocumentMetadata: {},
       didRegistrationMetadata: {},
@@ -197,7 +190,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
     const verificationKeyBase58 = TypedArrayEncoder.toBase58(verificationKey.publicKey.publicKey)
     // Create base did document
     const didDocumentBuilder = indyDidDocumentFromDid(did, verificationKeyBase58)
-    let diddocContent: Record<string, unknown> | undefined = undefined
+    let diddocContent: Record<string, unknown> | undefined
 
     // Add services if object was passed
     if (services) {
@@ -273,7 +266,7 @@ export class IndyVdrIndyDidRegistrar implements DidRegistrar {
       let nymRequest: NymRequest | CustomRequest
       let didDocument: DidDocument | undefined
       let attribRequest: AttribRequest | CustomRequest | undefined
-      let verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined = undefined
+      let verificationKey: Kms.PublicJwk<Kms.Ed25519PublicJwk> | undefined
 
       if (res.type === 'endorsedTransaction') {
         const { nymRequest: _nymRequest, attribRequest: _attribRequest } = res.endorsedTransaction

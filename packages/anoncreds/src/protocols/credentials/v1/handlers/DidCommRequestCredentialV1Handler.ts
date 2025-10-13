@@ -1,12 +1,11 @@
+import { CredoError } from '@credo-ts/core'
 import type {
   DidCommCredentialExchangeRecord,
   DidCommMessageHandler,
   DidCommMessageHandlerInboundMessage,
 } from '@credo-ts/didcomm'
-import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
-
-import { CredoError } from '@credo-ts/core'
 import { getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
+import type { DidCommCredentialV1Protocol } from '../DidCommCredentialV1Protocol'
 
 import { DidCommRequestCredentialV1Message } from '../messages'
 

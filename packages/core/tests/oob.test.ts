@@ -1,18 +1,17 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src'
-import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
-import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
-
+import { CredoError, Kms } from '@credo-ts/core'
 import { Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import type { AnonCredsDidCommCredentialFormatService } from '../../anoncreds/src'
 import { getAnonCredsIndyModules } from '../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,
 } from '../../anoncreds/tests/preCreatedAnonCredsDefinition'
+import type { DidCommMessageReceivedEvent } from '../../didcomm/src/DidCommEvents'
 import { DidCommEventTypes } from '../../didcomm/src/DidCommEvents'
+import type { DidCommMessage } from '../../didcomm/src/DidCommMessage'
 import { DidCommDidExchangeState, DidCommHandshakeProtocol } from '../../didcomm/src/modules/connections'
 import {
   type CreateCredentialOfferOptions,
@@ -27,11 +26,8 @@ import { OutOfBandDidCommService } from '../../didcomm/src/modules/oob/domain/Ou
 import { DidCommOutOfBandInvitation } from '../../didcomm/src/modules/oob/messages'
 import { Agent } from '../src/agent/Agent'
 import { JsonEncoder, JsonTransformer, TypedArrayEncoder } from '../src/utils'
-
-import { TestMessage } from './TestMessage'
 import { getAgentOptions, waitForCredentialRecord } from './helpers'
-
-import { CredoError, Kms } from '@credo-ts/core'
+import { TestMessage } from './TestMessage'
 
 const faberAgent = new Agent(
   getAgentOptions(
@@ -318,7 +314,7 @@ describe('out of band', () => {
         await aliceAgent.didcomm.oob.receiveInvitationFromUrl(urlMessage, { label: 'alice' })
       expect(receivedOutOfBandRecord.state).toBe(DidCommOutOfBandState.PrepareResponse)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -326,7 +322,7 @@ describe('out of band', () => {
       faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
       expect(faberAliceConnection?.state).toBe(DidCommDidExchangeState.Completed)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection!)
       expect(aliceFaberConnection.imageUrl).toBe(makeConnectionConfig.imageUrl)
       expect(faberAliceConnection).toBeConnectedWith(aliceFaberConnection)
@@ -346,7 +342,7 @@ describe('out of band', () => {
         { label: 'alice' }
       )
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -368,7 +364,7 @@ describe('out of band', () => {
         { label: 'alice' }
       )
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
       faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
@@ -427,7 +423,7 @@ describe('out of band', () => {
       const { message } = await faberAgent.didcomm.credentials.createOffer(credentialTemplate)
 
       // we need to override the message type to use the legacy did:sov prefix
-      // @ts-ignore
+      // @ts-expect-error
       message.type = message.type.replace('https://didcomm.org', 'did:sov:BzCbsNYhMrjHiqZDTUASHg;spec')
       const { outOfBandInvitation } = await faberAgent.didcomm.oob.createInvitation({
         ...issueCredentialConfig,
@@ -503,7 +499,7 @@ describe('out of band', () => {
       )
 
       // Wait until connection is ready
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
 
       let [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord?.id)
@@ -526,7 +522,7 @@ describe('out of band', () => {
         { label: 'alice' }
       )
       firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         firstAliceFaberConnection?.id!
       )
 
@@ -553,7 +549,7 @@ describe('out of band', () => {
 
       aliceAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, aliceReuseListener)
       faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, faberReuseListener)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
 
       // There shouldn't be any connection records for this oob id, as we reused an existing one
@@ -607,7 +603,7 @@ describe('out of band', () => {
         }
       )
       firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         firstAliceFaberConnection?.id!
       )
 
@@ -624,7 +620,7 @@ describe('out of band', () => {
 
       aliceAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
       faberAgent.events.off(DidCommOutOfBandEventTypes.HandshakeReused, reuseListener)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.returnWhenIsConnected(secondAliceFaberConnection?.id!)
 
       // If we're not reusing the connection, the reuse listener shouldn't be called
@@ -660,7 +656,7 @@ describe('out of band', () => {
       )
 
       // Wait until connection is ready
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
 
       const [faberAliceConnection] = await faberAgent.didcomm.connections.findAllByOutOfBandId(outOfBandRecord.id)
@@ -690,7 +686,7 @@ describe('out of band', () => {
       )
 
       // Wait for the connection to complete so we don't get wallet closed errors
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       await aliceAgent.didcomm.connections.returnWhenIsConnected(connectionRecord?.id!)
       aliceAgent.events.off(DidCommOutOfBandEventTypes.OutOfBandStateChanged, eventListener)
 
@@ -734,7 +730,7 @@ describe('out of band', () => {
         { label: 'alice' }
       )
       firstAliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         firstAliceFaberConnection?.id!
       )
 
@@ -796,7 +792,7 @@ describe('out of band', () => {
         { label: 'alice' }
       )
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
       expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -814,7 +810,7 @@ describe('out of band', () => {
         outOfBandRecord2.outOfBandInvitation,
         { label: 'alice' }
       )
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       aliceFaberConnection2 = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection2?.id!)
       expect(aliceFaberConnection2.state).toBe(DidCommDidExchangeState.Completed)
 

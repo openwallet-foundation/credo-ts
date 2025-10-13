@@ -1,17 +1,15 @@
 import type { DidRepository } from '@credo-ts/core'
+import { CredoError, tryParseDid } from '@credo-ts/core'
+import { DidCommTransportService } from '../../../DidCommTransportService'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
+import { DidCommOutboundMessageContext } from '../../../models'
 import type { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
+import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import type { DidCommRoutingService } from '../../routing/services/DidCommRoutingService'
 import type { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
-import type { DidCommConnectionService } from '../services'
-
-import { CredoError, tryParseDid } from '@credo-ts/core'
-
-import { DidCommTransportService } from '../../../DidCommTransportService'
-import { DidCommOutboundMessageContext } from '../../../models'
-import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidCommConnectionRequestMessage } from '../messages'
 import { DidCommHandshakeProtocol } from '../models'
+import type { DidCommConnectionService } from '../services'
 
 export class DidCommConnectionRequestHandler implements DidCommMessageHandler {
   private connectionService: DidCommConnectionService

@@ -1,5 +1,3 @@
-import type { DidCommOutOfBandInvitationOptions } from './messages'
-
 import {
   DidCommV1Service,
   DidDocumentBuilder,
@@ -8,13 +6,12 @@ import {
   didKeyToVerkey,
   verkeyToDidKey,
 } from '@credo-ts/core'
-
 import {
   DidCommConnectionInvitationMessage,
   type DidCommConnectionInvitationMessageOptions,
 } from '../connections/messages/DidCommConnectionInvitationMessage'
-
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
+import type { DidCommOutOfBandInvitationOptions } from './messages'
 import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages/DidCommOutOfBandInvitation'
 
 export function convertToNewInvitation(oldInvitation: DidCommConnectionInvitationMessage) {

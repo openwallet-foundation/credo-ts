@@ -1,13 +1,11 @@
-import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
-import type { DataIntegrityProofOptions } from './DataIntegrityProof'
-import type { LinkedDataProofOptions } from './LinkedDataProof'
-
-import { IsInstanceOrArrayOfInstances, JsonTransformer, asArray } from '../../../../utils'
-import { ClaimFormat } from '../../models'
-import { W3cPresentation } from '../../models/presentation/W3cPresentation'
-
 import type { SingleOrArray } from '../../../../types'
+import { asArray, IsInstanceOrArrayOfInstances, JsonTransformer } from '../../../../utils'
+import { ClaimFormat } from '../../models'
+import type { W3cPresentationOptions } from '../../models/presentation/W3cPresentation'
+import { W3cPresentation } from '../../models/presentation/W3cPresentation'
+import type { DataIntegrityProofOptions } from './DataIntegrityProof'
 import { DataIntegrityProof } from './DataIntegrityProof'
+import type { LinkedDataProofOptions } from './LinkedDataProof'
 import { LinkedDataProof } from './LinkedDataProof'
 import { ProofTransformer } from './ProofTransformer'
 

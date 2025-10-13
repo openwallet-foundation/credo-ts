@@ -1,4 +1,4 @@
-import { SQLiteColumn, foreignKey, integer, primaryKey, text } from 'drizzle-orm/sqlite-core'
+import { foreignKey, integer, primaryKey, SQLiteColumn, text } from 'drizzle-orm/sqlite-core'
 import { context } from '../core/context-record/sqlite'
 
 export const getSqliteBaseRecordTable = () =>
@@ -23,7 +23,7 @@ export const getSqliteBaseRecordTable = () =>
 
 // Define common base indexes that all tables should have
 export const sqliteBaseRecordIndexes = <
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   Table extends { contextCorrelationId: SQLiteColumn<any>; id: SQLiteColumn<any> },
 >(
   table: Table,

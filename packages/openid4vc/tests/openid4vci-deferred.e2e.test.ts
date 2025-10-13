@@ -1,36 +1,36 @@
-import { randomUUID } from 'crypto'
 import type { Mdoc, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   JwsService,
   Jwt,
   JwtPayload,
   Kms,
   X509Certificate,
   X509Module,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
-  calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
+import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import {
+  OpenId4VcIssuanceSessionState,
   type OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcModule,
   type OpenId4VciSignMdocCredentials,
+  OpenId4VcModule,
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
-import { OpenId4VcIssuanceSessionState } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'

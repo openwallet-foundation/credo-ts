@@ -1,12 +1,10 @@
 import type { BaseAgent, JsonObject } from '@credo-ts/core'
-import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
-import type { DidCommPlaintextMessage } from '../../types'
-
 import { Metadata } from '@credo-ts/core'
-
+import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
 import { DidCommCredentialState } from '../../modules/credentials/models/DidCommCredentialState'
 import { DidCommCredentialExchangeRepository } from '../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../repository'
+import type { DidCommPlaintextMessage } from '../../types'
 
 /**
  * Migrates the {@link CredentialRecord} to 0.2 compatible format. It fetches all records from storage
@@ -198,7 +196,7 @@ export async function migrateInternalCredentialRecordProperties<Agent extends Ba
       },
     ]
 
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // biome-ignore lint/performance/noDelete: no explanation
     delete untypedCredentialRecord.credentialId
   }
 

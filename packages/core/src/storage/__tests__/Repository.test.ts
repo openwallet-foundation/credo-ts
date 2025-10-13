@@ -1,19 +1,16 @@
-import type { AgentContext } from '../../agent'
-import type { TagsBase } from '../BaseRecord'
-import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
-import type { StorageService } from '../StorageService'
-
 import { Subject } from 'rxjs'
-
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
+import type { MockedClassConstructor } from '../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../tests/helpers'
+import type { AgentContext } from '../../agent'
 import { EventEmitter } from '../../agent/EventEmitter'
 import { CredoError, RecordDuplicateError, RecordNotFoundError } from '../../error'
-import { Repository } from '../Repository'
-import { RepositoryEventTypes } from '../RepositoryEvents'
-
-import type { MockedClassConstructor } from '../../../../../tests/types'
 import { CacheModuleConfig, InMemoryLruCache } from '../../modules/cache'
+import type { TagsBase } from '../BaseRecord'
+import { Repository } from '../Repository'
+import type { RecordDeletedEvent, RecordSavedEvent, RecordUpdatedEvent } from '../RepositoryEvents'
+import { RepositoryEventTypes } from '../RepositoryEvents'
+import type { StorageService } from '../StorageService'
 import { TestRecord } from './TestRecord'
 
 vi.mock('../../../../../tests/InMemoryStorageService')

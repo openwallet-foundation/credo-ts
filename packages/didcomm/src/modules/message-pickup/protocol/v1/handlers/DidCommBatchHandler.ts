@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { DidCommMessagePickupV1Protocol } from '../DidCommMessagePickupV1Protocol'
-
 import { DidCommOutboundMessageContext } from '../../../../../models'
+import type { DidCommMessagePickupV1Protocol } from '../DidCommMessagePickupV1Protocol'
 import { DidCommBatchMessage } from '../messages'
 
 export class DidCommBatchHandler implements DidCommMessageHandler {

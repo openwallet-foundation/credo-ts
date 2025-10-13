@@ -5,17 +5,15 @@ import type {
   AnonCredsSchema,
 } from '@credo-ts/anoncreds'
 import type { AgentContext } from '@credo-ts/core'
-import type { JsonObject } from '@hyperledger/anoncreds-shared'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
-
 import {
   JsonTransformer,
   W3cCredentialRepository,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
+import type { JsonObject } from '@hyperledger/anoncreds-shared'
 import {
+  anoncreds,
   CredentialDefinition,
   CredentialOffer,
   CredentialRequest,
@@ -26,10 +24,10 @@ import {
   RevocationStatusList,
   Schema,
   W3cCredential,
-  anoncreds,
 } from '@hyperledger/anoncreds-shared'
-
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
+import type { AnonCredsCredentialTags } from '../../utils/w3cAnonCredsUtils'
 
 /**
  * Creates a valid credential definition and returns its public and

@@ -1,4 +1,21 @@
 import type { AgentContext } from '../agent'
+import { CredoError } from '../error'
+import {
+  assertJwkAsymmetric,
+  assymetricPublicJwkMatches,
+  getJwkHumanDescription,
+  KeyManagementApi,
+  KeyManagementError,
+  type KnownJwaSignatureAlgorithm,
+  PublicJwk,
+} from '../modules/kms'
+import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
+import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
+import { X509Service } from './../modules/x509/X509Service'
+import { injectable } from '../plugins'
+import { type AnyUint8Array, isJsonObject } from '../types'
+import { JsonEncoder, TypedArrayEncoder } from '../utils'
+import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import type {
   Jws,
   JwsDetachedFormat,
@@ -6,25 +23,6 @@ import type {
   JwsGeneralFormat,
   JwsProtectedHeaderOptions,
 } from './JwsTypes'
-
-import { CredoError } from '../error'
-import { type EncodedX509Certificate, X509ModuleConfig } from '../modules/x509'
-import { injectable } from '../plugins'
-import { Buffer, JsonEncoder, TypedArrayEncoder } from '../utils'
-
-import {
-  KeyManagementApi,
-  KeyManagementError,
-  type KnownJwaSignatureAlgorithm,
-  PublicJwk,
-  assertJwkAsymmetric,
-  assymetricPublicJwkMatches,
-  getJwkHumanDescription,
-} from '../modules/kms'
-import { isKnownJwaSignatureAlgorithm } from '../modules/kms/jwk/jwa'
-import { isJsonObject } from '../types'
-import { X509Service } from './../modules/x509/X509Service'
-import type { JwsSigner, JwsSignerWithJwk } from './JwsSigner'
 import { JWS_COMPACT_FORMAT_MATCHER } from './JwsTypes'
 import { JwtPayload } from './jose/jwt'
 
@@ -362,7 +360,7 @@ export class JwsService {
 }
 
 export interface CreateJwsOptions {
-  payload: Buffer | JwtPayload
+  payload: AnyUint8Array | JwtPayload
   keyId: string
   header: Record<string, unknown>
   protectedHeaderOptions: JwsProtectedHeaderOptions

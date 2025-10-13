@@ -1,10 +1,17 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
 import type { DidCommMessageReceivedEvent } from '../../../../DidCommEvents'
+import { DidCommEventTypes } from '../../../../DidCommEvents'
 import type { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
+import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
 import type { MessagePickupCompletedEvent } from '../../DidCommMessagePickupEvents'
+import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
+import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
+import { DidCommBaseMessagePickupProtocol } from '../DidCommBaseMessagePickupProtocol'
 import type {
   DeliverMessagesProtocolOptions,
   DeliverMessagesProtocolReturnType,
@@ -12,16 +19,6 @@ import type {
   PickupMessagesProtocolReturnType,
   SetLiveDeliveryModeProtocolReturnType,
 } from '../DidCommMessagePickupProtocolOptions'
-
-import { CredoError, EventEmitter, injectable } from '@credo-ts/core'
-
-import { DidCommEventTypes } from '../../../../DidCommEvents'
-import { DidCommOutboundMessageContext, DidCommProtocol } from '../../../../models'
-import { DidCommMessagePickupEventTypes } from '../../DidCommMessagePickupEvents'
-import { DidCommMessagePickupModuleConfig } from '../../DidCommMessagePickupModuleConfig'
-import { DidCommBaseMessagePickupProtocol } from '../DidCommBaseMessagePickupProtocol'
-
-import { DidCommModuleConfig } from '../../../../DidCommModuleConfig'
 import { DidCommBatchHandler, DidCommBatchPickupHandler } from './handlers'
 import { DidCommBatchMessage, DidCommBatchMessageMessage, DidCommBatchPickupMessage } from './messages'
 

@@ -1,17 +1,15 @@
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommMessageProcessedEvent } from './DidCommEvents'
-import type { DidCommMessage } from './DidCommMessage'
-import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
-import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
-
-import { CredoError, EventEmitter, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
-
 import { DidCommEventTypes } from './DidCommEvents'
+import type { DidCommMessage } from './DidCommMessage'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from './DidCommMessageSender'
 import { DidCommProblemReportError } from './errors/problem-reports'
 import { DidCommMessageHandlerMiddlewareRunner } from './handlers'
+import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
 import { DidCommProblemReportMessage } from './messages'
 import { DidCommOutboundMessageContext } from './models'
+import type { DidCommInboundMessageContext } from './models/DidCommInboundMessageContext'
 import { DidCommProblemReportReason } from './models/problem-reports'
 import { canHandleMessageType, parseMessageType } from './util/messageType'
 

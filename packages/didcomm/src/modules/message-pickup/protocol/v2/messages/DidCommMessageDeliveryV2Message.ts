@@ -1,9 +1,7 @@
-import type { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
-
 import { Expose } from 'class-transformer'
 import { IsOptional, IsString } from 'class-validator'
-
 import { DidCommMessage } from '../../../../../DidCommMessage'
+import type { DidCommAttachment } from '../../../../../decorators/attachment/DidCommAttachment'
 import { ReturnRouteTypes } from '../../../../../decorators/transport/TransportDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 

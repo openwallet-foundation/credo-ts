@@ -1,8 +1,8 @@
 import { JwtPayload } from '../../../../crypto/jose/jwt'
 import { JsonTransformer } from '../../../../utils'
 import { W3cPresentation } from '../../models'
-import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 import { getJwtPayloadFromPresentation, getPresentationFromJwtPayload } from '../presentationTransformer'
+import { W3cJwtVerifiableCredential } from '../W3cJwtVerifiableCredential'
 
 import { CredoEs256DidJwkJwtVc } from './fixtures/credo-jwt-vc'
 

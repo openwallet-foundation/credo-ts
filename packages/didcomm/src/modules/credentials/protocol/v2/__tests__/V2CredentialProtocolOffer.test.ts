@@ -1,15 +1,6 @@
-import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type {
-  DidCommCredentialFormat,
-  DidCommCredentialFormatCreateOfferOptions,
-  DidCommCredentialFormatService,
-} from '../../../formats'
-import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
-
 import { Subject } from 'rxjs'
-
 import type { MockedClassConstructor } from '../../../../../../../../tests/types'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
 import {
@@ -24,11 +15,18 @@ import { DidCommInboundMessageContext } from '../../../../../models'
 import { DidCommMessageRepository } from '../../../../../repository'
 import { DidCommConnectionService, DidCommDidExchangeState } from '../../../../connections'
 import { DidCommRoutingService } from '../../../../routing/services/DidCommRoutingService'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import type {
+  DidCommCredentialFormat,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatService,
+} from '../../../formats'
 import { DidCommCredentialFormatSpec } from '../../../models'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
+import type { CreateCredentialOfferOptions } from '../../DidCommCredentialProtocolOptions'
 import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
 import { DidCommCredentialV2Preview } from '../messages'
 import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
@@ -54,7 +52,6 @@ interface TestCredentialFormat extends DidCommCredentialFormat {
 
 type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
   credentialRecordType: 'test',
   formatKey: 'test',

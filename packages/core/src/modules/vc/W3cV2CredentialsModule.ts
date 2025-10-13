@@ -1,10 +1,10 @@
 import type { DependencyManager, Module } from '../../plugins'
-import { W3cV2CredentialService } from './W3cV2CredentialService'
-import { W3cV2CredentialsApi } from './W3cV2CredentialsApi'
 import { SignatureSuiteRegistry } from './data-integrity/SignatureSuiteRegistry'
 import { W3cV2JwtCredentialService } from './jwt-vc'
 import { W3cV2CredentialRepository } from './repository/W3cV2CredentialRepository'
 import { W3cV2SdJwtCredentialService } from './sd-jwt-vc'
+import { W3cV2CredentialService } from './W3cV2CredentialService'
+import { W3cV2CredentialsApi } from './W3cV2CredentialsApi'
 
 /**
  * @public

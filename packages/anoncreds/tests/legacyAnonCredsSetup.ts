@@ -1,3 +1,4 @@
+import { Agent, CacheModule, CredoError, DidsModule, InMemoryLruCache, TypedArrayEncoder } from '@credo-ts/core'
 import type {
   DidCommAutoAcceptProof,
   DidCommConnectionRecord,
@@ -5,20 +6,6 @@ import type {
   DidCommModuleConfigOptions,
   DidCommProofFormatService,
 } from '@credo-ts/didcomm'
-import type { EventReplaySubject } from '../../core/tests'
-import type {
-  AnonCredsDidCommOfferCredentialFormat,
-  AnonCredsRegisterCredentialDefinitionOptions,
-  AnonCredsRequestedAttribute,
-  AnonCredsRequestedPredicate,
-  AnonCredsSchema,
-  RegisterCredentialDefinitionReturnStateFinished,
-  RegisterSchemaReturnStateFinished,
-} from '../src'
-import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
-
-import { randomUUID } from 'crypto'
-import { Agent, CacheModule, CredoError, DidsModule, InMemoryLruCache, TypedArrayEncoder } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommCredentialEventTypes,
@@ -30,8 +17,9 @@ import {
   DidCommProofState,
   DidCommProofV2Protocol,
 } from '@credo-ts/didcomm'
-
+import { randomUUID } from 'crypto'
 import { sleep } from '../../core/src/utils/sleep'
+import type { EventReplaySubject } from '../../core/tests'
 import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
 import {
   getAgentOptions,
@@ -42,6 +30,12 @@ import {
   waitForProofExchangeRecordSubject,
 } from '../../core/tests/helpers'
 import testLogger from '../../core/tests/logger'
+import { DrizzleStorageModule } from '../../drizzle-storage/src'
+import {
+  createDrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
+} from '../../drizzle-storage/tests/testDatabase'
 import {
   IndyVdrAnonCredsRegistry,
   IndyVdrIndyDidRegistrar,
@@ -50,28 +44,31 @@ import {
   IndyVdrSovDidResolver,
 } from '../../indy-vdr/src'
 import { indyVdrModuleConfig } from '../../indy-vdr/tests/helpers'
+import type {
+  AnonCredsDidCommOfferCredentialFormat,
+  AnonCredsRegisterCredentialDefinitionOptions,
+  AnonCredsRequestedAttribute,
+  AnonCredsRequestedPredicate,
+  AnonCredsSchema,
+  RegisterCredentialDefinitionReturnStateFinished,
+  RegisterSchemaReturnStateFinished,
+} from '../src'
 import {
   AnonCredsDidCommCredentialFormatService,
   AnonCredsDidCommProofFormatService,
   AnonCredsModule,
   DidCommCredentialV1Protocol,
   DidCommProofV1Protocol,
-  LegacyIndyDidCommCredentialFormatService,
-  LegacyIndyDidCommProofFormatService,
   getUnqualifiedCredentialDefinitionId,
   getUnqualifiedSchemaId,
+  LegacyIndyDidCommCredentialFormatService,
+  LegacyIndyDidCommProofFormatService,
   parseIndyCredentialDefinitionId,
   parseIndySchemaId,
 } from '../src'
-
-import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import {
-  createDrizzlePostgresTestDatabase,
-  inMemoryDrizzleSqliteDatabase,
-  pushDrizzleSchema,
-} from '../../drizzle-storage/tests/testDatabase'
-import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
 import { anoncreds } from './helpers'
+import { InMemoryAnonCredsRegistry } from './InMemoryAnonCredsRegistry'
+import type { PreCreatedAnonCredsDefinition } from './preCreatedAnonCredsDefinition'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
   storePreCreatedAnonCredsDefinition,

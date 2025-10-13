@@ -4,11 +4,9 @@ import type {
   QuestionAnswerState,
   QuestionAnswerStateChangedEvent,
 } from '@credo-ts/question-answer'
-import type { Observable } from 'rxjs'
-
-import { ReplaySubject, catchError, filter, map, timeout } from 'rxjs'
-
 import { QuestionAnswerEventTypes } from '@credo-ts/question-answer'
+import type { Observable } from 'rxjs'
+import { catchError, filter, map, ReplaySubject, timeout } from 'rxjs'
 import { firstValueWithStackTrace } from '../../core/tests/helpers'
 
 export async function waitForQuestionAnswerRecord(

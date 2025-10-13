@@ -12,8 +12,8 @@ import type { AgentConfig } from './AgentConfig'
 import type { AgentApi, EmptyModuleMap, ModuleApiInstance, ModulesMap, WithoutDefaultModules } from './AgentModules'
 
 import { getAgentApi } from './AgentModules'
-import { EventEmitter } from './EventEmitter'
 import { AgentContext } from './context'
+import { EventEmitter } from './EventEmitter'
 
 export abstract class BaseAgent<AgentModules extends ModulesMap = EmptyModuleMap> {
   protected logger: Logger

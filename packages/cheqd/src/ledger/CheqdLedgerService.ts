@@ -1,4 +1,5 @@
 import type { AbstractCheqdSDKModule, CheqdSDK, DIDDocument, DidStdFee } from '@cheqd/sdk'
+import { CheqdNetwork, createCheqdSDK, DIDModule, FeemarketModule, ResourceModule } from '@cheqd/sdk'
 import type { QueryAllDidDocVersionsMetadataResponse, SignInfo } from '@cheqd/ts-proto/cheqd/did/v2'
 import type {
   Metadata,
@@ -7,14 +8,11 @@ import type {
   ResourceWithMetadata,
 } from '@cheqd/ts-proto/cheqd/resource/v2'
 import type { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-signing'
-import type { DidDocumentMetadata } from '@credo-ts/core'
-
-import { CheqdNetwork, DIDModule, FeemarketModule, ResourceModule, createCheqdSDK } from '@cheqd/sdk'
-import { CredoError, InjectionSymbols, type Logger, inject, injectable } from '@credo-ts/core'
-
 import type { DeliverTxResponse } from '@cosmjs/stargate'
-import { CheqdModuleConfig } from '../CheqdModuleConfig'
+import type { DidDocumentMetadata } from '@credo-ts/core'
+import { CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import { parseCheqdDid } from '../anoncreds/utils/identifiers'
+import { CheqdModuleConfig } from '../CheqdModuleConfig'
 import { getCosmosPayerWallet } from '../dids/didCheqdUtil'
 
 export interface ICheqdLedgerConfig {

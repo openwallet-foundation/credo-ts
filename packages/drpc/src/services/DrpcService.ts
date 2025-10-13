@@ -1,13 +1,11 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { EventEmitter, injectable } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '@credo-ts/didcomm'
 import type { DrpcRequestStateChangedEvent } from '../DrpcRequestEvents'
-import type { DrpcResponseStateChangedEvent } from '../DrpcResponseEvents'
-import type { DrpcRequest, DrpcResponse } from '../messages'
-
-import { EventEmitter, injectable } from '@credo-ts/core'
-
 import { DrpcRequestEventTypes } from '../DrpcRequestEvents'
+import type { DrpcResponseStateChangedEvent } from '../DrpcResponseEvents'
 import { DrpcResponseEventTypes } from '../DrpcResponseEvents'
+import type { DrpcRequest, DrpcResponse } from '../messages'
 import { DrpcRequestMessage, DrpcResponseMessage } from '../messages'
 import { DrpcRole, DrpcState, isValidDrpcRequest, isValidDrpcResponse } from '../models'
 import { DrpcRecord, DrpcRepository } from '../repository'

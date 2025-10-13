@@ -1,11 +1,9 @@
-import type { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
-
 import { CredoError, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsOptional, IsString, IsUrl, ValidateIf } from 'class-validator'
-import { parseUrl } from 'query-string'
-
+import queryString from 'query-string'
 import { DidCommMessage } from '../../../DidCommMessage'
+import type { DidCommAttachment } from '../../../decorators/attachment/DidCommAttachment'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 
 export interface BaseInvitationOptions {
@@ -57,7 +55,7 @@ export class DidCommConnectionInvitationMessage extends DidCommMessage {
         this.routingKeys = options.routingKeys
       }
 
-      // @ts-ignore
+      // @ts-expect-error
       if (options.did && (options.recipientKeys || options.routingKeys || options.serviceEndpoint)) {
         throw new CredoError(
           'either the did or the recipientKeys/serviceEndpoint/routingKeys must be set, but not both'
@@ -132,7 +130,7 @@ export class DidCommConnectionInvitationMessage extends DidCommMessage {
    * @throws Error when the url can not be decoded to JSON, or decoded message is not a valid 'DidCommConnectionInvitationMessage'
    */
   public static fromUrl(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
+    const parsedUrl = queryString.parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl.c_i ?? parsedUrl.d_m
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)

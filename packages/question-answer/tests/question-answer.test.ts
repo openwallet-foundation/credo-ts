@@ -1,12 +1,8 @@
-import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
-
 import { Agent } from '@credo-ts/core'
-
-import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
-
-import { waitForQuestionAnswerRecord } from './helpers'
-
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { QuestionAnswerModule, QuestionAnswerRole, QuestionAnswerState } from '@credo-ts/question-answer'
+import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
+import { waitForQuestionAnswerRecord } from './helpers'
 
 const modules = {
   questionAnswer: new QuestionAnswerModule(),

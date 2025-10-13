@@ -1,11 +1,9 @@
-import type { V0_1ToV0_2UpdateConfig } from '../../../../src'
-
 import { readFileSync } from 'fs'
 import path from 'path'
-
 import { InMemoryStorageService } from '../../../../../../tests/InMemoryStorageService'
 import { InMemoryWalletModule } from '../../../../../../tests/InMemoryWalletModule'
 import { DidCommModule } from '../../../../../didcomm/src'
+import type { V0_1ToV0_2UpdateConfig } from '../../../../src'
 import { Agent, utils } from '../../../../src'
 import { agentDependencies as dependencies } from '../../../../tests/helpers'
 import { InjectionSymbols } from '../../../constants'

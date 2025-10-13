@@ -1,5 +1,5 @@
 import { BaseRecord, type Query, type TagValue } from '@credo-ts/core'
-import { SQL, type SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
+import { and, eq, not, or, SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import { PgColumn, pgTable } from 'drizzle-orm/pg-core'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
@@ -60,7 +60,7 @@ function jsonEqual<T extends PgColumn>(column: T, field: string, value: TagValue
  * Converts a WQL object to Drizzle where conditions
  */
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function queryToDrizzlePostgres<CredoRecord extends BaseRecord<any, any, any> = BaseRecord>(
   query: Query<CredoRecord>,
   table: ReturnType<typeof pgTable<string, ReturnType<typeof getPostgresBaseRecordTable>>>,

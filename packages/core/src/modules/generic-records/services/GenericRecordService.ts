@@ -1,9 +1,8 @@
 import type { AgentContext } from '../../../agent'
-import type { Query, QueryOptions } from '../../../storage/StorageService'
-import type { SaveGenericRecordOption } from '../repository/GenericRecord'
-
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
+import type { Query, QueryOptions } from '../../../storage/StorageService'
+import type { SaveGenericRecordOption } from '../repository/GenericRecord'
 import { GenericRecord } from '../repository/GenericRecord'
 import { GenericRecordsRepository } from '../repository/GenericRecordsRepository'
 

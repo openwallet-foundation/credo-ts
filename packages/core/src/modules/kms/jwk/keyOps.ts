@@ -1,10 +1,8 @@
-import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
-
 import { z } from 'zod'
-import { KeyManagementError } from '../error/KeyManagementError'
-
 import { zUniqueArray } from '../../../utils/zod'
+import { KeyManagementError } from '../error/KeyManagementError'
 import { getJwkHumanDescription } from './humanDescription'
+import type { KmsJwkPrivate, KmsJwkPublic } from './knownJwk'
 
 export const zKnownJwkUse = z.union([z.literal('sig').describe('signature'), z.literal('enc').describe('encryption')])
 export type KnownJwkUse = z.output<typeof zKnownJwkUse>

@@ -1,13 +1,11 @@
 import type { AgentContext, BaseRecordAny, ResolvedDidCommService } from '@credo-ts/core'
+import { CredoError, Kms, utils } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
+import { ServiceDecorator } from './decorators/service/ServiceDecorator'
 import type { DidCommRouting } from './models'
+import { DidCommOutboundMessageContext } from './models'
 import type { DidCommConnectionRecord } from './modules/connections/repository'
 import type { DidCommOutOfBandRecord } from './modules/oob'
-
-import { CredoError, Kms, utils } from '@credo-ts/core'
-
-import { ServiceDecorator } from './decorators/service/ServiceDecorator'
-import { DidCommOutboundMessageContext } from './models'
 import {
   DidCommInvitationType,
   DidCommOutOfBandRepository,
@@ -261,7 +259,7 @@ async function createOurService(
     `No previous sent message in thread for outbound message ${message.id} with type ${message.type}, setting up routing`
   )
 
-  let routing: DidCommRouting | undefined = undefined
+  let routing: DidCommRouting | undefined
 
   // Extract routing from out of band record if possible
   const oobRecordRecipientRouting = outOfBandRecord?.metadata.get(DidCommOutOfBandRecordMetadataKeys.RecipientRouting)

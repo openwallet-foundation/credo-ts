@@ -1,16 +1,13 @@
-import type { TagsBase } from '../../../storage/BaseRecord'
-import type { DidRecordMetadata } from './didRecordMetadataTypes'
-
 import { Type } from 'class-transformer'
 import { IsEnum, ValidateNested } from 'class-validator'
-
+import type { TagsBase } from '../../../storage/BaseRecord'
 import { BaseRecord } from '../../../storage/BaseRecord'
 import { uuid } from '../../../utils/uuid'
+import type { DidDocumentKey } from '../DidsApiOptions'
 import { DidDocument } from '../domain'
 import { DidDocumentRole } from '../domain/DidDocumentRole'
 import { parseDid } from '../domain/parse'
-
-import type { DidDocumentKey } from '../DidsApiOptions'
+import type { DidRecordMetadata } from './didRecordMetadataTypes'
 import { DidRecordMetadataKeys } from './didRecordMetadataTypes'
 
 export interface DidRecordProps {

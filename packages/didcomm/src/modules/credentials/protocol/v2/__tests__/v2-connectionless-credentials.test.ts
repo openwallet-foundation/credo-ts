@@ -1,15 +1,8 @@
-import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
-import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
-import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type {
-  AcceptCredentialOfferOptions,
-  AcceptCredentialRequestOptions,
-} from '../../../DidCommCredentialsApiOptions'
-
 import { ReplaySubject, Subject } from 'rxjs'
-
+import type { SubjectMessage } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectInboundTransport } from '../../../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../../../tests/transport/SubjectOutboundTransport'
+import type { AnonCredsTestsAgent } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import { getAnonCredsIndyModules } from '../../../../../../../anoncreds/tests/legacyAnonCredsSetup'
 import {
   anoncredsDefinitionFourAttributesNoRevocation,
@@ -18,7 +11,12 @@ import {
 import { Agent } from '../../../../../../../core/src/agent/Agent'
 import { getAgentOptions, waitForCredentialRecordSubject } from '../../../../../../../core/tests/helpers'
 import testLogger from '../../../../../../../core/tests/logger'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import type {
+  AcceptCredentialOfferOptions,
+  AcceptCredentialRequestOptions,
+} from '../../../DidCommCredentialsApiOptions'
 import { DidCommAutoAcceptCredential } from '../../../models/DidCommCredentialAutoAcceptType'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'

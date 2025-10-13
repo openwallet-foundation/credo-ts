@@ -86,14 +86,14 @@ export async function pushDrizzleSchema(drizzleModule: DrizzleStorageModule) {
   if (isDrizzlePostgresDatabase(drizzleModule.config.database)) {
     const { apply } = await pushSchema(
       drizzleModule.config.schemas,
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       drizzleModule.config.database as PgDatabase<any>
     )
     await apply()
   } else {
     const { apply } = await pushSQLiteSchema(
       drizzleModule.config.schemas,
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       drizzleModule.config.database as any
     )
     await apply()

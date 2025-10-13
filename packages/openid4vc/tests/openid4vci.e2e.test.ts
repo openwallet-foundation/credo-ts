@@ -3,19 +3,19 @@ import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   JwsService,
   Jwt,
   JwtPayload,
   Kms,
   X509Certificate,
   X509Module,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
-  calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import { AuthorizationFlow } from '@openid4vc/openid4vci'
@@ -37,7 +37,6 @@ import {
 const serverPort = 1234
 const baseUrl = `http://localhost:${serverPort}`
 const issuanceBaseUrl = `${baseUrl}/oid4vci`
-const _verificationBaseUrl = `${baseUrl}/oid4vp`
 
 describe('OpenId4Vc', () => {
   let expressApp: Express

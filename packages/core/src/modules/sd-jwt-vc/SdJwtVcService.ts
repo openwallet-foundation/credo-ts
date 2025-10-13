@@ -1,6 +1,26 @@
 import type { SDJwt } from '@sd-jwt/core'
+import { decodeSdJwtSync } from '@sd-jwt/decode'
+import { selectDisclosures } from '@sd-jwt/present'
+import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
+import { injectable } from 'tsyringe'
+import { AgentContext } from '../../agent'
+import { Hasher, JwtPayload } from '../../crypto'
+import { CredoError } from '../../error'
+import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
+import type { JsonObject } from '../../types'
+import { dateToSeconds, nowInSeconds, TypedArrayEncoder } from '../../utils'
+import { getDomainFromUrl } from '../../utils/domain'
+import { fetchWithTimeout } from '../../utils/fetch'
+import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
+import { KeyManagementApi, PublicJwk } from '../kms'
+import { ClaimFormat } from '../vc/index'
+import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
+import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
+import { buildDisclosureFrameForPayload } from './disclosureFrame'
+import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
+import { SdJwtVcError } from './SdJwtVcError'
 import type {
   SdJwtVcHeader,
   SdJwtVcIssuer,
@@ -9,29 +29,6 @@ import type {
   SdJwtVcSignOptions,
   SdJwtVcVerifyOptions,
 } from './SdJwtVcOptions'
-
-import { decodeSdJwtSync } from '@sd-jwt/decode'
-import { selectDisclosures } from '@sd-jwt/present'
-import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
-import { injectable } from 'tsyringe'
-
-import { AgentContext } from '../../agent'
-import { Hasher, JwtPayload } from '../../crypto'
-import { CredoError } from '../../error'
-import { X509Service } from '../../modules/x509/X509Service'
-import type { JsonObject } from '../../types'
-import { TypedArrayEncoder, dateToSeconds, nowInSeconds } from '../../utils'
-import { getDomainFromUrl } from '../../utils/domain'
-import { fetchWithTimeout } from '../../utils/fetch'
-import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { ClaimFormat } from '../vc/index'
-import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
-
-import { KeyManagementApi, PublicJwk } from '../kms'
-import { SdJwtVcError } from './SdJwtVcError'
-import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
-import { buildDisclosureFrameForPayload } from './disclosureFrame'
-import { SdJwtVcRecord, SdJwtVcRepository } from './repository'
 import type { SdJwtVcTypeMetadata } from './typeMetadata'
 import {
   extractKeyFromHolderBinding,

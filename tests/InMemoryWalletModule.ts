@@ -1,9 +1,7 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-
-import { InMemoryStorageService } from './InMemoryStorageService'
-
 import { CredoError, InjectionSymbols, Kms } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../packages/node/src'
+import { InMemoryStorageService } from './InMemoryStorageService'
 
 export class InMemoryWalletModule implements Module {
   private inMemoryStorageService = new InMemoryStorageService()

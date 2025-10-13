@@ -1,36 +1,4 @@
 import type { AnonCredsCredentialRequest } from '@credo-ts/anoncreds'
-import type { DidRepository } from '@credo-ts/core'
-
-import {
-  CacheModuleConfig,
-  DidResolverService,
-  DidsModuleConfig,
-  InMemoryLruCache,
-  InjectionSymbols,
-  SignatureSuiteToken,
-  W3cCredentialsModuleConfig,
-} from '@credo-ts/core'
-import {
-  DidCommCredentialExchangeRecord,
-  DidCommCredentialPreviewAttribute,
-  DidCommCredentialRole,
-  DidCommCredentialState,
-  DidCommProofExchangeRecord,
-  DidCommProofRole,
-  DidCommProofState,
-} from '@credo-ts/didcomm'
-import { Subject } from 'rxjs'
-
-import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
-import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
-import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
-import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
-import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
-
-import { InMemoryTailsFileService } from './InMemoryTailsFileService'
-import { anoncreds } from './helpers'
-
 import {
   AnonCredsCredentialDefinitionPrivateRecord,
   AnonCredsCredentialDefinitionPrivateRepository,
@@ -54,6 +22,34 @@ import {
   AnonCredsSchemaRepository,
   AnonCredsVerifierServiceSymbol,
 } from '@credo-ts/anoncreds'
+import type { DidRepository } from '@credo-ts/core'
+import {
+  CacheModuleConfig,
+  DidResolverService,
+  DidsModuleConfig,
+  InjectionSymbols,
+  InMemoryLruCache,
+  SignatureSuiteToken,
+  W3cCredentialsModuleConfig,
+} from '@credo-ts/core'
+import {
+  DidCommCredentialExchangeRecord,
+  DidCommCredentialPreviewAttribute,
+  DidCommCredentialRole,
+  DidCommCredentialState,
+  DidCommProofExchangeRecord,
+  DidCommProofRole,
+  DidCommProofState,
+} from '@credo-ts/didcomm'
+import { Subject } from 'rxjs'
+import { InMemoryStorageService } from '../../../tests/InMemoryStorageService'
+import { AnonCredsRegistryService } from '../../anoncreds/src/services/registry/AnonCredsRegistryService'
+import { dateToTimestamp } from '../../anoncreds/src/utils/timestamp'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
+import { agentDependencies, getAgentConfig, getAgentContext, testLogger } from '../../core/tests'
+import { AnonCredsRsHolderService, AnonCredsRsIssuerService, AnonCredsRsVerifierService } from '../src/anoncreds-rs'
+import { anoncreds } from './helpers'
+import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 
 const registry = new InMemoryAnonCredsRegistry()
 const tailsFileService = new InMemoryTailsFileService()

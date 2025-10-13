@@ -62,7 +62,7 @@ describe('DidRegistrar', () => {
     it('should return an error state if no key or key type is provided', async () => {
       const result = await keyDidRegistrar.create(agentContext, {
         method: 'key',
-        // @ts-ignore
+        // @ts-expect-error
         options: {},
       })
 

@@ -9,7 +9,7 @@ import { assymetricPublicJwkMatches } from './equals'
 import { getJwkHumanDescription } from './humanDescription'
 import type { KnownJwaKeyAgreementAlgorithm, KnownJwaSignatureAlgorithm } from './jwa'
 import { calculateJwkThumbprint } from './jwkThumbprint'
-import { type KmsJwkPublicAsymmetric, assertJwkAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
+import { assertJwkAsymmetric, type KmsJwkPublicAsymmetric, publicJwkFromPrivateJwk, zKmsJwkPublic } from './knownJwk'
 
 import {
   Ed25519PublicJwk,
@@ -111,6 +111,7 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
   public toJson({ includeKid = true }: { includeKid?: boolean } = {}): Jwk['jwk'] {
     if (includeKid) return this.jwk.jwk
 
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { kid, ...jwk } = this.jwk.jwk
     return jwk
   }
@@ -302,12 +303,6 @@ export class PublicJwk<Jwk extends SupportedPublicJwk = SupportedPublicJwk> {
    */
   public equals(other: PublicJwk) {
     return assymetricPublicJwkMatches(this.toJson(), other.toJson())
-  }
-
-  private toJSON() {
-    return {
-      jwk: this.jwk,
-    }
   }
 
   /**

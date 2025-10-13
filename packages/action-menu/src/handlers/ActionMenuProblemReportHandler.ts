@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '@credo-ts/didcomm'
-import type { ActionMenuService } from '../services'
-
 import { ActionMenuProblemReportMessage } from '../messages'
+import type { ActionMenuService } from '../services'
 
 /**
  * @internal

@@ -8,7 +8,7 @@ import {
   RecordDuplicateError,
   RecordNotFoundError,
 } from '@credo-ts/core'
-import { DrizzleQueryError, type Simplify, and, eq } from 'drizzle-orm'
+import { and, DrizzleQueryError, eq, type Simplify } from 'drizzle-orm'
 import { PgTable, pgTable } from 'drizzle-orm/pg-core'
 import { SQLiteTable as _SQLiteTable, sqliteTable } from 'drizzle-orm/sqlite-core'
 import { type DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
@@ -24,7 +24,7 @@ import {
 import { type DrizzleCustomTagKeyMapping, queryToDrizzlePostgres } from './queryToDrizzlePostgres'
 import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type AnyDrizzleAdapter = BaseDrizzleRecordAdapter<any, any, any, any, any>
 
 export type DrizzleAdapterValues<Table extends _SQLiteTable> = Simplify<
@@ -42,7 +42,7 @@ export type DrizzleAdapterRecordValues<Table extends _SQLiteTable> = Simplify<
  * Adapter between a specific Record class and the record Type
  */
 export abstract class BaseDrizzleRecordAdapter<
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   CredoRecord extends BaseRecord<any, any, any>,
   PostgresTable extends ReturnType<typeof pgTable<string, ReturnType<typeof getPostgresBaseRecordTable>>>,
   PostgresSchema extends Record<string, unknown>,
@@ -182,6 +182,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
+        // biome-ignore lint/correctness/noUnusedVariables: no explanation
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
@@ -204,6 +205,7 @@ export abstract class BaseDrizzleRecordAdapter<
           })
         }
 
+        // biome-ignore lint/correctness/noUnusedVariables: no explanation
         const { contextCorrelationId, ...item } = result
         return this._toRecord(item as DrizzleAdapterRecordValues<SQLiteTable>)
       }
@@ -221,13 +223,13 @@ export abstract class BaseDrizzleRecordAdapter<
   public async insert(agentContext: AgentContext, record: CredoRecord) {
     try {
       if (isDrizzlePostgresDatabase(this.database)) {
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         await this.database.insert(this.table.postgres).values(this.getValuesWithBase(agentContext, record) as any)
         return
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         await this.database.insert(this.table.sqlite).values(this.getValuesWithBase(agentContext, record) as any)
         return
       }

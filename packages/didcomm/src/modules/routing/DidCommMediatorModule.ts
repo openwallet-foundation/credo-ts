@@ -1,11 +1,9 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModuleConfig'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
-import { DidCommProtocol } from '../../models'
-
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../models'
 import { DidCommMediatorApi } from './DidCommMediatorApi'
+import type { DidCommMediatorModuleConfigOptions } from './DidCommMediatorModuleConfig'
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
 import { DidCommForwardHandler } from './handlers/DidCommForwardHandler'
 import { DidCommKeylistUpdateHandler } from './handlers/DidCommKeylistUpdateHandler'

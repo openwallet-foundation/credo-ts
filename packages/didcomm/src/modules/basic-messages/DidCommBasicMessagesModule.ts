@@ -1,9 +1,8 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
-import { DidCommProtocol } from '../../models'
-
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
+import { DidCommProtocol } from '../../models'
 import { DidCommBasicMessageRole } from './DidCommBasicMessageRole'
 import { DidCommBasicMessagesApi } from './DidCommBasicMessagesApi'
 import { DidCommBasicMessageHandler } from './handlers'

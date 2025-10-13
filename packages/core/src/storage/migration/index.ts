@@ -1,6 +1,6 @@
+export * from './isUpToDate'
 export * from './repository/StorageVersionRecord'
 export * from './repository/StorageVersionRepository'
 export * from './StorageUpdateService'
 export * from './UpdateAssistant'
 export type { Update } from './updates'
-export * from './isUpToDate'

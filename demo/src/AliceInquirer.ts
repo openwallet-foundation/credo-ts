@@ -1,7 +1,7 @@
 import type { DidCommCredentialExchangeRecord, DidCommProofExchangeRecord } from '@credo-ts/didcomm'
 
 import { clear } from 'console'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 import { prompt } from 'inquirer'
 
 import { Alice } from './Alice'
@@ -11,7 +11,7 @@ import { Title } from './OutputClass'
 
 export const runAlice = async () => {
   clear()
-  console.log(textSync('Alice', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Alice', { horizontalLayout: 'full' }))
   const alice = await AliceInquirer.build()
   await alice.processAnswer()
 }

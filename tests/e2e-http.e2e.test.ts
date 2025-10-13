@@ -1,10 +1,3 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-
-import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
-
-import { e2eTest } from './e2e-test'
-
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
@@ -12,6 +5,10 @@ import {
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport } from '@credo-ts/node'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAgentOptions } from '../packages/core/tests/helpers'
+import { e2eTest } from './e2e-test'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',

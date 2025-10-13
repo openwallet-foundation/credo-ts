@@ -7,8 +7,8 @@ import {
   EddsaSaSigSecp256k1,
   PublicKey,
   PublicKeyTransformer,
-  RsaSig2018,
   publicKeyTypes,
+  RsaSig2018,
 } from '../publicKey'
 
 const publicKeysJson = [
@@ -86,7 +86,7 @@ describe('Did | PublicKey', () => {
   )
 
   const publicKeyClassToJsonTests: [string, PublicKey, Record<string, string | undefined>, string][] =
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     publicKeysJson.map((pk) => [pk.class.name, new pk.class({ ...(pk.json as any) }), pk.json, pk.valueKey])
 
   test.each(publicKeyClassToJsonTests)(

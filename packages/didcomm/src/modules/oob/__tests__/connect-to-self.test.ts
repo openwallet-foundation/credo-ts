@@ -1,6 +1,5 @@
-import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
-
 import { Subject } from 'rxjs'
+import type { SubjectMessage } from '../../../../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../../../../tests/transport/SubjectOutboundTransport'
@@ -59,7 +58,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.DidExchange)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
@@ -85,7 +84,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.DidExchange)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })
@@ -111,7 +110,7 @@ describe('out of band', () => {
       expect(senderReceiverConnection.state).toBe(DidCommDidExchangeState.Completed)
       expect(senderReceiverConnection.protocol).toBe(DidCommHandshakeProtocol.Connections)
 
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      // biome-ignore lint/style/noNonNullAssertion: no explanation
       expect(receiverSenderConnection).toBeConnectedWith(senderReceiverConnection!)
       expect(senderReceiverConnection).toBeConnectedWith(receiverSenderConnection)
     })

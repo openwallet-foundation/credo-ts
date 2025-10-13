@@ -1,17 +1,15 @@
+import { filter, map, Subject, timeout } from 'rxjs'
 import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
-import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
-
-import { Subject, filter, map, timeout } from 'rxjs'
-
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
+import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
 import { DidCommEventTypes } from '../../didcomm/src'
 import {
   DidCommConnectionType,
   DidCommDidExchangeState,
   DidCommHandshakeProtocol,
 } from '../../didcomm/src/modules/connections'
+import type { OutOfBandDidCommService } from '../../didcomm/src/modules/oob'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateMessage,
@@ -103,7 +101,7 @@ describe('out of band with mediation', () => {
       { label: 'alice' }
     )
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceMediatorConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceMediatorConnection!.id)
     expect(aliceMediatorConnection.state).toBe(DidCommDidExchangeState.Completed)
 
@@ -154,7 +152,7 @@ describe('out of band with mediation', () => {
       label: 'alice',
     })
 
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: no explanation
     aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection!.id)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 

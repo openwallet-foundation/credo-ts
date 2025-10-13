@@ -1,10 +1,9 @@
 import type { AnonCredsTestsAgent } from '../../anoncreds/tests/anoncredsSetup'
-import type { EventReplaySubject } from '../../core/tests'
-
-import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { setupAnonCredsTests } from '../../anoncreds/tests/anoncredsSetup'
 import { presentationDefinition } from '../../anoncreds/tests/fixtures/presentation-definition'
+import { InMemoryAnonCredsRegistry } from '../../anoncreds/tests/InMemoryAnonCredsRegistry'
 import { W3cCredential, W3cCredentialSubject } from '../../core/src/index'
+import type { EventReplaySubject } from '../../core/tests'
 import { createDidKidVerificationMethod } from '../../core/tests'
 import { waitForCredentialRecordSubject, waitForProofExchangeRecord } from '../../core/tests/helpers'
 import {
@@ -167,7 +166,7 @@ describe('anoncreds w3c data integrity e2e tests', () => {
 
     const pdCopy = JSON.parse(JSON.stringify(presentationDefinition))
     for (const ide of pdCopy.input_descriptors) {
-      // biome-ignore lint/performance/noDelete: <explanation>
+      // biome-ignore lint/performance/noDelete: no explanation
       delete ide.constraints?.statuses
       if (ide.constraints.fields?.[0].filter?.const) {
         ide.constraints.fields[0].filter.const = issuerId

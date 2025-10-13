@@ -2,16 +2,16 @@ import { Agent, GenericRecord, RecordDuplicateError, RecordNotFoundError } from 
 import { agentDependencies } from '@credo-ts/node'
 import { GenericRecordsRepository } from '../../../../core/src/modules/generic-records/repository/GenericRecordsRepository'
 import {
-  type DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
   inMemoryDrizzleSqliteDatabase,
   pushDrizzleSchema,
 } from '../../../tests/testDatabase'
-import { DrizzleStorageModule } from '../../DrizzleStorageModule'
 import { coreBundle } from '../../core/bundle'
+import { DrizzleStorageModule } from '../../DrizzleStorageModule'
 
 describe.each(['postgres', 'sqlite'] as const)('DrizzleStorageService with %s', (drizzleDialect) => {
-  let postgresDatabase: DrizzlePostgresTestDatabase | undefined = undefined
+  let postgresDatabase: DrizzlePostgresTestDatabase | undefined
   let agent: Agent
 
   beforeAll(async () => {

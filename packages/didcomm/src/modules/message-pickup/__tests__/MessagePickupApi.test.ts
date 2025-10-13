@@ -1,9 +1,5 @@
-import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
-import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-
-import { Subject } from 'rxjs'
-
 import type { Logger } from '@credo-ts/core'
+import { Subject } from 'rxjs'
 import type { MockedFunction } from 'vitest'
 import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
@@ -16,11 +12,13 @@ import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExch
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
+import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
 import {
   DidCommMessageDeliveryV2Message,
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
 } from '../protocol'
+import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({

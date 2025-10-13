@@ -1,7 +1,6 @@
+import LRUMap from 'lru_map'
 import type { AgentContext } from '../../agent/context'
 import type { Cache } from './Cache'
-
-import LRUMap from 'lru_map'
 
 export interface InMemoryLruCacheOptions {
   /** The maximum number of entries allowed in the cache */
@@ -38,7 +37,7 @@ export class InMemoryLruCache implements Cache {
     expiresInSeconds?: number
   ): Promise<void> {
     this.removeExpiredItems()
-    let expiresDate = undefined
+    let expiresDate: Date | undefined
 
     if (expiresInSeconds) {
       expiresDate = new Date()

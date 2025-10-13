@@ -1,6 +1,5 @@
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
-
 import type { DidCommMediatorRoutingRecordRoutingKey } from '@credo-ts/didcomm'
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommMediatorRouting = sqliteTable(

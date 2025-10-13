@@ -1,8 +1,7 @@
 import type { DidCommProblemReportErrorOptions } from '../../../errors'
-import type { DidExchangeProblemReportReason } from './DidExchangeProblemReportReason'
-
 import { DidCommProblemReportError } from '../../../errors'
 import { DidCommDidExchangeProblemReportMessage } from '../messages'
+import type { DidExchangeProblemReportReason } from './DidExchangeProblemReportReason'
 
 interface DidExchangeProblemReportErrorOptions extends DidCommProblemReportErrorOptions {
   problemCode: DidExchangeProblemReportReason

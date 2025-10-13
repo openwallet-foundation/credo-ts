@@ -1,10 +1,8 @@
-import type { DidDoc } from '../models'
-
 import { Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString, IsUrl, ValidateNested } from 'class-validator'
-
 import { DidCommMessage } from '../../../DidCommMessage'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
+import type { DidDoc } from '../models'
 import { DidCommConnection } from '../models'
 
 export interface DidCommConnectionRequestMessageOptions {

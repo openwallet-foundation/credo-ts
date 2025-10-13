@@ -1,6 +1,5 @@
-import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-
 import type { DidCommAutoAcceptProof, DidCommProofRole, DidCommProofState } from '@credo-ts/didcomm'
+import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 import { didcommConnection } from '../connection-record/sqlite'
 

@@ -1,7 +1,6 @@
 import type { BaseAgent } from '@credo-ts/core'
-import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
-
 import { CredoError } from '@credo-ts/core'
+import type { DidCommCredentialExchangeRecord } from '../../modules/credentials'
 
 import {
   DidCommCredentialExchangeRepository,
