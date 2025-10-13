@@ -5,7 +5,7 @@ export default defineConfig(
   config.map((e) => ({
     ...e,
     dts: {
-      ...e.dts,
+      ...(typeof e.dts === 'object' ? e.dts : {}),
       // We have overridden the tsconfig for node module
       tsconfig: 'tsconfig.build.json',
     },
