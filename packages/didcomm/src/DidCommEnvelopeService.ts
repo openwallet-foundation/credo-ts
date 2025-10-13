@@ -11,7 +11,7 @@ import {
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommEncryptedMessage, DidCommPlaintextMessage } from './types'
 
-import { Logger, injectable } from '@credo-ts/core'
+import { type Logger, injectable } from '@credo-ts/core'
 
 import { DidCommModuleConfig } from './DidCommModuleConfig'
 import { getResolvedDidcommServiceWithSigningKeyId } from './modules/connections/services/helpers'
@@ -280,6 +280,10 @@ export class DidCommEnvelopeService {
       // Forward messages are anon packed
       encryptedMessage = await this.encryptDidcommV1Message(agentContext, forwardJson, [routingKey])
     }
+
+    this.logger.debug(`Packed outbound message ${message['@type']}`, {
+      routingKeys: routingKeys.map((routingKey) => routingKey.fingerprint),
+    })
 
     return encryptedMessage
   }

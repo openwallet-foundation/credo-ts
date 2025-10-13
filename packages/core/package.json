@@ -1,14 +1,29 @@
 {
   "name": "@credo-ts/core",
-  "main": "src/index",
-  "types": "src/index",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
   "version": "0.5.13",
   "files": ["build"],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "react-native": {
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js",
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
@@ -17,11 +32,8 @@
     "directory": "packages/core"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@animo-id/mdoc": "^0.5.2",
@@ -38,13 +50,13 @@
     "@peculiar/asn1-schema": "^2.3.15",
     "@peculiar/asn1-x509": "^2.3.15",
     "@peculiar/x509": "^1.13.0",
-    "@sd-jwt/core": "^0.10.0",
-    "@sd-jwt/decode": "^0.10.0",
-    "@sd-jwt/jwt-status-list": "^0.10.0",
-    "@sd-jwt/present": "^0.10.0",
-    "@sd-jwt/sd-jwt-vc": "^0.10.0",
-    "@sd-jwt/types": "^0.10.0",
-    "@sd-jwt/utils": "^0.10.0",
+    "@sd-jwt/core": "^0.15.0",
+    "@sd-jwt/decode": "^0.15.0",
+    "@sd-jwt/jwt-status-list": "^0.15.0",
+    "@sd-jwt/present": "^0.15.0",
+    "@sd-jwt/sd-jwt-vc": "^0.15.1",
+    "@sd-jwt/types": "^0.15.0",
+    "@sd-jwt/utils": "^0.15.0",
     "@sphereon/pex-models": "catalog:",
     "@sphereon/ssi-types": "0.33.0",
     "@stablelib/ed25519": "catalog:",
@@ -62,9 +74,9 @@
     "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
     "tsyringe": "catalog:",
-    "uuid": "^11.1.0",
+    "uuid": "^13.0.0",
     "varint": "^6.0.0",
-    "web-did-resolver": "^2.0.21",
+    "web-did-resolver": "^2.0.30",
     "webcrypto-core": "^1.8.1",
     "zod": "catalog:"
   },
@@ -73,7 +85,6 @@
     "@types/object-inspect": "^1.8.0",
     "@types/varint": "^6.0.0",
     "nock": "catalog:",
-    "rimraf": "catalog:",
     "tslog": "^4.8.2",
     "typescript": "catalog:"
   }

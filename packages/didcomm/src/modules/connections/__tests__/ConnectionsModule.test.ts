@@ -1,8 +1,12 @@
+import { DidRepository, DidResolverService } from '@credo-ts/core'
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../../models'
+import { DidCommOutOfBandService } from '../../oob'
+import { DidCommRoutingService } from '../../routing'
 import { DidCommConnectionsModule } from '../DidCommConnectionsModule'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import { DidExchangeProtocol } from '../DidExchangeProtocol'
@@ -14,9 +18,9 @@ import { DidCommDidRotateService } from '../services/DidCommDidRotateService'
 describe('DidCommConnectionsModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
     } as unknown as DependencyManager
 
     const connectionsModule = new DidCommConnectionsModule()
@@ -38,7 +42,20 @@ describe('DidCommConnectionsModule', () => {
 
   test('registers features on the feature registry', async () => {
     const featureRegistry = new DidCommFeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[DidCommFeatureRegistry, featureRegistry]] })
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommFeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommConnectionService, {} as unknown as DidCommConnectionService],
+        [DidCommOutOfBandService, {} as unknown as DidCommOutOfBandService],
+        [DidCommRoutingService, {} as unknown as DidCommRoutingService],
+        [DidRepository, {} as unknown as DidRepository],
+        [DidResolverService, {} as unknown as DidResolverService],
+        [DidCommTrustPingService, {} as unknown as DidCommTrustPingService],
+        [DidExchangeProtocol, {} as unknown as DidExchangeProtocol],
+        [DidCommDidRotateService, {} as unknown as DidCommDidRotateService],
+      ],
+    })
     await new DidCommConnectionsModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([

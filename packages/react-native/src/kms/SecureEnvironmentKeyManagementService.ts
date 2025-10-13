@@ -42,11 +42,12 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   }
 
   public async deleteKey(_agentContext: AgentContext, options: Kms.KmsDeleteKeyOptions): Promise<boolean> {
+    const secureEnvironment = await this.secureEnvironment
     try {
-      await this.secureEnvironment.deleteKey(options.keyId)
+      await secureEnvironment.deleteKey(options.keyId)
       return true
     } catch (error) {
-      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
+      if (error instanceof secureEnvironment.KeyNotFoundError) {
         return false
       }
 
@@ -82,9 +83,10 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
     }
 
     const keyId = options.keyId ?? utils.uuid()
+    const secureEnvironment = await this.secureEnvironment
 
     try {
-      await this.secureEnvironment.generateKeypair(keyId)
+      await secureEnvironment.generateKeypair(keyId)
 
       return {
         keyId,
@@ -92,7 +94,7 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       }
     } catch (error) {
       if (error instanceof Kms.KeyManagementError) throw error
-      if (error instanceof this.secureEnvironment.KeyAlreadyExistsError) {
+      if (error instanceof secureEnvironment.KeyAlreadyExistsError) {
         throw new Kms.KeyManagementKeyExistsError(keyId, this.backend)
       }
 
@@ -108,19 +110,21 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
       )
     }
 
+    const secureEnvironment = await this.secureEnvironment
+
     try {
       // TODO: can we store something like 'use' for the key in secure environment?
       // Kms.assertKeyAllowsSign(publicJwk)
 
       // Perform the signing operation
-      const signature = await this.secureEnvironment.sign(options.keyId, options.data)
+      const signature = await secureEnvironment.sign(options.keyId, options.data)
 
       return {
         signature,
       }
     } catch (error) {
-      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
-        throw new Kms.KeyManagementKeyNotFoundError(options.keyId, this.backend)
+      if (error instanceof secureEnvironment.KeyNotFoundError) {
+        throw new Kms.KeyManagementKeyNotFoundError(options.keyId, [this.backend])
       }
 
       throw new Kms.KeyManagementError('Error signing with key', { cause: error })
@@ -145,12 +149,14 @@ export class SecureEnvironmentKeyManagementService implements Kms.KeyManagementS
   }
 
   private async getKeyAsserted(keyId: string) {
+    const secureEnvironment = await this.secureEnvironment
+
     try {
-      const publicKeyBytes = await this.secureEnvironment.getPublicBytesForKeyId(keyId)
+      const publicKeyBytes = await secureEnvironment.getPublicBytesForKeyId(keyId)
       return this.publicJwkFromPublicKeyBytes(publicKeyBytes, keyId)
     } catch (error) {
-      if (error instanceof this.secureEnvironment.KeyNotFoundError) {
-        throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      if (error instanceof secureEnvironment.KeyNotFoundError) {
+        throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
       }
 
       throw new Kms.KeyManagementError(`Error retrieving key with id '${keyId}' from backend ${this.backend}`, {

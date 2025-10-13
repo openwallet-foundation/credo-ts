@@ -8,6 +8,10 @@ import { DidCommProtocol } from '../../models'
 
 import { DidCommCredentialsApi } from './DidCommCredentialsApi'
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
+import {
+  DidCommRevocationNotificationV1Handler,
+  DidCommRevocationNotificationV2Handler,
+} from './protocol/revocation-notification/handlers'
 import { DidCommRevocationNotificationService } from './protocol/revocation-notification/services'
 import { DidCommCredentialV2Protocol } from './protocol/v2'
 import { DidCommCredentialExchangeRepository } from './repository'
@@ -15,7 +19,7 @@ import { DidCommCredentialExchangeRepository } from './repository'
 /**
  * Default credentialProtocols that will be registered if the `credentialProtocols` property is not configured.
  */
-export type DefaultCredentialProtocols = []
+export type DefaultDidCommCredentialProtocols = [DidCommCredentialV2Protocol<[]>]
 
 // CredentialsModuleOptions makes the credentialProtocols property optional from the config, as it will set it when not provided.
 export type DidCommCredentialsModuleOptions<CredentialProtocols extends DidCommCredentialProtocol[]> = Optional<
@@ -24,7 +28,7 @@ export type DidCommCredentialsModuleOptions<CredentialProtocols extends DidCommC
 >
 
 export class DidCommCredentialsModule<
-  CredentialProtocols extends DidCommCredentialProtocol[] = DefaultCredentialProtocols,
+  CredentialProtocols extends DidCommCredentialProtocol[] = DefaultDidCommCredentialProtocols,
 > implements ApiModule
 {
   public readonly config: DidCommCredentialsModuleConfig<CredentialProtocols>
@@ -58,6 +62,15 @@ export class DidCommCredentialsModule<
   public async initialize(agentContext: AgentContext): Promise<void> {
     const messageHandlerRegistry = agentContext.dependencyManager.resolve(DidCommMessageHandlerRegistry)
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+
+    const revocationNotificationService = agentContext.resolve(DidCommRevocationNotificationService)
+
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommRevocationNotificationV1Handler(revocationNotificationService)
+    )
+    messageHandlerRegistry.registerMessageHandler(
+      new DidCommRevocationNotificationV2Handler(revocationNotificationService)
+    )
 
     featureRegistry.register(
       new DidCommProtocol({

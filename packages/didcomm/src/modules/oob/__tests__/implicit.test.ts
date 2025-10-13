@@ -64,18 +64,18 @@ describe('out of band implicit', () => {
   })
 
   afterEach(async () => {
-    const connections = await faberAgent.modules.connections.getAll()
+    const connections = await faberAgent.didcomm.connections.getAll()
     for (const connection of connections) {
-      await faberAgent.modules.connections.deleteById(connection.id)
+      await faberAgent.didcomm.connections.deleteById(connection.id)
     }
 
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public',
       label: 'Custom Alice',
@@ -86,13 +86,13 @@ describe('out of band implicit', () => {
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
       state: DidCommDidExchangeState.RequestReceived,
     })
-    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+    aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -102,7 +102,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.didcomm.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${DidCommHandshakeProtocol.DidExchange} based on implicit OOB invitation pointing to specific service`, async () => {
@@ -110,7 +110,7 @@ describe('out of band implicit', () => {
     const inMemoryDidDocument = await faberAgent.dids.resolveDidDocument(inMemoryDid)
     const serviceUrl = inMemoryDidDocument.service?.[1].id
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
       did: serviceUrl!,
       alias: 'Faber public',
@@ -122,13 +122,13 @@ describe('out of band implicit', () => {
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
       state: DidCommDidExchangeState.RequestReceived,
     })
-    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+    aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -139,13 +139,13 @@ describe('out of band implicit', () => {
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    expect(await aliceAgent.modules.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.didcomm.connections.findByInvitationDid(serviceUrl!)).toEqual([aliceFaberConnection])
   })
 
   test(`make a connection with ${DidCommHandshakeProtocol.Connections} based on implicit OOB invitation`, async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       label: 'alice',
       alias: 'Faber public',
@@ -156,13 +156,13 @@ describe('out of band implicit', () => {
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
       state: DidCommDidExchangeState.RequestReceived,
     })
-    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+    aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -172,12 +172,12 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // It is possible for an agent to check if it has already a connection to a certain public entity
-    expect(await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
+    expect(await aliceAgent.didcomm.connections.findByInvitationDid(inMemoryDid)).toEqual([aliceFaberConnection])
   })
 
   test('receive an implicit invitation using an unresolvable did', async () => {
     await expect(
-      aliceAgent.modules.oob.receiveImplicitInvitation({
+      aliceAgent.didcomm.oob.receiveImplicitInvitation({
         did: 'did:sov:ZSEqSci581BDZCFPa29ScB',
         label: 'alice',
         alias: 'Faber public',
@@ -189,7 +189,7 @@ describe('out of band implicit', () => {
   test('create two connections using the same implicit invitation', async () => {
     const inMemoryDid = await createInMemoryDid(faberAgent, 'rxjs:faber')
 
-    let { connectionRecord: aliceFaberConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       label: 'alice',
       alias: 'Faber public',
@@ -200,13 +200,13 @@ describe('out of band implicit', () => {
     let faberAliceConnection = await waitForConnectionRecord(faberAgent, {
       state: DidCommDidExchangeState.RequestReceived,
     })
-    await faberAgent.modules.connections.acceptRequest(faberAliceConnection.id)
-    faberAliceConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceConnection?.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceConnection.id)
+    faberAliceConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceConnection?.id)
     expect(faberAliceConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    aliceFaberConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
+    aliceFaberConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberConnection?.id!)
     expect(aliceFaberConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberConnection).toBeConnectedWith(faberAliceConnection)
@@ -216,7 +216,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberConnection.invitationDid).toBe(inMemoryDid)
 
     // Repeat implicit invitation procedure
-    let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.modules.oob.receiveImplicitInvitation({
+    let { connectionRecord: aliceFaberNewConnection } = await aliceAgent.didcomm.oob.receiveImplicitInvitation({
       did: inMemoryDid,
       alias: 'Faber public New',
       label: 'Alice New',
@@ -227,13 +227,13 @@ describe('out of band implicit', () => {
     let faberAliceNewConnection = await waitForConnectionRecord(faberAgent, {
       state: DidCommDidExchangeState.RequestReceived,
     })
-    await faberAgent.modules.connections.acceptRequest(faberAliceNewConnection.id)
-    faberAliceNewConnection = await faberAgent.modules.connections.returnWhenIsConnected(faberAliceNewConnection?.id)
+    await faberAgent.didcomm.connections.acceptRequest(faberAliceNewConnection.id)
+    faberAliceNewConnection = await faberAgent.didcomm.connections.returnWhenIsConnected(faberAliceNewConnection?.id)
     expect(faberAliceNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     // Alice should now be connected
     // biome-ignore lint/style/noNonNullAssertion: <explanation>
-    aliceFaberNewConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceFaberNewConnection?.id!)
+    aliceFaberNewConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceFaberNewConnection?.id!)
     expect(aliceFaberNewConnection.state).toBe(DidCommDidExchangeState.Completed)
 
     expect(aliceFaberNewConnection).toBeConnectedWith(faberAliceNewConnection)
@@ -243,7 +243,7 @@ describe('out of band implicit', () => {
     expect(aliceFaberNewConnection.invitationDid).toBe(inMemoryDid)
 
     // Both connections will be associated to the same invitation did
-    const connectionsFromFaberPublicDid = await aliceAgent.modules.connections.findByInvitationDid(inMemoryDid)
+    const connectionsFromFaberPublicDid = await aliceAgent.didcomm.connections.findByInvitationDid(inMemoryDid)
     expect(connectionsFromFaberPublicDid).toHaveLength(2)
     expect(connectionsFromFaberPublicDid).toEqual(
       expect.arrayContaining([aliceFaberConnection, aliceFaberNewConnection])

@@ -1,5 +1,5 @@
 import { SDJwtInstance } from '@sd-jwt/core'
-import { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
 import type { AgentContext } from '../../../agent/context'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
@@ -158,7 +158,7 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdJwt.verify(credential.encoded, [], false)
+        await sdJwt.verify(credential.encoded)
 
         validationResults.validations.signature = {
           isValid: true,
@@ -296,7 +296,7 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdjwt.verify(presentation.encoded, [], false)
+        await sdjwt.verify(presentation.encoded)
 
         validationResults.validations.presentationSignature = {
           isValid: true,

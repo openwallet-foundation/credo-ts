@@ -2,14 +2,7 @@ import type { DummyRecord, DummyStateChangedEvent } from './dummy'
 
 import { AskarModule } from '@credo-ts/askar'
 import { Agent, ConsoleLogger, CredoError, LogLevel } from '@credo-ts/core'
-import {
-  DidCommConnectionsModule,
-  DidCommHttpOutboundTransport,
-  DidCommMessagePickupModule,
-  DidCommModule,
-  DidCommOutOfBandModule,
-  DidCommWsOutboundTransport,
-} from '@credo-ts/didcomm'
+import { DidCommHttpOutboundTransport, DidCommModule, DidCommWsOutboundTransport } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { ReplaySubject, filter, first, firstValueFrom, map, timeout } from 'rxjs'
@@ -35,20 +28,16 @@ const run = async () => {
           key: 'requester',
         },
       }),
-      didcomm: new DidCommModule(),
-      oob: new DidCommOutOfBandModule(),
-      messagePickup: new DidCommMessagePickupModule(),
-      dummy: new DummyModule(),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
+      didcomm: new DidCommModule({
+        transports: { inbound: [httpOutboundTransport], outbound: [wsOutboundTransport] },
+        connections: {
+          autoAcceptConnections: true,
+        },
       }),
+      dummy: new DummyModule(),
     },
     dependencies: agentDependencies,
   })
-
-  // Register transports
-  agent.modules.didcomm.registerOutboundTransport(wsOutboundTransport)
-  agent.modules.didcomm.registerOutboundTransport(httpOutboundTransport)
 
   // Now agent will handle messages and events from Dummy protocol
 
@@ -57,13 +46,13 @@ const run = async () => {
 
   // Connect to responder using its invitation endpoint
   const invitationUrl = await (await agentDependencies.fetch(`http://localhost:${port}/invitation`)).text()
-  const { connectionRecord } = await agent.modules.oob.receiveInvitationFromUrl(invitationUrl, {
+  const { connectionRecord } = await agent.didcomm.oob.receiveInvitationFromUrl(invitationUrl, {
     label: 'requester',
   })
   if (!connectionRecord) {
     throw new CredoError('Connection record for out-of-band invitation was not created.')
   }
-  await agent.modules.connections.returnWhenIsConnected(connectionRecord.id)
+  await agent.didcomm.connections.returnWhenIsConnected(connectionRecord.id)
 
   // Create observable for Response Received event
   const observable = agent.events.observable<DummyStateChangedEvent>(DummyEventTypes.StateChanged)

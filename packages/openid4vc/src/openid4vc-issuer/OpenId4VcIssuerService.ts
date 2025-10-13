@@ -27,8 +27,8 @@ import {
   JwtPayload,
   Kms,
   MdocApi,
-  Query,
-  QueryOptions,
+  type Query,
+  type QueryOptions,
   SdJwtVcApi,
   TypedArrayEncoder,
   W3cCredentialService,
@@ -38,11 +38,11 @@ import {
   utils,
 } from '@credo-ts/core'
 import {
-  AuthorizationServerMetadata,
+  type AuthorizationServerMetadata,
   HashAlgorithm,
-  Jwk,
-  JwtSignerJwk,
-  JwtSignerWithJwk,
+  type Jwk,
+  type JwtSignerJwk,
+  type JwtSignerWithJwk,
   Oauth2AuthorizationServer,
   Oauth2Client,
   Oauth2ErrorCodes,
@@ -53,15 +53,15 @@ import {
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
-  CredentialConfigurationSupportedWithFormats,
-  CredentialConfigurationsSupportedWithFormats,
-  CredentialIssuerMetadata,
-  CredentialRequestFormatSpecific,
-  CredentialResponse,
-  DeferredCredentialResponse,
+  type CredentialConfigurationSupportedWithFormats,
+  type CredentialConfigurationsSupportedWithFormats,
+  type CredentialIssuerMetadata,
+  type CredentialRequestFormatSpecific,
+  type CredentialResponse,
+  type DeferredCredentialResponse,
   Openid4vciDraftVersion,
   Openid4vciIssuer,
-  ParseCredentialRequestReturn,
+  type ParseCredentialRequestReturn,
   extractScopesForCredentialConfigurationIds,
   getCredentialConfigurationsMatchingRequestFormat,
 } from '@openid4vc/openid4vci'
@@ -69,17 +69,11 @@ import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import {
-  addSecondsToDate,
-  dateToSeconds,
-  getProofTypeFromPublicJwk,
-  getPublicJwkFromDid,
-  getSupportedJwaSignatureAlgorithms,
-} from '../shared/utils'
+import { getProofTypeFromPublicJwk, getPublicJwkFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
-import { OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
+import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import {
   OpenId4VcIssuanceSessionRecord,
@@ -222,7 +216,10 @@ export class OpenId4VcIssuerService {
     })
 
     const createdAt = new Date()
-    const expiresAt = addSecondsToDate(createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+    const expiresAt = utils.addSecondsToDate(
+      createdAt,
+      this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+    )
 
     const issuanceSessionRepository = this.openId4VcIssuanceSessionRepository
     const issuanceSession = new OpenId4VcIssuanceSessionRecord({
@@ -1020,14 +1017,14 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const cNonceExpiresInSeconds = this.openId4VcIssuerConfig.cNonceExpiresInSeconds
-    const cNonceExpiresAt = addSecondsToDate(new Date(), cNonceExpiresInSeconds)
+    const cNonceExpiresAt = utils.addSecondsToDate(new Date(), cNonceExpiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const cNonce = await jwsService.createJwsCompact(agentContext, {
       keyId: key.keyId,
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(cNonceExpiresAt),
+        exp: utils.dateToSeconds(cNonceExpiresAt),
       }),
       protectedHeaderOptions: {
         typ: 'credo+cnonce',
@@ -1091,7 +1088,7 @@ export class OpenId4VcIssuerService {
     const jwsService = agentContext.dependencyManager.resolve(JwsService)
 
     const expiresInSeconds = this.openId4VcIssuerConfig.refreshTokenExpiresInSeconds
-    const expiresAt = addSecondsToDate(new Date(), expiresInSeconds)
+    const expiresAt = utils.addSecondsToDate(new Date(), expiresInSeconds)
 
     const key = issuer.resolvedAccessTokenPublicJwk
     const refreshToken = await jwsService.createJwsCompact(agentContext, {
@@ -1099,7 +1096,7 @@ export class OpenId4VcIssuerService {
       payload: JwtPayload.fromJson({
         iss: issuerMetadata.credentialIssuer.credential_issuer,
         aud: issuerMetadata.credentialIssuer.credential_issuer,
-        exp: dateToSeconds(expiresAt),
+        exp: utils.dateToSeconds(expiresAt),
         issuer_state: options.issuerState,
         'pre-authorized_code': options.preAuthorizedCode,
         cnf: options.dpop
@@ -1251,15 +1248,20 @@ export class OpenId4VcIssuerService {
   ) {
     const expiresAt =
       issuanceSession.expiresAt ??
-      addSecondsToDate(issuanceSession.createdAt, this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds)
+      utils.addSecondsToDate(
+        issuanceSession.createdAt,
+        this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds
+      )
 
     issuanceSession.expiresAt = new Date(
       Math.max(
         expiresAt.getTime(),
-        addSecondsToDate(
-          new Date(),
-          Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
-        ).getTime()
+        utils
+          .addSecondsToDate(
+            new Date(),
+            Math.max(this.openId4VcIssuerConfig.statefulCredentialOfferExpirationInSeconds, interval * 2)
+          )
+          .getTime()
       )
     )
 

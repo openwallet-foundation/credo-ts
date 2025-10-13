@@ -17,3 +17,11 @@ export default function timestamp(): Uint8Array {
 export function nowInSeconds() {
   return Math.floor(new Date().getTime() / 1000)
 }
+
+export function addSecondsToDate(date: Date, seconds: number) {
+  return new Date(date.getTime() + seconds * 1000)
+}
+
+export function dateToSeconds(date: Date) {
+  return Math.floor(date.getTime() / 1000)
+}

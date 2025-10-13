@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`UpdateAssistant | v0.4 - v0.5 should correctly add 'type' tag to w3c records 1`] = `
+exports[`UpdateAssistant | v0.4 - v0.5 > should correctly add 'type' tag to w3c records 1`] = `
 {
   "0e1f070a-e31f-46cf-88db-25c1621b2f4e": {
     "id": "0e1f070a-e31f-46cf-88db-25c1621b2f4e",
@@ -104,7 +104,7 @@ exports[`UpdateAssistant | v0.4 - v0.5 should correctly add 'type' tag to w3c re
 }
 `;
 
-exports[`UpdateAssistant | v0.4 - v0.5 should correctly add role to credential exchange records 1`] = `
+exports[`UpdateAssistant | v0.4 - v0.5 > should correctly add role to credential exchange records 1`] = `
 {
   "6bab4ff7-45a1-4d66-98a4-ae81efd7f460": {
     "id": "6bab4ff7-45a1-4d66-98a4-ae81efd7f460",
@@ -581,7 +581,7 @@ exports[`UpdateAssistant | v0.4 - v0.5 should correctly add role to credential e
 }
 `;
 
-exports[`UpdateAssistant | v0.4 - v0.5 should correctly add role to proof exchange records 1`] = `
+exports[`UpdateAssistant | v0.4 - v0.5 > should correctly add role to proof exchange records 1`] = `
 {
   "3f3351dd-7b56-4288-8ed7-b9c46f33718e": {
     "id": "3f3351dd-7b56-4288-8ed7-b9c46f33718e",

@@ -7,20 +7,19 @@
     "url": "https://github.com/openwallet-foundation/credo-ts",
     "type": "git"
   },
+  "type": "module",
   "scripts": {
-    "types:check": "pnpm types:check:build && pnpm types:check:tests",
-    "types:check:tests": "tsc -p tsconfig.test.json --noEmit",
-    "types:check:build": "pnpm -r --parallel exec tsc --noEmit",
+    "types:check": "tsc -p tsconfig.json --noEmit",
     "style:check": "biome check --unsafe",
     "style:fix": "biome check --write --unsafe",
-    "clean": "pnpm -r --parallel run clean",
     "build": "pnpm -r --parallel run build",
-    "test:unit": "pnpm test --testPathIgnorePatterns e2e.test.ts",
-    "test:e2e": "pnpm test --testPathIgnorePatterns drizzle --testMatch '**/?(*.)e2e.test.ts'",
-    "test:drizzle": "pnpm test --testMatch '**/*drizzle*.test.ts'",
-    "test": "jest",
+    "test:debug": "COLLECT_FAILED_TEST_LOGS=true pnpm test",
+    "test:unit": "pnpm test --project unit",
+    "test:e2e": "pnpm test --project e2e",
+    "test:drizzle": "pnpm test --project drizzle",
+    "test": "vitest",
     "validate": "pnpm types:check && pnpm style:check",
-    "run-mediator": "ts-node ./samples/mediator.ts",
+    "run-mediator": "vite-node ./samples/mediator.ts",
     "release": "pnpm build && pnpm changeset publish --no-git-tag",
     "changeset-version": "pnpm changeset version && pnpm style:fix"
   },
@@ -32,13 +31,13 @@
     "@credo-ts/action-menu": "workspace:*",
     "@credo-ts/anoncreds": "workspace:*",
     "@credo-ts/askar": "workspace:*",
+    "@credo-ts/askar-to-drizzle-storage-migration": "workspace:*",
     "@credo-ts/cheqd": "workspace:*",
     "@credo-ts/core": "workspace:*",
     "@credo-ts/didcomm": "workspace:*",
     "@credo-ts/drizzle-storage": "workspace:*",
     "@credo-ts/drpc": "workspace:*",
     "@credo-ts/indy-sdk-to-askar-migration": "workspace:*",
-    "@credo-ts/askar-to-drizzle-storage-migration": "workspace:*",
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@credo-ts/openid4vc": "workspace:*",
@@ -47,33 +46,43 @@
     "@credo-ts/redis-cache": "workspace:*",
     "@credo-ts/tenants": "workspace:*",
     "@credo-ts/webvh": "workspace:*",
-    "@jest/types": "^29.6.3",
+    "@credo-ts/hedera": "workspace:*",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "@types/cors": "^2.8.19",
     "@types/express": "catalog:",
-    "@types/jest": "^30.0.0",
     "@types/node": "catalog:",
     "@types/supertest": "^6.0.3",
     "@types/varint": "^6.0.3",
-    "drizzle-kit": "^0.31.4",
     "@types/ws": "catalog:",
+    "@vitest/coverage-v8": "3.2.4",
     "cors": "^2.8.5",
+    "drizzle-kit": "^0.31.4",
     "express": "catalog:",
-    "jest": "^30.0.3",
     "nock": "catalog:",
+    "reflect-metadata": "catalog:",
     "rxjs": "catalog:",
-    "supertest": "^7.1.3",
-    "ts-jest": "^29.4.0",
-    "ts-node": "catalog:",
+    "supertest": "^7.1.4",
+    "tsdown": "^0.15.6",
     "tsyringe": "catalog:",
     "typescript": "catalog:",
     "undici": "^6.21.3",
+    "vite": "npm:rolldown-vite@latest",
+    "vite-node": "^3.2.4",
+    "vitest": "catalog:",
     "ws": "catalog:"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "npm:rolldown-vite@latest"
+    },
+    "patchedDependencies": {
+      "drizzle-kit": "patches/drizzle-kit.patch"
+    }
   },
   "resolutions": {
     "undici": "^6.20.1"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19"
   }
 }

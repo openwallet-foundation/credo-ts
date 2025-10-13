@@ -1,7 +1,7 @@
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Hasher } from '../../../crypto'
 import { CredoError } from '../../../error'
-import { SingleOrArray, isJsonObject } from '../../../types'
+import { type SingleOrArray, isJsonObject } from '../../../types'
 import { ClaimFormat } from '../models'
 
 export interface W3cV2SdJwtHeader {

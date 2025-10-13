@@ -1,5 +1,6 @@
 import { InjectionSymbols } from '@credo-ts/core'
 
+import type { MockedClassConstructor } from '../../../../tests/types'
 import { DependencyManager } from '../../../core/src/plugins/DependencyManager'
 import { mockFunction } from '../../../core/tests'
 import { TenantsApi } from '../TenantsApi'
@@ -10,12 +11,12 @@ import { TenantSessionCoordinator } from '../context/TenantSessionCoordinator'
 import { TenantRepository, TenantRoutingRepository } from '../repository'
 import { TenantRecordService } from '../services'
 
-jest.mock('../../../core/src/plugins/DependencyManager')
-const DependencyManagerMock = DependencyManager as jest.Mock<DependencyManager>
+vi.mock('../../../core/src/plugins/DependencyManager')
+const DependencyManagerMock = DependencyManager as MockedClassConstructor<typeof DependencyManager>
 
 const dependencyManager = new DependencyManagerMock()
 
-mockFunction(dependencyManager.resolve).mockReturnValue({ logger: { warn: jest.fn() } })
+mockFunction(dependencyManager.resolve).mockReturnValue({ logger: { warn: vi.fn() } })
 
 describe('TenantsModule', () => {
   test('registers dependencies on the dependency manager', () => {

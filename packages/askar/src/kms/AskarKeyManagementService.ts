@@ -15,7 +15,7 @@ import { AskarStoreManager } from '../AskarStoreManager'
 import { AskarErrorCode, isAskarError, jwkCrvToAskarAlg, jwkEncToAskarAlg } from '../utils'
 import { aeadDecrypt } from './crypto/decrypt'
 import { askarSupportedKeyAgreementAlgorithms, deriveDecryptionKey, deriveEncryptionKey } from './crypto/deriveKey'
-import { AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
+import { type AskarSupportedEncryptionOptions, aeadEncrypt } from './crypto/encrypt'
 import { randomBytes } from './crypto/randomBytes'
 
 const askarSupportedEncryptionAlgorithms = [
@@ -750,7 +750,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   private async getKeyAsserted(agentContext: AgentContext, keyId: string) {
     const storageKey = await this.fetchAskarKey(agentContext, keyId)
     if (!storageKey) {
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
     }
 
     return storageKey

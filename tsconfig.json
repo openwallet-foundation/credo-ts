@@ -1,13 +1,27 @@
 {
   "extends": "./tsconfig.build.json",
-  "ts-node": {
-    "files": true
-  },
   "compilerOptions": {
     "baseUrl": ".",
-    "outDir": "__",
-    "types": ["jest", "node"],
+    "types": ["node", "vitest/globals"],
     "allowJs": true
   },
-  "exclude": ["node_modules", "**/build/**", "coverage", "**/cli-build/**", "**/bin.js"]
+  "include": [
+    "tests",
+    "samples",
+    "packages",
+    "tests/vitest.d.ts",
+    "demo",
+    "demo-openid",
+    "packages/drizzle-storage/types/shell.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/**",
+    "build",
+    "**/build/**",
+    "**/cli-build/**",
+    "cli-build",
+    ".pnpm",
+    "**/.pnpm/**"
+  ]
 }

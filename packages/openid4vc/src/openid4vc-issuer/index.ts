@@ -7,13 +7,13 @@ export * from './OpenId4VcIssuerEvents'
 export * from './OpenId4VcIssuanceSessionState'
 export {
   OpenId4VcIssuerRecord,
-  OpenId4VcIssuerRecordProps,
-  OpenId4VcIssuerRecordTags,
+  type OpenId4VcIssuerRecordProps,
+  type OpenId4VcIssuerRecordTags,
   OpenId4VcIssuanceSessionRecord,
-  OpenId4VcIssuanceSessionDpop,
-  OpenId4VcIssuanceSessionWalletAttestation,
-  OpenId4VcIssuanceSessionAuthorization,
-  OpenId4VcIssuanceSessionPresentation,
-  OpenId4VcIssuanceSessionPkce,
-  OpenId4VcIssuanceSessionRecordTransaction,
+  type OpenId4VcIssuanceSessionDpop,
+  type OpenId4VcIssuanceSessionWalletAttestation,
+  type OpenId4VcIssuanceSessionAuthorization,
+  type OpenId4VcIssuanceSessionPresentation,
+  type OpenId4VcIssuanceSessionPkce,
+  type OpenId4VcIssuanceSessionRecordTransaction,
 } from './repository'

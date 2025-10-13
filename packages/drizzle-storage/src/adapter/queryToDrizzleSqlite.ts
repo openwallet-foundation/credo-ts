@@ -1,10 +1,10 @@
-import { BaseRecord, Query } from '@credo-ts/core'
-import { SQL, SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
+import { BaseRecord, type Query } from '@credo-ts/core'
+import { SQL, type SQLWrapper, and, eq, not, or, sql } from 'drizzle-orm'
 import { sqliteTable } from 'drizzle-orm/sqlite-core'
 import type { AnySQLiteColumn, SQLiteColumn } from 'drizzle-orm/sqlite-core'
 import { CredoDrizzleStorageError } from '../error'
 import { getSqliteBaseRecordTable } from '../sqlite'
-import { DrizzleCustomTagKeyMapping } from './queryToDrizzlePostgres'
+import type { DrizzleCustomTagKeyMapping } from './queryToDrizzlePostgres'
 
 /**
  * Checks if an array column (stored as JSON text in SQLite) contains all values from the given array

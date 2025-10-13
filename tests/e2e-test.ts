@@ -1,7 +1,7 @@
 import type { DidCommMessageProcessedEvent, DidCommMessageSentEvent } from '@credo-ts/didcomm'
 import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
 
-import { filter, firstValueFrom, map } from 'rxjs'
+import { filter, map } from 'rxjs'
 
 import { issueAnonCredsCredential, presentAnonCredsProof } from '../packages/anoncreds/tests/anoncredsSetup'
 import {
@@ -9,7 +9,7 @@ import {
   storePreCreatedAnonCredsDefinition,
 } from '../packages/anoncreds/tests/preCreatedAnonCredsDefinition'
 import { setupEventReplaySubjects } from '../packages/core/tests'
-import { makeConnection } from '../packages/core/tests/helpers'
+import { firstValueWithStackTrace, makeConnection } from '../packages/core/tests/helpers'
 
 import {
   DidCommBatchMessage,
@@ -50,13 +50,13 @@ export async function e2eTest({
 
   // Request mediation from mediator
   const mediationRecord =
-    await recipientAgent.modules.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
+    await recipientAgent.didcomm.mediationRecipient.requestAndAwaitGrant(recipientMediatorConnection)
   expect(mediationRecord.state).toBe(DidCommMediationState.Granted)
 
   // Set mediator as default for recipient, start picking up messages
-  await recipientAgent.modules.mediationRecipient.setDefaultMediator(mediationRecord)
-  await recipientAgent.modules.mediationRecipient.initiateMessagePickup(mediationRecord)
-  const defaultMediator = await recipientAgent.modules.mediationRecipient.findDefaultMediator()
+  await recipientAgent.didcomm.mediationRecipient.setDefaultMediator(mediationRecord)
+  await recipientAgent.didcomm.mediationRecipient.initiateMessagePickup(mediationRecord)
+  const defaultMediator = await recipientAgent.didcomm.mediationRecipient.findDefaultMediator()
   expect(defaultMediator?.id).toBe(mediationRecord.id)
 
   // Make connection between sender and recipient
@@ -129,7 +129,7 @@ export async function e2eTest({
   expect(verifierProofExchangeRecord.state).toBe(DidCommProofState.Done)
 
   // We want to stop the mediator polling before the agent is shutdown.
-  await recipientAgent.modules.mediationRecipient.stopMessagePickup()
+  await recipientAgent.didcomm.mediationRecipient.stopMessagePickup()
 
   const pickupRequestMessages = [
     DidCommDeliveryRequestV2Message.type.messageTypeUri,
@@ -152,7 +152,7 @@ export async function e2eTest({
 
   // Wait for the response to the pickup message to be processed
   if (lastSentPickupMessageThreadId) {
-    await firstValueFrom(
+    await firstValueWithStackTrace(
       recipientReplay.pipe(
         filter((e): e is DidCommMessageProcessedEvent => e.type === DidCommEventTypes.DidCommMessageProcessed),
         filter((e) => deliveryMessages.includes(e.payload.message.type)),

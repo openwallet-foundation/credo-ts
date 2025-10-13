@@ -9,10 +9,7 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "start": "ts-node server.ts"
-  },
-  "devDependencies": {
-    "ts-node": "catalog:"
+    "start": "vite-node server.ts"
   },
   "dependencies": {
     "@credo-ts/anoncreds": "workspace:*",
@@ -21,6 +18,6 @@
     "@types/multer": "^1.4.13",
     "@types/ws": "catalog:",
     "form-data": "^4.0.4",
-    "multer": "^2.0.1"
+    "multer": "^2.0.2"
   }
 }

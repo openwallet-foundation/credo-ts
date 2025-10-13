@@ -7,7 +7,7 @@ import { X509Service } from '../X509Service'
 
 import { CredoWebCrypto, Hasher, TypedArrayEncoder, X509ExtendedKeyUsage, X509KeyUsage } from '@credo-ts/core'
 import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '../../../../../node/src'
-import { KeyManagementApi, KeyManagementModuleConfig, KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
+import { KeyManagementApi, KeyManagementModuleConfig, type KmsJwkPublicEc, P256PublicJwk, PublicJwk } from '../../kms'
 
 /**
  *
@@ -364,8 +364,8 @@ describe('X509Service', () => {
     const chain = await X509Service.validateCertificateChain(agentContext, { certificateChain })
 
     expect(chain.length).toStrictEqual(1)
-    expect(chain[0].sanDnsNames).toStrictEqual([])
-    expect(chain[0].sanUriNames).toStrictEqual([])
+    expect(chain[0].sanDnsNames).toEqual([])
+    expect(chain[0].sanUriNames).toEqual([])
   })
 
   it('should validate a valid certificate chain', async () => {
@@ -466,7 +466,7 @@ describe('X509Service', () => {
       })
     ).toString('base64')
 
-    expect(
+    await expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificate],
@@ -487,7 +487,7 @@ describe('X509Service', () => {
       })
     ).toString('base64')
 
-    expect(
+    await expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificate],
@@ -496,7 +496,7 @@ describe('X509Service', () => {
   })
 
   it('should not validate a certificate chain if incorrect signing order', async () => {
-    expect(
+    await expect(
       async () =>
         await X509Service.validateCertificateChain(agentContext, {
           certificateChain: [certificateChain[1], certificateChain[2], certificateChain[0]],

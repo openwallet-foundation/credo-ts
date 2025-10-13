@@ -18,7 +18,7 @@ describe('DidResolver', () => {
     })
 
     it('should correctly resolve a did:jwk document', async () => {
-      const fromDidSpy = jest.spyOn(DidJwk, 'fromDid')
+      const fromDidSpy = vi.spyOn(DidJwk, 'fromDid')
       const result = await keyDidResolver.resolve(agentContext, p256DidJwkEyJjcnYi0iFixture.id)
 
       expect(JsonTransformer.toJSON(result)).toMatchObject({

@@ -17,7 +17,7 @@ import type {
   SubmissionEntryCredential,
 } from '../models'
 
-import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core'
+import { SubmissionRequirementMatchType } from '@animo-id/pex/dist/main/lib/evaluation/core/index.js'
 import { JSONPath } from '@astronautlabs/jsonpath'
 import { decodeSdJwtSync, getClaimsSync } from '@sd-jwt/decode'
 import { Rules } from '@sphereon/pex-models'
@@ -31,7 +31,7 @@ import { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { ClaimFormat, W3cCredentialRecord } from '../../vc'
 import { DifPresentationExchangeError } from '../DifPresentationExchangeError'
 
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import { getSphereonOriginalVerifiableCredential } from './transform'
 
 export async function getCredentialsForRequest(

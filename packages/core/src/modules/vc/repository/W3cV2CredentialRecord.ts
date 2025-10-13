@@ -1,8 +1,8 @@
-import { BaseRecord, Tags, TagsBase } from '../../../storage/BaseRecord'
+import { BaseRecord, type Tags, type TagsBase } from '../../../storage/BaseRecord'
 import { JsonTransformer, asArray } from '../../../utils'
-import { Constructable } from '../../../utils/mixins'
+import type { Constructable } from '../../../utils/mixins'
 import { uuid } from '../../../utils/uuid'
-import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, W3cV2VerifiableCredential } from '../models'
+import { ClaimFormat, W3cV2EnvelopedVerifiableCredential, type W3cV2VerifiableCredential } from '../models'
 import { W3cV2VerifiableCredentialTransformer } from '../models/credential/W3cV2VerifiableCredential'
 
 export interface W3cV2CredentialRecordOptions {

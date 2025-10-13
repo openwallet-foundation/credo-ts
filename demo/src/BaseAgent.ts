@@ -22,21 +22,20 @@ import { Agent, DidsModule } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommAutoAcceptProof,
-  DidCommConnectionsModule,
   DidCommCredentialV2Protocol,
-  DidCommCredentialsModule,
   DidCommHttpOutboundTransport,
+  DidCommModule,
   DidCommProofV2Protocol,
-  DidCommProofsModule,
-  getDefaultDidcommModules,
 } from '@credo-ts/didcomm'
 import { IndyVdrAnonCredsRegistry, IndyVdrIndyDidResolver, IndyVdrModule } from '@credo-ts/indy-vdr'
 import { DidCommHttpInboundTransport, agentDependencies } from '@credo-ts/node'
+import type { HederaNetwork } from '@hiero-did-sdk/client'
 import { anoncreds } from '@hyperledger/anoncreds-nodejs'
 import { indyVdr } from '@hyperledger/indy-vdr-nodejs'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
-import { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import type { AskarModuleConfigStoreOptions } from '@credo-ts/askar'
+import { HederaAnonCredsRegistry, HederaDidRegistrar, HederaDidResolver, HederaModule } from '@credo-ts/hedera'
 import { greenText } from './OutputClass'
 
 const bcovrin = `{"reqSignature":{},"txn":{"data":{"data":{"alias":"Node1","blskey":"4N8aUNHSgjQVgkpm8nhNEfDf6txHznoYREg9kirmJrkivgL4oSEimFF6nsQ6M41QvhM2Z33nves5vfSn9n1UwNFJBYtWVnHYMATn76vLuL3zU88KyeAYcHfsih3He6UHcXDxcaecHVz6jhCYz1P2UZn2bDVruL5wXpehgBfBaLKm3Ba","blskey_pop":"RahHYiCvoNCtPTrVtP7nMC5eTYrsUA8WjXbdhNc8debh1agE9bGiJxWBXYNFbnJXoXhWFMvyqhqhRoq737YQemH5ik9oL7R4NTTCz2LEZhkgLJzB3QRQqJyBNyv7acbdHrAT8nQ9UkLbaVL9NBpnWXBTw4LEMePaSHEw66RzPNdAX1","client_ip":"138.197.138.255","client_port":9702,"node_ip":"138.197.138.255","node_port":9701,"services":["VALIDATOR"]},"dest":"Gw6pDLhcBcoQesN72qfotTgFa7cbuqZpkX3Xo6pLhPhv"},"metadata":{"from":"Th7MpTaRZVRYnPiabds81Y"},"type":"0"},"txnMetadata":{"seqNo":1,"txnId":"fea82e10e894419fe2bea7d96296a6d46f50f93f9eeda954ec461b2ed2950b62"},"ver":"1"}
@@ -65,10 +64,17 @@ export class BaseAgent {
     this.agent = new Agent({
       config: {},
       dependencies: agentDependencies,
-      modules: getAskarAnonCredsIndyModules({ endpoints: [`http://localhost:${this.port}`] }, { id: name, key: name }),
+      modules: getAskarAnonCredsIndyModules(
+        {
+          endpoints: [`http://localhost:${this.port}`],
+          transports: {
+            inbound: [new DidCommHttpInboundTransport({ port })],
+            outbound: [new DidCommHttpOutboundTransport()],
+          },
+        },
+        { id: name, key: name }
+      ),
     })
-    this.agent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port }))
-    this.agent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
   }
 
   public async initializeAgent() {
@@ -79,41 +85,43 @@ export class BaseAgent {
 }
 
 function getAskarAnonCredsIndyModules(
-  didcommConfig: DidCommModuleConfigOptions,
+  didcommConfig: Omit<DidCommModuleConfigOptions, 'credentials' | 'proofs' | 'connections'>,
   askarStoreConfig: AskarModuleConfigStoreOptions
 ) {
   const legacyIndyCredentialFormatService = new LegacyIndyDidCommCredentialFormatService()
   const legacyIndyProofFormatService = new LegacyIndyDidCommProofFormatService()
 
   return {
-    ...getDefaultDidcommModules(didcommConfig),
-    connections: new DidCommConnectionsModule({
-      autoAcceptConnections: true,
-    }),
-    credentials: new DidCommCredentialsModule({
-      autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-      credentialProtocols: [
-        new DidCommCredentialV1Protocol({
-          indyCredentialFormat: legacyIndyCredentialFormatService,
-        }),
-        new DidCommCredentialV2Protocol({
-          credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
-        }),
-      ],
-    }),
-    proofs: new DidCommProofsModule({
-      autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
-      proofProtocols: [
-        new DidCommProofV1Protocol({
-          indyProofFormat: legacyIndyProofFormatService,
-        }),
-        new DidCommProofV2Protocol({
-          proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
-        }),
-      ],
+    didcomm: new DidCommModule({
+      ...didcommConfig,
+      connections: {
+        autoAcceptConnections: true,
+      },
+      credentials: {
+        autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+        credentialProtocols: [
+          new DidCommCredentialV1Protocol({
+            indyCredentialFormat: legacyIndyCredentialFormatService,
+          }),
+          new DidCommCredentialV2Protocol({
+            credentialFormats: [legacyIndyCredentialFormatService, new AnonCredsDidCommCredentialFormatService()],
+          }),
+        ],
+      },
+      proofs: {
+        autoAcceptProofs: DidCommAutoAcceptProof.ContentApproved,
+        proofProtocols: [
+          new DidCommProofV1Protocol({
+            indyProofFormat: legacyIndyProofFormatService,
+          }),
+          new DidCommProofV2Protocol({
+            proofFormats: [legacyIndyProofFormatService, new AnonCredsDidCommProofFormatService()],
+          }),
+        ],
+      },
     }),
     anoncreds: new AnonCredsModule({
-      registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry()],
+      registries: [new IndyVdrAnonCredsRegistry(), new CheqdAnonCredsRegistry(), new HederaAnonCredsRegistry()],
       anoncreds,
     }),
     indyVdr: new IndyVdrModule({
@@ -132,12 +140,23 @@ function getAskarAnonCredsIndyModules(
       })
     ),
     dids: new DidsModule({
-      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver()],
-      registrars: [new CheqdDidRegistrar()],
+      resolvers: [new IndyVdrIndyDidResolver(), new CheqdDidResolver(), new HederaDidResolver()],
+      registrars: [new CheqdDidRegistrar(), new HederaDidRegistrar()],
     }),
     askar: new AskarModule({
       askar,
       store: askarStoreConfig,
+    }),
+    hedera: new HederaModule({
+      networks: [
+        {
+          network: (process.env.HEDERA_NETWORK as HederaNetwork) ?? 'testnet',
+          operatorId: process.env.HEDERA_OPERATOR_ID ?? '0.0.5489553',
+          operatorKey:
+            process.env.HEDERA_OPERATOR_KEY ??
+            '302e020100300506032b6570042204209f54b75b6238ced43e41b1463999cb40bf2f7dd2c9fd4fd3ef780027c016a138',
+        },
+      ],
     }),
   } as const
 }

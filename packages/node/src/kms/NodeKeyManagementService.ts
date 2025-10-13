@@ -411,7 +411,7 @@ export class NodeKeyManagementService implements Kms.KeyManagementService {
   private async getKeyAsserted(agentContext: AgentContext, keyId: string) {
     const storageKey = await this.#storage.get(agentContext, keyId)
     if (!storageKey) {
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
     }
 
     return storageKey

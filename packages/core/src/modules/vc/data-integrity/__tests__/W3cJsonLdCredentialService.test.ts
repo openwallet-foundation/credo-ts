@@ -6,7 +6,7 @@ import {
   DidRepository,
   DidsApi,
   DidsModuleConfig,
-  KeyDidCreateOptions,
+  type KeyDidCreateOptions,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2018,
   VERIFICATION_METHOD_TYPE_ED25519_VERIFICATION_KEY_2020,
 } from '../../../dids'
@@ -136,7 +136,7 @@ describe('W3cJsonLdCredentialsService', () => {
 
         const credential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
 
-        expect(async () => {
+        await expect(async () => {
           await w3cJsonLdCredentialService.signCredential(agentContext, {
             format: ClaimFormat.LdpVc,
             credential,
@@ -145,7 +145,7 @@ describe('W3cJsonLdCredentialsService', () => {
               'did:key:z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV#z6MkvePyWAApUVeDboZhNbckaWHnqtD6pCETd6xoqGbcpEBV',
           })
         }).rejects.toThrow(
-          `No key management service supports 'sign' operation with algorithm 'EdDSA' that has a key with keyId 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7`
+          `Error issuing W3C JSON-LD VC. Key with key id 'HC8vuuvP8x9kVJizh2eujQjo2JwFQJz6w63szzdbu1Q7' not found in backend 'node'. The key may exist in one of the key management services in which case the key management service does not support the 'sign' operation with algorithm 'EdDSA'`
         )
       })
     })

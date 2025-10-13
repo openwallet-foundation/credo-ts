@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { AnonCredsPredicateType, anonCredsPredicateType } from '../../../../models'
+import { type AnonCredsPredicateType, anonCredsPredicateType } from '../../../../models'
 import { unqualifiedCredentialDefinitionIdRegex } from '../../../../utils'
 
 export interface DidCommPresentationV1PreviewAttributeOptions {

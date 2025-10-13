@@ -3,7 +3,7 @@ import type { NextFunction, Response, Router } from 'express'
 import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { CredoError, Query, joinUriParts, utils } from '@credo-ts/core'
+import { CredoError, type Query, joinUriParts, utils } from '@credo-ts/core'
 import {
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
@@ -17,7 +17,6 @@ import {
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
@@ -95,7 +94,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
       const expiresAt =
         issuanceSession.expiresAt ??
-        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+        utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
@@ -148,7 +147,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt:
             issuanceSession.expiresAt ??
-            addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds),
+            utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds),
         })
       } else if (grant.grantType === authorizationCodeGrantIdentifier) {
         if (!issuanceSession.authorization?.code || !issuanceSession.authorization?.codeExpiresAt) {

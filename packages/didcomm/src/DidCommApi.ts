@@ -1,59 +1,111 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerMiddleware } from './handlers'
 import type { DidCommInboundTransport, DidCommOutboundTransport } from './transport'
 
-import { injectable } from '@credo-ts/core'
+import { AgentContext, type InjectionToken, injectable } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from './DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from './DidCommMessageHandlerRegistry'
-import { DidCommMessageReceiver } from './DidCommMessageReceiver'
-import { DidCommMessageSender } from './DidCommMessageSender'
-import { DidCommModuleConfig } from './DidCommModuleConfig'
+import { DidCommModuleConfig, type DidCommModuleConfigOptions } from './DidCommModuleConfig'
+import {
+  type DefaultDidCommMessagePickupProtocols,
+  type DefaultDidCommProofProtocols,
+  DidCommBasicMessagesApi,
+  DidCommConnectionsApi,
+  type DidCommCredentialProtocol,
+  DidCommDiscoverFeaturesApi,
+  DidCommMessagePickupApi,
+  type DidCommMessagePickupModuleConfigOptions,
+  type DidCommMessagePickupProtocol,
+  DidCommOutOfBandApi,
+  type DidCommProofProtocol,
+  DidCommProofsApi,
+  type DidCommProofsModuleConfigOptions,
+} from './modules'
+import { DidCommCredentialsApi } from './modules/credentials/DidCommCredentialsApi'
+import type { DefaultDidCommCredentialProtocols } from './modules/credentials/DidCommCredentialsModule'
+import type { DidCommCredentialsModuleConfigOptions } from './modules/credentials/DidCommCredentialsModuleConfig'
+import { DidCommMediationRecipientApi } from './modules/routing/DidCommMediationRecipientApi'
+import { DidCommMediatorApi } from './modules/routing/DidCommMediatorApi'
+
+type ApiOrUndefined<Config, Api> = Config extends false ? never : Api
 
 @injectable()
-export class DidCommApi {
-  public config: DidCommModuleConfig
+export class DidCommApi<Options extends DidCommModuleConfigOptions> {
+  public connections = this.agentContext.resolve(DidCommConnectionsApi)
+  public oob = this.agentContext.resolve(DidCommOutOfBandApi)
+  public discovery = this.agentContext.resolve(DidCommDiscoverFeaturesApi)
+  public proofs: ApiOrUndefined<
+    Options['proofs'],
+    DidCommProofsApi<
+      Options['proofs'] extends DidCommProofsModuleConfigOptions<DidCommProofProtocol[]>
+        ? Options['proofs']['proofProtocols']
+        : DefaultDidCommProofProtocols
+    >
+  > = this.apiOrUndefined(this.config.enabledModules.proofs, DidCommProofsApi)
 
-  private featureRegistry: DidCommFeatureRegistry
-  private messageSender: DidCommMessageSender
-  private messageReceiver: DidCommMessageReceiver
-  private messageHandlerRegistry: DidCommMessageHandlerRegistry
+  public credentials: ApiOrUndefined<
+    Options['credentials'],
+    DidCommCredentialsApi<
+      Options['credentials'] extends DidCommCredentialsModuleConfigOptions<DidCommCredentialProtocol[]>
+        ? Options['credentials']['credentialProtocols']
+        : DefaultDidCommCredentialProtocols
+    >
+  > = this.apiOrUndefined(this.config.enabledModules.credentials, DidCommCredentialsApi)
+
+  public messagePickup: ApiOrUndefined<
+    Options['messagePickup'],
+    DidCommMessagePickupApi<
+      Options['messagePickup'] extends DidCommMessagePickupModuleConfigOptions<DidCommMessagePickupProtocol[]>
+        ? Options['messagePickup']['protocols']
+        : DefaultDidCommMessagePickupProtocols
+    >
+  > = this.apiOrUndefined(this.config.enabledModules.messagePickup, DidCommMessagePickupApi)
+
+  public basicMessages: ApiOrUndefined<Options['basicMessages'], DidCommBasicMessagesApi> = this.apiOrUndefined(
+    this.config.enabledModules.basicMessages,
+    DidCommBasicMessagesApi
+  )
+
+  public mediator: ApiOrUndefined<Options['mediator'], DidCommMediatorApi> = this.apiOrUndefined(
+    this.config.enabledModules.mediator,
+    DidCommMediatorApi
+  )
+
+  public mediationRecipient: ApiOrUndefined<Options['mediationRecipient'], DidCommMediationRecipientApi> =
+    this.apiOrUndefined(this.config.enabledModules.mediationRecipient, DidCommMediationRecipientApi)
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
-    messageSender: DidCommMessageSender,
-    messageReceiver: DidCommMessageReceiver,
-    featureRegistry: DidCommFeatureRegistry,
-    config: DidCommModuleConfig
-  ) {
-    this.messageReceiver = messageReceiver
-    this.messageSender = messageSender
-    this.featureRegistry = featureRegistry
-    this.config = config
-    this.messageHandlerRegistry = messageHandlerRegistry
-  }
+    public agentContext: AgentContext,
+    private messageHandlerRegistry: DidCommMessageHandlerRegistry,
+    private featureRegistry: DidCommFeatureRegistry,
+    public config: DidCommModuleConfig
+  ) {}
 
   public registerInboundTransport(inboundTransport: DidCommInboundTransport) {
-    this.messageReceiver.registerInboundTransport(inboundTransport)
+    this.config.inboundTransports.push(inboundTransport)
   }
 
   public async unregisterInboundTransport(inboundTransport: DidCommInboundTransport) {
-    await this.messageReceiver.unregisterInboundTransport(inboundTransport)
+    this.config.inboundTransports = this.config.inboundTransports.filter((transport) => transport !== inboundTransport)
+    await inboundTransport.stop()
   }
 
   public get inboundTransports() {
-    return this.messageReceiver.inboundTransports
+    return this.config.inboundTransports
   }
 
   public registerOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    this.messageSender.registerOutboundTransport(outboundTransport)
+    this.config.outboundTransports.push(outboundTransport)
   }
 
   public async unregisterOutboundTransport(outboundTransport: DidCommOutboundTransport) {
-    await this.messageSender.unregisterOutboundTransport(outboundTransport)
+    this.config.outboundTransports = this.config.outboundTransports.filter(
+      (transport) => transport !== outboundTransport
+    )
   }
 
   public get outboundTransports() {
-    return this.messageSender.outboundTransports
+    return this.config.outboundTransports
   }
 
   /**
@@ -84,7 +136,16 @@ export class DidCommApi {
   public setFallbackMessageHandler(fallbackMessageHandler: DidCommMessageHandler['handle']) {
     this.messageHandlerRegistry.setFallbackMessageHandler(fallbackMessageHandler)
   }
+
   public get features() {
     return this.featureRegistry
+  }
+
+  private apiOrUndefined(isEnabled: boolean, apiClass: InjectionToken) {
+    if (isEnabled) {
+      return this.agentContext.resolve(apiClass)
+    }
+
+    return undefined
   }
 }

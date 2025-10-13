@@ -1,4 +1,4 @@
-import { AgentContext, JwsSignerWithJwk, Kms } from '@credo-ts/core'
+import { AgentContext, type JwsSignerWithJwk, Kms } from '@credo-ts/core'
 import type {
   CallbackContext,
   ClientAuthenticationCallback,

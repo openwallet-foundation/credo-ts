@@ -2,7 +2,7 @@ import type { ValidationOptions } from 'class-validator'
 
 import { IsString, ValidateBy, buildMessage, isString } from 'class-validator'
 
-import { SingleOrArray, isJsonObject } from '../../../../types'
+import { type SingleOrArray, isJsonObject } from '../../../../types'
 
 type ServiceEndpointType = SingleOrArray<string | Record<string, unknown>>
 

@@ -5,7 +5,7 @@ import type { KmsCreateKeyOptions, KmsCreateKeyReturn, KmsCreateKeyType } from '
 import type { KmsDeleteKeyOptions } from './options/KmsDeleteKeyOptions'
 import type { KmsEncryptOptions, KmsEncryptReturn } from './options/KmsEncryptOptions'
 import type { KmsImportKeyOptions, KmsImportKeyReturn } from './options/KmsImportKeyOptions'
-import { KmsOperation } from './options/KmsOperation'
+import type { KmsOperation } from './options/KmsOperation'
 import type { KmsSignOptions, KmsSignReturn } from './options/KmsSignOptions'
 import type { KmsVerifyOptions, KmsVerifyReturn } from './options/KmsVerifyOptions'
 
