@@ -4,15 +4,15 @@ import type { OpenId4VcVerificationRequest } from './requestContext'
 
 import { JwsService, Kms } from '@credo-ts/core'
 import {
-  EntityConfigurationClaimsOptions,
-  JsonWebKey,
+  type EntityConfigurationClaimsOptions,
+  type JsonWebKey,
   createEntityConfiguration,
   createEntityStatement,
   fetchEntityConfiguration,
 } from '@openid-federation/core'
 
+import { addSecondsToDate } from '@openid4vc/utils'
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 

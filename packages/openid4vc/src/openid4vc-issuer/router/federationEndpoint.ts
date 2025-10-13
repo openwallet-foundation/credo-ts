@@ -2,7 +2,7 @@ import { type Buffer, Kms } from '@credo-ts/core'
 import type { Response, Router } from 'express'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
-import { EntityConfigurationClaimsOptions, createEntityConfiguration } from '@openid-federation/core'
+import { type EntityConfigurationClaimsOptions, createEntityConfiguration } from '@openid-federation/core'
 
 import { getRequestContext, sendErrorResponse } from '../../shared/router'
 
