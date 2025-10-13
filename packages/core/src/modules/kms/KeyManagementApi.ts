@@ -320,7 +320,7 @@ export class KeyManagementApi {
       throw new KeyManagementKeyNotFoundError(
         keyId,
         this.keyManagementConfig.backends.map((b) => b.backend),
-        `It may be the key exists, but the key management servcie doe not support the operation ${getKmsOperationHumanDescription(operation)}`
+        `The key may exist in one of the key management services in which case the key management service does not support the ${getKmsOperationHumanDescription(operation)}`
       )
     }
 
