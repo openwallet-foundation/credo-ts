@@ -750,7 +750,7 @@ export class AskarKeyManagementService implements Kms.KeyManagementService {
   private async getKeyAsserted(agentContext: AgentContext, keyId: string) {
     const storageKey = await this.fetchAskarKey(agentContext, keyId)
     if (!storageKey) {
-      throw new Kms.KeyManagementKeyNotFoundError(keyId, this.backend)
+      throw new Kms.KeyManagementKeyNotFoundError(keyId, [this.backend])
     }
 
     return storageKey
