@@ -250,7 +250,7 @@ export class KeyManagementApi {
       const publicKey = await kms.getPublicKey(this.agentContext, keyId)
 
       if (!publicKey) {
-        throw new KeyManagementKeyNotFoundError(keyId, backend)
+        throw new KeyManagementKeyNotFoundError(keyId, [backend])
       }
     }
 
