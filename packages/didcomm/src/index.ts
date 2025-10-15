@@ -26,7 +26,6 @@ export * from './services'
 export * from './transport'
 export * from './types'
 export { encodeAttachment, isLinkedAttachment } from './util/attachment'
-
 export { DidCommLinkedAttachment, type DidCommLinkedAttachmentOptions } from './util/DidCommLinkedAttachment'
 export { isValidJweStructure } from './util/JWE'
 export {
@@ -34,5 +33,11 @@ export {
   type ParsedMessageType,
   parseMessageType,
   replaceLegacyDidSovPrefix,
+  supportsIncomingMessageType,
 } from './util/messageType'
-export { oobInvitationFromShortUrl, parseInvitationShortUrl, parseInvitationUrl } from './util/parseInvitation'
+export {
+  oobInvitationFromShortUrl,
+  parseInvitationJson,
+  parseInvitationShortUrl,
+  parseInvitationUrl,
+} from './util/parseInvitation'
