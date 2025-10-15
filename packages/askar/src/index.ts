@@ -14,6 +14,16 @@ export type {
   AskarSqliteStorageConfig,
 } from './AskarStorageConfig'
 export { AskarStoreManager } from './AskarStoreManager'
+// Errors
+export {
+  AskarStoreDuplicateError,
+  AskarStoreError,
+  AskarStoreExportPathExistsError,
+  AskarStoreExportUnsupportedError,
+  AskarStoreImportPathExistsError,
+  AskarStoreInvalidKeyError,
+  AskarStoreNotFoundError,
+} from './error'
 export { AskarKeyManagementService } from './kms/AskarKeyManagementService'
 // Storage
 export { AskarStorageService } from './storage'
