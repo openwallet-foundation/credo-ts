@@ -285,7 +285,7 @@ export class OpenId4VpVerifierService {
         ? {
             jwtSigner: jwtIssuer,
             requestUri: hostedAuthorizationRequestUri,
-            expiresInSeconds: this.config.authorizationRequestExpiresInSeconds,
+            expiresInSeconds: this.config.authorizationRequestExpirationInSeconds,
           }
         : undefined,
       authorizationRequestPayload:
@@ -319,7 +319,7 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpirationInSeconds),
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)

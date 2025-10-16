@@ -73,7 +73,7 @@ export class OpenId4VcVerifierModuleConfig {
    *
    * @default 300
    */
-  public get authorizationRequestExpiresInSeconds() {
+  public get authorizationRequestExpirationInSeconds() {
     return this.options.authorizationRequestExpirationInSeconds ?? 300
   }
 }
