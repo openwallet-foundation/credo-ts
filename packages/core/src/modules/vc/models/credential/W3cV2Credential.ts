@@ -34,7 +34,7 @@ export interface W3cV2CredentialOptions {
   credentialSubject: SingleOrArray<W3cV2CredentialSubjectOptions>
   validFrom?: string
   validUntil?: string
-  status?: SingleOrArray<W3cV2CredentialStatusOptions>
+  credentialStatus?: SingleOrArray<W3cV2CredentialStatusOptions>
   credentialSchema?: SingleOrArray<W3cV2CredentialSchemaOptions>
   refreshService?: SingleOrArray<W3cV2RefreshServiceOptions>
   termsOfUse?: SingleOrArray<W3cV2TermsOfUseOptions>
@@ -55,7 +55,7 @@ export class W3cV2Credential {
         credentialSubject,
         validFrom,
         validUntil,
-        status,
+        credentialStatus,
         credentialSchema,
         refreshService,
         termsOfUse,
@@ -95,8 +95,8 @@ export class W3cV2Credential {
       this.validFrom = validFrom
       this.validUntil = validUntil
 
-      if (status) {
-        this.status = mapSingleOrArray(status, (status) =>
+      if (credentialStatus) {
+        this.credentialStatus = mapSingleOrArray(credentialStatus, (status) =>
           status instanceof W3cV2CredentialStatus ? status : new W3cV2CredentialStatus(status)
         )
       }
@@ -169,7 +169,7 @@ export class W3cV2Credential {
   @Type(() => W3cV2CredentialStatus)
   @ValidateNested({ each: true })
   @IsInstanceOrArrayOfInstances({ classType: W3cV2CredentialStatus, allowEmptyArray: true })
-  public status?: SingleOrArray<W3cV2CredentialStatus>
+  public credentialStatus?: SingleOrArray<W3cV2CredentialStatus>
 
   @IsOptional()
   @Type(() => W3cV2CredentialSchema)
