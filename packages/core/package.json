@@ -24,8 +24,8 @@
     }
   },
   "react-native": {
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js",
-    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs"
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.js": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.js",
+    "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.mjs": "./build/modules/vc/data-integrity/libraries/nativeDocumentLoader.native.mjs"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/core",
   "repository": {
