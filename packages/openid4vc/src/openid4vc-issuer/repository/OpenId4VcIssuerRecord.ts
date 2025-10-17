@@ -27,6 +27,11 @@ export type OpenId4VcIssuerRecordProps = {
   accessTokenPublicJwk: Kms.KmsJwkPublicAsymmetric
 
   /**
+   * Public JWKs for JWT VC Issuer Metadata or URL string referencing the Issuer's JWKs document which contains the Issuer's public keys
+   */
+  jwks: Kms.KmsJwkPublicAsymmetric[] | string
+
+  /**
    * The DPoP signing algorithms supported by this issuer.
    * If not provided, dPoP is considered unsupported.
    */
@@ -60,6 +65,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
    */
   public accessTokenPublicKeyFingerprint?: string
   public accessTokenPublicJwk?: Kms.KmsJwkPublicAsymmetric
+  public jwks?: Kms.KmsJwkPublicAsymmetric[] | string
 
   /**
    * Only here for class transformation. If credentialsSupported is set we transform
@@ -102,6 +108,16 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
+  public get resolvedJwks() {
+    if (!this.jwks) {
+      return []
+    }
+    if (typeof this.jwks === 'string') {
+      return []
+    }
+    return this.jwks.map((jwk) => Kms.PublicJwk.fromPublicJwk(jwk))
+  }
+
   public get resolvedAccessTokenPublicJwk() {
     if (this.accessTokenPublicJwk) {
       return Kms.PublicJwk.fromPublicJwk(this.accessTokenPublicJwk)
@@ -134,6 +150,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
+      this.jwks = props.jwks
     }
   }
 

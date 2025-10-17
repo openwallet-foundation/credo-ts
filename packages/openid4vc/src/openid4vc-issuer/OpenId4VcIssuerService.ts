@@ -913,6 +913,7 @@ export class OpenId4VcIssuerService {
       display: options.display,
       dpopSigningAlgValuesSupported: options.dpopSigningAlgValuesSupported,
       accessTokenPublicJwk: accessTokenSignerKey.publicJwk,
+      jwks: options.jwks,
       authorizationServerConfigs: options.authorizationServerConfigs,
       credentialConfigurationsSupported: options.credentialConfigurationsSupported,
       batchCredentialIssuance: options.batchCredentialIssuance,

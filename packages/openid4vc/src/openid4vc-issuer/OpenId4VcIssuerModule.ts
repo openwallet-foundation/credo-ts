@@ -16,6 +16,7 @@ import {
   configureDeferredCredentialEndpoint,
   configureIssuerMetadataEndpoint,
   configureJwksEndpoint,
+  configureJwtVcIssuerMetadataEndpoint,
   configureNonceEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
@@ -114,11 +115,13 @@ export class OpenId4VcIssuerModule implements Module {
     // The files need to be hosted at the root .well-known directory
     const openidCredentialIssuerPath = joinUriParts('/.well-known/openid-credential-issuer', [issuerPath])
     const oauthAuthorizationServerPath = joinUriParts('/.well-known/oauth-authorization-server', [issuerPath])
+    const jwtVcIssuerPath = joinUriParts('/.well-known/jwt-vc-issuer', [issuerPath])
 
     wellKnownEndpointsRouter.param('issuerId', issuerIdParamHandler)
 
     configureIssuerMetadataEndpoint(wellKnownEndpointsRouter, openidCredentialIssuerPath)
     configureOAuthAuthorizationServerMetadataEndpoint(wellKnownEndpointsRouter, oauthAuthorizationServerPath)
+    configureJwtVcIssuerMetadataEndpoint(wellKnownEndpointsRouter, jwtVcIssuerPath)
 
     wellKnownEndpointsRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
       const { agentContext } = getRequestContext(req)
@@ -175,6 +178,7 @@ export class OpenId4VcIssuerModule implements Module {
     // NOTE: these are here for backwards compat, at some point we should remove them for the root well-known counterpart
     configureIssuerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/openid-credential-issuer')
     configureOAuthAuthorizationServerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/oauth-authorization-server')
+    configureJwtVcIssuerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/jwt-vc-issuer')
 
     configureJwksEndpoint(issuerEndpointsRouter, this.config)
     configureNonceEndpoint(issuerEndpointsRouter, this.config)

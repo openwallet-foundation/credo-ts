@@ -9,10 +9,8 @@ export function configureJwksEndpoint(router: Router, config: OpenId4VcIssuerMod
     const { agentContext, issuer } = getRequestContext(_request)
     try {
       const jwks = {
-        // Not needed to include kid in public facing JWKs
-        keys: [issuer.resolvedAccessTokenPublicJwk.toJson({ includeKid: false }) as Jwk],
+        keys: [issuer.resolvedAccessTokenPublicJwk.toJson({ includeKid: true }) as Jwk],
       } satisfies JwkSet
-
       return sendJsonResponse(response, next, jwks, 'application/jwk-set+json')
     } catch (e) {
       return sendUnknownServerErrorResponse(response, next, agentContext.config.logger, e)
