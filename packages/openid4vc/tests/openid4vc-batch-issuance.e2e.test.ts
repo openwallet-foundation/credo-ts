@@ -34,6 +34,7 @@ describe('OpenId4Vc Batch Issuance', () => {
     issuer = await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           issuer: {
             baseUrl: issuerBaseUrl,
             credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
@@ -83,8 +84,6 @@ describe('OpenId4Vc Batch Issuance', () => {
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 

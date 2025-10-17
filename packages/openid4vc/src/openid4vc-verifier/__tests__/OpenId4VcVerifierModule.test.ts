@@ -1,8 +1,10 @@
 import type { DependencyManager } from '@credo-ts/core'
-import { Router } from 'express'
+import express from 'express'
 import { OpenId4VcVerifierModule } from '../OpenId4VcVerifierModule'
-import type { OpenId4VcVerifierModuleConfigOptions } from '../OpenId4VcVerifierModuleConfig'
-import { OpenId4VcVerifierModuleConfig } from '../OpenId4VcVerifierModuleConfig'
+import {
+  type InternalOpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierModuleConfig,
+} from '../OpenId4VcVerifierModuleConfig'
 import { OpenId4VpVerifierService } from '../OpenId4VpVerifierService'
 import { OpenId4VcVerifierRepository } from '../repository'
 
@@ -20,8 +22,8 @@ describe('OpenId4VcVerifierModule', () => {
       endpoints: {
         authorization: '/hello',
       },
-      router: Router(),
-    } satisfies OpenId4VcVerifierModuleConfigOptions
+      app: express(),
+    } satisfies InternalOpenId4VcVerifierModuleConfigOptions
     const openId4VcClientModule = new OpenId4VcVerifierModule(options)
     openId4VcClientModule.register(dependencyManager)
 

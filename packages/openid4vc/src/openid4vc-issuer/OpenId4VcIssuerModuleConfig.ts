@@ -1,5 +1,4 @@
-import type { Router } from 'express'
-import { importExpress } from '../shared/router'
+import type { Express } from 'express'
 import type {
   OpenId4VciCredentialRequestToCredentialMapper,
   OpenId4VciDeferredCredentialRequestToCredentialMapper,
@@ -12,7 +11,7 @@ const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
 
-export interface OpenId4VcIssuerModuleConfigOptions {
+export interface InternalOpenId4VcIssuerModuleConfigOptions {
   /**
    * Base url at which the issuer endpoints will be hosted. All endpoints will be exposed with
    * this path as prefix.
@@ -20,13 +19,9 @@ export interface OpenId4VcIssuerModuleConfigOptions {
   baseUrl: string
 
   /**
-   * Express router on which the openid4vci endpoints will be registered. If
-   * no router is provided, a new one will be created.
-   *
-   * NOTE: you must manually register the router on your express app and
-   * expose this on a public url that is reachable when `baseUrl` is called.
+   * Express app on which the openid4vci endpoints will be registered.
    */
-  router?: Router
+  app: Express
 
   /**
    * The time after which a cNonce will expire.
@@ -163,8 +158,7 @@ export interface OpenId4VcIssuerModuleConfigOptions {
 }
 
 export class OpenId4VcIssuerModuleConfig {
-  private options: OpenId4VcIssuerModuleConfigOptions
-  public readonly router: Router
+  private options: InternalOpenId4VcIssuerModuleConfigOptions
 
   /**
    * Callback to get a verification session that needs to be fulfilled for the authorization of
@@ -175,12 +169,14 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public getVerificationSessionForIssuanceSessionAuthorization?: OpenId4VciGetVerificationSessionForIssuanceSessionAuthorization
 
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
+  public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions) {
     this.options = options
     this.getVerificationSessionForIssuanceSessionAuthorization =
       options.getVerificationSessionForIssuanceSessionAuthorization
+  }
 
-    this.router = options.router ?? importExpress().Router()
+  public get app() {
+    return this.options.app
   }
 
   public get baseUrl() {

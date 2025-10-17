@@ -61,6 +61,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     issuer = await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           issuer: {
             baseUrl: issuerBaseUrl,
             getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
@@ -275,9 +276,6 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       verifierId: issuerRecord.issuerId,
     })
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
-    expressApp.use('/oid4vp', issuer.agent.openid4vc.verifier.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
