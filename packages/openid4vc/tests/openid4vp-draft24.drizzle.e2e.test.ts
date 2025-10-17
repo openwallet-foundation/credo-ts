@@ -108,6 +108,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier = (await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           verifier: {
             baseUrl: verificationBaseUrl,
           },
@@ -121,9 +122,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
