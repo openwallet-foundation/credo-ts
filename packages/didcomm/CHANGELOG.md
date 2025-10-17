@@ -1,4 +1,4 @@
-# Changelog
+# @credo-ts/didcomm
 
 ## 0.6.0
 
@@ -13,9 +13,13 @@
 
   For this reason, we now require instances of X509 certificates where we used to require encoded certificates, to allow you to set the keyId on the certificate beforehand.
 
+- 0d877f5: Now using did:peer:4 by default when creating DID Exchange Requests as response to an Out of Band invitation.
+
+  It is possible to return to previous behaviour by manually setting `peerNumAlgoForDidExchangeRequests` option in DIDComm Connections module config.
+
 - e936068: The `Key` and `Jwk` classes have been removed in favour of a new `PublicJwk` class, and all APIs in Credo have been updated to use the new `PublicJwk` class. Leveraging Jwk as the base for all APIs provides more flexility and makes it easier to support key types where it's not always so easy to extract the raw public key bytes. In addition all the previous Jwk relatedfunctionality has been replaced with the new KMS jwk functionalty. For example `JwaSignatureAlgorithm` is now `Kms.KnownJwaSignatureAlgorithms`.
 - e936068: The wallet API has been completely rewritten to be more generic, support multiple backends at the same time, support generic encrypting and decryption, support symmetric keys, and enable backends that use key ids rather than the public key to identify a key. This has resulted in significant breaking changes, and all usages of the wallet api should be updated to use the new `agent.kms` APIs. In addition the wallet is not available anymore on the agentContext. If you used this, instead inject the KMS API using `agentContext.resolve(Kms.KeyManagementApi)`.
-- 70c849d: update target for tsc compiler to ES2020. Generally this should not have an impact for the supported environments (Node.JS / React Native). However this will have to be tested in React Native
+- 9df09fa: - messagehandler should return undefined if it doesn't want to response with a message
 - 897c834: DIDComm has been extracted out of the Core. This means that now all DIDComm related modules (e.g. proofs, credentials) must be explicitly added when creating an `Agent` instance. Therefore, their API will be accesable under `agent.modules.[moduleAPI]` instead of `agent.[moduleAPI]`. Some `Agent` DIDComm-related properties and methods where also moved to the API of a new DIDComm module (e.g. `agent.registerInboundTransport` turned into `agent.didcomm.registerInboundTransport`).
 
   **Example of DIDComm Agent**
@@ -69,15 +73,35 @@
       agent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
   ```
 
+- 81e3571: BREAKING CHANGE:
+
+  `label` and `connectionImageUrl` have been dropped from Agent configuration. Therefore, it must be specified manually in all DIDComm connection establishment related methods. If you don't want to specify any label, just use an empty value.
+
+  In the particular case of mediation provisioning through a `mediatorInvitationUrl`, the label will be always set to an empty value ('').
+
+- 9ef54ba: `MessagePickupRepository` has been refactored to `QueueTransportRepository`, and now belongs to DIDComm module configuration. As a result, MessagePickupRepository injection symbol has been dropped. If you want to retrieve current QueueTransportRepository instance, resolve DidCommModuleConfig and get `queueTransportRepository`.
+
+  All methods in QueueTransportRepository now include `AgentContext` as their first argument.
+
 - bc6f0c7: Add support for both CJS and ESM module syntax.
 
   - Use `tsdown` to bundle for both CJS and ESM (bridge period) -> tsdown is based on rust, so it should help with performance
   - Update to `vitest` since jest doesn't work well with ESM -> this should also help with performance
   - Simplify type checking -> just a single type check script instead of one for all packages. This should help with performance.
 
+- d9e04db: Update to Express JS v5. If you're using the DIDComm Http transports, or the OpenID4VC issuer and verifier packages you should update to Express v5
+
 ### Patch Changes
 
-- 13cd8cb: feat: support node 22
+- 1810764: fix: incorrect key alg for didcomm. With the introduction of the new KMS API, the XC20P algorithm was used instead of the C20P. This is not resolved and tests have been added to ensure interop with previous Credo versions.
+- 652ade8: feat(didcomm): emit event on hangup
+- 617b523: - Added a new package to use `redis` for caching in Node.js
+  - Add a new option `allowCache` to a record, which allows to CRUD the cache before calling the storage service
+    - This is only set to `true` on the `connectionRecord` and mediation records for now, improving the performance of the mediation flow
+- a4f443b: fix: allow did URLs in thread ids
+- 11545ce: - Made the receivedAt property of a queued DIDComm message required
+- 676af7f: feat: allow setting DIDComm transports on Agent constructor by setting `transports` in DIDComm module configuration
+- d6086e9: Export a few utils used by dependents.
 - Updated dependencies [55318b2]
 - Updated dependencies [e936068]
 - Updated dependencies [43148b4]
@@ -85,14 +109,12 @@
 - Updated dependencies [6d83136]
 - Updated dependencies [312a7b2]
 - Updated dependencies [1495177]
-- Updated dependencies [1810764]
 - Updated dependencies [879ed2c]
 - Updated dependencies [297d209]
 - Updated dependencies [2312bb8]
 - Updated dependencies [11827cc]
 - Updated dependencies [9f78a6e]
 - Updated dependencies [297d209]
-- Updated dependencies [652ade8]
 - Updated dependencies [bea846b]
 - Updated dependencies [13cd8cb]
 - Updated dependencies [15acc49]
@@ -102,7 +124,6 @@
 - Updated dependencies [e936068]
 - Updated dependencies [617b523]
 - Updated dependencies [90caf61]
-- Updated dependencies [b5fc7a6]
 - Updated dependencies [e936068]
 - Updated dependencies [dca4fdf]
 - Updated dependencies [14673b1]
@@ -111,11 +132,9 @@
 - Updated dependencies [5f08bc6]
 - Updated dependencies [27f971d]
 - Updated dependencies [cacd8ee]
-- Updated dependencies [0d877f5]
 - Updated dependencies [e936068]
 - Updated dependencies [2d10ec3]
 - Updated dependencies [1a4182e]
-- Updated dependencies [a4f443b]
 - Updated dependencies [90caf61]
 - Updated dependencies [9f78a6e]
 - Updated dependencies [e936068]
@@ -137,7 +156,6 @@
 - Updated dependencies [c5e2a21]
 - Updated dependencies [d59e889]
 - Updated dependencies [e936068]
-- Updated dependencies [11545ce]
 - Updated dependencies [e80794b]
 - Updated dependencies [9f78a6e]
 - Updated dependencies [9f78a6e]
@@ -145,122 +163,6 @@
 - Updated dependencies [decbcac]
 - Updated dependencies [6c8ab94]
 - Updated dependencies [bc6f0c7]
-- Updated dependencies [676af7f]
-- Updated dependencies [d9e04db]
-- Updated dependencies [d6086e9]
 - Updated dependencies [0d49804]
 - Updated dependencies [27f971d]
   - @credo-ts/core@0.6.0
-  - @credo-ts/didcomm@0.6.0
-
-## 0.5.13
-
-### Patch Changes
-
-- Updated dependencies [595c3d6]
-  - @credo-ts/core@0.5.13
-
-## 0.5.12
-
-### Patch Changes
-
-- Updated dependencies [3c85565]
-- Updated dependencies [3c85565]
-- Updated dependencies [7d51fcb]
-- Updated dependencies [9756a4a]
-  - @credo-ts/core@0.5.12
-
-## 0.5.11
-
-### Patch Changes
-
-- @credo-ts/core@0.5.11
-
-## 0.5.10
-
-### Patch Changes
-
-- Updated dependencies [fa62b74]
-  - @credo-ts/core@0.5.10
-
-## 0.5.9
-
-### Patch Changes
-
-- @credo-ts/core@0.5.9
-
-## 0.5.8
-
-### Patch Changes
-
-- Updated dependencies [3819eb2]
-- Updated dependencies [15d0a54]
-- Updated dependencies [a5235e7]
-  - @credo-ts/core@0.5.8
-
-## 0.5.7
-
-### Patch Changes
-
-- Updated dependencies [352383f]
-- Updated dependencies [1044c9d]
-  - @credo-ts/core@0.5.7
-
-## 0.5.6
-
-### Patch Changes
-
-- 66e696d: Fix build issue causing error with importing packages in 0.5.5 release
-- Updated dependencies [66e696d]
-  - @credo-ts/core@0.5.6
-
-## 0.5.5
-
-### Patch Changes
-
-- 482a630: - feat: allow serving dids from did record (#1856)
-  - fix: set created at for anoncreds records (#1862)
-  - feat: add goal to public api for credential and proof (#1867)
-  - fix(oob): only reuse connection if enabled (#1868)
-  - fix: issuer id query anoncreds w3c (#1870)
-  - feat: sd-jwt issuance without holder binding (#1871)
-  - chore: update oid4vci deps (#1873)
-  - fix: query for qualified/unqualified forms in revocation notification (#1866)
-  - fix: wrong schema id is stored for credentials (#1884)
-  - fix: process credential or proof problem report message related to connectionless or out of band exchange (#1859)
-  - fix: unqualified indy revRegDefId in migration (#1887)
-  - feat: verify SD-JWT Token status list and SD-JWT VC fixes (#1872)
-  - fix(anoncreds): combine creds into one proof (#1893)
-  - fix: AnonCreds proof requests with unqualified dids (#1891)
-  - fix: WebSocket priority in Message Pick Up V2 (#1888)
-  - fix: anoncreds predicate only proof with unqualified dids (#1907)
-  - feat: add pagination params to storage service (#1883)
-  - feat: add message handler middleware and fallback (#1894)
-- Updated dependencies [3239ef3]
-- Updated dependencies [d548fa4]
-- Updated dependencies [482a630]
-  - @credo-ts/core@0.5.5
-
-## [0.5.3](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.2...v0.5.3) (2024-05-01)
-
-**Note:** Version bump only for package @credo-ts/drpc
-
-## [0.5.2](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.1...v0.5.2) (2024-04-26)
-
-### Features
-
-- apply new version of SD JWT package ([#1787](https://github.com/openwallet-foundation/credo-ts/issues/1787)) ([b41e158](https://github.com/openwallet-foundation/credo-ts/commit/b41e158098773d2f59b5b5cfb82cc6be06a57acd))
-
-## [0.5.1](https://github.com/openwallet-foundation/credo-ts/compare/v0.5.0...v0.5.1) (2024-03-28)
-
-**Note:** Version bump only for package @credo-ts/drpc
-
-# [0.5.0](https://github.com/openwallet-foundation/credo-ts/compare/v0.4.2...v0.5.0) (2024-03-13)
-
-### Bug Fixes
-
-- stopped recvRequest from receiving outbound messages ([#1786](https://github.com/openwallet-foundation/credo-ts/issues/1786)) ([2005566](https://github.com/openwallet-foundation/credo-ts/commit/20055668765e1070cbf4db13a598e3e0d7881599))
-
-### Features
-
-- support DRPC protocol ([#1753](https://github.com/openwallet-foundation/credo-ts/issues/1753)) ([4f58925](https://github.com/openwallet-foundation/credo-ts/commit/4f58925dc3adb6bae1ab2a24e00b461e9c4881b9))
