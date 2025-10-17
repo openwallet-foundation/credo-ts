@@ -6,8 +6,8 @@ export type RedisCacheOptions = RedisOptions
 export class RedisCache implements Cache {
   private readonly _client: Redis
 
-  constructor(options: RedisCacheOptions = {}) {
-    this._client = new Redis(options)
+  constructor(options: RedisCacheOptions | Redis = {}) {
+    this._client = options instanceof Redis ? options : new Redis(options)
   }
 
   private async client() {
