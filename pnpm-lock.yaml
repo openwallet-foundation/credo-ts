@@ -935,6 +935,9 @@ importers:
       '@credo-ts/core':
         specifier: workspace:*
         version: link:../core
+      '@openid-federation/core':
+        specifier: 0.1.1-alpha.17
+        version: 0.1.1-alpha.17
       '@openid4vc/oauth2':
         specifier: 0.3.0-alpha-20251001121503
         version: 0.3.0-alpha-20251001121503
@@ -2962,6 +2965,9 @@ packages:
 
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
+
+  '@openid-federation/core@0.1.1-alpha.17':
+    resolution: {integrity: sha512-Bn5JaQzQnrQ2koPisiITHN69eOEewvs26EPyD4tp5XoR6Kdh9sy2f3w4hYV4MSaDwRorpRF7ttN6PGK1piMTng==}
 
   '@openid4vc/oauth2@0.3.0-alpha-20251001121503':
     resolution: {integrity: sha512-voGReZ2BxM45qPqAMMtnxb0vET2sTZ8YTKcyJjBF5HEuMKI/V51uwgHy1DRj2UNP1BPnrY2SUHMfCAI2gyJoWg==}
@@ -6468,6 +6474,7 @@ packages:
 
   metro-react-native-babel-preset@0.73.10:
     resolution: {integrity: sha512-1/dnH4EHwFb2RKEKx34vVDpUS3urt2WEeR8FYim+ogqALg4sTpG7yeQPxWpbgKATezt4rNfqAANpIyH19MS4BQ==}
+    deprecated: Use @react-native/babel-preset instead
     peerDependencies:
       '@babel/core': '*'
 
@@ -11159,6 +11166,11 @@ snapshots:
       outvariant: 1.4.3
 
   '@open-draft/until@2.1.0': {}
+
+  '@openid-federation/core@0.1.1-alpha.17':
+    dependencies:
+      buffer: 6.0.3
+      zod: 3.25.76
 
   '@openid4vc/oauth2@0.3.0-alpha-20251001121503':
     dependencies:

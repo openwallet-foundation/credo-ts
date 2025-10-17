@@ -7,9 +7,11 @@ import {
   DidsApi,
   getDomainFromUrl,
   getPublicJwkFromVerificationMethod,
+  JwsService,
   Kms,
   SignatureSuiteRegistry,
 } from '@credo-ts/core'
+import { fetchEntityConfiguration } from '@openid-federation/core'
 import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
 import type { OpenId4VcJwtIssuer } from './models'
 
@@ -42,7 +44,15 @@ export async function getPublicJwkFromDid(
 export async function requestSignerToJwtIssuer(
   agentContext: AgentContext,
   requestSigner: OpenId4VcJwtIssuer
-): Promise<Exclude<JwtSigner, JwtSignerX5c> | (JwtSignerX5c & { issuer: string })> {
+): Promise<
+  | Exclude<JwtSigner, JwtSignerX5c | { method: 'trustChain' }>
+  | (JwtSignerX5c & { issuer: string })
+  | (JwtSigner & {
+      // FIXME: export JwtSignerTrustChain
+      method: 'trustChain'
+      entityId: string
+    })
+> {
   if (requestSigner.method === 'did') {
     const dids = agentContext.resolve(DidsApi)
     const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(requestSigner.didUrl)
@@ -96,6 +106,50 @@ export async function requestSignerToJwtIssuer(
       ...requestSigner,
       publicJwk: requestSigner.jwk.toJson() as Jwk,
       alg: requestSigner.jwk.signatureAlgorithm,
+    }
+  }
+
+  if (requestSigner.method === 'federation') {
+    const jwsService = agentContext.dependencyManager.resolve(JwsService)
+
+    // TODO: we need to retrieve the openid federation record / some persistent state
+    // that contains the key to be used for verification. It does not make sense to fetch
+    // and verify our own metadata.
+
+    const entityConfiguration = await fetchEntityConfiguration({
+      entityId: requestSigner.entityId,
+      // Why do we need to fetch/verify our own entity configuration?
+      verifyJwtCallback: async ({ jwt, jwk }) => {
+        const res = await jwsService.verifyJws(agentContext, {
+          jws: jwt,
+          jwsSigner: { method: 'jwk', jwk: Kms.PublicJwk.fromUnknown(jwk) },
+        })
+        return res.isValid
+      },
+    })
+
+    // TODO: Not really sure if this is also used for the issuer so if so we need to change this logic.
+    // But currently it's not possible to specify a issuer method with issuance so I think it's fine.
+    const openIdRelyingParty = entityConfiguration.metadata?.openid_relying_party
+    if (!openIdRelyingParty) throw new CredoError('No openid_relying_party metadata found in the entity configuration.')
+
+    // NOTE: No support for signed jwks and external jwks
+    const jwks = openIdRelyingParty.jwks
+    if (!jwks) throw new CredoError('No jwks found in the openid-relying-party.')
+
+    // TODO: we should specifically store which keys to use for signing
+    const jwkJson = jwks.keys.find((jwk) => jwk.use === 'sig' && jwk.kid !== undefined)
+    if (!jwkJson) {
+      throw new CredoError(`Could not find jwk with use 'sig' and kid defined in openid_relying_party metadata jwks.`)
+    }
+    const jwk = Kms.PublicJwk.fromUnknown(jwkJson)
+    const alg = jwkJson.alg ?? jwk.signatureAlgorithm
+
+    return {
+      ...requestSigner,
+      method: 'federation',
+      kid: jwkJson.kid,
+      alg,
     }
   }
 

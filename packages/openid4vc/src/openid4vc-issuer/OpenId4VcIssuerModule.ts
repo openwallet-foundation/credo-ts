@@ -19,6 +19,7 @@ import {
   configureNonceEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
 } from './router'
+import { configureFederationEndpoint } from './router/federationEndpoint'
 
 /**
  * @public
@@ -122,6 +123,7 @@ export class OpenId4VcIssuerModule {
     configureAuthorizationChallengeEndpoint(endpointRouter, this.config)
     configureCredentialEndpoint(endpointRouter, this.config)
     configureDeferredCredentialEndpoint(endpointRouter, this.config)
+    configureFederationEndpoint(endpointRouter)
 
     // First one will be called for all requests (when next is called)
     contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {

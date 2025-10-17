@@ -190,6 +190,7 @@ export class OpenId4VpVerifierService {
     // We include the `session=` in the url so we can still easily
     // find the session an encrypted response
     const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint])}?session=${authorizationRequestId}`
+    const federationEntityId = joinUriParts(this.config.baseUrl, [options.verifier.verifierId])
 
     const jwtIssuer =
       options.requestSigner.method === 'none'
@@ -199,7 +200,12 @@ export class OpenId4VpVerifierService {
               ...options.requestSigner,
               issuer: authorizationResponseUrl,
             })
-          : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
+          : options.requestSigner.method === 'federation'
+            ? await requestSignerToJwtIssuer(agentContext, {
+                ...options.requestSigner,
+                entityId: federationEntityId,
+              })
+            : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
 
     let clientIdPrefix: ClientIdPrefix
     let clientId: string | undefined
@@ -226,9 +232,12 @@ export class OpenId4VpVerifierService {
     } else if (jwtIssuer?.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
       clientIdPrefix = version === 'v1' ? 'decentralized_identifier' : 'did'
+    } else if (jwtIssuer.method === 'federation') {
+      clientId = federationEntityId
+      clientIdPrefix = 'openid_federation'
     } else {
       throw new CredoError(
-        `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did' and 'x5c' are supported.`
+        `Unsupported jwt issuer method '${options.requestSigner.method}'. Only 'did', 'x5c' and 'federation' are supported.`
       )
     }
 
@@ -245,7 +254,10 @@ export class OpenId4VpVerifierService {
 
     const client_id =
       // For did/https and draft 21 the client id has no special prefix
-      clientIdPrefix === 'did' || (clientIdPrefix as string) === 'https' || version === 'v1.draft21'
+      clientIdPrefix === 'did' ||
+      (clientIdPrefix as string) === 'https' ||
+      ((clientIdPrefix as string) === 'openid_federation' && version === 'v1.draft24') ||
+      version === 'v1.draft21'
         ? clientId
         : `${clientIdPrefix}:${clientId}`
 
@@ -255,18 +267,23 @@ export class OpenId4VpVerifierService {
       clientIdPrefix !== 'web-origin' &&
       clientIdPrefix !== 'origin' &&
       clientIdPrefix !== 'decentralized_identifier'
-        ? clientIdPrefix
+        ? clientIdPrefix === 'openid_federation'
+          ? 'entity_id'
+          : clientIdPrefix
         : undefined
 
-    const client_metadata = await this.getClientMetadata(agentContext, {
-      responseMode,
-      verifier: options.verifier,
-      authorizationResponseUrl,
-      version,
+    // Do not add client metadata if OpenID Federation is used.
+    const client_metadata =
+      clientIdPrefix !== 'openid_federation'
+        ? await this.getClientMetadata(agentContext, {
+            responseMode,
+            verifier: options.verifier,
+            version,
 
-      // TODO: we don't validate the DCQL query when creating a request i think?
-      dcqlQuery: options.dcql?.query,
-    })
+            // TODO: we don't validate the DCQL query when creating a request i think?
+            dcqlQuery: options.dcql?.query,
+          })
+        : undefined
 
     const requestParamsBase = {
       nonce,
@@ -890,12 +907,11 @@ export class OpenId4VpVerifierService {
     return this.openId4VcVerificationSessionRepository.getById(agentContext, verificationSessionId)
   }
 
-  private async getClientMetadata(
+  public async getClientMetadata(
     agentContext: AgentContext,
     options: {
       responseMode: ResponseMode
       verifier: OpenId4VcVerifierRecord
-      authorizationResponseUrl: string
       dcqlQuery?: DcqlQuery
       version: NonNullable<OpenId4VpCreateAuthorizationRequestOptions['version']>
     }
