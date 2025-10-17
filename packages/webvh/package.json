@@ -4,7 +4,7 @@
     "cli": "./build/index.mjs",
     "import": "./src/index.ts"
   },
-  "version": "0.5.13",
+  "version": "0.6.0",
   "description": "Credo WebVH DID method implementation",
   "files": [
     "build"
@@ -24,7 +24,6 @@
       "./package.json": "./package.json"
     }
   },
-
   "scripts": {
     "build": "tsdown --config-loader unconfig",
     "prepublishOnly": "pnpm run build"
