@@ -29,7 +29,7 @@ export class BaseAgent<AgentModules extends ModulesMap> {
       label: name,
       walletConfig: { id: name, key: name },
       allowInsecureHttpUrls: true,
-      logger: new ConsoleLogger(LogLevel.off),
+      logger: new ConsoleLogger(LogLevel.debug),
     } satisfies InitConfig
 
     this.config = config

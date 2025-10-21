@@ -62,7 +62,7 @@ export interface OpenId4VcIssuanceSessionAuthorization {
 
 export interface OpenId4VcIssuanceSessionPresentation {
   /**
-   * Whether presentation during issuance is required.
+   * Whether presentation during issuance is required. Mutually `exclusive` with `identityBrokering`
    */
   required: true
 
@@ -75,6 +75,46 @@ export interface OpenId4VcIssuanceSessionPresentation {
    * The id of the `OpenId4VcVerificationSessionRecord` record this issuance session is linked to
    */
   openId4VcVerificationSessionId?: string
+}
+
+export interface OpenId4VcIssuanceSessionIdentityBrokering {
+  /**
+   * Whether identity brokering is required. Mutually exclusive with `presentation`
+   */
+  required: true
+
+  /**
+   * The <reference-value> from the `request_uri` paramer returned to the client
+   * in the form of `urn:ietf:params:oauth:request_uri:<reference-value>`.
+   */
+  requestUriReferenceValue?: string
+
+  /**
+   * @todo: I saw in google's library that for codes they encrypt an id with expiration time.
+   * You know the code was created by you because you can decrypt it, and you don't have to store
+   * additional metadata on your server. It's similar to the signed / encrypted nonce
+   */
+  requestUriExpiresAt?: Date
+
+  /**
+   * The brokered authorization request url, used to authorize to the external identity provider.
+   */
+  identityBrokerAuthorizationRequestUrl?: string
+
+  /**
+   * The state value used in the authorization request to the identity broker
+   */
+  identityBrokerState?: string
+
+  /**
+   * The state value that was received in the pushed authorization request.
+   */
+  state?: string
+
+  /**
+   * The redirect uri to redirect to after the authorization code has been granted.
+   */
+  redirectUri?: string
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
@@ -95,6 +135,10 @@ export type DefaultOpenId4VcIssuanceSessionRecordTags = {
 
   // presentation during issuance
   presentationAuthSession?: string
+
+  // identity brokering
+  identityBrokeringRequestUri?: string
+  identityBrokeringState?: string
 }
 
 export interface OpenId4VcIssuanceSessionRecordProps {
@@ -133,6 +177,14 @@ export interface OpenId4VcIssuanceSessionRecordProps {
    * `OpenId4VcVerificationSessionRecord` and state
    */
   presentation?: OpenId4VcIssuanceSessionPresentation
+
+  /**
+   * Identity brokering enables doing another Oauth2 authentication flow as part of
+   * the OpenID4VCI authorization flow. This allows you to leverage the advanced Oauth2
+   * functionality from Credo (such as Wallet Attestations, DPoP, PAR) while still allowing
+   * integration with existing IDPs.
+   */
+  identityBrokering?: OpenId4VcIssuanceSessionIdentityBrokering
 
   credentialOfferUri?: string
   credentialOfferId: string
@@ -230,6 +282,11 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
   public presentation?: OpenId4VcIssuanceSessionPresentation
 
   /**
+   * Identity brokering specificic metadata values
+   */
+  public identityBrokering?: OpenId4VcIssuanceSessionIdentityBrokering
+
+  /**
    * User-defined metadata that will be provided to the credential request to credential mapper
    * to allow to retrieve the needed credential input data. Can be the credential data itself,
    * or some other data that is needed to retrieve the credential data.
@@ -274,6 +331,8 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
       this.preAuthorizedCode = props.preAuthorizedCode
       this.pkce = props.pkce
       this.authorization = props.authorization
+      this.presentation = props.presentation
+      this.identityBrokering = props.identityBrokering
       this.credentialOfferUri = props.credentialOfferUri
       this.credentialOfferId = props.credentialOfferId
       this.credentialOfferPayload = props.credentialOfferPayload
@@ -319,6 +378,10 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
       // Presentation during issuance
       presentationAuthSession: this.presentation?.authSession,
+
+      // Identity brokering
+      identityBrokeringRequestUriReferenceValue: this.identityBrokering?.requestUriReferenceValue,
+      identityBrokeringState: this.identityBrokering?.identityBrokerState,
     }
   }
 }

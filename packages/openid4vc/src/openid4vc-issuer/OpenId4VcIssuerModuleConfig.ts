@@ -135,6 +135,21 @@ export interface OpenId4VcIssuerModuleConfigOptions {
     accessToken?: string
 
     /**
+     * @default /par
+     */
+    pushedAuthorizationRequest?: string
+
+    /**
+     * @default /authorize
+     */
+    authorization?: string
+
+    /**
+     * @default /redirect
+     */
+    redirect?: string
+
+    /**
      * @default /jwks
      */
     jwks: string
@@ -253,6 +268,27 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get nonceEndpointPath(): string {
     return this.options.endpoints?.nonce ?? '/nonce'
+  }
+
+  /**
+   * @default /par
+   */
+  public get pushedAuthorizationRequestEndpoint(): string {
+    return this.options.endpoints?.pushedAuthorizationRequest ?? '/par'
+  }
+
+  /**
+   * @default /authorize
+   */
+  public get authorizationEndpoint(): string {
+    return this.options.endpoints?.authorization ?? '/authorize'
+  }
+
+  /**
+   * @default /redirect
+   */
+  public get redirectEndpoint(): string {
+    return this.options.endpoints?.redirect ?? '/redirect'
   }
 
   /**
