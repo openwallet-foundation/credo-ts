@@ -2,6 +2,7 @@ import type { MdocRecord, SdJwtVcRecord, W3cCredentialRecord, W3cV2CredentialRec
 import { Mdoc } from '@credo-ts/core'
 import type {
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciDpopRequestOptions,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VpResolvedAuthorizationRequest,
 } from '@credo-ts/openid4vc'
@@ -153,6 +154,7 @@ export class HolderInquirer extends BaseInquirer {
     let authorizationCode: string | undefined
     let codeVerifier: string | undefined
     let txCode: string | undefined
+    let dpop: OpenId4VciDpopRequestOptions | undefined
 
     if (resolvedAuthorization.authorizationFlow === 'Oauth2Redirect') {
       console.log(redText('Authorization required for credential issuance', true))
@@ -164,12 +166,11 @@ export class HolderInquirer extends BaseInquirer {
           if (req.query.code) {
             resolve(req.query.code as string)
             // Store original routes
-            const originalStack = this.holder.app._router.stack
+            const originalStack = this.holder.app.router.stack
 
             // Remove specific GET route by path
-            this.holder.app._router.stack = originalStack.filter(
-              (layer: { route?: { path: string; methods: { get?: unknown } } }) =>
-                !(layer.route && layer.route.path === '/redirect' && layer.route.methods.get)
+            this.holder.app.router.stack = originalStack.filter(
+              (layer) => !(layer.route && layer.route.path === '/redirect')
             )
             res.send('Success! You can now go back to the terminal')
           } else {
@@ -184,6 +185,7 @@ export class HolderInquirer extends BaseInquirer {
       console.log('\n\n')
       codeVerifier = resolvedAuthorization.codeVerifier
       authorizationCode = await code
+      dpop = resolvedAuthorization.dpop
       console.log(greenText('Authorization complete', true))
     } else if (resolvedAuthorization.authorizationFlow === 'PresentationDuringIssuance') {
       console.log(redText('Presentation during issuance not supported yet', true))
@@ -203,6 +205,7 @@ export class HolderInquirer extends BaseInquirer {
       code: authorizationCode,
       redirectUri: authorizationCode ? this.holder.client.redirectUri : undefined,
       txCode,
+      dpop,
     })
 
     console.log(greenText('Received and stored the following credentials.', true))
