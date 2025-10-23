@@ -1,7 +1,7 @@
 import {
-  Buffer,
   type AgentContext,
   type AnyUint8Array,
+  Buffer,
   CredoError,
   DidsApi,
   getPublicJwkFromVerificationMethod,

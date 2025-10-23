@@ -3,7 +3,7 @@ import { Agent } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { getAgentOptions } from '../../core/tests/helpers'
 
-import { getWebvhModules } from './setupWebvhModule'
+import { getWebVhModules } from './setupWebVhModule'
 import { validDid } from './utils'
 
 // Simplified mock
@@ -39,11 +39,11 @@ vi.mock('didwebvh-ts', () => ({
 }))
 
 describe('WebVH DID resolver', () => {
-  let agent: Agent<ReturnType<typeof getWebvhModules>>
+  let agent: Agent<ReturnType<typeof getWebVhModules>>
 
   beforeAll(async () => {
-    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebvhModules())
-    agent = new Agent({ ...agentOptions, modules: { ...getWebvhModules(), inMemory: new InMemoryWalletModule() } })
+    const agentOptions = getAgentOptions('WebVH DID Resolver Test', {}, {}, getWebVhModules())
+    agent = new Agent({ ...agentOptions, modules: { ...getWebVhModules(), inMemory: new InMemoryWalletModule() } })
 
     await agent.initialize()
   })

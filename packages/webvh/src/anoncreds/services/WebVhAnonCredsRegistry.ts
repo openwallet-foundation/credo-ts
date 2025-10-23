@@ -32,7 +32,7 @@ import {
 } from '@credo-ts/core'
 import { canonicalize } from 'json-canonicalize'
 import { EddsaJcs2022Cryptosuite, type UnsecuredDocument } from '../../cryptosuites'
-import { WebvhDidResolver } from '../../dids'
+import { WebVhDidResolver } from '../../dids'
 import { WebVhResource } from '../utils/transform'
 
 type DidResourceResolutionResult = {
@@ -52,7 +52,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   public readonly supportedIdentifier = /^did:webvh:.*/
 
   /**
-   * Resolves a resource using the WebvhDidResolver and performs common validation steps.
+   * Resolves a resource using the WebVhDidResolver and performs common validation steps.
    *
    * @param agentContext The agent context.
    * @param resourceId The DID URI of the resource to resolve.
@@ -72,7 +72,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
     resourceTypeString: string
   ): Promise<{ resourceObject: WebVhResource; resolutionResult: DidResourceResolutionResult }> {
     try {
-      const webvhDidResolver = agentContext.dependencyManager.resolve(WebvhDidResolver)
+      const webvhDidResolver = agentContext.dependencyManager.resolve(WebVhDidResolver)
       if (!this.supportedIdentifier.test(resourceId))
         throw new CredoError(`Invalid ${resourceTypeString} ID: ${resourceId}`)
 
@@ -564,7 +564,7 @@ export class WebVhAnonCredsRegistry implements AnonCredsRegistry {
   ): Promise<RegisterRevocationStatusListReturn> {
     if (!options?.revocationStatusList) throw new CredoError('revocationStatusList options must be provided.')
 
-    const timestamp = Math.floor(new Date().getTime() / 1000)
+    const timestamp = Math.floor(Date.now() / 1000)
     const resourceId = this._digestMultibase(canonicalize(options.revocationStatusList))
 
     const resourceStatusListId = `${options.revocationStatusList.issuerId}/resources/${resourceId}`

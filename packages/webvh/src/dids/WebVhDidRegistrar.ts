@@ -12,10 +12,10 @@ import type {
 } from '@credo-ts/core'
 
 import { DidDocument, DidDocumentRole, DidRecord, DidRepository, JsonTransformer, Kms } from '@credo-ts/core'
-import { type DIDLog, MultibaseEncoding, createDID, multibaseEncode, updateDID } from 'didwebvh-ts'
+import { createDID, type DIDLog, MultibaseEncoding, multibaseEncode, updateDID } from 'didwebvh-ts'
 
-import { WebvhDidCrypto } from './WebvhDidCrypto'
-import { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
+import { WebVhDidCrypto } from './WebVhDidCrypto'
+import { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
 
 interface WebVhDidCreateOptions extends DidCreateOptions {
   domain: string
@@ -61,8 +61,8 @@ export class WebVhDidRegistrar implements DidRegistrar {
 
       // Create crypto instance
       const { publicKeyMultibase, keyId } = await this.generatePublicKey(agentContext)
-      const signer = new WebvhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
-      const verifier = new WebvhDidCrypto(agentContext)
+      const signer = new WebVhDidCryptoSigner(agentContext, publicKeyMultibase, keyId)
+      const verifier = new WebVhDidCrypto(agentContext)
       const baseDid = `did:webvh:{SCID}:${domain}`
 
       // Create DID
@@ -152,8 +152,8 @@ export class WebVhDidRegistrar implements DidRegistrar {
         return this.handleError('At least one verification method with publicKeyMultibase must be provided.')
 
       // Get signer/verifier
-      const signer = new WebvhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase, keyId)
-      const verifier = new WebvhDidCrypto(agentContext)
+      const signer = new WebVhDidCryptoSigner(agentContext, verificationMethod.publicKeyMultibase, keyId)
+      const verifier = new WebVhDidCrypto(agentContext)
 
       const { log: logResult, doc } = await updateDID({
         log,

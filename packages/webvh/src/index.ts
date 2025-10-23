@@ -1,4 +1,4 @@
 export { WebVhAnonCredsRegistry } from './anoncreds/services/WebVhAnonCredsRegistry'
-export { WebvhDidResolver, WebVhDidRegistrar } from './dids'
-export { WebvhApi } from './WebvhApi'
-export { WebvhModule } from './WebvhModule'
+export { WebVhDidResolver, WebVhDidRegistrar } from './dids'
+export { WebVhApi } from './WebVhApi'
+export { WebVhModule } from './WebVhModule'

@@ -1,25 +1,25 @@
 import { type AgentContext, Buffer, Kms } from '@credo-ts/core'
 import {
   MultibaseEncoding,
-  Signer,
-  SigningInput,
-  SigningOutput,
   multibaseEncode,
   prepareDataForSigning,
+  type Signer,
+  type SigningInput,
+  type SigningOutput,
 } from 'didwebvh-ts'
 
 /**
- * Complement to the WebvhDidCrypto class implementing the Signer interface.
+ * Complement to the WebVhDidCrypto class implementing the Signer interface.
  * Provides cryptographic operations for DID documents using Ed25519 keys.
  */
-export class WebvhDidCryptoSigner implements Signer {
+export class WebVhDidCryptoSigner implements Signer {
   private publicKeyMultibase: string
   private keyId: string
   private agentContext: AgentContext
   public readonly supportedMethods: string[] = ['webvh']
 
   /**
-   * Constructs a new instance of WebvhDidCryptoSigner.
+   * Constructs a new instance of WebVhDidCryptoSigner.
    * @param agentContext - The agent context containing wallet and configuration.
    * @param publicKeyMultibase - The public key encoded in multibase format.
    */

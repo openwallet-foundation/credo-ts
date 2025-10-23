@@ -1,5 +1,5 @@
 import { getAgentConfig, getAgentContext } from '../../../../core/tests/helpers'
-import { WebvhDidResolver } from '../WebvhDidResolver'
+import { WebVhDidResolver } from '../WebVhDidResolver'
 
 interface AttestedResourceContent {
   '@context': string
@@ -94,8 +94,8 @@ const createStubContent = (url: string) => {
   return null
 }
 
-describe('WebvhDidResolver Integration Tests', () => {
-  let resolver: WebvhDidResolver
+describe('WebVhDidResolver Integration Tests', () => {
+  let resolver: WebVhDidResolver
   let agentContext: ReturnType<typeof getAgentContext>
 
   const realResourceIds = [
@@ -109,10 +109,10 @@ describe('WebvhDidResolver Integration Tests', () => {
 
   beforeEach(() => {
     // Create a real resolver instance (no mocks in this file!)
-    resolver = new WebvhDidResolver()
+    resolver = new WebVhDidResolver()
 
     // Create a fresh agent context
-    const agentConfig = getAgentConfig('WebvhDidResolverIntegrationTest')
+    const agentConfig = getAgentConfig('WebVhDidResolverIntegrationTest')
     agentContext = getAgentContext({ agentConfig })
 
     // Mock the agentContext's fetch method

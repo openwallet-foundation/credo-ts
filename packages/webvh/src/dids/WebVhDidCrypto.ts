@@ -1,7 +1,7 @@
 import { type AgentContext, type AnyUint8Array, Kms } from '@credo-ts/core'
 import type { Verifier } from 'didwebvh-ts'
 
-export class WebvhDidCrypto implements Verifier {
+export class WebVhDidCrypto implements Verifier {
   private agentContext: AgentContext
 
   public constructor(agentContext: AgentContext) {

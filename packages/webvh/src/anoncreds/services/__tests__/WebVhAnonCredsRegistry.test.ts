@@ -1,7 +1,5 @@
 import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
 import type { AgentContext, DidDocumentService, VerificationMethod } from '@credo-ts/core'
-
-import { createHash } from 'crypto'
 import {
   DidDocument,
   DidRepository,
@@ -14,7 +12,7 @@ import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
-import { WebvhDidResolver } from '../../../dids'
+import { WebVhDidResolver } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
 import {
@@ -28,11 +26,11 @@ import {
   verificationMethodId,
 } from './mock-resources'
 
-// Mock the WebvhDidResolver
+// Mock the WebVhDidResolver
 const mockResolveResource = vi.fn()
-vi.mock('../../../dids/WebvhDidResolver', () => {
+vi.mock('../../../dids/WebVhDidResolver', () => {
   return {
-    WebvhDidResolver: vi.fn().mockImplementation(() => {
+    WebVhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -57,7 +55,7 @@ const mockResolveDidDocument = vi.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
 }
-const mockFindCreatedDid = jest.fn()
+const mockFindCreatedDid = vi.fn()
 const mockDidsRepository = {
   findCreatedDid: mockFindCreatedDid,
 }
@@ -78,7 +76,7 @@ describe('WebVhAnonCredsRegistry', () => {
       registerInstances: [
         [DidsApi, mockDidsApi],
         [DidRepository, mockDidsRepository],
-        [WebvhDidResolver, { resolveResource: mockResolveResource }],
+        [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
 
@@ -519,8 +517,7 @@ describe('WebVhAnonCredsRegistry', () => {
   describe('registerRevocationStatusList', () => {
     it('should correctly resolve and parse a valid RevocationStatusList resource', async () => {
       // Remove timestamp from validations
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { timestamp, ...revocationStatusList } = mockRegRevEntryResource.content
+      const { timestamp: _, ...revocationStatusList } = mockRegRevEntryResource.content
 
       mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
 

@@ -5,8 +5,8 @@ import {
   DidDocumentService,
   DidRecord,
   DidRepository,
-  InMemoryLruCache,
   InjectionSymbols,
+  InMemoryLruCache,
 } from '@credo-ts/core'
 import { Subject } from 'rxjs'
 
