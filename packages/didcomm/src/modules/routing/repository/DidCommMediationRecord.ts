@@ -1,9 +1,7 @@
-import type { DidCommMediationRole } from '../models/DidCommMediationRole'
-
 import { BaseRecord, CredoError, utils } from '@credo-ts/core'
 import { Transform } from 'class-transformer'
-
 import { DidCommMediatorPickupStrategy } from '../DidCommMediatorPickupStrategy'
+import type { DidCommMediationRole } from '../models/DidCommMediationRole'
 import { DidCommMediationState } from '../models/DidCommMediationState'
 
 export interface DidCommMediationRecordProps {
@@ -123,7 +121,6 @@ export class DidCommMediationRecord
 
   public assertState(expectedStates: DidCommMediationState | DidCommMediationState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

@@ -1,22 +1,20 @@
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../../DidCommMessage'
+import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
 import type { DidCommInboundMessageContext } from '../../../../models'
+import { DidCommProtocol } from '../../../../models'
 import type {
   DidCommDiscoverFeaturesDisclosureReceivedEvent,
   DidCommDiscoverFeaturesQueryReceivedEvent,
 } from '../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesEventTypes } from '../../DidCommDiscoverFeaturesEvents'
+import { DidCommDiscoverFeaturesModuleConfig } from '../../DidCommDiscoverFeaturesModuleConfig'
 import type {
   CreateDisclosureOptions,
   CreateQueryOptions,
   DiscoverFeaturesProtocolMsgReturnType,
 } from '../../DidCommDiscoverFeaturesServiceOptions'
-
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
-import { DidCommFeatureRegistry } from '../../../../DidCommFeatureRegistry'
-import { DidCommMessageHandlerRegistry } from '../../../../DidCommMessageHandlerRegistry'
-import { DidCommProtocol } from '../../../../models'
-import { DidCommDiscoverFeaturesEventTypes } from '../../DidCommDiscoverFeaturesEvents'
-import { DidCommDiscoverFeaturesModuleConfig } from '../../DidCommDiscoverFeaturesModuleConfig'
 import { DidCommDiscoverFeaturesService } from '../../services'
 
 import { DidCommFeaturesDiscloseMessageHandler, DidCommFeaturesQueryMessageHandler } from './handlers'
@@ -31,13 +29,10 @@ export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesSer
   public constructor(
     featureRegistry: DidCommFeatureRegistry,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger,
     discoverFeaturesConfig: DidCommDiscoverFeaturesModuleConfig
   ) {
     super(featureRegistry, eventEmitter, logger, discoverFeaturesConfig)
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -45,7 +40,7 @@ export class DidCommDiscoverFeaturesV1Service extends DidCommDiscoverFeaturesSer
    */
   public readonly version = 'v1'
 
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
+  public register(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
     messageHandlerRegistry.registerMessageHandler(new DidCommFeaturesDiscloseMessageHandler(this))
     messageHandlerRegistry.registerMessageHandler(new DidCommFeaturesQueryMessageHandler(this))
   }

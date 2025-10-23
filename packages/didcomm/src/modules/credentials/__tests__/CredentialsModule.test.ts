@@ -1,6 +1,4 @@
 import type { DependencyManager } from '../../../../../core/src/plugins/DependencyManager'
-import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
-
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
@@ -8,17 +6,18 @@ import { DidCommProtocol } from '../../../models'
 import { DidCommCredentialsModule } from '../DidCommCredentialsModule'
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommCredentialV2Protocol } from '../protocol'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 import { DidCommRevocationNotificationService } from '../protocol/revocation-notification/services'
 import { DidCommCredentialExchangeRepository } from '../repository'
 
 const featureRegistry = {
-  register: jest.fn(),
+  register: vi.fn(),
 } as unknown as DidCommFeatureRegistry
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
   resolve: () => featureRegistry,
 } as unknown as DependencyManager
 
@@ -48,7 +47,7 @@ describe('CredentialsModule', () => {
   })
 
   test('calls register on the provided CredentialProtocols', async () => {
-    const registerMock = jest.fn()
+    const registerMock = vi.fn()
     const credentialProtocol = {
       register: registerMock,
     } as unknown as DidCommCredentialProtocol
@@ -64,6 +63,7 @@ describe('CredentialsModule', () => {
       registerInstances: [
         [DidCommMessageHandlerRegistry, messageHandlerRegistry],
         [DidCommFeatureRegistry, featureRegistry],
+        [DidCommRevocationNotificationService, {} as DidCommRevocationNotificationService],
       ],
     })
     await credentialsModule.initialize(agentContext)

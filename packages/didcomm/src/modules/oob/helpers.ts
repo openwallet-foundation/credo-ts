@@ -1,13 +1,12 @@
-import type { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-
 import {
+  createPeerDidDocumentFromServices,
   DidCommV1Service,
   DidDocumentBuilder,
   DidKey,
-  createPeerDidDocumentFromServices,
   didDocumentToNumAlgo2Did,
   didKeyToEd25519PublicJwk,
 } from '@credo-ts/core'
+import type { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
 
 // This method is kept to support searching for existing connections created by
 // credo-ts <= 0.5.1

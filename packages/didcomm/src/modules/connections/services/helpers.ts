@@ -1,22 +1,25 @@
-import { AgentContext, DidDocumentKey, Kms, PeerDidNumAlgo, ResolvedDidCommService } from '@credo-ts/core'
-import type { DidCommRouting } from '../../../models'
-import type { DidDoc, PublicKey } from '../models'
-
 import {
+  AgentContext,
   CredoError,
+  createPeerDidDocumentFromServices,
   DidCommV1Service,
   DidDocumentBuilder,
+  type DidDocumentKey,
   DidDocumentRole,
   DidRepository,
   DidsApi,
-  IndyAgentService,
-  TypedArrayEncoder,
-  createPeerDidDocumentFromServices,
   didDocumentJsonToNumAlgo1Did,
   getEd25519VerificationKey2018,
+  IndyAgentService,
+  Kms,
+  PeerDidNumAlgo,
+  type ResolvedDidCommService,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
+import type { DidCommRouting } from '../../../models'
 import { OutOfBandDidCommService } from '../../oob/domain/OutOfBandDidCommService'
-import { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
+import type { DidCommOutOfBandInlineServiceKey } from '../../oob/repository/DidCommOutOfBandRecord'
+import type { DidDoc, PublicKey } from '../models'
 import { EmbeddedAuthentication } from '../models'
 
 export function convertToNewDidDocument(didDoc: DidDoc, keys?: DidDocumentKey[]) {

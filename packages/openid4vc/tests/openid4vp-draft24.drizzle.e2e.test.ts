@@ -1,33 +1,33 @@
-import { randomUUID } from 'crypto'
 import type { DcqlQuery, DifPresentationExchangeDefinitionV2, MdocDeviceResponse, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   DateOnly,
   Kms,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
+  w3cDate,
   X509Module,
   X509Service,
-  parseDid,
-  w3cDate,
 } from '@credo-ts/core'
+import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { DrizzleStorageModule } from '../../drizzle-storage/src'
-import openid4vcBundle from '../../drizzle-storage/src/openid4vc/bundle'
-import tenantsBundle from '../../drizzle-storage/src/tenants/bundle'
-import { inMemoryDrizzleSqliteDatabase, pushDrizzleSchema } from '../../drizzle-storage/tests/testDatabase'
+import { openid4vcBundle } from '../../drizzle-storage/src/openid4vc/bundle'
+import { tenantsBundle } from '../../drizzle-storage/src/tenants/bundle'
 import {
-  DrizzlePostgresTestDatabase,
   createDrizzlePostgresTestDatabase,
+  type DrizzlePostgresTestDatabase,
+  inMemoryDrizzleSqliteDatabase,
+  pushDrizzleSchema,
 } from '../../drizzle-storage/tests/testDatabase'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerifierModuleConfigOptions } from '../src'
-import { OpenId4VcVerificationSessionState } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
@@ -57,16 +57,18 @@ describe('OpenID4VP Draft 24', () => {
   let verifier2: TenantType
 
   let holderDrizzleModule: DrizzleStorageModule
-  // Use SQLite for verifier
-  const verifierDrizzleModule = new DrizzleStorageModule({
-    database: inMemoryDrizzleSqliteDatabase(),
-    bundles: [openid4vcBundle, tenantsBundle],
-  })
+  let verifierDrizzleModule: DrizzleStorageModule
 
   beforeAll(async () => {
     holderPostgresDatabase = await createDrizzlePostgresTestDatabase()
     holderDrizzleModule = new DrizzleStorageModule({
       database: holderPostgresDatabase.drizzle,
+      bundles: [openid4vcBundle, tenantsBundle],
+    })
+
+    // Use SQLite for verifier
+    verifierDrizzleModule = new DrizzleStorageModule({
+      database: await inMemoryDrizzleSqliteDatabase(),
       bundles: [openid4vcBundle, tenantsBundle],
     })
 
@@ -106,6 +108,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier = (await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           verifier: {
             baseUrl: verificationBaseUrl,
           },
@@ -119,9 +122,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })

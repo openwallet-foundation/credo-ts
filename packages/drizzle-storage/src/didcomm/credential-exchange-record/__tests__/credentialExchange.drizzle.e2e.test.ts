@@ -7,7 +7,7 @@ import {
   DidCommCredentialRole,
   DidCommCredentialState,
 } from '@credo-ts/didcomm'
-import { DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
+import { type DrizzleRecordTest, setupDrizzleRecordTest } from '../../../../tests/testDatabase'
 import { didcommCredentialExchangeDrizzleRecord } from '../index'
 
 describe.each(['postgres', 'sqlite'] as const)('CredentialExchangeRecord with %s', (type) => {

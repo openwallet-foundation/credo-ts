@@ -1,13 +1,4 @@
 import type { AgentContext, DidDocumentKey, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommAckMessage } from '../../../messages'
-import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommOutOfBandRecord } from '../../oob/repository'
-import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
-import type { DidCommConnectionProblemReportMessage } from '../messages'
-import type { DidCommConnectionType } from '../models'
-import type { DidCommConnectionRecordProps } from '../repository'
-
 import {
   CredoError,
   DidDocumentRole,
@@ -15,34 +6,41 @@ import {
   DidRecordMetadataKeys,
   DidRepository,
   DidsApi,
+  didDocumentJsonToNumAlgo1Did,
   EventEmitter,
+  filterContextCorrelationId,
   IndyAgentService,
   InjectionSymbols,
-  JsonTransformer,
-  Kms,
-  Logger,
-  TypedArrayEncoder,
-  didDocumentJsonToNumAlgo1Did,
-  filterContextCorrelationId,
   inject,
   injectable,
+  JsonTransformer,
+  Kms,
+  type Logger,
   parseDid,
+  TypedArrayEncoder,
   utils,
 } from '@credo-ts/core'
-import { ReplaySubject, firstValueFrom } from 'rxjs'
+import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { first, map, timeout } from 'rxjs/operators'
+import type { DidCommMessage } from '../../../DidCommMessage'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
-import { DidCommRouting } from '../../../models'
+import type { DidCommAckMessage } from '../../../messages'
+import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
-import { InvitationType } from '../../oob/messages'
+import { DidCommInvitationType } from '../../oob/messages'
+import type { DidCommOutOfBandRecord } from '../../oob/repository'
 import { DidCommOutOfBandRepository } from '../../oob/repository'
 import { DidCommOutOfBandRecordMetadataKeys } from '../../oob/repository/outOfBandRecordMetadataTypes'
+import type { DidCommConnectionStateChangedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { ConnectionProblemReportError, ConnectionProblemReportReason } from '../errors'
+import type { DidCommConnectionProblemReportMessage } from '../messages'
 import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
+import type { DidCommConnectionType } from '../models'
 import {
+  authenticationTypes,
   DidCommConnection,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
@@ -50,8 +48,8 @@ import {
   DidDoc,
   Ed25119Sig2018,
   ReferencedAuthentication,
-  authenticationTypes,
 } from '../models'
+import type { DidCommConnectionRecordProps } from '../repository'
 import { DidCommConnectionRecord, DidCommConnectionRepository } from '../repository'
 
 import {
@@ -653,7 +651,7 @@ export class DidCommConnectionService {
 
     // If the original invitation was a legacy connectionless invitation, it's okay if the message does not have a pthid.
     if (
-      legacyInvitationMetadata?.legacyInvitationType !== InvitationType.Connectionless &&
+      legacyInvitationMetadata?.legacyInvitationType !== DidCommInvitationType.Connectionless &&
       outOfBandRecord.outOfBandInvitation.id !== outOfBandInvitationId
     ) {
       throw new CredoError(

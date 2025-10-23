@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommConnectionService } from '../services'
-
 import { DidCommAckMessage } from '../../../messages'
+import type { DidCommConnectionService } from '../services'
 
 export class DidCommAckMessageHandler implements DidCommMessageHandler {
   private connectionService: DidCommConnectionService

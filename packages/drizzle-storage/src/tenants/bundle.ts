@@ -3,7 +3,7 @@ import { bundleMigrationDefinition } from '../util'
 import { tenantDrizzleRecord } from './tenant-record'
 import { tenantRoutingDrizzleRecord } from './tenant-routing-record'
 
-export default {
+export const tenantsBundle = {
   name: 'tenants',
   records: [tenantDrizzleRecord, tenantRoutingDrizzleRecord],
 

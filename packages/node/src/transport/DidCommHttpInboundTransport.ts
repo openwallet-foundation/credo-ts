@@ -1,5 +1,5 @@
-import type { Server } from 'http'
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import type {
   DidCommEncryptedMessage,
   DidCommInboundTransport,
@@ -7,12 +7,11 @@ import type {
   DidCommMessageReceivedEvent,
   DidCommTransportSession,
 } from '@credo-ts/didcomm'
-import type { Express, Request, Response } from 'express'
-
-import { CredoError, EventEmitter, utils } from '@credo-ts/core'
 import { DidCommEventTypes, DidCommMimeType, DidCommModuleConfig, DidCommTransportService } from '@credo-ts/didcomm'
+import type { Express, Request, Response } from 'express'
 import express, { text } from 'express'
-import { ReplaySubject, filter, firstValueFrom, take, timeout } from 'rxjs'
+import type { Server } from 'http'
+import { filter, firstValueFrom, ReplaySubject, take, timeout } from 'rxjs'
 
 const supportedContentTypes: string[] = [DidCommMimeType.V0, DidCommMimeType.V1]
 

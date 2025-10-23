@@ -1,18 +1,15 @@
-import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
-import type { AgentType } from './utils'
-
 import { CredoError, Kms } from '@credo-ts/core'
 import express, { type Express } from 'express'
-
+import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import {
   OpenId4VcIssuanceSessionState,
-  OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcModule,
+  type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VciCredentialFormatProfile,
+  OpenId4VcModule,
 } from '../src'
-
-import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
+import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
+import type { AgentType } from './utils'
 import { createAgentFromModules, waitForCredentialIssuanceSessionRecordSubject } from './utils'
 import { universityDegreeCredentialConfigurationSupportedMdoc } from './utilsVci'
 
@@ -34,52 +31,59 @@ describe('OpenId4Vc Batch Issuance', () => {
   beforeEach(async () => {
     expressApp = express()
 
-    issuer = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule({
-        issuer: {
-          baseUrl: issuerBaseUrl,
-          credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
-            if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
-              if (holderBinding.bindingMethod !== 'jwk') {
-                throw new CredoError('Expected jwk binding method')
-              }
-              return {
-                type: 'credentials',
-                format: OpenId4VciCredentialFormatProfile.MsoMdoc,
-                credentials: holderBinding.keys.map((holderBinding, index) => ({
-                  docType: credentialRequestFormat.doctype,
-                  holderKey: holderBinding.jwk,
-                  issuerCertificate: issuer.certificate,
-                  namespaces: {
-                    [credentialRequestFormat.doctype]: {
-                      index,
+    issuer = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule({
+          app: expressApp,
+          issuer: {
+            baseUrl: issuerBaseUrl,
+            credentialRequestToCredentialMapper: async ({ credentialRequestFormat, holderBinding }) => {
+              if (credentialRequestFormat?.format === OpenId4VciCredentialFormatProfile.MsoMdoc) {
+                if (holderBinding.bindingMethod !== 'jwk') {
+                  throw new CredoError('Expected jwk binding method')
+                }
+                return {
+                  type: 'credentials',
+                  format: OpenId4VciCredentialFormatProfile.MsoMdoc,
+                  credentials: holderBinding.keys.map((holderBinding, index) => ({
+                    docType: credentialRequestFormat.doctype,
+                    holderKey: holderBinding.jwk,
+                    issuerCertificate: issuer.certificate,
+                    namespaces: {
+                      [credentialRequestFormat.doctype]: {
+                        index,
+                      },
                     },
-                  },
-                  validityInfo: {
-                    validFrom: new Date('2024-01-01'),
-                    validUntil: new Date('2050-01-01'),
-                  },
-                })),
+                    validityInfo: {
+                      validFrom: new Date('2024-01-01'),
+                      validUntil: new Date('2050-01-01'),
+                    },
+                  })),
+                }
               }
-            }
 
-            throw new Error('not supported')
+              throw new Error('not supported')
+            },
           },
-        },
-      }),
-      inMemory: new InMemoryWalletModule(),
-    })
+        }),
+        inMemory: new InMemoryWalletModule(),
+      },
+      undefined,
+      global.fetch
+    )
 
-    holder = await createAgentFromModules({
-      openid4vc: new OpenId4VcModule(),
-      inMemory: new InMemoryWalletModule(),
-    })
+    holder = await createAgentFromModules(
+      {
+        openid4vc: new OpenId4VcModule(),
+        inMemory: new InMemoryWalletModule(),
+      },
+      undefined,
+      global.fetch
+    )
 
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate.toString('base64'))
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 

@@ -1,13 +1,11 @@
-import { JsonTransformer, TagsBase } from '@credo-ts/core'
-
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
+import { OpenId4VcIssuanceSessionRecord } from '@credo-ts/openid4vc'
 import {
   BaseDrizzleRecordAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
-
-import { OpenId4VcIssuanceSessionRecord } from '@credo-ts/openid4vc'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
@@ -40,13 +38,17 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
     record: OpenId4VcIssuanceSessionRecord
   ): DrizzleAdapterValues<(typeof sqlite)['openId4VcIssuanceSession']> {
     const {
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       authorizationCode,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       authorizationSubject,
       credentialOfferId,
       credentialOfferUri,
       issuerId,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       issuerState,
       preAuthorizedCode,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       presentationAuthSession,
       state,
       ...customTags

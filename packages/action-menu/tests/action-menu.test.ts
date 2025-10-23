@@ -1,12 +1,9 @@
-import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
+import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 import { Agent } from '@credo-ts/core'
-
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
 import { getAgentOptions, makeConnection, setupSubjectTransports, testLogger } from '../../core/tests'
-
 import { waitForActionMenuRecord } from './helpers'
-
-import { ActionMenu, ActionMenuModule, ActionMenuRecord, ActionMenuRole, ActionMenuState } from '@credo-ts/action-menu'
 
 const modules = {
   actionMenu: new ActionMenuModule(),

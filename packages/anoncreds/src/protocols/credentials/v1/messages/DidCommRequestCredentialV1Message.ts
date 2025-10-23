@@ -1,8 +1,7 @@
-import type { LegacyIndyCredentialRequest } from '../../../../formats'
-
 import { DidCommAttachment, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import type { LegacyIndyCredentialRequest } from '../../../../formats'
 
 export const INDY_CREDENTIAL_REQUEST_ATTACHMENT_ID = 'libindy-cred-request-0'
 

@@ -1,9 +1,13 @@
-import { AgentContext, FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
+import { AgentContext, type FileSystem, InjectionSymbols, JsonTransformer, StorageVersionRecord } from '@credo-ts/core'
 import { KdfMethod, Session, Store, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
 import { inject, injectable } from 'tsyringe'
 
-import { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
-import { AskarModuleConfig, AskarModuleConfigStoreOptions, AskarMultiWalletDatabaseScheme } from './AskarModuleConfig'
+import type { AskarStoreExportOptions, AskarStoreImportOptions, AskarStoreRotateKeyOptions } from './AskarApiOptions'
+import {
+  AskarModuleConfig,
+  type AskarModuleConfigStoreOptions,
+  AskarMultiWalletDatabaseScheme,
+} from './AskarModuleConfig'
 import {
   AskarError,
   AskarStoreDuplicateError,
@@ -322,7 +326,7 @@ export class AskarStoreManager {
     const sourceAskarStoreConfig = this.getAskarStoreConfig(options.importFromStore)
     const destinationAskarStoreConfig = this.getAskarStoreConfig(destinationStoreConfig)
 
-    let sourceWalletStore: Store | undefined = undefined
+    let sourceWalletStore: Store | undefined
     try {
       if (destinationAskarStoreConfig.path) {
         // Import path already exists
@@ -494,7 +498,7 @@ export class AskarStoreManager {
     callback: (session: Session) => Return,
     transaction = false
   ): Promise<Awaited<Return>> {
-    let session: Session | undefined = undefined
+    let session: Session | undefined
     try {
       const { store, profile } = await this.getInitializedStoreWithProfile(agentContext)
 

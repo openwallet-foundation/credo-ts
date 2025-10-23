@@ -1,40 +1,38 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommInboundMessageContext } from '../../../models'
-import type { DidCommConnectionRecord } from '../../connections/repository'
-import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
-import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
-
 import {
   CredoError,
   DidKey,
+  didKeyToVerkey,
   EventEmitter,
   InjectionSymbols,
-  Kms,
-  Logger,
-  RecordDuplicateError,
-  TypedArrayEncoder,
-  didKeyToVerkey,
   inject,
   injectable,
   isDidKey,
+  Kms,
+  type Logger,
+  RecordDuplicateError,
+  TypedArrayEncoder,
   verkeyToDidKey,
 } from '@credo-ts/core'
-
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import type { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services'
 import { DidCommMessagePickupApi } from '../../message-pickup'
 import { DidCommMessagePickupSessionRole } from '../../message-pickup/DidCommMessagePickupSession'
 import { DidCommMediatorModuleConfig } from '../DidCommMediatorModuleConfig'
 import { DidCommMessageForwardingStrategy } from '../DidCommMessageForwardingStrategy'
+import type { DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import type { DidCommForwardMessage, DidCommMediationRequestMessage } from '../messages'
 import {
   DidCommKeylistUpdateAction,
+  DidCommKeylistUpdated,
   DidCommKeylistUpdateMessage,
   DidCommKeylistUpdateResponseMessage,
   DidCommKeylistUpdateResult,
-  DidCommKeylistUpdated,
   DidCommMediationGrantMessage,
 } from '../messages'
 import { DidCommMediationRole } from '../models/DidCommMediationRole'
@@ -49,21 +47,18 @@ export class DidCommMediatorService {
   private logger: Logger
   private mediationRepository: DidCommMediationRepository
   private mediatorRoutingRepository: DidCommMediatorRoutingRepository
-  private messagePickupApi: DidCommMessagePickupApi
   private eventEmitter: EventEmitter
   private connectionService: DidCommConnectionService
 
   public constructor(
     mediationRepository: DidCommMediationRepository,
     mediatorRoutingRepository: DidCommMediatorRoutingRepository,
-    messagePickupApi: DidCommMessagePickupApi,
     eventEmitter: EventEmitter,
     @inject(InjectionSymbols.Logger) logger: Logger,
     connectionService: DidCommConnectionService
   ) {
     this.mediationRepository = mediationRepository
     this.mediatorRoutingRepository = mediatorRoutingRepository
-    this.messagePickupApi = messagePickupApi
     this.eventEmitter = eventEmitter
     this.logger = logger
     this.connectionService = connectionService
@@ -86,6 +81,8 @@ export class DidCommMediatorService {
   ): Promise<void> {
     const { message, agentContext } = messageContext
 
+    const messagePickupApi = agentContext.resolve(DidCommMessagePickupApi)
+
     // TODO: update to class-validator validation
     if (!message.to) {
       throw new CredoError('Invalid Message: Missing required attribute "to"')
@@ -106,24 +103,24 @@ export class DidCommMediatorService {
 
     switch (messageForwardingStrategy) {
       case DidCommMessageForwardingStrategy.QueueOnly:
-        await this.messagePickupApi.queueMessage({
+        await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
         break
       case DidCommMessageForwardingStrategy.QueueAndLiveModeDelivery: {
-        await this.messagePickupApi.queueMessage({
+        await messagePickupApi.queueMessage({
           connectionId: mediationRecord.connectionId,
           recipientDids: [verkeyToDidKey(message.to)],
           message: message.message,
         })
-        const session = await this.messagePickupApi.getLiveModeSession({
+        const session = await messagePickupApi.getLiveModeSession({
           connectionId: mediationRecord.connectionId,
           role: DidCommMessagePickupSessionRole.MessageHolder,
         })
         if (session) {
-          await this.messagePickupApi.deliverMessagesFromQueue({
+          await messagePickupApi.deliverMessagesFromQueue({
             pickupSessionId: session.id,
             recipientDid: verkeyToDidKey(message.to),
           })

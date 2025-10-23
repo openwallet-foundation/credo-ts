@@ -1,3 +1,4 @@
+import type { AnyUint8Array, Uint8ArrayBuffer } from '../../../../types'
 import type { VerificationMethod } from '../../../dids'
 
 export interface LdKeyPairOptions {
@@ -41,10 +42,10 @@ export abstract class LdKeyPair {
   public abstract verifyFingerprint(fingerprint: string): boolean
 
   public abstract signer(): {
-    sign: (data: { data: Uint8Array | Uint8Array[] }) => Promise<Uint8Array | Array<Uint8Array>>
+    sign: (data: { data: AnyUint8Array | AnyUint8Array[] }) => Promise<Uint8ArrayBuffer | Array<Uint8ArrayBuffer>>
   }
 
   public abstract verifier(): {
-    verify: (data: { data: Uint8Array | Uint8Array[]; signature: Uint8Array }) => Promise<boolean>
+    verify: (data: { data: AnyUint8Array | AnyUint8Array[]; signature: AnyUint8Array }) => Promise<boolean>
   }
 }

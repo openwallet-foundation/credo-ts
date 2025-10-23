@@ -6,14 +6,12 @@ import type {
   QueryOptions,
   StorageService,
 } from '@credo-ts/core'
-import { JsonTransformer, RecordDuplicateError, RecordNotFoundError, injectable } from '@credo-ts/core'
-import { Session } from '@openwallet-foundation/askar-shared'
-import { Scan } from '@openwallet-foundation/askar-shared'
+import { injectable, JsonTransformer, RecordDuplicateError, RecordNotFoundError } from '@credo-ts/core'
+import { Scan, Session } from '@openwallet-foundation/askar-shared'
 
 import { AskarStoreManager } from '../AskarStoreManager'
-import { AskarErrorCode, isAskarError } from '../utils/askarError'
-
 import { AskarError } from '../error'
+import { AskarErrorCode, isAskarError } from '../utils/askarError'
 import { askarQueryFromSearchQuery, recordToInstance, transformFromRecordTagValues } from './utils'
 
 @injectable()

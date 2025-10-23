@@ -1,10 +1,9 @@
-import type { AgentConfig, AgentContext } from '../../../../../../core/src'
-import type { CustomDidCommProofExchangeTags, DidCommProofStateChangedEvent } from '../../../../../../didcomm/src'
-
 import { Subject } from 'rxjs'
-
+import type { MockedClassConstructor } from '../../../../../../../tests/types'
+import type { AgentConfig, AgentContext } from '../../../../../../core/src'
 import { EventEmitter } from '../../../../../../core/src'
 import { getAgentConfig, getAgentContext, getMockConnection, mockFunction } from '../../../../../../core/tests'
+import type { CustomDidCommProofExchangeTags, DidCommProofStateChangedEvent } from '../../../../../../didcomm/src'
 import {
   DidCommAttachment,
   DidCommAttachmentData,
@@ -25,16 +24,20 @@ import { DidCommRequestPresentationV1Message, INDY_PROOF_REQUEST_ATTACHMENT_ID }
 import { DidCommPresentationV1ProblemReportMessage } from '../messages/DidCommPresentationV1ProblemReportMessage'
 
 // Mock classes
-jest.mock('../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository')
-jest.mock('../../../../formats/LegacyIndyDidCommProofFormatService')
-jest.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
-jest.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
+vi.mock('../../../../../../didcomm/src/modules/proofs/repository/DidCommProofExchangeRepository')
+vi.mock('../../../../formats/LegacyIndyDidCommProofFormatService')
+vi.mock('../../../../../../didcomm/src/repository/DidCommMessageRepository')
+vi.mock('../../../../../../didcomm/src/modules/connections/services/DidCommConnectionService')
 
 // Mock typed object
-const ProofRepositoryMock = DidCommProofExchangeRepository as jest.Mock<DidCommProofExchangeRepository>
-const connectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
-const didCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const indyProofFormatServiceMock = LegacyIndyDidCommProofFormatService as jest.Mock<LegacyIndyDidCommProofFormatService>
+const ProofRepositoryMock = DidCommProofExchangeRepository as MockedClassConstructor<
+  typeof DidCommProofExchangeRepository
+>
+const connectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
+const didCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
+const indyProofFormatServiceMock = LegacyIndyDidCommProofFormatService as MockedClassConstructor<
+  typeof LegacyIndyDidCommProofFormatService
+>
 
 const proofRepository = new ProofRepositoryMock()
 const connectionService = new connectionServiceMock()
@@ -130,7 +133,7 @@ describe('DidCommProofV1Protocol', () => {
     })
 
     test(`creates and return proof record in ${DidCommProofState.PresentationReceived} state with offer, without thread ID`, async () => {
-      const repositorySaveSpy = jest.spyOn(proofRepository, 'save')
+      const repositorySaveSpy = vi.spyOn(proofRepository, 'save')
 
       // when
       const returnedProofExchangeRecord = await proofProtocol.processRequest(messageContext)
@@ -151,7 +154,7 @@ describe('DidCommProofV1Protocol', () => {
     })
 
     test(`emits stateChange event with ${DidCommProofState.RequestReceived}`, async () => {
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommProofStateChangedEvent>(DidCommProofEventTypes.ProofStateChanged, eventListenerMock)
 
       // when
@@ -232,7 +235,7 @@ describe('DidCommProofV1Protocol', () => {
     })
 
     test('updates problem report error message and returns proof record', async () => {
-      const repositoryUpdateSpy = jest.spyOn(proofRepository, 'update')
+      const repositoryUpdateSpy = vi.spyOn(proofRepository, 'update')
 
       // given
       mockFunction(proofRepository.getSingleByQuery).mockReturnValue(Promise.resolve(proof))

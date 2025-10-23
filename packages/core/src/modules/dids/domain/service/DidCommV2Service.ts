@@ -2,9 +2,8 @@ import { Type } from 'class-transformer'
 import { IsOptional, IsString, ValidateNested } from 'class-validator'
 
 import { CredoError } from '../../../../error'
+import type { SingleOrArray } from '../../../../types'
 import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils'
-
-import { SingleOrArray } from '../../../../types'
 import { DidDocumentService } from './DidDocumentService'
 
 export interface DidCommV2ServiceEndpointOptions {

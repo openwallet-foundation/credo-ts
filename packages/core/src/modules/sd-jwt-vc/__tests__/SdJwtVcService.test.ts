@@ -1,15 +1,29 @@
-import type { AgentContext } from '@credo-ts/core'
-import type { SdJwtVcHeader } from '../SdJwtVcOptions'
-
-import { randomUUID } from 'crypto'
-import { StatusList, createHeaderAndPayload } from '@sd-jwt/jwt-status-list'
+import type { AgentContext, Constructable } from '@credo-ts/core'
+import {
+  Agent,
+  DidKey,
+  DidsModule,
+  getDomainFromUrl,
+  JwsService,
+  JwtPayload,
+  KeyDidRegistrar,
+  KeyDidResolver,
+  parseDid,
+  TypedArrayEncoder,
+  X509Certificate,
+  X509ModuleConfig,
+} from '@credo-ts/core'
+import { createHeaderAndPayload, StatusList } from '@sd-jwt/jwt-status-list'
 import { SDJWTException } from '@sd-jwt/utils'
-
+import { randomUUID } from 'crypto'
+import { vi } from 'vitest'
+import { transformSeedToPrivateJwk } from '../../../../../askar/src'
 import { agentDependencies, getAgentOptions } from '../../../../tests'
 import * as fetchUtils from '../../../utils/fetch'
-import { SdJwtVcService } from '../SdJwtVcService'
+import { PublicJwk } from '../../kms'
 import { SdJwtVcRepository } from '../repository'
-
+import type { SdJwtVcHeader } from '../SdJwtVcOptions'
+import { SdJwtVcService } from '../SdJwtVcService'
 import {
   complexSdJwtVc,
   complexSdJwtVcPresentation,
@@ -28,24 +42,6 @@ import {
   simpleX509,
 } from './sdjwtvc.fixtures'
 
-import {
-  Agent,
-  CredoError,
-  DidKey,
-  DidsModule,
-  JwsService,
-  JwtPayload,
-  KeyDidRegistrar,
-  KeyDidResolver,
-  TypedArrayEncoder,
-  X509Certificate,
-  X509ModuleConfig,
-  getDomainFromUrl,
-  parseDid,
-} from '@credo-ts/core'
-import { transformSeedToPrivateJwk } from '../../../../../askar/src'
-import { PublicJwk } from '../../kms'
-
 const agent = new Agent(
   getAgentOptions(
     'sdjwtvcserviceagent',
@@ -60,11 +56,12 @@ const agent = new Agent(
   )
 )
 
-agent.kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+agent.kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = vi.fn(() => 1698151532000)
+Date.now = vi.fn(() => 1698151532000)
 
-jest.mock('../repository/SdJwtVcRepository')
-const SdJwtVcRepositoryMock = SdJwtVcRepository as jest.Mock<SdJwtVcRepository>
+vi.mock('../repository/SdJwtVcRepository')
+const SdJwtVcRepositoryMock = SdJwtVcRepository as unknown as Constructable<SdJwtVcRepository>
 
 const simpleX509Certificate = X509Certificate.fromEncodedCertificate(simpleX509.trustedCertficate)
 
@@ -86,7 +83,7 @@ const generateStatusList = async (
     {
       iss: did,
       sub: 'https://example.com/status/1',
-      iat: new Date().getTime() / 1000,
+      iat: Date.now() / 1000,
     },
     {
       alg: 'EdDSA',
@@ -235,7 +232,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: simpleX509.certificateIssuer,
         cnf: { jwk: holderKey.toJson() },
       })
@@ -273,7 +270,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         cnf: {
           jwk: holderKey.toJson(),
@@ -307,7 +304,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
       })
     })
@@ -341,7 +338,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.prettyClaims).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: parseDid(issuerDidUrl).did,
         value: false,
         discloseableValue: false,
@@ -376,7 +373,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -387,7 +384,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         claim: 'some-claim',
         cnf: {
@@ -442,7 +439,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           _sd: ['8Kl-6KGl7JjFrlN0ZKDPKzeRfo0oJ5Tv0F6cXgpmOCY', 'cxH6g51BOh8vDiQXW88Kq896DEVLZZ4mbuLO6z__5ds'],
           locality: 'Anytown',
@@ -467,7 +464,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -532,7 +529,7 @@ describe('SdJwtVcService', () => {
 
       expect(payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         phone_number: '+1-202-555-0101',
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
@@ -553,7 +550,7 @@ describe('SdJwtVcService', () => {
 
       expect(prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         address: {
           region: 'Anystate',
           country: 'US',
@@ -591,7 +588,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         cnf: {
           jwk: holderKey.toJson(),
@@ -613,7 +610,7 @@ describe('SdJwtVcService', () => {
       expect(sdJwtVc.payload).toEqual({
         claim: 'some-claim',
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
       })
     })
@@ -629,7 +626,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         iss: issuerDidUrl.split('#')[0],
         _sd: ['LHLZVlumA3_k-zntrSL6ocULVh_uz0PQoupZS4hu15M'],
         _sd_alg: 'sha-256',
@@ -652,7 +649,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.payload).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         address: {
@@ -691,7 +688,7 @@ describe('SdJwtVcService', () => {
 
       expect(sdJwtVc.prettyClaims).toEqual({
         vct: 'IdentityCredential',
-        iat: Math.floor(new Date().getTime() / 1000),
+        iat: Math.floor(Date.now() / 1000),
         family_name: 'Doe',
         iss: issuerDidUrl.split('#')[0],
         phone_number: '+1-202-555-0101',
@@ -745,6 +742,29 @@ describe('SdJwtVcService', () => {
         family_name: 'MUSTERMANN',
       })
     })
+
+    test('Supports payload that results in no disclosures', async () => {
+      const presentation = sdJwtVcService.applyDisclosuresForPayload(simpleJwtVc, {
+        claim: 'some-claim',
+      })
+
+      expect(presentation.prettyClaims).toStrictEqual({
+        claim: 'some-claim',
+        vct: 'IdentityCredential',
+        cnf: {
+          jwk: {
+            kty: 'OKP',
+            crv: 'Ed25519',
+            kid: 'BnbnQW5VWoys6x6qYxEUVrEKGYW2GS5vG71vCMwwfsYm',
+            x: 'oENVsxOUiH54X8wJLaVkicCRk00wBIQ4sRgbk54N8Mo',
+          },
+        },
+        iss: 'did:key:z6MktqtXNG8CDUY9PrrtoStFzeCnhpMmgxYL1gikcW3BzvNW',
+        iat: 1698151532,
+      })
+
+      expect(presentation.compact).toEqual(simpleJwtVc)
+    })
   })
 
   describe('SdJwtVcService.present', () => {
@@ -753,7 +773,7 @@ describe('SdJwtVcService', () => {
         compactSdJwtVc: simpleJwtVc,
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -791,7 +811,7 @@ describe('SdJwtVcService', () => {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         presentationFrame: { claim: true },
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -810,7 +830,7 @@ describe('SdJwtVcService', () => {
       }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -836,7 +856,7 @@ describe('SdJwtVcService', () => {
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -851,16 +871,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -870,7 +880,7 @@ describe('SdJwtVcService', () => {
         // no disclosures
         presentationFrame: {},
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -888,16 +898,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          containsExpectedKeyBinding: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -916,40 +916,31 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-        },
       })
     })
 
     test('Verify x509 chain protected sd-jwt-vc', async () => {
       const x509ModuleConfig = agent.context.dependencyManager.resolve(X509ModuleConfig)
-      await x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+      x509ModuleConfig.addTrustedCertificate(funkeX509.trustedCertificate)
+
+      Date.prototype.getTime = vi.fn(() => 1717498204 * 1000)
+      Date.now = vi.fn(() => 1717498204 * 1000)
 
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: funkeX509.sdJwtVc,
         requiredClaimKeys: ['issuing_country'],
       })
 
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
+      Date.now = vi.fn(() => 1698151532000)
+
       const sdJwtIss = verificationResult.sdJwtVc?.payload.iss
       expect(sdJwtIss).toEqual('https://demo.pid-issuer.bundesdruckerei.de/c')
       expect(getDomainFromUrl(sdJwtIss as string)).toEqual('demo.pid-issuer.bundesdruckerei.de')
 
       expect(verificationResult).toEqual({
-        isValid: false,
-        error: new CredoError('JWT expired at 1718707804'),
+        isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          isValid: false,
-          isValidJwtPayload: false,
-          isStatusValid: true,
-        },
       })
     })
 
@@ -957,7 +948,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -985,13 +976,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          areRequiredClaimsIncluded: true,
-        },
       })
     })
 
@@ -999,7 +983,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -1027,13 +1011,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Status is not valid'),
       })
     })
@@ -1042,7 +1019,7 @@ describe('SdJwtVcService', () => {
       const sdJwtVcService = agent.dependencyManager.resolve(SdJwtVcService)
 
       // Mock call to status list
-      const fetchSpy = jest.spyOn(fetchUtils, 'fetchWithTimeout')
+      const fetchSpy = vi.spyOn(fetchUtils, 'fetchWithTimeout')
 
       // First time not revoked
       fetchSpy.mockResolvedValueOnce({
@@ -1070,13 +1047,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: false,
         sdJwtVc: expect.any(Object),
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new Error('Index out of bounds'),
       })
     })
@@ -1085,7 +1055,7 @@ describe('SdJwtVcService', () => {
       const presentation = await sdJwtVcService.present(agent.context, {
         compactSdJwtVc: sdJwtVcWithSingleDisclosure,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1101,16 +1071,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          containsRequiredVcProperties: true,
-          areRequiredClaimsIncluded: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-          containsExpectedKeyBinding: true,
-        },
       })
     })
 
@@ -1124,7 +1084,7 @@ describe('SdJwtVcService', () => {
       }>(agent.context, {
         compactSdJwtVc: complexSdJwtVc,
         verifierMetadata: {
-          issuedAt: new Date().getTime() / 1000,
+          issuedAt: Date.now() / 1000,
           audience: verifierDid,
           nonce: 'salt',
         },
@@ -1165,16 +1125,6 @@ describe('SdJwtVcService', () => {
       expect(verificationResult).toEqual({
         isValid: true,
         sdJwtVc: expect.any(Object),
-        verification: {
-          isSignatureValid: true,
-          areRequiredClaimsIncluded: true,
-          containsExpectedKeyBinding: true,
-          containsRequiredVcProperties: true,
-          isValid: true,
-          isValidJwtPayload: true,
-          isStatusValid: true,
-          isKeyBindingValid: true,
-        },
       })
     })
 
@@ -1191,24 +1141,22 @@ describe('SdJwtVcService', () => {
         }
       )
 
-      expect(verificationResult.verification.isValid).toBe(true)
+      expect(verificationResult.isValid).toBe(true)
     })
 
     test('verify expired sd-jwt-vc and fails', async () => {
+      Date.prototype.getTime = vi.fn(() => 1716111919 * 1000 + 1000)
+      Date.now = vi.fn(() => 1716111919 * 1000 + 1000)
       const verificationResult = await sdJwtVcService.verify(agent.context, {
         compactSdJwtVc: expiredSdJwtVc,
       })
 
+      Date.prototype.getTime = vi.fn(() => 1698151532000)
+      Date.now = vi.fn(() => 1698151532000)
+
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT expired at 1716111919'),
+        error: new SDJWTException('Verify Error: JWT is expired'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1220,14 +1168,7 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: true,
-          isSignatureValid: true,
-          isStatusValid: true,
-          isValid: false,
-          isValidJwtPayload: false,
-        },
-        error: new CredoError('JWT not valid before 4078944000'),
+        error: new SDJWTException('Verify Error: JWT is not yet valid'),
         sdJwtVc: expect.any(Object),
       })
     })
@@ -1239,13 +1180,6 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })
@@ -1258,13 +1192,6 @@ describe('SdJwtVcService', () => {
 
       expect(verificationResult).toEqual({
         isValid: false,
-        verification: {
-          isValid: false,
-          areRequiredClaimsIncluded: false,
-          isSignatureValid: false,
-          isStatusValid: false,
-          isValidJwtPayload: true,
-        },
         error: new SDJWTException('Verify Error: Invalid JWT Signature'),
         sdJwtVc: expect.any(Object),
       })

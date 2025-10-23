@@ -1,13 +1,11 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { DrizzleStorageModuleConfigOptions } from './DrizzleStorageModuleConfig'
-
 import { CredoError, InjectionSymbols, StorageUpdateService } from '@credo-ts/core'
-
 import { eq } from 'drizzle-orm'
-import { isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from './DrizzleDatabase'
-import { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
 import { context as postgresContext } from './core/postgres'
 import { context as sqliteContext } from './core/sqlite'
+import { isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from './DrizzleDatabase'
+import type { DrizzleStorageModuleConfigOptions } from './DrizzleStorageModuleConfig'
+import { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
 import { CredoDrizzleStorageError } from './error'
 import { DrizzleStorageService } from './storage'
 

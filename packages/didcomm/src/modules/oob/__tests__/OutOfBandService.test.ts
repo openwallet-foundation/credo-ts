@@ -1,8 +1,7 @@
-import type { DidCommDocumentService } from '../../../services'
+import { Kms, TypedArrayEncoder } from '@credo-ts/core'
 
 import { Subject } from 'rxjs'
-
-import { Kms, TypedArrayEncoder } from '@credo-ts/core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../core/src/error'
 import {
@@ -13,6 +12,7 @@ import {
   mockFunction,
 } from '../../../../../core/tests/helpers'
 import { DidCommInboundMessageContext } from '../../../models'
+import type { DidCommDocumentService } from '../../../services'
 import { DidCommDidExchangeState } from '../../connections'
 import { DidCommOutOfBandService } from '../DidCommOutOfBandService'
 import { DidCommOutOfBandEventTypes } from '../domain/DidCommOutOfBandEvents'
@@ -22,8 +22,8 @@ import { DidCommHandshakeReuseMessage } from '../messages'
 import { DidCommHandshakeReuseAcceptedMessage } from '../messages/DidCommHandshakeReuseAcceptedMessage'
 import { DidCommOutOfBandRepository } from '../repository'
 
-jest.mock('../repository/DidCommOutOfBandRepository')
-const OutOfBandRepositoryMock = DidCommOutOfBandRepository as jest.Mock<DidCommOutOfBandRepository>
+vi.mock('../repository/DidCommOutOfBandRepository')
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
 
 const key = Kms.PublicJwk.fromPublicKey({
   kty: 'OKP',
@@ -162,7 +162,7 @@ describe('DidCommOutOfBandService', () => {
         parentThreadId: 'parentThreadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed })
       const messageContext = new DidCommInboundMessageContext(reuseMessage, {
@@ -214,7 +214,7 @@ describe('DidCommOutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      const updateStateSpy = jest.spyOn(outOfBandService, 'updateState')
+      const updateStateSpy = vi.spyOn(outOfBandService, 'updateState')
 
       // Reusable shouldn't update state
       await outOfBandService.processHandshakeReuse(messageContext)
@@ -377,7 +377,7 @@ describe('DidCommOutOfBandService', () => {
         threadId: 'threadId',
       })
 
-      const reuseListener = jest.fn()
+      const reuseListener = vi.fn()
 
       const connection = getMockConnection({ state: DidCommDidExchangeState.Completed, id: 'connectionId' })
       const messageContext = new DidCommInboundMessageContext(reuseAcceptedMessage, {
@@ -432,7 +432,7 @@ describe('DidCommOutOfBandService', () => {
       })
       mockFunction(outOfBandRepository.findSingleByQuery).mockResolvedValue(mockOob)
 
-      const updateStateSpy = jest.spyOn(outOfBandService, 'updateState')
+      const updateStateSpy = vi.spyOn(outOfBandService, 'updateState')
 
       await outOfBandService.processHandshakeReuseAccepted(messageContext)
       expect(updateStateSpy).toHaveBeenCalledWith(agentContext, mockOob, DidCommOutOfBandState.Done)
@@ -461,7 +461,7 @@ describe('DidCommOutOfBandService', () => {
     })
 
     test('emits an OutOfBandStateChangedEvent', async () => {
-      const stateChangedListener = jest.fn()
+      const stateChangedListener = vi.fn()
 
       const mockOob = getMockOutOfBand({
         state: DidCommOutOfBandState.Initial,

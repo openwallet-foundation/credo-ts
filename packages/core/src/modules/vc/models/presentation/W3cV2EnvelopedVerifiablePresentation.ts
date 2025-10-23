@@ -1,5 +1,5 @@
 import { Exclude, Expose } from 'class-transformer'
-import { IsDataURI, ValidateBy, ValidationOptions, buildMessage } from 'class-validator'
+import { buildMessage, IsDataURI, ValidateBy, type ValidationOptions } from 'class-validator'
 import { CredoError } from '../../../../error'
 import type { JsonObject, SingleOrArray } from '../../../../types'
 import {

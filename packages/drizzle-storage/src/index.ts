@@ -1,29 +1,22 @@
 // Adapter
 export {
+  type AnyDrizzleAdapter,
   BaseDrizzleRecordAdapter,
-  AnyDrizzleAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from './adapter'
-
-// Storage
-export { DrizzleStorageService } from './storage'
-
+export {
+  applyReactNativeMigrations,
+  type ReactNativeDrizzleMigration,
+  type ReactNativeDrizzleMigrationsOptions,
+} from './applyReactNativeMigrations'
+export { type GetSchemaFromDrizzleRecords, getSchemaFromDrizzleRecords } from './combineSchemas'
+export type { DrizzleDatabase } from './DrizzleDatabase'
+export type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 // Module
 export { DrizzleStorageModule } from './DrizzleStorageModule'
 export { DrizzleStorageModuleConfig } from './DrizzleStorageModuleConfig'
-
-export { DrizzleDatabase } from './DrizzleDatabase'
-
 export { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from './postgres'
 export { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from './sqlite'
-
-export type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
-
-export { GetSchemaFromDrizzleRecords, getSchemaFromDrizzleRecords } from './combineSchemas'
-
-export {
-  ReactNativeDrizzleMigration,
-  ReactNativeDrizzleMigrationsOptions,
-  applyReactNativeMigrations,
-} from './applyReactNativeMigrations'
+// Storage
+export { DrizzleStorageService } from './storage'

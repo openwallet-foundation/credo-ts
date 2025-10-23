@@ -1,7 +1,6 @@
-import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
-
 import { DidCommCredentialsModuleConfig } from '../DidCommCredentialsModuleConfig'
 import { DidCommAutoAcceptCredential } from '../models'
+import type { DidCommCredentialProtocol } from '../protocol/DidCommCredentialProtocol'
 
 describe('CredentialsModuleConfig', () => {
   test('sets default values', () => {
@@ -14,7 +13,7 @@ describe('CredentialsModuleConfig', () => {
   })
 
   test('sets values', () => {
-    const credentialProtocol = jest.fn() as unknown as DidCommCredentialProtocol
+    const credentialProtocol = vi.fn() as unknown as DidCommCredentialProtocol
     const config = new DidCommCredentialsModuleConfig({
       autoAcceptCredentials: DidCommAutoAcceptCredential.Always,
       credentialProtocols: [credentialProtocol],

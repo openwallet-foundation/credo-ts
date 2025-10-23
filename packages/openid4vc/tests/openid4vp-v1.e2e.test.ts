@@ -1,9 +1,11 @@
 import type { DcqlQuery, MdocDeviceResponse, SdJwtVc, W3cV2SdJwtVerifiablePresentation } from '@credo-ts/core'
 import {
+  asArray,
   ClaimFormat,
   DateOnly,
   Kms,
   MdocRecord,
+  parseDid,
   SdJwtVcRecord,
   W3cCredential,
   W3cCredentialSubject,
@@ -11,17 +13,15 @@ import {
   W3cV2Credential,
   W3cV2CredentialSubject,
   W3cV2Issuer,
+  w3cDate,
   X509Module,
   X509Service,
-  asArray,
-  parseDid,
-  w3cDate,
 } from '@credo-ts/core'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
-import { OpenId4VcModule, OpenId4VcVerificationSessionState, OpenId4VcVerifierModuleConfigOptions } from '../src'
+import { OpenId4VcModule, OpenId4VcVerificationSessionState, type OpenId4VcVerifierModuleConfigOptions } from '../src'
 import type { AgentType, TenantType } from './utils'
 import { createAgentFromModules, createTenantForAgent, waitForVerificationSessionRecordSubject } from './utils'
 import { openBadgeDcqlQuery, universityDegreeDcqlQuery } from './utilsVp'
@@ -78,6 +78,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     verifier = (await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           verifier: {
             baseUrl: verificationBaseUrl,
           },
@@ -90,8 +91,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     )) as unknown as typeof verifier
     verifier1 = await createTenantForAgent(verifier.agent, 'vTenant1')
     verifier2 = await createTenantForAgent(verifier.agent, 'vTenant2')
-
-    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -1477,16 +1476,16 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
             OpenBadgeCredentialDescriptor: [
               {
                 claimFormat: ClaimFormat.SdJwtDc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[0] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[0] as any).claims.valid_claim_sets[0].output,
               },
               {
                 claimFormat: ClaimFormat.SdJwtDc,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 credentialRecord: (validCredentials?.[1] as any).record,
-                // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+                // biome-ignore lint/suspicious/noExplicitAny: no explanation
                 disclosedPayload: (validCredentials?.[1] as any).claims.valid_claim_sets[0].output,
               },
             ],

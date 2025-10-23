@@ -1,11 +1,9 @@
+import { CredoError } from '@credo-ts/core'
+import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
 import type { DidCommInboundMessageContext } from '../../../../../models'
 import type { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import type { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
-
-import { CredoError } from '@credo-ts/core'
-
-import { getOutboundDidCommMessageContext } from '../../../../../getDidCommOutboundMessageContext'
 import { DidCommIssueCredentialV2Message } from '../messages/DidCommIssueCredentialV2Message'
 
 export class DidCommIssueCredentialV2Handler implements DidCommMessageHandler {

@@ -21,7 +21,7 @@ const aliceCredentialRecordsString = readFileSync(
 )
 
 const backupDate = new Date('2022-03-22T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | Aries Askar', () => {
   let updateAssistant: UpdateAssistant
@@ -45,7 +45,7 @@ describe('UpdateAssistant | Aries Askar', () => {
   it('should create a backup', async () => {
     const aliceCredentialRecordsJson = JSON.parse(aliceCredentialRecordsString)
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     const aliceCredentialRecords = Object.values(aliceCredentialRecordsJson).map((data: any) => {
       const record = JsonTransformer.fromJSON(data.value, DidCommCredentialExchangeRecord)
 

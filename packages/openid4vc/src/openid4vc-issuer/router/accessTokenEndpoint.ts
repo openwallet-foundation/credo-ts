@@ -1,26 +1,24 @@
+import { CredoError, joinUriParts, type Query, utils } from '@credo-ts/core'
 import type { HttpMethod, Jwk, VerifyAccessTokenRequestReturn } from '@openid4vc/oauth2'
-import type { NextFunction, Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-import { CredoError, Query, joinUriParts, utils } from '@credo-ts/core'
 import {
+  authorizationCodeGrantIdentifier,
   Oauth2ErrorCodes,
   Oauth2ServerErrorResponseError,
-  authorizationCodeGrantIdentifier,
   preAuthorizedCodeGrantIdentifier,
   refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
+import type { NextFunction, Response, Router } from 'express'
 import {
   getRequestContext,
   sendJsonResponse,
   sendOauth2ErrorResponse,
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
-import { addSecondsToDate } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRecord, OpenId4VcIssuanceSessionRepository } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureAccessTokenEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.post(config.accessTokenEndpointPath, handleTokenRequest(config))
@@ -95,7 +93,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
 
       const expiresAt =
         issuanceSession.expiresAt ??
-        addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+        utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
       if (Date.now() > expiresAt.getTime()) {
         issuanceSession.errorMessage = 'Credential offer has expired'
@@ -148,7 +146,7 @@ export function handleTokenRequest(config: OpenId4VcIssuerModuleConfig) {
           expectedTxCode: issuanceSession.userPin,
           preAuthorizedCodeExpiresAt:
             issuanceSession.expiresAt ??
-            addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds),
+            utils.addSecondsToDate(issuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds),
         })
       } else if (grant.grantType === authorizationCodeGrantIdentifier) {
         if (!issuanceSession.authorization?.code || !issuanceSession.authorization?.codeExpiresAt) {

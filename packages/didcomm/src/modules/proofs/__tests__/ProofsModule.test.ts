@@ -1,18 +1,17 @@
-import type { DependencyManager } from '../../../../../core'
-import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
-
+import type { DependencyManager } from '../../../../../core/src/index'
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProofsModule } from '../DidCommProofsModule'
 import { DidCommProofsModuleConfig } from '../DidCommProofsModuleConfig'
+import type { DidCommProofProtocol } from '../protocol/DidCommProofProtocol'
 import { DidCommProofV2Protocol } from '../protocol/v2/DidCommProofV2Protocol'
 import { DidCommProofExchangeRepository } from '../repository'
 
 const dependencyManager = {
-  registerInstance: jest.fn(),
-  registerSingleton: jest.fn(),
-  registerContextScoped: jest.fn(),
+  registerInstance: vi.fn(),
+  registerSingleton: vi.fn(),
+  registerContextScoped: vi.fn(),
 } as unknown as DependencyManager
 
 describe('DidCommProofsModule', () => {
@@ -36,7 +35,7 @@ describe('DidCommProofsModule', () => {
   })
 
   test('calls register on the provided ProofProtocols', async () => {
-    const registerMock = jest.fn()
+    const registerMock = vi.fn()
     const proofProtocol = {
       register: registerMock,
     } as unknown as DidCommProofProtocol

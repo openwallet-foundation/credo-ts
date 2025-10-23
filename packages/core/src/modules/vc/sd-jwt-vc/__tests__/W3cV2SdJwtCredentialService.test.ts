@@ -31,7 +31,7 @@ import {
   Ed256DidJwkJwtVcUnsigned,
 } from './fixtures/credo-sd-jwt-vc'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const storageService = new InMemoryStorageService<any>()
 const config = getAgentConfig('W3cV2SdJwtCredentialService')
 const agentContext = getAgentContext({
@@ -65,8 +65,8 @@ const kms = agentContext.dependencyManager.resolve(KeyManagementApi)
 const dids = agentContext.dependencyManager.resolve(DidsApi)
 const w3cV2JwtCredentialService = new W3cV2SdJwtCredentialService()
 
-kms.randomBytes = jest.fn(() => TypedArrayEncoder.fromString('salt'))
-Date.prototype.getTime = jest.fn(() => 1698151532000)
+kms.randomBytes = vi.fn(() => TypedArrayEncoder.fromString('salt'))
+Date.prototype.getTime = vi.fn(() => 1698151532000)
 
 describe('W3cV2SdJwtCredentialService', () => {
   let issuerDidJwk: DidJwk
@@ -123,6 +123,9 @@ describe('W3cV2SdJwtCredentialService', () => {
   describe('signCredential', () => {
     test('signs an ES256 JWT vc', async () => {
       const credential = JsonTransformer.fromJSON(Ed256DidJwkJwtVcUnsigned, W3cV2Credential)
+
+      const nowMock = vi.spyOn(Date, 'now')
+      nowMock.mockReturnValueOnce(1698151532000)
 
       const vcJwt = await w3cV2JwtCredentialService.signCredential(agentContext, {
         alg: KnownJwaSignatureAlgorithms.ES256,
@@ -248,7 +251,7 @@ describe('W3cV2SdJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.issuer = undefined
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {
@@ -271,7 +274,7 @@ describe('W3cV2SdJwtCredentialService', () => {
     test('returns invalid result when credential is not according to data model', async () => {
       const jwtVc = W3cV2SdJwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc)
 
-      // @ts-ignore
+      // @ts-expect-error
       jwtVc.resolvedCredential.vc = 'mamma mia'
 
       const result = await w3cV2JwtCredentialService.verifyCredential(agentContext, {

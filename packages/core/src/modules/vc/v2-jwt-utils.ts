@@ -2,15 +2,15 @@ import { AgentContext } from '../../agent'
 import { CredoError } from '../../error'
 import { asArray, isDid } from '../../utils'
 import {
-  DidPurpose,
+  type DidPurpose,
   DidResolverService,
   DidsApi,
-  VerificationMethod,
   getPublicJwkFromVerificationMethod,
   parseDid,
+  VerificationMethod,
 } from '../dids'
 import { getSupportedVerificationMethodTypesForPublicJwk } from '../dids/domain/key-type/keyDidMapping'
-import { KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
+import { type KnownJwaSignatureAlgorithm, PublicJwk } from '../kms'
 import { extractKeyFromHolderBinding, parseHolderBindingFromCredential } from '../sd-jwt-vc/utils'
 import { W3cV2JwtVerifiableCredential, W3cV2JwtVerifiablePresentation } from './jwt-vc'
 import { W3cV2Presentation } from './models'

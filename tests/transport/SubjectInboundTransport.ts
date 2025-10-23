@@ -1,15 +1,13 @@
 import type { Subscription } from 'rxjs'
+import { Subject } from 'rxjs'
 import type { AgentContext } from '../../packages/core/src'
+import { EventEmitter } from '../../packages/core/src'
+import { uuid } from '../../packages/core/src/utils/uuid'
 import type {
   DidCommEncryptedMessage,
   DidCommInboundTransport,
   DidCommTransportSession,
 } from '../../packages/didcomm/src'
-
-import { Subject } from 'rxjs'
-
-import { EventEmitter } from '../../packages/core/src'
-import { uuid } from '../../packages/core/src/utils/uuid'
 import { DidCommMessageReceiver, DidCommTransportService } from '../../packages/didcomm/src'
 
 export type SubjectMessage = { message: DidCommEncryptedMessage; replySubject?: Subject<SubjectMessage> }

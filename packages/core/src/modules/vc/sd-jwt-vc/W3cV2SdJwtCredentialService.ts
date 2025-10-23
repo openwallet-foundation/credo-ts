@@ -1,10 +1,10 @@
 import { SDJwtInstance } from '@sd-jwt/core'
-import { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
+import type { DisclosureFrame, PresentationFrame, SDJWTConfig } from '@sd-jwt/types'
 import type { AgentContext } from '../../../agent/context'
 import { JwtPayload } from '../../../crypto'
 import { CredoError } from '../../../error'
 import { injectable } from '../../../plugins'
-import { JsonTransformer, MessageValidator, TypedArrayEncoder, asArray, nowInSeconds } from '../../../utils'
+import { asArray, JsonTransformer, MessageValidator, nowInSeconds, TypedArrayEncoder } from '../../../utils'
 import { getPublicJwkFromVerificationMethod } from '../../dids/domain/key-type/keyDidMapping'
 import { KeyManagementApi } from '../../kms'
 import {
@@ -13,13 +13,6 @@ import {
   getSdJwtVerifier,
   parseHolderBindingFromCredential,
 } from '../../sd-jwt-vc/utils'
-import type {
-  W3cV2SdJwtSignCredentialOptions,
-  W3cV2SdJwtSignPresentationOptions,
-  W3cV2SdJwtVcPresentOptions,
-  W3cV2SdJwtVerifyCredentialOptions,
-  W3cV2SdJwtVerifyPresentationOptions,
-} from '../W3cV2CredentialServiceOptions'
 import type {
   SingleValidationResult,
   W3cV2JsonCredential,
@@ -32,6 +25,13 @@ import {
   getVerificationMethodForJwt,
   validateAndResolveVerificationMethod,
 } from '../v2-jwt-utils'
+import type {
+  W3cV2SdJwtSignCredentialOptions,
+  W3cV2SdJwtSignPresentationOptions,
+  W3cV2SdJwtVcPresentOptions,
+  W3cV2SdJwtVerifyCredentialOptions,
+  W3cV2SdJwtVerifyPresentationOptions,
+} from '../W3cV2CredentialServiceOptions'
 import { sdJwtVcHasher } from './W3cV2SdJwt'
 import { W3cV2SdJwtVerifiableCredential } from './W3cV2SdJwtVerifiableCredential'
 import { W3cV2SdJwtVerifiablePresentation } from './W3cV2SdJwtVerifiablePresentation'
@@ -158,7 +158,7 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdJwt.verify(credential.encoded, [], false)
+        await sdJwt.verify(credential.encoded)
 
         validationResults.validations.signature = {
           isValid: true,
@@ -296,7 +296,7 @@ export class W3cV2SdJwtCredentialService {
       })
 
       try {
-        await sdjwt.verify(presentation.encoded, [], false)
+        await sdjwt.verify(presentation.encoded)
 
         validationResults.validations.presentationSignature = {
           isValid: true,

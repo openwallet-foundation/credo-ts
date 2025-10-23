@@ -1,9 +1,7 @@
-import type { DependencyManager, Module } from '../../plugins'
-import type { X509ModuleConfigOptions } from './X509ModuleConfig'
-
 import { AgentConfig } from '../../agent/AgentConfig'
-
+import type { DependencyManager, Module } from '../../plugins'
 import { X509Api } from './X509Api'
+import type { X509ModuleConfigOptions } from './X509ModuleConfig'
 import { X509ModuleConfig } from './X509ModuleConfig'
 import { X509Service } from './X509Service'
 

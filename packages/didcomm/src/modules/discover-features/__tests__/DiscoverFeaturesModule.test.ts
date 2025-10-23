@@ -1,7 +1,8 @@
-import type { DependencyManager } from '../../../../../core'
+import type { DependencyManager } from '../../../../../core/src/index'
 
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../../models'
 import { DidCommDiscoverFeaturesModule } from '../DidCommDiscoverFeaturesModule'
 import { DidCommDiscoverFeaturesV1Service } from '../protocol/v1'
@@ -10,9 +11,9 @@ import { DidCommDiscoverFeaturesV2Service } from '../protocol/v2'
 describe('DiscoverFeaturesModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
-      registerContextScoped: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
+      registerContextScoped: vi.fn(),
     } as unknown as DependencyManager
 
     new DidCommDiscoverFeaturesModule().register(dependencyManager)
@@ -24,7 +25,14 @@ describe('DiscoverFeaturesModule', () => {
 
   test('registers features on the feature registry', async () => {
     const featureRegistry = new DidCommFeatureRegistry()
-    const agentContext = getAgentContext({ registerInstances: [[DidCommFeatureRegistry, featureRegistry]] })
+    const agentContext = getAgentContext({
+      registerInstances: [
+        [DidCommFeatureRegistry, featureRegistry],
+        [DidCommMessageHandlerRegistry, new DidCommMessageHandlerRegistry()],
+        [DidCommDiscoverFeaturesV2Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV2Service],
+        [DidCommDiscoverFeaturesV1Service, { register: vi.fn() } as unknown as DidCommDiscoverFeaturesV1Service],
+      ],
+    })
     await new DidCommDiscoverFeaturesModule().initialize(agentContext)
 
     expect(featureRegistry.query({ featureType: 'protocol', match: '*' })).toEqual([

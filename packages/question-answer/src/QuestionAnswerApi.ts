@@ -1,16 +1,8 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { QuestionAnswerRecord } from './repository'
-
 import { AgentContext, injectable } from '@credo-ts/core'
-import {
-  DidCommConnectionService,
-  DidCommMessageHandlerRegistry,
-  DidCommMessageSender,
-  getOutboundDidCommMessageContext,
-} from '@credo-ts/didcomm'
-
-import { AnswerMessageHandler, QuestionMessageHandler } from './handlers'
+import { DidCommConnectionService, DidCommMessageSender, getOutboundDidCommMessageContext } from '@credo-ts/didcomm'
 import { ValidResponse } from './models'
+import type { QuestionAnswerRecord } from './repository'
 import { QuestionAnswerService } from './services'
 
 @injectable()
@@ -30,13 +22,6 @@ export class QuestionAnswerApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-
-    this.agentContext.dependencyManager
-      .resolve(DidCommMessageHandlerRegistry)
-      .registerMessageHandlers([
-        new QuestionMessageHandler(this.questionAnswerService),
-        new AnswerMessageHandler(this.questionAnswerService),
-      ])
   }
 
   /**

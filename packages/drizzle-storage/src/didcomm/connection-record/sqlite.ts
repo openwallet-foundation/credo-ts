@@ -1,6 +1,5 @@
-import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
-
 import type { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from '@credo-ts/didcomm'
+import { integer, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 
 export const didcommConnection = sqliteTable(

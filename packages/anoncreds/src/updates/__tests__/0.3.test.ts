@@ -1,11 +1,11 @@
+import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 import { readFileSync } from 'fs'
 import path from 'path'
-import { Agent, DependencyManager, InjectionSymbols, UpdateAssistant, utils } from '@credo-ts/core'
 
 import { InMemoryStorageService } from '../../../../../tests/InMemoryStorageService'
 import { agentDependencies } from '../../../../core/tests'
-import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { anoncreds } from '../../../tests/helpers'
+import { InMemoryAnonCredsRegistry } from '../../../tests/InMemoryAnonCredsRegistry'
 import { AnonCredsModule } from '../../AnonCredsModule'
 import {
   AnonCredsHolderServiceSymbol,
@@ -15,13 +15,13 @@ import {
 
 // Backup date / time is the unique identifier for a backup, needs to be unique for every test
 const backupDate = new Date('2023-03-19T22:50:20.522Z')
-jest.useFakeTimers().setSystemTime(backupDate)
+vi.useFakeTimers().setSystemTime(backupDate)
 
 describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
   it('should correctly update the credential exchange records for holders', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const holderRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/holder-anoncreds-2-credentials-0.3.json'),
@@ -91,7 +91,7 @@ describe('UpdateAssistant | AnonCreds | v0.3.1 - v0.4', () => {
   it('should correctly update the schema and credential definition, and create link secret records for issuers', async () => {
     // We need to mock the uuid generation to make sure we generate consistent uuids for the new records created.
     let uuidCounter = 1
-    const uuidSpy = jest.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
+    const uuidSpy = vi.spyOn(utils, 'uuid').mockImplementation(() => `${uuidCounter++}-4e4f-41d9-94c4-f49351b811f1`)
 
     const issuerRecordsString = readFileSync(
       path.join(__dirname, '__fixtures__/issuer-anoncreds-2-schema-credential-definition-credentials-0.3.json'),

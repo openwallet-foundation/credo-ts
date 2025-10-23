@@ -1,10 +1,10 @@
-import { DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
-import { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
-import { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
+import type { AnyDrizzleAdapter } from './adapter/BaseDrizzleRecordAdapter'
 import { getSchemaFromDrizzleRecords } from './combineSchemas'
-import coreDrizzleBundle from './core/bundle'
+import { coreBundle } from './core/bundle'
+import { type DrizzleDatabase, getDrizzleDatabaseType } from './DrizzleDatabase'
+import type { DrizzleRecord, DrizzleRecordBundle } from './DrizzleRecord'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type AnyDrizzleDatabase = DrizzleDatabase<any, any>
 
 export interface DrizzleStorageModuleConfigOptions<Database extends AnyDrizzleDatabase = AnyDrizzleDatabase> {
@@ -37,7 +37,7 @@ export class DrizzleStorageModuleConfig {
 
     // core MUST always be registered
     const allRecords: DrizzleRecord[] = Array.from(
-      new Set([...coreDrizzleBundle.records, ...options.bundles.flatMap((bundle) => bundle.records)])
+      new Set([...coreBundle.records, ...options.bundles.flatMap((bundle) => bundle.records)])
     )
     this.adapters = allRecords
       .map((record) => (record.adapter ? new record.adapter(this.database) : undefined))

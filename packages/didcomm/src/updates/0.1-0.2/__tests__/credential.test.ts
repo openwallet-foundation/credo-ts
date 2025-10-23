@@ -1,8 +1,8 @@
-import type { CredentialRecordBinding } from '../../../modules/credentials'
-
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { Agent } from '../../../../../core/src/agent/Agent'
 import { JsonTransformer } from '../../../../../core/src/utils'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../../core/tests/helpers'
+import type { CredentialRecordBinding } from '../../../modules/credentials'
 import { DidCommCredentialExchangeRecord, DidCommCredentialState } from '../../../modules/credentials'
 import { DidCommCredentialExchangeRepository } from '../../../modules/credentials/repository/DidCommCredentialExchangeRepository'
 import { DidCommMessageRole } from '../../../repository'
@@ -12,21 +12,23 @@ import * as testModule from '../credential'
 const agentConfig = getAgentConfig('Migration CredentialRecord 0.1-0.2')
 const agentContext = getAgentContext()
 
-jest.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
+vi.mock('../../../modules/credentials/repository/DidCommCredentialExchangeRepository')
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
 const credentialRepository = new CredentialRepositoryMock()
 
-jest.mock('../../../repository/DidCommMessageRepository')
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
+vi.mock('../../../repository/DidCommMessageRepository')
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
 
-jest.mock('../../../../../core/src/agent/Agent', () => {
+vi.mock('../../../../../core/src/agent/Agent', () => {
   return {
-    Agent: jest.fn(() => ({
+    Agent: vi.fn(() => ({
       config: agentConfig,
       context: agentContext,
       dependencyManager: {
-        resolve: jest.fn((token) =>
+        resolve: vi.fn((token) =>
           token === CredentialRepositoryMock ? credentialRepository : didCommMessageRepository
         ),
       },
@@ -35,7 +37,7 @@ jest.mock('../../../../../core/src/agent/Agent', () => {
 })
 
 // Mock typed object
-const AgentMock = Agent as jest.Mock<Agent>
+const AgentMock = Agent as MockedClassConstructor<typeof Agent>
 
 describe('0.1-0.2 | Credential', () => {
   let agent: Agent
@@ -499,13 +501,13 @@ function getCredential({
   metadata?: Record<string, unknown>
   credentialId?: string
   protocolVersion?: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   proposalMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   offerMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   requestMessage?: any
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   credentialMessage?: any
   state?: DidCommCredentialState
   credentials?: CredentialRecordBinding[]

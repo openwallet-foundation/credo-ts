@@ -1,6 +1,5 @@
-import type { CredentialPreviewOptions } from '@credo-ts/didcomm'
-
 import { JsonTransformer } from '@credo-ts/core'
+import type { CredentialPreviewOptions } from '@credo-ts/didcomm'
 import {
   DidCommCredentialPreviewAttribute,
   IsValidMessageType,
@@ -24,13 +23,14 @@ export class DidCommCredentialV1Preview {
     }
   }
 
+  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-preview')
+
   @Expose({ name: '@type' })
   @IsValidMessageType(DidCommCredentialV1Preview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
   public readonly type = DidCommCredentialV1Preview.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/issue-credential/1.0/credential-preview')
 
   @Type(() => DidCommCredentialPreviewAttribute)
   @ValidateNested({ each: true })

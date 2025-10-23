@@ -1,14 +1,17 @@
-import { AgentContext, ClaimFormat, DcqlQuery, DidPurpose, Kms } from '@credo-ts/core'
-import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
-import type { OpenId4VcJwtIssuer } from './models'
-
 import {
+  AgentContext,
+  ClaimFormat,
   CredoError,
+  type DcqlQuery,
+  type DidPurpose,
   DidsApi,
-  SignatureSuiteRegistry,
   getDomainFromUrl,
   getPublicJwkFromVerificationMethod,
+  Kms,
+  SignatureSuiteRegistry,
 } from '@credo-ts/core'
+import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
+import type { OpenId4VcJwtIssuer } from './models'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
@@ -83,7 +86,7 @@ export async function requestSignerToJwtIssuer(
 
     return {
       ...requestSigner,
-      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64url')),
+      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64')),
       alg: leafCertificate.publicJwk.signatureAlgorithm,
       kid: leafCertificate.publicJwk.keyId,
     }
@@ -108,14 +111,6 @@ export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.P
   }
 
   return supportedSignatureSuites[0].proofType
-}
-
-export function addSecondsToDate(date: Date, seconds: number) {
-  return new Date(date.getTime() + seconds * 1000)
-}
-
-export function dateToSeconds(date: Date) {
-  return Math.floor(date.getTime() / 1000)
 }
 
 export function parseIfJson<T>(input: T): T | Record<string, unknown> {

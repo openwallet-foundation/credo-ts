@@ -1,62 +1,68 @@
-import {
+import type {
   RegisterCredentialDefinitionOptions,
   RegisterRevocationRegistryDefinitionOptions,
   RegisterRevocationStatusListOptions,
   RegisterSchemaOptions,
 } from '@credo-ts/anoncreds'
-import { DidDocument, DidRecord, DidRepository, TypedArrayEncoder } from '@credo-ts/core'
-import { AgentContext } from '@credo-ts/core'
-import { DidDocumentKey, Kms } from '@credo-ts/core'
+import {
+  AgentContext,
+  DidDocument,
+  type DidDocumentKey,
+  DidRecord,
+  DidRepository,
+  Kms,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
 import { Client, PrivateKey } from '@hashgraph/sdk'
 import { HederaLedgerService } from '../../src/ledger/HederaLedgerService'
 
-jest.mock('@hiero-did-sdk/registrar', () => ({
-  DIDUpdateBuilder: jest.fn().mockReturnValue({
-    addService: jest.fn().mockReturnThis(),
-    removeService: jest.fn().mockReturnThis(),
-    addVerificationMethod: jest.fn().mockReturnThis(),
-    removeVerificationMethod: jest.fn().mockReturnThis(),
-    addAssertionMethod: jest.fn().mockReturnThis(),
-    removeAssertionMethod: jest.fn().mockReturnThis(),
-    addAuthenticationMethod: jest.fn().mockReturnThis(),
-    removeAuthenticationMethod: jest.fn().mockReturnThis(),
-    addCapabilityDelegationMethod: jest.fn().mockReturnThis(),
-    removeCapabilityDelegationMethod: jest.fn().mockReturnThis(),
-    addCapabilityInvocationMethod: jest.fn().mockReturnThis(),
-    removeCapabilityInvocationMethod: jest.fn().mockReturnThis(),
-    addKeyAgreementMethod: jest.fn().mockReturnThis(),
-    removeKeyAgreementMethod: jest.fn().mockReturnThis(),
-    build: jest.fn(),
+vi.mock('@hiero-did-sdk/registrar', () => ({
+  DIDUpdateBuilder: vi.fn().mockReturnValue({
+    addService: vi.fn().mockReturnThis(),
+    removeService: vi.fn().mockReturnThis(),
+    addVerificationMethod: vi.fn().mockReturnThis(),
+    removeVerificationMethod: vi.fn().mockReturnThis(),
+    addAssertionMethod: vi.fn().mockReturnThis(),
+    removeAssertionMethod: vi.fn().mockReturnThis(),
+    addAuthenticationMethod: vi.fn().mockReturnThis(),
+    removeAuthenticationMethod: vi.fn().mockReturnThis(),
+    addCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+    removeCapabilityDelegationMethod: vi.fn().mockReturnThis(),
+    addCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+    removeCapabilityInvocationMethod: vi.fn().mockReturnThis(),
+    addKeyAgreementMethod: vi.fn().mockReturnThis(),
+    removeKeyAgreementMethod: vi.fn().mockReturnThis(),
+    build: vi.fn(),
   }),
-  generateCreateDIDRequest: jest.fn(),
-  submitCreateDIDRequest: jest.fn(),
-  generateUpdateDIDRequest: jest.fn(),
-  submitUpdateDIDRequest: jest.fn(),
-  generateDeactivateDIDRequest: jest.fn(),
-  submitDeactivateDIDRequest: jest.fn(),
+  generateCreateDIDRequest: vi.fn(),
+  submitCreateDIDRequest: vi.fn(),
+  generateUpdateDIDRequest: vi.fn(),
+  submitUpdateDIDRequest: vi.fn(),
+  generateDeactivateDIDRequest: vi.fn(),
+  submitDeactivateDIDRequest: vi.fn(),
 }))
 
 import {
-  CreateDIDRequest,
+  type CreateDIDRequest,
+  type DeactivateDIDRequest,
   DIDUpdateBuilder,
-  DeactivateDIDRequest,
-  UpdateDIDRequest,
   generateCreateDIDRequest,
   generateDeactivateDIDRequest,
   generateUpdateDIDRequest,
   submitCreateDIDRequest,
   submitDeactivateDIDRequest,
   submitUpdateDIDRequest,
+  type UpdateDIDRequest,
 } from '@hiero-did-sdk/registrar'
 
-jest.mock('@hiero-did-sdk/resolver', () => ({
-  resolveDID: jest.fn(),
-  TopicReaderHederaHcs: jest.fn(),
+vi.mock('@hiero-did-sdk/resolver', () => ({
+  resolveDID: vi.fn(),
+  TopicReaderHederaHcs: vi.fn(),
 }))
 
-import { resolveDID } from '@hiero-did-sdk/resolver'
-
 import { DID_ROOT_KEY_ID } from '@hiero-did-sdk/core'
+import { resolveDID } from '@hiero-did-sdk/resolver'
+import type { MockInstance } from 'vitest'
 import { mockFunction } from '../../../core/tests/helpers'
 import { HederaAnonCredsRegistry } from '../../src/anoncreds/HederaAnonCredsRegistry'
 import { did, didDocument } from './fixtures/did-document'
@@ -73,12 +79,12 @@ const mockPublicJwk: Kms.KmsJwkPublicOkp & { crv: 'Ed25519' } = {
 }
 
 const mockKms = {
-  sign: jest.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3]) }),
-  getPublicKey: jest.fn().mockReturnValue(mockPublicJwk),
+  sign: vi.fn().mockResolvedValue({ signature: new Uint8Array([1, 2, 3]) }),
+  getPublicKey: vi.fn().mockReturnValue(mockPublicJwk),
 } as unknown as Kms.KeyManagementApi
 
 const mockDidRepository = {
-  findCreatedDid: jest.fn().mockResolvedValue({
+  findCreatedDid: vi.fn().mockResolvedValue({
     keys: [
       {
         didDocumentRelativeKeyId: DID_ROOT_KEY_ID,
@@ -90,7 +96,7 @@ const mockDidRepository = {
 
 const mockAgentContext = {
   dependencyManager: {
-    resolve: jest.fn((cls) => {
+    resolve: vi.fn((cls) => {
       if (cls === Kms.KeyManagementApi) {
         return mockKms
       }
@@ -103,14 +109,14 @@ const mockAgentContext = {
 } as unknown as AgentContext
 
 const mockHederaAnonCredsRegistry = {
-  getSchema: jest.fn().mockResolvedValue('schema'),
-  registerSchema: jest.fn().mockResolvedValue('registerSchema'),
-  getCredentialDefinition: jest.fn().mockResolvedValue('credDef'),
-  registerCredentialDefinition: jest.fn().mockResolvedValue('registerCredDef'),
-  getRevocationRegistryDefinition: jest.fn().mockResolvedValue('revRegDef'),
-  registerRevocationRegistryDefinition: jest.fn().mockResolvedValue('registerRevRegDef'),
-  getRevocationStatusList: jest.fn().mockResolvedValue('revStatusList'),
-  registerRevocationStatusList: jest.fn().mockResolvedValue('registerRevStatus'),
+  getSchema: vi.fn().mockResolvedValue('schema'),
+  registerSchema: vi.fn().mockResolvedValue('registerSchema'),
+  getCredentialDefinition: vi.fn().mockResolvedValue('credDef'),
+  registerCredentialDefinition: vi.fn().mockResolvedValue('registerCredDef'),
+  getRevocationRegistryDefinition: vi.fn().mockResolvedValue('revRegDef'),
+  registerRevocationRegistryDefinition: vi.fn().mockResolvedValue('registerRevRegDef'),
+  getRevocationStatusList: vi.fn().mockResolvedValue('revStatusList'),
+  registerRevocationStatusList: vi.fn().mockResolvedValue('registerRevStatus'),
 } as unknown as HederaAnonCredsRegistry
 
 describe('HederaLedgerService', () => {
@@ -124,31 +130,31 @@ describe('HederaLedgerService', () => {
         },
       ],
       cache: {
-        get: jest.fn().mockResolvedValue(null),
-        set: jest.fn().mockResolvedValue(undefined),
-        remove: jest.fn().mockResolvedValue(undefined),
-        clear: jest.fn(),
+        get: vi.fn().mockResolvedValue(null),
+        set: vi.fn().mockResolvedValue(undefined),
+        remove: vi.fn().mockResolvedValue(undefined),
+        clear: vi.fn(),
       },
     },
   })
   const builder: DIDUpdateBuilder = new DIDUpdateBuilder()
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
+  vi.spyOn((service as any).clientService, 'withClient').mockImplementation(async (_props, operation) => {
     const mockClient = {} as Client
-    // @ts-ignore
+    // @ts-expect-error
     return operation(mockClient)
   })
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
+  vi.spyOn(service as any, 'getHederaAnonCredsRegistry').mockReturnValue(mockHederaAnonCredsRegistry)
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  jest.spyOn(service as any, 'getPublisher').mockResolvedValue({})
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
+  vi.spyOn(service as any, 'getPublisher').mockResolvedValue({})
 
   describe('resolveDid', () =>
     it('should call resolveDID with proper args and returns result', async () => {
-      // @ts-ignore - there is a conflict with 'resolveDID' "overloaded" signatures
+      // @ts-expect-error - there is a conflict with 'resolveDID' "overloaded" signatures
       mockFunction(resolveDID).mockResolvedValueOnce(didDocument)
 
       const result = await service.resolveDid(mockAgentContext, did)
@@ -193,7 +199,7 @@ describe('HederaLedgerService', () => {
       mockFunction(generateCreateDIDRequest).mockResolvedValueOnce(createDidRequest)
       mockFunction(submitCreateDIDRequest).mockResolvedValueOnce({ did, didDocument })
 
-      const updateDidSpy = jest.spyOn(service, 'updateDid').mockResolvedValueOnce({ did, didDocument })
+      const updateDidSpy = vi.spyOn(service, 'updateDid').mockResolvedValueOnce({ did, didDocument })
 
       const result = await service.createDid(mockAgentContext, {
         method: 'hedera',
@@ -228,23 +234,23 @@ describe('HederaLedgerService', () => {
 
     it('should call correct builder methods for each field and action', () => {
       const spies = {
-        addService: jest.spyOn(builder, 'addService'),
-        removeService: jest.spyOn(builder, 'removeService'),
-        addVerificationMethod: jest.spyOn(builder, 'addVerificationMethod'),
-        removeVerificationMethod: jest.spyOn(builder, 'removeVerificationMethod'),
-        addAssertionMethod: jest.spyOn(builder, 'addAssertionMethod'),
-        removeAssertionMethod: jest.spyOn(builder, 'removeAssertionMethod'),
-        addAuthenticationMethod: jest.spyOn(builder, 'addAuthenticationMethod'),
-        removeAuthenticationMethod: jest.spyOn(builder, 'removeAuthenticationMethod'),
-        addCapabilityDelegationMethod: jest.spyOn(builder, 'addCapabilityDelegationMethod'),
-        removeCapabilityDelegationMethod: jest.spyOn(builder, 'removeCapabilityDelegationMethod'),
-        addCapabilityInvocationMethod: jest.spyOn(builder, 'addCapabilityInvocationMethod'),
-        removeCapabilityInvocationMethod: jest.spyOn(builder, 'removeCapabilityInvocationMethod'),
-        addKeyAgreementMethod: jest.spyOn(builder, 'addKeyAgreementMethod'),
-        removeKeyAgreementMethod: jest.spyOn(builder, 'removeKeyAgreementMethod'),
+        addService: vi.spyOn(builder, 'addService'),
+        removeService: vi.spyOn(builder, 'removeService'),
+        addVerificationMethod: vi.spyOn(builder, 'addVerificationMethod'),
+        removeVerificationMethod: vi.spyOn(builder, 'removeVerificationMethod'),
+        addAssertionMethod: vi.spyOn(builder, 'addAssertionMethod'),
+        removeAssertionMethod: vi.spyOn(builder, 'removeAssertionMethod'),
+        addAuthenticationMethod: vi.spyOn(builder, 'addAuthenticationMethod'),
+        removeAuthenticationMethod: vi.spyOn(builder, 'removeAuthenticationMethod'),
+        addCapabilityDelegationMethod: vi.spyOn(builder, 'addCapabilityDelegationMethod'),
+        removeCapabilityDelegationMethod: vi.spyOn(builder, 'removeCapabilityDelegationMethod'),
+        addCapabilityInvocationMethod: vi.spyOn(builder, 'addCapabilityInvocationMethod'),
+        removeCapabilityInvocationMethod: vi.spyOn(builder, 'removeCapabilityInvocationMethod'),
+        addKeyAgreementMethod: vi.spyOn(builder, 'addKeyAgreementMethod'),
+        removeKeyAgreementMethod: vi.spyOn(builder, 'removeKeyAgreementMethod'),
       }
 
-      const testCases: [string, 'add' | 'remove', string, jest.SpyInstance][] = [
+      const testCases: [string, 'add' | 'remove', string, MockInstance][] = [
         ['service', 'add', 'service-item', spies.addService],
         ['service', 'remove', 'service-id', spies.removeService],
 
@@ -268,9 +274,9 @@ describe('HederaLedgerService', () => {
       ]
 
       for (const [property, action, param, spy] of testCases) {
-        jest.clearAllMocks()
+        vi.clearAllMocks()
 
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         const builderMethod = (service as any).getUpdateMethod(builder, property, action)
 
         const result = builderMethod(param)
@@ -287,7 +293,7 @@ describe('HederaLedgerService', () => {
     it('should return builder unchanged for unknown property', () => {
       const unknownProperty = 'unknown-property'
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const builderMethod = (service as any).getUpdateMethod(builder, unknownProperty, 'add')
       const result = builderMethod({})
 
@@ -318,18 +324,18 @@ describe('HederaLedgerService', () => {
         signingRequest: { serializedPayload: new Uint8Array() },
       } as unknown as UpdateDIDRequest
 
-      // @ts-ignore - there is a conflict with 'resolveDID' "overloaded" signatures
+      // @ts-expect-error - there is a conflict with 'resolveDID' "overloaded" signatures
       mockFunction(resolveDID).mockResolvedValueOnce({ didDocument })
 
-      jest
-        // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      vi
+        // biome-ignore lint/suspicious/noExplicitAny: no explanation
         .spyOn(service as any, 'prepareDidUpdates')
-        .mockReturnValueOnce({ build: jest.fn().mockReturnValueOnce(updatedDidDocument) })
+        .mockReturnValueOnce({ build: vi.fn().mockReturnValueOnce(updatedDidDocument) })
 
       mockFunction(generateUpdateDIDRequest).mockResolvedValueOnce(updateDidRequest)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-      jest.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
+      vi.spyOn(service as any, 'signRequests').mockResolvedValueOnce(Promise.resolve())
       mockFunction(submitUpdateDIDRequest).mockResolvedValueOnce({ did, didDocument: updatedDidDocument })
 
       await expect(
@@ -341,7 +347,7 @@ describe('HederaLedgerService', () => {
         })
       ).resolves.toHaveProperty('did', did)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       expect((service as any).prepareDidUpdates).toHaveBeenCalled()
       expect(generateUpdateDIDRequest).toHaveBeenCalled()
       expect(submitUpdateDIDRequest).toHaveBeenCalled()
@@ -356,7 +362,7 @@ describe('HederaLedgerService', () => {
     })
 
     it('should throw an error if root key is not found in deactivateDid', async () => {
-      mockFunction(mockAgentContext.dependencyManager.resolve).mockReturnValueOnce({ sign: jest.fn() })
+      mockFunction(mockAgentContext.dependencyManager.resolve).mockReturnValueOnce({ sign: vi.fn() })
 
       await expect(
         service.deactivateDid(mockAgentContext, {
@@ -518,11 +524,10 @@ describe('HederaLedgerService', () => {
 
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const result = await (service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')
 
       expect(mockDidRepository.findCreatedDid).toHaveBeenCalledWith(mockAgentContext, 'issuer-id')
-      // @ts-ignore
       expect(mockKms.getPublicKey).toHaveBeenCalledWith({ keyId: 'kms-key-id' })
       expect(await result.publicKey()).toEqual(privateKey.publicKey.toStringDer())
     })
@@ -533,7 +538,7 @@ describe('HederaLedgerService', () => {
       } as unknown as DidRecord
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(didRecord)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )
@@ -542,7 +547,7 @@ describe('HederaLedgerService', () => {
     it('should throw error if didRecord is null or undefined', async () => {
       mockFunction(mockDidRepository.findCreatedDid).mockResolvedValueOnce(null)
 
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       await expect((service as any).getIssuerKeySigner(mockAgentContext, 'issuer-id')).rejects.toThrow(
         'The root key not found in the KMS'
       )

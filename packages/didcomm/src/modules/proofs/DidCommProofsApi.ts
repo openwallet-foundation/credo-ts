@@ -1,4 +1,9 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, CredoError, injectable } from '@credo-ts/core'
+import { DidCommMessage } from '../../DidCommMessage'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
+import { DidCommConnectionService } from '../connections'
 import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
@@ -20,19 +25,11 @@ import type {
   SelectCredentialsForProofRequestReturn,
   SendProofProblemReportOptions,
 } from './DidCommProofsApiOptions'
+import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
+import { DidCommProofState } from './models/DidCommProofState'
 import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
 import type { ProofFormatsFromProtocols } from './protocol/DidCommProofProtocolOptions'
 import type { DidCommProofExchangeRecord } from './repository/DidCommProofExchangeRecord'
-
-import { AgentContext, CredoError, injectable } from '@credo-ts/core'
-
-import { DidCommMessage } from '../../DidCommMessage'
-import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
-import { DidCommConnectionService } from '../connections'
-
-import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
-import { DidCommProofState } from './models/DidCommProofState'
 import { DidCommProofExchangeRepository } from './repository/DidCommProofExchangeRepository'
 
 export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
@@ -87,7 +84,7 @@ export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
 }
 
 @injectable()
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: no explanation
 export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements DidCommProofsApi<PPs> {
   /**
    * Configuration for the proofs module

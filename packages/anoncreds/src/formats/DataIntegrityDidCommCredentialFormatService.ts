@@ -5,6 +5,25 @@ import type {
   VerificationMethod,
   W3cCredentialRecord,
 } from '@credo-ts/core'
+import {
+  ClaimFormat,
+  CredoError,
+  DidsApi,
+  deepEquality,
+  getPublicJwkFromVerificationMethod,
+  JsonEncoder,
+  JsonTransformer,
+  JwsService,
+  JwtPayload,
+  Kms,
+  parseDid,
+  SignatureSuiteRegistry,
+  TypedArrayEncoder,
+  W3cCredential,
+  W3cCredentialService,
+  W3cCredentialSubject,
+  W3cJsonLdVerifiableCredential,
+} from '@credo-ts/core'
 import type {
   AnonCredsLinkSecretBindingMethod,
   AnonCredsLinkSecretDataIntegrityBindingProof,
@@ -34,30 +53,6 @@ import type {
   DidCommSignedAttachmentDataIntegrityBindingProof,
   W3C_VC_DATA_MODEL_VERSION,
 } from '@credo-ts/didcomm'
-import type { AnonCredsRevocationStatusList } from '../models'
-import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
-import type { AnonCredsClaimRecord } from '../utils/credential'
-import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
-
-import {
-  ClaimFormat,
-  CredoError,
-  DidsApi,
-  JsonEncoder,
-  JsonTransformer,
-  JwsService,
-  JwtPayload,
-  Kms,
-  SignatureSuiteRegistry,
-  TypedArrayEncoder,
-  W3cCredential,
-  W3cCredentialService,
-  W3cCredentialSubject,
-  W3cJsonLdVerifiableCredential,
-  deepEquality,
-  getPublicJwkFromVerificationMethod,
-  parseDid,
-} from '@credo-ts/core'
 import {
   DataIntegrityCredentialOffer,
   DidCommAttachment,
@@ -67,12 +62,13 @@ import {
   DidCommCredentialProblemReportReason,
   DidCommProblemReportError,
 } from '@credo-ts/didcomm'
-
+import type { AnonCredsRevocationStatusList } from '../models'
 import {
   AnonCredsCredentialDefinitionRepository,
   AnonCredsRevocationRegistryDefinitionPrivateRepository,
   AnonCredsRevocationRegistryState,
 } from '../repository'
+import type { AnonCredsHolderService, AnonCredsIssuerService } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsIssuerServiceSymbol } from '../services'
 import {
   dateToTimestamp,
@@ -81,10 +77,12 @@ import {
   fetchRevocationStatusList,
   fetchSchema,
 } from '../utils'
+import type { AnonCredsClaimRecord } from '../utils/credential'
 import {
   assertAttributesMatch as assertAttributesMatchSchema,
   convertAttributesToCredentialValues,
 } from '../utils/credential'
+import type { AnonCredsCredentialMetadata, AnonCredsCredentialRequestMetadata } from '../utils/metadata'
 import { AnonCredsCredentialMetadataKey, AnonCredsCredentialRequestMetadataKey } from '../utils/metadata'
 import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
 
@@ -113,20 +111,14 @@ export class DataIntegrityDidCommCredentialFormatService
    */
   public async createProposal(
     _agentContext: AgentContext,
-    {
-      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-      credentialFormats,
-      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-      credentialExchangeRecord,
-    }: DidCommCredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
+    options: DidCommCredentialFormatCreateProposalOptions<DidCommDataIntegrityCredentialFormat>
   ): Promise<DidCommCredentialFormatCreateProposalReturn> {
     throw new CredoError('Not defined')
   }
 
   public async processProposal(
     _agentContext: AgentContext,
-    // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { attachment }: DidCommCredentialFormatProcessOptions
+    options: DidCommCredentialFormatProcessOptions
   ): Promise<void> {
     throw new CredoError('Not defined')
   }
@@ -337,8 +329,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
     const credentialOffer = JsonTransformer.fromJSON(offerAttachment.getDataAsJson(), DataIntegrityCredentialOffer)
 
-    let anonCredsLinkSecretDataIntegrityBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof | undefined =
-      undefined
+    let anonCredsLinkSecretDataIntegrityBindingProof: AnonCredsLinkSecretDataIntegrityBindingProof | undefined
     const autoAcceptOfferWithAnonCredsLinkSecretMethod =
       credentialOffer.bindingRequired &&
       !dataIntegrityFormat?.didCommSignedAttachment &&
@@ -383,8 +374,8 @@ export class DataIntegrityDidCommCredentialFormatService
       )
     }
 
-    let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined = undefined
-    let didCommSignedAttachment: DidCommAttachment | undefined = undefined
+    let didCommSignedAttachmentBindingProof: DidCommSignedAttachmentDataIntegrityBindingProof | undefined
+    let didCommSignedAttachment: DidCommAttachment | undefined
     if (dataIntegrityFormat?.didCommSignedAttachment) {
       if (!credentialOffer.bindingMethod?.didcommSignedAttachment) {
         throw new CredoError('Cannot request credential with a binding method that was not offered.')
@@ -494,9 +485,9 @@ export class DataIntegrityDidCommCredentialFormatService
 
     // We check locally for credential definition info. If it supports revocation, we need to search locally for
     // an active revocation registry
-    let revocationRegistryDefinitionId: string | undefined = undefined
-    let revocationRegistryIndex: number | undefined = undefined
-    let revocationStatusList: AnonCredsRevocationStatusList | undefined = undefined
+    let revocationRegistryDefinitionId: string | undefined
+    let revocationRegistryIndex: number | undefined
+    let revocationStatusList: AnonCredsRevocationStatusList | undefined
 
     if (credentialDefinition.revocation) {
       const { credentialRevocationId, revocationRegistryId } = linkSecretMetadata
@@ -620,6 +611,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
     let credentialToBeSigned = credential
     if (credential instanceof W3cJsonLdVerifiableCredential) {
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       const { proof, ..._credentialToBeSigned } = credential
       credentialToBeSigned = _credentialToBeSigned as W3cCredential
     }
@@ -948,8 +940,8 @@ export class DataIntegrityDidCommCredentialFormatService
   }
 
   public async shouldAutoRespondToProposal(
-    _agentContext: AgentContext, // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-    { offerAttachment, proposalAttachment }: DidCommCredentialFormatAutoRespondProposalOptions
+    _agentContext: AgentContext,
+    options: DidCommCredentialFormatAutoRespondProposalOptions
   ): Promise<boolean> {
     throw new CredoError('Not implemented')
   }
@@ -1011,14 +1003,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
   public async shouldAutoRespondToCredential(
     _agentContext: AgentContext,
-    {
-      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-      credentialExchangeRecord,
-      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-      requestAttachment,
-      // biome-ignore lint/correctness/noUnusedVariables: <explanation>
-      credentialAttachment,
-    }: DidCommCredentialFormatAutoRespondCredentialOptions
+    options: DidCommCredentialFormatAutoRespondCredentialOptions
   ) {
     return true
   }
@@ -1045,7 +1030,7 @@ export class DataIntegrityDidCommCredentialFormatService
     const validW3cCredential = JsonTransformer.fromJSON(credentialJson, W3cCredential)
     const previewAttributes = this.previewAttributesFromCredential(validW3cCredential)
 
-    let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined = undefined
+    let anonCredsLinkSecretBindingMethod: AnonCredsLinkSecretBindingMethod | undefined
     if (anonCredsLinkSecretBindingMethodOptions) {
       const { credentialDefinitionId, revocationRegistryDefinitionId, revocationRegistryIndex } =
         anonCredsLinkSecretBindingMethodOptions
@@ -1095,7 +1080,7 @@ export class DataIntegrityDidCommCredentialFormatService
       })
     }
 
-    let didCommSignedAttachmentBindingMethod: DidCommSignedAttachmentBindingMethod | undefined = undefined
+    let didCommSignedAttachmentBindingMethod: DidCommSignedAttachmentBindingMethod | undefined
     if (didCommSignedAttachmentBindingMethodOptions) {
       const kms = agentContext.dependencyManager.resolve(Kms.KeyManagementApi)
 

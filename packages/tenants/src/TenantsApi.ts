@@ -1,25 +1,23 @@
 import type { DefaultAgentModules, ModulesMap, Query, QueryOptions } from '@credo-ts/core'
+import {
+  AgentContext,
+  InjectionSymbols,
+  inject,
+  injectable,
+  isStorageUpToDate,
+  type Logger,
+  UpdateAssistant,
+} from '@credo-ts/core'
+import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
+import type { TenantRecord } from './repository'
+import { TenantRecordService } from './services'
+import { TenantAgent } from './TenantAgent'
 import type {
   CreateTenantOptions,
   GetTenantAgentOptions,
   UpdateTenantStorageOptions,
   WithTenantAgentCallback,
 } from './TenantsApiOptions'
-import type { TenantRecord } from './repository'
-
-import {
-  AgentContext,
-  InjectionSymbols,
-  Logger,
-  UpdateAssistant,
-  inject,
-  injectable,
-  isStorageUpToDate,
-} from '@credo-ts/core'
-
-import { TenantAgent } from './TenantAgent'
-import { TenantAgentContextProvider } from './context/TenantAgentContextProvider'
-import { TenantRecordService } from './services'
 
 @injectable()
 export class TenantsApi<AgentModules extends ModulesMap = DefaultAgentModules> {

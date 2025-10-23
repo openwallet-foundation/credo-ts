@@ -34,7 +34,7 @@ export class DidCommKeylistMessage extends DidCommMessage {
 
 export class Keylist {
   public constructor(options: { paginateOffset: number }) {
-    // biome-ignore lint/correctness/noConstructorReturn: <explanation>
+    // biome-ignore lint/correctness/noConstructorReturn: no explanation
     return options
   }
 }

@@ -1,6 +1,5 @@
+import { filter, timeout } from 'rxjs'
 import type { DidCommMessageProcessedEvent } from '../../didcomm/src'
-
-import { filter, firstValueFrom, timeout } from 'rxjs'
 
 import {
   DidCommEventTypes,
@@ -12,7 +11,7 @@ import {
 } from '../../didcomm/src'
 import { Agent } from '../src/agent/Agent'
 
-import { getAgentOptions } from './helpers'
+import { firstValueWithStackTrace, getAgentOptions } from './helpers'
 import { setupSubjectTransports } from './transport'
 
 const aliceAgentOptions = getAgentOptions(
@@ -49,14 +48,14 @@ describe('multi version protocols', () => {
     setupSubjectTransports([aliceAgent, bobAgent])
 
     // Register the test handler with the v1.3 version of the message
-    const mockHandle = jest.fn()
-    aliceAgent.modules.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
+    const mockHandle = vi.fn()
+    aliceAgent.didcomm.registerMessageHandlers([{ supportedMessages: [TestMessageV13], handle: mockHandle }])
 
     await aliceAgent.initialize()
     await bobAgent.initialize()
 
-    const { outOfBandInvitation, id } = await aliceAgent.modules.oob.createInvitation()
-    let { connectionRecord: bobConnection } = await bobAgent.modules.oob.receiveInvitation(outOfBandInvitation, {
+    const { outOfBandInvitation, id } = await aliceAgent.didcomm.oob.createInvitation()
+    let { connectionRecord: bobConnection } = await bobAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, {
       label: 'bob',
       autoAcceptConnection: true,
       autoAcceptInvitation: true,
@@ -66,10 +65,10 @@ describe('multi version protocols', () => {
       throw new Error('No connection for bob')
     }
 
-    bobConnection = await bobAgent.modules.connections.returnWhenIsConnected(bobConnection.id)
+    bobConnection = await bobAgent.didcomm.connections.returnWhenIsConnected(bobConnection.id)
 
-    let [aliceConnection] = await aliceAgent.modules.connections.findAllByOutOfBandId(id)
-    aliceConnection = await aliceAgent.modules.connections.returnWhenIsConnected(aliceConnection.id)
+    let [aliceConnection] = await aliceAgent.didcomm.connections.findAllByOutOfBandId(id)
+    aliceConnection = await aliceAgent.didcomm.connections.returnWhenIsConnected(aliceConnection.id)
 
     expect(aliceConnection).toBeConnectedWith(bobConnection)
     expect(bobConnection).toBeConnectedWith(aliceConnection)
@@ -77,7 +76,7 @@ describe('multi version protocols', () => {
     const bobMessageSender = bobAgent.dependencyManager.resolve(DidCommMessageSender)
 
     // Start event listener for message processed
-    const agentMessageV11ProcessedPromise = firstValueFrom(
+    const agentMessageV11ProcessedPromise = firstValueWithStackTrace(
       aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV11.type.messageTypeUri),
         timeout(8000)
@@ -97,7 +96,7 @@ describe('multi version protocols', () => {
     expect(mockHandle).toHaveBeenCalledTimes(1)
 
     // Start event listener for message processed
-    const agentMessageV15ProcessedPromise = firstValueFrom(
+    const agentMessageV15ProcessedPromise = firstValueWithStackTrace(
       aliceAgent.events.observable<DidCommMessageProcessedEvent>(DidCommEventTypes.DidCommMessageProcessed).pipe(
         filter((event) => event.payload.message.type === TestMessageV15.type.messageTypeUri),
         timeout(8000)

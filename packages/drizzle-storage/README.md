@@ -96,25 +96,22 @@ The bundles provide the agent with the needed context about which record types a
 
 The following bundles are provided out of the box by the Drizzle storage module:
 
-- `coreDrizzleBundle` from `@credo-ts/drizzle-storage/core` (`core`)
-- `didcommDrizzleBundle` from `@credo-ts/drizzle-storage/didcomm` (`didcomm`)
-- `actionMenuDrizzleBundle` from `@credo-ts/drizzle-storage/action-menu` (`action-menu`)
-- `anonCredsDrizzleBundle` from `@credo-ts/drizzle-storage/anoncreds` (`anoncreds`)
-- `openid4vcDrizzleBundle` from `@credo-ts/drizzle-storage/openid4vc` (`openid4vc`)
-- `drpcDrizzleBundle` from `@credo-ts/drizzle-storage/drpc` (`drpc`)
-- `questionAnswerDrizzleBundle` from `@credo-ts/drizzle-storage/question-answer` (`question-answer`)
+- `coreBundle` from `@credo-ts/drizzle-storage/core` (`core`)
+- `didcommBundle` from `@credo-ts/drizzle-storage/didcomm` (`didcomm`)
+- `actionMenuBundle` from `@credo-ts/drizzle-storage/action-menu` (`action-menu`)
+- `anonCredsBundle` from `@credo-ts/drizzle-storage/anoncreds` (`anoncreds`)
+- `openid4vcBundle` from `@credo-ts/drizzle-storage/openid4vc` (`openid4vc`)
+- `drpcBundle` from `@credo-ts/drizzle-storage/drpc` (`drpc`)
+- `tenantsBundle` from `@credo-ts/drizzle-storage/tenants` (`tenants`)
+- `questionAnswerBundle` from `@credo-ts/drizzle-storage/question-answer` (`question-answer`)
 
 > [!IMPORTANT]  
-> Make sure to order the bundles to account for any dependencies between modules. For example, the `actionMenuDrizzleBundle`, depends on the connection record from `didcommDrizzleBundle`. Generally we recommend to adhere to the order defined above, and always provide custom records after the records provided by the `@credo-ts/drizzle-storage` package.
+> Make sure to order the bundles to account for any dependencies between modules. For example, the `actionMenuBundle`, depends on the connection record from `didcommBundle`. Generally we recommend to adhere to the order defined above, and always provide custom records after the records provided by the `@credo-ts/drizzle-storage` package.
 
 The following defines the bundles for an agent using the `didcomm` and `anoncreds` extension modules, but doesn't use the `action-menu` extension module:
 
 ```ts
-const bundles = [
-  coreDrizzleBundle,
-  didcommDrizzleBundle,
-  anonCredsDrizzleBundle,
-] as const;
+const bundles = [coreBundle, didcommBundle, anonCredsBundle] as const;
 ```
 
 ### Migrations

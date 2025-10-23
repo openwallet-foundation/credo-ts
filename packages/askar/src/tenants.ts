@@ -1,7 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
-import type { TenantsModule } from '@credo-ts/tenants'
-
 import { getApiForModuleByName } from '@credo-ts/core'
+import type { TenantsModule } from '@credo-ts/tenants'
 import { AskarError } from './error'
 
 const ASKAR_STORE_CONFIG_METADATA_KEY = '_askar/storeConfig'

@@ -1,22 +1,23 @@
-import type { AgentContext } from '../../../agent'
-
+import type { MockedFunction } from 'vitest'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { getAgentConfig, getAgentContext, mockFunction } from '../../../../tests'
+import type { AgentContext } from '../../../agent'
 import { JwsService } from '../../../crypto'
-import { JsonTransformer, asArray } from '../../../utils'
-import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
+import { asArray, JsonTransformer } from '../../../utils'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity'
-import { SignatureSuiteRegistry } from '../data-integrity/SignatureSuiteRegistry'
-import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
 import { customDocumentLoader } from '../data-integrity/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtures'
 import jsonld from '../data-integrity/libraries/jsonld'
+import { SignatureSuiteRegistry } from '../data-integrity/SignatureSuiteRegistry'
+import { W3cJsonLdCredentialService } from '../data-integrity/W3cJsonLdCredentialService'
 import { W3cJwtCredentialService } from '../jwt-vc'
 import { W3cPresentation } from '../models'
 import { W3cCredentialRecord, W3cCredentialRepository } from '../repository'
+import { W3cCredentialService } from '../W3cCredentialService'
+import { W3cCredentialsModuleConfig } from '../W3cCredentialsModuleConfig'
 
-jest.mock('../repository/W3cCredentialRepository')
-const W3cCredentialsRepositoryMock = W3cCredentialRepository as jest.Mock<W3cCredentialRepository>
+vi.mock('../repository/W3cCredentialRepository')
+const W3cCredentialsRepositoryMock = W3cCredentialRepository as MockedClassConstructor<typeof W3cCredentialRepository>
 
 const agentConfig = getAgentConfig('W3cCredentialServiceTest')
 
@@ -94,7 +95,7 @@ describe('W3cCredentialsService', () => {
 
   describe('Credential Storage', () => {
     let w3cCredentialRecord: W3cCredentialRecord
-    let w3cCredentialRepositoryDeleteMock: jest.MockedFunction<(typeof w3cCredentialsRepository)['deleteById']>
+    let w3cCredentialRepositoryDeleteMock: MockedFunction<(typeof w3cCredentialsRepository)['deleteById']>
 
     beforeEach(async () => {
       const credential = JsonTransformer.fromJSON(

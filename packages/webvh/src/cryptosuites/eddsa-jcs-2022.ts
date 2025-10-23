@@ -1,12 +1,14 @@
-import { type AgentContext, CredoError } from '@credo-ts/core'
 import {
   Buffer,
+  type AgentContext,
+  type AnyUint8Array,
+  CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   Hasher,
   Kms,
   MultiBaseEncoder,
   TypedArrayEncoder,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import { MultibaseEncoding, multibaseEncode } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
@@ -93,7 +95,7 @@ export class EddsaJcs2022Cryptosuite {
     return hashData
   }
 
-  public async proofVerification(hashData: Uint8Array, proofBytes: Uint8Array, options: ProofOptions) {
+  public async proofVerification(hashData: AnyUint8Array, proofBytes: AnyUint8Array, options: ProofOptions) {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const publicJwk = await this._publicJwkFromId(options.verificationMethod)
     const verificationResult = await this.keyApi.verify({
@@ -107,7 +109,9 @@ export class EddsaJcs2022Cryptosuite {
 
   public async verifyProof(securedDocument: WebVhResource) {
     // https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proof, ...unsecuredDocument } = securedDocument
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { proofValue, ...proofOptions } = securedDocument.proof
     const proofBytes = MultiBaseEncoder.decode(securedDocument.proof.proofValue)
     const transformedData = this.transformation(unsecuredDocument, proofOptions)

@@ -1,32 +1,29 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../DidCommMessage'
-import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
-import type { DidCommRouting } from '../../models'
-import type { DidCommPlaintextMessage } from '../../types'
-import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
-
 import {
   AgentContext,
   CredoError,
   DidKey,
   EventEmitter,
+  filterContextCorrelationId,
   InjectionSymbols,
+  inject,
+  injectable,
   JsonEncoder,
   JsonTransformer,
   Kms,
-  Logger,
-  filterContextCorrelationId,
-  inject,
-  injectable,
+  type Logger,
 } from '@credo-ts/core'
-import { EmptyError, catchError, first, firstValueFrom, map, of, timeout } from 'rxjs'
-
+import { catchError, EmptyError, first, firstValueFrom, map, of, timeout } from 'rxjs'
 import { DidCommEventTypes, type DidCommMessageReceivedEvent } from '../../DidCommEvents'
+import type { DidCommMessage } from '../../DidCommMessage'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
+import type { DidCommAttachment } from '../../decorators/attachment/DidCommAttachment'
 import { ServiceDecorator } from '../../decorators/service/ServiceDecorator'
+import type { DidCommRouting } from '../../models'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommDocumentService } from '../../services'
+import type { DidCommPlaintextMessage } from '../../types'
 import {
   parseDidCommProtocolUri,
   parseMessageType,
@@ -42,19 +39,18 @@ import {
 } from '../connections'
 import { DidCommConnectionsApi } from '../connections/DidCommConnectionsApi'
 import { DidCommRoutingService } from '../routing/services/DidCommRoutingService'
+import { convertToNewInvitation, convertToOldInvitation } from './converters'
 
 import { DidCommOutOfBandService } from './DidCommOutOfBandService'
-import { convertToNewInvitation, convertToOldInvitation } from './converters'
+import type { DidCommHandshakeReusedEvent } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { OutOfBandDidCommService } from './domain/OutOfBandDidCommService'
-import { DidCommHandshakeReuseHandler } from './handlers'
-import { DidCommHandshakeReuseAcceptedHandler } from './handlers/DidCommHandshakeReuseAcceptedHandler'
 import { outOfBandServiceToInlineKeysNumAlgo2Did } from './helpers'
-import { DidCommOutOfBandInvitation, InvitationType } from './messages'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from './messages'
 import { DidCommOutOfBandRepository } from './repository'
-import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
+import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord } from './repository/DidCommOutOfBandRecord'
 import { DidCommOutOfBandRecordMetadataKeys } from './repository/outOfBandRecordMetadataTypes'
 
 const didCommProfiles = ['didcomm/aip1', 'didcomm/aip2;env=rfc19']
@@ -141,7 +137,6 @@ export class DidCommOutOfBandApi {
     this.connectionsApi = connectionsApi
     this.messageSender = messageSender
     this.eventEmitter = eventEmitter
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -198,7 +193,7 @@ export class DidCommOutOfBandApi {
       )
     }
 
-    let mediatorId: string | undefined = undefined
+    let mediatorId: string | undefined
     let services: [string] | OutOfBandDidCommService[]
     if (config.routing && config.invitationDid) {
       throw new CredoError("Both 'routing' and 'invitationDid' cannot be provided at the same time.")
@@ -286,7 +281,7 @@ export class DidCommOutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: InvitationType.Connection,
+      legacyInvitationType: DidCommInvitationType.Connection,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)
@@ -312,7 +307,7 @@ export class DidCommOutOfBandApi {
 
     // Set legacy invitation type
     outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
-      legacyInvitationType: InvitationType.Connectionless,
+      legacyInvitationType: DidCommInvitationType.Connectionless,
     })
     const outOfBandRepository = this.agentContext.dependencyManager.resolve(DidCommOutOfBandRepository)
     await outOfBandRepository.update(this.agentContext, outOfBandRecord)
@@ -484,7 +479,7 @@ export class DidCommOutOfBandApi {
     }
 
     // If the invitation was converted from another legacy format, we store this, as its needed for some flows
-    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== InvitationType.OutOfBand) {
+    if (outOfBandInvitation.invitationType && outOfBandInvitation.invitationType !== DidCommInvitationType.OutOfBand) {
       outOfBandRecord.metadata.set(DidCommOutOfBandRecordMetadataKeys.LegacyInvitation, {
         legacyInvitationType: outOfBandInvitation.invitationType,
       })
@@ -578,7 +573,7 @@ export class DidCommOutOfBandApi {
     if (handshakeProtocols && handshakeProtocols.length > 0) {
       this.logger.debug('Out of band message contains handshake protocols.')
 
-      let connectionRecord: DidCommConnectionRecord | undefined = undefined
+      let connectionRecord: DidCommConnectionRecord | undefined
       if (existingConnection && reuseConnection) {
         this.logger.debug(
           `Connection already exists and reuse is enabled. Reusing an existing connection with ID ${existingConnection.id}.`
@@ -923,7 +918,7 @@ export class DidCommOutOfBandApi {
 
     // If the invitation is created from a legacy connectionless invitation, we don't need to set the pthid
     // as that's not expected, and it's generated on our side only
-    if (legacyInvitationMetadata?.legacyInvitationType === InvitationType.Connectionless) {
+    if (legacyInvitationMetadata?.legacyInvitationType === DidCommInvitationType.Connectionless) {
       return
     }
 
@@ -991,7 +986,7 @@ export class DidCommOutOfBandApi {
         recipientKeyFingerprints.push(
           ...resolvedDidCommServices
             .reduce<Kms.PublicJwk<Kms.Ed25519PublicJwk | Kms.X25519PublicJwk>[]>(
-              // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+              // biome-ignore lint/performance/noAccumulatingSpread: no explanation
               (aggr, { recipientKeys }) => [...aggr, ...recipientKeys],
               []
             )
@@ -1005,11 +1000,5 @@ export class DidCommOutOfBandApi {
     }
 
     return recipientKeyFingerprints
-  }
-
-  // TODO: we should probably move these to the out of band module and register the handler there
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseHandler(this.outOfBandService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommHandshakeReuseAcceptedHandler(this.outOfBandService))
   }
 }

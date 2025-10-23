@@ -1,28 +1,26 @@
 import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
-import type { MessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
-import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
-
 import { DidCommMessagePickupApi } from './DidCommMessagePickupApi'
+import type { DidCommMessagePickupModuleConfigOptions } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupModuleConfig } from './DidCommMessagePickupModuleConfig'
 import { DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol } from './protocol'
+import type { DidCommMessagePickupProtocol } from './protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from './services'
 
 /**
  * Default protocols that will be registered if the `protocols` property is not configured.
  */
-export type DefaultMessagePickupProtocols = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol]
+export type DefaultDidCommMessagePickupProtocols = [DidCommMessagePickupV1Protocol, DidCommMessagePickupV2Protocol]
 
 // MessagePickupModuleOptions makes the protocols property optional from the config, as it will set it when not provided.
-export type MessagePickupModuleOptions<MessagePickupProtocols extends DidCommMessagePickupProtocol[]> = Optional<
-  MessagePickupModuleConfigOptions<MessagePickupProtocols>,
+export type DidCommMessagePickupModuleOptions<MessagePickupProtocols extends DidCommMessagePickupProtocol[]> = Optional<
+  DidCommMessagePickupModuleConfigOptions<MessagePickupProtocols>,
   'protocols'
 >
 
 export class DidCommMessagePickupModule<
-  MessagePickupProtocols extends DidCommMessagePickupProtocol[] = DefaultMessagePickupProtocols,
+  MessagePickupProtocols extends DidCommMessagePickupProtocol[] = DefaultDidCommMessagePickupProtocols,
 > implements ApiModule
 {
   public readonly config: DidCommMessagePickupModuleConfig<MessagePickupProtocols>
@@ -30,7 +28,7 @@ export class DidCommMessagePickupModule<
   // Infer Api type from the config
   public readonly api: Constructor<DidCommMessagePickupApi<MessagePickupProtocols>> = DidCommMessagePickupApi
 
-  public constructor(config?: MessagePickupModuleOptions<MessagePickupProtocols>) {
+  public constructor(config?: DidCommMessagePickupModuleOptions<MessagePickupProtocols>) {
     this.config = new DidCommMessagePickupModuleConfig({
       ...config,
       protocols: config?.protocols ?? [new DidCommMessagePickupV1Protocol(), new DidCommMessagePickupV2Protocol()],

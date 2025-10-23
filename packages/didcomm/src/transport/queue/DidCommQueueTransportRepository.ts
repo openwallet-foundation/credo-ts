@@ -1,11 +1,11 @@
 import { AgentContext } from '@credo-ts/core'
+import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
 import type {
   AddMessageOptions,
   GetAvailableMessageCountOptions,
   RemoveMessagesOptions,
   TakeFromQueueOptions,
 } from './QueueTransportRepositoryOptions'
-import type { QueuedDidCommMessage } from './QueuedDidCommMessage'
 
 export interface DidCommQueueTransportRepository {
   getAvailableMessageCount(

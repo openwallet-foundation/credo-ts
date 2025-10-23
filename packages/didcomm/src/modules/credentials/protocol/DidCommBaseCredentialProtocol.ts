@@ -1,13 +1,19 @@
 import type { AgentContext, Query, QueryOptions } from '@credo-ts/core'
+import { EventEmitter } from '@credo-ts/core'
 import type { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import type { DidCommMessage } from '../../../DidCommMessage'
 import type { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import type { DidCommProblemReportMessage } from '../../../messages'
 import type { DidCommInboundMessageContext } from '../../../models'
+import { DidCommMessageRepository } from '../../../repository'
+import { DidCommConnectionService } from '../../connections'
 import type { DidCommCredentialStateChangedEvent } from '../DidCommCredentialEvents'
+import { DidCommCredentialEventTypes } from '../DidCommCredentialEvents'
 import type { DidCommCredentialFormatService, ExtractCredentialFormats } from '../formats'
 import type { DidCommCredentialRole } from '../models'
+import { DidCommCredentialState } from '../models/DidCommCredentialState'
 import type { DidCommCredentialExchangeRecord } from '../repository'
+import { DidCommCredentialExchangeRepository } from '../repository'
 import type { DidCommCredentialProtocol } from './DidCommCredentialProtocol'
 import type {
   AcceptCredentialOfferOptions,
@@ -24,14 +30,6 @@ import type {
   NegotiateCredentialOfferOptions,
   NegotiateCredentialProposalOptions,
 } from './DidCommCredentialProtocolOptions'
-
-import { EventEmitter } from '@credo-ts/core'
-
-import { DidCommMessageRepository } from '../../../repository'
-import { DidCommConnectionService } from '../../connections'
-import { DidCommCredentialEventTypes } from '../DidCommCredentialEvents'
-import { DidCommCredentialState } from '../models/DidCommCredentialState'
-import { DidCommCredentialExchangeRepository } from '../repository'
 
 /**
  * Base implementation of the DidCommCredentialProtocol that can be used as a foundation for implementing

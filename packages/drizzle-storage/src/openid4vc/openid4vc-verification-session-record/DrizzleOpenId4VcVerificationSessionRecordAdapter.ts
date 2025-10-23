@@ -1,12 +1,12 @@
-import { JsonTransformer, TagsBase } from '@credo-ts/core'
+import { JsonTransformer, type TagsBase } from '@credo-ts/core'
 
 import { OpenId4VcVerificationSessionRecord } from '@credo-ts/openid4vc'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
 import {
   BaseDrizzleRecordAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
@@ -53,6 +53,7 @@ export class DrizzleOpenId4VcVerificationSessionRecordAdapter extends BaseDrizzl
   }
 
   public toRecord(values: DrizzleOpenId4VcVerificationSessionAdapterValues): OpenId4VcVerificationSessionRecord {
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { customTags, nonce, payloadState, ...remainingValues } = values
 
     const record = JsonTransformer.fromJSON(remainingValues, OpenId4VcVerificationSessionRecord)

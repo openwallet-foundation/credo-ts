@@ -1,36 +1,35 @@
-import type { DidKey, X509Certificate } from '@credo-ts/core'
-import {
-  OpenId4VcIssuerModuleConfigOptions,
-  OpenId4VcIssuerRecord,
-  OpenId4VcModule,
-  OpenId4VcVerifierModuleConfigOptions,
-  OpenId4VcVerifierRecord,
-  OpenId4VciCredentialConfigurationsSupportedWithFormats,
-  OpenId4VciCredentialRequestToCredentialMapper,
-  OpenId4VciSignMdocCredentials,
-  OpenId4VciSignSdJwtCredentials,
-  OpenId4VciSignW3cCredentials,
-  VerifiedOpenId4VcCredentialHolderBinding,
-} from '@credo-ts/openid4vc'
-
 import { AskarModule, transformSeedToPrivateJwk } from '@credo-ts/askar'
+import type { DidKey, X509Certificate } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   JsonTransformer,
   Kms,
+  parseDid,
   TypedArrayEncoder,
+  utils,
   W3cCredential,
   W3cCredentialSubject,
   W3cIssuer,
-  X509Service,
-  parseDid,
-  utils,
   w3cDate,
+  X509Service,
 } from '@credo-ts/core'
-import { OpenId4VcVerifierApi, OpenId4VciCredentialFormatProfile } from '@credo-ts/openid4vc'
+import {
+  type OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcIssuerRecord,
+  type OpenId4VciCredentialConfigurationsSupportedWithFormats,
+  OpenId4VciCredentialFormatProfile,
+  type OpenId4VciCredentialRequestToCredentialMapper,
+  type OpenId4VciSignMdocCredentials,
+  type OpenId4VciSignSdJwtCredentials,
+  type OpenId4VciSignW3cCredentials,
+  OpenId4VcModule,
+  OpenId4VcVerifierApi,
+  type OpenId4VcVerifierModuleConfigOptions,
+  OpenId4VcVerifierRecord,
+  type VerifiedOpenId4VcCredentialHolderBinding,
+} from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { Router } from 'express'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -221,22 +220,18 @@ export class Issuer extends BaseAgent<{
   public verifierRecord!: OpenId4VcVerifierRecord
 
   public constructor(url: string, port: number, name: string) {
-    const openId4VciRouter = Router()
-    const openId4VpRouter = Router()
-
     super({
       port,
       name,
-      modules: {
+      modules: (app) => ({
         askar: new AskarModule({ askar, store: { id: name, key: name } }),
         openid4vc: new OpenId4VcModule({
+          app,
           verifier: {
             baseUrl: `${url}/oid4vp`,
-            router: openId4VpRouter,
           },
           issuer: {
             baseUrl: `${url}/oid4vci`,
-            router: openId4VciRouter,
             credentialRequestToCredentialMapper: (...args) =>
               getCredentialRequestToCredentialMapper({ issuerDidKey: this.didKey })(...args),
             getVerificationSessionForIssuanceSessionAuthorization: async ({ agentContext, scopes }) => {
@@ -280,11 +275,8 @@ export class Issuer extends BaseAgent<{
             },
           },
         }),
-      },
+      }),
     })
-
-    this.app.use('/oid4vci', openId4VciRouter)
-    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Issuer> {
@@ -315,7 +307,7 @@ export class Issuer extends BaseAgent<{
     })
 
     issuer.agent.x509.config.setTrustedCertificates([issuerCertificate])
-    console.log('Set the following certficate for the holder to verify mdoc credentials.')
+    console.log('Set the following certificate for the holder to verify mdoc credentials.')
     console.log(issuerCertificate.toString('base64'))
 
     issuer.verifierRecord = await issuer.agent.openid4vc.verifier.createVerifier({

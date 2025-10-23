@@ -1,12 +1,12 @@
 import { getAgentOptions } from '../../../../tests'
 import { Agent } from '../../../agent/Agent'
 import { JsonTransformer } from '../../../utils'
-import { W3cCredentialService } from '../W3cCredentialService'
-import { W3cCredentialsModule } from '../W3cCredentialsModule'
 import { customDocumentLoader } from '../data-integrity/__tests__/documentLoader'
 import { Ed25519Signature2018Fixtures } from '../data-integrity/__tests__/fixtures'
 import { W3cJsonLdVerifiableCredential } from '../data-integrity/models'
 import { W3cCredentialRepository } from '../repository'
+import { W3cCredentialService } from '../W3cCredentialService'
+import { W3cCredentialsModule } from '../W3cCredentialsModule'
 
 const agentOptions = getAgentOptions(
   'W3cCredentialsApi',
@@ -44,12 +44,12 @@ describe('W3cCredentialsApi', () => {
     // for tenants we do it on the tenants api, for the main context
     //  we can do it on the agent instance? So `agent.delete()` maybe?
     await agent.dependencyManager.registeredModules.inMemory.onDeleteContext?.(agent.context)
-    agent.shutdown()
+    await agent.shutdown()
   })
 
   it('Should successfully store a credential', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'save')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'storeCredential')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'save')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'storeCredential')
 
     await agent.w3cCredentials.storeCredential({
       credential: testCredential,
@@ -60,8 +60,8 @@ describe('W3cCredentialsApi', () => {
   })
 
   it('Should successfully retrieve a credential by id', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'getById')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'getCredentialRecordById')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'getById')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'getCredentialRecordById')
 
     const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,
@@ -71,15 +71,13 @@ describe('W3cCredentialsApi', () => {
     expect(storedCredential.id).toEqual(retrievedCredential.id)
 
     expect(repoSpy).toHaveBeenCalledTimes(1)
-
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-    expect(repoSpy).toHaveBeenCalledWith((agent as any).agentContext, storedCredential.id)
+    expect(repoSpy).toHaveBeenCalledWith(agent.context, storedCredential.id)
     expect(serviceSpy).toHaveBeenCalledTimes(1)
   })
 
   it('Should successfully remove a credential by id', async () => {
-    const repoSpy = jest.spyOn(w3cCredentialRepository, 'deleteById')
-    const serviceSpy = jest.spyOn(w3cCredentialService, 'removeCredentialRecord')
+    const repoSpy = vi.spyOn(w3cCredentialRepository, 'deleteById')
+    const serviceSpy = vi.spyOn(w3cCredentialService, 'removeCredentialRecord')
 
     const storedCredential = await agent.w3cCredentials.storeCredential({
       credential: testCredential,

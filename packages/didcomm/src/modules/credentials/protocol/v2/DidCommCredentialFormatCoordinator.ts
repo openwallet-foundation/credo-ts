@@ -1,5 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError } from '@credo-ts/core'
 import type { DidCommAttachment } from '../../../../decorators/attachment/DidCommAttachment'
+import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 import type {
   DidCommCredentialFormatPayload,
   DidCommCredentialFormatService,
@@ -7,10 +9,6 @@ import type {
 } from '../../formats'
 import type { DidCommCredentialFormatSpec } from '../../models'
 import type { DidCommCredentialExchangeRecord } from '../../repository/DidCommCredentialExchangeRecord'
-
-import { CredoError } from '@credo-ts/core'
-
-import { DidCommMessageRepository, DidCommMessageRole } from '../../../../repository'
 
 import {
   DidCommCredentialV2Preview,

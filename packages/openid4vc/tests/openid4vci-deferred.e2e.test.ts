@@ -1,36 +1,36 @@
-import { randomUUID } from 'crypto'
 import type { Mdoc, SdJwtVc } from '@credo-ts/core'
 import {
   ClaimFormat,
   CredoError,
   DidsApi,
+  getPublicJwkFromVerificationMethod,
   JwsService,
   Jwt,
   JwtPayload,
   Kms,
   X509Certificate,
   X509Module,
-  getPublicJwkFromVerificationMethod,
 } from '@credo-ts/core'
 import type { AuthorizationServerMetadata, Jwk } from '@openid4vc/oauth2'
 import {
+  calculateJwkThumbprint,
   HashAlgorithm,
   Oauth2AuthorizationServer,
-  calculateJwkThumbprint,
   preAuthorizedCodeGrantIdentifier,
 } from '@openid4vc/oauth2'
-import { AuthorizationFlow, CredentialRequest } from '@openid4vc/openid4vci'
+import { AuthorizationFlow, type CredentialRequest } from '@openid4vc/openid4vci'
+import { randomUUID } from 'crypto'
 import express, { type Express } from 'express'
 import { InMemoryWalletModule } from '../../../tests/InMemoryWalletModule'
 import { setupNockToExpress } from '../../../tests/nockToExpress'
 import { TenantsModule } from '../../tenants/src'
 import {
-  OpenId4VcIssuerModuleConfigOptions,
+  OpenId4VcIssuanceSessionState,
+  type OpenId4VcIssuerModuleConfigOptions,
+  type OpenId4VciSignMdocCredentials,
   OpenId4VcModule,
-  OpenId4VciSignMdocCredentials,
-  VerifiedOpenId4VcCredentialHolderBinding,
+  type VerifiedOpenId4VcCredentialHolderBinding,
 } from '../src'
-import { OpenId4VcIssuanceSessionState } from '../src'
 import type { OpenId4VciCredentialBindingResolver } from '../src/openid4vc-holder'
 import { getOid4vcCallbacks } from '../src/shared/callbacks'
 import type { AgentType, TenantType } from './utils'
@@ -79,6 +79,7 @@ describe('OpenId4Vci (Deferred)', () => {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           issuer: {
             baseUrl: issuanceBaseUrl,
             dpopRequired: true,
@@ -178,9 +179,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       global.fetch
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })

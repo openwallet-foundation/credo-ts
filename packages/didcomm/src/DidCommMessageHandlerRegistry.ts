@@ -1,9 +1,8 @@
+import { injectable } from '@credo-ts/core'
 import type { DidCommMessage } from './DidCommMessage'
 import type { DidCommMessageHandler } from './handlers/DidCommMessageHandler'
 import type { DidCommMessageHandlerMiddleware } from './handlers/DidCommMessageHandlerMiddleware'
 import type { ParsedDidCommProtocolUri } from './util/messageType'
-
-import { injectable } from '@credo-ts/core'
 
 import { canHandleMessageType, parseMessageType, supportsIncomingDidCommProtocolUri } from './util/messageType'
 
@@ -66,7 +65,7 @@ export class DidCommMessageHandlerRegistry {
   public get supportedMessageTypes() {
     return (
       this.messageHandlers
-        // biome-ignore lint/performance/noAccumulatingSpread: <explanation>
+        // biome-ignore lint/performance/noAccumulatingSpread: no explanation
         .reduce<(typeof DidCommMessage)[]>((all, cur) => [...all, ...cur.supportedMessages], [])
         .map((m) => m.type)
     )

@@ -1,21 +1,17 @@
+import { AskarModule, AskarModuleConfig, AskarStoreManager, recordToInstance } from '@credo-ts/askar'
 import {
   Agent,
   AgentContext,
-  AgentDependencies,
+  type AgentDependencies,
   BaseRecord,
   ConsoleLogger,
+  type Logger,
   LogLevel,
-  Logger,
   StorageVersionRecord,
 } from '@credo-ts/core'
-import { EntryListHandle } from '@openwallet-foundation/askar-shared'
-
-import { AskarModule, AskarModuleConfig } from '@credo-ts/askar'
-import { AskarStoreManager } from '@credo-ts/askar'
-import { recordToInstance } from '@credo-ts/askar'
 import { BaseDrizzleRecordAdapter, DrizzleStorageModule, DrizzleStorageModuleConfig } from '@credo-ts/drizzle-storage'
 import { TenantsModule } from '@credo-ts/tenants'
-import { EntryList, ScanHandle } from '@openwallet-foundation/askar-shared'
+import { EntryList, EntryListHandle, ScanHandle } from '@openwallet-foundation/askar-shared'
 import { AskarToDrizzleStorageMigrationError } from './errors/AskarToDrizzleStorageMigrationError'
 
 /**
@@ -122,7 +118,7 @@ export class AskarToDrizzleStorageMigrator {
       return null
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     return adapter as BaseDrizzleRecordAdapter<BaseRecord, any, any, any, any>
   }
 
@@ -181,10 +177,54 @@ export class AskarToDrizzleStorageMigrator {
     }
   }
 
+  public async deleteStorageRecords() {
+    try {
+      await this.askarAgent.initialize()
+      this.logger.info('Successfully initialized askar agent')
+
+      if (this.tenantsModule) {
+        const askarAgentWithTenants = this.askarAgent as Agent<{ tenants: TenantsModule }>
+
+        this.logger.info('Detected tenants module, deleting tenant records')
+        const allTenants = await askarAgentWithTenants.modules.tenants.getAllTenants()
+
+        this.logger.debug(`Retrieved '${allTenants.length}' tenants to delete non-KMS storage for.`)
+
+        for (const tenant of allTenants) {
+          this.logger.info(`Starting deletion of non-KMS records for tenant '${tenant.id}'`)
+
+          // NOTE: we create a nested withTenantAgent, as we need to have the context for both the askar and drizzle module/agent.
+          // Using `withTenantAgent` ensures the session is always correctly closed, so it's the safest way
+          await askarAgentWithTenants.modules.tenants.withTenantAgent(
+            { tenantId: tenant.id },
+            async (askarTenantAgent) =>
+              this.deleteForContext({
+                askarContext: askarTenantAgent.context,
+              })
+          )
+          this.logger.info(`Succesfully removed non-KMS records for tenant '${tenant.id}'`)
+        }
+      }
+
+      this.logger.info('Starting deletion of non-KMS records for default agent context')
+      await this.deleteForContext({
+        askarContext: this.askarAgent.context,
+      })
+      this.logger.info('Succesfully removed non-KMS records for default agent context')
+    } finally {
+      if (this.askarAgent.isInitialized) {
+        await this.askarAgent.shutdown()
+      }
+    }
+  }
+
   private async migrateForContext({
     drizzleContext,
     askarContext,
-  }: { drizzleContext: AgentContext; askarContext: AgentContext }) {
+  }: {
+    drizzleContext: AgentContext
+    askarContext: AgentContext
+  }) {
     try {
       const storeManager = askarContext.resolve(AskarStoreManager)
       const askar = askarContext.resolve(AskarModuleConfig).askar
@@ -196,7 +236,7 @@ export class AskarToDrizzleStorageMigrator {
       // but for tenants agents we need to make sure a row exists in the `Context` table
       await this.drizzleModule.onProvisionContext(drizzleContext)
 
-      let scanHandle: ScanHandle | undefined = undefined
+      let scanHandle: ScanHandle | undefined
       let entryListHandle: EntryListHandle | null = null
       let migratedRecordCount = 0
       let skippedRecordCount = 0
@@ -295,6 +335,37 @@ export class AskarToDrizzleStorageMigrator {
       this.logger.error(`Migration failed for context '${askarContext.contextCorrelationId}'. ${error.message}`)
       throw new AskarToDrizzleStorageMigrationError(
         `Migration failed for context '${askarContext.contextCorrelationId}'. ${error.message}`,
+        {
+          cause: error,
+        }
+      )
+    }
+  }
+
+  private async deleteForContext({ askarContext }: { askarContext: AgentContext }) {
+    try {
+      const storeManager = askarContext.resolve(AskarStoreManager)
+      const { store, profile } = await storeManager.getInitializedStoreWithProfile(askarContext)
+
+      this.logger.debug(
+        `Removing all non-KMS records from askar storage for context '${askarContext.contextCorrelationId}'`
+      )
+      const session = await store.session(profile).open()
+      try {
+        await session.removeAll({})
+
+        this.logger.debug(
+          `Succesfully removed all non-KMS records from Askar for context '${askarContext.contextCorrelationId}'`
+        )
+      } finally {
+        await session.close()
+      }
+    } catch (error) {
+      this.logger.error(
+        `Removing non-KMS records failed for context '${askarContext.contextCorrelationId}'. ${error.message}`
+      )
+      throw new AskarToDrizzleStorageMigrationError(
+        `Removing non-KMS record failed for context '${askarContext.contextCorrelationId}'. ${error.message}`,
         {
           cause: error,
         }

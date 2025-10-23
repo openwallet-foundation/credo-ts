@@ -1,3 +1,4 @@
+import { JSONPath } from '@astronautlabs/jsonpath'
 import type {
   AgentContext,
   AnoncredsDataIntegrityVerifyPresentation,
@@ -7,29 +8,26 @@ import type {
   W3cCredentialRecord,
   W3cJsonLdVerifiableCredential,
 } from '@credo-ts/core'
-import type { Descriptor, FieldV2, InputDescriptorV1, InputDescriptorV2 } from '@sphereon/pex-models'
-import type { AnonCredsProofRequest, AnonCredsRequestedPredicate } from '../models'
-import type { CredentialWithRevocationMetadata } from '../models/utils'
-import type { AnonCredsCredentialProve, AnonCredsHolderService, CreateW3cPresentationOptions } from '../services'
-import type { AnonCredsRsVerifierService } from './AnonCredsRsVerifierService'
-
-import { JSONPath } from '@astronautlabs/jsonpath'
 import {
   ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE,
   ClaimFormat,
   CredoError,
+  deepEquality,
   Hasher,
+  injectable,
   JsonTransformer,
   TypedArrayEncoder,
-  deepEquality,
-  injectable,
 } from '@credo-ts/core'
-
+import type { Descriptor, FieldV2, InputDescriptorV1, InputDescriptorV2 } from '@sphereon/pex-models'
+import type { AnonCredsProofRequest, AnonCredsRequestedPredicate } from '../models'
+import type { CredentialWithRevocationMetadata } from '../models/utils'
+import type { AnonCredsCredentialProve, AnonCredsHolderService, CreateW3cPresentationOptions } from '../services'
 import { AnonCredsHolderServiceSymbol, AnonCredsVerifierServiceSymbol } from '../services'
 import { fetchCredentialDefinitions, fetchSchemas } from '../utils/anonCredsObjects'
 import { bytesToBigint } from '../utils/bytesToBigint'
 import { assertLinkSecretsMatch } from '../utils/linkSecret'
 import { getAnonCredsTagsFromRecord } from '../utils/w3cAnonCredsUtils'
+import type { AnonCredsRsVerifierService } from './AnonCredsRsVerifierService'
 
 import { getW3cAnonCredsCredentialMetadata } from './utils'
 

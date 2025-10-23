@@ -1,9 +1,7 @@
-import type { DidCommFeatureQueryOptions } from '../../../../../models'
-
 import { Type } from 'class-transformer'
 import { ArrayNotEmpty, IsInstance } from 'class-validator'
-
 import { DidCommMessage } from '../../../../../DidCommMessage'
+import type { DidCommFeatureQueryOptions } from '../../../../../models'
 import { DidCommFeatureQuery } from '../../../../../models'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 

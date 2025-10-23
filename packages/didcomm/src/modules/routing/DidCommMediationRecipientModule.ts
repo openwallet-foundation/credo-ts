@@ -1,14 +1,18 @@
-import { CredoError } from '@credo-ts/core'
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
-import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMediationRecipientModuleConfig'
-
+import { CredoError } from '@credo-ts/core'
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../models'
-
 import { DidCommConnectionsApi } from '../connections'
 import { DidCommOutOfBandApi } from '../oob'
 import { DidCommMediationRecipientApi } from './DidCommMediationRecipientApi'
+import type { DidCommMediationRecipientModuleConfigOptions } from './DidCommMediationRecipientModuleConfig'
 import { DidCommMediationRecipientModuleConfig } from './DidCommMediationRecipientModuleConfig'
+import {
+  DidCommKeylistUpdateResponseHandler,
+  DidCommMediationDenyHandler,
+  DidCommMediationGrantHandler,
+} from './handlers'
 import { DidCommMediationRole } from './models'
 import { DidCommMediationRepository } from './repository'
 import { DidCommMediationRecipientService, DidCommRoutingService } from './services'
@@ -38,6 +42,12 @@ export class DidCommMediationRecipientModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+    const mediationRecipientService = agentContext.resolve(DidCommMediationRecipientService)
+
+    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateResponseHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationGrantHandler(mediationRecipientService))
+    messageHandlerRegistry.registerMessageHandler(new DidCommMediationDenyHandler(mediationRecipientService))
 
     featureRegistry.register(
       new DidCommProtocol({

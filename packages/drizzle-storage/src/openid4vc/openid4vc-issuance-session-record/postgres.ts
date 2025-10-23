@@ -11,9 +11,9 @@ import type {
 import { boolean, jsonb, pgEnum, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
 import { getPostgresBaseRecordTable, postgresBaseRecordIndexes } from '../../postgres/baseRecord'
 import { exhaustiveArray } from '../../util'
-import { openid4vcIssuer } from '../postgres'
+import { openid4vcIssuer } from '../openid4vc-issuer-record/postgres'
 
-export const openId4VcIssuanceSessionStates = exhaustiveArray(
+const openId4VcIssuanceSessionStates = exhaustiveArray(
   {} as OpenId4VcIssuanceSessionState,
   [
     'OfferCreated',

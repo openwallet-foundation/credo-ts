@@ -1,7 +1,6 @@
-import type { DrpcErrorCode } from '../models'
-
 import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose } from 'class-transformer'
+import type { DrpcErrorCode } from '../models'
 
 import { IsValidDrpcResponse } from '../models'
 
@@ -10,13 +9,13 @@ export type DrpcResponse = DrpcResponseObject | (DrpcResponseObject | Record<str
 export interface DrpcResponseError {
   code: DrpcErrorCode
   message: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   data?: any
 }
 
 export interface DrpcResponseObject {
   jsonrpc: string
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   result?: any
   error?: DrpcResponseError
   id: string | number | null

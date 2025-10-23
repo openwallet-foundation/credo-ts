@@ -1,14 +1,31 @@
 {
   "name": "@credo-ts/openid4vc",
-  "main": "src/index",
-  "types": "src/index",
+  "exports": {
+    "cli": "./build/index.mjs",
+    "import": "./src/index.ts"
+  },
   "version": "0.5.13",
-  "files": ["build"],
+  "files": [
+    "build"
+  ],
   "license": "Apache-2.0",
   "publishConfig": {
-    "main": "build/index",
-    "types": "build/index",
-    "access": "public"
+    "access": "public",
+    "main": "./build/index.js",
+    "types": "./build/index.d.ts",
+    "module": "./build/index.mjs",
+    "exports": {
+      ".": {
+        "import": "./build/index.mjs",
+        "require": "./build/index.js",
+        "types": "./build/index.d.ts"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "react-native": {
+    "./build/shared/router/express.mjs": "./build/shared/router/express.native.mjs",
+    "./build/shared/router/express.js": "./build/shared/router/express.native.js"
   },
   "homepage": "https://github.com/openwallet-foundation/credo-ts/tree/main/packages/openid4vc",
   "repository": {
@@ -17,11 +34,8 @@
     "directory": "packages/openid4vc"
   },
   "scripts": {
-    "build": "pnpm run clean && pnpm run compile",
-    "clean": "rimraf ./build",
-    "compile": "tsc -p tsconfig.build.json",
-    "prepublishOnly": "pnpm run build",
-    "test": "jest"
+    "build": "tsdown --config-loader unconfig",
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@credo-ts/core": "workspace:*",
@@ -31,14 +45,13 @@
     "@openid4vc/openid4vci": "0.3.0-alpha-20251001121503",
     "@openid4vc/oauth2": "0.3.0-alpha-20251001121503",
     "@openid4vc/openid4vp": "0.3.0-alpha-20251001121503",
-    "@openid4vc/utils": "0.3.0-alpha-20251001121503"
+    "@openid4vc/utils": "0.3.0-alpha-20251001121503",
+    "@types/express": "catalog:",
+    "express": "catalog:"
   },
   "devDependencies": {
     "@credo-ts/tenants": "workspace:*",
-    "@types/express": "catalog:",
-    "express": "catalog:",
     "nock": "catalog:",
-    "rimraf": "catalog:",
     "typescript": "catalog:"
   }
 }

@@ -1,24 +1,24 @@
 import type { FileSystem, InitConfig } from '@credo-ts/core'
-
-import path from 'path'
-import { Agent, CacheModule, InMemoryLruCache, InjectionSymbols, UpdateAssistant } from '@credo-ts/core'
-import { DidCommConnectionsModule } from '@credo-ts/didcomm'
+import { Agent, CacheModule, InjectionSymbols, InMemoryLruCache, UpdateAssistant } from '@credo-ts/core'
+import { DidCommModule } from '@credo-ts/didcomm'
 import { agentDependencies } from '@credo-ts/node'
-
+import { TenantsModule } from '@credo-ts/tenants'
+import path from 'path'
 import { AskarModule, AskarMultiWalletDatabaseScheme } from '../../askar/src'
 import { askar } from '../../askar/tests/helpers'
 import { testLogger } from '../../core/tests'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
 import { TenantSessionCoordinator } from '../src/context/TenantSessionCoordinator'
-
-import { TenantsModule } from '@credo-ts/tenants'
 
 const agentConfig = {
   logger: testLogger,
 } satisfies InitConfig
 
 const modules = {
-  ...getDefaultDidcommModules(),
+  didcomm: new DidCommModule({
+    connections: {
+      autoAcceptConnections: true,
+    },
+  }),
   tenants: new TenantsModule(),
   askar: new AskarModule({
     askar,
@@ -27,9 +27,6 @@ const modules = {
       id: 'tenants-agent-04',
       key: 'tenants-agent-04',
     },
-  }),
-  connections: new DidCommConnectionsModule({
-    autoAcceptConnections: true,
   }),
   cache: new CacheModule({
     cache: new InMemoryLruCache({ limit: 500 }),

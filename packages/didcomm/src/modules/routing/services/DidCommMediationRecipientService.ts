@@ -1,31 +1,31 @@
-import { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
-import type { DidCommMessage } from '../../../DidCommMessage'
-import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
-import type { DidCommConnectionRecord } from '../../connections/repository'
-import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
-import type { DidCommMediationDenyMessage } from '../messages'
-import type { GetRoutingOptions, RemoveRoutingOptions } from './DidCommRoutingService'
-
 import {
+  AgentContext,
   CredoError,
   DidKey,
-  EventEmitter,
-  TypedArrayEncoder,
   didKeyToVerkey,
+  EventEmitter,
   filterContextCorrelationId,
   injectable,
   isDidKey,
+  Kms,
+  type Query,
+  type QueryOptions,
+  TypedArrayEncoder,
 } from '@credo-ts/core'
-import { ReplaySubject, firstValueFrom } from 'rxjs'
+import { firstValueFrom, ReplaySubject } from 'rxjs'
 import { filter, first, timeout } from 'rxjs/operators'
-
+import type { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
+import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import { DidCommOutboundMessageContext } from '../../../models'
 import { DidCommConnectionType } from '../../connections/models/DidCommConnectionType'
+import type { DidCommConnectionRecord } from '../../connections/repository'
 import { DidCommConnectionMetadataKeys } from '../../connections/repository/DidCommConnectionMetadataTypes'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
+import type { DidCommKeylistUpdatedEvent, DidCommMediationStateChangedEvent } from '../DidCommRoutingEvents'
 import { DidCommRoutingEventTypes } from '../DidCommRoutingEvents'
+import type { DidCommMediationDenyMessage } from '../messages'
 import {
   DidCommKeylistUpdateAction,
   DidCommKeylistUpdateResponseMessage,
@@ -36,6 +36,7 @@ import { DidCommKeylistUpdate, DidCommKeylistUpdateMessage } from '../messages/D
 import { DidCommMediationRole, DidCommMediationState } from '../models'
 import { DidCommMediationRecord } from '../repository/DidCommMediationRecord'
 import { DidCommMediationRepository } from '../repository/DidCommMediationRepository'
+import type { GetRoutingOptions, RemoveRoutingOptions } from './DidCommRoutingService'
 
 @injectable()
 export class DidCommMediationRecipientService {

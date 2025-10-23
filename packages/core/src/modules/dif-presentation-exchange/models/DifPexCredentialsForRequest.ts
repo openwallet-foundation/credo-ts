@@ -1,4 +1,4 @@
-import { JsonObject } from '../../../types'
+import type { JsonObject } from '../../../types'
 import type { MdocNameSpaces, MdocRecord } from '../../mdoc'
 import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import type { ClaimFormat, W3cCredentialRecord } from '../../vc'

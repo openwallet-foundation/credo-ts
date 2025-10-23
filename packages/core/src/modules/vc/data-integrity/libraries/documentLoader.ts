@@ -1,11 +1,9 @@
 import type { AgentContext } from '../../../../agent/context/AgentContext'
-import type { DocumentLoader } from './jsonld'
-
 import { CredoError } from '../../../../error/CredoError'
 import { isDid } from '../../../../utils'
 import { DidResolverService } from '../../../dids'
-
 import { DEFAULT_CONTEXTS } from './contexts'
+import type { DocumentLoader } from './jsonld'
 import jsonld from './jsonld'
 import { getNativeDocumentLoader } from './nativeDocumentLoader'
 
@@ -47,7 +45,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
           '@embed': '@never',
           id: url,
         },
-        // @ts-ignore
+        // @ts-expect-error
         { documentLoader: this }
       )
 
@@ -59,7 +57,7 @@ export function defaultDocumentLoader(agentContext: AgentContext): DocumentLoade
     }
 
     // fetches the documentLoader from documentLoader.ts or documentLoader.native.ts depending on the platform at bundle time
-    const platformLoader = getNativeDocumentLoader()
+    const platformLoader = await getNativeDocumentLoader()
     const nativeLoader = platformLoader.apply(jsonld, [])
 
     return await nativeLoader(url)

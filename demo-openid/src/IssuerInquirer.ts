@@ -1,13 +1,13 @@
 import { clear } from 'console'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { Issuer, credentialConfigurationsSupported } from './Issuer'
-import { Title, greenText, purpleText, redText } from './OutputClass'
+import { credentialConfigurationsSupported, Issuer } from './Issuer'
+import { greenText, purpleText, redText, Title } from './OutputClass'
 
 export const runIssuer = async () => {
   clear()
-  console.log(textSync('Issuer', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Issuer', { horizontalLayout: 'full' }))
   const issuer = await IssuerInquirer.build()
   await issuer.processAnswer()
 }

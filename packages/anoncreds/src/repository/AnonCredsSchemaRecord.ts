@@ -1,10 +1,8 @@
 import type { TagsBase } from '@credo-ts/core'
-import type { AnonCredsSchema } from '../models'
-import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
-
 import { BaseRecord, utils } from '@credo-ts/core'
-
+import type { AnonCredsSchema } from '../models'
 import { getUnqualifiedSchemaId, isDidIndySchemaId, parseIndySchemaId } from '../utils/indyIdentifiers'
+import type { AnonCredsSchemaRecordMetadata } from './anonCredsSchemaRecordMetadataTypes'
 
 export interface AnonCredsSchemaRecordProps {
   id?: string
@@ -57,7 +55,7 @@ export class AnonCredsSchemaRecord extends BaseRecord<
   }
 
   public getTags() {
-    let unqualifiedSchemaId: string | undefined = undefined
+    let unqualifiedSchemaId: string | undefined
     if (isDidIndySchemaId(this.schemaId)) {
       const { namespaceIdentifier, schemaName, schemaVersion } = parseIndySchemaId(this.schemaId)
       unqualifiedSchemaId = getUnqualifiedSchemaId(namespaceIdentifier, schemaName, schemaVersion)

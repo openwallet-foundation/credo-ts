@@ -1,12 +1,10 @@
 import type { DidDocumentService } from '@credo-ts/core'
-import type { Authentication } from './authentication'
-import type { PublicKey } from './publicKey'
-
 import { DID_V1_CONTEXT_URL, DidCommV1Service, IndyAgentService, ServiceTransformer } from '@credo-ts/core'
 import { Expose } from 'class-transformer'
 import { Equals, IsArray, IsString, ValidateNested } from 'class-validator'
-
+import type { Authentication } from './authentication'
 import { AuthenticationTransformer } from './authentication'
+import type { PublicKey } from './publicKey'
 import { PublicKeyTransformer } from './publicKey'
 
 type DidDocOptions = Pick<DidDoc, 'id' | 'publicKey' | 'service' | 'authentication'>

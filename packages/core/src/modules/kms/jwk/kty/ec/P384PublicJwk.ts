@@ -1,6 +1,7 @@
-import { KnownJwaKeyAgreementAlgorithms, KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
-import { PublicJwkType } from '../PublicJwk'
-import { KmsJwkPublicEc } from './ecJwk'
+import type { AnyUint8Array } from '../../../../../types'
+import { KnownJwaKeyAgreementAlgorithms, type KnownJwaSignatureAlgorithm, KnownJwaSignatureAlgorithms } from '../../jwa'
+import type { PublicJwkType } from '../PublicJwk'
+import type { KmsJwkPublicEc } from './ecJwk'
 import { ecPublicJwkToPublicKey, ecPublicKeyToPublicJwk } from './ecPublicKey'
 
 type Jwk = KmsJwkPublicEc & { crv: 'P-384' }
@@ -36,12 +37,12 @@ export class P384PublicJwk implements PublicJwkType<Jwk> {
     return ecPublicJwkToPublicKey(this.jwk, { compressed: true })
   }
 
-  public static fromPublicKey(publicKey: Uint8Array) {
+  public static fromPublicKey(publicKey: AnyUint8Array) {
     const jwk = ecPublicKeyToPublicJwk(publicKey, 'P-384')
     return new P384PublicJwk(jwk)
   }
 
-  public static fromMulticodec(multicodec: Uint8Array) {
+  public static fromMulticodec(multicodec: AnyUint8Array) {
     const jwk = ecPublicKeyToPublicJwk(multicodec, 'P-384')
     return new P384PublicJwk(jwk)
   }

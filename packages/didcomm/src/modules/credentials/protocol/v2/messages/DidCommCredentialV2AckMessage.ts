@@ -1,4 +1,4 @@
-import { DidCommAckMessage, DidCommAckMessageOptions } from '../../../../../messages'
+import { DidCommAckMessage, type DidCommAckMessageOptions } from '../../../../../messages'
 import { IsValidMessageType, parseMessageType } from '../../../../../util/messageType'
 
 export type DidCommCredentialV2AckMessageOptions = DidCommAckMessageOptions

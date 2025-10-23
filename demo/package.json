@@ -9,8 +9,8 @@
   },
   "license": "Apache-2.0",
   "scripts": {
-    "alice": "ts-node src/AliceInquirer.ts",
-    "faber": "ts-node src/FaberInquirer.ts"
+    "alice": "vite-node src/AliceInquirer.ts",
+    "faber": "vite-node src/FaberInquirer.ts"
   },
   "dependencies": {
     "@hyperledger/anoncreds-nodejs": "catalog:",
@@ -28,10 +28,9 @@
     "@credo-ts/indy-vdr": "workspace:*",
     "@credo-ts/node": "workspace:*",
     "@hiero-did-sdk/client": "0.1.5",
-    "@types/figlet": "^1.5.4",
+    "@types/figlet": "^1.7.0",
     "@types/inquirer": "^8.2.6",
     "clear": "^0.1.0",
-    "figlet": "^1.5.2",
-    "ts-node": "catalog:"
+    "figlet": "^1.9.3"
   }
 }

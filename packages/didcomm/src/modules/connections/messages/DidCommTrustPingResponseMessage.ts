@@ -1,8 +1,6 @@
-import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
-
 import { IsOptional, IsString } from 'class-validator'
-
 import { DidCommMessage } from '../../../DidCommMessage'
+import type { TimingDecorator } from '../../../decorators/timing/TimingDecorator'
 import { IsValidMessageType, parseMessageType } from '../../../util/messageType'
 
 export interface DidCommTrustPingResponseMessageOptions {

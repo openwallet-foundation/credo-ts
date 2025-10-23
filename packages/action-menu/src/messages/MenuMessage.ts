@@ -1,8 +1,7 @@
-import type { ActionMenuOptionOptions } from '../models'
-
 import { DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsInstance, IsOptional, IsString } from 'class-validator'
+import type { ActionMenuOptionOptions } from '../models'
 
 import { ActionMenuOption } from '../models'
 

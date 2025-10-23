@@ -1,7 +1,6 @@
 import type { DidCommProblemReportErrorOptions } from '../../../../../errors'
-import type { DidCommCredentialProblemReportReason } from '../../../models/DidCommCredentialProblemReportReason'
-
 import { DidCommProblemReportError } from '../../../../../errors'
+import type { DidCommCredentialProblemReportReason } from '../../../models/DidCommCredentialProblemReportReason'
 import { DidCommCredentialV2ProblemReportMessage } from '../messages/DidCommCredentialV2ProblemReportMessage'
 
 export interface DidCommCredentialV2ProblemReportErrorOptions extends DidCommProblemReportErrorOptions {

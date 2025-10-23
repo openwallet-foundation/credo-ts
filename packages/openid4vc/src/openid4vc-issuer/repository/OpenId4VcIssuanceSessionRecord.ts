@@ -1,11 +1,10 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import type { OpenId4VciCredentialOfferPayload } from '../../shared'
-
 import { BaseRecord, CredoError, DateTransformer, isJsonObject, utils } from '@credo-ts/core'
 import { PkceCodeChallengeMethod } from '@openid4vc/oauth2'
 import { Transform, TransformationType } from 'class-transformer'
+import type { OpenId4VciCredentialOfferPayload } from '../../shared'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
-import { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VciVersion } from '../OpenId4VcIssuerServiceOptions'
 
 export type OpenId4VcIssuanceSessionRecordTags = RecordTags<OpenId4VcIssuanceSessionRecord>
 
@@ -343,7 +342,6 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
   public assertState(expectedStates: OpenId4VcIssuanceSessionState | OpenId4VcIssuanceSessionState[]) {
     if (!Array.isArray(expectedStates)) {
-      // biome-ignore lint/style/noParameterAssign: <explanation>
       expectedStates = [expectedStates]
     }
 

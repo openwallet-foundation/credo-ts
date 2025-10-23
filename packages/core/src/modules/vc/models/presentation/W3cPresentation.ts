@@ -1,19 +1,16 @@
-import type { JsonObject, SingleOrArray } from '../../../../types'
-import { type W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../credential/W3cVerifiableCredential'
-import type { W3cHolderOptions } from './W3cHolder'
-import type { W3cJsonPresentation } from './W3cJsonPresentation'
-
 import { Expose } from 'class-transformer'
 import { IsOptional, ValidateNested } from 'class-validator'
-
+import type { JsonObject, SingleOrArray } from '../../../../types'
 import { JsonTransformer } from '../../../../utils'
 import { IsInstanceOrArrayOfInstances, IsUri } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V1_URL, VERIFIABLE_PRESENTATION_TYPE } from '../../constants'
 import { W3cJsonLdVerifiableCredential } from '../../data-integrity/models/W3cJsonLdVerifiableCredential'
 import { W3cJwtVerifiableCredential } from '../../jwt-vc/W3cJwtVerifiableCredential'
 import { IsCredentialJsonLdContext, IsVerifiablePresentationType } from '../../validators'
-
+import { type W3cVerifiableCredential, W3cVerifiableCredentialTransformer } from '../credential/W3cVerifiableCredential'
+import type { W3cHolderOptions } from './W3cHolder'
 import { IsW3cHolder, W3cHolder, W3cHolderTransformer } from './W3cHolder'
+import type { W3cJsonPresentation } from './W3cJsonPresentation'
 
 export interface W3cPresentationOptions {
   id?: string

@@ -1,12 +1,9 @@
-import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
-
 import { Agent } from '@credo-ts/core'
 import { Subject } from 'rxjs'
+import type { SubjectMessage } from '../../../tests/transport/SubjectInboundTransport'
 
 import { SubjectInboundTransport } from '../../../tests/transport/SubjectInboundTransport'
 import { SubjectOutboundTransport } from '../../../tests/transport/SubjectOutboundTransport'
-
-import { getDefaultDidcommModules } from '@credo-ts/didcomm'
 import { askarPostgresStorageConfig, e2eTest, getAskarPostgresAgentOptions } from './helpers'
 
 const alicePostgresAgentOptions = getAskarPostgresAgentOptions(
@@ -23,8 +20,8 @@ const bobPostgresAgentOptions = getAskarPostgresAgentOptions(
 )
 
 describe('Askar Postgres agents', () => {
-  let aliceAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
-  let bobAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  let aliceAgent: Agent<(typeof alicePostgresAgentOptions)['modules']>
+  let bobAgent: Agent<(typeof bobPostgresAgentOptions)['modules']>
 
   test('Postgres Askar wallets E2E test', async () => {
     const aliceMessages = new Subject<SubjectMessage>()
@@ -36,13 +33,13 @@ describe('Askar Postgres agents', () => {
     }
 
     aliceAgent = new Agent(alicePostgresAgentOptions)
-    aliceAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
-    aliceAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    aliceAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(aliceMessages))
+    aliceAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await aliceAgent.initialize()
 
     bobAgent = new Agent(bobPostgresAgentOptions)
-    bobAgent.modules.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
-    bobAgent.modules.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
+    bobAgent.didcomm.registerInboundTransport(new SubjectInboundTransport(bobMessages))
+    bobAgent.didcomm.registerOutboundTransport(new SubjectOutboundTransport(subjectMap))
     await bobAgent.initialize()
 
     await e2eTest(aliceAgent, bobAgent)

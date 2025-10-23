@@ -1,6 +1,6 @@
 import type { DidCommEncryptedMessage } from '../types'
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function isValidJweStructure(message: any): message is DidCommEncryptedMessage {
   return Boolean(
     message &&

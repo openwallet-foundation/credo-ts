@@ -1,17 +1,15 @@
 // Module
-export { CacheModule, CacheModuleOptions } from './CacheModule'
-export { CacheModuleConfig } from './CacheModuleConfig'
 
 // Cache
-export { Cache } from './Cache'
-
-// Cache Implementations
-export { InMemoryLruCache, InMemoryLruCacheOptions } from './InMemoryLruCache'
-export {
-  SingleContextStorageLruCache,
-  SingleContextStorageLruCacheOptions,
-  SingleContextLruCacheRecord,
-  SingleContextLruCacheItem,
-} from './singleContextLruCache'
-
+export type { Cache } from './Cache'
 export { CachedStorageService } from './CachedStorageService'
+export { CacheModule, type CacheModuleOptions } from './CacheModule'
+export { CacheModuleConfig } from './CacheModuleConfig'
+// Cache Implementations
+export { InMemoryLruCache, type InMemoryLruCacheOptions } from './InMemoryLruCache'
+export {
+  type SingleContextLruCacheItem,
+  SingleContextLruCacheRecord,
+  SingleContextStorageLruCache,
+  type SingleContextStorageLruCacheOptions,
+} from './singleContextLruCache'

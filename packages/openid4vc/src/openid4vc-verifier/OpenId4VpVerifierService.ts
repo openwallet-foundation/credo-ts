@@ -1,75 +1,73 @@
 import {
   AgentContext,
   ClaimFormat,
-  DcqlEncodedPresentations,
-  DcqlQuery,
-  DifPresentationExchangeDefinition,
-  DifPresentationExchangeSubmission,
-  HashName,
-  Kms,
-  MdocSessionTranscriptOptions,
-  MdocSupportedSignatureAlgorithm,
-  Query,
-  QueryOptions,
-  VerifiablePresentation,
-  W3cV2CredentialService,
-  W3cV2SdJwtVerifiablePresentation,
-} from '@credo-ts/core'
-import {
   CredoError,
+  type DcqlEncodedPresentations,
+  type DcqlQuery,
   DcqlService,
+  type DifPresentationExchangeDefinition,
   DifPresentationExchangeService,
+  type DifPresentationExchangeSubmission,
   EventEmitter,
-  InjectionSymbols,
-  JsonEncoder,
-  JsonTransformer,
-  Jwt,
-  Logger,
-  MdocDeviceResponse,
-  SdJwtVcApi,
-  SignatureSuiteRegistry,
-  TypedArrayEncoder,
-  W3cCredentialService,
-  W3cJsonLdVerifiablePresentation,
-  W3cJwtVerifiablePresentation,
-  X509Certificate,
-  X509ModuleConfig,
-  X509Service,
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
+  type HashName,
+  InjectionSymbols,
   inject,
   injectable,
   isMdocSupportedSignatureAlgorithm,
+  JsonEncoder,
+  JsonTransformer,
+  Jwt,
   joinUriParts,
+  Kms,
+  type Logger,
+  MdocDeviceResponse,
+  type MdocSessionTranscriptOptions,
+  type MdocSupportedSignatureAlgorithm,
+  mapNonEmptyArray,
+  type NonEmptyArray,
+  type Query,
+  type QueryOptions,
+  SdJwtVcApi,
+  SignatureSuiteRegistry,
+  TypedArrayEncoder,
   utils,
+  type VerifiablePresentation,
+  W3cCredentialService,
+  W3cJsonLdVerifiablePresentation,
+  W3cJwtVerifiablePresentation,
+  W3cV2CredentialService,
+  W3cV2SdJwtVerifiablePresentation,
+  X509Certificate,
+  X509ModuleConfig,
+  X509Service,
 } from '@credo-ts/core'
-import { NonEmptyArray, mapNonEmptyArray } from '@credo-ts/core'
-import { Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import {
-  ClientIdPrefix,
-  ClientMetadata,
-  JarmMode,
-  Openid4vpVerifier,
-  ParsedOpenid4vpAuthorizationResponse,
-  TransactionDataHashesCredentials,
+  type ClientIdPrefix,
+  type ClientMetadata,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
+  JarmMode,
+  Openid4vpVerifier,
+  type ParsedOpenid4vpAuthorizationResponse,
+  type TransactionDataHashesCredentials,
   zOpenid4vpAuthorizationResponse,
 } from '@openid4vc/openid4vp'
 import { getOid4vcCallbacks } from '../shared/callbacks'
-import { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
+import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
-  addSecondsToDate,
   dcqlCredentialQueryToPresentationFormat,
   getSupportedJwaSignatureAlgorithms,
   requestSignerToJwtIssuer,
 } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
-import { OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
+import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
 import { OpenId4VcVerifierModuleConfig } from './OpenId4VcVerifierModuleConfig'
 import type {
   OpenId4VpCreateAuthorizationRequestOptions,
@@ -321,7 +319,7 @@ export class OpenId4VpVerifierService {
       authorizationRequestId,
       state: OpenId4VcVerificationSessionState.RequestCreated,
       verifierId: options.verifier.verifierId,
-      expiresAt: addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
+      expiresAt: utils.addSecondsToDate(new Date(), this.config.authorizationRequestExpiresInSeconds),
       openId4VpVersion: version,
     })
     await this.openId4VcVerificationSessionRepository.save(agentContext, verificationSession)
@@ -388,7 +386,7 @@ export class OpenId4VpVerifierService {
     const openid4vpVerifier = this.getOpenid4vpVerifier(agentContext)
 
     const { authorizationResponse, verificationSession, origin } = options
-    let parsedAuthorizationResponse: ParsedOpenid4vpAuthorizationResponse | undefined = undefined
+    let parsedAuthorizationResponse: ParsedOpenid4vpAuthorizationResponse | undefined
 
     try {
       parsedAuthorizationResponse = await openid4vpVerifier.parseOpenid4vpAuthorizationResponse({
@@ -473,9 +471,9 @@ export class OpenId4VpVerifierService {
     const encryptionJwk = authorizationRequest.client_metadata?.jwks?.keys.find((key) => key.use === 'enc')
     const encryptionPublicJwk = encryptionJwk ? Kms.PublicJwk.fromUnknown(encryptionJwk) : undefined
 
-    let dcqlResponse: OpenId4VpVerifiedAuthorizationResponseDcql | undefined = undefined
-    let pexResponse: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined = undefined
-    let transactionData: OpenId4VpVerifiedAuthorizationResponseTransactionData[] | undefined = undefined
+    let dcqlResponse: OpenId4VpVerifiedAuthorizationResponseDcql | undefined
+    let pexResponse: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined
+    let transactionData: OpenId4VpVerifiedAuthorizationResponseTransactionData[] | undefined
 
     try {
       const parsedClientId = getOpenid4vpClientId({
@@ -733,7 +731,7 @@ export class OpenId4VpVerifierService {
       authorizationResponsePayload: openid4vpAuthorizationResponsePayload,
     })
 
-    let presentationExchange: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined = undefined
+    let presentationExchange: OpenId4VpVerifiedAuthorizationResponsePresentationExchange | undefined
     const dcql =
       result.type === 'dcql'
         ? await this.getDcqlVerifiedResponse(
@@ -1108,7 +1106,7 @@ export class OpenId4VpVerifierService {
       this.logger.trace('Presentation response', JsonTransformer.toJSON(presentation))
 
       let isValid: boolean
-      let cause: Error | undefined = undefined
+      let cause: Error | undefined
       let verifiablePresentation: VerifiablePresentation
 
       if (format === ClaimFormat.SdJwtDc) {
@@ -1120,7 +1118,7 @@ export class OpenId4VpVerifierService {
         const jwt = Jwt.fromSerializedJwt(presentation.split('~')[0])
         const certificateChain = extractX509CertificatesFromJwt(jwt)
 
-        let trustedCertificates: string[] | undefined = undefined
+        let trustedCertificates: string[] | undefined
         if (certificateChain && x509Config.getTrustedCertificatesForVerification) {
           trustedCertificates = await x509Config.getTrustedCertificatesForVerification(agentContext, {
             certificateChain,
@@ -1146,7 +1144,7 @@ export class OpenId4VpVerifierService {
           trustedCertificates,
         })
 
-        isValid = verificationResult.verification.isValid
+        isValid = verificationResult.isValid
         cause = verificationResult.isValid ? undefined : verificationResult.error
         verifiablePresentation = sdJwtVc
       } else if (format === ClaimFormat.MsoMdoc) {

@@ -1,18 +1,6 @@
-import type { AgentContext } from '../../../../../../../core/src/agent'
-import type { GetAgentMessageOptions } from '../../../../../repository'
-import type { DidCommPlaintextMessage } from '../../../../../types'
-import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
-import type {
-  DidCommCredentialFormat,
-  DidCommCredentialFormatAcceptRequestOptions,
-  DidCommCredentialFormatCreateOfferOptions,
-  DidCommCredentialFormatService,
-} from '../../../formats'
-import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
-import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
-
 import { Subject } from 'rxjs'
-
+import type { MockedClassConstructor } from '../../../../../../../../tests/types'
+import type { AgentContext } from '../../../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../../../core/src/error'
 import { JsonTransformer } from '../../../../../../../core/src/utils'
@@ -26,14 +14,25 @@ import {
 import { DidCommAttachment, DidCommAttachmentData } from '../../../../../decorators/attachment/DidCommAttachment'
 import { AckStatus } from '../../../../../messages'
 import { DidCommInboundMessageContext } from '../../../../../models'
+import type { GetAgentMessageOptions } from '../../../../../repository'
 import { DidCommMessageRecord, DidCommMessageRepository, DidCommMessageRole } from '../../../../../repository'
+import type { DidCommPlaintextMessage } from '../../../../../types'
 import { DidCommDidExchangeState } from '../../../../connections'
 import { DidCommConnectionService } from '../../../../connections/services/DidCommConnectionService'
-import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { credReq } from '../../../__tests__/fixtures'
+import type { DidCommCredentialStateChangedEvent } from '../../../DidCommCredentialEvents'
+import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
+import type {
+  DidCommCredentialFormat,
+  DidCommCredentialFormatAcceptRequestOptions,
+  DidCommCredentialFormatCreateOfferOptions,
+  DidCommCredentialFormatService,
+} from '../../../formats'
 import { DidCommCredentialFormatSpec, DidCommCredentialRole } from '../../../models'
+import type { DidCommCredentialPreviewAttribute } from '../../../models/DidCommCredentialPreviewAttribute'
 import { DidCommCredentialProblemReportReason } from '../../../models/DidCommCredentialProblemReportReason'
 import { DidCommCredentialState } from '../../../models/DidCommCredentialState'
+import type { CustomDidCommCredentialExchangeTags } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRecord } from '../../../repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from '../../../repository/DidCommCredentialExchangeRepository'
 import { DidCommCredentialV2Protocol } from '../DidCommCredentialV2Protocol'
@@ -43,17 +42,20 @@ import { DidCommCredentialV2ProblemReportMessage } from '../messages/DidCommCred
 import { DidCommIssueCredentialV2Message } from '../messages/DidCommIssueCredentialV2Message'
 import { DidCommOfferCredentialV2Message } from '../messages/DidCommOfferCredentialV2Message'
 import { DidCommRequestCredentialV2Message } from '../messages/DidCommRequestCredentialV2Message'
+
 // Mock classes
 
-jest.mock('../../../repository/DidCommCredentialExchangeRepository')
-jest.mock('../../../../../repository/DidCommMessageRepository')
-jest.mock('../../../../connections/services/DidCommConnectionService')
-jest.mock('../../../../../DidCommDispatcher')
+vi.mock('../../../repository/DidCommCredentialExchangeRepository')
+vi.mock('../../../../../repository/DidCommMessageRepository')
+vi.mock('../../../../connections/services/DidCommConnectionService')
+vi.mock('../../../../../DidCommDispatcher')
 
 // Mock typed object
-const CredentialRepositoryMock = DidCommCredentialExchangeRepository as jest.Mock<DidCommCredentialExchangeRepository>
-const DidCommMessageRepositoryMock = DidCommMessageRepository as jest.Mock<DidCommMessageRepository>
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
+const CredentialRepositoryMock = DidCommCredentialExchangeRepository as MockedClassConstructor<
+  typeof DidCommCredentialExchangeRepository
+>
+const DidCommMessageRepositoryMock = DidCommMessageRepository as MockedClassConstructor<typeof DidCommMessageRepository>
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
 
 const credentialRepository = new CredentialRepositoryMock()
 const didCommMessageRepository = new DidCommMessageRepositoryMock()
@@ -163,7 +165,7 @@ const didCommMessageRecord = new DidCommMessageRecord({
   role: DidCommMessageRole.Receiver,
 })
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 const getAgentMessageMock = async (_agentContext: AgentContext, options: GetAgentMessageOptions<any>) => {
   if (options.messageClass === DidCommProposeCredentialV2Message) {
     return credentialProposalMessage
@@ -227,7 +229,6 @@ interface TestCredentialFormat extends DidCommCredentialFormat {
 
 type TestCredentialFormatService = DidCommCredentialFormatService<TestCredentialFormat>
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export const testCredentialFormatService = {
   credentialRecordType: 'test',
   formatKey: 'test',
@@ -243,10 +244,10 @@ export const testCredentialFormatService = {
     _agentContext: AgentContext,
     _options: DidCommCredentialFormatAcceptRequestOptions<TestCredentialFormat>
   ) => ({ attachment: credentialAttachment, format: credentialFormat }),
-  deleteCredentialById: jest.fn(),
-  processCredential: jest.fn(),
+  deleteCredentialById: vi.fn(),
+  processCredential: vi.fn(),
   acceptOffer: () => ({ attachment: requestAttachment, format: requestFormat }),
-  processRequest: jest.fn(),
+  processRequest: vi.fn(),
 } as unknown as TestCredentialFormatService
 
 describe('credentialProtocol', () => {
@@ -269,7 +270,7 @@ describe('credentialProtocol', () => {
   })
 
   afterEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('acceptOffer', () => {
@@ -368,7 +369,7 @@ describe('credentialProtocol', () => {
         agentContext,
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -436,7 +437,7 @@ describe('credentialProtocol', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
 
       // given
       mockFunction(credentialRepository.getById).mockResolvedValue(credentialExchangeRecord)
@@ -543,7 +544,7 @@ describe('credentialProtocol', () => {
         connectionId: 'b1e2f039-aa39-40be-8643-6ce2797b5190',
       })
 
-      const eventListenerMock = jest.fn()
+      const eventListenerMock = vi.fn()
       eventEmitter.on<DidCommCredentialStateChangedEvent>(
         DidCommCredentialEventTypes.DidCommCredentialStateChanged,
         eventListenerMock
@@ -778,7 +779,7 @@ describe('credentialProtocol', () => {
       const credentialExchangeRecord = mockCredentialRecord()
       mockFunction(credentialRepository.getById).mockReturnValue(Promise.resolve(credentialExchangeRecord))
 
-      const repositoryDeleteSpy = jest.spyOn(credentialRepository, 'delete')
+      const repositoryDeleteSpy = mockFunction(credentialRepository.delete)
       await credentialProtocol.delete(agentContext, credentialExchangeRecord)
       expect(repositoryDeleteSpy).toHaveBeenNthCalledWith(1, agentContext, credentialExchangeRecord)
     })

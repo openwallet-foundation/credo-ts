@@ -1,27 +1,24 @@
 import type { AgentContext, DidDocument, DidDocumentKey } from '@credo-ts/core'
-import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
-import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
-import type { DidCommConnectionRecord } from '../repository'
-
 import {
   CredoError,
   DidRepository,
   DidResolverService,
   DidsApi,
   EventEmitter,
-  InjectionSymbols,
-  Logger,
-  PeerDidNumAlgo,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
+  InjectionSymbols,
   inject,
   injectable,
   isValidPeerDid,
+  type Logger,
+  PeerDidNumAlgo,
 } from '@credo-ts/core'
-
 import { AckStatus } from '../../../messages'
+import type { DidCommInboundMessageContext, DidCommRouting } from '../../../models'
 import { DidCommOutboundMessageContext } from '../../../models'
 import { getMediationRecordForDidDocument } from '../../routing/services/helpers'
+import type { DidCommConnectionDidRotatedEvent } from '../DidCommConnectionEvents'
 import { DidCommConnectionEventTypes } from '../DidCommConnectionEvents'
 import { DidCommConnectionsModuleConfig } from '../DidCommConnectionsModuleConfig'
 import {
@@ -30,6 +27,7 @@ import {
   DidCommDidRotateProblemReportMessage,
   DidCommHangupMessage,
 } from '../messages'
+import type { DidCommConnectionRecord } from '../repository'
 import { DidCommConnectionMetadataKeys } from '../repository/DidCommConnectionMetadataTypes'
 
 import { DidCommConnectionService } from './DidCommConnectionService'

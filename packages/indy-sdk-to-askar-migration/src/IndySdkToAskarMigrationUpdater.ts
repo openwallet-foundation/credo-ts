@@ -1,12 +1,17 @@
 import type { AnonCredsCredentialValue } from '@credo-ts/anoncreds'
-import type { Agent, FileSystem } from '@credo-ts/core'
-import { EntryObject, KdfMethod, StoreKeyMethod } from '@openwallet-foundation/askar-shared'
-
 import { AnonCredsCredentialRecord, AnonCredsLinkSecretRecord } from '@credo-ts/anoncreds'
-import { InjectionSymbols, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
-import { Key, KeyAlgorithm, Migration, Store } from '@openwallet-foundation/askar-shared'
-
 import { AskarModule } from '@credo-ts/askar'
+import type { Agent, FileSystem } from '@credo-ts/core'
+import { InjectionSymbols, JsonTransformer, TypedArrayEncoder } from '@credo-ts/core'
+import {
+  type EntryObject,
+  KdfMethod,
+  Key,
+  KeyAlgorithm,
+  Migration,
+  Store,
+  StoreKeyMethod,
+} from '@openwallet-foundation/askar-shared'
 import { IndySdkToAskarMigrationError } from './errors/IndySdkToAskarMigrationError'
 import { transformFromRecordTagValues } from './utils'
 

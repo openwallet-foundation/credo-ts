@@ -1,13 +1,11 @@
 import { JsonTransformer } from '@credo-ts/core'
-
+import { DidCommOutOfBandRecord } from '@credo-ts/didcomm'
 import {
   BaseDrizzleRecordAdapter,
-  DrizzleAdapterRecordValues,
-  DrizzleAdapterValues,
+  type DrizzleAdapterRecordValues,
+  type DrizzleAdapterValues,
 } from '../../adapter/BaseDrizzleRecordAdapter'
-
-import { DidCommOutOfBandRecord } from '@credo-ts/didcomm'
-import { DrizzleDatabase } from '../../DrizzleDatabase'
+import type { DrizzleDatabase } from '../../DrizzleDatabase'
 import * as postgres from './postgres'
 import * as sqlite from './sqlite'
 
@@ -37,6 +35,7 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
       recipientRoutingKeyFingerprint,
 
       // Queried based on `outOfBandInvitation.@id`
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       invitationId,
 
       ...customTags
@@ -68,7 +67,9 @@ export class DrizzleDidcommOutOfBandRecordAdapter extends BaseDrizzleRecordAdapt
       customTags,
       recipientKeyFingerprints,
       recipientRoutingKeyFingerprint,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       threadId,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
       invitationRequestsThreadIds,
       ...remainingValues
     } = values

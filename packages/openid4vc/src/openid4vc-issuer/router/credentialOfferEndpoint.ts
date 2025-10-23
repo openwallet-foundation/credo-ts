@@ -1,9 +1,5 @@
+import { joinUriParts, utils } from '@credo-ts/core'
 import type { Response, Router } from 'express'
-import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
-import type { OpenId4VcIssuanceRequest } from './requestContext'
-
-import { joinUriParts } from '@credo-ts/core'
-import { addSecondsToDate } from '@openid4vc/utils'
 import {
   getRequestContext,
   sendErrorResponse,
@@ -12,8 +8,10 @@ import {
   sendUnknownServerErrorResponse,
 } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
+import type { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
+import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureCredentialOfferEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
   router.get(
@@ -71,7 +69,7 @@ export function configureCredentialOfferEndpoint(router: Router, config: OpenId4
 
         const expiresAt =
           openId4VcIssuanceSession.expiresAt ??
-          addSecondsToDate(openId4VcIssuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
+          utils.addSecondsToDate(openId4VcIssuanceSession.createdAt, config.statefulCredentialOfferExpirationInSeconds)
 
         if (Date.now() > expiresAt.getTime()) {
           return sendNotFoundResponse(response, next, agentContext.config.logger, 'Session expired')

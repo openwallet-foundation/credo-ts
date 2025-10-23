@@ -1,15 +1,22 @@
-import type { DidCommPlaintextMessage } from '../../../types'
-
 import { CredoError, IsStringOrInstance, JsonEncoder, JsonTransformer } from '@credo-ts/core'
 import { Exclude, Expose, Transform, TransformationType, Type } from 'class-transformer'
 import { ArrayNotEmpty, IsArray, IsInstance, IsOptional, IsUrl, ValidateNested } from 'class-validator'
-import { parseUrl } from 'query-string'
-
+import queryString from 'query-string'
 import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommAttachment, DidCommAttachmentData } from '../../../decorators/attachment/DidCommAttachment'
+import type { DidCommPlaintextMessage } from '../../../types'
 import { IsValidMessageType, parseMessageType, replaceLegacyDidSovPrefix } from '../../../util/messageType'
 import { OutOfBandDidCommService } from '../domain/OutOfBandDidCommService'
 import { outOfBandServiceToNumAlgo2Did } from '../helpers'
+
+/**
+ * The original invitation an out of band invitation was derived from.
+ */
+export enum DidCommInvitationType {
+  OutOfBand = 'out-of-band/1.x',
+  Connection = 'connections/1.x',
+  Connectionless = 'connectionless',
+}
 
 export interface DidCommOutOfBandInvitationOptions {
   id?: string
@@ -45,7 +52,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
    * from what the oob invitation was originally created (e.g. legacy connectionless invitation).
    */
   @Exclude()
-  public invitationType?: InvitationType
+  public invitationType?: DidCommInvitationType
 
   public addRequest(message: DidCommMessage) {
     if (!this.requests) this.requests = []
@@ -71,7 +78,7 @@ export class DidCommOutOfBandInvitation extends DidCommMessage {
   }
 
   public static fromUrl(invitationUrl: string) {
-    const parsedUrl = parseUrl(invitationUrl).query
+    const parsedUrl = queryString.parseUrl(invitationUrl).query
     const encodedInvitation = parsedUrl.oob
     if (typeof encodedInvitation === 'string') {
       const invitationJson = JsonEncoder.fromBase64(encodedInvitation)
@@ -181,13 +188,4 @@ function OutOfBandServiceTransformer() {
     // PLAIN_TO_PLAIN
     return value
   })
-}
-
-/**
- * The original invitation an out of band invitation was derived from.
- */
-export enum InvitationType {
-  OutOfBand = 'out-of-band/1.x',
-  Connection = 'connections/1.x',
-  Connectionless = 'connectionless',
 }

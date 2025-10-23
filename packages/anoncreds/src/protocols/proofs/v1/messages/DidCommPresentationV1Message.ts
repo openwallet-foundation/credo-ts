@@ -1,8 +1,7 @@
-import type { AnonCredsProof } from '../../../../models'
-
 import { DidCommAttachment, DidCommMessage, IsValidMessageType, parseMessageType } from '@credo-ts/didcomm'
 import { Expose, Type } from 'class-transformer'
 import { IsArray, IsInstance, IsOptional, IsString, ValidateNested } from 'class-validator'
+import type { AnonCredsProof } from '../../../../models'
 
 export const INDY_PROOF_ATTACHMENT_ID = 'libindy-presentation-0'
 

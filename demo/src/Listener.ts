@@ -6,12 +6,6 @@ import type {
   DidCommProofExchangeRecord,
   DidCommProofStateChangedEvent,
 } from '@credo-ts/didcomm'
-import type BottomBar from 'inquirer/lib/ui/bottom-bar'
-import type { Alice } from './Alice'
-import type { AliceInquirer } from './AliceInquirer'
-import type { Faber } from './Faber'
-import type { FaberInquirer } from './FaberInquirer'
-
 import {
   DidCommBasicMessageEventTypes,
   DidCommBasicMessageRole,
@@ -21,6 +15,11 @@ import {
   DidCommProofState,
 } from '@credo-ts/didcomm'
 import { ui } from 'inquirer'
+import type BottomBar from 'inquirer/lib/ui/bottom-bar'
+import type { Alice } from './Alice'
+import type { AliceInquirer } from './AliceInquirer'
+import type { Faber } from './Faber'
+import type { FaberInquirer } from './FaberInquirer'
 
 import { Color, purpleText } from './OutputClass'
 

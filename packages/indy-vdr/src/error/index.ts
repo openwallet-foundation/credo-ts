@@ -1,3 +1,3 @@
 export * from './IndyVdrError'
-export * from './IndyVdrNotFound'
 export * from './IndyVdrNotConfiguredError'
+export * from './IndyVdrNotFound'

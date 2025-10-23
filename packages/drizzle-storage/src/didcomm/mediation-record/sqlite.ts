@@ -1,8 +1,7 @@
-import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-
 import type { DidCommMediationRole, DidCommMediationState, DidCommMediatorPickupStrategy } from '@credo-ts/didcomm'
+import { foreignKey, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
-import { didcommConnection } from '../sqlite'
+import { didcommConnection } from '../connection-record/sqlite'
 
 export const didcommMediation = sqliteTable(
   'DidcommMediation',

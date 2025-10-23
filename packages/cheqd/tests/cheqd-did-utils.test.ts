@@ -8,7 +8,7 @@ import {
   validateSpecCompliantPayload,
 } from '../src/dids/didCheqdUtil'
 
-import { validDid, validDidDoc } from './setup'
+import { validDid, validDidDoc } from './testUtils'
 
 describe('Test Cheqd Did Utils', () => {
   it('should validate did spec compliant payload', () => {

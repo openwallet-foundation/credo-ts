@@ -1,9 +1,8 @@
-import type { HashName } from '../crypto'
-import type { BaseName } from './MultiBaseEncoder'
-import type { Buffer } from './buffer'
-
-// @ts-ignore ts is giving me headaches because this package has no types
+// @ts-expect-error ts is giving me headaches because this package has no types
 import cbor from 'borc'
+import type { HashName } from '../crypto'
+import type { Buffer } from './buffer'
+import type { BaseName } from './MultiBaseEncoder'
 
 import { MultiBaseEncoder } from './MultiBaseEncoder'
 import { MultiHashEncoder } from './MultiHashEncoder'
@@ -23,7 +22,7 @@ const hexTable = {
   contentType: 0x0e,
 }
 
-// biome-ignore lint/complexity/noStaticOnlyClass: <explanation>
+// biome-ignore lint/complexity/noStaticOnlyClass: no explanation
 export class HashlinkEncoder {
   /**
    * Encodes a buffer, with optional metadata, into a hashlink
@@ -114,7 +113,7 @@ export class HashlinkEncoder {
     const obj = { urls: [] as string[], contentType: '' }
     const { data } = MultiBaseEncoder.decode(mb)
     try {
-      // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+      // biome-ignore lint/suspicious/noExplicitAny: no explanation
       const cborData: Map<number, any> = cbor.decode(data)
       cborData.forEach((value, key) => {
         if (key === hexTable.urls) {

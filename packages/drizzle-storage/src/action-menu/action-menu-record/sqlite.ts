@@ -1,11 +1,10 @@
-import { foreignKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
-
 import type {
   ActionMenuOptions,
   ActionMenuRole,
   ActionMenuSelectionOptions,
   ActionMenuState,
 } from '@credo-ts/action-menu'
+import { foreignKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
 import { didcommConnection } from '../../didcomm/connection-record/sqlite'
 import { getSqliteBaseRecordTable, sqliteBaseRecordIndexes } from '../../sqlite/baseRecord'
 

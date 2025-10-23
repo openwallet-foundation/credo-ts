@@ -1,4 +1,14 @@
+import { parseDid } from '@sphereon/ssi-types'
+import { AgentContext } from '../../agent'
+import { CredoError, RecordNotFoundError } from '../../error'
+import { injectable } from '../../plugins'
+import { KeyManagementApi } from '../kms'
 import type { ImportDidOptions } from './DidsApiOptions'
+import { DidsModuleConfig } from './DidsModuleConfig'
+import { type DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
+import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
+import { DidRecord, DidRepository } from './repository'
+import { DidRegistrarService, DidResolverService } from './services'
 import type {
   DidCreateOptions,
   DidCreateResult,
@@ -8,18 +18,6 @@ import type {
   DidUpdateOptions,
   DidUpdateResult,
 } from './types'
-
-import { AgentContext } from '../../agent'
-import { CredoError, RecordNotFoundError } from '../../error'
-import { injectable } from '../../plugins'
-
-import { parseDid } from '@sphereon/ssi-types'
-import { KeyManagementApi } from '../kms'
-import { DidsModuleConfig } from './DidsModuleConfig'
-import { DidPurpose, getPublicJwkFromVerificationMethod } from './domain'
-import { getAlternativeDidsForPeerDid, isValidPeerDid } from './methods'
-import { DidRecord, DidRepository } from './repository'
-import { DidRegistrarService, DidResolverService } from './services'
 
 @injectable()
 export class DidsApi {

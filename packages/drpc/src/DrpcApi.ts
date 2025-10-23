@@ -1,17 +1,9 @@
-import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
-import type { DrpcRequest, DrpcRequestMessage, DrpcResponse, DrpcResponseMessage } from './messages'
-import type { DrpcRecord } from './repository/DrpcRecord'
-
 import { AgentContext, injectable } from '@credo-ts/core'
-import {
-  DidCommConnectionService,
-  DidCommMessageHandlerRegistry,
-  DidCommMessageSender,
-  DidCommOutboundMessageContext,
-} from '@credo-ts/didcomm'
-
-import { DrpcRequestHandler, DrpcResponseHandler } from './handlers'
+import type { DidCommConnectionRecord } from '@credo-ts/didcomm'
+import { DidCommConnectionService, DidCommMessageSender, DidCommOutboundMessageContext } from '@credo-ts/didcomm'
+import type { DrpcRequest, DrpcRequestMessage, DrpcResponse, DrpcResponseMessage } from './messages'
 import { DrpcRole } from './models'
+import type { DrpcRecord } from './repository/DrpcRecord'
 import { DrpcService } from './services'
 
 @injectable()
@@ -22,7 +14,6 @@ export class DrpcApi {
   private agentContext: AgentContext
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     drpcMessageService: DrpcService,
     messageSender: DidCommMessageSender,
     connectionService: DidCommConnectionService,
@@ -32,7 +23,6 @@ export class DrpcApi {
     this.messageSender = messageSender
     this.connectionService = connectionService
     this.agentContext = agentContext
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   /**
@@ -175,10 +165,5 @@ export class DrpcApi {
       associatedRecord: messageRecord,
     })
     await this.messageSender.sendMessage(outboundMessageContext)
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DrpcRequestHandler(this.drpcMessageService))
-    messageHandlerRegistry.registerMessageHandler(new DrpcResponseHandler(this.drpcMessageService))
   }
 }

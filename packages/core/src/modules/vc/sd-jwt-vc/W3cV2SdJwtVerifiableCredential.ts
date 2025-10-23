@@ -2,7 +2,7 @@ import { CredoError } from '../../../error'
 import { JsonTransformer, MessageValidator } from '../../../utils'
 import { ClaimFormat } from '../models/ClaimFormat'
 import { W3cV2Credential } from '../models/credential/W3cV2Credential'
-import { W3cV2SdJwt, decodeSdJwt } from './W3cV2SdJwt'
+import { decodeSdJwt, type W3cV2SdJwt } from './W3cV2SdJwt'
 
 export interface W3cV2SdJwtVerifiableCredentialOptions {
   sdJwt: W3cV2SdJwt<ClaimFormat.SdJwtW3cVc>

@@ -1,13 +1,20 @@
-import { KeyDidCreateOptions, Kms, SdJwtVc } from '@credo-ts/core'
-
-import { Agent, DidKey, TypedArrayEncoder, W3cCredentialService, W3cJwtVerifiableCredential } from '@credo-ts/core'
+import '@openwallet-foundation/askar-nodejs'
+import {
+  Agent,
+  DidKey,
+  type KeyDidCreateOptions,
+  Kms,
+  type SdJwtVc,
+  TypedArrayEncoder,
+  W3cCredentialService,
+  W3cJwtVerifiableCredential,
+} from '@credo-ts/core'
 import nock, { cleanAll, enableNetConnect } from 'nock'
-import { agentDependencies } from '../../../../node/src'
-import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
-
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
+import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import { OpenId4VciAuthorizationFlow } from '../OpenId4VciHolderServiceOptions'
 import { animoOpenIdPlaygroundDraft11SdJwtVc, matrrLaunchpadDraft11JwtVcJson, waltIdDraft11JwtVcJson } from './fixtures'
 
 const holder = new Agent({
@@ -105,9 +112,10 @@ describe('OpenId4VcHolder', () => {
 
       // The credential issued by mattr launchpad is expired, so we mock the verification...
       const w3cCredentialService = holder.dependencyManager.resolve(W3cCredentialService)
-      jest
-        .spyOn(w3cCredentialService, 'verifyCredential')
-        .mockImplementationOnce(async () => ({ isValid: true, validations: {} }))
+      vi.spyOn(w3cCredentialService, 'verifyCredential').mockImplementationOnce(async () => ({
+        isValid: true,
+        validations: {},
+      }))
 
       const credentialsResult = await holder.openid4vc.holder.requestCredentials({
         resolvedCredentialOffer: resolved,

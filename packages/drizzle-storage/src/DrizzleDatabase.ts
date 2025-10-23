@@ -1,12 +1,13 @@
+import { entityKind } from 'drizzle-orm'
 import { PgDatabase } from 'drizzle-orm/pg-core'
 import { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 
 export type DrizzleSqliteDatabase<Schema extends Record<string, unknown> = Record<string, unknown>> =
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   BaseSQLiteDatabase<'sync' | 'async', any, Schema>
 
 export type DrizzlePostgresDatabase<Schema extends Record<string, unknown> = Record<string, unknown>> = PgDatabase<
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   any,
   Schema
 >
@@ -21,7 +22,8 @@ export function isDrizzlePostgresDatabase(database: DrizzleDatabase): database i
 }
 
 export function isDrizzleSqliteDatabase(database: DrizzleDatabase): database is DrizzleSqliteDatabase {
-  return database instanceof BaseSQLiteDatabase
+  // NOTE: somehow instanceof does not work. We use
+  return Object.getPrototypeOf(database.constructor)[entityKind] === 'BaseSQLiteDatabase'
 }
 
 export function getDrizzleDatabaseType(database: DrizzleDatabase): 'sqlite' | 'postgres' {

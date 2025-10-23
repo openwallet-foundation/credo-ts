@@ -1,17 +1,14 @@
 import type { Agent, InitConfig } from '@credo-ts/core'
-import type { DidCommModuleConfig } from '../..//didcomm'
-
-import path from 'path'
 import { LogLevel, utils } from '@credo-ts/core'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 import { registerAskar } from '@openwallet-foundation/askar-shared'
-
+import path from 'path'
 import { waitForBasicMessage } from '../../core/tests/helpers'
 import { TestLogger } from '../../core/tests/logger'
-import { DidCommConnectionsModule, DidCommHandshakeProtocol } from '../../didcomm'
-import { getDefaultDidcommModules } from '../../didcomm/src/util/modules'
+import type { DidCommModuleConfigOptions } from '../../didcomm/src'
+import { DidCommHandshakeProtocol, DidCommModule } from '../../didcomm/src'
 import { agentDependencies } from '../../node/src'
-import { AskarPostgresStorageConfig } from '../src'
+import type { AskarPostgresStorageConfig } from '../src'
 import { AskarModule } from '../src/AskarModule'
 
 registerAskar({ askar })
@@ -36,7 +33,7 @@ export const askarPostgresStorageConfig: AskarPostgresStorageConfig = {
 
 export function getAskarPostgresAgentOptions(
   name: string,
-  didcommConfig: Partial<DidCommModuleConfig>,
+  didcommConfig: Partial<DidCommModuleConfigOptions>,
   storageConfig: AskarPostgresStorageConfig,
   extraConfig: Partial<InitConfig> = {}
 ) {
@@ -50,7 +47,12 @@ export function getAskarPostgresAgentOptions(
     config,
     dependencies: agentDependencies,
     modules: {
-      ...getDefaultDidcommModules(didcommConfig),
+      didcomm: new DidCommModule({
+        connections: {
+          autoAcceptConnections: true,
+        },
+        ...didcommConfig,
+      }),
       askar: new AskarModule({
         askar,
         store: {
@@ -59,16 +61,13 @@ export function getAskarPostgresAgentOptions(
           database: storageConfig,
         },
       }),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
-      }),
     },
   } as const
 }
 
 export function getAskarSqliteAgentOptions(
   name: string,
-  didcommConfig: Partial<DidCommModuleConfig> = {},
+  didcommConfig: Partial<DidCommModuleConfigOptions> = {},
   extraConfig: Partial<InitConfig> = {},
   inMemory?: boolean
 ) {
@@ -82,7 +81,12 @@ export function getAskarSqliteAgentOptions(
     config,
     dependencies: agentDependencies,
     modules: {
-      ...getDefaultDidcommModules(didcommConfig),
+      didcomm: new DidCommModule({
+        connections: {
+          autoAcceptConnections: true,
+        },
+        ...didcommConfig,
+      }),
       askar: new AskarModule({
         askar,
         store: {
@@ -90,9 +94,6 @@ export function getAskarSqliteAgentOptions(
           key: `Key${name}`,
           database: { type: 'sqlite', config: { inMemory } },
         },
-      }),
-      connections: new DidCommConnectionsModule({
-        autoAcceptConnections: true,
       }),
     },
   } as const
@@ -104,14 +105,14 @@ export function getAskarSqliteAgentOptions(
  * @param receiverAgent
  */
 export async function e2eTest(
-  senderAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>,
-  receiverAgent: Agent<ReturnType<typeof getDefaultDidcommModules>>
+  senderAgent: Agent<{ didcomm: DidCommModule<object> }>,
+  receiverAgent: Agent<{ didcomm: DidCommModule<object> }>
 ) {
-  const senderReceiverOutOfBandRecord = await senderAgent.modules.oob.createInvitation({
+  const senderReceiverOutOfBandRecord = await senderAgent.didcomm.oob.createInvitation({
     handshakeProtocols: [DidCommHandshakeProtocol.Connections],
   })
 
-  const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.modules.oob.receiveInvitation(
+  const { connectionRecord: bobConnectionAtReceiversender } = await receiverAgent.didcomm.oob.receiveInvitation(
     senderReceiverOutOfBandRecord.outOfBandInvitation,
     {
       label: 'receiver',
@@ -119,15 +120,15 @@ export async function e2eTest(
   )
   if (!bobConnectionAtReceiversender) throw new Error('Connection not created')
 
-  await receiverAgent.modules.connections.returnWhenIsConnected(bobConnectionAtReceiversender.id)
+  await receiverAgent.didcomm.connections.returnWhenIsConnected(bobConnectionAtReceiversender.id)
 
-  const [senderConnectionAtReceiver] = await senderAgent.modules.connections.findAllByOutOfBandId(
+  const [senderConnectionAtReceiver] = await senderAgent.didcomm.connections.findAllByOutOfBandId(
     senderReceiverOutOfBandRecord.id
   )
-  const senderConnection = await senderAgent.modules.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
+  const senderConnection = await senderAgent.didcomm.connections.returnWhenIsConnected(senderConnectionAtReceiver.id)
 
   const message = 'hello, world'
-  await senderAgent.modules.basicMessages.sendMessage(senderConnection.id, message)
+  await senderAgent.didcomm.basicMessages.sendMessage(senderConnection.id, message)
 
   const basicMessage = await waitForBasicMessage(receiverAgent, {
     content: message,

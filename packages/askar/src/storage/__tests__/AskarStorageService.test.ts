@@ -42,13 +42,7 @@ describe('AskarStorageService', () => {
     await storeManager.deleteStore(agentContext)
   })
 
-  const insertRecord = async ({
-    id,
-    tags,
-  }: {
-    id?: string
-    tags?: TagsBase
-  }) => {
+  const insertRecord = async ({ id, tags }: { id?: string; tags?: TagsBase }) => {
     const props = {
       id,
       foo: 'bar',
@@ -79,7 +73,7 @@ describe('AskarStorageService', () => {
         askar.sessionFetch({
           category: record.type,
           name: record.id,
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
+          // biome-ignore lint/style/noNonNullAssertion: no explanation
           sessionHandle: session.handle!,
           forUpdate: false,
         })
@@ -105,7 +99,7 @@ describe('AskarStorageService', () => {
           await askar.sessionUpdate({
             category: TestRecord.type,
             name: 'some-id',
-            // biome-ignore lint/style/noNonNullAssertion: <explanation>
+            // biome-ignore lint/style/noNonNullAssertion: no explanation
             sessionHandle: session.handle!,
             value: TypedArrayEncoder.fromString('{}'),
             tags: {
@@ -254,7 +248,7 @@ describe('AskarStorageService', () => {
 
     // FIXME: this should actually return 1 record, but we currently return 2
     // See https://github.com/openwallet-foundation/credo-ts/issues/2315
-    it.failing('should not return records with null tag values', async () => {
+    it.fails('should not return records with null tag values', async () => {
       const expectedRecord = await insertRecord({ tags: { myTag: 'foobar' } })
       await insertRecord({ tags: { myTag: null } })
 

@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../handlers'
-import type { DidCommTrustPingService } from '../services'
-
 import { DidCommTrustPingResponseMessage } from '../messages'
+import type { DidCommTrustPingService } from '../services'
 
 export class DidCommTrustPingResponseMessageHandler implements DidCommMessageHandler {
   private trustPingService: DidCommTrustPingService

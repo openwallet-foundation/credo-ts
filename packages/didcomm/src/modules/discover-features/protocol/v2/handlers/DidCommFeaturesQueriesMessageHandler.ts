@@ -1,7 +1,6 @@
 import type { DidCommMessageHandler, DidCommMessageHandlerInboundMessage } from '../../../../../handlers'
-import type { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
-
 import { DidCommOutboundMessageContext } from '../../../../../models'
+import type { DidCommDiscoverFeaturesV2Service } from '../DidCommDiscoverFeaturesV2Service'
 import { DidCommFeaturesQueriesMessage } from '../messages'
 
 export class DidCommFeaturesQueriesMessageHandler implements DidCommMessageHandler {

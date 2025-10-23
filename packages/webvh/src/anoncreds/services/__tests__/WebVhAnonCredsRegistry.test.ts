@@ -10,6 +10,7 @@ import {
   MultiHashEncoder,
   TypedArrayEncoder,
 } from '@credo-ts/core'
+import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
@@ -28,10 +29,10 @@ import {
 } from './mock-resources'
 
 // Mock the WebvhDidResolver
-const mockResolveResource = jest.fn()
-jest.mock('../../../dids/WebvhDidResolver', () => {
+const mockResolveResource = vi.fn()
+vi.mock('../../../dids/WebvhDidResolver', () => {
   return {
-    WebvhDidResolver: jest.fn().mockImplementation(() => {
+    WebvhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -52,7 +53,7 @@ interface DidDocumentOptions {
 }
 
 // Mock DidsApi
-const mockResolveDidDocument = jest.fn()
+const mockResolveDidDocument = vi.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
 }
@@ -82,7 +83,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     // Default mock for verifyProof to return true (will be overridden in verifyProof tests)
-    jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
+    vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof').mockResolvedValue(true)
 
     registry = new WebVhAnonCredsRegistry()
   })
@@ -208,7 +209,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return resolutionMetadata with error if proof validation fails (placeholder)', async () => {
       // Use a type assertion to access the private method for mocking
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValueOnce(false)
 
       const schemaContent = { attrNames: ['a'], name: 'N', version: 'V' }
@@ -455,7 +456,7 @@ describe('WebVhAnonCredsRegistry', () => {
       mockResolveResource.mockResolvedValue(mockResolverResponse)
 
       // We need to mock verifyProof to return true for this test
-      const verifyProofSpy = jest.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
+      const verifyProofSpy = vi.spyOn(WebVhAnonCredsRegistry.prototype, 'verifyProof')
       verifyProofSpy.mockResolvedValue(true)
 
       const result = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
@@ -542,7 +543,7 @@ describe('WebVhAnonCredsRegistry', () => {
   describe('verifyProof', () => {
     beforeEach(() => {
       // Clear the default verifyProof mock for these tests
-      jest.restoreAllMocks()
+      vi.restoreAllMocks()
 
       // Mock successful DID resolution
       mockResolveDidDocument.mockResolvedValue(
@@ -559,7 +560,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for null proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = null
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -568,7 +569,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for undefined proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = undefined
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -577,7 +578,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false for non-object proof', async () => {
       const testInput = { ...mockSchemaResource }
-      // @ts-ignore
+      // @ts-expect-error
       testInput.proof = testInput.proof.proofValue
       const result = await registry.verifyProof(agentContext, testInput)
       expect(result).toBe(false)
@@ -587,7 +588,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for wrong proof type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.type = 'Ed25519Signature2020'
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -608,7 +608,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing verificationMethod', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -619,7 +619,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid verificationMethod type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.verificationMethod = { id: testProof.verificationMethod }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -629,7 +629,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for missing proofValue', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = undefined
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -640,7 +640,7 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false for invalid proofValue type', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
+      // @ts-expect-error
       testProof.proofValue = { value: testInput.proof.proofValue }
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)
@@ -666,7 +666,6 @@ describe('WebVhAnonCredsRegistry', () => {
     it('should return false when verification method not found in DID document', async () => {
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
-      // @ts-ignore
       testProof.verificationMethod = `${issuerId}#key-01`
       testInput.proof = testProof
       const result = await registry.verifyProof(agentContext, testInput)

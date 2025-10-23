@@ -1,19 +1,14 @@
-import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
-
-import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
-import { getAgentOptions } from '../packages/core/tests/helpers'
-
-import { e2eTest } from './e2e-test'
-
 import { Agent } from '@credo-ts/core'
 import {
   DidCommAutoAcceptCredential,
   DidCommHttpOutboundTransport,
-  DidCommMediationRecipientModule,
-  DidCommMediatorModule,
   DidCommMediatorPickupStrategy,
 } from '@credo-ts/didcomm'
 import { DidCommHttpInboundTransport } from '@credo-ts/node'
+import type { AnonCredsTestsAgent } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAnonCredsModules } from '../packages/anoncreds/tests/anoncredsSetup'
+import { getAgentOptions } from '../packages/core/tests/helpers'
+import { e2eTest } from './e2e-test'
 
 const recipientAgentOptions = getAgentOptions(
   'E2E HTTP Recipient',
@@ -22,10 +17,12 @@ const recipientAgentOptions = getAgentOptions(
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediationRecipient: new DidCommMediationRecipientModule({
-      mediatorPollingInterval: 500,
-      mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+      extraDidCommConfig: {
+        mediationRecipient: {
+          mediatorPollingInterval: 500,
+          mediatorPickupStrategy: DidCommMediatorPickupStrategy.PickUpV1,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -34,16 +31,17 @@ const recipientAgentOptions = getAgentOptions(
 const mediatorPort = 3000
 const mediatorAgentOptions = getAgentOptions(
   'E2E HTTP Mediator',
-  {
-    endpoints: [`http://localhost:${mediatorPort}`],
-  },
+  {},
   {},
   {
     ...getAnonCredsModules({
       autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
-    }),
-    mediator: new DidCommMediatorModule({
-      autoAcceptMediationRequests: true,
+      extraDidCommConfig: {
+        endpoints: [`http://localhost:${mediatorPort}`],
+        mediator: {
+          autoAcceptMediationRequests: true,
+        },
+      },
     }),
   },
   { requireDidcomm: true }
@@ -52,12 +50,13 @@ const mediatorAgentOptions = getAgentOptions(
 const senderPort = 3001
 const senderAgentOptions = getAgentOptions(
   'E2E HTTP Sender',
-  {
-    endpoints: [`http://localhost:${senderPort}`],
-  },
+  {},
   {},
   getAnonCredsModules({
     autoAcceptCredentials: DidCommAutoAcceptCredential.ContentApproved,
+    extraDidCommConfig: {
+      endpoints: [`http://localhost:${senderPort}`],
+    },
   }),
   { requireDidcomm: true }
 )
@@ -81,17 +80,17 @@ describe('E2E HTTP tests', () => {
 
   test('Full HTTP flow (connect, request mediation, issue, verify)', async () => {
     // Recipient Setup
-    recipientAgent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+    recipientAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await recipientAgent.initialize()
 
     // Mediator Setup
-    mediatorAgent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: mediatorPort }))
-    mediatorAgent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+    mediatorAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: mediatorPort }))
+    mediatorAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await mediatorAgent.initialize()
 
     // Sender Setup
-    senderAgent.modules.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: senderPort }))
-    senderAgent.modules.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
+    senderAgent.didcomm.registerInboundTransport(new DidCommHttpInboundTransport({ port: senderPort }))
+    senderAgent.didcomm.registerOutboundTransport(new DidCommHttpOutboundTransport())
     await senderAgent.initialize()
 
     await e2eTest({

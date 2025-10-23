@@ -1,4 +1,5 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import type {
   DidCommFeatureRegistry,
   DidCommInboundMessageContext,
@@ -6,18 +7,15 @@ import type {
   DidCommMessageHandlerRegistry,
   DidCommProblemReportMessage,
   DidCommProofFormat,
+  DidCommProofProtocol,
   GetProofFormatDataReturn,
-  ProofProtocol,
   ProofProtocolOptions,
 } from '@credo-ts/didcomm'
-import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
-
-import { CredoError, JsonEncoder, JsonTransformer, MessageValidator, utils } from '@credo-ts/core'
 import {
   AckStatus,
-  BaseProofProtocol,
   DidCommAttachment,
   DidCommAutoAcceptProof,
+  DidCommBaseProofProtocol,
   DidCommConnectionService,
   DidCommMessageRepository,
   DidCommMessageRole,
@@ -29,10 +27,10 @@ import {
   DidCommProofsModuleConfig,
   DidCommProtocol,
 } from '@credo-ts/didcomm'
-
+import type { LegacyIndyDidCommProofFormatService } from '../../../formats'
+import type { AnonCredsProofRequest } from '../../../models'
+import { type AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
 import { composeProofAutoAccept, createRequestFromPreview } from '../../../utils'
-
-import { AnonCredsHolderService, AnonCredsHolderServiceSymbol } from '../../../services'
 import { DidCommPresentationV1ProblemReportError } from './errors'
 import {
   DidCommPresentationV1AckHandler,
@@ -57,8 +55,8 @@ export interface DidCommProofV1ProtocolConfig {
 }
 
 export class DidCommProofV1Protocol
-  extends BaseProofProtocol
-  implements ProofProtocol<[LegacyIndyDidCommProofFormatService]>
+  extends DidCommBaseProofProtocol
+  implements DidCommProofProtocol<[LegacyIndyDidCommProofFormatService]>
 {
   private indyProofFormat: LegacyIndyDidCommProofFormatService
 
@@ -1150,7 +1148,7 @@ export class DidCommProofV1Protocol
       this.findPresentationMessage(agentContext, proofExchangeRecordId),
     ])
 
-    let indyProposeProof = undefined
+    let indyProposeProof: AnonCredsProofRequest | undefined
     const indyRequestProof = requestMessage?.indyProofRequest ?? undefined
     const indyPresentProof = presentationMessage?.indyProof ?? undefined
 

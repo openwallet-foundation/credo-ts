@@ -1,11 +1,8 @@
 import type { AgentContext, BaseAgent } from '@credo-ts/core'
-import type { AnonCredsHolderService } from '../../services'
-import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
-
 import { CacheModuleConfig, CredoError, W3cCredentialRepository, W3cCredentialService } from '@credo-ts/core'
 import { DidCommCredentialExchangeRepository } from '@credo-ts/didcomm'
-
 import { type AnonCredsCredentialRecord, AnonCredsCredentialRepository } from '../../repository'
+import type { AnonCredsHolderService } from '../../services'
 import { AnonCredsHolderServiceSymbol } from '../../services'
 import { fetchCredentialDefinition } from '../../utils/anonCredsObjects'
 import {
@@ -17,6 +14,7 @@ import {
   isUnqualifiedIndyDid,
   parseIndyRevocationRegistryId,
 } from '../../utils/indyIdentifiers'
+import type { W3cAnonCredsCredentialMetadata } from '../../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../../utils/metadata'
 import { getW3cRecordAnonCredsTags } from '../../utils/w3cAnonCredsUtils'
 

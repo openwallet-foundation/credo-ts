@@ -1,47 +1,55 @@
-import { AgentContext, DidsApi, W3cV2CredentialService, W3cV2SdJwtVerifiableCredential } from '@credo-ts/core'
 import {
+  AgentContext,
   CredoError,
+  DidsApi,
   InjectionSymbols,
+  inject,
+  injectable,
   Kms,
-  Logger,
+  type Logger,
   Mdoc,
   MdocApi,
+  parseDid,
+  replaceError,
   SdJwtVcApi,
   SignatureSuiteRegistry,
   W3cCredentialService,
   W3cJsonLdVerifiableCredential,
   W3cJwtVerifiableCredential,
-  inject,
-  injectable,
-  parseDid,
+  W3cV2CredentialService,
+  W3cV2SdJwtVerifiableCredential,
 } from '@credo-ts/core'
 import {
-  CallbackContext,
-  Jwk,
-  Oauth2Client,
-  RequestDpopOptions,
+  type AccessTokenResponse,
   authorizationCodeGrantIdentifier,
+  type CallbackContext,
   clientAuthenticationAnonymous,
   clientAuthenticationClientAttestationJwt,
   clientAuthenticationNone,
   getAuthorizationServerMetadataFromList,
+  type Jwk,
+  Oauth2Client,
   preAuthorizedCodeGrantIdentifier,
+  type RequestDpopOptions,
   refreshTokenGrantIdentifier,
 } from '@openid4vc/oauth2'
 import {
-  DeferredCredentialResponse,
-  determineAuthorizationServerForCredentialOffer,
-  parseKeyAttestationJwt,
-} from '@openid4vc/openid4vci'
-import {
   AuthorizationFlow,
-  CredentialResponse,
-  IssuerMetadataResult,
+  type CredentialResponse,
+  type DeferredCredentialResponse,
+  determineAuthorizationServerForCredentialOffer,
+  type IssuerMetadataResult,
   Openid4vciClient,
   Openid4vciDraftVersion,
   Openid4vciRetrieveCredentialsError,
+  parseKeyAttestationJwt,
 } from '@openid4vc/openid4vci'
 import type { OpenId4VciCredentialConfigurationSupportedWithFormats, OpenId4VciMetadata } from '../shared'
+
+import { OpenId4VciCredentialFormatProfile } from '../shared'
+import { getOid4vcCallbacks } from '../shared/callbacks'
+import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
+import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
 import type {
   OpenId4VciAcceptCredentialOfferOptions,
   OpenId4VciAuthCodeFlowOptions,
@@ -59,13 +67,6 @@ import type {
   OpenId4VciTokenRefreshOptions,
   OpenId4VciTokenRequestOptions,
 } from './OpenId4VciHolderServiceOptions'
-
-import { OpenId4VciCredentialFormatProfile } from '../shared'
-import { getOid4vcCallbacks } from '../shared/callbacks'
-import { getOfferedCredentials, getScopesFromCredentialConfigurationsSupported } from '../shared/issuerMetadataUtils'
-import { getSupportedJwaSignatureAlgorithms } from '../shared/utils'
-
-import { replaceError } from '@credo-ts/core'
 import { openId4VciSupportedCredentialFormats } from './OpenId4VciHolderServiceOptions'
 
 @injectable()
@@ -251,10 +252,17 @@ export class OpenId4VciHolderService {
       }
     }
 
-    const alg = dpopSigningAlgValuesSupported.find((alg): alg is Kms.KnownJwaSignatureAlgorithm => {
+    const alg = dpopSigningAlgValuesSupported.find((algorithm): algorithm is Kms.KnownJwaSignatureAlgorithm => {
       try {
-        Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(alg as Kms.KnownJwaSignatureAlgorithm)
-        return true
+        Kms.PublicJwk.supportedPublicJwkClassForSignatureAlgorithm(algorithm as Kms.KnownJwaSignatureAlgorithm)
+
+        // TODO: we should allow providing allowed backends to OID4VC API so you can limit which
+        // KMS backends can be used for DPOP
+        const supportedBackends = kms.supportedBackendsForOperation({
+          operation: 'sign',
+          algorithm: algorithm as Kms.KnownJwaSignatureAlgorithm,
+        })
+        return supportedBackends.length > 0
       } catch {
         return false
       }
@@ -282,7 +290,10 @@ export class OpenId4VciHolderService {
   public async retrieveAuthorizationCodeUsingPresentation(
     agentContext: AgentContext,
     options: OpenId4VciRetrieveAuthorizationCodeUsingPresentationOptions
-  ) {
+  ): Promise<{
+    authorizationCode: string
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const client = this.getClient(agentContext, {
       clientAttestation: options.walletAttestationJwt,
     })
@@ -314,7 +325,14 @@ export class OpenId4VciHolderService {
     }
   }
 
-  public async requestAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRequestOptions) {
+  public async requestAccessToken(
+    agentContext: AgentContext,
+    options: OpenId4VciTokenRequestOptions
+  ): Promise<{
+    authorizationServer: string
+    accessTokenResponse: AccessTokenResponse
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const { metadata, credentialOfferPayload } = options.resolvedCredentialOffer
     const client = this.getClient(agentContext, {
       clientAttestation: options.walletAttestationJwt,
@@ -376,7 +394,15 @@ export class OpenId4VciHolderService {
     }
   }
 
-  public async refreshAccessToken(agentContext: AgentContext, options: OpenId4VciTokenRefreshOptions) {
+  public async refreshAccessToken(
+    agentContext: AgentContext,
+    options: OpenId4VciTokenRefreshOptions
+  ): Promise<
+    // FIXME: export type in oid4vc library
+    Omit<Awaited<ReturnType<Oauth2Client['retrieveRefreshTokenAccessToken']>>, 'dpop'> & {
+      dpop?: OpenId4VciDpopRequestOptions
+    }
+  > {
     const oauth2Client = this.getOauth2Client(agentContext, {
       clientAttestation: options.walletAttestationJwt,
       clientId: options.clientId,
@@ -423,7 +449,12 @@ export class OpenId4VciHolderService {
       dpop?: OpenId4VciDpopRequestOptions
       clientId?: string
     }
-  ) {
+  ): Promise<{
+    credentials: OpenId4VciCredentialResponse[]
+    deferredCredentials: OpenId4VciDeferredCredentialResponse[]
+    dpop?: OpenId4VciDpopRequestOptions
+    cNonce?: string
+  }> {
     const { resolvedCredentialOffer, acceptCredentialOfferOptions } = options
     const { metadata, offeredCredentialConfigurations } = resolvedCredentialOffer
     const {
@@ -583,7 +614,11 @@ export class OpenId4VciHolderService {
   public async retrieveDeferredCredentials(
     agentContext: AgentContext,
     options: OpenId4VciDeferredCredentialRequestOptions
-  ) {
+  ): Promise<{
+    credentials: OpenId4VciCredentialResponse[]
+    deferredCredentials: OpenId4VciDeferredCredentialResponse[]
+    dpop?: OpenId4VciDpopRequestOptions
+  }> {
     const {
       issuerMetadata,
       transactionId,

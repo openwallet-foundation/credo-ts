@@ -13,7 +13,7 @@ import {
   ValidateNested,
 } from 'class-validator'
 
-import { AnonCredsPredicateType, anonCredsPredicateType } from '../../../../models'
+import { type AnonCredsPredicateType, anonCredsPredicateType } from '../../../../models'
 import { unqualifiedCredentialDefinitionIdRegex } from '../../../../utils'
 
 export interface DidCommPresentationV1PreviewAttributeOptions {
@@ -117,13 +117,14 @@ export class DidCommPresentationV1Preview {
     }
   }
 
+  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
+
   @Expose({ name: '@type' })
   @IsValidMessageType(DidCommPresentationV1Preview.type)
   @Transform(({ value }) => replaceLegacyDidSovPrefix(value), {
     toClassOnly: true,
   })
   public readonly type = DidCommPresentationV1Preview.type.messageTypeUri
-  public static readonly type = parseMessageType('https://didcomm.org/present-proof/1.0/presentation-preview')
 
   @Type(() => DidCommPresentationV1PreviewAttribute)
   @ValidateNested({ each: true })

@@ -1,3 +1,3 @@
 export * from './DidCommCredentialV2Protocol'
-export * from './messages'
 export * from './errors'
+export * from './messages'

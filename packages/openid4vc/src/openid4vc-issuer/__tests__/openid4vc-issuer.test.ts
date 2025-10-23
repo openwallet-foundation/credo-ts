@@ -1,3 +1,4 @@
+import '@openwallet-foundation/askar-nodejs'
 import type {
   AgentContext,
   KeyDidCreateOptions,
@@ -5,24 +6,19 @@ import type {
   W3cVerifiableCredential,
   W3cVerifyCredentialResult,
 } from '@credo-ts/core'
-import type {
-  OpenId4VciCredentialConfigurationSupportedWithFormats,
-  OpenId4VciCredentialRequest,
-  OpenId4VciMetadata,
-} from '../../shared'
-import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
-import type { OpenId4VcIssuerRecord } from '../repository'
-
 import {
   Agent,
+  asArray,
   CredoError,
   DidKey,
   DidsApi,
+  equalsIgnoreOrder,
   JsonTransformer,
   JwsService,
   JwtPayload,
   SdJwtVcApi,
   TypedArrayEncoder,
+  utils,
   W3cCredential,
   W3cCredentialService,
   W3cCredentialSubject,
@@ -34,18 +30,22 @@ import {
   W3cV2CredentialSubject,
   W3cV2Issuer,
   W3cV2SdJwtVerifiableCredential,
-  asArray,
-  equalsIgnoreOrder,
   w3cDate,
 } from '@credo-ts/core'
 import { InMemoryWalletModule } from '../../../../../tests/InMemoryWalletModule'
 import { transformPrivateKeyToPrivateJwk } from '../../../../askar/src'
 import { agentDependencies } from '../../../../node/src'
 import { OpenId4VcModule } from '../../OpenId4VcModule'
+import type {
+  OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialRequest,
+  OpenId4VciMetadata,
+} from '../../shared'
 import { OpenId4VciCredentialFormatProfile } from '../../shared'
-import { dateToSeconds } from '../../shared/utils'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
+import type { OpenId4VciCredentialRequestToCredentialMapper } from '../OpenId4VcIssuerServiceOptions'
+import type { OpenId4VcIssuerRecord } from '../repository'
 import { OpenId4VcIssuanceSessionRepository } from '../repository'
 
 const openBadgeCredential = {
@@ -119,7 +119,7 @@ const createCredentialRequest = async (
   const jws = await jwsService.createJwsCompact(agentContext, {
     protectedHeaderOptions: { alg: publicJwk.signatureAlgorithm, kid, typ: 'openid4vci-proof+jwt' },
     payload: new JwtPayload({
-      iat: dateToSeconds(new Date()),
+      iat: utils.dateToSeconds(new Date()),
       iss: clientId,
       aud: issuerMetadata.credentialIssuer.credential_issuer,
       additionalClaims: {

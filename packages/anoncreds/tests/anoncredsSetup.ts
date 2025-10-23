@@ -1,7 +1,40 @@
 import type { CheqdDidCreateOptions } from '@credo-ts/cheqd'
-import type { DidCommAutoAcceptProof, DidCommConnectionRecord } from '@credo-ts/didcomm'
+import {
+  Agent,
+  CacheModule,
+  CredoError,
+  DidDocumentBuilder,
+  DidsModule,
+  InMemoryLruCache,
+  TypedArrayEncoder,
+} from '@credo-ts/core'
+import type { DidCommAutoAcceptProof, DidCommConnectionRecord, DidCommModuleConfigOptions } from '@credo-ts/didcomm'
+import {
+  DidCommAutoAcceptCredential,
+  DidCommCredentialEventTypes,
+  DidCommCredentialState,
+  DidCommCredentialV2Protocol,
+  DidCommDifPresentationExchangeProofFormatService,
+  DidCommModule,
+  DidCommProofEventTypes,
+  DidCommProofState,
+  DidCommProofV2Protocol,
+} from '@credo-ts/didcomm'
+
+import { randomUUID } from 'crypto'
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
+import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
+import { sleep } from '../../core/src/utils/sleep'
 import type { EventReplaySubject } from '../../core/tests'
-import type { DefaultAgentModulesInput } from '../../didcomm/src/util/modules'
+import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
+import {
+  getAgentOptions,
+  makeConnection,
+  waitForCredentialRecordSubject,
+  waitForProofExchangeRecordSubject,
+} from '../../core/tests/helpers'
+import testLogger from '../../core/tests/logger'
 import type {
   AnonCredsDidCommOfferCredentialFormat,
   AnonCredsRegisterCredentialDefinitionOptions,
@@ -16,59 +49,23 @@ import type {
   RegisterRevocationStatusListReturnStateFinished,
   RegisterSchemaReturnStateFinished,
 } from '../src'
-
-import { randomUUID } from 'crypto'
-import {
-  Agent,
-  CacheModule,
-  CredoError,
-  DidDocumentBuilder,
-  DidsModule,
-  InMemoryLruCache,
-  TypedArrayEncoder,
-} from '@credo-ts/core'
-import {
-  DidCommAutoAcceptCredential,
-  DidCommCredentialEventTypes,
-  DidCommCredentialState,
-  DidCommCredentialV2Protocol,
-  DidCommCredentialsModule,
-  DidCommDifPresentationExchangeProofFormatService,
-  DidCommProofEventTypes,
-  DidCommProofState,
-  DidCommProofV2Protocol,
-  DidCommProofsModule,
-} from '@credo-ts/didcomm'
-
-import { CheqdDidRegistrar, CheqdDidResolver, CheqdModule } from '../../cheqd/src/index'
-import { getCheqdModuleConfig } from '../../cheqd/tests/setupCheqdModule'
-import { sleep } from '../../core/src/utils/sleep'
-import { setupEventReplaySubjects, setupSubjectTransports } from '../../core/tests'
-import {
-  getAgentOptions,
-  makeConnection,
-  waitForCredentialRecordSubject,
-  waitForProofExchangeRecordSubject,
-} from '../../core/tests/helpers'
-import testLogger from '../../core/tests/logger'
 import { AnonCredsDidCommCredentialFormatService, AnonCredsDidCommProofFormatService, AnonCredsModule } from '../src'
 import { DataIntegrityDidCommCredentialFormatService } from '../src/formats/DataIntegrityDidCommCredentialFormatService'
 import { InMemoryAnonCredsRegistry } from '../tests/InMemoryAnonCredsRegistry'
-
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src/utils'
+import { anoncreds } from './helpers'
 import { InMemoryTailsFileService } from './InMemoryTailsFileService'
 import { LocalDidResolver } from './LocalDidResolver'
-import { anoncreds } from './helpers'
 import { anoncredsDefinitionFourAttributesNoRevocation } from './preCreatedAnonCredsDefinition'
 
 // Helper type to get the type of the agents (with the custom modules) for the credential tests
-export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsModules> & DefaultAgentModulesInput>
+export type AnonCredsTestsAgent = Agent<ReturnType<typeof getAnonCredsModules>>
 
 export const getAnonCredsModules = ({
   autoAcceptCredentials,
   autoAcceptProofs,
   registries,
   cheqd,
+  extraDidCommConfig,
 }: {
   autoAcceptCredentials?: DidCommAutoAcceptCredential
   autoAcceptProofs?: DidCommAutoAcceptProof
@@ -77,6 +74,7 @@ export const getAnonCredsModules = ({
     rpcUrl?: string
     seed?: string
   }
+  extraDidCommConfig?: Omit<DidCommModuleConfigOptions, 'proofs' | 'credentials'>
 } = {}) => {
   const dataIntegrityCredentialFormatService = new DataIntegrityDidCommCredentialFormatService()
   // Add support for resolving pre-created credential definitions and schemas
@@ -97,22 +95,29 @@ export const getAnonCredsModules = ({
   const cheqdSdk = cheqd ? new CheqdModule(getCheqdModuleConfig(cheqd.seed, cheqd.rpcUrl)) : undefined
   const modules = {
     ...(cheqdSdk && { cheqdSdk }),
-    credentials: new DidCommCredentialsModule({
-      autoAcceptCredentials,
-      credentialProtocols: [
-        new DidCommCredentialV2Protocol({
-          credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
-        }),
-      ],
+    didcomm: new DidCommModule({
+      connections: {
+        autoAcceptConnections: true,
+      },
+      ...extraDidCommConfig,
+      credentials: {
+        autoAcceptCredentials,
+        credentialProtocols: [
+          new DidCommCredentialV2Protocol({
+            credentialFormats: [dataIntegrityCredentialFormatService, anonCredsCredentialFormatService],
+          }),
+        ],
+      },
+      proofs: {
+        autoAcceptProofs,
+        proofProtocols: [
+          new DidCommProofV2Protocol({
+            proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
+          }),
+        ],
+      },
     }),
-    proofs: new DidCommProofsModule({
-      autoAcceptProofs,
-      proofProtocols: [
-        new DidCommProofV2Protocol({
-          proofFormats: [anonCredsProofFormatService, presentationExchangeProofFormatService],
-        }),
-      ],
-    }),
+
     anoncreds: new AnonCredsModule({
       registries: registries ?? [inMemoryAnonCredsRegistry],
       tailsFileService: new InMemoryTailsFileService(),
@@ -151,7 +156,7 @@ export async function issueAnonCredsCredential({
   revocationRegistryDefinitionId: string | null
   offer: AnonCredsDidCommOfferCredentialFormat
 }) {
-  let issuerCredentialExchangeRecord = await issuerAgent.modules.credentials.offerCredential({
+  let issuerCredentialExchangeRecord = await issuerAgent.didcomm.credentials.offerCredential({
     comment: 'some comment about credential',
     connectionId: issuerHolderConnectionId,
     protocolVersion: 'v2',
@@ -170,7 +175,7 @@ export async function issueAnonCredsCredential({
     state: DidCommCredentialState.OfferReceived,
   })
 
-  await holderAgent.modules.credentials.acceptOffer({
+  await holderAgent.didcomm.credentials.acceptOffer({
     credentialExchangeRecordId: holderCredentialExchangeRecord.id,
     autoAcceptCredential: DidCommAutoAcceptCredential.ContentApproved,
   })
@@ -251,7 +256,7 @@ export async function presentAnonCredsProof({
     state: DidCommProofState.RequestReceived,
   })
 
-  let verifierProofExchangeRecord = await verifierAgent.modules.proofs.requestProof({
+  let verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.requestProof({
     connectionId: verifierHolderConnectionId,
     proofFormats: {
       anoncreds: {
@@ -266,7 +271,7 @@ export async function presentAnonCredsProof({
 
   let holderProofExchangeRecord = await holderProofExchangeRecordPromise
 
-  const selectedCredentials = await holderAgent.modules.proofs.selectCredentialsForRequest({
+  const selectedCredentials = await holderAgent.didcomm.proofs.selectCredentialsForRequest({
     proofExchangeRecordId: holderProofExchangeRecord.id,
   })
 
@@ -275,7 +280,7 @@ export async function presentAnonCredsProof({
     state: DidCommProofState.PresentationReceived,
   })
 
-  await holderAgent.modules.proofs.acceptRequest({
+  await holderAgent.didcomm.proofs.acceptRequest({
     proofExchangeRecordId: holderProofExchangeRecord.id,
     proofFormats: { anoncreds: selectedCredentials.proofFormats.anoncreds },
   })
@@ -290,7 +295,7 @@ export async function presentAnonCredsProof({
     state: DidCommProofState.Done,
   })
 
-  verifierProofExchangeRecord = await verifierAgent.modules.proofs.acceptPresentation({
+  verifierProofExchangeRecord = await verifierAgent.didcomm.proofs.acceptPresentation({
     proofExchangeRecordId: verifierProofExchangeRecord.id,
   })
   holderProofExchangeRecord = await holderProofExchangeRecordPromise
@@ -335,15 +340,16 @@ export async function setupAnonCredsTests<
   const issuerAgent = new Agent(
     getAgentOptions(
       issuerName,
-      {
-        endpoints: ['rxjs:issuer'],
-      },
+      {},
       {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
         cheqd,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:issuer'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -352,15 +358,16 @@ export async function setupAnonCredsTests<
   const holderAgent = new Agent(
     getAgentOptions(
       holderName,
-      {
-        endpoints: ['rxjs:holder'],
-      },
+      {},
       {},
       getAnonCredsModules({
         autoAcceptCredentials,
         autoAcceptProofs,
         registries,
         cheqd,
+        extraDidCommConfig: {
+          endpoints: ['rxjs:holder'],
+        },
       }),
       { requireDidcomm: true }
     )
@@ -370,16 +377,18 @@ export async function setupAnonCredsTests<
     ? new Agent(
         getAgentOptions(
           verifierName,
-          {
-            endpoints: ['rxjs:verifier'],
-          },
+          {},
           {},
           getAnonCredsModules({
             autoAcceptCredentials,
             autoAcceptProofs,
             registries,
             cheqd,
-          })
+            extraDidCommConfig: {
+              endpoints: ['rxjs:verifier'],
+            },
+          }),
+          { requireDidcomm: true }
         )
       )
     : undefined

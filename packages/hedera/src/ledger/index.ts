@@ -1,7 +1,7 @@
 export {
+  type HederaCreateDidResult,
+  type HederaDidCreateOptions,
+  type HederaDidDeactivateOptions,
+  type HederaDidUpdateOptions,
   HederaLedgerService,
-  HederaDidCreateOptions,
-  HederaDidUpdateOptions,
-  HederaDidDeactivateOptions,
-  HederaCreateDidResult,
 } from './HederaLedgerService'

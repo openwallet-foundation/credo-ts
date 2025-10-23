@@ -1,7 +1,7 @@
-import { Expose, Type, plainToClassFromExist } from 'class-transformer'
+import { Expose, plainToClassFromExist, Type } from 'class-transformer'
 import { IsOptional, IsRFC3339, ValidateNested } from 'class-validator'
 import type { JsonObject, SingleOrArray } from '../../../../types'
-import { JsonTransformer, asArray, mapSingleOrArray } from '../../../../utils'
+import { asArray, JsonTransformer, mapSingleOrArray } from '../../../../utils'
 import {
   IsInstanceOrArrayOfInstances,
   IsNever,
@@ -10,15 +10,19 @@ import {
 } from '../../../../utils/validators'
 import { CREDENTIALS_CONTEXT_V2_URL } from '../../constants'
 import { IsCredentialJsonLdContext, IsCredentialType } from '../../validators'
-import { W3cV2CredentialSchema, W3cV2CredentialSchemaOptions } from './W3cV2CredentialSchema'
-import { W3cV2CredentialStatus, W3cV2CredentialStatusOptions } from './W3cV2CredentialStatus'
-import { W3cV2CredentialSubject, W3cV2CredentialSubjectOptions } from './W3cV2CredentialSubject'
-import { W3cV2Evidence, W3cV2EvidenceOptions } from './W3cV2Evidence'
-import { IsW3cV2Issuer, W3cV2Issuer, W3cV2IssuerOptions, W3cV2IssuerTransformer } from './W3cV2Issuer'
-import { W3cV2JsonCredential } from './W3cV2JsonCredential'
-import { W3cV2LocalizedValue, W3cV2LocalizedValueOptions, W3cV2LocalizedValueTransformer } from './W3cV2LocalizedValue'
-import { W3cV2RefreshService, W3cV2RefreshServiceOptions } from './W3cV2RefreshService'
-import { W3cV2TermsOfUse, W3cV2TermsOfUseOptions } from './W3cV2TermsOfUse'
+import { W3cV2CredentialSchema, type W3cV2CredentialSchemaOptions } from './W3cV2CredentialSchema'
+import { W3cV2CredentialStatus, type W3cV2CredentialStatusOptions } from './W3cV2CredentialStatus'
+import { W3cV2CredentialSubject, type W3cV2CredentialSubjectOptions } from './W3cV2CredentialSubject'
+import { W3cV2Evidence, type W3cV2EvidenceOptions } from './W3cV2Evidence'
+import { IsW3cV2Issuer, W3cV2Issuer, type W3cV2IssuerOptions, W3cV2IssuerTransformer } from './W3cV2Issuer'
+import type { W3cV2JsonCredential } from './W3cV2JsonCredential'
+import {
+  W3cV2LocalizedValue,
+  type W3cV2LocalizedValueOptions,
+  W3cV2LocalizedValueTransformer,
+} from './W3cV2LocalizedValue'
+import { W3cV2RefreshService, type W3cV2RefreshServiceOptions } from './W3cV2RefreshService'
+import { W3cV2TermsOfUse, type W3cV2TermsOfUseOptions } from './W3cV2TermsOfUse'
 
 export interface W3cV2CredentialOptions {
   context?: Array<string | JsonObject>
@@ -30,7 +34,7 @@ export interface W3cV2CredentialOptions {
   credentialSubject: SingleOrArray<W3cV2CredentialSubjectOptions>
   validFrom?: string
   validUntil?: string
-  status?: SingleOrArray<W3cV2CredentialStatusOptions>
+  credentialStatus?: SingleOrArray<W3cV2CredentialStatusOptions>
   credentialSchema?: SingleOrArray<W3cV2CredentialSchemaOptions>
   refreshService?: SingleOrArray<W3cV2RefreshServiceOptions>
   termsOfUse?: SingleOrArray<W3cV2TermsOfUseOptions>
@@ -51,7 +55,7 @@ export class W3cV2Credential {
         credentialSubject,
         validFrom,
         validUntil,
-        status,
+        credentialStatus,
         credentialSchema,
         refreshService,
         termsOfUse,
@@ -91,8 +95,8 @@ export class W3cV2Credential {
       this.validFrom = validFrom
       this.validUntil = validUntil
 
-      if (status) {
-        this.status = mapSingleOrArray(status, (status) =>
+      if (credentialStatus) {
+        this.credentialStatus = mapSingleOrArray(credentialStatus, (status) =>
           status instanceof W3cV2CredentialStatus ? status : new W3cV2CredentialStatus(status)
         )
       }
@@ -165,7 +169,7 @@ export class W3cV2Credential {
   @Type(() => W3cV2CredentialStatus)
   @ValidateNested({ each: true })
   @IsInstanceOrArrayOfInstances({ classType: W3cV2CredentialStatus, allowEmptyArray: true })
-  public status?: SingleOrArray<W3cV2CredentialStatus>
+  public credentialStatus?: SingleOrArray<W3cV2CredentialStatus>
 
   @IsOptional()
   @Type(() => W3cV2CredentialSchema)

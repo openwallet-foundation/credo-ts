@@ -1,7 +1,6 @@
 import type { DependencyManager, Module } from '../../plugins'
-import type { DidsModuleConfigOptions } from './DidsModuleConfig'
-
 import { DidsApi } from './DidsApi'
+import type { DidsModuleConfigOptions } from './DidsModuleConfig'
 import { DidsModuleConfig } from './DidsModuleConfig'
 import { DidRepository } from './repository'
 import { DidRegistrarService, DidResolverService } from './services'

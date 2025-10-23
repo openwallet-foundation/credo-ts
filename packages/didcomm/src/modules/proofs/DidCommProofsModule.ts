@@ -1,13 +1,11 @@
 import type { AgentContext, ApiModule, Constructor, DependencyManager, Optional } from '@credo-ts/core'
-import type { DidCommProofsModuleConfigOptions } from './DidCommProofsModuleConfig'
-import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
-
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
-
 import { DidCommProofsApi } from './DidCommProofsApi'
+import type { DidCommProofsModuleConfigOptions } from './DidCommProofsModuleConfig'
 import { DidCommProofsModuleConfig } from './DidCommProofsModuleConfig'
 import { DidCommProofV2Protocol } from './protocol'
+import type { DidCommProofProtocol } from './protocol/DidCommProofProtocol'
 import { DidCommProofExchangeRepository } from './repository'
 
 /**

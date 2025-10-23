@@ -1,18 +1,17 @@
 import type { DependencyManager } from '../../../../../core/src/plugins'
-import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-
 import { getAgentContext } from '../../../../../core/tests'
 import { DidCommFeatureRegistry } from '../../../DidCommFeatureRegistry'
 import { DidCommMessageHandlerRegistry } from '../../../DidCommMessageHandlerRegistry'
 import { DidCommMessagePickupModule } from '../DidCommMessagePickupModule'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
+import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from '../services'
 
 describe('DidCommMessagePickupModule', () => {
   test('registers dependencies on the dependency manager', () => {
     const dependencyManager = {
-      registerInstance: jest.fn(),
-      registerSingleton: jest.fn(),
+      registerInstance: vi.fn(),
+      registerSingleton: vi.fn(),
       isRegistered: () => {
         return false
       },
@@ -30,7 +29,7 @@ describe('DidCommMessagePickupModule', () => {
 
   test('calls register on the provided ProofProtocols', async () => {
     const messagePickupProtocol = {
-      register: jest.fn(),
+      register: vi.fn(),
     } as unknown as DidCommMessagePickupProtocol
 
     const messagePickupModule = new DidCommMessagePickupModule({
@@ -40,7 +39,7 @@ describe('DidCommMessagePickupModule', () => {
     expect(messagePickupModule.config.protocols).toEqual([messagePickupProtocol])
 
     const messagePickupSessionSessionService = {
-      start: jest.fn(),
+      start: vi.fn(),
     } as unknown as DidCommMessagePickupSessionService
 
     const messageHandlerRegistry = new DidCommMessageHandlerRegistry()

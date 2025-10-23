@@ -7,8 +7,8 @@ import type {
   StorageService,
 } from '@credo-ts/core'
 import { injectable } from '@credo-ts/core'
-import { DrizzleStorageModuleConfig } from '../DrizzleStorageModuleConfig'
 import { BaseDrizzleRecordAdapter } from '../adapter/BaseDrizzleRecordAdapter'
+import { DrizzleStorageModuleConfig } from '../DrizzleStorageModuleConfig'
 import { CredoDrizzleStorageError } from '../error/CredoDrizzleStorageError'
 
 @injectable()
@@ -23,7 +23,7 @@ export class DrizzleStorageService<T extends BaseRecord> implements StorageServi
       )
     }
 
-    // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
     return adapter as BaseDrizzleRecordAdapter<T, any, any, any, any>
   }
 

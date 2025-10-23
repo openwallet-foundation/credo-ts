@@ -1,17 +1,15 @@
-import type { AgentContext } from '../../../../../core/src/agent'
-import type { DidCommRouting } from '../../../models'
-
 import { Subject } from 'rxjs'
-
-import { Kms, TypedArrayEncoder } from '../../../../../core'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
+import type { AgentContext } from '../../../../../core/src/agent'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
+import { Kms, TypedArrayEncoder } from '../../../../../core/src/index'
 import { DidKey, IndyAgentService } from '../../../../../core/src/modules/dids'
 import { DidDocumentRole } from '../../../../../core/src/modules/dids/domain/DidDocumentRole'
 import { DidCommV1Service } from '../../../../../core/src/modules/dids/domain/service/DidCommV1Service'
 import { didDocumentJsonToNumAlgo1Did } from '../../../../../core/src/modules/dids/methods/peer/peerDidNumAlgo1'
 import { DidRecord, DidRepository } from '../../../../../core/src/modules/dids/repository'
-import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { indyDidFromPublicKeyBase58 } from '../../../../../core/src/utils/did'
+import { JsonTransformer } from '../../../../../core/src/utils/JsonTransformer'
 import { uuid } from '../../../../../core/src/utils/uuid'
 import {
   getAgentConfig,
@@ -24,6 +22,7 @@ import { DidCommMessage } from '../../../DidCommMessage'
 import { DidCommModuleConfig } from '../../../DidCommModuleConfig'
 import { signData, unpackAndVerifySignatureDecorator } from '../../../decorators/signature/SignatureDecoratorUtils'
 import { AckStatus, DidCommAckMessage } from '../../../messages'
+import type { DidCommRouting } from '../../../models'
 import { DidCommInboundMessageContext } from '../../../models'
 import { DidCommOutOfBandService } from '../../oob/DidCommOutOfBandService'
 import { DidCommOutOfBandRole } from '../../oob/domain/DidCommOutOfBandRole'
@@ -31,6 +30,7 @@ import { DidCommOutOfBandState } from '../../oob/domain/DidCommOutOfBandState'
 import { DidCommOutOfBandRepository } from '../../oob/repository/DidCommOutOfBandRepository'
 import { DidCommConnectionRequestMessage, DidCommConnectionResponseMessage, DidCommTrustPingMessage } from '../messages'
 import {
+  authenticationTypes,
   DidCommConnection,
   DidCommDidExchangeRole,
   DidCommDidExchangeState,
@@ -38,20 +38,21 @@ import {
   Ed25119Sig2018,
   EmbeddedAuthentication,
   ReferencedAuthentication,
-  authenticationTypes,
 } from '../models'
 import { DidCommConnectionRepository } from '../repository'
 import { DidCommConnectionService } from '../services'
 import { convertToNewDidDocument } from '../services/helpers'
 
-jest.mock('../repository/DidCommConnectionRepository')
-jest.mock('../../oob/repository/DidCommOutOfBandRepository')
-jest.mock('../../oob/DidCommOutOfBandService')
-jest.mock('../../../../../core/src/modules/dids/repository/DidRepository')
-const ConnectionRepositoryMock = DidCommConnectionRepository as jest.Mock<DidCommConnectionRepository>
-const OutOfBandRepositoryMock = DidCommOutOfBandRepository as jest.Mock<DidCommOutOfBandRepository>
-const OutOfBandServiceMock = DidCommOutOfBandService as jest.Mock<DidCommOutOfBandService>
-const DidRepositoryMock = DidRepository as jest.Mock<DidRepository>
+vi.mock('../repository/DidCommConnectionRepository')
+vi.mock('../../oob/repository/DidCommOutOfBandRepository')
+vi.mock('../../oob/DidCommOutOfBandService')
+vi.mock('../../../../../core/src/modules/dids/repository/DidRepository')
+const ConnectionRepositoryMock = DidCommConnectionRepository as MockedClassConstructor<
+  typeof DidCommConnectionRepository
+>
+const OutOfBandRepositoryMock = DidCommOutOfBandRepository as MockedClassConstructor<typeof DidCommOutOfBandRepository>
+const OutOfBandServiceMock = DidCommOutOfBandService as MockedClassConstructor<typeof DidCommOutOfBandService>
+const DidRepositoryMock = DidRepository as MockedClassConstructor<typeof DidRepository>
 
 const connectionImageUrl = 'https://example.com/image.png'
 
@@ -109,14 +110,12 @@ describe('DidCommConnectionService', () => {
     }
 
     mockFunction(didRepository.getById).mockResolvedValue(
-      Promise.resolve(
-        new DidRecord({
-          did: 'did:peer:123',
-          role: DidDocumentRole.Created,
-        })
-      )
+      new DidRecord({
+        did: 'did:peer:123',
+        role: DidDocumentRole.Created,
+      })
     )
-    mockFunction(didRepository.findByQuery).mockResolvedValue(Promise.resolve([]))
+    mockFunction(didRepository.findByQuery).mockResolvedValue([])
   })
 
   describe('createRequest', () => {
@@ -393,7 +392,7 @@ describe('DidCommConnectionService', () => {
     it(`throws an error when out-of-band role is not ${DidCommOutOfBandRole.Sender}`, async () => {
       expect.assertions(1)
 
-      const inboundMessage = new DidCommInboundMessageContext(jest.fn()(), {
+      const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), {
         agentContext,
         recipientKey: Kms.PublicJwk.fromPublicKey({
           kty: 'OKP',
@@ -427,7 +426,7 @@ describe('DidCommConnectionService', () => {
       (state) => {
         expect.assertions(1)
 
-        const inboundMessage = new DidCommInboundMessageContext(jest.fn()(), { agentContext })
+        const inboundMessage = new DidCommInboundMessageContext(vi.fn()(), { agentContext })
         const outOfBand = getMockOutOfBand({ role: DidCommOutOfBandRole.Sender, state })
 
         return expect(connectionService.processRequest(inboundMessage, outOfBand)).rejects.toThrow(
@@ -599,7 +598,7 @@ describe('DidCommConnectionService', () => {
       const processedConnection = await connectionService.processResponse(messageContext, outOfBandRecord)
 
       const peerDid = didDocumentJsonToNumAlgo1Did(
-        // biome-ignore lint/style/noNonNullAssertion: <explanation>
+        // biome-ignore lint/style/noNonNullAssertion: no explanation
         convertToNewDidDocument(otherPartyConnection.didDoc!).didDocument.toJSON()
       )
 
@@ -615,7 +614,7 @@ describe('DidCommConnectionService', () => {
         role: DidCommDidExchangeRole.Responder,
         state: DidCommDidExchangeState.RequestSent,
       })
-      const messageContext = new DidCommInboundMessageContext(jest.fn()(), {
+      const messageContext = new DidCommInboundMessageContext(vi.fn()(), {
         agentContext,
         connection: connectionRecord,
         recipientKey: Kms.PublicJwk.fromPublicKey({

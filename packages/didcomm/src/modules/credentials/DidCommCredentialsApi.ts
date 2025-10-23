@@ -1,4 +1,9 @@
 import type { Query, QueryOptions } from '@credo-ts/core'
+import { AgentContext, CredoError, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
+import { DidCommMessage } from '../../DidCommMessage'
+import { DidCommMessageSender } from '../../DidCommMessageSender'
+import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
+import { DidCommConnectionService } from '../connections'
 import type {
   AcceptCredentialOfferOptions,
   AcceptCredentialOptions,
@@ -19,20 +24,12 @@ import type {
   SendCredentialProblemReportOptions,
   SendRevocationNotificationOptions,
 } from './DidCommCredentialsApiOptions'
-import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
-import type { CredentialFormatsFromProtocols } from './protocol/DidCommCredentialProtocolOptions'
-import type { DidCommCredentialExchangeRecord } from './repository/DidCommCredentialExchangeRecord'
-
-import { AgentContext, CredoError, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
-import { DidCommMessage } from '../../DidCommMessage'
-import { DidCommMessageSender } from '../../DidCommMessageSender'
-import { getOutboundDidCommMessageContext } from '../../getDidCommOutboundMessageContext'
-import { DidCommConnectionService } from '../connections'
-
 import { DidCommCredentialsModuleConfig } from './DidCommCredentialsModuleConfig'
 import { DidCommCredentialState } from './models/DidCommCredentialState'
+import type { DidCommCredentialProtocol } from './protocol/DidCommCredentialProtocol'
+import type { CredentialFormatsFromProtocols } from './protocol/DidCommCredentialProtocolOptions'
 import { DidCommRevocationNotificationService } from './protocol/revocation-notification/services'
+import type { DidCommCredentialExchangeRecord } from './repository/DidCommCredentialExchangeRecord'
 import { DidCommCredentialExchangeRepository } from './repository/DidCommCredentialExchangeRepository'
 
 export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> {
@@ -90,7 +87,7 @@ export interface DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> 
 }
 
 @injectable()
-// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: <explanation>
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: no explanation
 export class DidCommCredentialsApi<CPs extends DidCommCredentialProtocol[]> implements DidCommCredentialsApi<CPs> {
   /**
    * Configuration for the credentials module

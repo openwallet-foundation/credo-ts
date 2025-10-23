@@ -1,41 +1,41 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
-import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
-
+import type { Logger } from '@credo-ts/core'
 import { Subject } from 'rxjs'
-
-import { Logger } from '@credo-ts/core'
+import type { MockedFunction } from 'vitest'
+import type { MockedClassConstructor } from '../../../../../../tests/types'
 import { EventEmitter } from '../../../../../core/src/agent/EventEmitter'
 import { CredoError } from '../../../../../core/src/error/CredoError'
 import { testLogger } from '../../../../../core/tests'
 import { getAgentContext, getMockConnection, mockFunction } from '../../../../../core/tests/helpers'
-import { DidCommModuleConfig } from '../../../../../didcomm'
+import { DidCommModuleConfig } from '../../../../../didcomm/src'
 import { DidCommMessageSender } from '../../../DidCommMessageSender'
 import { DidCommDidExchangeState } from '../../connections/models/DidCommDidExchangeState'
 import { DidCommConnectionService } from '../../connections/services/DidCommConnectionService'
 import { DidCommMessagePickupApi } from '../DidCommMessagePickupApi'
 import { DidCommMessagePickupModuleConfig } from '../DidCommMessagePickupModuleConfig'
+import type { DidCommMessagePickupSession } from '../DidCommMessagePickupSession'
 import {
   DidCommMessageDeliveryV2Message,
   DidCommMessagePickupV1Protocol,
   DidCommMessagePickupV2Protocol,
 } from '../protocol'
+import type { DidCommMessagePickupProtocol } from '../protocol/DidCommMessagePickupProtocol'
 import { DidCommMessagePickupSessionService } from '../services/DidCommMessagePickupSessionService'
 
 const mockConnection = getMockConnection({
   state: DidCommDidExchangeState.Completed,
 })
 
-jest.mock('../../../../../core/src/agent/EventEmitter')
-jest.mock('../../../DidCommMessageSender')
-jest.mock('../../connections/services/DidCommConnectionService')
-jest.mock('../services/DidCommMessagePickupSessionService')
+vi.mock('../../../../../core/src/agent/EventEmitter')
+vi.mock('../../../DidCommMessageSender')
+vi.mock('../../connections/services/DidCommConnectionService')
+vi.mock('../services/DidCommMessagePickupSessionService')
 
-const EventEmitterMock = EventEmitter as jest.Mock<EventEmitter>
-const MessageSenderMock = DidCommMessageSender as jest.Mock<DidCommMessageSender>
-const ConnectionServiceMock = DidCommConnectionService as jest.Mock<DidCommConnectionService>
-const MessagePickupSessionServiceMock =
-  DidCommMessagePickupSessionService as jest.Mock<DidCommMessagePickupSessionService>
+const EventEmitterMock = EventEmitter as MockedClassConstructor<typeof EventEmitter>
+const MessageSenderMock = DidCommMessageSender as MockedClassConstructor<typeof DidCommMessageSender>
+const ConnectionServiceMock = DidCommConnectionService as MockedClassConstructor<typeof DidCommConnectionService>
+const MessagePickupSessionServiceMock = DidCommMessagePickupSessionService as MockedClassConstructor<
+  typeof DidCommMessagePickupSessionService
+>
 
 const messagePickupModuleConfig = new DidCommMessagePickupModuleConfig({
   maximumBatchSize: 10,
@@ -61,14 +61,14 @@ const agentContext = getAgentContext({
 })
 
 describe('DidCommMessagePickupApi', () => {
-  jest.resetAllMocks()
+  vi.resetAllMocks()
 
   let api: DidCommMessagePickupApi<DidCommMessagePickupProtocol[]>
   let mockLogger: Logger
   let stop$: Subject<boolean>
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    vi.resetAllMocks()
     stop$ = new Subject()
     mockLogger = testLogger
     api = new DidCommMessagePickupApi(
@@ -115,7 +115,7 @@ describe('DidCommMessagePickupApi', () => {
       ],
     })
 
-    const sendMessageMock = messageSender.sendMessage as jest.Mock
+    const sendMessageMock = messageSender.sendMessage as MockedFunction<(typeof messageSender)['sendMessage']>
     const [outboundCtx, options] = sendMessageMock.mock.calls[0]
 
     expect(messageSender.sendMessage).toHaveBeenCalledTimes(1)

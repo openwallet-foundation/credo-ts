@@ -1,7 +1,6 @@
 import type { RecordTags, TagsBase } from '@credo-ts/core'
-import type { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
-
 import { BaseRecord, utils } from '@credo-ts/core'
+import type { DidCommBasicMessageRole } from '../DidCommBasicMessageRole'
 
 export type CustomDidCommBasicMessageTags = TagsBase
 export type DefaultDidCommBasicMessageTags = {

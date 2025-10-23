@@ -1,10 +1,11 @@
 import type { AgentContext, DependencyManager, Module } from '@credo-ts/core'
 
 import { DidCommFeatureRegistry } from '../../DidCommFeatureRegistry'
+import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommProtocol } from '../../models'
-
 import { DidCommBasicMessageRole } from './DidCommBasicMessageRole'
 import { DidCommBasicMessagesApi } from './DidCommBasicMessagesApi'
+import { DidCommBasicMessageHandler } from './handlers'
 import { DidCommBasicMessageRepository } from './repository'
 import { DidCommBasicMessageService } from './services'
 
@@ -24,6 +25,10 @@ export class DidCommBasicMessagesModule implements Module {
 
   public async initialize(agentContext: AgentContext): Promise<void> {
     const featureRegistry = agentContext.dependencyManager.resolve(DidCommFeatureRegistry)
+    const messageHandlerRegistry = agentContext.resolve(DidCommMessageHandlerRegistry)
+    const basicMessageService = agentContext.resolve(DidCommBasicMessageService)
+
+    messageHandlerRegistry.registerMessageHandler(new DidCommBasicMessageHandler(basicMessageService))
 
     featureRegistry.register(
       new DidCommProtocol({

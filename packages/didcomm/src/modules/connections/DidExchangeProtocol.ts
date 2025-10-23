@@ -1,43 +1,38 @@
 import type { AgentContext, DidDocumentKey, ResolvedDidCommService } from '@credo-ts/core'
-import type { DidCommRouting } from '../../models'
-import type { DidCommOutOfBandRecord } from '../oob/repository'
-import type { DidCommConnectionRecord } from './repository'
-
 import {
   Buffer,
+  base64ToBase64URL,
   CredoError,
   DidDocument,
   DidKey,
   DidRepository,
   DidsApi,
-  InjectionSymbols,
-  JsonEncoder,
-  JsonTransformer,
-  JwsService,
-  Kms,
-  Logger,
-  PeerDidNumAlgo,
-  TypedArrayEncoder,
-  base64ToBase64URL,
   getAlternativeDidsForPeerDid,
   getNumAlgoFromPeerDid,
   getPublicJwkFromVerificationMethod,
+  InjectionSymbols,
   inject,
   injectable,
   isDid,
   isValidPeerDid,
+  JsonEncoder,
+  JsonTransformer,
+  JwsService,
+  Kms,
+  type Logger,
+  PeerDidNumAlgo,
   parseDid,
+  TypedArrayEncoder,
   tryParseDid,
 } from '@credo-ts/core'
-
 import { DidCommAttachment, DidCommAttachmentData } from '../../decorators/attachment/DidCommAttachment'
+import type { DidCommRouting } from '../../models'
 import { DidCommInboundMessageContext } from '../../models'
-import { ParsedMessageType } from '../../util/messageType'
+import type { ParsedMessageType } from '../../util/messageType'
 import { DidCommOutOfBandRole } from '../oob/domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from '../oob/domain/DidCommOutOfBandState'
+import type { DidCommOutOfBandRecord } from '../oob/repository'
 import { getMediationRecordForDidDocument } from '../routing/services/helpers'
-
-import { DidCommDocumentService } from '../../services'
 import { DidCommConnectionsModuleConfig } from './DidCommConnectionsModuleConfig'
 import { DidExchangeStateMachine } from './DidExchangeStateMachine'
 import { DidExchangeProblemReportError, DidExchangeProblemReportReason } from './errors'
@@ -47,6 +42,7 @@ import {
   DidCommDidExchangeResponseMessage,
 } from './messages'
 import { DidCommDidExchangeRole, DidCommDidExchangeState, DidCommHandshakeProtocol } from './models'
+import type { DidCommConnectionRecord } from './repository'
 import { DidCommConnectionService } from './services'
 import {
   createPeerDidFromServices,
@@ -67,7 +63,6 @@ interface DidExchangeRequestParams {
 @injectable()
 export class DidExchangeProtocol {
   private connectionService: DidCommConnectionService
-  private didcommDocumentService: DidCommDocumentService
   private jwsService: JwsService
   private didRepository: DidRepository
   private logger: Logger
@@ -76,13 +71,11 @@ export class DidExchangeProtocol {
     connectionService: DidCommConnectionService,
     didRepository: DidRepository,
     jwsService: JwsService,
-    didcommDocumentService: DidCommDocumentService,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.connectionService = connectionService
     this.didRepository = didRepository
     this.jwsService = jwsService
-    this.didcommDocumentService = didcommDocumentService
     this.logger = logger
   }
 

@@ -1,15 +1,9 @@
-import type { DidCommMediationRecord } from './repository'
-
 import { AgentContext, injectable } from '@credo-ts/core'
-
-import { DidCommMessageHandlerRegistry } from '../../DidCommMessageHandlerRegistry'
 import { DidCommMessageSender } from '../../DidCommMessageSender'
 import { DidCommOutboundMessageContext } from '../../models'
 import { DidCommConnectionService } from '../connections'
-
 import { DidCommMediatorModuleConfig } from './DidCommMediatorModuleConfig'
-import { DidCommForwardHandler, DidCommKeylistUpdateHandler } from './handlers'
-import { DidCommMediationRequestHandler } from './handlers/DidCommMediationRequestHandler'
+import type { DidCommMediationRecord } from './repository'
 import { DidCommMediatorService } from './services/DidCommMediatorService'
 
 @injectable()
@@ -22,7 +16,6 @@ export class DidCommMediatorApi {
   private connectionService: DidCommConnectionService
 
   public constructor(
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     mediationService: DidCommMediatorService,
     messageSender: DidCommMessageSender,
     agentContext: AgentContext,
@@ -34,7 +27,6 @@ export class DidCommMediatorApi {
     this.connectionService = connectionService
     this.agentContext = agentContext
     this.config = config
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   public async grantRequestedMediation(mediationRecordId: string): Promise<DidCommMediationRecord> {
@@ -54,11 +46,5 @@ export class DidCommMediatorApi {
     await this.messageSender.sendMessage(outboundMessageContext)
 
     return mediationRecord
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommKeylistUpdateHandler(this.mediatorService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommForwardHandler(this.mediatorService))
-    messageHandlerRegistry.registerMessageHandler(new DidCommMediationRequestHandler(this.mediatorService, this.config))
   }
 }

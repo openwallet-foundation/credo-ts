@@ -1,13 +1,11 @@
 import type { ValidationOptions } from 'class-validator'
+import { buildMessage, isInstance, isString, ValidateBy } from 'class-validator'
 import type { SingleOrArray } from '../types'
+import { asArray } from './array'
 import type { Constructor } from './mixins'
 
-import { ValidateBy, buildMessage, isInstance, isString } from 'class-validator'
-
-import { asArray } from './array'
-
 export interface IsInstanceOrArrayOfInstancesValidationOptions extends ValidationOptions {
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
+  // biome-ignore lint/suspicious/noExplicitAny: no explanation
   classType: SingleOrArray<new (...args: any[]) => any>
 
   /**
@@ -106,7 +104,7 @@ export function IsStringOrInstanceOrArrayOfInstances(
   )
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
 export function isStringArray(value: any): value is string[] {
   return Array.isArray(value) && value.every((v) => typeof v === 'string')
 }

@@ -1,5 +1,5 @@
 import { clear } from 'console'
-import { textSync } from 'figlet'
+import figlet from 'figlet'
 import { prompt } from 'inquirer'
 
 import { BaseInquirer, ConfirmOptions } from './BaseInquirer'
@@ -9,7 +9,7 @@ import { Title } from './OutputClass'
 
 export const runFaber = async () => {
   clear()
-  console.log(textSync('Faber', { horizontalLayout: 'full' }))
+  console.log(figlet.textSync('Faber', { horizontalLayout: 'full' }))
   const faber = await FaberInquirer.build()
   await faber.processAnswer()
 }

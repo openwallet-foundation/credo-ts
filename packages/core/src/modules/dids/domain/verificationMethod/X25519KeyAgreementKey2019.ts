@@ -16,7 +16,11 @@ export function getX25519KeyAgreementKey2019({
   publicJwk,
   id,
   controller,
-}: { id: string; publicJwk: PublicJwk<X25519PublicJwk>; controller: string }) {
+}: {
+  id: string
+  publicJwk: PublicJwk<X25519PublicJwk>
+  controller: string
+}) {
   return new VerificationMethod({
     id,
     type: VERIFICATION_METHOD_TYPE_X25519_KEY_AGREEMENT_KEY_2019,

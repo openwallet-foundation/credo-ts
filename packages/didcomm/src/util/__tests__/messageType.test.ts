@@ -11,7 +11,6 @@ import {
   supportsIncomingMessageType,
 } from '../messageType'
 
-// biome-ignore lint/suspicious/noExportsInTest: <explanation>
 export class TestMessage extends DidCommMessage {
   public constructor() {
     super()

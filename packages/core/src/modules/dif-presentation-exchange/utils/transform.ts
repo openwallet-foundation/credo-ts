@@ -4,17 +4,16 @@ import type {
 } from '@animo-id/pex/dist/main/lib/types/PexCredentialMapper'
 import type { W3CVerifiablePresentation as SphereonW3CVerifiablePresentation } from '@sphereon/ssi-types'
 import type { AgentContext } from '../../../agent'
-import type { MdocRecord } from '../../mdoc'
-import type { SdJwtVcRecord } from '../../sd-jwt-vc'
-import type { W3cCredentialRecord } from '../../vc'
-import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
-import type { VerifiablePresentation } from '../models'
-
 import { Jwt } from '../../../crypto'
 import { JsonTransformer } from '../../../utils'
+import type { MdocRecord } from '../../mdoc'
 import { MdocDeviceResponse } from '../../mdoc'
+import type { SdJwtVcRecord } from '../../sd-jwt-vc'
 import { SdJwtVcApi } from '../../sd-jwt-vc'
+import type { W3cCredentialRecord } from '../../vc'
 import { W3cJsonLdVerifiablePresentation, W3cJwtVerifiablePresentation } from '../../vc'
+import type { W3cJsonPresentation } from '../../vc/models/presentation/W3cJsonPresentation'
+import type { VerifiablePresentation } from '../models'
 
 export function getSphereonOriginalVerifiableCredential(
   credentialRecord: W3cCredentialRecord | SdJwtVcRecord | MdocRecord

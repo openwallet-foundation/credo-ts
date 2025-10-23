@@ -1,17 +1,12 @@
 import type { AgentContext } from '@credo-ts/core'
+import { CredoError, EventEmitter, InjectionSymbols, inject, injectable, type Logger } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../../../../models'
-import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
-import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
-import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
-
-import { CredoError, EventEmitter, InjectionSymbols, Logger, inject, injectable } from '@credo-ts/core'
-
-import { DidCommMessageHandlerRegistry } from '../../../../../DidCommMessageHandlerRegistry'
 import { DidCommConnectionRecord } from '../../../../connections'
+import type { DidCommRevocationNotificationReceivedEvent } from '../../../DidCommCredentialEvents'
 import { DidCommCredentialEventTypes } from '../../../DidCommCredentialEvents'
 import { DidCommRevocationNotification } from '../../../models/DidCommRevocationNotification'
 import { DidCommCredentialExchangeRepository } from '../../../repository'
-import { DidCommRevocationNotificationV1Handler, DidCommRevocationNotificationV2Handler } from '../handlers'
+import type { DidCommRevocationNotificationV1Message } from '../messages/DidCommRevocationNotificationV1Message'
 import { DidCommRevocationNotificationV2Message } from '../messages/DidCommRevocationNotificationV2Message'
 import {
   v1ThreadRegex,
@@ -20,6 +15,7 @@ import {
   v2IndyRevocationFormat,
   v2IndyRevocationIdentifierRegex,
 } from '../util/revocationIdentifier'
+import type { V2DidCommCreateRevocationNotificationMessageOptions } from './DidCommRevocationNotificationServiceOptions'
 
 @injectable()
 export class DidCommRevocationNotificationService {
@@ -30,14 +26,11 @@ export class DidCommRevocationNotificationService {
   public constructor(
     credentialRepository: DidCommCredentialExchangeRepository,
     eventEmitter: EventEmitter,
-    messageHandlerRegistry: DidCommMessageHandlerRegistry,
     @inject(InjectionSymbols.Logger) logger: Logger
   ) {
     this.credentialRepository = credentialRepository
     this.eventEmitter = eventEmitter
     this.logger = logger
-
-    this.registerMessageHandlers(messageHandlerRegistry)
   }
 
   private async processRevocationNotification(
@@ -179,10 +172,5 @@ export class DidCommRevocationNotificationService {
     } catch (error) {
       this.logger.warn('Failed to process revocation notification message', { error, credentialId })
     }
-  }
-
-  private registerMessageHandlers(messageHandlerRegistry: DidCommMessageHandlerRegistry) {
-    messageHandlerRegistry.registerMessageHandler(new DidCommRevocationNotificationV1Handler(this))
-    messageHandlerRegistry.registerMessageHandler(new DidCommRevocationNotificationV2Handler(this))
   }
 }

@@ -1,4 +1,5 @@
 import type { ValidityInfo } from '@animo-id/mdoc'
+import type { AnyUint8Array } from '../../types'
 import type { DifPresentationExchangeDefinition } from '../dif-presentation-exchange'
 import { PublicJwk } from '../kms'
 import type { EncodedX509Certificate, X509Certificate } from '../x509'
@@ -31,7 +32,7 @@ export type MdocOpenId4VpDraft18SessionTranscriptOptions = {
 
 export type MdocSessionTranscriptByteOptions = {
   type: 'sesionTranscriptBytes'
-  sessionTranscriptBytes: Uint8Array
+  sessionTranscriptBytes: AnyUint8Array
 }
 
 export type MdocOpenId4VpDcApiSessionTranscriptOptions = {

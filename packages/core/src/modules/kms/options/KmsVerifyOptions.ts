@@ -1,7 +1,7 @@
-import type { KmsJwkPublic } from '../jwk/knownJwk'
-
-import * as z from '../../../utils/zod'
+import { z } from 'zod'
+import { zAnyUint8Array } from '../../../utils/zod'
 import { zKnownJwaSignatureAlgorithm } from '../jwk/jwa'
+import type { KmsJwkPublic } from '../jwk/knownJwk'
 import { zKmsJwkPublicAsymmetric } from '../jwk/knownJwk'
 import { zKmsKeyId } from './common'
 
@@ -36,12 +36,12 @@ export const zKmsVerifyOptions = z.object({
   /**
    * The data to verify
    */
-  data: z.instanceof(Uint8Array).describe('The data to verify'),
+  data: zAnyUint8Array.describe('The data to verify'),
 
   /**
    * The signature to verify the data against
    */
-  signature: z.instanceof(Uint8Array).describe('The signature on the data to verify'),
+  signature: zAnyUint8Array.describe('The signature on the data to verify'),
 })
 
 export type KmsVerifyOptions = z.output<typeof zKmsVerifyOptions>

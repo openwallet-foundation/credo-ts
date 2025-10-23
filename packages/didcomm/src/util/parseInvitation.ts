@@ -1,13 +1,13 @@
 import type { AgentDependencies } from '@credo-ts/core'
 
 import { CredoError, JsonEncoder, JsonTransformer, MessageValidator } from '@credo-ts/core'
-import { parseUrl } from 'query-string'
+import queryString from 'query-string'
 
 import { DidCommMessage } from '../DidCommMessage'
 import { DidCommConnectionInvitationMessage } from '../modules/connections/messages'
 import { convertToNewInvitation } from '../modules/oob/converters'
 import { OutOfBandDidCommService } from '../modules/oob/domain/OutOfBandDidCommService'
-import { DidCommOutOfBandInvitation, InvitationType } from '../modules/oob/messages'
+import { DidCommInvitationType, DidCommOutOfBandInvitation } from '../modules/oob/messages'
 
 import { parseMessageType, supportsIncomingMessageType } from './messageType'
 
@@ -47,14 +47,14 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
   if (supportsIncomingMessageType(parsedMessageType, DidCommOutOfBandInvitation.type)) {
     const invitation = JsonTransformer.fromJSON(invitationJson, DidCommOutOfBandInvitation)
     MessageValidator.validateSync(invitation)
-    invitation.invitationType = InvitationType.OutOfBand
+    invitation.invitationType = DidCommInvitationType.OutOfBand
     return invitation
   }
   if (supportsIncomingMessageType(parsedMessageType, DidCommConnectionInvitationMessage.type)) {
     const invitation = JsonTransformer.fromJSON(invitationJson, DidCommConnectionInvitationMessage)
     MessageValidator.validateSync(invitation)
     const outOfBandInvitation = convertToNewInvitation(invitation)
-    outOfBandInvitation.invitationType = InvitationType.Connection
+    outOfBandInvitation.invitationType = DidCommInvitationType.Connection
     return outOfBandInvitation
   }
   if (invitationJson['~service']) {
@@ -72,7 +72,7 @@ export const parseInvitationJson = (invitationJson: Record<string, unknown>): Di
  * @returns DidCommOutOfBandInvitation
  */
 export const parseInvitationUrl = (invitationUrl: string): DidCommOutOfBandInvitation => {
-  const parsedUrl = parseUrl(invitationUrl).query
+  const parsedUrl = queryString.parseUrl(invitationUrl).query
 
   const encodedInvitation = parsedUrl.oob ?? parsedUrl.c_i ?? parsedUrl.d_m
 
@@ -116,6 +116,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
 
   // This destructuring removes the ~service property from the message, and
   // we can can use messageWithoutService to create the out of band invitation
+  // biome-ignore lint/correctness/noUnusedVariables: no explanation
   const { '~service': service, ...messageWithoutService } = messageJson
 
   // transform into out of band invitation
@@ -123,7 +124,7 @@ export function transformLegacyConnectionlessInvitationToOutOfBandInvitation(mes
     services: [OutOfBandDidCommService.fromResolvedDidCommService(agentMessage.service.resolvedDidCommService)],
   })
 
-  invitation.invitationType = InvitationType.Connectionless
+  invitation.invitationType = DidCommInvitationType.Connectionless
   invitation.addRequest(JsonTransformer.fromJSON(messageWithoutService, DidCommMessage))
 
   return invitation
@@ -143,7 +144,7 @@ export const parseInvitationShortUrl = async (
   invitationUrl: string,
   dependencies: AgentDependencies
 ): Promise<DidCommOutOfBandInvitation> => {
-  const parsedUrl = parseUrl(invitationUrl).query
+  const parsedUrl = queryString.parseUrl(invitationUrl).query
   if (parsedUrl.oob || parsedUrl.c_i) {
     return parseInvitationUrl(invitationUrl)
   }
@@ -154,7 +155,7 @@ export const parseInvitationShortUrl = async (
   }
   try {
     const outOfBandInvitation = await oobInvitationFromShortUrl(await fetchShortUrl(invitationUrl, dependencies))
-    outOfBandInvitation.invitationType = InvitationType.OutOfBand
+    outOfBandInvitation.invitationType = DidCommInvitationType.OutOfBand
     return outOfBandInvitation
   } catch (_error) {
     throw new CredoError(

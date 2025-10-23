@@ -1,10 +1,6 @@
-import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core'
-import type { DidCommProofFormatService } from '../../DidCommProofFormatService'
-import type { DidCommDifPresentationExchangeProofFormat } from '../DidCommDifPresentationExchangeProofFormat'
-
 import { PresentationSubmissionLocation } from '@animo-id/pex'
-
 import { Agent } from '../../../../../../../core/src/agent/Agent'
+import type { DifPresentationExchangeDefinitionV1 } from '../../../../../../../core/src/index'
 import {
   DifPresentationExchangeModule,
   DifPresentationExchangeService,
@@ -21,6 +17,8 @@ import { DidCommProofsModule } from '../../../DidCommProofsModule'
 import { DidCommProofRole, DidCommProofState } from '../../../models'
 import { DidCommProofV2Protocol } from '../../../protocol'
 import { DidCommProofExchangeRecord } from '../../../repository'
+import type { DidCommProofFormatService } from '../../DidCommProofFormatService'
+import type { DidCommDifPresentationExchangeProofFormat } from '../DidCommDifPresentationExchangeProofFormat'
 import { DidCommDifPresentationExchangeProofFormatService } from '../DidCommDifPresentationExchangeProofFormatService'
 
 const mockProofRecord = () =>
@@ -82,8 +80,8 @@ const verifiablePresentation = new W3cJsonLdVerifiablePresentation({
     proofValue: 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz',
   },
 })
-jest.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
-jest.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
+vi.spyOn(W3cCredentialRepository.prototype, 'findByQuery').mockResolvedValue([mockCredentialRecord])
+vi.spyOn(DifPresentationExchangeService.prototype, 'createPresentation').mockResolvedValue({
   presentationSubmission,
   verifiablePresentations: [verifiablePresentation],
   presentationSubmissionLocation: PresentationSubmissionLocation.PRESENTATION,

@@ -1,21 +1,19 @@
 import type { DidDocument } from '@credo-ts/core'
-import type { CheqdDidCreateOptions, CheqdDidUpdateOptions } from '../src'
-
 import {
   Agent,
   DidDocumentBuilder,
-  Kms,
-  TypedArrayEncoder,
   getEd25519VerificationKey2018,
   getJsonWebKey2020,
+  Kms,
+  TypedArrayEncoder,
   utils,
 } from '@credo-ts/core'
+import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
 
 import { getAgentOptions } from '../../core/tests/helpers'
-
-import { transformPrivateKeyToPrivateJwk } from '../../askar/src'
-import { validService } from './setup'
+import type { CheqdDidCreateOptions, CheqdDidUpdateOptions } from '../src'
 import { cheqdPayerSeeds, getCheqdModules } from './setupCheqdModule'
+import { validService } from './testUtils'
 
 const agentOptions = getAgentOptions('Faber Dids Registrar', {}, {}, getCheqdModules(cheqdPayerSeeds[0]))
 
@@ -42,7 +40,7 @@ describe('Cheqd DID registrar', () => {
     const { privateJwk } = transformPrivateKeyToPrivateJwk({ type: { crv: 'Ed25519', kty: 'OKP' }, privateKey })
     const createdKey = await agent.kms.importKey({ privateJwk })
 
-    // @ts-ignore
+    // biome-ignore lint/correctness/noUnusedVariables: no explanation
     const { kid, d, ...publicJwk } = createdKey.publicJwk
 
     const did = await agent.dids.create<CheqdDidCreateOptions>({

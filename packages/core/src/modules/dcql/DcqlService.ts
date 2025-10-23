@@ -1,6 +1,3 @@
-import type { AgentContext } from '../../agent'
-import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
-
 import {
   DcqlCredential,
   DcqlCredentialQuery,
@@ -11,10 +8,19 @@ import {
   DcqlW3cVcCredential,
 } from 'dcql'
 import { injectable } from 'tsyringe'
-import { JsonObject, JsonValue, isNonEmptyArray, mapNonEmptyArray } from '../../types'
-import { TypedArrayEncoder, asArray } from '../../utils'
-import { DidsApi, VerificationMethod, getPublicJwkFromVerificationMethod } from '../dids'
-import { Mdoc, MdocApi, MdocDeviceResponse, MdocNameSpaces, MdocRecord, MdocSessionTranscriptOptions } from '../mdoc'
+import type { AgentContext } from '../../agent'
+import { isNonEmptyArray, type JsonObject, type JsonValue, mapNonEmptyArray } from '../../types'
+import { asArray, TypedArrayEncoder } from '../../utils'
+import { DidsApi, getPublicJwkFromVerificationMethod, VerificationMethod } from '../dids'
+import type { VerifiablePresentation } from '../dif-presentation-exchange/index'
+import {
+  Mdoc,
+  MdocApi,
+  MdocDeviceResponse,
+  type MdocNameSpaces,
+  MdocRecord,
+  type MdocSessionTranscriptOptions,
+} from '../mdoc'
 import { SdJwtVcApi, SdJwtVcRecord, SdJwtVcService } from '../sd-jwt-vc'
 import { buildDisclosureFrameForPayload } from '../sd-jwt-vc/disclosureFrame'
 import {
@@ -36,7 +42,7 @@ import { purposes } from '../vc/data-integrity/libraries/jsonld-signatures'
 import { W3cV2SdJwtCredentialService, W3cV2SdJwtVerifiableCredential } from '../vc/sd-jwt-vc'
 import { X509Certificate } from '../x509'
 import { DcqlError } from './DcqlError'
-import {
+import type {
   DcqlCredentialsForRequest,
   DcqlEncodedPresentations,
   DcqlFailedCredential,

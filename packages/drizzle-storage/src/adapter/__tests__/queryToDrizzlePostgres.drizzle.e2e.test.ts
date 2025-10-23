@@ -1,6 +1,6 @@
 import { DidCommConnectionRecord, DidCommDidExchangeRole, DidCommDidExchangeState } from '@credo-ts/didcomm'
 import { pushSchema } from 'drizzle-kit/api'
-import { DrizzlePostgresTestDatabase, createDrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
+import { createDrizzlePostgresTestDatabase, type DrizzlePostgresTestDatabase } from '../../../tests/testDatabase'
 import * as coreContextSchema from '../../core/context-record/postgres'
 import * as didcommConnectionSchema from '../../didcomm/connection-record/postgres'
 import { queryToDrizzlePostgres } from '../queryToDrizzlePostgres'
@@ -16,7 +16,7 @@ describe('queryToDrizzlePostgres', () => {
 
     const { apply } = await pushSchema(
       { ...didcommConnectionSchema, ...coreContextSchema },
-      // @ts-ignore
+      // @ts-expect-error
       postgresDatabase.drizzle
     )
     await apply()

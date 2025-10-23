@@ -1,4 +1,17 @@
 import type { AgentContext, Query, SimpleQuery } from '@credo-ts/core'
+import {
+  CredoError,
+  injectable,
+  JsonTransformer,
+  Kms,
+  TypedArrayEncoder,
+  utils,
+  W3cCredentialRecord,
+  W3cCredentialRepository,
+  W3cCredentialService,
+  W3cJsonLdVerifiableCredential,
+  W3cJsonLdVerifiablePresentation,
+} from '@credo-ts/core'
 import type {
   CredentialEntry,
   CredentialProve,
@@ -6,6 +19,20 @@ import type {
   JsonObject,
   W3cCredentialEntry,
 } from '@hyperledger/anoncreds-shared'
+import {
+  anoncreds,
+  Credential,
+  CredentialRequest,
+  CredentialRevocationState,
+  LinkSecret,
+  Presentation,
+  RevocationRegistryDefinition,
+  RevocationStatusList,
+  W3cCredential as W3cAnonCredsCredential,
+  W3cPresentation as W3cAnonCredsPresentation,
+} from '@hyperledger/anoncreds-shared'
+import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
+import { AnonCredsRsError } from '../error'
 import type {
   AnonCredsCredential,
   AnonCredsCredentialDefinition,
@@ -18,8 +45,10 @@ import type {
   AnonCredsRevocationRegistryDefinition,
   AnonCredsSchema,
 } from '../models'
+import { AnonCredsRestrictionWrapper } from '../models'
 import type { CredentialWithRevocationMetadata } from '../models/utils'
 import type { AnonCredsCredentialRecord } from '../repository'
+import { AnonCredsCredentialRepository, AnonCredsLinkSecretRepository } from '../repository'
 import type {
   AnonCredsHolderService,
   CreateCredentialRequestOptions,
@@ -33,45 +62,13 @@ import type {
   GetCredentialsOptions,
   StoreCredentialOptions,
 } from '../services'
+import { AnonCredsRegistryService } from '../services'
 import type {
   AnonCredsCredentialProve,
   CreateW3cPresentationOptions,
   LegacyToW3cCredentialOptions,
   W3cToLegacyCredentialOptions,
 } from '../services/AnonCredsHolderServiceOptions'
-import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
-
-import {
-  CredoError,
-  JsonTransformer,
-  Kms,
-  TypedArrayEncoder,
-  W3cCredentialRecord,
-  W3cCredentialRepository,
-  W3cCredentialService,
-  W3cJsonLdVerifiableCredential,
-  W3cJsonLdVerifiablePresentation,
-  injectable,
-  utils,
-} from '@credo-ts/core'
-import {
-  Credential,
-  CredentialRequest,
-  CredentialRevocationState,
-  LinkSecret,
-  Presentation,
-  RevocationRegistryDefinition,
-  RevocationStatusList,
-  W3cCredential as W3cAnonCredsCredential,
-  W3cPresentation as W3cAnonCredsPresentation,
-  anoncreds,
-} from '@hyperledger/anoncreds-shared'
-
-import { AnonCredsModuleConfig } from '../AnonCredsModuleConfig'
-import { AnonCredsRsError } from '../error'
-import { AnonCredsRestrictionWrapper } from '../models'
-import { AnonCredsCredentialRepository, AnonCredsLinkSecretRepository } from '../repository'
-import { AnonCredsRegistryService } from '../services'
 import { storeLinkSecret, unqualifiedCredentialDefinitionIdRegex } from '../utils'
 import {
   isUnqualifiedCredentialDefinitionId,
@@ -79,6 +76,7 @@ import {
   isUnqualifiedSchemaId,
 } from '../utils/indyIdentifiers'
 import { assertLinkSecretsMatch, getLinkSecret } from '../utils/linkSecret'
+import type { AnonCredsCredentialRequestMetadata, W3cAnonCredsCredentialMetadata } from '../utils/metadata'
 import { W3cAnonCredsCredentialMetadataKey } from '../utils/metadata'
 import { proofRequestUsesUnqualifiedIdentifiers } from '../utils/proofRequest'
 import { getAnoncredsCredentialInfoFromRecord, getW3cRecordAnonCredsTags } from '../utils/w3cAnonCredsUtils'

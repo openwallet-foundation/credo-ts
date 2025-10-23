@@ -1,20 +1,17 @@
 import type { AgentContext, Kms, Query, QueryOptions } from '@credo-ts/core'
+import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
 import type { DidCommInboundMessageContext } from '../../models'
+import { DidCommDocumentService } from '../../services'
 import type { DidCommConnectionRecord, DidCommHandshakeProtocol } from '../connections'
+import { getResolvedDidcommServiceWithSigningKeyId } from '../connections/services/helpers'
 import type { OutOfBandDidCommService } from './domain'
 import type { DidCommHandshakeReusedEvent, DidCommOutOfBandStateChangedEvent } from './domain/DidCommOutOfBandEvents'
-
-import { CredoError, DidsApi, EventEmitter, injectable, parseDid } from '@credo-ts/core'
-
-import { DidCommDocumentService } from '../../services'
-
-import { getResolvedDidcommServiceWithSigningKeyId } from '../connections/services/helpers'
 import { DidCommOutOfBandEventTypes } from './domain/DidCommOutOfBandEvents'
 import { DidCommOutOfBandRole } from './domain/DidCommOutOfBandRole'
 import { DidCommOutOfBandState } from './domain/DidCommOutOfBandState'
 import { DidCommHandshakeReuseMessage, DidCommOutOfBandInvitation } from './messages'
 import { DidCommHandshakeReuseAcceptedMessage } from './messages/DidCommHandshakeReuseAcceptedMessage'
-import { DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord, DidCommOutOfBandRepository } from './repository'
+import { type DidCommOutOfBandInlineServiceKey, DidCommOutOfBandRecord, DidCommOutOfBandRepository } from './repository'
 
 export interface CreateFromImplicitInvitationConfig {
   did: string

@@ -9,8 +9,8 @@ describe('ConnectionRequestMessage', () => {
       label: 'test-label',
     })
 
-    // @ts-ignore
-    // biome-ignore lint/performance/noDelete: <explanation>
+    // @ts-expect-error
+    // biome-ignore lint/performance/noDelete: no explanation
     delete connectionRequest.connection
 
     expect(() => MessageValidator.validateSync(connectionRequest)).toThrow(ClassValidationError)

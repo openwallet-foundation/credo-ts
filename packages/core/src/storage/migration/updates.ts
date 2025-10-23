@@ -1,8 +1,7 @@
 import type { BaseAgent } from '../../agent/BaseAgent'
 import type { VersionString } from '../../utils/version'
-
-import { updateV0_3ToV0_3_1 } from './updates/0.3-0.3.1'
 import { updateV0_3_1ToV0_4 } from './updates/0.3.1-0.4'
+import { updateV0_3ToV0_3_1 } from './updates/0.3-0.3.1'
 import { updateV0_4ToV0_5 } from './updates/0.4-0.5'
 
 export const INITIAL_STORAGE_VERSION = '0.1'
