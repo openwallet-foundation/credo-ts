@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@credo-ts/node": "workspace:*",
-    "@hyperledger/anoncreds-nodejs": "^0.2.2",
+    "@hyperledger/anoncreds-nodejs": "^0.3.3",
     "rimraf": "^4.4.0",
     "zstd-napi": "^0.0.10"
   }
