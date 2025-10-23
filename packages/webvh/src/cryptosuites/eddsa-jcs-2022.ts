@@ -14,7 +14,7 @@ import {
 import { multibaseEncode, MultibaseEncoding } from 'didwebvh-ts'
 import { canonicalize } from 'json-canonicalize'
 
-import { WebvhDidCrypto } from '../dids'
+import { WebVhDidCrypto } from '../dids'
 
 export class EddsaJcs2022Cryptosuite {
   private didApi: DidsApi
@@ -85,7 +85,7 @@ export class EddsaJcs2022Cryptosuite {
     // https://www.w3.org/TR/vc-di-eddsa/#proof-verification-eddsa-jcs-2022
     const key = await this._publicKeyFromId(options.verificationMethod)
     if (!key) return false
-    const crypto = new WebvhDidCrypto(this.agentContext)
+    const crypto = new WebVhDidCrypto(this.agentContext)
     const verified = await crypto.verify(proofBytes, hashData, key.publicKey)
     return verified
   }

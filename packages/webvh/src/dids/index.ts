@@ -1,4 +1,4 @@
-export { WebvhDidCrypto } from './WebvhDidCrypto'
-export { WebvhDidCryptoSigner } from './WebvhDidCryptoSigner'
+export { WebVhDidCrypto } from './WebVhDidCrypto'
+export { WebVhDidCryptoSigner } from './WebVhDidCryptoSigner'
 export { WebVhDidRegistrar } from './WebVhDidRegistrar'
-export { WebvhDidResolver } from './WebvhDidResolver'
+export { WebVhDidResolver } from './WebVhDidResolver'

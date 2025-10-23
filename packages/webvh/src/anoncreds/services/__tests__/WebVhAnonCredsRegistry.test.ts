@@ -13,7 +13,7 @@ import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
-import { WebvhDidResolver, WebvhDidCrypto } from '../../../dids'
+import { WebVhDidResolver, WebVhDidCrypto } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
 import {
@@ -27,11 +27,11 @@ import {
   verificationMethodId,
 } from './mock-resources'
 
-// Mock the WebvhDidResolver
+// Mock the WebVhDidResolver
 const mockResolveResource = jest.fn()
-jest.mock('../../../dids/WebvhDidResolver', () => {
+jest.mock('../../../dids/WebVhDidResolver', () => {
   return {
-    WebvhDidResolver: jest.fn().mockImplementation(() => {
+    WebVhDidResolver: jest.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -77,7 +77,7 @@ describe('WebVhAnonCredsRegistry', () => {
       registerInstances: [
         [DidsApi, mockDidsApi],
         [DidRepository, mockDidsRepository],
-        [WebvhDidResolver, { resolveResource: mockResolveResource }],
+        [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
 
@@ -551,7 +551,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should return true for valid DataIntegrityProof with eddsa-jcs-2022', async () => {
-      jest.spyOn(WebvhDidCrypto.prototype, 'verify').mockResolvedValueOnce(true)
+      jest.spyOn(WebVhDidCrypto.prototype, 'verify').mockResolvedValueOnce(true)
       const result = await registry.verifyProof(agentContext, mockSchemaResource)
 
       expect(result).toBe(true)
@@ -676,7 +676,7 @@ describe('WebVhAnonCredsRegistry', () => {
 
     it('should return false when signature verification fails', async () => {
       // Force crypto verify to fail for this test only
-      jest.spyOn(WebvhDidCrypto.prototype, 'verify').mockResolvedValueOnce(false)
+      jest.spyOn(WebVhDidCrypto.prototype, 'verify').mockResolvedValueOnce(false)
       const testInput = { ...mockSchemaResource }
       const testProof = { ...mockSchemaResource.proof }
       testProof.proofValue = 'z58DAdFfa9SkqZMVPxAQpic7ndSayn1PzZs6ZjWp1CktyGesjuTSwRdoWhAfGFCF5bppETSTojQCrfFPP2oumHKtz'
@@ -688,7 +688,7 @@ describe('WebVhAnonCredsRegistry', () => {
     })
 
     it('should handle proof without optional fields', async () => {
-      jest.spyOn(WebvhDidCrypto.prototype, 'verify').mockResolvedValueOnce(true)
+      jest.spyOn(WebVhDidCrypto.prototype, 'verify').mockResolvedValueOnce(true)
       const testInput = { ...mockSchemaResource }
       const result = await registry.verifyProof(agentContext, testInput)
 

@@ -2,7 +2,7 @@ import { Agent } from '@credo-ts/core'
 
 import { getInMemoryAgentOptions } from '../../core/tests/helpers'
 
-import { getWebvhModules } from './setupWebvhModule'
+import { getWebVhModules } from './setupWebVhModule'
 import { validDid } from './utils'
 
 // Simplified mock
@@ -38,10 +38,10 @@ jest.mock('didwebvh-ts', () => ({
 }))
 
 describe('WebVH DID resolver', () => {
-  let agent: Agent<ReturnType<typeof getWebvhModules>>
+  let agent: Agent<ReturnType<typeof getWebVhModules>>
 
   beforeAll(async () => {
-    const agentOptions = getInMemoryAgentOptions('WebVH DID Resolver Test', {}, getWebvhModules())
+    const agentOptions = getInMemoryAgentOptions('WebVH DID Resolver Test', {}, getWebVhModules())
     agent = new Agent(agentOptions)
 
     await agent.initialize()

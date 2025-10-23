@@ -40,7 +40,7 @@ To use the WebVh module, register it with your agent instance. Below is an examp
 
 ```typescript
 import { Agent, DidsModule, AnonCredsModule } from '@credo-ts/core'
-import { WebVhAnonCredsRegistry, WebvhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
+import { WebVhAnonCredsRegistry, WebVhDidResolver, WebVhDidRegistrar } from '@credo-ts/webvh'
 
 const agent = new Agent({
   config: options.config,
@@ -50,7 +50,7 @@ const agent = new Agent({
       registries: [new WebVhAnonCredsRegistry()],
     }),
     dids: new DidsModule({
-      resolvers: [new WebvhDidResolver()],
+      resolvers: [new WebVhDidResolver()],
       registrars: [new WebVhDidRegistrar()],
     }),
   },

@@ -2,7 +2,7 @@ import type { Verifier } from 'didwebvh-ts'
 
 import { Buffer, type AgentContext, Key, KeyType } from '@credo-ts/core'
 
-export class WebvhDidCrypto implements Verifier {
+export class WebVhDidCrypto implements Verifier {
   private agentContext: AgentContext
 
   public constructor(agentContext: AgentContext) {
