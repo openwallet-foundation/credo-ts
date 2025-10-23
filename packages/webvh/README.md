@@ -6,7 +6,7 @@
     height="250px"
   />
 </p>
-<h1 align="center"><b>Credo WebVh Module</b></h1>
+<h1 align="center"><b>Credo did:webvh Module</b></h1>
 <p align="center">
   <a
     href="https://raw.githubusercontent.com/openwallet-foundation/credo-ts/main/LICENSE"
