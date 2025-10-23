@@ -15,6 +15,7 @@ import {
   X509Module,
 } from '@credo-ts/core'
 import type {
+  OpenId4VciDpopRequestOptions,
   OpenId4VciMetadata,
   OpenId4VciResolvedCredentialOffer,
   OpenId4VpResolvedAuthorizationRequest,
@@ -133,6 +134,7 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
       code?: string
       redirectUri?: string
       txCode?: string
+      dpop?: OpenId4VciDpopRequestOptions
     }
   ) {
     const tokenResponse = await this.agent.openid4vc.holder.requestToken(
@@ -143,10 +145,12 @@ export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHold
             codeVerifier: options.codeVerifier,
             code: options.code,
             redirectUri: options.redirectUri,
+            dpop: options.dpop,
           }
         : {
             resolvedCredentialOffer,
             txCode: options.txCode,
+            dpop: options.dpop,
           }
     )
 
