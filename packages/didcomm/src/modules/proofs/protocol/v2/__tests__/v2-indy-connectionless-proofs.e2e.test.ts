@@ -28,8 +28,11 @@ import {
   DidCommHandshakeProtocol,
   DidCommLinkedAttachment,
   DidCommMediatorPickupStrategy,
+  DidCommPresentationV2Message,
   DidCommProofEventTypes,
   DidCommProofState,
+  DidCommProposePresentationV2Message,
+  DidCommRequestPresentationV2Message,
 } from '../../../../../../src'
 
 describe('V2 Connectionless Proofs - Indy', () => {
@@ -643,5 +646,99 @@ describe('V2 Connectionless Proofs - Indy', () => {
       state: DidCommProofState.Abandoned,
       threadId: requestMessage.threadId,
     })
+  })
+
+  test('Alice start with oob proof proposal for Faber with aut-accept enabled', async () => {
+    const {
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      credentialDefinitionId,
+      issuerHolderConnectionId: faberConnectionId,
+    } = await setupAnonCredsTests({
+      issuerName: 'Faber oob Proofs proposal v2 - Auto Accept',
+      holderName: 'Alice oob Proofs proposal v2 - Auto Accept',
+      autoAcceptProofs: DidCommAutoAcceptProof.Always,
+      attributeNames: ['name', 'age'],
+    })
+    await issueLegacyAnonCredsCredential({
+      issuerAgent: faberAgent,
+      issuerReplay: faberReplay,
+      holderAgent: aliceAgent,
+      holderReplay: aliceReplay,
+      issuerHolderConnectionId: faberConnectionId,
+      offer: {
+        credentialDefinitionId,
+        attributes: [
+          {
+            name: 'name',
+            value: 'Alice',
+          },
+          {
+            name: 'age',
+            value: '99',
+          },
+        ],
+      },
+    })
+    agents = [aliceAgent, faberAgent]
+    testLogger.test('Alice creates oob proof proposal for faber')
+    const { message } = await aliceAgent.didcomm.proofs.createProofProposal({
+      protocolVersion: 'v2',
+      proofFormats: {
+        indy: {
+          name: 'abc',
+          version: '1.0',
+          attributes: [
+            {
+              name: 'name',
+              value: 'Alice',
+              credentialDefinitionId,
+            },
+          ],
+          predicates: [
+            {
+              name: 'age',
+              predicate: '>=',
+              threshold: 50,
+              credentialDefinitionId,
+            },
+          ],
+        },
+      },
+      autoAcceptProof: DidCommAutoAcceptProof.ContentApproved,
+    })
+
+    const { outOfBandInvitation } = await aliceAgent.didcomm.oob.createInvitation({
+      messages: [message],
+      autoAcceptConnection: true,
+    })
+    await faberAgent.didcomm.oob.receiveInvitation(outOfBandInvitation, { label: 'faber' })
+
+    const aliceProofExchangeRecord = await waitForProofExchangeRecordSubject(aliceReplay, {
+      state: DidCommProofState.Done,
+      threadId: message.id,
+    })
+    const faberProofExchangeRecord = await waitForProofExchangeRecordSubject(faberReplay, {
+      state: DidCommProofState.Done,
+      threadId: message.id,
+    })
+    expect(aliceProofExchangeRecord.connectionId).not.toBeNull()
+    const proposalMessageFaber = await faberAgent.didcomm.proofs.findProposalMessage(faberProofExchangeRecord.id)
+    const requestMessageFaber = await faberAgent.didcomm.proofs.findRequestMessage(faberProofExchangeRecord.id)
+    const presentationMessageFaber = await faberAgent.didcomm.proofs.findPresentationMessage(
+      faberProofExchangeRecord.id
+    )
+    expect(proposalMessageFaber).toBeInstanceOf(DidCommProposePresentationV2Message)
+    expect(requestMessageFaber).toBeInstanceOf(DidCommRequestPresentationV2Message)
+    expect(presentationMessageFaber).toBeInstanceOf(DidCommPresentationV2Message)
+
+    const proposalMessage = await aliceAgent.didcomm.proofs.findProposalMessage(aliceProofExchangeRecord.id)
+    const requestMessage = await aliceAgent.didcomm.proofs.findRequestMessage(aliceProofExchangeRecord.id)
+    const presentationMessage = await aliceAgent.didcomm.proofs.findPresentationMessage(aliceProofExchangeRecord.id)
+    expect(proposalMessage).toBeInstanceOf(DidCommProposePresentationV2Message)
+    expect(requestMessage).toBeInstanceOf(DidCommRequestPresentationV2Message)
+    expect(presentationMessage).toBeInstanceOf(DidCommPresentationV2Message)
   })
 })
