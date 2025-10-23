@@ -26,18 +26,21 @@ import {
   preAuthorizedCodeGrantIdentifier,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
+import type { Express } from 'express'
 import { BaseAgent } from './BaseAgent'
 import { greenText, Output } from './OutputClass'
 
 function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOptions) {
-  return {
+  return (app: Express) => ({
     askar: new AskarModule({ askar, store: askarStorageConfig }),
-    openid4vc: new OpenId4VcModule(),
+    openid4vc: new OpenId4VcModule({
+      app,
+    }),
     x509: new X509Module({
       getTrustedCertificatesForVerification: (_agentContext, { certificateChain, verification }) => {
         console.log(
           greenText(
-            `dyncamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
+            `dynamically trusting certificate ${certificateChain[0].getIssuerNameField('C')} for verification of ${
               verification.type
             }`,
             true
@@ -47,10 +50,10 @@ function getOpenIdHolderModules(askarStorageConfig: AskarModuleConfigStoreOption
         return [certificateChain[0].toString('pem')]
       },
     }),
-  } as const
+  })
 }
 
-export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>> {
+export class Holder extends BaseAgent<ReturnType<ReturnType<typeof getOpenIdHolderModules>>> {
   public client = {
     clientId: 'wallet',
     redirectUri: 'http://localhost:3000/redirect',
@@ -87,7 +90,7 @@ export class Holder extends BaseAgent<ReturnType<typeof getOpenIdHolderModules>>
     credentialsToRequest: string[]
   ) {
     const grants = resolvedCredentialOffer.credentialOfferPayload.grants
-    // TODO: extend iniateAuthorization in oid4vci lib? Or not?
+    // TODO: extend initiateAuthorization in oid4vci lib? Or not?
     if (grants?.[preAuthorizedCodeGrantIdentifier]) {
       return {
         authorizationFlow: 'PreAuthorized',
