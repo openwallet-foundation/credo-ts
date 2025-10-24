@@ -16,7 +16,7 @@ export const openid4vcIssuer = pgTable(
     issuerId: text('issuer_id').unique().notNull(),
     accessTokenPublicKeyFingerprint: jsonb('access_token_public_key_fingerprint'),
     accessTokenPublicJwk: jsonb('access_token_public_jwk').$type<Kms.KmsJwkPublicAsymmetric>(),
-
+    jwks: jsonb('jwks').$type<Kms.KmsJwkPublicAsymmetric[] | string>(),
     credentialConfigurationsSupported: jsonb('credential_configurations_supported')
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
       .notNull(),

@@ -23,7 +23,7 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
-
+    jwks: text('jwks', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric[] | string>(),
     credentialConfigurationsSupported: text('credential_configurations_supported', { mode: 'json' })
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
       .notNull(),

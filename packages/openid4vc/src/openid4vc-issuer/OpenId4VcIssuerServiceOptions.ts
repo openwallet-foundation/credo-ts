@@ -395,6 +395,7 @@ export type OpenId4VciCreateIssuerOptions = {
    */
   accessTokenSignerKeyType?: Kms.KmsCreateKeyTypeAssymetric
 
+  jwks: Kms.KmsJwkPublicAsymmetric[] | string
   display?: OpenId4VciCredentialIssuerMetadataDisplay[]
   authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
   dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
@@ -414,4 +415,5 @@ export type OpenId4VcUpdateIssuerRecordOptions = Pick<
   | 'dpopSigningAlgValuesSupported'
   | 'credentialConfigurationsSupported'
   | 'batchCredentialIssuance'
+  | 'jwks'
 >
