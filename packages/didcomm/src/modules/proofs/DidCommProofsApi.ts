@@ -8,6 +8,7 @@ import type {
   AcceptProofOptions,
   AcceptProofProposalOptions,
   AcceptProofRequestOptions,
+  CreateProofProposalOptions,
   CreateProofRequestOptions,
   DeclineProofRequestOptions,
   DeleteProofOptions,
@@ -49,6 +50,10 @@ export interface DidCommProofsApi<PPs extends DidCommProofProtocol[]> {
 
   // out of band
   createRequest(options: CreateProofRequestOptions<PPs>): Promise<{
+    message: DidCommMessage
+    proofRecord: DidCommProofExchangeRecord
+  }>
+  createProofProposal(options: CreateProofProposalOptions<PPs>): Promise<{
     message: DidCommMessage
     proofRecord: DidCommProofExchangeRecord
   }>
@@ -153,6 +158,27 @@ export class DidCommProofsApi<PPs extends DidCommProofProtocol[]> implements Did
 
     await this.messageSender.sendMessage(outboundMessageContext)
     return proofRecord
+  }
+
+  /**
+   * Initiate a new presentation exchange as prover by sending an out of band proof proposal message
+   *
+   * @param options multiple properties like protocol version, proof Formats to build the proof request
+   * @returns the message itself and the proof record associated with the sent request message
+   */
+  public async createProofProposal(options: CreateProofProposalOptions<PPs>): Promise<{
+    message: DidCommMessage
+    proofRecord: DidCommProofExchangeRecord
+  }> {
+    const protocol = this.getProtocol(options.protocolVersion)
+
+    return await protocol.createProposal(this.agentContext, {
+      proofFormats: options.proofFormats,
+      autoAcceptProof: options.autoAcceptProof,
+      goalCode: options.goalCode,
+      comment: options.comment,
+      parentThreadId: options.parentThreadId,
+    })
   }
 
   /**

@@ -88,7 +88,7 @@ interface BaseOptions {
 }
 
 export interface CreateProofProposalOptions<PFs extends DidCommProofFormatService[]> extends BaseOptions {
-  connectionRecord: DidCommConnectionRecord
+  connectionRecord?: DidCommConnectionRecord
   proofFormats: DidCommProofFormatPayload<ExtractProofFormats<PFs>, 'createProposal'>
   parentThreadId?: string
 }

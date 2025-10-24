@@ -115,7 +115,7 @@ export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = Di
     }
 
     const proofRecord = new DidCommProofExchangeRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: utils.uuid(),
       parentThreadId,
       state: DidCommProofState.ProposalSent,
@@ -417,7 +417,6 @@ export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = Di
     let proofRecord = await this.findByProperties(messageContext.agentContext, {
       threadId: requestMessage.threadId,
       role: DidCommProofRole.Prover,
-      connectionId: connection?.id,
     })
 
     const formatServices = this.getFormatServicesFromMessage(requestMessage.formats)
@@ -447,6 +446,8 @@ export class DidCommProofV2Protocol<PFs extends DidCommProofFormatService[] = Di
         lastSentMessage,
         expectedConnectionId: proofRecord.connectionId,
       })
+
+      if (!proofRecord.connectionId) proofRecord.connectionId = connection?.id
 
       await this.proofFormatCoordinator.processRequest(messageContext.agentContext, {
         proofRecord,
