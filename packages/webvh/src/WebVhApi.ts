@@ -1,10 +1,10 @@
 import { AgentContext } from '@credo-ts/core'
 import { injectable } from 'tsyringe'
 
-import { WebvhDidResolver } from './dids/WebvhDidResolver'
+import { WebVhDidResolver } from './dids/WebVhDidResolver'
 
 @injectable()
-export class WebvhApi {
+export class WebVhApi {
   private agentContext: AgentContext
 
   public constructor(agentContext: AgentContext) {
@@ -12,7 +12,7 @@ export class WebvhApi {
   }
 
   public async resolveResource(resourceUrl: string) {
-    const webvhDidResolver = this.agentContext.dependencyManager.resolve(WebvhDidResolver)
+    const webvhDidResolver = this.agentContext.dependencyManager.resolve(WebVhDidResolver)
     return await webvhDidResolver.resolveResource(this.agentContext, resourceUrl)
   }
 }

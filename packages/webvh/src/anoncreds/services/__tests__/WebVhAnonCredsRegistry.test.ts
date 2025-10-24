@@ -1,33 +1,36 @@
+import type { AnonCredsCredentialDefinition, AnonCredsRevocationRegistryDefinition } from '@credo-ts/anoncreds'
+import type { AgentContext, DidDocumentService, VerificationMethod } from '@credo-ts/core'
 import {
-  AgentContext,
   DidDocument,
-  DidDocumentService,
+  DidRepository,
   DidsApi,
   MultiBaseEncoder,
   MultiHashEncoder,
   TypedArrayEncoder,
-  VerificationMethod,
 } from '@credo-ts/core'
 import { createHash } from 'crypto'
 import { canonicalize } from 'json-canonicalize'
 
 import { getAgentConfig, getAgentContext } from '../../../../../core/tests/helpers'
-import { WebvhDidResolver } from '../../../dids'
+import { WebVhDidResolver } from '../../../dids'
 import { WebVhAnonCredsRegistry } from '../WebVhAnonCredsRegistry'
 
 import {
   issuerId,
+  mockCredDefResource,
+  mockRegRevEntryResource,
   mockResolvedDidDocument,
+  mockResolvedDidRecord,
   mockRevRegDefResource,
   mockSchemaResource,
   verificationMethodId,
 } from './mock-resources'
 
-// Mock the WebvhDidResolver
+// Mock the WebVhDidResolver
 const mockResolveResource = vi.fn()
-vi.mock('../../../dids/WebvhDidResolver', () => {
+vi.mock('../../../dids/WebVhDidResolver', () => {
   return {
-    WebvhDidResolver: vi.fn().mockImplementation(() => {
+    WebVhDidResolver: vi.fn().mockImplementation(() => {
       return { resolveResource: mockResolveResource }
     }),
   }
@@ -52,6 +55,10 @@ const mockResolveDidDocument = vi.fn()
 const mockDidsApi = {
   resolveDidDocument: mockResolveDidDocument,
 }
+const mockFindCreatedDid = vi.fn()
+const mockDidsRepository = {
+  findCreatedDid: mockFindCreatedDid,
+}
 
 describe('WebVhAnonCredsRegistry', () => {
   let agentContext: AgentContext
@@ -61,13 +68,15 @@ describe('WebVhAnonCredsRegistry', () => {
     // Reset the mocks before each test
     mockResolveResource.mockReset()
     mockResolveDidDocument.mockReset()
+    mockFindCreatedDid.mockReset()
 
     const agentConfig = getAgentConfig('WebVhAnonCredsRegistryTest')
     agentContext = getAgentContext({
       agentConfig,
       registerInstances: [
         [DidsApi, mockDidsApi],
-        [WebvhDidResolver, { resolveResource: mockResolveResource }],
+        [DidRepository, mockDidsRepository],
+        [WebVhDidResolver, { resolveResource: mockResolveResource }],
       ],
     })
 
@@ -329,6 +338,46 @@ describe('WebVhAnonCredsRegistry', () => {
     })
   })
 
+  describe('registerSchema', () => {
+    it('should register and retrieve a schema with correct resolutionMetadata', async () => {
+      const schemaId = mockSchemaResource.id
+
+      const mockResolverResponse = {
+        content: mockSchemaResource,
+        schemaId: schemaId,
+        schemaMetadata: mockSchemaResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+      const schema = mockSchemaResource.content
+
+      const result = await registry.registerSchema(agentContext, { schema })
+      expect(result).toMatchObject({
+        schemaState: {
+          state: 'finished',
+          schemaId,
+        },
+      })
+
+      const schemaResponse = await registry.getSchema(agentContext, schemaId)
+
+      expect(mockResolveResource).toHaveBeenCalledWith(agentContext, schemaId)
+      expect(schemaResponse).toEqual({
+        schema: {
+          attrNames: mockSchemaResource.content.attrNames,
+          name: mockSchemaResource.content.name,
+          version: mockSchemaResource.content.version,
+          issuerId: issuerId,
+        },
+        schemaId,
+        resolutionMetadata: mockResolverResponse.dereferencingMetadata,
+        schemaMetadata: mockSchemaResource.metadata,
+      })
+    })
+  })
+
   describe('getCredentialDefinition', () => {
     it('should return resolutionMetadata with error for invalid prefix (tested via helper)', async () => {
       const credDefId = 'did:web:example.com/resource/credDef123' // Invalid prefix for this registry
@@ -358,6 +407,38 @@ describe('WebVhAnonCredsRegistry', () => {
       // Expect the error propagated from the helper/resolver
       expect(result.resolutionMetadata.error).toBe('invalid')
       expect(result.resolutionMetadata.message).toContain('could not be resolved or is missing data')
+    })
+  })
+
+  describe('registerCredentialDefinition', () => {
+    it('should register and retrieve a credential definition with correct resolutionMetadata', async () => {
+      const credentialDefinition = mockCredDefResource.content as AnonCredsCredentialDefinition
+      const mockResolverResponse = {
+        content: mockCredDefResource,
+        contentMetadata: {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerCredentialDefinition(agentContext, { credentialDefinition, options: {} })
+      const credDef = await registry.getCredentialDefinition(agentContext, mockCredDefResource.id)
+
+      expect(result).toMatchObject({
+        credentialDefinitionState: {
+          state: 'finished',
+          credentialDefinition,
+        },
+        credentialDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(credDef).toMatchObject({
+        credentialDefinition,
+        credentialDefinitionId: mockCredDefResource.id,
+        resolutionMetadata: { contentType: 'application/json' },
+        credentialDefinitionMetadata: mockCredDefResource.metadata,
+      })
     })
   })
 
@@ -395,6 +476,65 @@ describe('WebVhAnonCredsRegistry', () => {
 
     // Add more tests for error cases (invalid ID, not found, hash mismatch, invalid content etc.)
     // similar to the getSchema tests
+  })
+
+  describe('registerRevocationRegistryDefinition', () => {
+    it('should register and retrieve a RevRegDef with correct resolutionMetadata', async () => {
+      const revRegDefId = mockRevRegDefResource.id
+      const revocationRegistryDefinition = mockRevRegDefResource.content as AnonCredsRevocationRegistryDefinition
+      const mockResolverResponse = {
+        content: mockRevRegDefResource,
+        contentMetadata: mockRevRegDefResource.metadata || {},
+        dereferencingMetadata: { contentType: 'application/json' },
+      }
+
+      mockResolveResource.mockResolvedValue(mockResolverResponse)
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerRevocationRegistryDefinition(agentContext, {
+        revocationRegistryDefinition,
+        options: {},
+      })
+      const revRegDef = await registry.getRevocationRegistryDefinition(agentContext, revRegDefId)
+
+      expect(result).toMatchObject({
+        revocationRegistryDefinitionState: {
+          state: 'finished',
+          revocationRegistryDefinition,
+        },
+        revocationRegistryDefinitionMetadata: {},
+        registrationMetadata: {},
+      })
+      expect(revRegDef).toMatchObject({
+        revocationRegistryDefinition,
+        revocationRegistryDefinitionId: revRegDefId,
+        resolutionMetadata: { contentType: 'application/json' },
+        revocationRegistryDefinitionMetadata: mockRevRegDefResource.metadata,
+      })
+    })
+  })
+
+  describe('registerRevocationStatusList', () => {
+    it('should correctly resolve and parse a valid RevocationStatusList resource', async () => {
+      // Remove timestamp from validations
+      const { timestamp: _, ...revocationStatusList } = mockRegRevEntryResource.content
+
+      mockFindCreatedDid.mockResolvedValue(mockResolvedDidRecord)
+
+      const result = await registry.registerRevocationStatusList(agentContext, {
+        revocationStatusList,
+        options: {},
+      })
+
+      expect(result).toMatchObject({
+        revocationStatusListState: {
+          state: 'finished',
+          revocationStatusList,
+        },
+        revocationStatusListMetadata: { previousVersionId: '', nextVersionId: '' },
+        registrationMetadata: {},
+      })
+    })
   })
 
   describe('verifyProof', () => {
