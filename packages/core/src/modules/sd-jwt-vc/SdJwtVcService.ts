@@ -37,6 +37,7 @@ import {
   parseHolderBindingFromCredential,
   resolveDidUrl,
   resolveSigningPublicJwkFromDidUrl,
+  resolveSigningPublicJwkFromJwtVcIssuerMetadata,
 } from './utils'
 
 type SdJwtVcConfig = SDJwtVcInstance['userConfig']
@@ -231,6 +232,15 @@ export class SdJwtVcService {
       throw new SdJwtVcError(
         `The 'iss' claim in the payload does not match a 'SAN-URI' name and the domain extracted from the HTTPS URI does not match a 'SAN-DNS' name in the x5c certificate.`
       )
+    }
+  }
+
+  private assertValidJwtVcIssuer(agentContext: AgentContext, iss: string, publicJwk: PublicJwk) {
+    if (!iss.startsWith('https://') && !(iss.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)) {
+      throw new SdJwtVcError('The issuer must be a HTTPS URI.')
+    }
+    if (!publicJwk.hasKeyId) {
+      throw new SdJwtVcError(`No kid found for key ${publicJwk.jwkTypehumanDescription}`)
     }
   }
 
@@ -480,7 +490,19 @@ export class SdJwtVcService {
       }
     }
 
-    throw new SdJwtVcError("Unsupported credential issuer. Only 'did' and 'x5c' is supported at the moment.")
+    if (issuer.method === 'jwt-vc-issuer-metadata') {
+      this.assertValidJwtVcIssuer(agentContext, issuer.issuer, issuer.jwk)
+      return {
+        publicJwk: issuer.jwk,
+        alg: issuer.jwk.signatureAlgorithm,
+        iss: issuer.issuer,
+        kid: issuer.jwk.keyId,
+      }
+    }
+
+    throw new SdJwtVcError(
+      "Unsupported credential issuer. Only 'did', 'x5c', and 'jwt-vc-issuer-metadata' is supported at the moment."
+    )
   }
 
   private async parseIssuerFromCredential<Header extends SdJwtVcHeader, Payload extends SdJwtVcPayload>(
@@ -580,7 +602,32 @@ export class SdJwtVcService {
         didUrl,
       }
     }
-    throw new SdJwtVcError("Unsupported 'iss' value. Only did is supported at the moment.")
+
+    if (iss.startsWith('https://')) {
+      if (!sdJwtVc.jwt?.header) {
+        throw new SdJwtVcError('Credential does not contain a header')
+      }
+      if (!sdJwtVc.jwt.header.kid) {
+        throw new SdJwtVcError('Credential does not contain a kid in the header')
+      }
+      const kid = sdJwtVc.jwt.header.kid as string
+      const result = await resolveSigningPublicJwkFromJwtVcIssuerMetadata(agentContext, iss, kid)
+      if (!result) {
+        throw new SdJwtVcError('Failed to resolve signing public JWK from issuer metadata')
+      }
+      if (result.issuer !== iss) {
+        throw new SdJwtVcError(
+          `Failed to resolve signing public JWK from issuer metadata. Expected issuer: ${iss}, but got: ${result.issuer}`
+        )
+      }
+      return {
+        method: 'jwt-vc-issuer-metadata',
+        jwk: result.jwk,
+        issuer: result.issuer,
+      }
+    }
+
+    throw new SdJwtVcError("Unsupported 'iss' value. Only did, x5c, and jwk is supported at the moment.")
   }
 
   private getBaseSdJwtConfig(agentContext: AgentContext): SdJwtVcConfig {
