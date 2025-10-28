@@ -72,7 +72,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * request will be created dynamically when the wallet initiates the authorization flow using the
    * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
    *
-   * You can dynamically create the verification session based on the provided issuace session, or you
+   * You can dynamically create the verification session based on the provided issuance session, or you
    * can have a more generic implementation based on credential configurations and scopes that are being
    * requested.
    *
@@ -85,6 +85,10 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * @default false
    */
   requirePresentationDuringIssuance?: boolean
+
+  // TODO: correct place? mutually exclusive with requirePresentationDuringIssuance
+  // TODO: needs correct server
+  requireChainedIdentity?: boolean
 }
 
 interface OpenId4VciCreateCredentialOfferOptionsBase {
@@ -127,7 +131,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**
-   * Options related to authorization, for both the pre-authorized and authorizat_code flows.
+   * Options related to authorization, for both the pre-authorized and authorization_code flows.
    */
   authorization?: {
     /**
