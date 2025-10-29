@@ -86,9 +86,13 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    */
   requirePresentationDuringIssuance?: boolean
 
-  // TODO: correct place? mutually exclusive with requirePresentationDuringIssuance
-  // TODO: needs correct server
-  requireChainedIdentity?: boolean
+  /**
+   * The chained identity server to use as part of the authorization flow. This server must be configured
+   * as a 'chained' authorization server in the issuer configuration.
+   *
+   * This option is mutually exclusive with `requirePresentationDuringIssuance`.
+   */
+  chainedIdentityAuthorizationServerUrl?: string
 }
 
 interface OpenId4VciCreateCredentialOfferOptionsBase {

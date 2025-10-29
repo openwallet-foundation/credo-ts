@@ -51,7 +51,10 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           )
         }
 
-        if (!issuanceSession.chainedIdentity?.required || !issuanceSession.chainedIdentity.redirectUri) {
+        if (
+          !issuanceSession.chainedIdentity?.externalAuthorizationServerUrl ||
+          !issuanceSession.chainedIdentity.redirectUri
+        ) {
           throw new Oauth2ServerErrorResponseError(
             {
               error: Oauth2ErrorCodes.InvalidRequest,
@@ -65,7 +68,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
 
         if (chainedIdentityAuthorizationCode && typeof chainedIdentityAuthorizationCode === 'string') {
           // TODO: should we be storing all metadata, or just the identifier of the external IDP and fetch the metadata again?
-          const authorizationServerMetadata = issuanceSession.chainedIdentity.chainedIdentityServerMetadata
+          const authorizationServerMetadata = issuanceSession.chainedIdentity.externalAuthorizationServerMetadata
           if (!authorizationServerMetadata) {
             throw new Oauth2ServerErrorResponseError(
               {
@@ -128,7 +131,7 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
           // Store access token response
           issuanceSession.chainedIdentity = {
             ...issuanceSession.chainedIdentity,
-            accessTokenResponse,
+            externalAccessTokenResponse: accessTokenResponse,
           }
 
           // TODO: we need to start using locks so we can't get corrupted state

@@ -69,6 +69,19 @@ export async function handlePushedAuthorizationRequest(
       }
     )
   }
+
+  if (!issuanceSession.chainedIdentity?.externalAuthorizationServerUrl) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Unexpected redirect call for session.`,
+      },
+      {
+        internalMessage: `Issuance session '${issuanceSession.id}' is not configured to use chained identity for authorization.`,
+      }
+    )
+  }
+
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
     // First authorization server is the internal authorization server
@@ -154,13 +167,11 @@ export async function handlePushedAuthorizationRequest(
   //       but then we redirect to an user configured html screen!
   //   - we should support a method that parses a response url
 
-  // TODO: configurable
-  const externalIDP = 'https://accounts.google.com'
-
   const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
+  const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
 
   const authorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
-    (config) => config.issuer === externalIDP
+    (config) => config.issuer === authorizationServerUrl
   )
   if (!authorizationServerConfig) {
     throw new Oauth2ServerErrorResponseError(
@@ -197,9 +208,7 @@ export async function handlePushedAuthorizationRequest(
     authorizationServerMetadata,
     clientId: authorizationServerConfig.clientAuthentication.clientId,
     redirectUri,
-    additionalRequestPayload: {
-      state: chainedIdentityState,
-    },
+    state: chainedIdentityState,
     scope: Array.from(
       new Set(
         authorizationServerConfig.supportedCredentials
@@ -214,17 +223,16 @@ export async function handlePushedAuthorizationRequest(
   })
 
   issuanceSession.chainedIdentity = {
-    required: true,
+    ...issuanceSession.chainedIdentity,
     requestUriReferenceValue: utils.uuid(),
-    chainedIdentityAuthorizationRequestUrl: authorizationRequestUrl,
+    externalAuthorizationRequestUrl: authorizationRequestUrl,
     // TODO: make configurable?
     requestUriExpiresAt: addSecondsToDate(new Date(), 60),
     pkceCodeVerifier: pkce?.codeVerifier,
-    chainedIdentityState: chainedIdentityState,
-    // FIXME: should add state to authorization request in oid4vc-ts
-    state: parsedAuthorizationRequest.authorizationRequest.state as string | undefined,
+    externalState: chainedIdentityState,
+    state: parsedAuthorizationRequest.authorizationRequest.state,
     redirectUri: parsedAuthorizationRequest.authorizationRequest.redirect_uri,
-    chainedIdentityServerMetadata: authorizationServerMetadata,
+    externalAuthorizationServerMetadata: authorizationServerMetadata,
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({

@@ -29,9 +29,8 @@ import {
   OpenId4VcVerifierRecord,
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
-import { decodeJwt } from '@openid4vc/oauth2'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-
+import { decodeJwt } from 'jose'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
@@ -128,15 +127,12 @@ function getCredentialRequestToCredentialMapper({
     // Example of how to use the the access token information from the chained identity server.
     let authorizedUser = authorization.accessToken.payload.sub
     if (
-      issuanceSession.chainedIdentity?.accessTokenResponse?.id_token &&
-      typeof issuanceSession.chainedIdentity?.accessTokenResponse?.id_token === 'string'
+      issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token &&
+      typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token === 'string'
     ) {
-      const { payload } = decodeJwt({
-        jwt: issuanceSession.chainedIdentity.accessTokenResponse.id_token,
-      })
-
-      if (typeof payload.name === 'string') {
-        authorizedUser = payload.name
+      const claims = decodeJwt(issuanceSession.chainedIdentity.externalAccessTokenResponse.id_token)
+      if (typeof claims.name === 'string') {
+        authorizedUser = claims.name
       }
     }
 
@@ -412,7 +408,7 @@ export class Issuer extends BaseAgent<{
             issuerState: utils.uuid(),
             requirePresentationDuringIssuance: options.requireAuthorization === 'presentation',
 
-            requireChainedIdentity: true,
+            chainedIdentityAuthorizationServerUrl: 'https://accounts.google.com',
           }
         : undefined,
     })

@@ -249,9 +249,9 @@ export class OpenId4VcIssuerService {
             required: true,
           }
         : undefined,
-      chainedIdentity: authorizationCodeFlowConfig?.requireChainedIdentity
+      chainedIdentity: authorizationCodeFlowConfig?.chainedIdentityAuthorizationServerUrl
         ? {
-            required: true,
+            externalAuthorizationServerUrl: authorizationCodeFlowConfig?.chainedIdentityAuthorizationServerUrl,
           }
         : undefined,
       // TODO: how to mix pre-auth and auth? Need to do state checks

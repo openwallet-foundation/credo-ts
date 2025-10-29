@@ -21,7 +21,6 @@
     "@koa/bodyparser": "^6.0.0",
     "@openwallet-foundation/askar-nodejs": "catalog:",
     "express": "catalog:",
-    "@openid4vc/oauth2": "0.3.0-alpha-20251021082313",
     "inquirer": "^8.2.5",
     "jose": "^6.1.0",
     "oidc-provider": "^9.5.1"

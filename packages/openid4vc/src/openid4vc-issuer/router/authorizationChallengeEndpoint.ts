@@ -144,7 +144,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     )
   }
 
-  if (issuanceSession?.chainedIdentity?.required) {
+  if (issuanceSession?.chainedIdentity?.externalAuthorizationServerUrl) {
     const clientId =
       parseResult.authorizationChallengeRequest.client_id ??
       (parseResult.clientAttestation?.clientAttestationJwt

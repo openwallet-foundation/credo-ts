@@ -83,9 +83,10 @@ export interface OpenId4VcIssuanceSessionPkce {
 
 export interface OpenId4VcIssuanceSessionChainedIdentity {
   /**
-   * Whether identity chaining is required. Mutually exclusive with `presentation`.
+   * The identifier of the external identity provider's authorization server.
+   * Mutually exclusive with `presentation`.
    */
-  required: true
+  externalAuthorizationServerUrl: string
 
   /**
    * The <reference-value> from the `request_uri` parameter returned to the client
@@ -118,22 +119,22 @@ export interface OpenId4VcIssuanceSessionChainedIdentity {
   /**
    * The chained identity authorization request url, used to authorize to the external identity provider.
    */
-  chainedIdentityAuthorizationRequestUrl?: string
+  externalAuthorizationRequestUrl?: string
 
   /**
    * The state value used in the authorization request to the external identity provider.
    */
-  chainedIdentityState?: string
+  externalState?: string
 
   /**
    * The metadata of the external identity provider's authorization server.
    */
-  chainedIdentityServerMetadata?: AuthorizationServerMetadata
+  externalAuthorizationServerMetadata?: AuthorizationServerMetadata
 
   /**
    * The access token response received from the external identity provider.
    */
-  accessTokenResponse?: AccessTokenResponse
+  externalAccessTokenResponse?: AccessTokenResponse
 }
 
 export type DefaultOpenId4VcIssuanceSessionRecordTags = {
@@ -484,7 +485,7 @@ export class OpenId4VcIssuanceSessionRecord extends BaseRecord<DefaultOpenId4VcI
 
       // Chained identity
       chainedIdentityRequestUriReferenceValue: this.chainedIdentity?.requestUriReferenceValue,
-      chainedIdentityState: this.chainedIdentity?.chainedIdentityState,
+      chainedIdentityState: this.chainedIdentity?.externalState,
     }
   }
 }
