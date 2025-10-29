@@ -135,3 +135,20 @@ This will open three proxies. You should then run your demo environments with th
 - `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm provider` (ngrok url for port 3042)
 - `PROVIDER_HOST=https://d404-123-123-123-123.ngrok-free.app ISSUER_HOST=https://d738-123-123-123-123.ngrok-free.app pnpm issuer` (ngrok url for port 2000)
 - `VERIFIER_HOST=https://1d91-123-123-123-123.ngrok-free.app pnpm verifier` (ngrok url for port 4000)
+
+### Optional Google Account API for Chained Identity
+
+You can also configure external identity providers in order to be able to use their access tokens to fetch specific data for credentials. In this demo, we have an integration with Google Account OpenID Connect API, which provides an ID Token with information we then use to put on the credential itself.
+
+To set this up, you need to create an account in [Google Cloud](https://console.cloud.google.com/auth/overview) platform, and configure a client with the correct domain. In this case, you need a proxy since the URL is not allowed to be `localhost`.
+
+In addition, the following scopes are necessary:
+
+- `openid`
+- `https://www.googleapis.com/auth/userinfo.email`
+
+Once you have the client ID and client secret from the Google integration, please start the issuer as follows:
+
+```sh
+ISSUER_HOST="<issuer-host>" GOOGLE_CLIENT_ID="<google-client-id>" GOOGLE_CLIENT_SECRET="<google-client-secret>"  pnpm issuer
+```

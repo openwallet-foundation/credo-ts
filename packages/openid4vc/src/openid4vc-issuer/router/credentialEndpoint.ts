@@ -274,7 +274,7 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
         },
         openId4VciVersion:
           issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
+          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.V1
             ? 'v1.draft15'
             : 'v1.draft11-14',
       })
