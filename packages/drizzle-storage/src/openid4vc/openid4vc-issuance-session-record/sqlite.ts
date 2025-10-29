@@ -1,5 +1,6 @@
 import type {
   OpenId4VcIssuanceSessionAuthorization,
+  OpenId4VcIssuanceSessionChainedIdentity,
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecord,
@@ -45,6 +46,10 @@ export const openId4VcIssuanceSession = sqliteTable(
     issuanceMetadata: text('issuance_metadata', { mode: 'json' }).$type<Record<string, unknown>>(),
 
     transactions: text({ mode: 'json' }).$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
+
+    chainedIdentity: text({ mode: 'json' }).$type<
+      Omit<OpenId4VcIssuanceSessionChainedIdentity, 'requestUriExpiresAt'> & { requestUriExpiresAt?: string }
+    >(),
 
     // Credential offer
     credentialOfferUri: text('credential_offer_uri'),
