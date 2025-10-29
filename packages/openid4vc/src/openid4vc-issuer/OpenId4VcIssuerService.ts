@@ -1011,6 +1011,7 @@ export class OpenId4VcIssuerService {
     } satisfies AuthorizationServerMetadata
 
     return {
+      originalDraftVersion: Openid4vciDraftVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
     }

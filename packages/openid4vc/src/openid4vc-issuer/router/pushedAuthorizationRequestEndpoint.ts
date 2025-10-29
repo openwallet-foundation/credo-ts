@@ -158,7 +158,7 @@ export async function handlePushedAuthorizationRequest(
         error_description: `The issuer is not configured to use an external authorization server for identity chaining.`,
       },
       {
-        internalMessage: `Issuer '${issuer.issuerId}' does not have a chained authorization server config for issuer '${externalIDP}'`,
+        internalMessage: `Issuer '${issuer.issuerId}' does not have a chained authorization server config for issuer '${authorizationServerUrl}'`,
       }
     )
   }

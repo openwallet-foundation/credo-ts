@@ -91,8 +91,6 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
  * Handle authorization challenge request without auth session. This endpoint
  * may fall back to a Pushed Authorization Request if no presentation during issuance
  * is required.
- *
- * TODO: if we fall back to PAR, we can't properly handle the redirect_uri. Should we change that?
  */
 async function handleAuthorizationChallengeNoAuthSession(options: {
   agentContext: AgentContext
