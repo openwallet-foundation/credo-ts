@@ -145,28 +145,6 @@ export async function handlePushedAuthorizationRequest(
   issuanceSession.clientId =
     clientAttestation?.clientAttestation.payload.sub ?? parsedAuthorizationRequest.authorizationRequest.client_id
 
-  // TODO:
-  // Need to dynamically create an authorization request here
-  // - call an externally configured OAuth2 server (adapt authorization servers?)
-  //   - use client_id + client_secret -> other auth methods possible in future
-  //   - start without PAR, DPoP, PKCE add support for it in follw up iteration
-  // - construct an authorization request url based on auth server metadata
-  // - include a state parameter
-  // - return that url in this method
-  // - user opens browser/auth session and sign in with the external IDP
-  // - user is then redirected to our redirect url (which is whitelisted at the IDP)
-
-  // credo config
-  // - configure an external auth provider
-  //  - creates an id and redirectUri
-
-  // - new endpoint for the redirectUri
-  //   - this should not be handled by credo, as it should render html
-  //     - recommendation from google: handle it first on the server
-  //       the redirect to html. That way we can handle the response in credo
-  //       but then we redirect to an user configured html screen!
-  //   - we should support a method that parses a response url
-
   const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
   const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
 
