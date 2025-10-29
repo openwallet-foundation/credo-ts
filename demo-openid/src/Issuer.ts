@@ -29,6 +29,7 @@ import {
   OpenId4VcVerifierRecord,
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
+import { decodeJwt } from '@openid4vc/oauth2'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
@@ -117,7 +118,28 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
+  return async ({
+    holderBinding,
+    credentialConfigurationId,
+    credentialConfiguration,
+    authorization,
+    issuanceSession,
+  }) => {
+    // Example of how to use the the access token information from the chained identity server.
+    let authorizedUser = authorization.accessToken.payload.sub
+    if (
+      issuanceSession.chainedIdentity?.accessTokenResponse?.id_token &&
+      typeof issuanceSession.chainedIdentity?.accessTokenResponse?.id_token === 'string'
+    ) {
+      const { payload } = decodeJwt({
+        jwt: issuanceSession.chainedIdentity.accessTokenResponse.id_token,
+      })
+
+      if (typeof payload.name === 'string') {
+        authorizedUser = payload.name
+      }
+    }
+
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
         type: 'credentials',
@@ -125,7 +147,7 @@ function getCredentialRequestToCredentialMapper({
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer:
@@ -155,7 +177,7 @@ function getCredentialRequestToCredentialMapper({
               credentialSubject: JsonTransformer.fromJSON(
                 {
                   id: parseDid(binding.didUrl).did,
-                  authorizedUser: authorization.accessToken.payload.sub,
+                  authorizedUser: authorizedUser,
                 },
                 W3cCredentialSubject
               ),
@@ -176,7 +198,7 @@ function getCredentialRequestToCredentialMapper({
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer: {
@@ -200,7 +222,7 @@ function getCredentialRequestToCredentialMapper({
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
-              authorized_user: authorization.accessToken.payload.sub,
+              authorized_user: authorizedUser,
             },
           },
           docType: credentialConfiguration.doctype,
