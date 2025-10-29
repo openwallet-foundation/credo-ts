@@ -1,11 +1,7 @@
 import type { AgentContext } from '@credo-ts/core'
 import { joinUriParts, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
-import type {
-  HttpMethod,
-  ParseAuthorizationChallengeRequestOptions,
-  ParseAuthorizationChallengeRequestResult,
-} from '@openid4vc/oauth2'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import type { HttpMethod, ParseAuthorizationChallengeRequestResult, RequestLike } from '@openid4vc/oauth2'
+import { decodeJwt, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 import {
   OpenId4VcVerificationSessionRepository,
@@ -29,6 +25,7 @@ import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from '../OpenId4VcIssuerService'
 import type { OpenId4VcIssuerRecord } from '../repository'
+import { handlePushedAuthorizationRequest } from './pushedAuthorizationRequestEndpoint'
 import type { OpenId4VcIssuanceRequest } from './requestContext'
 
 export function configureAuthorizationChallengeEndpoint(router: Router, config: OpenId4VcIssuerModuleConfig) {
@@ -45,7 +42,6 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
         const fullRequestUrl = joinUriParts(issuerMetadata.credentialIssuer.credential_issuer, [
           config.authorizationChallengeEndpointPath,
         ])
-
         const requestLike = {
           headers: new Headers(request.headers as Record<string, string>),
           method: request.method as HttpMethod,
@@ -56,6 +52,7 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
           authorizationChallengeRequest: request.body,
           request: requestLike,
         })
+
         const { authorizationChallengeRequest } = parseResult
 
         if (authorizationChallengeRequest.auth_session) {
@@ -86,32 +83,23 @@ export function configureAuthorizationChallengeEndpoint(router: Router, config: 
   )
 }
 
+/**
+ * Handle authorization challenge request without auth session. This endpoint
+ * may fall back to a Pushed Authorization Request if no presentation during issuance
+ * is required.
+ */
 async function handleAuthorizationChallengeNoAuthSession(options: {
   agentContext: AgentContext
   issuer: OpenId4VcIssuerRecord
   parseResult: ParseAuthorizationChallengeRequestResult
-  // FIXME: export in oid4vc-ts
-  request: ParseAuthorizationChallengeRequestOptions['request']
+  request: RequestLike
 }) {
   const { agentContext, issuer, parseResult, request } = options
   const { authorizationChallengeRequest } = parseResult
 
-  // First call, no auth_session yet
-
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
   const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-
-  if (!config.getVerificationSessionForIssuanceSessionAuthorization) {
-    throw new Oauth2ServerErrorResponseError(
-      {
-        error: Oauth2ErrorCodes.ServerError,
-      },
-      {
-        internalMessage: `Missing required 'getVerificationSessionForIssuanceSessionAuthorization' callback in openid4vc issuer module config. This callback is required for presentation during issuance flows.`,
-      }
-    )
-  }
 
   if (!authorizationChallengeRequest.issuer_state) {
     throw new Oauth2ServerErrorResponseError({
@@ -131,6 +119,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     issuerId: issuer.issuerId,
     issuerState: authorizationChallengeRequest.issuer_state,
   })
+
   const allowedStates = [OpenId4VcIssuanceSessionState.OfferCreated, OpenId4VcIssuanceSessionState.OfferUriRetrieved]
   if (!issuanceSession || !allowedStates.includes(issuanceSession.state)) {
     throw new Oauth2ServerErrorResponseError(
@@ -144,6 +133,70 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
           : `Issuance session '${issuanceSession.id}' has state '${
               issuanceSession.state
             }' but expected one of ${allowedStates.join(', ')}`,
+      }
+    )
+  }
+
+  if (issuanceSession?.chainedIdentity?.externalAuthorizationServerUrl) {
+    const clientId =
+      parseResult.authorizationChallengeRequest.client_id ??
+      (parseResult.clientAttestation?.clientAttestationJwt
+        ? // FIXME: export scheme for client attestation jwt
+          // FIXME: add sub to base jwt type
+          decodeJwt({
+            jwt: parseResult.clientAttestation.clientAttestationJwt,
+          }).payload.sub
+        : undefined)
+
+    if (!clientId || typeof clientId !== 'string') {
+      throw new Oauth2ServerErrorResponseError({
+        error: Oauth2ErrorCodes.InvalidClient,
+        error_description: `Missing required 'client_id' parameter in authorization request.`,
+      })
+    }
+
+    const { pushedAuthorizationResponse } = await handlePushedAuthorizationRequest(agentContext, {
+      issuer,
+      issuanceSession,
+      parsedAuthorizationRequest: {
+        clientAttestation: parseResult.clientAttestation,
+        dpop: parseResult.dpop,
+        authorizationRequest: {
+          ...parseResult.authorizationChallengeRequest,
+          response_type: 'code',
+          client_id: clientId,
+        },
+      },
+      request,
+    })
+
+    throw new Oauth2ServerErrorResponseError({
+      error: Oauth2ErrorCodes.RedirectToWeb,
+      error_description: 'Authorization required before issuance',
+      ...pushedAuthorizationResponse,
+    })
+  }
+
+  // From here on 'presentation' MUST be required
+  if (!issuanceSession.presentation?.required) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.InvalidRequest,
+        error_description: `Invalid 'issuer_state' parameter`,
+      },
+      {
+        internalMessage: `Neither presentation during issuance or identity chaining was configured on issuance session '${issuanceSession.id}'`,
+      }
+    )
+  }
+
+  if (!config.getVerificationSessionForIssuanceSessionAuthorization) {
+    throw new Oauth2ServerErrorResponseError(
+      {
+        error: Oauth2ErrorCodes.ServerError,
+      },
+      {
+        internalMessage: `Missing required 'getVerificationSessionForIssuanceSessionAuthorization' callback in openid4vc issuer module config. This callback is required for presentation during issuance flows.`,
       }
     )
   }
@@ -176,7 +229,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     }
   if (clientAttestation)
     issuanceSession.walletAttestation = {
-      // If dpop is provided at the start, it's required from now on.
+      // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
 
@@ -257,8 +310,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   issuer: OpenId4VcIssuerRecord
   next: NextFunction
   parseResult: ParseAuthorizationChallengeRequestResult
-  // FIXME: export in oid4vc-ts
-  request: ParseAuthorizationChallengeRequestOptions['request']
+  request: RequestLike
 }) {
   const { agentContext, issuer, parseResult, request, response, next } = options
   const { authorizationChallengeRequest } = parseResult

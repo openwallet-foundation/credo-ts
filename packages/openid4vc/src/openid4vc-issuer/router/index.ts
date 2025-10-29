@@ -1,5 +1,6 @@
 export { configureAccessTokenEndpoint } from './accessTokenEndpoint'
 export { configureAuthorizationChallengeEndpoint } from './authorizationChallengeEndpoint'
+export { configureAuthorizationEndpoint } from './authorizationEndpoint'
 export { configureOAuthAuthorizationServerMetadataEndpoint } from './authorizationServerMetadataEndpoint'
 export { configureCredentialEndpoint } from './credentialEndpoint'
 export { configureCredentialOfferEndpoint } from './credentialOfferEndpoint'
@@ -7,4 +8,6 @@ export { configureDeferredCredentialEndpoint } from './deferredCredentialEndpoin
 export { configureIssuerMetadataEndpoint } from './issuerMetadataEndpoint'
 export { configureJwksEndpoint } from './jwksEndpoint'
 export { configureNonceEndpoint } from './nonceEndpoint'
+export { configurePushedAuthorizationRequestEndpoint } from './pushedAuthorizationRequestEndpoint'
+export { configureRedirectEndpoint } from './redirectEndpoint'
 export type { OpenId4VcIssuanceRequest } from './requestContext'
