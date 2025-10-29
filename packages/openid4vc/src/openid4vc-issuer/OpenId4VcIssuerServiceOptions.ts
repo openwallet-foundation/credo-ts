@@ -37,7 +37,7 @@ export interface OpenId4VciCredentialRequestAuthorization {
   }
 }
 
-export type OpenId4VciVersion = 'v1.draft11-14' | 'v1.draft15'
+export type OpenId4VciVersion = 'v1.draft11-14' | 'v1.draft15' | 'v1'
 
 export interface OpenId4VciPreAuthorizedCodeFlowConfig {
   preAuthorizedCode?: string
@@ -62,8 +62,11 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   issuerState?: string
 
   /**
-   * OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
-   * type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+   * OPTIONAL. String value that the wallet can use to identify the authorization server to use with
+   * this grant type when multiple authorization servers have been configured in the Credential Issuer
+   * metadata.
+   *
+   * When using a chained authorization server, this option is mutually exclusive with `requirePresentationDuringIssuance`.
    */
   authorizationServerUrl?: string
 
@@ -72,7 +75,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * request will be created dynamically when the wallet initiates the authorization flow using the
    * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
    *
-   * You can dynamically create the verification session based on the provided issuace session, or you
+   * You can dynamically create the verification session based on the provided issuance session, or you
    * can have a more generic implementation based on credential configurations and scopes that are being
    * requested.
    *
@@ -102,7 +105,7 @@ interface OpenId4VciCreateCredentialOfferOptionsBase {
   baseUri?: string
 
   /**
-   * @default v1.draft15
+   * @default v1
    */
   version?: OpenId4VciVersion
 }
@@ -114,12 +117,12 @@ export interface OpenId4VciCreateStatelessCredentialOfferOptions extends OpenId4
    * For stateless credential offers we need an external authorization server, which also means we need to
    * support `authorization_servers`.
    *
-   * NOTE: `v1.draft15` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
+   * NOTE: `v1` credential is compatible with draft 13 credential offer as well. Only the issuer metadata
    * is different, so ensure you configure the issuer metadata in a compatible way based on the provided draft version.
    *
-   * @default v1.draft15
+   * @default v1
    */
-  version?: 'v1.draft15'
+  version?: 'v1'
 }
 
 export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreateCredentialOfferOptionsBase {
@@ -127,7 +130,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**
-   * Options related to authorization, for both the pre-authorized and authorizat_code flows.
+   * Options related to authorization, for both the pre-authorized and authorization_code flows.
    */
   authorization?: {
     /**
