@@ -7,6 +7,7 @@ export * from './OpenId4VcIssuerService'
 export * from './OpenId4VcIssuerServiceOptions'
 export {
   type OpenId4VcIssuanceSessionAuthorization,
+  type OpenId4VcIssuanceSessionChainedIdentity,
   type OpenId4VcIssuanceSessionDpop,
   type OpenId4VcIssuanceSessionPkce,
   type OpenId4VcIssuanceSessionPresentation,
