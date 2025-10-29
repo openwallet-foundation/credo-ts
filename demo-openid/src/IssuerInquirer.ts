@@ -56,7 +56,7 @@ export class IssuerInquirer extends BaseInquirer {
     }
 
     const authorizationMethod = await this.pickOne(
-      ['Transaction Code', 'Browser', 'Presentation', 'None'],
+      ['Transaction Code', 'Browser', 'Browser (Google Account)', 'Presentation', 'None'],
       'Authorization method'
     )
     const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({
@@ -64,9 +64,11 @@ export class IssuerInquirer extends BaseInquirer {
       requireAuthorization:
         authorizationMethod === 'Browser'
           ? 'browser'
-          : authorizationMethod === 'Presentation'
-            ? 'presentation'
-            : undefined,
+          : authorizationMethod === 'Browser (Google Account)'
+            ? 'browser-external'
+            : authorizationMethod === 'Presentation'
+              ? 'presentation'
+              : undefined,
       requirePin: authorizationMethod === 'Transaction Code',
     })
 
