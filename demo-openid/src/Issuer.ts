@@ -17,6 +17,7 @@ import {
 import {
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
+  type OpenId4VciAuthorizationServerConfig,
   type OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialFormatProfile,
   type OpenId4VciCredentialRequestToCredentialMapper,
@@ -30,7 +31,7 @@ import {
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-
+import { decodeJwt } from 'jose'
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
@@ -58,7 +59,7 @@ export const credentialConfigurationsSupported = {
   },
   'UniversityDegreeCredential-jwtvcjson': {
     format: OpenId4VciCredentialFormatProfile.JwtVcJson,
-    scope: 'openid4vc:credential:UniversityDegreeCredential-jwtvcjson',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     // TODO: we should validate this against what is supported by credo
     // as otherwise it's very easy to create invalid configurations?
     cryptographic_binding_methods_supported: ['did:key', 'did:jwk'],
@@ -81,7 +82,7 @@ export const credentialConfigurationsSupported = {
   'UniversityDegreeCredential-sdjwt': {
     format: OpenId4VciCredentialFormatProfile.SdJwtVc,
     vct: 'UniversityDegreeCredential',
-    scope: 'openid4vc:credential:OpenBadgeCredential-sdjwt',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     cryptographic_binding_methods_supported: ['jwk'],
     credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
     proof_types_supported: {
@@ -96,7 +97,7 @@ export const credentialConfigurationsSupported = {
   'UniversityDegreeCredential-mdoc': {
     format: OpenId4VciCredentialFormatProfile.MsoMdoc,
     doctype: 'UniversityDegreeCredential',
-    scope: 'openid4vc:credential:OpenBadgeCredential-mdoc',
+    scope: 'openid4vc:credential:OpenBadgeCredential',
     cryptographic_binding_methods_supported: ['jwk'],
     credential_signing_alg_values_supported: ['ES256', 'EdDSA'],
     proof_types_supported: {
@@ -117,7 +118,25 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
+  return async ({
+    holderBinding,
+    credentialConfigurationId,
+    credentialConfiguration,
+    authorization,
+    issuanceSession,
+  }) => {
+    // Example of how to use the the access token information from the chained identity server.
+    let authorizedUser = authorization.accessToken.payload.sub
+    if (
+      issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token &&
+      typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token === 'string'
+    ) {
+      const claims = decodeJwt(issuanceSession.chainedIdentity.externalAccessTokenResponse.id_token)
+      if (typeof claims.email === 'string') {
+        authorizedUser = claims.email
+      }
+    }
+
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
         type: 'credentials',
@@ -125,7 +144,7 @@ function getCredentialRequestToCredentialMapper({
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer:
@@ -155,7 +174,7 @@ function getCredentialRequestToCredentialMapper({
               credentialSubject: JsonTransformer.fromJSON(
                 {
                   id: parseDid(binding.didUrl).did,
-                  authorizedUser: authorization.accessToken.payload.sub,
+                  authorizedUser: authorizedUser,
                 },
                 W3cCredentialSubject
               ),
@@ -176,7 +195,7 @@ function getCredentialRequestToCredentialMapper({
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer: {
@@ -200,7 +219,7 @@ function getCredentialRequestToCredentialMapper({
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
-              authorized_user: authorization.accessToken.payload.sub,
+              authorized_user: authorizedUser,
             },
           },
           docType: credentialConfiguration.doctype,
@@ -318,12 +337,32 @@ export class Issuer extends BaseAgent<{
       credentialConfigurationsSupported,
       authorizationServerConfigs: [
         {
+          type: 'direct',
           issuer: PROVIDER_HOST,
           clientAuthentication: {
             clientId: 'issuer-server',
             clientSecret: 'issuer-server',
           },
         },
+        ...((process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+          ? [
+              {
+                type: 'chained',
+                issuer: 'https://accounts.google.com',
+                clientAuthentication: {
+                  type: 'clientSecret',
+                  clientId: process.env.GOOGLE_CLIENT_ID,
+                  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                },
+                scopesMapping: {
+                  'openid4vc:credential:OpenBadgeCredential': [
+                    'openid',
+                    'https://www.googleapis.com/auth/userinfo.email',
+                  ],
+                },
+              },
+            ]
+          : []) satisfies OpenId4VciAuthorizationServerConfig[]),
       ],
     })
 
@@ -335,7 +374,7 @@ export class Issuer extends BaseAgent<{
 
   public async createCredentialOffer(options: {
     credentialConfigurationIds: string[]
-    requireAuthorization?: 'presentation' | 'browser'
+    requireAuthorization?: 'presentation' | 'browser' | 'browser-external'
     requirePin: boolean
   }) {
     const issuerMetadata = await this.agent.openid4vc.issuer.getIssuerMetadata(this.issuerRecord.issuerId)
@@ -359,7 +398,12 @@ export class Issuer extends BaseAgent<{
       // Auth using external authorization server
       authorizationCodeFlowConfig: options.requireAuthorization
         ? {
-            authorizationServerUrl: options.requireAuthorization === 'browser' ? PROVIDER_HOST : undefined,
+            authorizationServerUrl:
+              options.requireAuthorization === 'browser'
+                ? PROVIDER_HOST
+                : options.requireAuthorization === 'browser-external'
+                  ? 'https://accounts.google.com'
+                  : undefined,
             // TODO: should be generated by us, if we're going to use for matching
             issuerState: utils.uuid(),
             requirePresentationDuringIssuance: options.requireAuthorization === 'presentation',
