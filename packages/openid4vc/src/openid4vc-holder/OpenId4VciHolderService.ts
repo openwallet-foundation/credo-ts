@@ -169,6 +169,15 @@ export class OpenId4VciHolderService {
       scope: scope.join(' '),
       redirectUri,
       dpop,
+      additionalRequestPayload: {
+        // TODO: this ensures that the redirect_uri is sent to the authorization
+        // challenge endpoint, and in the end used in the auth code request bc the
+        // authorization challenge endpoint ends up working as PAR.
+        //
+        // Should we somehow in oid4vc-ts lib be "smarter" and if there is a redirect_uri
+        // then use the PAR endpoint if available instead of posting to the authorization challenge endpoint?
+        redirect_uri: redirectUri,
+      },
     })
 
     if (authorizationResult.authorizationFlow === AuthorizationFlow.PresentationDuringIssuance) {

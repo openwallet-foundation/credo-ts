@@ -29,12 +29,13 @@ import {
   OpenId4VcVerifierRecord,
   type VerifiedOpenId4VcCredentialHolderBinding,
 } from '@credo-ts/openid4vc'
+import { decodeJwt } from '@openid4vc/oauth2'
 import { askar } from '@openwallet-foundation/askar-nodejs'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
 
-const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
+const _PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
 const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
 
 export const credentialConfigurationsSupported = {
@@ -117,7 +118,28 @@ function getCredentialRequestToCredentialMapper({
 }: {
   issuerDidKey: DidKey
 }): OpenId4VciCredentialRequestToCredentialMapper {
-  return async ({ holderBinding, credentialConfigurationId, credentialConfiguration, authorization }) => {
+  return async ({
+    holderBinding,
+    credentialConfigurationId,
+    credentialConfiguration,
+    authorization,
+    issuanceSession,
+  }) => {
+    // Example of how to use the the access token information from the chained identity server.
+    let authorizedUser = authorization.accessToken.payload.sub
+    if (
+      issuanceSession.chainedIdentity?.accessTokenResponse?.id_token &&
+      typeof issuanceSession.chainedIdentity?.accessTokenResponse?.id_token === 'string'
+    ) {
+      const { payload } = decodeJwt({
+        jwt: issuanceSession.chainedIdentity.accessTokenResponse.id_token,
+      })
+
+      if (typeof payload.name === 'string') {
+        authorizedUser = payload.name
+      }
+    }
+
     if (credentialConfigurationId === 'PresentationAuthorization') {
       return {
         type: 'credentials',
@@ -125,7 +147,7 @@ function getCredentialRequestToCredentialMapper({
         credentials: holderBinding.keys.map((binding) => ({
           payload: {
             vct: credentialConfiguration.vct,
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer:
@@ -155,7 +177,7 @@ function getCredentialRequestToCredentialMapper({
               credentialSubject: JsonTransformer.fromJSON(
                 {
                   id: parseDid(binding.didUrl).did,
-                  authorizedUser: authorization.accessToken.payload.sub,
+                  authorizedUser: authorizedUser,
                 },
                 W3cCredentialSubject
               ),
@@ -176,7 +198,7 @@ function getCredentialRequestToCredentialMapper({
             vct: credentialConfiguration.vct,
             university: 'innsbruck',
             degree: 'bachelor',
-            authorized_user: authorization.accessToken.payload.sub,
+            authorized_user: authorizedUser,
           },
           holder: binding,
           issuer: {
@@ -200,7 +222,7 @@ function getCredentialRequestToCredentialMapper({
           namespaces: {
             'Leopold-Franzens-University': {
               degree: 'bachelor',
-              authorized_user: authorization.accessToken.payload.sub,
+              authorized_user: authorizedUser,
             },
           },
           docType: credentialConfiguration.doctype,
@@ -317,12 +339,35 @@ export class Issuer extends BaseAgent<{
       issuerId: '726222ad-7624-4f12-b15b-e08aa7042ffa',
       credentialConfigurationsSupported,
       authorizationServerConfigs: [
+        // TODO: the oid4vc-ts package throws an error if we have authorization servers
+        // for the code auth flow, but then don't use it when using chained authentication.
+        // So for now we comment this out to allow easier testing with Credo as an
+        // authorization server. How to fix it?
+        // {
+        //   type: 'direct',
+        //   issuer: PROVIDER_HOST,
+        //   clientAuthentication: {
+        //     clientId: 'issuer-server',
+        //     clientSecret: 'issuer-server',
+        //   },
+        // },
         {
-          issuer: PROVIDER_HOST,
+          type: 'chained',
+          issuer: 'https://accounts.google.com',
           clientAuthentication: {
-            clientId: 'issuer-server',
-            clientSecret: 'issuer-server',
+            type: 'clientSecret',
+            clientId: 'ID',
+            clientSecret: 'SECRET',
           },
+          supportedCredentials: [
+            {
+              credentialConfigurationId: 'UniversityDegreeCredential-sdjwt',
+              scopes: [
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'https://www.googleapis.com/auth/userinfo.email',
+              ],
+            },
+          ],
         },
       ],
     })
@@ -359,10 +404,15 @@ export class Issuer extends BaseAgent<{
       // Auth using external authorization server
       authorizationCodeFlowConfig: options.requireAuthorization
         ? {
-            authorizationServerUrl: options.requireAuthorization === 'browser' ? PROVIDER_HOST : undefined,
+            // authorizationServerUrl:
+            //   options.requireAuthorization === 'browser'
+            //     ? issuerMetadata.credentialIssuer.credential_issuer
+            //     : undefined,
             // TODO: should be generated by us, if we're going to use for matching
             issuerState: utils.uuid(),
             requirePresentationDuringIssuance: options.requireAuthorization === 'presentation',
+
+            requireChainedIdentity: true,
           }
         : undefined,
     })
