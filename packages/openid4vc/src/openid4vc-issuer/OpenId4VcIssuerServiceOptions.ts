@@ -62,8 +62,11 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
   issuerState?: string
 
   /**
-   * OPTIONAL string that the Wallet can use to identify the Authorization Server to use with this grant
-   * type when authorization_servers parameter in the Credential Issuer metadata has multiple entries.
+   * OPTIONAL. String value that the wallet can use to identify the authorization server to use with
+   * this grant type when multiple authorization servers have been configured in the Credential Issuer
+   * metadata.
+   *
+   * When using a chained authorization server, this option is mutually exclusive with `requirePresentationDuringIssuance`.
    */
   authorizationServerUrl?: string
 
@@ -72,7 +75,7 @@ export interface OpenId4VciAuthorizationCodeFlowConfig {
    * request will be created dynamically when the wallet initiates the authorization flow using the
    * `getVerificationSessionForIssuanceSessionAuthorization` callback in the issuer module config.
    *
-   * You can dynamically create the verification session based on the provided issuace session, or you
+   * You can dynamically create the verification session based on the provided issuance session, or you
    * can have a more generic implementation based on credential configurations and scopes that are being
    * requested.
    *
@@ -127,7 +130,7 @@ export interface OpenId4VciCreateCredentialOfferOptions extends OpenId4VciCreate
   authorizationCodeFlowConfig?: OpenId4VciAuthorizationCodeFlowConfig
 
   /**
-   * Options related to authorization, for both the pre-authorized and authorizat_code flows.
+   * Options related to authorization, for both the pre-authorized and authorization_code flows.
    */
   authorization?: {
     /**
