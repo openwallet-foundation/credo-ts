@@ -192,6 +192,9 @@ describe('OpenId4VcHolder', () => {
         .get('/.well-known/oauth-authorization-server/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
         .reply(404)
 
+        .get('/.well-known/openid-credential-issuer/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
+        .reply(404)
+
       // setup server metadata response
       nock('https://openid4vc.animo.id/oid4vci/0bbfb1c0-9f45-478c-a139-08f6ed610a37')
         .get('/.well-known/openid-configuration')

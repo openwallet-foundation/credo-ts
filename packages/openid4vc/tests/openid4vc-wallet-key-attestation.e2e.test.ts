@@ -362,7 +362,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       resolvedCredentialOffer,
       {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
       }
     )
@@ -453,7 +453,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     await expect(
       holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
       })
     ).rejects.toThrow('Missing required client attestation parameters in pushed authorization request')
 
@@ -469,7 +469,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       resolvedCredentialOffer,
       {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
       }
     )

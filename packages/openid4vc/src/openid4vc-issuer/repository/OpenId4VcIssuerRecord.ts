@@ -102,6 +102,14 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
+  public get directAuthorizationServerConfigs() {
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct')
+  }
+
+  public get chainedAuthorizationServerConfigs() {
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'chained')
+  }
+
   public get resolvedAccessTokenPublicJwk() {
     if (this.accessTokenPublicJwk) {
       return Kms.PublicJwk.fromPublicJwk(this.accessTokenPublicJwk)
