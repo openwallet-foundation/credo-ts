@@ -273,10 +273,11 @@ export function configureCredentialEndpoint(router: Router, config: OpenId4VcIss
           subject: tokenPayload.sub,
         },
         openId4VciVersion:
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15 ||
-          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft16
-            ? 'v1.draft15'
-            : 'v1.draft11-14',
+          issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.V1
+            ? 'v1'
+            : issuerMetadata.originalDraftVersion === Openid4vciDraftVersion.Draft15
+              ? 'v1.draft15'
+              : 'v1.draft11-14',
       })
 
       // Save and update
