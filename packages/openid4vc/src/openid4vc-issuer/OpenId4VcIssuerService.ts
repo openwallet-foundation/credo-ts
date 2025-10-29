@@ -208,9 +208,9 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
+        ...issuerMetadata,
         originalDraftVersion:
           version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
-        ...issuerMetadata,
       },
     })
 
@@ -247,6 +247,11 @@ export class OpenId4VcIssuerService {
       walletAttestation: authorization?.requireWalletAttestation
         ? {
             required: true,
+          }
+        : undefined,
+      chainedIdentity: authorizationCodeFlowConfig?.chainedIdentityAuthorizationServerUrl
+        ? {
+            externalAuthorizationServerUrl: authorizationCodeFlowConfig?.chainedIdentityAuthorizationServerUrl,
           }
         : undefined,
       // TODO: how to mix pre-auth and auth? Need to do state checks
@@ -506,6 +511,7 @@ export class OpenId4VcIssuerService {
     if (signOptionsOrDeferral.type === 'deferral') {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
+        transactionId: signOptionsOrDeferral.transactionId,
       })
 
       // Update expiry time to allow for re-check
@@ -560,12 +566,6 @@ export class OpenId4VcIssuerService {
 
     const vcIssuer = this.getIssuer(agentContext, { issuanceSessionId: issuanceSession.id })
     const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer)
-
-    // FIXME: verify request against the configuration
-    // - key attestations required
-    // - proof types supported
-    // - signing alg values supported
-    // - key attestation level met.
 
     const allowedProofTypes = credentialConfiguration.proof_types_supported ?? {
       jwt: { proof_signing_alg_values_supported: getSupportedJwaSignatureAlgorithms(agentContext) },
@@ -955,11 +955,12 @@ export class OpenId4VcIssuerService {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
+    const directAuthorizationServerConfigs = issuerRecord.directAuthorizationServerConfigs
 
     const extraAuthorizationServers: AuthorizationServerMetadata[] =
-      fetchExternalAuthorizationServerMetadata && issuerRecord.authorizationServerConfigs
+      fetchExternalAuthorizationServerMetadata && directAuthorizationServerConfigs
         ? await Promise.all(
-            issuerRecord.authorizationServerConfigs.map(async (server) => {
+            directAuthorizationServerConfigs.map(async (server) => {
               const metadata = await oauth2Client.fetchAuthorizationServerMetadata(server.issuer)
               if (!metadata)
                 throw new CredoError(`Authorization server metadata not found for issuer '${server.issuer}'`)
@@ -969,9 +970,9 @@ export class OpenId4VcIssuerService {
         : []
 
     const authorizationServers =
-      issuerRecord.authorizationServerConfigs && issuerRecord.authorizationServerConfigs.length > 0
+      directAuthorizationServerConfigs && directAuthorizationServerConfigs.length > 0
         ? [
-            ...issuerRecord.authorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
+            ...directAuthorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
             // Our issuer is also a valid authorization server (only for pre-auth)
             issuerUrl,
           ]
@@ -998,11 +999,12 @@ export class OpenId4VcIssuerService {
       'pre-authorized_grant_anonymous_access_supported': true,
 
       jwks_uri: joinUriParts(issuerUrl, [config.jwksEndpointPath]),
-      authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
 
-      // TODO: PAR (maybe not needed as we only use this auth server for presentation during issuance)
-      // pushed_authorization_request_endpoint: '',
-      // require_pushed_authorization_requests: true
+      authorization_challenge_endpoint: joinUriParts(issuerUrl, [config.authorizationChallengeEndpointPath]),
+      authorization_endpoint: joinUriParts(issuerUrl, [config.authorizationEndpoint]),
+
+      pushed_authorization_request_endpoint: joinUriParts(issuerUrl, [config.pushedAuthorizationRequestEndpoint]),
+      require_pushed_authorization_requests: true,
 
       code_challenge_methods_supported: [PkceCodeChallengeMethod.S256],
       dpop_signing_alg_values_supported: issuerRecord.dpopSigningAlgValuesSupported,
@@ -1215,9 +1217,14 @@ export class OpenId4VcIssuerService {
     })
   }
 
-  public getOauth2Client(agentContext: AgentContext) {
+  public getOauth2Client(agentContext: AgentContext, issuerRecord?: OpenId4VcIssuerRecord) {
     return new Oauth2Client({
-      callbacks: getOid4vcCallbacks(agentContext),
+      callbacks: {
+        ...getOid4vcCallbacks(agentContext),
+        ...(issuerRecord
+          ? { clientAuthentication: dynamicOid4vciClientAuthentication(agentContext, issuerRecord) }
+          : {}),
+      },
     })
   }
 
