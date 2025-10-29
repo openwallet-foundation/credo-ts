@@ -52,44 +52,6 @@ export interface OpenId4VciDirectAuthorizationServerConfig {
   clientAuthentication?: Optional<OpenId4VciAuthorizationServerClientAuthenticationClientSecret, 'type'>
 }
 
-/**
- * @note we should probably support two flows for chained authorization servers:
- *
- * - Using OpenID Connect where we receive an ID Token from the extern IDP. In this case
- * the ID Token can contain claims which we will map to claims in the credential. This way
- * you can hook it up into any existing IDP and as long as it's in an ID Token you can directly
- * issue it into a credential without the need for a glue layer.
- *
- * - Using OAuth2 (i think code grant, but maybe others?). We can convert this into an access token
- * and use that access token to call an external endpoint with either GET/POST the credential data.
- * We can then map the response to values in the credential.
- *
- * It can also be a combination. Where you retrieve an ID Token, put some of the ID token claims in the
- * credential, but then also make a request to an external resource server to fetch additional data. Especially
- * if multiple credentials are being issued this can allow for a combined approach.
- *
- * Some requirements:
- * - All of the issued credentials in one offer need to use the same authorization server. With the
- *    `authorization_server` in the credential offer this is already handled, but with chained mode
- *   all requests will use the credo authorization server. So we need to configure it on a `credential_configuration_id`
- *   level and enforce this at time of issuance.
- *
- * We would have to think how we correctly initiate the request to the external authorization server
- * to include the correct scopes etc.. We have the scopes on our end, but these may need to be mapped
- * to other scopes on their external authorizations server's end. So we probably need an additional option
- * for all credential configurations that won't be published, but configures how it's mapped. OR, and this may
- * be more flexible, we dynamically call a callback when we initiate the request to an external authorizatino
- * server. The callback approach may be more flexible, the pre-configured approach might be easier to set up.
- * Same holds for the client_id, client_secret, we could also dynamically inject these. Along with
- * even the chained authorization servers. The `direct` NEEDS to be configured in the issuer metadata
- * but that's not the case for chained.
- *
- * @note for Paradym. I think in the beginning we only want to support the chained mode. As it gives
- * way more control on our end, and means there's way less restrictions on the external authorization
- * server. If it's needed we can add the direct flow as well, but we would need to disable quite some
- * settings then as e.g. wallet attestations, DPoP, PKCE, will all be handled by the external authorization
- * server.
- */
 export interface OpenId4VciChainedAuthorizationServerConfig {
   type: 'chained'
 

@@ -17,8 +17,8 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
 
       try {
         const requestUri = request.query.request_uri
+        const clientId = request.query.client_id
 
-        // TODO: validate client_id?
         if (!requestUri) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidRequest,
@@ -38,6 +38,7 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
           issuerId: issuer.issuerId,
           chainedIdentityRequestUriReferenceValue: requestUriReferenceValue,
         })
+
         if (!issuanceSession || issuanceSession.state !== OpenId4VcIssuanceSessionState.AuthorizationInitiated) {
           throw new Oauth2ServerErrorResponseError(
             {
@@ -50,6 +51,18 @@ export function configureAuthorizationEndpoint(router: Router, config: OpenId4Vc
                 : `Issuance session '${issuanceSession.id}' has state '${
                     issuanceSession.state
                   }' but expected ${OpenId4VcIssuanceSessionState.AuthorizationInitiated}`,
+            }
+          )
+        }
+
+        if (clientId !== issuanceSession.clientId) {
+          throw new Oauth2ServerErrorResponseError(
+            {
+              error: Oauth2ErrorCodes.InvalidRequest,
+              error_description: `The 'client_id' parameter does not match the original value.`,
+            },
+            {
+              internalMessage: `The 'client_id' '${clientId}' does not match the expected value for issuance session '${issuanceSession.id}'.`,
             }
           )
         }
