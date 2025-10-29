@@ -208,9 +208,9 @@ export class OpenId4VcIssuerService {
       credentialOfferUri: hostedCredentialOfferUri,
       credentialOfferScheme: options.baseUri,
       issuerMetadata: {
+        ...issuerMetadata,
         originalDraftVersion:
           version === 'v1.draft11-14' ? Openid4vciDraftVersion.Draft11 : Openid4vciDraftVersion.Draft15,
-        ...issuerMetadata,
       },
     })
 
@@ -511,6 +511,7 @@ export class OpenId4VcIssuerService {
     if (signOptionsOrDeferral.type === 'deferral') {
       deferredCredentialResponse = vcIssuer.createDeferredCredentialResponse({
         interval: signOptionsOrDeferral.interval,
+        transactionId: signOptionsOrDeferral.transactionId,
       })
 
       // Update expiry time to allow for re-check

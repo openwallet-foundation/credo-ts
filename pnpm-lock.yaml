@@ -295,8 +295,8 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0(koa@3.0.1)
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20251001121503
-        version: 0.3.0-alpha-20251001121503
+        specifier: 0.3.0-alpha-20251021082313
+        version: 0.3.0-alpha-20251021082313
       '@openwallet-foundation/askar-nodejs':
         specifier: 'catalog:'
         version: 0.4.2
@@ -939,17 +939,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20251001121503
-        version: 0.3.0-alpha-20251001121503
+        specifier: 0.3.0-alpha-20251021082313
+        version: 0.3.0-alpha-20251021082313
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20251001121503
-        version: 0.3.0-alpha-20251001121503
+        specifier: 0.3.0-alpha-20251021082313
+        version: 0.3.0-alpha-20251021082313
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20251001121503
-        version: 0.3.0-alpha-20251001121503
+        specifier: 0.3.0-alpha-20251021082313
+        version: 0.3.0-alpha-20251021082313
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20251001121503
-        version: 0.3.0-alpha-20251001121503
+        specifier: 0.3.0-alpha-20251021082313
+        version: 0.3.0-alpha-20251021082313
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.3
@@ -2966,17 +2966,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251001121503':
-    resolution: {integrity: sha512-voGReZ2BxM45qPqAMMtnxb0vET2sTZ8YTKcyJjBF5HEuMKI/V51uwgHy1DRj2UNP1BPnrY2SUHMfCAI2gyJoWg==}
+  '@openid4vc/oauth2@0.3.0-alpha-20251021082313':
+    resolution: {integrity: sha512-0WPz374PJt3QLqiayEY7Q20DI11VUzp31ExrL5rNMwNGeHTOyq6Dc51FD2KIrtpy9ugC1jXJrcJWV5LTEtCP2g==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251001121503':
-    resolution: {integrity: sha512-e+6CXKTUZG6+J5V31N7hiqJOaHnQt1EYTOvz9Kqhtqazd4ikcN2CeK/ksuBbYnH6qk7yMdwQOGoCXiMYhv3h3A==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20251021082313':
+    resolution: {integrity: sha512-m8SomdWomi77CfD75KePrKSIO67Cyh21O6YQe8cHmcbw+ahkT2DpfG3VhQhMByy5GYebVy1Y5zKvtwgCv5Ni4g==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251001121503':
-    resolution: {integrity: sha512-FZ7fn27Tev2DT6p/QYJiVjvZCR3ug/sVM5MlVhQ8wZpCxREDhXuSUGoOW4byxAyfNbeXjye+DXXaEVfZbXnFUg==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20251021082313':
+    resolution: {integrity: sha512-CRZ0y1CAh599G3Jqo7Sz17qUOalx0ojId97aMuRMueFD+E7YxMcut3uaWuptafWUtN7IJ1FIQ0N5GU3kD8LOJA==}
 
-  '@openid4vc/utils@0.3.0-alpha-20251001121503':
-    resolution: {integrity: sha512-KViYaEFtkeMVTmq+PB8RyU1m4x9WARtIQ/jtSFS1K4A54AmyNHA6MxQ1ei+aSzD0tnOaGgCtn6VzCDHkQA+lew==}
+  '@openid4vc/utils@0.3.0-alpha-20251021082313':
+    resolution: {integrity: sha512-HKeaizTNKOD3HS9x9GXbSpWUN5XLYsPgmPbMM4X6UgLcNqI471HOf65jYkeEHyYh1skA2dYSyw/pL649xIpLsQ==}
 
   '@openwallet-foundation/askar-nodejs@0.4.2':
     resolution: {integrity: sha512-aQ4+zi8DWYjJUyTdCMnVsUwvEsFZuUBeDdxHxXMu19FAmTNAc4sOT6tPYZEBWAui5EBapn5tyFJ/0sqrmrif5A==}
@@ -8624,6 +8624,9 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
+  zod@4.1.12:
+    resolution: {integrity: sha512-JInaHOamG8pt5+Ey8kGmdcAcg3OL9reK8ltczgHTAwNhMys/6ThXHityHxVV2p3fkw/c+MAvBHFVYHFZDmjMCQ==}
+
   zstd-napi@0.0.12:
     resolution: {integrity: sha512-W4qfyNIJAfu8zB1w4TkjKBuXLRvkWa+owH4o32AEep1hRbAzS/bHNErC4fSKN7ls5s15b77bV0yRXbr9h12Wkg==}
     engines: {node: ^12.22.0 || ^14.17.0 || ^15.12.0 || >=16}
@@ -11167,27 +11170,27 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251001121503':
+  '@openid4vc/oauth2@0.3.0-alpha-20251021082313':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20251001121503
-      zod: 3.25.76
+      '@openid4vc/utils': 0.3.0-alpha-20251021082313
+      zod: 4.1.12
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251001121503':
+  '@openid4vc/openid4vci@0.3.0-alpha-20251021082313':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251001121503
-      '@openid4vc/utils': 0.3.0-alpha-20251001121503
-      zod: 3.25.76
+      '@openid4vc/oauth2': 0.3.0-alpha-20251021082313
+      '@openid4vc/utils': 0.3.0-alpha-20251021082313
+      zod: 4.1.12
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251001121503':
+  '@openid4vc/openid4vp@0.3.0-alpha-20251021082313':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251001121503
-      '@openid4vc/utils': 0.3.0-alpha-20251001121503
-      zod: 3.25.76
+      '@openid4vc/oauth2': 0.3.0-alpha-20251021082313
+      '@openid4vc/utils': 0.3.0-alpha-20251021082313
+      zod: 4.1.12
 
-  '@openid4vc/utils@0.3.0-alpha-20251001121503':
+  '@openid4vc/utils@0.3.0-alpha-20251021082313':
     dependencies:
       buffer: 6.0.3
-      zod: 3.25.76
+      zod: 4.1.12
 
   '@openwallet-foundation/askar-nodejs@0.4.2':
     dependencies:
@@ -17817,6 +17820,8 @@ snapshots:
       zod: 3.25.76
 
   zod@3.25.76: {}
+
+  zod@4.1.12: {}
 
   zstd-napi@0.0.12:
     dependencies:
