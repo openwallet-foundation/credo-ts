@@ -978,7 +978,7 @@ export class OpenId4VcIssuerService {
       directAuthorizationServerConfigs && directAuthorizationServerConfigs.length > 0
         ? [
             ...directAuthorizationServerConfigs.map((authorizationServer) => authorizationServer.issuer),
-            // Our issuer is also a valid authorization server (only for pre-auth)
+            // Our issuer is also a valid authorization server (for pre-auth and chained auth)
             issuerUrl,
           ]
         : undefined
@@ -1362,10 +1362,10 @@ export class OpenId4VcIssuerService {
         authorizationServerUrl = issuerMetadata.credentialIssuer.credential_issuer
       }
 
-      if (
-        issuer.authorizationServerConfigs?.find((server) => server.issuer === authorizationServerUrl)?.type ===
-        'chained'
-      ) {
+      const authorizationServerConfig = issuer.authorizationServerConfigs?.find(
+        (server) => server.issuer === authorizationServerUrl
+      )
+      if (authorizationServerConfig?.type === 'chained') {
         authorizationServerUrl = issuerMetadata.credentialIssuer.credential_issuer
       }
 

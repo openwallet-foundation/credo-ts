@@ -2,7 +2,7 @@ import { clear } from 'console'
 import figlet from 'figlet'
 
 import { BaseInquirer } from './BaseInquirer'
-import { credentialConfigurationsSupported, Issuer } from './Issuer'
+import { credentialConfigurationsSupported, GOOGLE_ENABLED, Issuer } from './Issuer'
 import { greenText, purpleText, redText, Title } from './OutputClass'
 
 export const runIssuer = async () => {
@@ -56,7 +56,7 @@ export class IssuerInquirer extends BaseInquirer {
     }
 
     const authorizationMethod = await this.pickOne(
-      ['Transaction Code', 'Browser', 'Browser (Google Account)', 'Presentation', 'None'],
+      ['Transaction Code', 'Browser', ...(GOOGLE_ENABLED ? ['Browser (Google Account)'] : []), 'Presentation', 'None'],
       'Authorization method'
     )
     const { credentialOffer, issuanceSession } = await this.issuer.createCredentialOffer({

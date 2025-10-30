@@ -1,9 +1,5 @@
 import { AgentContext, joinUriParts, utils } from '@credo-ts/core'
-import type {
-  HttpMethod,
-  ParsePushedAuthorizationRequestResult,
-  VerifyPushedAuthorizationRequestOptions,
-} from '@openid4vc/oauth2'
+import type { HttpMethod, ParsePushedAuthorizationRequestResult, RequestLike } from '@openid4vc/oauth2'
 import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
 import type { NextFunction, Response, Router } from 'express'
@@ -35,8 +31,7 @@ export async function handlePushedAuthorizationRequest(
     issuer: OpenId4VcIssuerRecord
     issuanceSession: OpenId4VcIssuanceSessionRecord
     parsedAuthorizationRequest: ParsePushedAuthorizationRequestResult
-    // FIXME: export type
-    request: VerifyPushedAuthorizationRequestOptions['request']
+    request: RequestLike
   }
 ) {
   const openId4VcIssuerService = agentContext.dependencyManager.resolve(OpenId4VcIssuerService)
@@ -44,9 +39,6 @@ export async function handlePushedAuthorizationRequest(
 
   const { issuanceSession, parsedAuthorizationRequest, issuer, request } = options
   const issuerMetadata = await openId4VcIssuerService.getIssuerMetadata(agentContext, issuer)
-  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
-    issuanceSessionId: issuanceSession.id,
-  })
 
   if (!parsedAuthorizationRequest.authorizationRequest.scope) {
     throw new Oauth2ServerErrorResponseError({
@@ -82,6 +74,10 @@ export async function handlePushedAuthorizationRequest(
     )
   }
 
+  const authorizationServer = openId4VcIssuerService.getOauth2AuthorizationServer(agentContext, {
+    issuanceSessionId: issuanceSession.id,
+  })
+
   const { clientAttestation, dpop } = await authorizationServer.verifyPushedAuthorizationRequest({
     authorizationRequest: parsedAuthorizationRequest.authorizationRequest,
     // First authorization server is the internal authorization server
@@ -110,7 +106,7 @@ export async function handlePushedAuthorizationRequest(
 
   if (clientAttestation) {
     issuanceSession.walletAttestation = {
-      // If dpop is provided at the start, it's required from now on.
+      // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
   }
@@ -155,7 +151,6 @@ export async function handlePushedAuthorizationRequest(
     throw new Oauth2ServerErrorResponseError(
       {
         error: Oauth2ErrorCodes.ServerError,
-        error_description: `The issuer is not configured to use an external authorization server for identity chaining.`,
       },
       {
         internalMessage: `Issuer '${issuer.issuerId}' does not have a chained authorization server config for issuer '${authorizationServerUrl}'`,
@@ -189,7 +184,6 @@ export async function handlePushedAuthorizationRequest(
     throw new Oauth2ServerErrorResponseError(
       {
         error: Oauth2ErrorCodes.ServerError,
-        error_description: `The issuer is not configured to map the requested scope '${scope}' for the external authorization server.`,
       },
       {
         internalMessage: `Issuer '${issuer.issuerId}' does not have a scope mapping for scope '${scope}' for external authorization server '${authorizationServerConfig.issuer}'`,
@@ -197,7 +191,7 @@ export async function handlePushedAuthorizationRequest(
     )
   })
 
-  // TODO: add support for DPoP here
+  // TODO: add support for DPoP
   const { authorizationRequestUrl, pkce } = await oauth2Client.initiateAuthorization({
     authorizationServerMetadata,
     clientId: authorizationServerConfig.clientAuthentication.clientId,
@@ -219,7 +213,7 @@ export async function handlePushedAuthorizationRequest(
   }
 
   const { pushedAuthorizationResponse } = authorizationServer.createPushedAuthorizationResponse({
-    expiresInSeconds: 60,
+    expiresInSeconds: config.requestUriExpiresInSeconds,
     requestUri: pushedAuthorizationRequestUriPrefix + issuanceSession.chainedIdentity.requestUriReferenceValue,
   })
 

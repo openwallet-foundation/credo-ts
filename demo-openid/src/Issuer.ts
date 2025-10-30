@@ -14,6 +14,7 @@ import {
   w3cDate,
   X509Service,
 } from '@credo-ts/core'
+import { NodeInMemoryKeyManagementStorage, NodeKeyManagementService } from '@credo-ts/node'
 import {
   type OpenId4VcIssuerModuleConfigOptions,
   OpenId4VcIssuerRecord,
@@ -37,6 +38,10 @@ import { Output } from './OutputClass'
 
 const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
 const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+export const GOOGLE_ENABLED = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
 
 export const credentialConfigurationsSupported = {
   PresentationAuthorization: {
@@ -127,10 +132,18 @@ function getCredentialRequestToCredentialMapper({
   }) => {
     // Example of how to use the the access token information from the chained identity server.
     let authorizedUser = authorization.accessToken.payload.sub
-    if (
-      issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token &&
-      typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token === 'string'
-    ) {
+
+    const isOpenId = issuanceSession.chainedIdentity?.externalAccessTokenResponse?.scope?.split(' ').includes('openid')
+    if (isOpenId) {
+      if (
+        !issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token ||
+        typeof issuanceSession.chainedIdentity?.externalAccessTokenResponse?.id_token !== 'string'
+      ) {
+        // This should never happen, as Credo already validated the id_token when there is an openid scope.
+        throw new Error('No id_token present in the external access token response')
+      }
+
+      // This token has already been validated by Credo, so we can just decode it.
       const claims = decodeJwt(issuanceSession.chainedIdentity.externalAccessTokenResponse.id_token)
       if (typeof claims.email === 'string') {
         authorizedUser = claims.email
@@ -244,6 +257,9 @@ export class Issuer extends BaseAgent<{
       name,
       modules: (app) => ({
         askar: new AskarModule({ askar, store: { id: name, key: name } }),
+        kms: new Kms.KeyManagementModule({
+          backends: [new NodeKeyManagementService(new NodeInMemoryKeyManagementStorage())],
+        }),
         openid4vc: new OpenId4VcModule({
           app,
           verifier: {
@@ -344,15 +360,15 @@ export class Issuer extends BaseAgent<{
             clientSecret: 'issuer-server',
           },
         },
-        ...((process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+        ...((GOOGLE_ENABLED
           ? [
               {
                 type: 'chained',
                 issuer: 'https://accounts.google.com',
                 clientAuthentication: {
                   type: 'clientSecret',
-                  clientId: process.env.GOOGLE_CLIENT_ID,
-                  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                  clientId: GOOGLE_CLIENT_ID,
+                  clientSecret: GOOGLE_CLIENT_SECRET,
                 },
                 scopesMapping: {
                   'openid4vc:credential:OpenBadgeCredential': [
@@ -362,7 +378,7 @@ export class Issuer extends BaseAgent<{
                 },
               },
             ]
-          : []) satisfies OpenId4VciAuthorizationServerConfig[]),
+          : []) as OpenId4VciAuthorizationServerConfig[]),
       ],
     })
 

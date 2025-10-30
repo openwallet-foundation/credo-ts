@@ -217,7 +217,7 @@ importers:
         version: 6.21.0
       vite:
         specifier: npm:rolldown-vite@latest
-        version: rolldown-vite@7.1.16(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
+        version: rolldown-vite@7.1.20(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
       vite-node:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1)
@@ -936,17 +936,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20251029103950
-        version: 0.3.0-alpha-20251029103950
+        specifier: 0.3.0-alpha-20251030142433
+        version: 0.3.0-alpha-20251030142433
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20251029103950
-        version: 0.3.0-alpha-20251029103950
+        specifier: 0.3.0-alpha-20251030142433
+        version: 0.3.0-alpha-20251030142433
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20251029103950
-        version: 0.3.0-alpha-20251029103950
+        specifier: 0.3.0-alpha-20251030142433
+        version: 0.3.0-alpha-20251030142433
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20251029103950
-        version: 0.3.0-alpha-20251029103950
+        specifier: 0.3.0-alpha-20251030142433
+        version: 0.3.0-alpha-20251030142433
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.3
@@ -2963,17 +2963,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251029103950':
-    resolution: {integrity: sha512-8eDr0cPAOXGHBUwgGt5r0ICccDvOnLGeVUilpSo1zYqa98Zrp9Gs5THrQoKShz8T3BnIu89Mqw7Xx5a5uc/XLg==}
+  '@openid4vc/oauth2@0.3.0-alpha-20251030142433':
+    resolution: {integrity: sha512-KCGwMWGbv6dWjS13XKpKCxoHwvB6wy441noQZbzDggum3RmuDLceXw8yoDwMS9ClrnjZo6EfUhJKL0zkgPvNYg==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251029103950':
-    resolution: {integrity: sha512-3N+JPT8T1SbwlfJm/xRLMt238tv9jxykhKfqL2EMjZCid563OlBhtf6gRJUDy55CB5qubSeufldTLx6oy6d+2A==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20251030142433':
+    resolution: {integrity: sha512-ngvqu5ThzUqNJXv+oscHifYsTSxNlW2sBxxpBvO4bceH9pdSDNvoRzc0H0InilWyMvZ6or99OLD7CccaHEh3Hg==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251029103950':
-    resolution: {integrity: sha512-+VFzU1xeTdEM+tvoaKUPprLHFEihCoXZrX9MqaO2l8IOV19UADw9kFUzAMBq0E23FZ8H3kT+VRu168YjOnsJLA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20251030142433':
+    resolution: {integrity: sha512-jDhnCUnfyaCHuBkZhM9hCOmAZNaiB0Eyh4lRNTEZf1/b45Oo1xlKVTKXh5pA2XWDKFmg4CWrL3sjZOCi9Xhl3g==}
 
-  '@openid4vc/utils@0.3.0-alpha-20251029103950':
-    resolution: {integrity: sha512-cMxkJAWaRapCZM7dUgPc168nzRYyZa5wo45khJopFF4xSMtLKs2TzIreICZDsg2joV3T6epUl+SSrNWlriyirQ==}
+  '@openid4vc/utils@0.3.0-alpha-20251030142433':
+    resolution: {integrity: sha512-XHDlVpgTnCBxAY52KUErBBHvkBmxJI9jhp57zPLuZplUjiyDdPLWmEVQkkrCS5id0LBnvHotV/xucOlMWD6Nsw==}
 
   '@openwallet-foundation/askar-nodejs@0.4.2':
     resolution: {integrity: sha512-aQ4+zi8DWYjJUyTdCMnVsUwvEsFZuUBeDdxHxXMu19FAmTNAc4sOT6tPYZEBWAui5EBapn5tyFJ/0sqrmrif5A==}
@@ -2984,6 +2984,10 @@ packages:
 
   '@oxc-project/runtime@0.92.0':
     resolution: {integrity: sha512-Z7x2dZOmznihvdvCvLKMl+nswtOSVxS2H2ocar+U9xx6iMfTp0VGIrX6a4xB1v80IwOPC7dT1LXIJrY70Xu3Jw==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+
+  '@oxc-project/runtime@0.95.0':
+    resolution: {integrity: sha512-qJS5pNepwMGnafO9ayKGz7rfPQgUBuunHpnP1//9Qa0zK3oT3t1EhT+I+pV9MUA+ZKez//OFqxCxf1vijCKb2Q==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   '@oxc-project/types@0.94.0':
@@ -7543,6 +7547,46 @@ packages:
       yaml:
         optional: true
 
+  rolldown-vite@7.1.20:
+    resolution: {integrity: sha512-iXo6JzhBnNl+MY5Wky2Qr4RnB1gLJ3798YUMC3uBXSjCDM/bV+ALcnm5M23eOy9Nldi18aUioLpTB/PtqvwSZQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+    peerDependencies:
+      '@types/node': ^20.19.0 || >=22.12.0
+      esbuild: ^0.25.0
+      jiti: '>=1.21.0'
+      less: ^4.0.0
+      sass: ^1.70.0
+      sass-embedded: ^1.70.0
+      stylus: '>=0.54.8'
+      sugarss: ^5.0.0
+      terser: ^5.16.0
+      tsx: ^4.8.1
+      yaml: ^2.4.2
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
+      esbuild:
+        optional: true
+      jiti:
+        optional: true
+      less:
+        optional: true
+      sass:
+        optional: true
+      sass-embedded:
+        optional: true
+      stylus:
+        optional: true
+      sugarss:
+        optional: true
+      terser:
+        optional: true
+      tsx:
+        optional: true
+      yaml:
+        optional: true
+
   rolldown@1.0.0-beta.42:
     resolution: {integrity: sha512-xaPcckj+BbJhYLsv8gOqezc8EdMcKKe/gk8v47B0KPvgABDrQ0qmNPAiT/gh9n9Foe0bUkEv2qzj42uU5q1WRg==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -11167,24 +11211,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251029103950':
+  '@openid4vc/oauth2@0.3.0-alpha-20251030142433':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20251029103950
+      '@openid4vc/utils': 0.3.0-alpha-20251030142433
       zod: 4.1.12
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251029103950':
+  '@openid4vc/openid4vci@0.3.0-alpha-20251030142433':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251029103950
-      '@openid4vc/utils': 0.3.0-alpha-20251029103950
+      '@openid4vc/oauth2': 0.3.0-alpha-20251030142433
+      '@openid4vc/utils': 0.3.0-alpha-20251030142433
       zod: 4.1.12
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251029103950':
+  '@openid4vc/openid4vp@0.3.0-alpha-20251030142433':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251029103950
-      '@openid4vc/utils': 0.3.0-alpha-20251029103950
+      '@openid4vc/oauth2': 0.3.0-alpha-20251030142433
+      '@openid4vc/utils': 0.3.0-alpha-20251030142433
       zod: 4.1.12
 
-  '@openid4vc/utils@0.3.0-alpha-20251029103950':
+  '@openid4vc/utils@0.3.0-alpha-20251030142433':
     dependencies:
       buffer: 6.0.3
       zod: 4.1.12
@@ -11205,6 +11249,8 @@ snapshots:
       tar: 7.4.3
 
   '@oxc-project/runtime@0.92.0': {}
+
+  '@oxc-project/runtime@0.95.0': {}
 
   '@oxc-project/types@0.94.0': {}
 
@@ -16606,6 +16652,24 @@ snapshots:
       picomatch: 4.0.3
       postcss: 8.5.6
       rolldown: 1.0.0-beta.42
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 20.19.2
+      esbuild: 0.25.5
+      fsevents: 2.3.3
+      jiti: 2.6.1
+      terser: 5.44.0
+      tsx: 4.20.6
+      yaml: 2.8.1
+
+  rolldown-vite@7.1.20(@types/node@20.19.2)(esbuild@0.25.5)(jiti@2.6.1)(terser@5.44.0)(tsx@4.20.6)(yaml@2.8.1):
+    dependencies:
+      '@oxc-project/runtime': 0.95.0
+      fdir: 6.5.0(picomatch@4.0.3)
+      lightningcss: 1.30.2
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rolldown: 1.0.0-beta.45
       tinyglobby: 0.2.15
     optionalDependencies:
       '@types/node': 20.19.2

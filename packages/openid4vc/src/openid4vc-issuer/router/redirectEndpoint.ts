@@ -1,7 +1,8 @@
 import { joinUriParts, Kms, TypedArrayEncoder } from '@credo-ts/core'
-import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
+import { Oauth2ErrorCodes, Oauth2ServerErrorResponseError, verifyJwtIdToken } from '@openid4vc/oauth2'
 import { addSecondsToDate } from '@openid4vc/utils'
 import type { NextFunction, Response, Router } from 'express'
+import { getOid4vcCallbacks } from '../../shared'
 import { getRequestContext, sendOauth2ErrorResponse, sendUnknownServerErrorResponse } from '../../shared/router'
 import { OpenId4VcIssuanceSessionState } from '../OpenId4VcIssuanceSessionState'
 import { OpenId4VcIssuerModuleConfig } from '../OpenId4VcIssuerModuleConfig'
@@ -69,8 +70,25 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         }
 
         if (chainedIdentityAuthorizationCode && typeof chainedIdentityAuthorizationCode === 'string') {
-          // TODO: is storing the whole metadata a good idea? Or should we refetch? What if it has changed?
-          const authorizationServerMetadata = issuanceSession.chainedIdentity.externalAuthorizationServerMetadata
+          const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
+          const authorizationServerUrl = issuanceSession.chainedIdentity.externalAuthorizationServerUrl
+          const authorizationServerConfig = issuer.chainedAuthorizationServerConfigs?.find(
+            (config) => config.issuer === authorizationServerUrl
+          )
+          if (!authorizationServerConfig) {
+            throw new Oauth2ServerErrorResponseError(
+              {
+                error: Oauth2ErrorCodes.ServerError,
+              },
+              {
+                internalMessage: `Issuer '${issuer.issuerId}' does not have a chained authorization server config for issuer '${authorizationServerUrl}'`,
+              }
+            )
+          }
+
+          const authorizationServerMetadata = await oauth2Client.fetchAuthorizationServerMetadata(
+            authorizationServerConfig.issuer
+          )
           if (!authorizationServerMetadata) {
             throw new Oauth2ServerErrorResponseError(
               {
@@ -78,21 +96,18 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
                 error_description: `Unable to retrieve authorization server metadata from external identity provider.`,
               },
               {
-                internalMessage: `Missing chained identity server metadata on issuance session '${issuanceSession.id}'`,
+                internalMessage: `Unable to retrieve authorization server metadata from '${authorizationServerConfig.issuer}'`,
               }
             )
           }
 
-          const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
-
-          // Retrieve / verify access token.
+          // Retrieve access token
           // TODO: add support for DPoP
           const { accessTokenResponse } = await oauth2Client
             .retrieveAuthorizationCodeAccessToken({
               authorizationCode: chainedIdentityAuthorizationCode,
               authorizationServerMetadata,
               pkceCodeVerifier: issuanceSession.chainedIdentity.pkceCodeVerifier,
-
               redirectUri: joinUriParts(config.baseUrl, [issuer.issuerId, 'redirect']),
             })
             .catch((error) => {
@@ -110,6 +125,29 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
                 }
               )
             })
+
+          // Verify the ID Token if 'openid' scope was requested
+          if (accessTokenResponse.scope?.split(' ').includes('openid')) {
+            const idToken = accessTokenResponse.id_token
+            if (typeof idToken !== 'string') {
+              throw new Oauth2ServerErrorResponseError(
+                {
+                  error: Oauth2ErrorCodes.ServerError,
+                  error_description: `Missing 'id_token' in access token response`,
+                },
+                {
+                  internalMessage: `id_token is missing from access token response from ${authorizationServerMetadata.issuer} even though 'openid' scope was requested.`,
+                }
+              )
+            }
+
+            await verifyJwtIdToken({
+              idToken,
+              authorizationServer: authorizationServerMetadata,
+              clientId: authorizationServerConfig.clientAuthentication.clientId,
+              callbacks: getOid4vcCallbacks(agentContext),
+            })
+          }
 
           // Grant authorization
           const kms = agentContext.resolve(Kms.KeyManagementApi)

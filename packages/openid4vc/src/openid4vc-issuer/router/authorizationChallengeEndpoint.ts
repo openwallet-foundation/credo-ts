@@ -1,10 +1,6 @@
 import type { AgentContext } from '@credo-ts/core'
 import { joinUriParts, Kms, TypedArrayEncoder, utils } from '@credo-ts/core'
-import type {
-  HttpMethod,
-  ParseAuthorizationChallengeRequestOptions,
-  ParseAuthorizationChallengeRequestResult,
-} from '@openid4vc/oauth2'
+import type { HttpMethod, ParseAuthorizationChallengeRequestResult, RequestLike } from '@openid4vc/oauth2'
 import { decodeJwt, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@openid4vc/oauth2'
 import type { NextFunction, Response, Router } from 'express'
 import {
@@ -96,8 +92,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
   agentContext: AgentContext
   issuer: OpenId4VcIssuerRecord
   parseResult: ParseAuthorizationChallengeRequestResult
-  // FIXME: export in oid4vc-ts
-  request: ParseAuthorizationChallengeRequestOptions['request']
+  request: RequestLike
 }) {
   const { agentContext, issuer, parseResult, request } = options
   const { authorizationChallengeRequest } = parseResult
@@ -177,7 +172,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 
     throw new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.RedirectToWeb,
-      error_description: 'Chained identity required before issuance',
+      error_description: 'Authorization required before issuance',
       ...pushedAuthorizationResponse,
     })
   }
@@ -234,7 +229,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     }
   if (clientAttestation)
     issuanceSession.walletAttestation = {
-      // If dpop is provided at the start, it's required from now on.
+      // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
 
@@ -315,8 +310,7 @@ async function handleAuthorizationChallengeWithAuthSession(options: {
   issuer: OpenId4VcIssuerRecord
   next: NextFunction
   parseResult: ParseAuthorizationChallengeRequestResult
-  // FIXME: export in oid4vc-ts
-  request: ParseAuthorizationChallengeRequestOptions['request']
+  request: RequestLike
 }) {
   const { agentContext, issuer, parseResult, request, response, next } = options
   const { authorizationChallengeRequest } = parseResult
