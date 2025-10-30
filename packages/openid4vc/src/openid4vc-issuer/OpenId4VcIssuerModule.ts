@@ -11,6 +11,7 @@ import type { OpenId4VcIssuanceRequest } from './router'
 import {
   configureAccessTokenEndpoint,
   configureAuthorizationChallengeEndpoint,
+  configureAuthorizationEndpoint,
   configureCredentialEndpoint,
   configureCredentialOfferEndpoint,
   configureDeferredCredentialEndpoint,
@@ -18,6 +19,8 @@ import {
   configureJwksEndpoint,
   configureNonceEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
+  configurePushedAuthorizationRequestEndpoint,
+  configureRedirectEndpoint,
 } from './router'
 
 /**
@@ -183,6 +186,9 @@ export class OpenId4VcIssuerModule implements Module {
     configureAuthorizationChallengeEndpoint(issuerEndpointsRouter, this.config)
     configureCredentialEndpoint(issuerEndpointsRouter, this.config)
     configureDeferredCredentialEndpoint(issuerEndpointsRouter, this.config)
+    configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)
+    configureAuthorizationEndpoint(issuerEndpointsRouter, this.config)
+    configureRedirectEndpoint(issuerEndpointsRouter, this.config)
 
     // First one will be called for all requests (when next is called)
     issuerContextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
