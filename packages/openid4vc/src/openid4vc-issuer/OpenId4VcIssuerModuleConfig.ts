@@ -10,6 +10,7 @@ const DEFAULT_AUTHORIZATION_CODE_EXPIRES_IN = 1 * 60 // 1 minute
 const DEFAULT_TOKEN_EXPIRES_IN = 3 * 60 // 3 minutes
 const DEFAULT_REFRESH_TOKEN_EXPIRES_IN = 90 * 24 * 60 * 60 // 90 days
 const DEFAULT_STATEFUL_CREDENTIAL_OFFER_EXPIRES_IN = 3 * 60 // 3 minutes
+const DEFAULT_REQUEST_URI_EXPIRES_IN = 1 * 60 // 1 minute
 
 export interface InternalOpenId4VcIssuerModuleConfigOptions {
   /**
@@ -59,6 +60,13 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
    * @default 7776000 (90 days)
    */
   refreshTokenExpiresInSeconds?: number
+
+  /**
+   * The time after which a pushed authorization request URI will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  requestUriExpiresInSeconds?: number
 
   /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
@@ -149,6 +157,21 @@ export interface InternalOpenId4VcIssuerModuleConfigOptions {
      * @default /token
      */
     accessToken?: string
+
+    /**
+     * @default /par
+     */
+    pushedAuthorizationRequest?: string
+
+    /**
+     * @default /authorize
+     */
+    authorization?: string
+
+    /**
+     * @default /redirect
+     */
+    redirect?: string
 
     /**
      * @default /jwks
@@ -245,6 +268,15 @@ export class OpenId4VcIssuerModuleConfig {
   }
 
   /**
+   * The time after which a pushed authorization request URI will expire.
+   *
+   * @default 60 (1 minute)
+   */
+  public get requestUriExpiresInSeconds(): number {
+    return this.options.requestUriExpiresInSeconds ?? DEFAULT_REQUEST_URI_EXPIRES_IN
+  }
+
+  /**
    * Whether DPoP is required for all issuance sessions. This value can be overridden when creating
    * a credential offer. If dpop is not required, but used by a client in the first request to credo,
    * DPoP will be required going forward.
@@ -286,6 +318,27 @@ export class OpenId4VcIssuerModuleConfig {
    */
   public get nonceEndpointPath(): string {
     return this.options.endpoints?.nonce ?? '/nonce'
+  }
+
+  /**
+   * @default /par
+   */
+  public get pushedAuthorizationRequestEndpoint(): string {
+    return this.options.endpoints?.pushedAuthorizationRequest ?? '/par'
+  }
+
+  /**
+   * @default /authorize
+   */
+  public get authorizationEndpoint(): string {
+    return this.options.endpoints?.authorization ?? '/authorize'
+  }
+
+  /**
+   * @default /redirect
+   */
+  public get redirectEndpoint(): string {
+    return this.options.endpoints?.redirect ?? '/redirect'
   }
 
   /**

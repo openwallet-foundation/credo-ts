@@ -1,5 +1,6 @@
 import type {
   OpenId4VcIssuanceSessionAuthorization,
+  OpenId4VcIssuanceSessionChainedIdentity,
   OpenId4VcIssuanceSessionDpop,
   OpenId4VcIssuanceSessionPkce,
   OpenId4VcIssuanceSessionPresentation,
@@ -66,6 +67,10 @@ export const openId4VcIssuanceSession = pgTable(
     issuanceMetadata: jsonb('issuance_metadata').$type<Record<string, unknown>>(),
 
     transactions: jsonb().$type<OpenId4VcIssuanceSessionRecordTransaction[]>(),
+
+    chainedIdentity: jsonb().$type<
+      Omit<OpenId4VcIssuanceSessionChainedIdentity, 'requestUriExpiresAt'> & { requestUriExpiresAt?: string }
+    >(),
 
     // Credential offer
     credentialOfferUri: text('credential_offer_uri'),
