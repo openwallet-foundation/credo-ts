@@ -177,7 +177,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
 
     throw new Oauth2ServerErrorResponseError({
       error: Oauth2ErrorCodes.RedirectToWeb,
-      error_description: 'Chained identity required before issuance',
+      error_description: 'Authorization required before issuance',
       ...pushedAuthorizationResponse,
     })
   }
@@ -234,7 +234,7 @@ async function handleAuthorizationChallengeNoAuthSession(options: {
     }
   if (clientAttestation)
     issuanceSession.walletAttestation = {
-      // If dpop is provided at the start, it's required from now on.
+      // If client attestation is provided at the start, it's required from now on.
       required: true,
     }
 

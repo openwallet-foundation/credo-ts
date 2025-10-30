@@ -38,6 +38,10 @@ import { Output } from './OutputClass'
 const PROVIDER_HOST = process.env.PROVIDER_HOST ?? 'http://localhost:3042'
 const ISSUER_HOST = process.env.ISSUER_HOST ?? 'http://localhost:2000'
 
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
+export const GOOGLE_ENABLED = GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET
+
 export const credentialConfigurationsSupported = {
   PresentationAuthorization: {
     format: OpenId4VciCredentialFormatProfile.SdJwtVc,
@@ -344,15 +348,15 @@ export class Issuer extends BaseAgent<{
             clientSecret: 'issuer-server',
           },
         },
-        ...((process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+        ...((GOOGLE_ENABLED
           ? [
               {
                 type: 'chained',
                 issuer: 'https://accounts.google.com',
                 clientAuthentication: {
                   type: 'clientSecret',
-                  clientId: process.env.GOOGLE_CLIENT_ID,
-                  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                  clientId: GOOGLE_CLIENT_ID,
+                  clientSecret: GOOGLE_CLIENT_SECRET,
                 },
                 scopesMapping: {
                   'openid4vc:credential:OpenBadgeCredential': [
@@ -362,7 +366,7 @@ export class Issuer extends BaseAgent<{
                 },
               },
             ]
-          : []) satisfies OpenId4VciAuthorizationServerConfig[]),
+          : []) as OpenId4VciAuthorizationServerConfig[]),
       ],
     })
 

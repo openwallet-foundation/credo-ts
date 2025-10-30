@@ -217,7 +217,7 @@ export interface OpenId4VcIssuanceSessionRecordProps {
 
   /**
    * Identity chaining enables doing another OAuth2 authentication flow as part
-   * of the OpenID4VCI authorization flow. This allows leveraging the advances OAuth2
+   * of the OpenID4VCI authorization flow. This allows leveraging the advanced OAuth2
    * functionality from Credo (e.g. Wallet Attestations, DPoP, PAR) while still allowing
    * integration with existing IDPs.
    */
