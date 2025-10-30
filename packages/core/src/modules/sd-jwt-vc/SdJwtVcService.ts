@@ -610,8 +610,13 @@ export class SdJwtVcService {
           } when fetching status list from ${uri}. ${await response.text()}`
         )
       }
-
-      return await response.text()
+      const responseText = await response.text()
+      const statusListJwt = Jwt.fromSerializedJwt(responseText)
+      // according to draft-ietf-oauth-status-list-13 status provider jwt 'sub' must match 'status_list.uri'
+      if (statusListJwt.payload.sub !== uri) {
+        throw new CredoError(`Status list provider JWT sub does not match the status_list.uri.`)
+      }
+      return responseText
     }
   }
   private getStatusVerifier(agentContext: AgentContext) {
