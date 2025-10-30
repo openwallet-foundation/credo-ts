@@ -69,8 +69,10 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
         }
 
         if (chainedIdentityAuthorizationCode && typeof chainedIdentityAuthorizationCode === 'string') {
-          // TODO: is storing the whole metadata a good idea? Or should we refetch? What if it has changed?
-          const authorizationServerMetadata = issuanceSession.chainedIdentity.externalAuthorizationServerMetadata
+          const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
+          const authorizationServerMetadata = await oauth2Client.fetchAuthorizationServerMetadata(
+            issuanceSession.chainedIdentity.externalAuthorizationServerUrl
+          )
           if (!authorizationServerMetadata) {
             throw new Oauth2ServerErrorResponseError(
               {
@@ -78,12 +80,10 @@ export function configureRedirectEndpoint(router: Router, config: OpenId4VcIssue
                 error_description: `Unable to retrieve authorization server metadata from external identity provider.`,
               },
               {
-                internalMessage: `Missing chained identity server metadata on issuance session '${issuanceSession.id}'`,
+                internalMessage: `Unable to retrieve authorization server metadata from '${issuanceSession.chainedIdentity.externalAuthorizationServerUrl}'`,
               }
             )
           }
-
-          const oauth2Client = openId4VcIssuerService.getOauth2Client(agentContext, issuer)
 
           // Retrieve / verify access token.
           // TODO: add support for DPoP
