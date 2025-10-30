@@ -5,7 +5,7 @@ import { SDJwtVcInstance } from '@sd-jwt/sd-jwt-vc'
 import type { DisclosureFrame, PresentationFrame } from '@sd-jwt/types'
 import { injectable } from 'tsyringe'
 import { AgentContext } from '../../agent'
-import { Hasher, JwtPayload } from '../../crypto'
+import { Hasher, JwsService, Jwt, JwtPayload } from '../../crypto'
 import { CredoError } from '../../error'
 import { X509Service } from '../../modules/x509/X509Service'
 import type { Query, QueryOptions } from '../../storage/StorageService'
@@ -14,7 +14,7 @@ import { dateToSeconds, nowInSeconds, TypedArrayEncoder } from '../../utils'
 import { getDomainFromUrl } from '../../utils/domain'
 import { fetchWithTimeout } from '../../utils/fetch'
 import { getPublicJwkFromVerificationMethod, parseDid } from '../dids'
-import { KeyManagementApi, PublicJwk } from '../kms'
+import { type Jwk, KeyManagementApi, PublicJwk } from '../kms'
 import { ClaimFormat } from '../vc/index'
 import { type EncodedX509Certificate, X509Certificate, X509ModuleConfig } from '../x509'
 import { decodeSdJwtVc, sdJwtVcHasher } from './decodeSdJwtVc'
@@ -590,6 +590,8 @@ export class SdJwtVcService {
       hasher: sdJwtVcHasher,
       statusListFetcher: this.getStatusListFetcher(agentContext),
       saltGenerator: (length) => TypedArrayEncoder.toBase64URL(kms.randomBytes({ length })).slice(0, length),
+      statusVerifier: this.getStatusVerifier(agentContext),
+      statusValidator: this.getStatusValidator(agentContext),
     }
   }
 
@@ -610,6 +612,45 @@ export class SdJwtVcService {
       }
 
       return await response.text()
+    }
+  }
+  private getStatusVerifier(agentContext: AgentContext) {
+    return async (data: string, sig: string) => {
+      const jwt = Jwt.fromSerializedJwt(`${data}.${sig}`)
+      const payload = jwt.payload
+      const jwksResponse = await fetchWithTimeout(
+        agentContext.config.agentDependencies.fetch,
+        `${payload.iss}/.well-known/jwks.json`
+      )
+      if (!jwksResponse.ok) {
+        throw new CredoError(
+          `Received invalid response with status ${
+            jwksResponse.status
+          } when fetching JWKS from ${payload.iss}/.well-known/jwks.json. ${await jwksResponse.text()}`
+        )
+      }
+      const jwks = (await jwksResponse.json()) as Record<'keys', Jwk[]>
+      // TODO: we can check all keys against the signature incase kid is not present in the header
+      const signingJwk = jwks.keys.find((jwk) => jwk.kid === jwt.header.kid)
+      if (!signingJwk) {
+        throw new CredoError(`No JWK found for kid ${jwt.header.kid} in JWKS from ${payload.iss}/.well-known/jwks.json`)
+      }
+      const { isValid } = await agentContext.resolve(JwsService).verifyJws(agentContext, {
+        jws: jwt.serializedJwt,
+        jwsSigner: {
+          method: 'jwk',
+          jwk: PublicJwk.fromUnknown(signingJwk),
+        },
+      })
+      agentContext.config.logger.debug(`Status list provider JWT signature verification result: ${isValid}`)
+      return isValid
+    }
+  }
+  private getStatusValidator(agentContext: AgentContext) {
+    return async (status: number) => {
+      if (status !== 0) {
+        throw new SdJwtVcError(`Credential status is not valid. Status: ${status}`)
+      }
     }
   }
 }
