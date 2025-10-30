@@ -103,7 +103,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   public get directAuthorizationServerConfigs() {
-    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct')
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct' || !config.type)
   }
 
   public get chainedAuthorizationServerConfigs() {
