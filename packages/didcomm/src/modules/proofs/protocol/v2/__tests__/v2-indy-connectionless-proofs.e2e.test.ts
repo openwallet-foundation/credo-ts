@@ -648,7 +648,7 @@ describe('V2 Connectionless Proofs - Indy', () => {
     })
   })
 
-  test('Alice start with oob proof proposal for Faber with aut-accept enabled', async () => {
+  test('Alice start with oob proof proposal for Faber with auto-accept enabled', async () => {
     const {
       issuerAgent: faberAgent,
       issuerReplay: faberReplay,
