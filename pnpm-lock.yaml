@@ -108,8 +108,8 @@ importers:
   demo:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
-        specifier: ^0.2.2
-        version: 0.2.4
+        specifier: ^0.3.3
+        version: 0.3.3
       '@hyperledger/aries-askar-nodejs':
         specifier: ^0.2.3
         version: 0.2.3
@@ -163,8 +163,8 @@ importers:
   demo-openid:
     dependencies:
       '@hyperledger/anoncreds-nodejs':
-        specifier: ^0.2.2
-        version: 0.2.4
+        specifier: ^0.3.3
+        version: 0.3.3
       '@hyperledger/aries-askar-nodejs':
         specifier: ^0.2.3
         version: 0.2.3
@@ -265,11 +265,11 @@ importers:
         specifier: workspace:*
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
-        specifier: ^0.2.2
-        version: 0.2.4
+        specifier: ^0.3.3
+        version: 0.3.3
       '@hyperledger/anoncreds-shared':
-        specifier: ^0.2.2
-        version: 0.2.4
+        specifier: ^0.3.3
+        version: 0.3.3
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -637,8 +637,8 @@ importers:
         specifier: workspace:*
         version: link:../node
       '@hyperledger/anoncreds-nodejs':
-        specifier: ^0.2.2
-        version: 0.2.4
+        specifier: ^0.3.3
+        version: 0.3.3
       rimraf:
         specifier: ^4.4.0
         version: 4.4.1
@@ -2322,11 +2322,12 @@ packages:
     resolution: {integrity: sha512-93zYdMES/c1D69yZiKDBj0V24vqNzB/koF26KPaagAfd3P/4gUlh3Dys5ogAK+Exi9QyzlD8x/08Zt7wIKcDcA==}
     deprecated: Use @eslint/object-schema instead
 
-  '@hyperledger/anoncreds-nodejs@0.2.4':
-    resolution: {integrity: sha512-CaWYwV8DOTfgXS8n15TIAzdCkAyI+g+r/hgUMq7qMGesy0wfOokDDUC+7WPgNuG4am6jscETUgGbicWr95WInA==}
+  '@hyperledger/anoncreds-nodejs@0.3.3':
+    resolution: {integrity: sha512-6OVeUUvpHAiTqjDE1MwIIPOOxp3lal9fJ2sSIXf6vA2chlVutMhcsPik9FKJMhbK/u9x9KSsLMWVSrqGicN6VA==}
+    engines: {node: '>= 18'}
 
-  '@hyperledger/anoncreds-shared@0.2.4':
-    resolution: {integrity: sha512-OKw8/KXU5bAVA2fhm8pI3BLyJOIzOrEWz6sqX8QQSILNgx2hrEcN1OCSYTudcLAfID3fGRvr1X3vLzlRo19IVg==}
+  '@hyperledger/anoncreds-shared@0.3.3':
+    resolution: {integrity: sha512-id6d4ZGdFaoduZish/B/2XLWJleoOWX7KzBmJseVxmvjxabegudfNMgfjABHzE7zlgkGRJ0fR0nRM21gf6d4FA==}
 
   '@hyperledger/aries-askar-nodejs@0.2.3':
     resolution: {integrity: sha512-2BnGqK08Y96DEB8tDuXy2x+soetChyMGB0+L1yqdHx1Xv5FvRerYrTXdTjJXTW6ANb48k2Np8WlJ4YNePSo6ww==}
@@ -10267,19 +10268,19 @@ snapshots:
 
   '@humanwhocodes/object-schema@2.0.3': {}
 
-  '@hyperledger/anoncreds-nodejs@0.2.4':
+  '@hyperledger/anoncreds-nodejs@0.3.3':
     dependencies:
       '@2060.io/ffi-napi': 4.0.9
       '@2060.io/ref-napi': 3.0.6
-      '@hyperledger/anoncreds-shared': 0.2.4
-      '@mapbox/node-pre-gyp': 1.0.11
+      '@hyperledger/anoncreds-shared': 0.3.3
       ref-array-di: 1.2.2
       ref-struct-di: 1.1.1
     transitivePeerDependencies:
-      - encoding
       - supports-color
 
-  '@hyperledger/anoncreds-shared@0.2.4': {}
+  '@hyperledger/anoncreds-shared@0.3.3':
+    dependencies:
+      tar: 7.4.3
 
   '@hyperledger/aries-askar-nodejs@0.2.3':
     dependencies:
