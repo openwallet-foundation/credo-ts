@@ -32,6 +32,8 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
     authorizationCode: ['authorization', 'code'],
     authorizationSubject: ['authorization', 'subject'],
     presentationAuthSession: ['presentation', 'authSession'],
+    chainedIdentityRequestUriReferenceValue: ['chainedIdentity', 'requestUriReferenceValue'],
+    chainedIdentityState: ['chainedIdentity', 'externalState'],
   } as const
 
   public getValues(
@@ -50,6 +52,10 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
       preAuthorizedCode,
       // biome-ignore lint/correctness/noUnusedVariables: no explanation
       presentationAuthSession,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
+      chainedIdentityRequestUriReferenceValue,
+      // biome-ignore lint/correctness/noUnusedVariables: no explanation
+      chainedIdentityState,
       state,
       ...customTags
     } = record.getTags()
@@ -69,6 +75,12 @@ export class DrizzleOpenId4VcIssuanceSessionRecordAdapter extends BaseDrizzleRec
         ? {
             ...record.authorization,
             codeExpiresAt: record.authorization.codeExpiresAt?.toISOString(),
+          }
+        : undefined,
+      chainedIdentity: record.chainedIdentity
+        ? {
+            ...record.chainedIdentity,
+            requestUriExpiresAt: record.chainedIdentity.requestUriExpiresAt?.toISOString(),
           }
         : undefined,
       clientId: record.clientId,
