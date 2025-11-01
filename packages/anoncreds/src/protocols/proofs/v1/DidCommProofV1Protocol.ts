@@ -134,7 +134,7 @@ export class DidCommProofV1Protocol
 
     // Create record
     const proofRecord = new DidCommProofExchangeRecord({
-      connectionId: connectionRecord.id,
+      connectionId: connectionRecord?.id,
       threadId: message.threadId,
       parentThreadId: message.thread?.parentThreadId,
       state: DidCommProofState.ProposalSent,
@@ -429,7 +429,6 @@ export class DidCommProofV1Protocol
     let proofRecord = await this.findByProperties(agentContext, {
       threadId: proofRequestMessage.threadId,
       role: DidCommProofRole.Prover,
-      connectionId: connection?.id,
     })
 
     const requestAttachment = proofRequestMessage.getRequestAttachmentById(INDY_PROOF_REQUEST_ATTACHMENT_ID)
@@ -458,6 +457,8 @@ export class DidCommProofV1Protocol
         lastSentMessage,
         expectedConnectionId: proofRecord.connectionId,
       })
+
+      if (!proofRecord.connectionId) proofRecord.connectionId = connection?.id
 
       await this.indyProofFormat.processRequest(agentContext, {
         attachment: requestAttachment,
