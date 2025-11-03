@@ -273,6 +273,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
       authorizationServerConfigs: [
         {
+          type: 'direct',
           issuer: 'http://localhost:4747',
         },
       ],
