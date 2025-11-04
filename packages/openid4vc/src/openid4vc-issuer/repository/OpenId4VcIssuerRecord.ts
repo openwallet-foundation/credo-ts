@@ -1,4 +1,4 @@
-import { BaseRecord, CredoError, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
+import { BaseRecord, CredoError, isJsonObject, Kms, type RecordTags, type TagsBase, utils } from '@credo-ts/core'
 import { credentialsSupportedToCredentialConfigurationsSupported } from '@openid4vc/openid4vci'
 import { Transform, TransformationType } from 'class-transformer'
 import type {
@@ -38,7 +38,7 @@ export type OpenId4VcIssuerRecordProps = {
   credentialConfigurationsSupported: OpenId4VciCredentialConfigurationsSupportedWithFormats
 
   /**
-   * Indicate support for batch issuane of credentials
+   * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 }
@@ -98,12 +98,31 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
     return value
   })
   public display?: OpenId4VciCredentialIssuerMetadataDisplay[]
+
+  // Adds the type field if missing (for older records)
+  @Transform(({ type, value }) => {
+    if (type === TransformationType.PLAIN_TO_CLASS && Array.isArray(value)) {
+      return value.map((config) => {
+        if (isJsonObject(config) && typeof config.type === 'undefined') {
+          return {
+            ...config,
+            type: 'direct',
+          }
+        }
+
+        return value
+      })
+    }
+
+    return value
+  })
   public authorizationServerConfigs?: OpenId4VciAuthorizationServerConfig[]
+
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
   public get directAuthorizationServerConfigs() {
-    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct' || !config.type)
+    return this.authorizationServerConfigs?.filter((config) => config.type === 'direct')
   }
 
   public get chainedAuthorizationServerConfigs() {
