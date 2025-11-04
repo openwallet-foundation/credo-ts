@@ -26,7 +26,7 @@ export class BaseAgent<AgentModules extends ModulesMap> {
   }: {
     port: number
     name: string
-    modules: AgentModules
+    modules: (app: Express) => AgentModules
   }) {
     this.name = name
     this.port = port
@@ -42,7 +42,7 @@ export class BaseAgent<AgentModules extends ModulesMap> {
     this.agent = new Agent({
       config,
       dependencies: agentDependencies,
-      modules,
+      modules: modules(this.app),
     })
   }
 

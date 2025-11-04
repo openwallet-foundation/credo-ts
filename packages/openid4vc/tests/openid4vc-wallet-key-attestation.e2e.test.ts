@@ -61,6 +61,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     issuer = await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           issuer: {
             baseUrl: issuerBaseUrl,
             getVerificationSessionForIssuanceSessionAuthorization: async ({ issuanceSession, scopes }) => {
@@ -275,9 +276,6 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       verifierId: issuerRecord.issuerId,
     })
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
-    expressApp.use('/oid4vp', issuer.agent.openid4vc.verifier.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 
@@ -364,7 +362,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       resolvedCredentialOffer,
       {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
       }
     )
@@ -439,7 +437,9 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     const { credentialOffer } = await issuer.agent.openid4vc.issuer.createCredentialOffer({
       issuerId: issuerRecord.issuerId,
       credentialConfigurationIds: ['universityDegree'],
-      authorizationCodeFlowConfig: {},
+      authorizationCodeFlowConfig: {
+        requirePresentationDuringIssuance: true,
+      },
       preAuthorizedCodeFlowConfig: {},
 
       // Require DPoP and wallet attestations
@@ -455,7 +455,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
     await expect(
       holder.agent.openid4vc.holder.resolveOpenId4VciAuthorizationRequest(resolvedCredentialOffer, {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
       })
     ).rejects.toThrow('Missing required client attestation parameters in pushed authorization request')
 
@@ -471,7 +471,7 @@ describe('OpenId4Vc Wallet and Key Attestations', () => {
       resolvedCredentialOffer,
       {
         clientId: 'wallet',
-        redirectUri: 'something',
+        redirectUri: 'http://localhost/callback',
         walletAttestationJwt,
       }
     )

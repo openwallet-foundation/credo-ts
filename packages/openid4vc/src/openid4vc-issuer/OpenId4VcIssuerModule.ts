@@ -1,8 +1,8 @@
-import type { AgentContext, DependencyManager } from '@credo-ts/core'
+import { type AgentContext, type DependencyManager, joinUriParts, type Module } from '@credo-ts/core'
 import type { NextFunction, Response } from 'express'
 import { getAgentContextForActorId, getRequestContext, importExpress } from '../shared/router'
 import { OpenId4VcIssuerApi } from './OpenId4VcIssuerApi'
-import type { OpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
+import type { InternalOpenId4VcIssuerModuleConfigOptions } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 import { OpenId4VcIssuerService } from './OpenId4VcIssuerService'
 import { OpenId4VcIssuanceSessionRepository } from './repository'
@@ -11,6 +11,7 @@ import type { OpenId4VcIssuanceRequest } from './router'
 import {
   configureAccessTokenEndpoint,
   configureAuthorizationChallengeEndpoint,
+  configureAuthorizationEndpoint,
   configureCredentialEndpoint,
   configureCredentialOfferEndpoint,
   configureDeferredCredentialEndpoint,
@@ -18,17 +19,19 @@ import {
   configureJwksEndpoint,
   configureNonceEndpoint,
   configureOAuthAuthorizationServerMetadataEndpoint,
+  configurePushedAuthorizationRequestEndpoint,
+  configureRedirectEndpoint,
 } from './router'
 import { configureFederationEndpoint } from './router/federationEndpoint'
 
 /**
  * @public
  */
-export class OpenId4VcIssuerModule {
+export class OpenId4VcIssuerModule implements Module {
   public readonly config: OpenId4VcIssuerModuleConfig
 
-  public constructor(options: OpenId4VcIssuerModuleConfigOptions) {
-    this.config = new OpenId4VcIssuerModuleConfig(options)
+  public constructor(options: InternalOpenId4VcIssuerModuleConfigOptions | OpenId4VcIssuerModuleConfig) {
+    this.config = options instanceof OpenId4VcIssuerModuleConfig ? options : new OpenId4VcIssuerModuleConfig(options)
   }
 
   /**
@@ -58,29 +61,22 @@ export class OpenId4VcIssuerModule {
    * Registers the endpoints on the router passed to this module.
    */
   private configureRouter(rootAgentContext: AgentContext) {
-    const { Router, json, urlencoded } = importExpress()
-
     // TODO: it is currently not possible to initialize an agent
     // shut it down, and then start it again, as the
     // express router is configured with a specific `AgentContext` instance
     // and dependency manager. One option is to always create a new router
     // but then users cannot pass their own router implementation.
     // We need to find a proper way to fix this.
+    this.registerWellKnownRoutes(rootAgentContext)
+    this.registerIssuerRoutes(rootAgentContext)
+  }
 
-    // We use separate context router and endpoint router. Context router handles the linking of the request
-    // to a specific agent context. Endpoint router only knows about a single context
-    const endpointRouter = Router()
-    const contextRouter = this.config.router
-
-    // parse application/x-www-form-urlencoded
-    contextRouter.use(urlencoded({ extended: false }))
-    // parse application/json
-    contextRouter.use(json())
-
-    contextRouter.param('issuerId', async (req: OpenId4VcIssuanceRequest, _res, next, issuerId: string) => {
+  private getIssuerIdParamHandler =
+    (rootAgentContext: AgentContext) =>
+    async (req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction, issuerId: string) => {
       if (!issuerId) {
         rootAgentContext.config.logger.debug('No issuerId provided for incoming oid4vci request, returning 404')
-        _res.status(404).send('Not found')
+        return res.status(404).send('Not found')
       }
 
       let agentContext: AgentContext | undefined
@@ -105,28 +101,30 @@ export class OpenId4VcIssuerModule {
         // If the opening failed
         await agentContext?.endSession()
 
-        return _res.status(404).send('Not found')
+        return res.status(404).send('Not found')
       }
 
       next()
-    })
+    }
 
-    contextRouter.use('/:issuerId', endpointRouter)
+  private registerWellKnownRoutes(rootAgentContext: AgentContext) {
+    const issuerIdParamHandler = this.getIssuerIdParamHandler(rootAgentContext)
+    const { Router } = importExpress()
+    const wellKnownEndpointsRouter = Router()
 
-    // Configure endpoints
-    configureIssuerMetadataEndpoint(endpointRouter)
-    configureJwksEndpoint(endpointRouter, this.config)
-    configureNonceEndpoint(endpointRouter, this.config)
-    configureOAuthAuthorizationServerMetadataEndpoint(endpointRouter)
-    configureCredentialOfferEndpoint(endpointRouter, this.config)
-    configureAccessTokenEndpoint(endpointRouter, this.config)
-    configureAuthorizationChallengeEndpoint(endpointRouter, this.config)
-    configureCredentialEndpoint(endpointRouter, this.config)
-    configureDeferredCredentialEndpoint(endpointRouter, this.config)
-    configureFederationEndpoint(endpointRouter)
+    const basePath = new URL(this.config.baseUrl).pathname
+    const issuerPath = joinUriParts(basePath, [':issuerId'])
 
-    // First one will be called for all requests (when next is called)
-    contextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
+    // The files need to be hosted at the root .well-known directory
+    const openidCredentialIssuerPath = joinUriParts('/.well-known/openid-credential-issuer', [issuerPath])
+    const oauthAuthorizationServerPath = joinUriParts('/.well-known/oauth-authorization-server', [issuerPath])
+
+    wellKnownEndpointsRouter.param('issuerId', issuerIdParamHandler)
+
+    configureIssuerMetadataEndpoint(wellKnownEndpointsRouter, openidCredentialIssuerPath)
+    configureOAuthAuthorizationServerMetadataEndpoint(wellKnownEndpointsRouter, oauthAuthorizationServerPath)
+
+    wellKnownEndpointsRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
       const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
 
@@ -134,22 +132,96 @@ export class OpenId4VcIssuerModule {
     })
 
     // This one will be called for all errors that are thrown
-    contextRouter.use(async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
-      const { agentContext } = getRequestContext(req)
+    wellKnownEndpointsRouter.use(
+      async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+        const { agentContext } = getRequestContext(req)
 
-      if (!res.headersSent) {
-        agentContext.config.logger.warn(
-          'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
-        )
+        if (!res.headersSent) {
+          agentContext.config.logger.warn(
+            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+          )
 
-        res.status(500).json({
-          error: 'server_error',
-          error_description: 'An unexpected error occurred on the server.',
-        })
+          res.status(500).json({
+            error: 'server_error',
+            error_description: 'An unexpected error occurred on the server.',
+          })
+        }
+
+        await agentContext.endSession()
+        next()
       }
+    )
 
+    // We only want these routes to be handle by the router, so we register each path separately
+    // here, so it's also possible for the app to register other `.well-known` endpoints.
+    this.config.app.get(openidCredentialIssuerPath, wellKnownEndpointsRouter)
+    this.config.app.get(oauthAuthorizationServerPath, wellKnownEndpointsRouter)
+  }
+
+  private registerIssuerRoutes(rootAgentContext: AgentContext) {
+    const { Router, json, urlencoded } = importExpress()
+
+    const issuerContextRouter = Router()
+    const issuerEndpointsRouter = Router()
+    const issuerIdParamHandler = this.getIssuerIdParamHandler(rootAgentContext)
+
+    const basePath = new URL(this.config.baseUrl).pathname
+
+    // parse application/x-www-form-urlencoded
+    issuerContextRouter.use(urlencoded({ extended: false }))
+    // parse application/json
+    issuerContextRouter.use(json())
+
+    // Register the issuer endpoints under /:issuerId
+    issuerContextRouter.param('issuerId', issuerIdParamHandler)
+    issuerContextRouter.use('/:issuerId', issuerEndpointsRouter)
+
+    // NOTE: these are here for backwards compat, at some point we should remove them for the root well-known counterpart
+    configureIssuerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/openid-credential-issuer')
+    configureOAuthAuthorizationServerMetadataEndpoint(issuerEndpointsRouter, '/.well-known/oauth-authorization-server')
+
+    configureJwksEndpoint(issuerEndpointsRouter, this.config)
+    configureNonceEndpoint(issuerEndpointsRouter, this.config)
+    configureCredentialOfferEndpoint(issuerEndpointsRouter, this.config)
+    configureAccessTokenEndpoint(issuerEndpointsRouter, this.config)
+    configureAuthorizationChallengeEndpoint(issuerEndpointsRouter, this.config)
+    configureCredentialEndpoint(issuerEndpointsRouter, this.config)
+    configureDeferredCredentialEndpoint(issuerEndpointsRouter, this.config)
+    configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)
+    configureAuthorizationEndpoint(issuerEndpointsRouter, this.config)
+    configureRedirectEndpoint(issuerEndpointsRouter, this.config)
+    configureFederationEndpoint(issuerEndpointsRouter)
+
+    // First one will be called for all requests (when next is called)
+    issuerContextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {
+      const { agentContext } = getRequestContext(req)
       await agentContext.endSession()
+
       next()
     })
+
+    // This one will be called for all errors that are thrown
+    issuerContextRouter.use(
+      async (_error: unknown, req: OpenId4VcIssuanceRequest, res: Response, next: NextFunction) => {
+        const { agentContext } = getRequestContext(req)
+
+        if (!res.headersSent) {
+          agentContext.config.logger.warn(
+            'Error was thrown but openid4vci endpoint did not send a response. Sending generic server_error.'
+          )
+
+          res.status(500).json({
+            error: 'server_error',
+            error_description: 'An unexpected error occurred on the server.',
+          })
+        }
+
+        await agentContext.endSession()
+        next()
+      }
+    )
+
+    // Register the issuer context router under /<basePath>
+    this.config.app.use(basePath, issuerContextRouter)
   }
 }

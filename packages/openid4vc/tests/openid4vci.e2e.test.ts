@@ -65,9 +65,9 @@ describe('OpenId4Vc', () => {
         x509: new X509Module(),
         inMemory: new InMemoryWalletModule(),
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           issuer: {
             baseUrl: issuanceBaseUrl,
-
             credentialRequestToCredentialMapper: async ({ agentContext, credentialRequest, holderBinding }) => {
               // We sign the request with the first did:key did we have
               const didsApi = agentContext.dependencyManager.resolve(DidsApi)
@@ -160,9 +160,6 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       global.fetch
     )) as unknown as typeof holder
     holder1 = await createTenantForAgent(holder.agent, 'hTenant1')
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
@@ -276,6 +273,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
       },
       authorizationServerConfigs: [
         {
+          type: 'direct',
           issuer: 'http://localhost:4747',
         },
       ],

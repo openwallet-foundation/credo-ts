@@ -2,11 +2,12 @@ export * from './OpenId4VcIssuanceSessionState'
 export * from './OpenId4VcIssuerApi'
 export * from './OpenId4VcIssuerEvents'
 export * from './OpenId4VcIssuerModule'
-export * from './OpenId4VcIssuerModuleConfig'
+export { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
 export * from './OpenId4VcIssuerService'
 export * from './OpenId4VcIssuerServiceOptions'
 export {
   type OpenId4VcIssuanceSessionAuthorization,
+  type OpenId4VcIssuanceSessionChainedIdentity,
   type OpenId4VcIssuanceSessionDpop,
   type OpenId4VcIssuanceSessionPkce,
   type OpenId4VcIssuanceSessionPresentation,

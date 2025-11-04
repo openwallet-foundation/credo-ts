@@ -130,6 +130,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
     issuer = await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           verifier: {
             baseUrl: verifierBaseUrl,
           },
@@ -204,10 +205,6 @@ describe('OpenId4Vc Presentation During Issuance', () => {
 
     holder.agent.x509.config.addTrustedCertificate(issuer.certificate)
     issuer.agent.x509.config.addTrustedCertificate(issuer.certificate)
-
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vci', issuer.agent.openid4vc.issuer.config.router)
-    expressApp.use('/oid4vp', issuer.agent.openid4vc.verifier.config.router)
 
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })

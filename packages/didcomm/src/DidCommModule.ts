@@ -83,36 +83,38 @@ type DidCommModules<Options extends DidCommModuleConfigOptions> = {
   ModuleOrEmpty<Options['basicMessages'], { basicMessages: DidCommBasicMessagesModule }>
 
 function getDidcommModules<Options extends DidCommModuleConfigOptions>(options: Options): DidCommModules<Options> {
-  return {
-    connections: new DidCommConnectionsModule(options.connections),
-    oob: new DidCommOutOfBandModule(),
-    discovery: new DidCommDiscoverFeaturesModule(options.discovery),
+  return Object.fromEntries(
+    Object.entries({
+      connections: new DidCommConnectionsModule(options.connections),
+      oob: new DidCommOutOfBandModule(),
+      discovery: new DidCommDiscoverFeaturesModule(options.discovery),
 
-    credentials:
-      options.credentials !== false
-        ? new DidCommCredentialsModule(options.credentials === true ? {} : options.credentials)
-        : undefined,
+      credentials:
+        options.credentials !== false
+          ? new DidCommCredentialsModule(options.credentials === true ? {} : options.credentials)
+          : undefined,
 
-    proofs:
-      options.proofs !== false ? new DidCommProofsModule(options.proofs === true ? {} : options.proofs) : undefined,
+      proofs:
+        options.proofs !== false ? new DidCommProofsModule(options.proofs === true ? {} : options.proofs) : undefined,
 
-    mediator:
-      options.mediator !== false
-        ? new DidCommMediatorModule(options.mediator === true ? {} : options.mediator)
-        : undefined,
+      mediator:
+        options.mediator !== false
+          ? new DidCommMediatorModule(options.mediator === true ? {} : options.mediator)
+          : undefined,
 
-    mediationRecipient:
-      options.mediationRecipient !== false
-        ? new DidCommMediationRecipientModule(options.mediationRecipient === true ? {} : options.mediationRecipient)
-        : undefined,
+      mediationRecipient:
+        options.mediationRecipient !== false
+          ? new DidCommMediationRecipientModule(options.mediationRecipient === true ? {} : options.mediationRecipient)
+          : undefined,
 
-    messagePickup:
-      options.messagePickup !== false
-        ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
-        : undefined,
+      messagePickup:
+        options.messagePickup !== false
+          ? new DidCommMessagePickupModule(options.messagePickup === true ? {} : options.messagePickup)
+          : undefined,
 
-    basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
-  } as unknown as DidCommModules<Options>
+      basicMessages: options.basicMessages !== false ? new DidCommBasicMessagesModule() : undefined,
+    }).filter(([, moduleValue]) => moduleValue !== undefined)
+  ) as unknown as DidCommModules<Options>
 }
 
 export class DidCommModule<Options extends DidCommModuleConfigOptions = DidCommModuleConfigOptions> implements Module {

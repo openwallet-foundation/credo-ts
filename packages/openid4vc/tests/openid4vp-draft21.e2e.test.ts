@@ -39,6 +39,7 @@ describe('OpenID4VP Draft 21', () => {
     verifier = (await createAgentFromModules(
       {
         openid4vc: new OpenId4VcModule({
+          app: expressApp,
           verifier: {
             baseUrl: verificationBaseUrl,
           },
@@ -50,8 +51,6 @@ describe('OpenID4VP Draft 21', () => {
       global.fetch
     )) as unknown as typeof verifier
 
-    // We let AFJ create the router, so we have a fresh one each time
-    expressApp.use('/oid4vp', verifier.agent.openid4vc.verifier.config.router)
     clearNock = setupNockToExpress(baseUrl, expressApp)
   })
 

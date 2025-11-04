@@ -128,6 +128,17 @@ export interface NegotiateProofRequestOptions<PPs extends DidCommProofProtocol[]
 }
 
 /**
+ * Interface for ProofsApi.createProofProposal. Will create an out of band proposal.
+ */
+export interface CreateProofProposalOptions<PPs extends DidCommProofProtocol[] = DidCommProofProtocol[]>
+  extends BaseOptions {
+  protocolVersion: ProofsProtocolVersionType<PPs>
+  proofFormats: DidCommProofFormatPayload<ProofFormatsFromProtocols<PPs>, 'createProposal'>
+  goalCode?: string
+  parentThreadId?: string
+}
+
+/**
  * Interface for ProofsApi.acceptPresentation. Will send an ack message
  */
 export interface AcceptProofOptions {

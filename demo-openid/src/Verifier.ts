@@ -3,7 +3,6 @@ import type { DcqlQuery, DifPresentationExchangeDefinitionV2 } from '@credo-ts/c
 import type { OpenId4VcVerifierModuleConfigOptions, OpenId4VcVerifierRecord } from '@credo-ts/openid4vc'
 import { OpenId4VcModule } from '@credo-ts/openid4vc'
 import { askar } from '@openwallet-foundation/askar-nodejs'
-import { Router } from 'express'
 
 import { BaseAgent } from './BaseAgent'
 import { Output } from './OutputClass'
@@ -127,23 +126,19 @@ export class Verifier extends BaseAgent<{
   public verifierRecord!: OpenId4VcVerifierRecord
 
   public constructor(url: string, port: number, name: string) {
-    const openId4VpRouter = Router()
-
     super({
       port,
       name,
-      modules: {
+      modules: (app) => ({
         askar: new AskarModule({ askar, store: { id: name, key: name } }),
         openid4vc: new OpenId4VcModule({
+          app,
           verifier: {
             baseUrl: `${url}/oid4vp`,
-            router: openId4VpRouter,
           },
         }),
-      },
+      }),
     })
-
-    this.app.use('/oid4vp', openId4VpRouter)
   }
 
   public static async build(): Promise<Verifier> {
