@@ -197,7 +197,7 @@ describe('OpenId4VcIssuerRecord', () => {
     ])
   })
 
-  test('removes logo if empty objct in display metadata', () => {
+  test('removes logo if empty object in display metadata', () => {
     const instance = JsonTransformer.fromJSON(
       {
         display: [
@@ -217,7 +217,7 @@ describe('OpenId4VcIssuerRecord', () => {
     ])
   })
 
-  test('does not transfrom display metadata if already using uri', () => {
+  test('does not transform display metadata if already using uri', () => {
     const instance = JsonTransformer.fromJSON(
       {
         display: [
@@ -237,6 +237,34 @@ describe('OpenId4VcIssuerRecord', () => {
         name: 'hello',
         logo: {
           uri: 'uri',
+        },
+      },
+    ])
+  })
+
+  test('should correctly transform authorization servers configurations', () => {
+    const instance = JsonTransformer.fromJSON(
+      {
+        authorizationServerConfigs: [
+          {
+            issuer: 'https://issuer.example.com',
+            clientAuthentication: {
+              clientId: 'issuer-server',
+              clientSecret: 'issuer-server',
+            },
+          },
+        ],
+      },
+      OpenId4VcIssuerRecord
+    )
+
+    expect(instance.authorizationServerConfigs).toEqual([
+      {
+        type: 'direct',
+        issuer: 'https://issuer.example.com',
+        clientAuthentication: {
+          clientId: 'issuer-server',
+          clientSecret: 'issuer-server',
         },
       },
     ])
