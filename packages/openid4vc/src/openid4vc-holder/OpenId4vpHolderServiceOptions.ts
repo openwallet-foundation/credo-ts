@@ -6,7 +6,7 @@ import type {
   DifPresentationExchangeDefinition,
   EncodedX509Certificate,
 } from '@credo-ts/core'
-import type { ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
+import type { ClientMetadata, ResolvedOpenid4vpAuthorizationRequest } from '@openid4vc/openid4vp'
 import type { OpenId4VpAuthorizationRequestPayload } from '../shared'
 
 // TODO: export from oid4vp
@@ -14,6 +14,7 @@ export type ParsedTransactionDataEntry = NonNullable<ResolvedOpenid4vpAuthorizat
 
 export interface ResolveOpenId4VpAuthorizationRequestOptions {
   trustedCertificates?: EncodedX509Certificate[]
+  trustedFederationEntityIds?: string[]
   origin?: string
 }
 
@@ -83,8 +84,8 @@ export interface OpenId4VpResolvedAuthorizationRequest {
      * The client id metadata.
      *
      * In case of 'openid_federation' client id prefix, this will be the metadata from the federation.
-     * clientMetadata?: ClientMetadata
      */
+    clientMetadata?: ClientMetadata
   }
 
   /**
@@ -134,4 +135,13 @@ export interface OpenId4VpAcceptAuthorizationRequestOptions {
    * Required in combination with the DC Api
    */
   origin?: string
+}
+
+export interface OpenId4VpResolveTrustChainsOptions {
+  entityId: string
+  trustAnchorEntityIds: [string, ...string[]]
+}
+
+export interface OpenId4VpFetchEntityConfigurationOptions {
+  entityId: string
 }

@@ -1004,6 +1004,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(resolvedAuthorizationRequest.signedAuthorizationRequest).toBeUndefined()
     expect(resolvedAuthorizationRequest.verifier).toEqual({
       clientIdPrefix: 'redirect_uri',
+      clientMetadata: expect.any(Object),
       effectiveClientId: `redirect_uri:${authorizationRequestObject.response_uri}`,
     })
 

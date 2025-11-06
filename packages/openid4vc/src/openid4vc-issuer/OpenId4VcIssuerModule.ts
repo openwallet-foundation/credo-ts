@@ -22,6 +22,7 @@ import {
   configurePushedAuthorizationRequestEndpoint,
   configureRedirectEndpoint,
 } from './router'
+import { configureFederationEndpoint } from './router/federationEndpoint'
 
 /**
  * @public
@@ -189,6 +190,7 @@ export class OpenId4VcIssuerModule implements Module {
     configurePushedAuthorizationRequestEndpoint(issuerEndpointsRouter, this.config)
     configureAuthorizationEndpoint(issuerEndpointsRouter, this.config)
     configureRedirectEndpoint(issuerEndpointsRouter, this.config)
+    configureFederationEndpoint(issuerEndpointsRouter)
 
     // First one will be called for all requests (when next is called)
     issuerContextRouter.use(async (req: OpenId4VcIssuanceRequest, _res: unknown, next) => {

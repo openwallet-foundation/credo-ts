@@ -1,3 +1,4 @@
+import { AgentContext } from '@credo-ts/core'
 import type { Express } from 'express'
 
 export interface InternalOpenId4VcVerifierModuleConfigOptions {
@@ -31,6 +32,30 @@ export interface InternalOpenId4VcVerifierModuleConfigOptions {
      * @default /authorization-requests
      */
     authorizationRequest?: string
+  }
+
+  /**
+   * Configuration for the federation endpoint.
+   */
+  federation?: {
+    // TODO: Make this functions also compatible with the issuer side
+    isSubordinateEntity?: (
+      agentContext: AgentContext,
+      options: {
+        verifierId: string
+
+        issuerEntityId: string
+        subjectEntityId: string
+      }
+    ) => Promise<boolean>
+    getAuthorityHints?: (
+      agentContext: AgentContext,
+      options: {
+        verifierId: string
+
+        issuerEntityId: string
+      }
+    ) => Promise<string[] | undefined>
   }
 }
 
@@ -70,5 +95,9 @@ export class OpenId4VcVerifierModuleConfig {
    */
   public get authorizationRequestExpiresInSeconds() {
     return this.options.authorizationRequestExpirationInSeconds ?? 300
+  }
+
+  public get federation() {
+    return this.options.federation
   }
 }

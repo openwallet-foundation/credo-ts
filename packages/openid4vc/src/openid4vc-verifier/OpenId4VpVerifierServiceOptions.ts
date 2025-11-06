@@ -15,7 +15,7 @@ import type {
   VerifierAttestations,
 } from '@openid4vc/openid4vp'
 import type { NonEmptyArray } from '@openid4vc/utils'
-import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid } from '../shared'
+import type { OpenId4VcIssuerX5c, OpenId4VcJwtIssuerDid, OpenId4VcJwtIssuerFederation } from '../shared'
 import type { OpenId4VcVerificationSessionRecord, OpenId4VcVerifierRecordProps } from './repository'
 
 export type ResponseMode = 'direct_post' | 'direct_post.jwt' | 'dc_api' | 'dc_api.jwt'
@@ -28,6 +28,7 @@ export interface OpenId4VpCreateAuthorizationRequestOptions {
   requestSigner:
     | OpenId4VcJwtIssuerDid
     | Omit<OpenId4VcIssuerX5c, 'issuer'>
+    | Omit<OpenId4VcJwtIssuerFederation, 'entityId'>
     | {
         /**
          * Do not sign the request, will use `redirect_uri` client id prefix
