@@ -13,6 +13,7 @@ export {
   type OpenId4VcIssuanceSessionPresentation,
   OpenId4VcIssuanceSessionRecord,
   type OpenId4VcIssuanceSessionRecordTransaction,
+  OpenId4VcIssuanceSessionRepository,
   type OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VcIssuerRecord,
   type OpenId4VcIssuerRecordProps,
