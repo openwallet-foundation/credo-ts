@@ -71,8 +71,8 @@ export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument
         e.type === DidCommV1Service.type
           ? e.serviceEndpoint
           : Array.isArray(e.serviceEndpoint)
-          ? e.serviceEndpoint
-          : [e.serviceEndpoint],
+            ? e.serviceEndpoint
+            : [e.serviceEndpoint],
     }
   })
   const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
