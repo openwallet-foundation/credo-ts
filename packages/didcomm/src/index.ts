@@ -31,8 +31,10 @@ export { isValidJweStructure } from './util/JWE'
 export {
   IsValidMessageType,
   type ParsedMessageType,
+  parseDidCommProtocolUri,
   parseMessageType,
   replaceLegacyDidSovPrefix,
+  supportsIncomingDidCommProtocolUri,
   supportsIncomingMessageType,
 } from './util/messageType'
 export {
