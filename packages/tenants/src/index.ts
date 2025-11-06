@@ -1,5 +1,6 @@
 export type { TenantConfig } from './models/TenantConfig'
 export { TenantRecord, type TenantRecordProps } from './repository/TenantRecord'
+export { TenantRepository } from './repository/TenantRepository'
 export { TenantRoutingRecord } from './repository/TenantRoutingRecord'
 export { TenantAgent } from './TenantAgent'
 export * from './TenantsApi'
