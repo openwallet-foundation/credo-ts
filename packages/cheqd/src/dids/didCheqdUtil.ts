@@ -13,6 +13,7 @@ import { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } from '@cosmjs/proto-si
 import {
   type AnyUint8Array,
   CredoError,
+  DidCommV1Service,
   DidDocument,
   JsonEncoder,
   JsonTransformer,
@@ -64,7 +65,14 @@ export async function createMsgCreateDidDocPayloadToSign(didPayload: DIDDocument
   didPayload.service = didPayload.service?.map((e) => {
     return {
       ...e,
-      serviceEndpoint: Array.isArray(e.serviceEndpoint) ? e.serviceEndpoint : [e.serviceEndpoint],
+      // For DIDComm V1 services (V2 already supports array), keep serviceEndpoint as string
+      // For other services, convert to array if not already
+      serviceEndpoint:
+        e.type === DidCommV1Service.type
+          ? e.serviceEndpoint
+          : Array.isArray(e.serviceEndpoint)
+            ? e.serviceEndpoint
+            : [e.serviceEndpoint],
     }
   })
   const { protobufVerificationMethod, protobufService } = await DIDModule.validateSpecCompliantPayload(didPayload)
