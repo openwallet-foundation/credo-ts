@@ -1,5 +1,6 @@
 import type { Kms } from '@credo-ts/core'
 import type {
+  OpenId4VcIssuerRecordSignedMetadata,
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -23,6 +24,8 @@ export const openid4vcIssuer = sqliteTable(
       mode: 'json',
     }),
     accessTokenPublicJwk: text('access_token_public_jwk', { mode: 'json' }).$type<Kms.KmsJwkPublicAsymmetric>(),
+
+    signedMetadata: text('signed_metadata', { mode: 'json' }).$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
     credentialConfigurationsSupported: text('credential_configurations_supported', { mode: 'json' })
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
