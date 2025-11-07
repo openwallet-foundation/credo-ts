@@ -49,6 +49,16 @@ export type X509VerificationTypeOpenId4VciKeyAttestation = {
   }
 }
 
+export type X509VerificationTypeOpenId4VciCredentialIssuerMetadata = {
+  type: 'openId4VciCredentialIssuerMetadata'
+
+  // NOTE: it would be more helpful to have the typed JWT payload from openid4vc here?
+  credentialIssuerMetadata: {
+    jwt: string
+    payload: JwtPayload
+  }
+}
+
 export type X509VerificationTypeOauth2ClientAttestation = {
   type: 'oauth2ClientAttestation'
 
@@ -81,6 +91,7 @@ export interface X509VerificationContext {
     | X509VerificationTypeOauth2SecuredAuthorizationRequest
     | X509VerificationTypeOauth2ClientAttestation
     | X509VerificationTypeOpenId4VciKeyAttestation
+    | X509VerificationTypeOpenId4VciCredentialIssuerMetadata
 }
 
 export interface X509ModuleConfigOptions {

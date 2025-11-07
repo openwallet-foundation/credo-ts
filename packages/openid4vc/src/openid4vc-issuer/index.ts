@@ -17,5 +17,6 @@ export {
   type OpenId4VcIssuanceSessionWalletAttestation,
   OpenId4VcIssuerRecord,
   type OpenId4VcIssuerRecordProps,
+  type OpenId4VcIssuerRecordSignedMetadata,
   type OpenId4VcIssuerRecordTags,
 } from './repository'
