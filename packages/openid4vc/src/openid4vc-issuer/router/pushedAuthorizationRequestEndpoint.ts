@@ -249,10 +249,17 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
           url: fullRequestUrl,
         } as const
 
-        const parseResult = authorizationServer.parsePushedAuthorizationRequest({
+        const parseResult = await authorizationServer.parsePushedAuthorizationRequest({
           authorizationRequest: request.body,
           request: requestLike,
         })
+
+        if (parseResult.authorizationRequestJwt) {
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidRequest,
+            error_description: `Using JWT-secured authorization request is not supported.`,
+          })
+        }
 
         // TODO: we could allow dynamic issuance sessions here. Maybe based on a callback?
         // Not sure how to decide which credentials are allowed to be requested dynamically
