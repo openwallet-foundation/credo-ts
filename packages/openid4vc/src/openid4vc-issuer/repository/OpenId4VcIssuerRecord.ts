@@ -5,6 +5,7 @@ import type {
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
   OpenId4VciCredentialIssuerMetadataDisplay,
+  OpenId4VcJwtIssuerEncoded,
 } from '../../shared'
 import type { OpenId4VciBatchCredentialIssuanceOptions } from '../OpenId4VcIssuerServiceOptions'
 
@@ -12,6 +13,15 @@ export type OpenId4VcIssuerRecordTags = RecordTags<OpenId4VcIssuerRecord>
 
 export type DefaultOpenId4VcIssuerRecordTags = {
   issuerId: string
+}
+
+export type OpenId4VcIssuerRecordSignedMetadata = {
+  signer: OpenId4VcJwtIssuerEncoded
+
+  /**
+   * The credential issuer metadata as a signed JWT
+   */
+  jwt: string
 }
 
 export type OpenId4VcIssuerRecordProps = {
@@ -41,6 +51,12 @@ export type OpenId4VcIssuerRecordProps = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  /**
+   * When signed metadata is supported, this stores the
+   * signed jwt and signer information to update the JWT in the future.
+   */
+  signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
 }
 
 /**
@@ -121,6 +137,8 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
   public dpopSigningAlgValuesSupported?: [Kms.KnownJwaSignatureAlgorithm, ...Kms.KnownJwaSignatureAlgorithm[]]
   public batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
 
+  public signedMetadata?: OpenId4VcIssuerRecordSignedMetadata
+
   public get directAuthorizationServerConfigs() {
     return this.authorizationServerConfigs?.filter((config) => config.type === 'direct')
   }
@@ -161,6 +179,7 @@ export class OpenId4VcIssuerRecord extends BaseRecord<DefaultOpenId4VcIssuerReco
       this.display = props.display
       this.authorizationServerConfigs = props.authorizationServerConfigs
       this.batchCredentialIssuance = props.batchCredentialIssuance
+      this.signedMetadata = props.signedMetadata
     }
   }
 
