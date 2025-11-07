@@ -30,6 +30,8 @@
 
 Credo Drizzle Storage provides a storage integration with Drizzle ORM, with support for PostgreSQL and SQLite.
 
+> NOTE: This package will add SQL migrations in non-breaking releases, requiring the migrations to be ran for Credo to work correctly. We recommend running the migrations continuously during deployments as breaking migrations will only be released in breaking Credo releases. If you don't want to or can't run migrations on a continuous basis (e.g. for every deploy), we recommend either using the Askar storage (which does not define a database schema), or pinning to a specific Credo version.
+
 ## Usage
 
 Install the `@credo-ts/drizzle-storage` package and add the `DrizzleStorageModule` module to your agent.
