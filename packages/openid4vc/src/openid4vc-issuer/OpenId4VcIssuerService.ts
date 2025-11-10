@@ -49,15 +49,24 @@ import {
 import { OpenId4VcVerifierApi } from '../openid4vc-verifier'
 import type {
   OpenId4VciCredentialConfigurationSupportedWithFormats,
+  OpenId4VciCredentialIssuerMetadata,
   OpenId4VciCredentialOfferPayload,
   OpenId4VciMetadata,
+  OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import { OpenId4VciCredentialFormatProfile } from '../shared'
 import { dynamicOid4vciClientAuthentication, getOid4vcCallbacks } from '../shared/callbacks'
 import { getCredentialConfigurationsSupportedForScopes, getOfferedCredentials } from '../shared/issuerMetadataUtils'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
-import { getProofTypeFromPublicJwk, getPublicJwkFromDid, getSupportedJwaSignatureAlgorithms } from '../shared/utils'
+import {
+  credoJwtIssuerToOpenId4VcJwtIssuer,
+  decodeJwtIssuer,
+  encodeJwtIssuer,
+  getProofTypeFromPublicJwk,
+  getPublicJwkFromDid,
+  getSupportedJwaSignatureAlgorithms,
+} from '../shared/utils'
 import { OpenId4VcIssuanceSessionState } from './OpenId4VcIssuanceSessionState'
 import { type OpenId4VcIssuanceSessionStateChangedEvent, OpenId4VcIssuerEvents } from './OpenId4VcIssuerEvents'
 import { OpenId4VcIssuerModuleConfig } from './OpenId4VcIssuerModuleConfig'
@@ -900,7 +909,16 @@ export class OpenId4VcIssuerService {
   }
 
   public async updateIssuer(agentContext: AgentContext, issuer: OpenId4VcIssuerRecord) {
-    return this.openId4VcIssuerRepository.update(agentContext, issuer)
+    if (issuer.signedMetadata) {
+      const issuerMetadata = await this.getIssuerMetadata(agentContext, issuer, false)
+      issuer.signedMetadata = await this.createSignedMetadata(
+        agentContext,
+        issuerMetadata.credentialIssuer,
+        decodeJwtIssuer(issuer.signedMetadata.signer)
+      )
+    }
+
+    await this.openId4VcIssuerRepository.update(agentContext, issuer)
   }
 
   public async createIssuer(agentContext: AgentContext, options: OpenId4VciCreateIssuerOptions) {
@@ -923,9 +941,35 @@ export class OpenId4VcIssuerService {
       batchCredentialIssuance: options.batchCredentialIssuance,
     })
 
+    if (options.metadataSigner) {
+      const issuerMetadata = await this.getIssuerMetadata(agentContext, openId4VcIssuer, false)
+      openId4VcIssuer.signedMetadata = await this.createSignedMetadata(
+        agentContext,
+        issuerMetadata.credentialIssuer,
+        options.metadataSigner
+      )
+    }
+
     await this.openId4VcIssuerRepository.save(agentContext, openId4VcIssuer)
     await storeActorIdForContextCorrelationId(agentContext, openId4VcIssuer.issuerId)
     return openId4VcIssuer
+  }
+
+  private async createSignedMetadata(
+    agentContext: AgentContext,
+    credentialIssuerMetadata: OpenId4VciCredentialIssuerMetadata,
+    metadataSigner: OpenId4VcJwtIssuer
+  ) {
+    const issuer = this.getIssuer(agentContext)
+    const credentialIssuerMetadataJwt = await issuer.createSignedCredentialIssuerMetadataJwt({
+      credentialIssuerMetadata,
+      signer: await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, metadataSigner),
+    })
+
+    return {
+      jwt: credentialIssuerMetadataJwt,
+      signer: encodeJwtIssuer(metadataSigner),
+    }
   }
 
   public async rotateAccessTokenSigningKey(
@@ -956,7 +1000,7 @@ export class OpenId4VcIssuerService {
     agentContext: AgentContext,
     issuerRecord: OpenId4VcIssuerRecord,
     fetchExternalAuthorizationServerMetadata = false
-  ): Promise<OpenId4VciMetadata> {
+  ) {
     const config = agentContext.dependencyManager.resolve(OpenId4VcIssuerModuleConfig)
     const issuerUrl = joinUriParts(config.baseUrl, [issuerRecord.issuerId])
     const oauth2Client = this.getOauth2Client(agentContext)
@@ -1019,6 +1063,8 @@ export class OpenId4VcIssuerService {
       originalDraftVersion: Openid4vciDraftVersion.V1,
       credentialIssuer: credentialIssuerMetadata,
       authorizationServers: [issuerAuthorizationServer, ...extraAuthorizationServers],
+
+      signedMetadataJwt: issuerRecord.signedMetadata?.jwt,
     }
   }
 
