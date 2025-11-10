@@ -1,5 +1,6 @@
 import type { Kms } from '@credo-ts/core'
 import type {
+  OpenId4VcIssuerRecordSignedMetadata,
   OpenId4VciAuthorizationServerConfig,
   OpenId4VciBatchCredentialIssuanceOptions,
   OpenId4VciCredentialConfigurationsSupportedWithFormats,
@@ -16,6 +17,7 @@ export const openid4vcIssuer = pgTable(
     issuerId: text('issuer_id').unique().notNull(),
     accessTokenPublicKeyFingerprint: jsonb('access_token_public_key_fingerprint'),
     accessTokenPublicJwk: jsonb('access_token_public_jwk').$type<Kms.KmsJwkPublicAsymmetric>(),
+    signedMetadata: jsonb('signed_metadata').$type<OpenId4VcIssuerRecordSignedMetadata>(),
 
     credentialConfigurationsSupported: jsonb('credential_configurations_supported')
       .$type<OpenId4VciCredentialConfigurationsSupportedWithFormats>()
