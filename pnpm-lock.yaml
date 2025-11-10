@@ -601,8 +601,8 @@ importers:
         specifier: 'catalog:'
         version: 0.14.1
       dcql:
-        specifier: 2.0.0-alpha-20250916080434
-        version: 2.0.0-alpha-20250916080434(typescript@5.9.3)
+        specifier: ^2.0.0
+        version: 2.0.0(typescript@5.9.3)
       did-resolver:
         specifier: ^4.1.0
         version: 4.1.0
@@ -936,17 +936,17 @@ importers:
         specifier: workspace:*
         version: link:../core
       '@openid4vc/oauth2':
-        specifier: 0.3.0-alpha-20251031103301
-        version: 0.3.0-alpha-20251031103301
+        specifier: 0.3.0-alpha-20251107132439
+        version: 0.3.0-alpha-20251107132439
       '@openid4vc/openid4vci':
-        specifier: 0.3.0-alpha-20251031103301
-        version: 0.3.0-alpha-20251031103301
+        specifier: 0.3.0-alpha-20251107132439
+        version: 0.3.0-alpha-20251107132439
       '@openid4vc/openid4vp':
-        specifier: 0.3.0-alpha-20251031103301
-        version: 0.3.0-alpha-20251031103301
+        specifier: 0.3.0-alpha-20251107132439
+        version: 0.3.0-alpha-20251107132439
       '@openid4vc/utils':
-        specifier: 0.3.0-alpha-20251031103301
-        version: 0.3.0-alpha-20251031103301
+        specifier: 0.3.0-alpha-20251107132439
+        version: 0.3.0-alpha-20251107132439
       '@types/express':
         specifier: 'catalog:'
         version: 5.0.3
@@ -2963,17 +2963,17 @@ packages:
   '@open-draft/until@2.1.0':
     resolution: {integrity: sha512-U69T3ItWHvLwGg5eJ0n3I62nWuE6ilHlmz7zM0npLBRvPRd7e6NYmg54vvRtP5mZG7kZqZCFVdsTWo7BPtBujg==}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251031103301':
-    resolution: {integrity: sha512-Jrl/uqPEjNVjGxgI2qPpUXLjD4AkHE6zAKYUGIA99lIfU+1ajRC1ZTxieAjjEi9jDveG2LDy2Fz3Tmj8Fyh7Tw==}
+  '@openid4vc/oauth2@0.3.0-alpha-20251107132439':
+    resolution: {integrity: sha512-Xim+3pYTPx1cefFTkTE8Ga9tGWiK/yVz9ngmEMlWPko2JWZnpPC3HiSyeyv2lLBewuRlyyGH7op0KXOtiXspNQ==}
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251031103301':
-    resolution: {integrity: sha512-HieYaaEGg1ulLg1HVC3TJDuj1ggDKfW0jxvTgTDDcJc8HTJvMYrRgCa13J0qw70QFGbWkNMrAcrL5ptkagDX3A==}
+  '@openid4vc/openid4vci@0.3.0-alpha-20251107132439':
+    resolution: {integrity: sha512-RK8ALbRSObYth8OpUxhEtuRAO2k31ZMuDVv0Y7g9c25Ks3jCaO6otYeCv2lCyF6fKqObGA2aaqhAp+gtnBtmHQ==}
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251031103301':
-    resolution: {integrity: sha512-D8IB+pHR9cCVSVILmW15lwsU5XR8z2Dcnh2Bk1kLJhiEaUDiFQp/9G8XXrC24vOCN0lmYz/g0vyh051CwHh1VA==}
+  '@openid4vc/openid4vp@0.3.0-alpha-20251107132439':
+    resolution: {integrity: sha512-U4FQwTR57ZBsscHNggYXH/FaORu7bMC0UQ5TgbhHP1Tq35TZRzItHbUHFliOQgP5ieFn8jrj9rSZyFYjEekC3g==}
 
-  '@openid4vc/utils@0.3.0-alpha-20251031103301':
-    resolution: {integrity: sha512-3pQka4KPrU4UQ3OhFtxGX935hyRRsTNJbahCUz3Nym4vX/0s/vGHOc4JC71g3lzRD1N0wJ4mkbM9q7uVbqJpwg==}
+  '@openid4vc/utils@0.3.0-alpha-20251107132439':
+    resolution: {integrity: sha512-MuND0uGWQXjGR7SYN9CLJw3d7OCjG4JfiTGNBne8wIJX1Ot7sZ8THCCEaeeiKnGG98JwOcd6m06HNm9OPI+yBw==}
 
   '@openwallet-foundation/askar-nodejs@0.4.2':
     resolution: {integrity: sha512-aQ4+zi8DWYjJUyTdCMnVsUwvEsFZuUBeDdxHxXMu19FAmTNAc4sOT6tPYZEBWAui5EBapn5tyFJ/0sqrmrif5A==}
@@ -4704,8 +4704,8 @@ packages:
   dayjs@1.11.18:
     resolution: {integrity: sha512-zFBQ7WFRvVRhKcWoUh+ZA1g2HVgUbsZm9sbddh8EC5iv93sui8DVVz1Npvz+r6meo9VKfa8NyLWBsQK1VvIKPA==}
 
-  dcql@2.0.0-alpha-20250916080434:
-    resolution: {integrity: sha512-l/dN05fpAA350jknqN8km2BdUTnYWLi6wUty9w86K0MdYEHyXz/CGnHAlFr6EfhaobTCL0INYoSXMahXCGh3mg==}
+  dcql@2.0.0:
+    resolution: {integrity: sha512-+axocPnkCZfvmt9gT8RnVuQ2YTe/g3Wkycql5SubTnr17WqaE5vwa9pMmDcoAH3hdYGwM859z4WjGKkigzMRLQ==}
 
   debug@2.6.9:
     resolution: {integrity: sha512-bC7ElrdJaJnPbAP+1EotYvqZsb3ecl5wi6Bfi6BJTUcNowp6cvspg0jXznRTKDjm/E7AdgFBVeAPVMNcKGsHMA==}
@@ -8483,8 +8483,8 @@ packages:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
     hasBin: true
 
-  valibot@1.0.0-beta.8:
-    resolution: {integrity: sha512-OPAwJZtowb0j91b+bd77+ny7D1VVzsCzD7Jl9waLUlMprTsfI9Y3HHbW3hAQD7wKDKHsmGEesuiYWaYvcZL2wg==}
+  valibot@1.1.0:
+    resolution: {integrity: sha512-Nk8lX30Qhu+9txPYTwM0cFlWLdPFsFr6LblzqIySfbZph9+BFsAHsNvHOymEviUepeIW6KFHzpX8TKhbptBXXw==}
     peerDependencies:
       typescript: '>=5'
     peerDependenciesMeta:
@@ -11305,24 +11305,24 @@ snapshots:
 
   '@open-draft/until@2.1.0': {}
 
-  '@openid4vc/oauth2@0.3.0-alpha-20251031103301':
+  '@openid4vc/oauth2@0.3.0-alpha-20251107132439':
     dependencies:
-      '@openid4vc/utils': 0.3.0-alpha-20251031103301
+      '@openid4vc/utils': 0.3.0-alpha-20251107132439
       zod: 4.1.12
 
-  '@openid4vc/openid4vci@0.3.0-alpha-20251031103301':
+  '@openid4vc/openid4vci@0.3.0-alpha-20251107132439':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251031103301
-      '@openid4vc/utils': 0.3.0-alpha-20251031103301
+      '@openid4vc/oauth2': 0.3.0-alpha-20251107132439
+      '@openid4vc/utils': 0.3.0-alpha-20251107132439
       zod: 4.1.12
 
-  '@openid4vc/openid4vp@0.3.0-alpha-20251031103301':
+  '@openid4vc/openid4vp@0.3.0-alpha-20251107132439':
     dependencies:
-      '@openid4vc/oauth2': 0.3.0-alpha-20251031103301
-      '@openid4vc/utils': 0.3.0-alpha-20251031103301
+      '@openid4vc/oauth2': 0.3.0-alpha-20251107132439
+      '@openid4vc/utils': 0.3.0-alpha-20251107132439
       zod: 4.1.12
 
-  '@openid4vc/utils@0.3.0-alpha-20251031103301':
+  '@openid4vc/utils@0.3.0-alpha-20251107132439':
     dependencies:
       buffer: 6.0.3
       zod: 4.1.12
@@ -13403,9 +13403,9 @@ snapshots:
   dayjs@1.11.18:
     optional: true
 
-  dcql@2.0.0-alpha-20250916080434(typescript@5.9.3):
+  dcql@2.0.0(typescript@5.9.3):
     dependencies:
-      valibot: 1.0.0-beta.8(typescript@5.9.3)
+      valibot: 1.1.0(typescript@5.9.3)
     transitivePeerDependencies:
       - typescript
 
@@ -17739,7 +17739,7 @@ snapshots:
 
   uuid@8.3.2: {}
 
-  valibot@1.0.0-beta.8(typescript@5.9.3):
+  valibot@1.1.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
 

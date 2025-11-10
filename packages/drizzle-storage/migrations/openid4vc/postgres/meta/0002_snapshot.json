@@ -1,0 +1,593 @@
+{
+  "id": "16351d9a-e1cc-469e-bc5e-6cf31cdff48b",
+  "prevId": "c932ba13-38df-4dae-9c9b-8a362cc5abed",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.OpenId4VcIssuanceSession": {
+      "name": "OpenId4VcIssuanceSession",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "OpenId4VcIssuanceSessionState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issued_credentials": {
+          "name": "issued_credentials",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pre_authorized_code": {
+          "name": "pre_authorized_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_pin": {
+          "name": "user_pin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pkce": {
+          "name": "pkce",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wallet_attestation": {
+          "name": "wallet_attestation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dpop": {
+          "name": "dpop",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization": {
+          "name": "authorization",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "presentation": {
+          "name": "presentation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issuance_metadata": {
+          "name": "issuance_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "transactions": {
+          "name": "transactions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chainedIdentity": {
+          "name": "chainedIdentity",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_offer_uri": {
+          "name": "credential_offer_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_offer_id": {
+          "name": "credential_offer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_offer_payload": {
+          "name": "credential_offer_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "generate_refresh_tokens": {
+          "name": "generate_refresh_tokens",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "OpenId4VcIssuanceSession_issuer_id_Openid4vcIssuer_issuer_id_fk": {
+          "name": "OpenId4VcIssuanceSession_issuer_id_Openid4vcIssuer_issuer_id_fk",
+          "tableFrom": "OpenId4VcIssuanceSession",
+          "tableTo": "Openid4vcIssuer",
+          "columnsFrom": ["issuer_id"],
+          "columnsTo": ["issuer_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "openId4VcIssuanceSession_fk_context": {
+          "name": "openId4VcIssuanceSession_fk_context",
+          "tableFrom": "OpenId4VcIssuanceSession",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openId4VcIssuanceSession_pk": {
+          "name": "openId4VcIssuanceSession_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.OpenId4VcVerificationSession": {
+      "name": "OpenId4VcVerificationSession",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verifier_id": {
+          "name": "verifier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "OpenId4VcVerificationSessionState",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_request_jwt": {
+          "name": "authorization_request_jwt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_request_payload": {
+          "name": "authorization_request_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_request_uri": {
+          "name": "authorization_request_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_response_redirect_uri": {
+          "name": "authorization_response_redirect_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_request_id": {
+          "name": "authorization_request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_response_payload": {
+          "name": "authorization_response_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "presentation_during_issuance_session": {
+          "name": "presentation_during_issuance_session",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_state": {
+          "name": "payload_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "OpenId4VcVerificationSession_verifier_id_Openid4vcVerifier_verifier_id_fk": {
+          "name": "OpenId4VcVerificationSession_verifier_id_Openid4vcVerifier_verifier_id_fk",
+          "tableFrom": "OpenId4VcVerificationSession",
+          "tableTo": "Openid4vcVerifier",
+          "columnsFrom": ["verifier_id"],
+          "columnsTo": ["verifier_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "openId4VcVerificationSession_fk_context": {
+          "name": "openId4VcVerificationSession_fk_context",
+          "tableFrom": "OpenId4VcVerificationSession",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openId4VcVerificationSession_pk": {
+          "name": "openId4VcVerificationSession_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Openid4vcIssuer": {
+      "name": "Openid4vcIssuer",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token_public_key_fingerprint": {
+          "name": "access_token_public_key_fingerprint",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_public_jwk": {
+          "name": "access_token_public_jwk",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "signed_metadata": {
+          "name": "signed_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credential_configurations_supported": {
+          "name": "credential_configurations_supported",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display": {
+          "name": "display",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "authorization_server_configs": {
+          "name": "authorization_server_configs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dpop_signing_alg_values_supported": {
+          "name": "dpop_signing_alg_values_supported",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_credential_issuance": {
+          "name": "batch_credential_issuance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "openid4vcIssuer_fk_context": {
+          "name": "openid4vcIssuer_fk_context",
+          "tableFrom": "Openid4vcIssuer",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openid4vcIssuer_pk": {
+          "name": "openid4vcIssuer_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "Openid4vcIssuer_issuer_id_unique": {
+          "name": "Openid4vcIssuer_issuer_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["issuer_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.Openid4vcVerifier": {
+      "name": "Openid4vcVerifier",
+      "schema": "",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp (3) with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verifier_id": {
+          "name": "verifier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_metadata": {
+          "name": "client_metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "openid4vcVerifier_fk_context": {
+          "name": "openid4vcVerifier_fk_context",
+          "tableFrom": "Openid4vcVerifier",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openid4vcVerifier_pk": {
+          "name": "openid4vcVerifier_pk",
+          "columns": ["context_correlation_id", "id"]
+        }
+      },
+      "uniqueConstraints": {
+        "Openid4vcVerifier_verifier_id_unique": {
+          "name": "Openid4vcVerifier_verifier_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["verifier_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.OpenId4VcIssuanceSessionState": {
+      "name": "OpenId4VcIssuanceSessionState",
+      "schema": "public",
+      "values": [
+        "OfferCreated",
+        "OfferUriRetrieved",
+        "AuthorizationInitiated",
+        "AuthorizationGranted",
+        "AccessTokenRequested",
+        "AccessTokenCreated",
+        "CredentialRequestReceived",
+        "CredentialsPartiallyIssued",
+        "Completed",
+        "Error"
+      ]
+    },
+    "public.OpenId4VcVerificationSessionState": {
+      "name": "OpenId4VcVerificationSessionState",
+      "schema": "public",
+      "values": ["Error", "RequestCreated", "RequestUriRetrieved", "ResponseVerified"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
