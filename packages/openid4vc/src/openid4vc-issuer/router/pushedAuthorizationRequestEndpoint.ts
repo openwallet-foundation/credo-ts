@@ -12,6 +12,7 @@ import {
   getAllowedAndRequestedScopeValues,
   getCredentialConfigurationsSupportedForScopes,
   getOfferedCredentials,
+  getOid4vcCallbacks,
   getScopesFromCredentialConfigurationsSupported,
 } from '../../shared'
 import {
@@ -252,6 +253,9 @@ export function configurePushedAuthorizationRequestEndpoint(router: Router, conf
         const parseResult = await authorizationServer.parsePushedAuthorizationRequest({
           authorizationRequest: request.body,
           request: requestLike,
+
+          // FIXME: remove once https://github.com/openwallet-foundation-labs/oid4vc-ts/pull/129 is released
+          callbacks: getOid4vcCallbacks(agentContext),
         })
 
         if (parseResult.authorizationRequestJwt) {
