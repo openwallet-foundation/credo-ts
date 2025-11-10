@@ -24,6 +24,7 @@ import type {
   OpenId4VciCredentialRequestFormatSpecific,
   OpenId4VciDeferredCredentialRequest,
   OpenId4VciTxCode,
+  OpenId4VcJwtIssuer,
   VerifiedOpenId4VcCredentialHolderBinding,
 } from '../shared'
 import type { OpenId4VciAuthorizationServerConfig } from '../shared/models/OpenId4VciAuthorizationServerConfig'
@@ -408,6 +409,15 @@ export type OpenId4VciCreateIssuerOptions = {
    * Indicate support for batch issuance of credentials
    */
   batchCredentialIssuance?: OpenId4VciBatchCredentialIssuanceOptions
+
+  /**
+   * When provided, allows wallets to fetch signed metadata.
+   *
+   * Currently the metadata is signed when the issuer metadata is created or updated, but
+   * it won't be updated for each wallet that resolves the metadata. This also mean that no exp
+   * is added to the signed metadata.
+   */
+  metadataSigner?: OpenId4VcJwtIssuer
 }
 
 export type OpenId4VcUpdateIssuerRecordOptions = Pick<

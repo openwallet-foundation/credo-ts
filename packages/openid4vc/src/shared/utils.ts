@@ -5,13 +5,13 @@ import {
   type DcqlQuery,
   type DidPurpose,
   DidsApi,
-  getDomainFromUrl,
   getPublicJwkFromVerificationMethod,
   Kms,
   SignatureSuiteRegistry,
+  X509Certificate,
 } from '@credo-ts/core'
-import type { Jwk, JwtSigner, JwtSignerX5c } from '@openid4vc/oauth2'
-import type { OpenId4VcJwtIssuer } from './models'
+import type { Jwk, JwtSigner } from '@openid4vc/oauth2'
+import type { OpenId4VcJwtIssuer, OpenId4VcJwtIssuerEncoded } from './models'
 
 /**
  * Returns the JWA Signature Algorithms that are supported by the wallet.
@@ -39,67 +39,84 @@ export async function getPublicJwkFromDid(
   return getPublicJwkFromVerificationMethod(verificationMethod)
 }
 
-export async function requestSignerToJwtIssuer(
+export function encodeJwtIssuer(jwtIssuer: OpenId4VcJwtIssuer): OpenId4VcJwtIssuerEncoded {
+  if (jwtIssuer.method === 'jwk') {
+    return {
+      method: 'jwk',
+      jwk: jwtIssuer.jwk.toJson(),
+    }
+  }
+
+  if (jwtIssuer.method === 'x5c') {
+    return {
+      method: 'x5c',
+      leafCertificateKeyId: jwtIssuer.x5c[0].keyId,
+      x5c: jwtIssuer.x5c.map((c) => c.toString('base64')),
+    }
+  }
+
+  return jwtIssuer
+}
+
+export function decodeJwtIssuer(encodedJwtIssuer: OpenId4VcJwtIssuerEncoded): OpenId4VcJwtIssuer {
+  if (encodedJwtIssuer.method === 'jwk') {
+    return {
+      method: 'jwk',
+      jwk: Kms.PublicJwk.fromUnknown(encodedJwtIssuer.jwk),
+    }
+  }
+
+  if (encodedJwtIssuer.method === 'x5c') {
+    return {
+      method: 'x5c',
+      x5c: encodedJwtIssuer.x5c.map((e, i) => {
+        const c = X509Certificate.fromEncodedCertificate(e)
+        if (i === 0) c.keyId = encodedJwtIssuer.leafCertificateKeyId
+        return c
+      }),
+    }
+  }
+
+  return encodedJwtIssuer
+}
+
+export async function credoJwtIssuerToOpenId4VcJwtIssuer(
   agentContext: AgentContext,
-  requestSigner: OpenId4VcJwtIssuer
-): Promise<Exclude<JwtSigner, JwtSignerX5c> | (JwtSignerX5c & { issuer: string })> {
-  if (requestSigner.method === 'did') {
+  createJwtIssuer: OpenId4VcJwtIssuer
+): Promise<JwtSigner> {
+  if (createJwtIssuer.method === 'did') {
     const dids = agentContext.resolve(DidsApi)
-    const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(requestSigner.didUrl)
+    const { publicJwk } = await dids.resolveVerificationMethodFromCreatedDidRecord(createJwtIssuer.didUrl)
 
     return {
-      method: requestSigner.method,
-      didUrl: requestSigner.didUrl,
+      method: createJwtIssuer.method,
+      didUrl: createJwtIssuer.didUrl,
       alg: publicJwk.signatureAlgorithm,
       kid: publicJwk.keyId,
     }
   }
-  if (requestSigner.method === 'x5c') {
-    const leafCertificate = requestSigner.x5c[0]
+  if (createJwtIssuer.method === 'x5c') {
+    const leafCertificate = createJwtIssuer.x5c[0]
     if (!leafCertificate) {
       throw new CredoError('Unable to extract leaf certificate, x5c certificate chain is empty')
     }
 
-    if (
-      !requestSigner.issuer.startsWith('https://') &&
-      !(requestSigner.issuer.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
-    ) {
-      throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
-    }
-
-    if (
-      !leafCertificate.sanUriNames.includes(requestSigner.issuer) &&
-      !leafCertificate.sanDnsNames.includes(getDomainFromUrl(requestSigner.issuer))
-    ) {
-      const sanUriMessage =
-        leafCertificate.sanUriNames.length > 0
-          ? `SAN-URI names are ${leafCertificate.sanUriNames.join(', ')}`
-          : 'there are no SAN-URI names'
-      const sanDnsMessage =
-        leafCertificate.sanDnsNames.length > 0
-          ? `SAN-DNS names are ${leafCertificate.sanDnsNames.join(', ')}`
-          : 'there are no SAN-DNS names'
-      throw new Error(
-        `The 'iss' claim in the payload does not match a 'SAN-URI' or 'SAN-DNS' name in the x5c certificate. 'iss' value is '${requestSigner.issuer}', ${sanUriMessage}, ${sanDnsMessage} (for SAN-DNS only domain has to match)`
-      )
-    }
-
     return {
-      ...requestSigner,
-      x5c: requestSigner.x5c.map((certificate) => certificate.toString('base64')),
+      ...createJwtIssuer,
+      x5c: createJwtIssuer.x5c.map((certificate) => certificate.toString('base64')),
       alg: leafCertificate.publicJwk.signatureAlgorithm,
       kid: leafCertificate.publicJwk.keyId,
     }
   }
-  if (requestSigner.method === 'jwk') {
+  if (createJwtIssuer.method === 'jwk') {
     return {
-      ...requestSigner,
-      publicJwk: requestSigner.jwk.toJson() as Jwk,
-      alg: requestSigner.jwk.signatureAlgorithm,
+      ...createJwtIssuer,
+      publicJwk: createJwtIssuer.jwk.toJson() as Jwk,
+      alg: createJwtIssuer.jwk.signatureAlgorithm,
     }
   }
 
-  throw new CredoError(`Unsupported jwt issuer method '${(requestSigner as OpenId4VcJwtIssuer).method}'`)
+  throw new CredoError(`Unsupported jwt issuer method '${(createJwtIssuer as OpenId4VcJwtIssuer).method}'`)
 }
 
 export function getProofTypeFromPublicJwk(agentContext: AgentContext, key: Kms.PublicJwk) {

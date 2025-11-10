@@ -1,0 +1,624 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "6e44351f-2401-4932-9021-e97c6e877ddb",
+  "prevId": "c97d3073-3188-456f-9138-43cbece62bfd",
+  "tables": {
+    "OpenId4VcIssuanceSession": {
+      "name": "OpenId4VcIssuanceSession",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "issued_credentials": {
+          "name": "issued_credentials",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pre_authorized_code": {
+          "name": "pre_authorized_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "user_pin": {
+          "name": "user_pin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "client_id": {
+          "name": "client_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "pkce": {
+          "name": "pkce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "wallet_attestation": {
+          "name": "wallet_attestation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dpop": {
+          "name": "dpop",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization": {
+          "name": "authorization",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "presentation": {
+          "name": "presentation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "issuance_metadata": {
+          "name": "issuance_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "transactions": {
+          "name": "transactions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "chainedIdentity": {
+          "name": "chainedIdentity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "credential_offer_uri": {
+          "name": "credential_offer_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "credential_offer_id": {
+          "name": "credential_offer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "credential_offer_payload": {
+          "name": "credential_offer_payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "generate_refresh_tokens": {
+          "name": "generate_refresh_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "OpenId4VcIssuanceSession_issuer_id_Openid4vcIssuer_issuer_id_fk": {
+          "name": "OpenId4VcIssuanceSession_issuer_id_Openid4vcIssuer_issuer_id_fk",
+          "tableFrom": "OpenId4VcIssuanceSession",
+          "tableTo": "Openid4vcIssuer",
+          "columnsFrom": ["issuer_id"],
+          "columnsTo": ["issuer_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "openId4VcIssuanceSession_fk_context": {
+          "name": "openId4VcIssuanceSession_fk_context",
+          "tableFrom": "OpenId4VcIssuanceSession",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openId4VcIssuanceSession_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "openId4VcIssuanceSession_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "OpenId4VcVerificationSession": {
+      "name": "OpenId4VcVerificationSession",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "verifier_id": {
+          "name": "verifier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "error_message": {
+          "name": "error_message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_request_jwt": {
+          "name": "authorization_request_jwt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_request_payload": {
+          "name": "authorization_request_payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_request_uri": {
+          "name": "authorization_request_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_response_redirect_uri": {
+          "name": "authorization_response_redirect_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_request_id": {
+          "name": "authorization_request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_response_payload": {
+          "name": "authorization_response_payload",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "presentation_during_issuance_session": {
+          "name": "presentation_during_issuance_session",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_state": {
+          "name": "payload_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "OpenId4VcVerificationSession_verifier_id_Openid4vcVerifier_verifier_id_fk": {
+          "name": "OpenId4VcVerificationSession_verifier_id_Openid4vcVerifier_verifier_id_fk",
+          "tableFrom": "OpenId4VcVerificationSession",
+          "tableTo": "Openid4vcVerifier",
+          "columnsFrom": ["verifier_id"],
+          "columnsTo": ["verifier_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "openId4VcVerificationSession_fk_context": {
+          "name": "openId4VcVerificationSession_fk_context",
+          "tableFrom": "OpenId4VcVerificationSession",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openId4VcVerificationSession_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "openId4VcVerificationSession_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Openid4vcIssuer": {
+      "name": "Openid4vcIssuer",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "issuer_id": {
+          "name": "issuer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "access_token_public_key_fingerprint": {
+          "name": "access_token_public_key_fingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "access_token_public_jwk": {
+          "name": "access_token_public_jwk",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "signed_metadata": {
+          "name": "signed_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "credential_configurations_supported": {
+          "name": "credential_configurations_supported",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display": {
+          "name": "display",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "authorization_server_configs": {
+          "name": "authorization_server_configs",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dpop_signing_alg_values_supported": {
+          "name": "dpop_signing_alg_values_supported",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "batch_credential_issuance": {
+          "name": "batch_credential_issuance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Openid4vcIssuer_issuer_id_unique": {
+          "name": "Openid4vcIssuer_issuer_id_unique",
+          "columns": ["issuer_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "openid4vcIssuer_fk_context": {
+          "name": "openid4vcIssuer_fk_context",
+          "tableFrom": "Openid4vcIssuer",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openid4vcIssuer_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "openid4vcIssuer_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "Openid4vcVerifier": {
+      "name": "Openid4vcVerifier",
+      "columns": {
+        "context_correlation_id": {
+          "name": "context_correlation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "custom_tags": {
+          "name": "custom_tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "verifier_id": {
+          "name": "verifier_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "client_metadata": {
+          "name": "client_metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "Openid4vcVerifier_verifier_id_unique": {
+          "name": "Openid4vcVerifier_verifier_id_unique",
+          "columns": ["verifier_id"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "openid4vcVerifier_fk_context": {
+          "name": "openid4vcVerifier_fk_context",
+          "tableFrom": "Openid4vcVerifier",
+          "tableTo": "Context",
+          "columnsFrom": ["context_correlation_id"],
+          "columnsTo": ["context_correlation_id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "openid4vcVerifier_pk": {
+          "columns": ["context_correlation_id", "id"],
+          "name": "openid4vcVerifier_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

@@ -12,6 +12,7 @@ import {
   extractPresentationsWithDescriptorsFromSubmission,
   extractX509CertificatesFromJwt,
   getDomainFromUrl,
+  Hasher,
   type HashName,
   InjectionSymbols,
   inject,
@@ -62,9 +63,9 @@ import type { OpenId4VpAuthorizationRequestPayload } from '../shared/index'
 import { storeActorIdForContextCorrelationId } from '../shared/router'
 import { getSdJwtVcTransactionDataHashes } from '../shared/transactionData'
 import {
+  credoJwtIssuerToOpenId4VcJwtIssuer,
   dcqlCredentialQueryToPresentationFormat,
   getSupportedJwaSignatureAlgorithms,
-  requestSignerToJwtIssuer,
 } from '../shared/utils'
 import { OpenId4VcVerificationSessionState } from './OpenId4VcVerificationSessionState'
 import { type OpenId4VcVerificationSessionStateChangedEvent, OpenId4VcVerifierEvents } from './OpenId4VcVerifierEvents'
@@ -192,14 +193,9 @@ export class OpenId4VpVerifierService {
     const authorizationResponseUrl = `${joinUriParts(this.config.baseUrl, [options.verifier.verifierId, this.config.authorizationEndpoint])}?session=${authorizationRequestId}`
 
     const jwtIssuer =
-      options.requestSigner.method === 'none'
-        ? undefined
-        : options.requestSigner.method === 'x5c'
-          ? await requestSignerToJwtIssuer(agentContext, {
-              ...options.requestSigner,
-              issuer: authorizationResponseUrl,
-            })
-          : await requestSignerToJwtIssuer(agentContext, options.requestSigner)
+      options.requestSigner.method !== 'none'
+        ? await credoJwtIssuerToOpenId4VcJwtIssuer(agentContext, options.requestSigner)
+        : undefined
 
     let clientIdPrefix: ClientIdPrefix
     let clientId: string | undefined
@@ -215,13 +211,31 @@ export class OpenId4VpVerifierService {
     } else if (jwtIssuer?.method === 'x5c') {
       const leafCertificate = X509Service.getLeafCertificate(agentContext, { certificateChain: jwtIssuer.x5c })
 
-      if (leafCertificate.sanDnsNames.includes(getDomainFromUrl(jwtIssuer.issuer))) {
-        clientIdPrefix = 'x509_san_dns'
-        clientId = getDomainFromUrl(jwtIssuer.issuer)
+      if (
+        !authorizationResponseUrl.startsWith('https://') &&
+        !(authorizationResponseUrl.startsWith('http://') && agentContext.config.allowInsecureHttpUrls)
+      ) {
+        throw new CredoError('The X509 certificate issuer must be a HTTPS URI.')
+      }
+
+      if (options.requestSigner.method === 'x5c' && options.requestSigner.clientIdPrefix === 'x509_hash') {
+        clientIdPrefix = 'x509_hash'
+        // TODO: replace with calculateX509HashClientIdPrefixValue once released in oid4vc-ts
+        clientId = TypedArrayEncoder.toBase64URL(Hasher.hash(leafCertificate.rawCertificate, 'sha-256'))
       } else {
-        throw new CredoError(
-          `With jwtIssuer method 'x5c' the jwtIssuer's 'issuer' field must match a sanDnsName (FQDN) in the leaf x509 chain's leaf certificate.`
-        )
+        if (!leafCertificate.sanDnsNames.includes(getDomainFromUrl(authorizationResponseUrl))) {
+          const sanDnsMessage =
+            leafCertificate.sanDnsNames.length > 0
+              ? `SAN-DNS names are ${leafCertificate.sanDnsNames.join(', ')}`
+              : 'there are no SAN-DNS names'
+
+          throw new CredoError(
+            `The domain of the OpenID4VCI issuer does not match a SAN DNS name in the x5c certificate. The OpenID4VCI domain is '${getDomainFromUrl(authorizationResponseUrl)}', $${sanDnsMessage}`
+          )
+        }
+
+        clientIdPrefix = 'x509_san_dns'
+        clientId = getDomainFromUrl(authorizationResponseUrl)
       }
     } else if (jwtIssuer?.method === 'did') {
       clientId = jwtIssuer.didUrl.split('#')[0]
