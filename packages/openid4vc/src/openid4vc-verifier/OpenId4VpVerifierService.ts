@@ -49,6 +49,7 @@ import { type Jwk, Oauth2ErrorCodes, Oauth2ServerErrorResponseError } from '@ope
 import {
   type ClientIdPrefix,
   type ClientMetadata,
+  calculateX509HashClientIdPrefixValue,
   getOpenid4vpClientId,
   isJarmResponseMode,
   isOpenid4vpAuthorizationRequestDcApi,
@@ -220,8 +221,10 @@ export class OpenId4VpVerifierService {
 
       if (options.requestSigner.method === 'x5c' && options.requestSigner.clientIdPrefix === 'x509_hash') {
         clientIdPrefix = 'x509_hash'
-        // TODO: replace with calculateX509HashClientIdPrefixValue once released in oid4vc-ts
-        clientId = TypedArrayEncoder.toBase64URL(Hasher.hash(leafCertificate.rawCertificate, 'sha-256'))
+        clientId = await calculateX509HashClientIdPrefixValue({
+          x509Certificate: leafCertificate.rawCertificate,
+          hash: Hasher.hash,
+        })
       } else {
         if (!leafCertificate.sanDnsNames.includes(getDomainFromUrl(authorizationResponseUrl))) {
           const sanDnsMessage =
