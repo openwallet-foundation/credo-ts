@@ -9,8 +9,12 @@ import {
   RecordNotFoundError,
 } from '@credo-ts/core'
 import { and, DrizzleQueryError, eq, type Simplify } from 'drizzle-orm'
-import { PgTable, pgTable } from 'drizzle-orm/pg-core'
-import { SQLiteTable as _SQLiteTable, sqliteTable } from 'drizzle-orm/sqlite-core'
+import { PgTransaction as _PgTransaction, PgTable, pgTable } from 'drizzle-orm/pg-core'
+import {
+  SQLiteTable as _SQLiteTable,
+  SQLiteTransaction as _SQLiteTransaction,
+  sqliteTable,
+} from 'drizzle-orm/sqlite-core'
 import { type DrizzleDatabase, isDrizzlePostgresDatabase, isDrizzleSqliteDatabase } from '../DrizzleDatabase'
 import { CredoDrizzleStorageError } from '../error'
 import { getPostgresBaseRecordTable } from '../postgres'
@@ -26,6 +30,12 @@ import { queryToDrizzleSqlite } from './queryToDrizzleSqlite'
 
 // biome-ignore lint/suspicious/noExplicitAny: no explanation
 export type AnyDrizzleAdapter = BaseDrizzleRecordAdapter<any, any, any, any, any>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
+type SQLiteTransaction = _SQLiteTransaction<any, any, any, any>
+// biome-ignore lint/suspicious/noExplicitAny: no explanation
+type PgTransaction = _PgTransaction<any>
+
+type Transaction<T extends AnyDrizzleAdapter> = Parameters<Parameters<T['database']['transaction']>[0]>[0]
 
 export type DrizzleAdapterValues<Table extends _SQLiteTable> = Simplify<
   Omit<
@@ -162,10 +172,12 @@ export abstract class BaseDrizzleRecordAdapter<
     throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
-  public async getById(agentContext: AgentContext, id: string) {
+  public async getById(agentContext: AgentContext, id: string, tx?: Transaction<this>, forUpdate?: boolean) {
     try {
       if (isDrizzlePostgresDatabase(this.database)) {
-        const [result] = await this.database
+        const session = (tx as PgTransaction) ?? this.database
+
+        let queryResult = session
           .select()
           .from(this.table.postgres as PgTable)
           .where(
@@ -175,6 +187,12 @@ export abstract class BaseDrizzleRecordAdapter<
             )
           )
           .limit(1)
+
+        if (forUpdate) {
+          queryResult = queryResult.for('no key update') as typeof queryResult
+        }
+
+        const [result] = await queryResult
 
         if (!result) {
           throw new RecordNotFoundError(`record with id ${id} not found.`, {
@@ -188,7 +206,9 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
-        const [result] = await this.database
+        const session = (tx as SQLiteTransaction) ?? this.database
+
+        const [result] = await session
           .select()
           .from(this.table.sqlite)
           .where(
@@ -257,7 +277,32 @@ export abstract class BaseDrizzleRecordAdapter<
     throw new CredoDrizzleStorageError('Unsupported database type')
   }
 
-  public async update(agentContext: AgentContext, record: CredoRecord) {
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    id: string,
+    updateCallback: (record: CredoRecord) => Promise<CredoRecord>
+  ) {
+    // SQLite  does not support locking, so there's no need to create a transaction
+    if (isDrizzleSqliteDatabase(this.database)) {
+      const record = await this.getById(agentContext, id)
+      const updatedRecord = await updateCallback(record)
+      updatedRecord.updatedAt = new Date()
+      await this.update(agentContext, updatedRecord)
+
+      return updatedRecord
+    }
+
+    return await this.database.transaction(async (tx) => {
+      const record = await this.getById(agentContext, id, tx, true)
+      const updatedRecord = await updateCallback(record)
+      updatedRecord.updatedAt = new Date()
+      await this.update(agentContext, updatedRecord, tx)
+
+      return updatedRecord
+    })
+  }
+
+  public async update(agentContext: AgentContext, record: CredoRecord, tx?: Transaction<this>) {
     // Although id should always be set, if for some reason it is not set it can be quite impactful
     if (!record.id) {
       throw new CredoDrizzleStorageError(`Record of type ${record.type}' is missing 'id' column.`)
@@ -265,7 +310,8 @@ export abstract class BaseDrizzleRecordAdapter<
 
     try {
       if (isDrizzlePostgresDatabase(this.database)) {
-        const updated = await this.database
+        const session = (tx as PgTransaction) ?? this.database
+        const updated = await session
           .update(this.table.postgres)
           // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
           .set(this.getValuesWithBase(agentContext, record) as any)
@@ -287,7 +333,8 @@ export abstract class BaseDrizzleRecordAdapter<
       }
 
       if (isDrizzleSqliteDatabase(this.database)) {
-        const updated = await this.database
+        const session = (tx as SQLiteTransaction) ?? this.database
+        const updated = await session
           .update(this.table.sqlite)
           // biome-ignore lint/suspicious/noExplicitAny: generics really don't play well here
           .set(this.getValuesWithBase(agentContext, record) as any)

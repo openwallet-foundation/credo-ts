@@ -37,6 +37,10 @@ export class Repository<T extends BaseRecord<any, any, any>> {
     }
   }
 
+  public supportsLocking(agentContext: AgentContext): boolean {
+    return this.getStorageService(agentContext).supportsLocking?.(agentContext) ?? false
+  }
+
   /** @inheritDoc {StorageService#save} */
   public async save(agentContext: AgentContext, record: T): Promise<void> {
     await this.getStorageService(agentContext).save(agentContext, record)
@@ -61,6 +65,37 @@ export class Repository<T extends BaseRecord<any, any, any>> {
         record: record.clone(),
       },
     })
+  }
+
+  /** @inheritDoc {StorageService#updateByIdWithLock} */
+  public async updateByIdWithLock(
+    agentContext: AgentContext,
+    id: string,
+    updateCallback: (record: T) => Promise<T>
+  ): Promise<T> {
+    const storageService = this.getStorageService(agentContext)
+
+    // NOTE: we might want to not do this, to allow the caller to handle it, (e.g. they might already
+    // have the record and this would just re-fetch it again). Then we could just return null?
+    // If a backend does not implement this method, we fall back to two separate calls to
+    // getById and update
+    if (!storageService.updateByIdWithLock) {
+      const record = await this.getById(agentContext, id)
+      const updatedRecord = await updateCallback(record)
+      await this.update(agentContext, record)
+      return updatedRecord
+    }
+
+    const updatedRecord = await storageService.updateByIdWithLock(agentContext, this.recordClass, id, updateCallback)
+    this.eventEmitter.emit<RecordUpdatedEvent<T>>(agentContext, {
+      type: RepositoryEventTypes.RecordUpdated,
+      payload: {
+        // Record in event should be static
+        record: updatedRecord.clone(),
+      },
+    })
+
+    return updatedRecord
   }
 
   /** @inheritDoc {StorageService#delete} */
