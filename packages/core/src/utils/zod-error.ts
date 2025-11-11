@@ -1,5 +1,4 @@
 import type z from 'zod'
-import { type ZodIssue, ZodIssueCode } from 'zod'
 
 /**
  * Some code comes from `zod-validation-error` package (MIT License) and
@@ -16,7 +15,7 @@ function escapeQuotes(str: string): string {
   return str.replace(/"/g, '\\"')
 }
 
-function joinPath(path: Array<string | number>): string {
+function joinPath(path: Array<PropertyKey>): string {
   if (path.length === 1) {
     return path[0].toString()
   }
@@ -27,36 +26,35 @@ function joinPath(path: Array<string | number>): string {
       return `${acc}[${item.toString()}]`
     }
 
+    const stringItem = item.toString()
+
     // handle quoted values
-    if (item.includes('"')) {
-      return `${acc}["${escapeQuotes(item)}"]`
+    if (stringItem.includes('"')) {
+      return `${acc}["${escapeQuotes(stringItem)}"]`
     }
 
     // handle special characters
-    if (!constants.identifierRegex.test(item)) {
-      return `${acc}["${item}"]`
+    if (!constants.identifierRegex.test(stringItem)) {
+      return `${acc}["${stringItem}"]`
     }
 
     // handle normal values
     const separator = acc.length === 0 ? '' : '.'
-    return acc + separator + item
+    return acc + separator + stringItem
   }, '')
 }
-function getMessageFromZodIssue(issue: ZodIssue): string {
-  if (issue.code === ZodIssueCode.invalid_union) {
-    return getMessageFromUnionErrors(issue.unionErrors)
+
+function getMessageFromZodIssue(issue: z.core.$ZodIssue): string {
+  if (issue.code === 'invalid_union') {
+    return getMessageFromUnionErrors(issue.errors)
   }
 
-  if (issue.code === ZodIssueCode.invalid_arguments) {
-    return [issue.message, ...issue.argumentsError.issues.map((issue) => getMessageFromZodIssue(issue))].join(
-      constants.issueSeparator
-    )
+  if (issue.code === 'invalid_key') {
+    return [issue.message, ...issue.issues.map((issue) => getMessageFromZodIssue(issue))].join(constants.issueSeparator)
   }
 
-  if (issue.code === ZodIssueCode.invalid_return_type) {
-    return [issue.message, ...issue.returnTypeError.issues.map((issue) => getMessageFromZodIssue(issue))].join(
-      constants.issueSeparator
-    )
+  if (issue.code === 'invalid_element') {
+    return [issue.message, ...issue.issues.map((issue) => getMessageFromZodIssue(issue))].join(constants.issueSeparator)
   }
 
   if (issue.path.length !== 0) {
@@ -75,10 +73,10 @@ function getMessageFromZodIssue(issue: ZodIssue): string {
   return issue.message
 }
 
-function getMessageFromUnionErrors(unionErrors: z.ZodError[]): string {
+function getMessageFromUnionErrors(unionErrors: z.core.$ZodIssue[][]): string {
   return unionErrors
-    .reduce<string[]>((acc, zodError) => {
-      const newIssues = zodError.issues.map((issue) => getMessageFromZodIssue(issue)).join(constants.issueSeparator)
+    .reduce<string[]>((acc, zodIssue) => {
+      const newIssues = zodIssue.map((issue) => getMessageFromZodIssue(issue)).join(constants.issueSeparator)
 
       if (!acc.includes(newIssues)) acc.push(newIssues)
 

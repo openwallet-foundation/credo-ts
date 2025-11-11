@@ -15,9 +15,7 @@ catalog:
   reflect-metadata: 0.2.2
   typescript: ~5.9.3
   "@stablelib/ed25519": ^2.0.2
-  # NOTE: keeping at zod 3 untwil we have updated oid4vc-ts to zod4 first
-  # https://github.com/openwallet-foundation-labs/oid4vc-ts/issues/102
-  zod: ^3.25.74
+  zod: ^4.1.12
   nock: ^14.0.10
   express: ^5.1.0
   "@openwallet-foundation/askar-nodejs": ^0.4.2

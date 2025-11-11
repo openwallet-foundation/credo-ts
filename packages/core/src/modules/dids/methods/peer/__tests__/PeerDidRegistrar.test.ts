@@ -76,7 +76,8 @@ describe('DidRegistrar', () => {
           didRegistrationMetadata: {},
           didState: {
             state: 'failed',
-            reason: 'unknownError: Invalid options provided to getPublicKey method\n\t- Required at "keyId"',
+            reason:
+              'unknownError: Invalid options provided to getPublicKey method\n\t- Invalid input: expected string, received undefined at "keyId"',
           },
         })
       })
