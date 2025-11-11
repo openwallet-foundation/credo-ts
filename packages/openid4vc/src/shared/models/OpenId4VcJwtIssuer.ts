@@ -11,7 +11,7 @@ export interface OpenId4VcJwtIssuerDid {
   didUrl: string
 }
 
-export interface OpenId4VcIssuerX5c {
+export interface OpenId4VcJwtIssuerX5c {
   method: 'x5c'
 
   /**
@@ -21,14 +21,20 @@ export interface OpenId4VcIssuerX5c {
    * The first certificate MUST also have a key id configured on the public key to enable signing with the KMS.
    */
   x5c: X509Certificate[]
+}
+
+export interface OpenId4VcJwtIssuerX5cEncoded {
+  method: 'x5c'
 
   /**
-   * The issuer of the JWT. Should be a HTTPS URI.
-   *
-   * The issuer value must either match a `uniformResourceIdentifier` SAN entry of the leaf entity certificate
-   * or the domain name in the `iss` value matches a `dNSName` SAN entry of the leaf-entity certificate.
+   * x5c encoded as base64
    */
-  issuer: string
+  x5c: string[]
+
+  /**
+   * key id associated with the leaf certificate
+   */
+  leafCertificateKeyId: string
 }
 
 export interface OpenId4VcJwtIssuerJwk {
@@ -36,4 +42,13 @@ export interface OpenId4VcJwtIssuerJwk {
   jwk: Kms.PublicJwk
 }
 
-export type OpenId4VcJwtIssuer = OpenId4VcJwtIssuerDid | OpenId4VcIssuerX5c | OpenId4VcJwtIssuerJwk
+export interface OpenId4VcJwtIssuerJwkEncoded {
+  method: 'jwk'
+  jwk: Kms.KmsJwkPublic
+}
+
+export type OpenId4VcJwtIssuer = OpenId4VcJwtIssuerDid | OpenId4VcJwtIssuerX5c | OpenId4VcJwtIssuerJwk
+export type OpenId4VcJwtIssuerEncoded =
+  | OpenId4VcJwtIssuerDid
+  | OpenId4VcJwtIssuerX5cEncoded
+  | OpenId4VcJwtIssuerJwkEncoded
