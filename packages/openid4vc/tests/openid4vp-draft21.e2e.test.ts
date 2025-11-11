@@ -165,7 +165,11 @@ describe('OpenID4VP Draft 21', () => {
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -470,7 +474,11 @@ describe('OpenID4VP Draft 21', () => {
                 {
                   claimFormat: ClaimFormat.MsoMdoc,
                   credentialRecord: expect.objectContaining({
-                    base64Url: expect.any(String),
+                    credentialInstances: [
+                      expect.objectContaining({
+                        issuerSignedBase64Url: expect.any(String),
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -498,7 +506,11 @@ describe('OpenID4VP Draft 21', () => {
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {

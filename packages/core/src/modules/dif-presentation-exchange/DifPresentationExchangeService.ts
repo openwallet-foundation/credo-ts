@@ -584,8 +584,14 @@ export class DifPresentationExchangeService {
         }
 
         const sdJwtVcApi = this.getSdJwtVcApi(agentContext)
+
+        // NOTE: we use the kmsKeyId from the first credential. We don't support the new useMode (for single-use credentials) for PEX
+        const originalSdJwtVc = sdJwtVcApi.fromCompact(sdJwtInput.compactSdJwtVc)
+        originalSdJwtVc.kmsKeyId =
+          presentationToCreate.verifiableCredentials[0].credential.credentialInstances[0].kmsKeyId
+
         const sdJwtVc = await sdJwtVcApi.present({
-          sdJwtVc: sdJwtInput.compactSdJwtVc,
+          sdJwtVc: originalSdJwtVc,
           // SD is already handled by PEX, so we presents all keys
           presentationFrame: undefined,
           verifierMetadata: {

@@ -58,8 +58,15 @@ export class Mdoc {
     return publicJwk
   }
 
-  public set deviceKeyId(keyId: string) {
+  public set deviceKeyId(keyId: string | undefined) {
     this.#deviceKeyId = keyId
+  }
+
+  public get deviceKeyId() {
+    const deviceKey = this.deviceKey
+
+    if (deviceKey.hasKeyId) return deviceKey.keyId
+    return undefined
   }
 
   public static fromBase64Url(mdocBase64Url: string, expectedDocType?: string): Mdoc {

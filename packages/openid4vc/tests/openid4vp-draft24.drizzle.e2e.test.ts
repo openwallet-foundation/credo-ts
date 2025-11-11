@@ -309,11 +309,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               verifiableCredentials: [
                 {
                   claimFormat: ClaimFormat.JwtVc,
-                  credentialRecord: {
-                    credential: {
-                      type: ['VerifiableCredential', 'OpenBadgeCredential'],
-                    },
-                  },
+                  credentialRecord: expect.objectContaining({
+                    credentialInstances: [
+                      expect.objectContaining({
+                        credential: expect.any(String),
+                      }),
+                    ],
+                  }),
                 },
               ],
             },
@@ -334,11 +336,13 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
               verifiableCredentials: [
                 {
                   claimFormat: ClaimFormat.JwtVc,
-                  credentialRecord: {
-                    credential: {
-                      type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-                    },
-                  },
+                  credentialRecord: expect.objectContaining({
+                    credentialInstances: [
+                      expect.objectContaining({
+                        credential: expect.any(String),
+                      }),
+                    ],
+                  }),
                 },
               ],
             },
@@ -577,7 +581,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -859,7 +867,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1184,7 +1196,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1215,7 +1231,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc2.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc2.compact,
+                      }),
+                    ],
                   }),
                   disclosedPayload: {
                     cnf: {
@@ -1752,7 +1772,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.MsoMdoc,
                   credentialRecord: expect.objectContaining({
-                    base64Url: expect.any(String),
+                    credentialInstances: [
+                      expect.objectContaining({
+                        issuerSignedBase64Url: expect.any(String),
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -1780,7 +1804,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -2097,7 +2125,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc.compact,
+                      }),
+                    ],
                   }),
                   // Name is NOT in here
                   disclosedPayload: {
@@ -2128,7 +2160,11 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
                 {
                   claimFormat: ClaimFormat.SdJwtDc,
                   credentialRecord: expect.objectContaining({
-                    compactSdJwtVc: signedSdJwtVc2.compact,
+                    credentialInstances: [
+                      expect.objectContaining({
+                        compactSdJwtVc: signedSdJwtVc2.compact,
+                      }),
+                    ],
                   }),
                   disclosedPayload: {
                     cnf: {

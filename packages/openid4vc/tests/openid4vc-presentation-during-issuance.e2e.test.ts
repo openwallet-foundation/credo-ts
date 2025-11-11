@@ -255,6 +255,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
     await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree
@@ -375,6 +376,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
     await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree
@@ -492,6 +494,7 @@ describe('OpenId4Vc Presentation During Issuance', () => {
         jwk: holder.jwk,
       },
     })
+    holderIdentityCredential.kmsKeyId = holder.jwk.keyId
     await holder.agent.sdJwtVc.store({ record: SdJwtVcRecord.fromSdJwtVc(holderIdentityCredential) })
 
     // Create offer for university degree

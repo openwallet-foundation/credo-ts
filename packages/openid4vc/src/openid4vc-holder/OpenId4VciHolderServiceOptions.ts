@@ -325,6 +325,13 @@ export interface OpenId4VciDeferredCredentialRequestOptions {
   verifyCredentialStatus?: boolean
   accessToken: string
   dpop?: OpenId4VciDpopRequestOptions
+
+  /**
+   * Mapping from JWK thumbprint values to KMS key ids that were submitted in the credential request.
+   * These were returned in the deferred credential return value in case JWKs were used in the proof
+   * of possession of the credential request
+   */
+  jwkThumbprintKmsKeyIdMapping?: Record<string, string>
 }
 
 /**
@@ -428,6 +435,12 @@ export interface OpenId4VciCredentialBindingOptions {
    * indicating they support proof of possession signatures bound to a jwk.
    */
   supportsJwk: boolean
+
+  /**
+   * The cNonce that will be used for the credential request. May be used if dynamically creating a key attestation
+   * that must include the cNonce.
+   */
+  cNonce: string
 }
 
 /**

@@ -191,15 +191,26 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  type: ['VerifiableCredential', 'OpenBadgeCredential'],
-                },
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
               },
             },
           ],
         },
       },
     })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential: any =
+      resolvedProofRequest1.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials?.[0]
+
+    expect((validCredential.record as W3cCredentialRecord).firstCredential.type).toEqual([
+      'VerifiableCredential',
+      'OpenBadgeCredential',
+    ])
 
     const resolvedProofRequest2 =
       await holderTenant.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
@@ -212,15 +223,26 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  type: ['VerifiableCredential', 'UniversityDegreeCredential'],
-                },
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
+                  },
+                ],
               },
             },
           ],
         },
       },
     })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential2: any =
+      resolvedProofRequest2.dcql?.queryResult.credential_matches.UniversityDegree.valid_credentials?.[0]
+
+    expect((validCredential2.record as W3cCredentialRecord).firstCredential.type).toEqual([
+      'VerifiableCredential',
+      'UniversityDegreeCredential',
+    ])
 
     if (!resolvedProofRequest1.dcql || !resolvedProofRequest2.dcql) {
       throw new Error('dcql not defined')
@@ -456,17 +478,26 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  resolvedCredential: {
-                    type: ['VerifiableCredential', 'OpenBadgeCredential'],
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
                   },
-                },
+                ],
               },
             },
           ],
         },
       },
     })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential: any =
+      resolvedProofRequest1.dcql?.queryResult.credential_matches.OpenBadgeCredentialDescriptor.valid_credentials?.[0]
+
+    expect((validCredential.record as W3cV2CredentialRecord).firstCredential.resolvedCredential.type).toEqual([
+      'VerifiableCredential',
+      'OpenBadgeCredential',
+    ])
 
     const resolvedProofRequest2 =
       await holderTenant.modules.openid4vc.holder.resolveOpenId4VpAuthorizationRequest(authorizationRequestUri2)
@@ -479,17 +510,25 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
           valid_credentials: [
             {
               record: {
-                credential: {
-                  resolvedCredential: {
-                    type: ['VerifiableCredential', 'UniversityDegreeCredential'],
+                credentialInstances: [
+                  {
+                    credential: expect.stringContaining('ey'),
                   },
-                },
+                ],
               },
             },
           ],
         },
       },
     })
+
+    // biome-ignore lint/suspicious/noExplicitAny: no explanation
+    const validCredential2: any =
+      resolvedProofRequest2.dcql?.queryResult.credential_matches.UniversityDegree.valid_credentials?.[0]
+    expect((validCredential2.record as W3cV2CredentialRecord).firstCredential.resolvedCredential.type).toEqual([
+      'VerifiableCredential',
+      'UniversityDegreeCredential',
+    ])
 
     if (!resolvedProofRequest1.dcql || !resolvedProofRequest2.dcql) {
       throw new Error('dcql not defined')

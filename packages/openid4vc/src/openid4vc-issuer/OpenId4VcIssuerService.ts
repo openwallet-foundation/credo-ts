@@ -630,7 +630,7 @@ export class OpenId4VcIssuerService {
       if (!supportedProofType.proof_signing_alg_values_supported.includes(keyAttestation.header.alg)) {
         throw new Oauth2ServerErrorResponseError({
           error: Oauth2ErrorCodes.InvalidProof,
-          error_description: `Proof signing alg value '${keyAttestation.header.alg}' is not supported for proof type 'attestation' in credentail configuration '${credentialConfigurationId}'`,
+          error_description: `Proof signing alg value '${keyAttestation.header.alg}' is not supported for proof type 'attestation' in credential configuration '${credentialConfigurationId}'`,
         })
       }
 
@@ -714,12 +714,12 @@ export class OpenId4VcIssuerService {
           clientId: options.issuanceSession.clientId,
         })
 
-        // TOOD: we should probably do this check before signature verification, but we then we
+        // TODO: we should probably do this check before signature verification, but we then we
         // first need to decode the jwt
         if (!supportedProofType.proof_signing_alg_values_supported.includes(header.alg)) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
-            error_description: `Proof signing alg value '${header.alg}' is not supported for proof type 'jwt' in credentail configuration '${credentialConfigurationId}'`,
+            error_description: `Proof signing alg value '${header.alg}' is not supported for proof type 'jwt' in credential configuration '${credentialConfigurationId}'`,
           })
         }
 
@@ -756,7 +756,7 @@ export class OpenId4VcIssuerService {
         if (supportedProofType.key_attestations_required && !keyAttestation) {
           throw new Oauth2ServerErrorResponseError({
             error: Oauth2ErrorCodes.InvalidProof,
-            error_description: `Missing required key attestation. Key attestations are required for proof type 'jwt' in credentail configuration '${credentialConfigurationId}'`,
+            error_description: `Missing required key attestation. Key attestations are required for proof type 'jwt' in credential configuration '${credentialConfigurationId}'`,
           })
         }
 
@@ -770,7 +770,7 @@ export class OpenId4VcIssuerService {
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
-              error_description: `Insufficent key_storage for key attestation. Proof type 'jwt' for credential configuration '${credentialConfigurationId}', expects one of key_storage values ${expectedKeyStorage.join(', ')}`,
+              error_description: `Insufficient key_storage for key attestation. Proof type 'jwt' for credential configuration '${credentialConfigurationId}', expects one of key_storage values ${expectedKeyStorage.join(', ')}`,
             })
           }
 
@@ -782,7 +782,7 @@ export class OpenId4VcIssuerService {
           ) {
             throw new Oauth2ServerErrorResponseError({
               error: Oauth2ErrorCodes.InvalidProof,
-              error_description: `Insufficent user_authentication for key attestation. Proof type 'jwt' for credential configuration '${credentialConfigurationId}', expects one of user_authentication values ${expectedUserAuthentication.join(', ')}`,
+              error_description: `Insufficient user_authentication for key attestation. Proof type 'jwt' for credential configuration '${credentialConfigurationId}', expects one of user_authentication values ${expectedUserAuthentication.join(', ')}`,
             })
           }
         }
@@ -814,6 +814,16 @@ export class OpenId4VcIssuerService {
             error_description: 'Not all nonce values in proofs are equal',
             c_nonce: cNonce,
             c_nonce_expires_in: cNonceExpiresInSeconds,
+          })
+        }
+
+        // IF nonce is provided in the key attestation (not required with jwt proof) then
+        // it MUST match with the nonce of the JWT proof
+        if (keyAttestation?.payload.nonce && keyAttestation.payload.nonce !== payload.nonce) {
+          throw new Oauth2ServerErrorResponseError({
+            error: Oauth2ErrorCodes.InvalidProof,
+            error_description:
+              'If a nonce is present in the key attestation, the nonce in the proof jwt must be equal to the nonce in the key attestation',
           })
         }
 

@@ -643,6 +643,7 @@ export class OpenId4VciHolderService {
       credentialConfiguration,
       verifyCredentialStatus,
       accessToken,
+      jwkThumbprintKmsKeyIdMapping,
     } = options
     const client = this.getClient(agentContext)
 
@@ -684,6 +685,7 @@ export class OpenId4VciHolderService {
         format: credentialConfiguration.format as OpenId4VciCredentialFormatProfile,
         credentialConfigurationId: credentialConfigurationId,
         credentialConfiguration: credentialConfiguration,
+        jwkThumbprintKmsKeyIdMapping,
       })
 
       const firstCredential = credential.record.firstCredential
@@ -774,6 +776,7 @@ export class OpenId4VciHolderService {
       supportsAllDidMethods,
       supportedDidMethods,
       supportsJwk,
+      cNonce: options.cNonce,
     })
 
     const client = this.getClient(agentContext)
@@ -821,6 +824,11 @@ export class OpenId4VciHolderService {
         throw new CredoError(
           `Resolved credential binding for proof of possession uses did method '${firstDid.method}', but issuer only supports '${supportedDidMethodsString}'`
         )
+      }
+
+      // DIDs and mDOC are not compatible
+      if (configuration.format === 'mso_mdoc') {
+        throw new CredoError("Using a did for credential binding is not supported for the 'mso_mdoc' format.")
       }
 
       const { publicJwk: firstKey } = await dids.resolveVerificationMethodFromCreatedDidRecord(firstDid.didUrl)
@@ -874,6 +882,18 @@ export class OpenId4VciHolderService {
       if (!supportsJwk && supportsAnyMethod) {
         throw new CredoError(
           `Resolved credential binding for proof of possession uses jwk, but openid issuer does not support 'jwk' or 'cose_key' cryptographic binding method`
+        )
+      }
+
+      // For W3C credentials (any variant) we only support binding to a DID.
+      if (
+        configuration.format === 'jwt_vc_json' ||
+        configuration.format === 'jwt_vc_json-ld' ||
+        configuration.format === 'ldp_vc' ||
+        (configuration.format === 'vc+sd-jwt' && !configuration.vct)
+      ) {
+        throw new CredoError(
+          `Using a JWK for credential binding is not supported for the '${configuration.format}' format.`
         )
       }
 
@@ -953,25 +973,33 @@ export class OpenId4VciHolderService {
         )
       }
 
-      // TODO: check nonce matches cNonce
+      // NOTE: for now we require the attested_keys to include the `kid`. If that's not the case
+      // it won't work. We can adjust this later to allow separately providing the jwkThumbprintKmsKeyIdMapping
+      const jwkThumbprintKmsKeyIdMapping = Object.fromEntries(
+        payload.attested_keys.map((jwk) => {
+          const jwkInstance = Kms.PublicJwk.fromUnknown(jwk)
+          return [TypedArrayEncoder.toBase64(jwkInstance.getJwkThumbprint()), jwkInstance.keyId]
+        })
+      )
+
+      // TODO: check nonce matches cNonce. However you could separately fetch the nonce endpoint
+      // (even from another server) when creating the key attestation, so it's maybe too limiting
       if (proofTypes.attestation && payload.nonce) {
         // If attestation is supported and the attestation contains a nonce, we can use the attestation directly
         return {
           proofs: {
             attestation: [credentialBinding.keyAttestationJwt],
           },
+          jwkThumbprintKmsKeyIdMapping,
         }
       }
 
       if (proofTypes.jwt) {
+        // NOTE: the nonce in the key attestation and the jwt proof MUST match, if the key attestation has a nonce.
+        // To prevent errors we use the nonce from the key attestation if present, also for the jwt proof
+        // It might be that during the creation on the key attestation the nonce endpoint was fetched separately.
+        const nonce = payload.nonce ?? options.cNonce
         const jwk = Kms.PublicJwk.fromUnknown(payload.attested_keys[0])
-
-        const jwkThumbprintKmsKeyIdMapping = Object.fromEntries(
-          payload.attested_keys.map((jwk) => {
-            const jwkInstance = Kms.PublicJwk.fromUnknown(jwk)
-            return [TypedArrayEncoder.toBase64(jwkInstance.getJwkThumbprint()), jwkInstance.keyId]
-          })
-        )
 
         return {
           jwkThumbprintKmsKeyIdMapping,
@@ -988,7 +1016,7 @@ export class OpenId4VciHolderService {
                     alg: jwk.supportedSignatureAlgorithms[0],
                   },
                   keyAttestationJwt: credentialBinding.keyAttestationJwt,
-                  nonce: options.cNonce,
+                  nonce,
                   clientId: options.clientId,
                 })
                 .then(({ jwt }) => jwt),
@@ -1351,10 +1379,12 @@ export class OpenId4VciHolderService {
           const mdoc = Mdoc.fromBase64Url(credential)
           const result = await mdocApi.verify(mdoc, {})
 
-          const kmsKeyId =
-            options.jwkThumbprintKmsKeyIdMapping?.[TypedArrayEncoder.toBase64(mdoc.deviceKey.getJwkThumbprint())]
+          const jwkThumbprint = TypedArrayEncoder.toBase64(mdoc.deviceKey.getJwkThumbprint())
+          const kmsKeyId = options.jwkThumbprintKmsKeyIdMapping?.[jwkThumbprint]
           if (!kmsKeyId) {
-            throw new Error('')
+            throw new CredoError(
+              `Missing kmsKeyId for jwk with thumbprint ${jwkThumbprint}. A credential was issued for a key that was not in the credential request.`
+            )
           }
 
           return {

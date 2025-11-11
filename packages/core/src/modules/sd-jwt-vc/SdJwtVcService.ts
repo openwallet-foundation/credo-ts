@@ -100,7 +100,10 @@ export class SdJwtVcService {
     this.sdJwtVcRepository = sdJwtVcRepository
   }
 
-  public async sign<Payload extends SdJwtVcPayload>(agentContext: AgentContext, options: SdJwtVcSignOptions<Payload>) {
+  public async sign<Payload extends SdJwtVcPayload>(
+    agentContext: AgentContext,
+    options: SdJwtVcSignOptions<Payload>
+  ): Promise<SdJwtVc> {
     const { payload, disclosureFrame, hashingAlgorithm } = options
 
     // default is sha-256
