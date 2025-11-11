@@ -212,7 +212,7 @@ export class DifPresentationExchangeService {
 
         const { deviceResponseBase64Url, presentationSubmission } =
           await MdocDeviceResponse.createPresentationDefinitionDeviceResponse(agentContext, {
-            mdocs: [mdocRecord.firstMdoc],
+            mdocs: [mdocRecord.firstCredential],
             presentationDefinition: presentationDefinition,
             sessionTranscriptOptions: mdocSessionTranscript,
           })
@@ -476,8 +476,9 @@ export class DifPresentationExchangeService {
 
     const credentialAreSignedUsingAnonCredsDataIntegrity = presentationToCreate.verifiableCredentials.every(
       ({ credential }) => {
-        if (credential.credential.claimFormat !== ClaimFormat.LdpVc) return false
-        return credential.credential.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
+        const firstCredential = credential.firstCredential
+        if (firstCredential.claimFormat !== ClaimFormat.LdpVc) return false
+        return firstCredential.dataIntegrityCryptosuites.includes(ANONCREDS_DATA_INTEGRITY_CRYPTOSUITE)
       }
     )
 

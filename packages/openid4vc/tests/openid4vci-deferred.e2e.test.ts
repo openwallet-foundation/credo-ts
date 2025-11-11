@@ -373,7 +373,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(deferredCredentialResponse.deferredCredentials).toHaveLength(0)
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
 
-    const firstSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record as SdJwtVcRecord).firstSdJwtVc
+    const firstSdJwtVcTenant1 = (deferredCredentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
@@ -570,7 +570,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
 
     expect(deferredCredentialResponse.credentials).toHaveLength(1)
-    const firstMdoc = (deferredCredentialResponse.credentials[0].record as MdocRecord).firstMdoc
+    const firstMdoc = (deferredCredentialResponse.credentials[0].record as MdocRecord).firstCredential
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()

@@ -165,7 +165,7 @@ export class W3cV2CredentialService {
     queryOptions?: QueryOptions
   ): Promise<W3cV2VerifiableCredential[]> {
     const result = await this.w3cV2CredentialRepository.findByQuery(agentContext, query, queryOptions)
-    return result.map((record) => record.credential)
+    return result.map((record) => record.firstCredential)
   }
 
   public async findCredentialRecordByQuery(
@@ -173,6 +173,6 @@ export class W3cV2CredentialService {
     query: Query<W3cV2CredentialRecord>
   ): Promise<W3cV2VerifiableCredential | undefined> {
     const result = await this.w3cV2CredentialRepository.findSingleByQuery(agentContext, query)
-    return result?.credential
+    return result?.firstCredential
   }
 }

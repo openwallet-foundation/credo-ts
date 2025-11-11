@@ -326,7 +326,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialResponse.credentials).toHaveLength(1)
-    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstSdJwtVc
+    const firstSdJwtVcTenant1 = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
     expect(firstSdJwtVcTenant1.payload.vct).toEqual('UniversityDegreeCredential')
 
     await holderTenant.endSession()
@@ -473,7 +473,7 @@ pUGCFdfNLQIgHGSa5u5ZqUtCrnMiaEageO71rjzBlov0YUH4+6ELioY=
     })
 
     expect(credentialsTenant1.credentials).toHaveLength(1)
-    const firstMdoc = (credentialsTenant1.credentials[0].record as MdocRecord).firstMdoc
+    const firstMdoc = (credentialsTenant1.credentials[0].record as MdocRecord).firstCredential
     expect(firstMdoc.docType).toEqual('UniversityDegreeCredential')
 
     await holderTenant1.endSession()

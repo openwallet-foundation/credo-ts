@@ -75,7 +75,7 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
     }
   }
 
-  public get firstMdoc(): Mdoc {
+  public get firstCredential(): Mdoc {
     const mdoc = Mdoc.fromBase64Url(this.credentialInstances[0].issuerSignedBase64Url)
 
     mdoc.deviceKeyId = this.credentialInstances[0].kmsKeyId ?? mdoc.deviceKey?.legacyKeyId
@@ -95,7 +95,7 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
   }
 
   public getTags() {
-    const mdoc = this.firstMdoc
+    const mdoc = this.firstCredential
     const docType = mdoc.docType
     const alg = mdoc.alg
 
@@ -108,13 +108,6 @@ export class MdocRecord extends BaseRecord<DefaultMdocRecordTags> {
 
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
-  }
-
-  /**
-   * credential is convenience method added to all credential records
-   */
-  public get credential(): Mdoc {
-    return this.firstMdoc
   }
 
   /**

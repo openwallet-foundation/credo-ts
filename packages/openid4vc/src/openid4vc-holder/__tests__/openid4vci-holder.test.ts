@@ -133,7 +133,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialsResult.credentials).toHaveLength(1)
-      const w3cCredential = (credentialsResult.credentials[0].record as W3cCredentialRecord).credential
+      const w3cCredential = (credentialsResult.credentials[0].record as W3cCredentialRecord).firstCredential
       expect(w3cCredential).toBeInstanceOf(W3cJwtVerifiableCredential)
 
       expect(w3cCredential.type).toEqual(['VerifiableCredential', 'OpenBadgeCredential'])
@@ -248,7 +248,7 @@ describe('OpenId4VcHolder', () => {
       })
 
       expect(credentialResponse.credentials).toHaveLength(1)
-      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstSdJwtVc
+      const credential = (credentialResponse.credentials[0].record as SdJwtVcRecord).firstCredential
       expect(credential).toEqual({
         claimFormat: 'dc+sd-jwt',
         compact:

@@ -884,7 +884,7 @@ export class DataIntegrityDidCommCredentialFormatService
 
       await this.assertCredentialAttributesMatchSchemaAttributes(
         agentContext,
-        w3cCredentialRecord.credential,
+        w3cCredentialRecord.firstCredential,
         getAnonCredsTagsFromRecord(w3cCredentialRecord)?.anonCredsSchemaId as string,
         true
       )

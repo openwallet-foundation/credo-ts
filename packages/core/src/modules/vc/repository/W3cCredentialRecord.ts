@@ -148,13 +148,6 @@ export class W3cCredentialRecord extends BaseRecord<DefaultW3cCredentialTags, Cu
   }
 
   /**
-   * credential is convenience method added to all credential records
-   */
-  public get credential(): W3cVerifiableCredential {
-    return this.firstCredential
-  }
-
-  /**
    * encoded is convenience method added to all credential records
    */
   public get encoded() {

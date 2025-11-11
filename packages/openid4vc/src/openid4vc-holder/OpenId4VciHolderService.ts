@@ -600,7 +600,7 @@ export class OpenId4VciHolderService {
           jwkThumbprintKmsKeyIdMapping,
         })
 
-        const firstCredential = credential.record.credential
+        const firstCredential = credential.record.firstCredential
         this.logger.debug('received credential response', {
           firstCredential:
             firstCredential instanceof Mdoc
@@ -686,7 +686,7 @@ export class OpenId4VciHolderService {
         credentialConfiguration: credentialConfiguration,
       })
 
-      const firstCredential = credential.record.credential
+      const firstCredential = credential.record.firstCredential
       this.logger.debug('received credential response', {
         firstCredential:
           firstCredential instanceof Mdoc

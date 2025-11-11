@@ -297,21 +297,25 @@ export class HolderInquirer extends BaseInquirer {
     credentialRecord: W3cCredentialRecord | W3cV2CredentialRecord | SdJwtVcRecord | MdocRecord
   ) => {
     if (credentialRecord.type === 'W3cCredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credentialRecord.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credentialRecord.credential.jsonCredential, null, 2))
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.jsonCredential, null, 2))
       console.log('')
     } else if (credentialRecord.type === 'W3cV2CredentialRecord') {
-      console.log(greenText(`W3cCredentialRecord with claim format ${credentialRecord.credential.claimFormat}`, true))
-      console.log(JSON.stringify(credentialRecord.credential.resolvedCredential.toJSON(), null, 2))
+      console.log(
+        greenText(`W3cCredentialRecord with claim format ${credentialRecord.firstCredential.claimFormat}`, true)
+      )
+      console.log(JSON.stringify(credentialRecord.firstCredential.resolvedCredential.toJSON(), null, 2))
       console.log('')
     } else if (credentialRecord.type === 'MdocRecord') {
       console.log(greenText('MdocRecord', true))
-      const namespaces = credentialRecord.credential.issuerSignedNamespaces
+      const namespaces = credentialRecord.firstCredential.issuerSignedNamespaces
       console.log(JSON.stringify(namespaces, null, 2))
       console.log('')
     } else {
       console.log(greenText('SdJwtVcRecord', true))
-      const prettyClaims = credentialRecord.credential.prettyClaims
+      const prettyClaims = credentialRecord.firstCredential.prettyClaims
       console.log(JSON.stringify(prettyClaims, null, 2))
       console.log('')
     }

@@ -70,7 +70,7 @@ const mockCredentialRecord = W3cCredentialRecord.fromCredential(
 
 const presentationSubmission = { id: 'did:id', definition_id: 'my-id', descriptor_map: [] }
 const verifiablePresentation = new W3cJsonLdVerifiablePresentation({
-  verifiableCredential: [mockCredentialRecord.credential],
+  verifiableCredential: [mockCredentialRecord.firstCredential],
   proof: {
     type: 'Ed25519Signature2020',
     created: '2021-11-13T18:19:39Z',

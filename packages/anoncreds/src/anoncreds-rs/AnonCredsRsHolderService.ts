@@ -190,7 +190,7 @@ export class AnonCredsRsHolderService implements AnonCredsHolderService {
           const credential =
             credentialRecord instanceof W3cCredentialRecord
               ? await this.w3cToLegacyCredential(agentContext, {
-                  credential: credentialRecord.credential as W3cJsonLdVerifiableCredential,
+                  credential: credentialRecord.firstCredential as W3cJsonLdVerifiableCredential,
                 })
               : (credentialRecord.credential as AnonCredsCredential)
 

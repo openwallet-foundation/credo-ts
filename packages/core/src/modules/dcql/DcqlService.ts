@@ -238,7 +238,7 @@ export class DcqlService {
         credentialRecordsWithFormatDuplicates.push(record)
 
         // We always extract the first mdoc for querying
-        const mdoc = record.firstMdoc
+        const mdoc = record.firstCredential
 
         const akiValues = mdoc.issuerSignedCertificateChain
           .map((c) => {
@@ -262,7 +262,7 @@ export class DcqlService {
       }
 
       if (record.type === 'SdJwtVcRecord') {
-        const sdJwtVc = record.firstSdJwtVc
+        const sdJwtVc = record.firstCredential
         const claims = sdJwtVc.prettyClaims as DcqlSdJwtVcCredential.Claims
 
         const akiValues = (sdJwtVc.header.x5c as string[] | undefined)
@@ -301,31 +301,33 @@ export class DcqlService {
       }
 
       if (record.type === 'W3cCredentialRecord') {
+        const firstCredential = record.firstCredential
         credentialRecordsWithFormatDuplicates.push(record)
-        if (record.credential.claimFormat === ClaimFormat.LdpVc) {
+        if (firstCredential.claimFormat === ClaimFormat.LdpVc) {
           return {
             credential_format: 'ldp_vc',
             type: record.getTags().expandedTypes ?? [],
-            claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
+            claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
             cryptographic_holder_binding: true,
           } satisfies DcqlW3cVcCredential
         }
 
         return {
           credential_format: 'jwt_vc_json',
-          type: record.credential.type,
-          claims: record.credential.jsonCredential as DcqlW3cVcCredential.Claims,
+          type: firstCredential.type,
+          claims: firstCredential.jsonCredential as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: true,
         } satisfies DcqlW3cVcCredential
       }
 
       if (record.type === 'W3cV2CredentialRecord') {
         credentialRecordsWithFormatDuplicates.push(record)
+        const firstCredential = record.firstCredential
 
         return {
           credential_format: 'vc+sd-jwt',
-          type: asArray(record.credential.resolvedCredential.type),
-          claims: record.credential.resolvedCredential.toJSON() as DcqlW3cVcCredential.Claims,
+          type: asArray(firstCredential.resolvedCredential.type),
+          claims: firstCredential.resolvedCredential.toJSON() as DcqlW3cVcCredential.Claims,
           cryptographic_holder_binding: true,
         } satisfies DcqlW3cVcCredential
       }
@@ -359,12 +361,14 @@ export class DcqlService {
                                 .prettyClaims as { [key: string]: JsonValue },
                             }
                           : record.type === 'W3cV2CredentialRecord' &&
-                              record.credential instanceof W3cV2SdJwtVerifiableCredential
+                              record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                             ? {
                                 output: agentContext.dependencyManager
                                   .resolve(SdJwtVcService)
-                                  .applyDisclosuresForPayload(record.credential.encoded, claimSet.output as JsonObject)
-                                  .prettyClaims as { [key: string]: JsonValue },
+                                  .applyDisclosuresForPayload(
+                                    record.firstCredential.encoded,
+                                    claimSet.output as JsonObject
+                                  ).prettyClaims as { [key: string]: JsonValue },
                               }
                             : {}),
                       })),
@@ -411,11 +415,11 @@ export class DcqlService {
                           },
                         }
                       : record.type === 'W3cV2CredentialRecord' &&
-                          record.credential instanceof W3cV2SdJwtVerifiableCredential
+                          record.firstCredential instanceof W3cV2SdJwtVerifiableCredential
                         ? {
                             output: agentContext.dependencyManager
                               .resolve(SdJwtVcService)
-                              .applyDisclosuresForPayload(record.credential.encoded, claimSet.output as JsonObject)
+                              .applyDisclosuresForPayload(record.firstCredential.encoded, claimSet.output as JsonObject)
                               .prettyClaims as { [key: string]: JsonValue },
                           }
                         : {}),
@@ -519,15 +523,15 @@ export class DcqlService {
 
     if (validCredential.record.type === 'W3cCredentialRecord') {
       return {
-        claimFormat: validCredential.record.credential.claimFormat,
+        claimFormat: validCredential.record.firstCredential.claimFormat,
         credentialRecord: validCredential.record,
-        disclosedPayload: validCredential.record.credential.jsonCredential as JsonObject,
+        disclosedPayload: validCredential.record.firstCredential.jsonCredential as JsonObject,
       } as const
     }
 
     if (validCredential.record.type === 'W3cV2CredentialRecord') {
       return {
-        claimFormat: validCredential.record.credential.claimFormat,
+        claimFormat: validCredential.record.firstCredential.claimFormat,
         credentialRecord: validCredential.record,
         disclosedPayload: validCredential.claims.valid_claim_sets[0].output as JsonObject,
       } as const
@@ -790,10 +794,10 @@ export class DcqlService {
         } else if (presentationToCreate.claimFormat === ClaimFormat.JwtW3cVp) {
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSubjectIds[0],
+            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSubjectIds[0],
             verifiableCredential: [
               W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(
-                presentationToCreate.credentialRecord.credential
+                presentationToCreate.credentialRecord.firstCredential
               ),
             ],
           })
@@ -815,13 +819,13 @@ export class DcqlService {
 
           const w3cV2SdJwtCredentialService = agentContext.resolve(W3cV2SdJwtCredentialService)
           const sdJwtVc = await w3cV2SdJwtCredentialService.present(agentContext, {
-            credential: presentationToCreate.credentialRecord.credential.encoded,
+            credential: presentationToCreate.credentialRecord.firstCredential.encoded,
             presentationFrame,
           })
 
           const w3cV2CredentialService = agentContext.resolve(W3cV2CredentialService)
           const w3cV2Presentation = new W3cV2Presentation({
-            holder: presentationToCreate.credentialRecord.credential.resolvedCredential.credentialSchemaIds[0],
+            holder: presentationToCreate.credentialRecord.firstCredential.resolvedCredential.credentialSchemaIds[0],
             verifiableCredential: [W3cV2EnvelopedVerifiableCredential.fromVerifiableCredential(sdJwtVc)],
           })
 

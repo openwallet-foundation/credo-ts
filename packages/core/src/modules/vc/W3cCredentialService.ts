@@ -159,7 +159,7 @@ export class W3cCredentialService {
     agentContext: AgentContext,
     options: W3cStoreCredentialOptions
   ): Promise<W3cCredentialRecord> {
-    const credential = options.record.credential
+    const credential = options.record.firstCredential
 
     // JsonLd credentials need expanded types to be stored.
     if (credential instanceof W3cJsonLdVerifiableCredential && !options.record.getTag('expandedTypes')) {
@@ -193,7 +193,7 @@ export class W3cCredentialService {
     queryOptions?: QueryOptions
   ): Promise<W3cVerifiableCredential[]> {
     const result = await this.w3cCredentialRepository.findByQuery(agentContext, query, queryOptions)
-    return result.map((record) => record.credential)
+    return result.map((record) => record.firstCredential)
   }
 
   public async findCredentialRecordByQuery(
@@ -201,6 +201,6 @@ export class W3cCredentialService {
     query: Query<W3cCredentialRecord>
   ): Promise<W3cVerifiableCredential | undefined> {
     const result = await this.w3cCredentialRepository.findSingleByQuery(agentContext, query)
-    return result?.credential
+    return result?.firstCredential
   }
 }

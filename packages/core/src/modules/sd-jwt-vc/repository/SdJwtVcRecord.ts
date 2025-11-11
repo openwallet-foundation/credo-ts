@@ -95,7 +95,7 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
     }
   }
 
-  public get firstSdJwtVc(): SdJwtVc {
+  public get firstCredential(): SdJwtVc {
     return {
       ...decodeSdJwtVc(this.credentialInstances[0].compactSdJwtVc, this.typeMetadata),
       kmsKeyId: this.credentialInstances[0].kmsKeyId,
@@ -130,13 +130,6 @@ export class SdJwtVcRecord extends BaseRecord<DefaultSdJwtVcRecordTags> {
 
   public clone(): this {
     return JsonTransformer.fromJSON(JsonTransformer.toJSON(this), this.constructor as Constructable<this>)
-  }
-
-  /**
-   * credential is convenience method added to all credential records
-   */
-  public get credential(): SdJwtVc {
-    return this.firstSdJwtVc
   }
 
   /**

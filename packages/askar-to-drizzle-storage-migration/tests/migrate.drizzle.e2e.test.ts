@@ -93,28 +93,41 @@ async function expectDatabaseWithRecords(agent: Agent | TenantAgent) {
 
   await expect(agent.sdJwtVc.getAll()).resolves.toMatchObject([
     {
-      compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+      credentialInstances: [
+        {
+          compactSdJwtVc: sdJwtVcWithSingleDisclosure,
+        },
+      ],
     },
   ])
 
   await expect(agent.mdoc.getAll()).resolves.toMatchObject([
     {
-      base64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).encoded,
+      credentialInstances: [
+        {
+          issuerSignedBase64Url: Mdoc.fromBase64Url(sprindFunkeTestVectorBase64Url).encoded,
+        },
+      ],
     },
   ])
 
   await expect(agent.w3cCredentials.getAll()).resolves.toMatchObject([
     {
-      credential: JsonTransformer.fromJSON(
-        Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
-        W3cJsonLdVerifiableCredential
-      ),
+      credentialInstances: [
+        {
+          credential: Ed25519Signature2018Fixtures.TEST_LD_DOCUMENT_SIGNED,
+        },
+      ],
     },
   ])
 
   await expect(agent.w3cV2Credentials.getAll()).resolves.toMatchObject([
     {
-      credential: W3cV2JwtVerifiableCredential.fromCompact(CredoEs256DidJwkJwtVc),
+      credentialInstances: [
+        {
+          credential: CredoEs256DidJwkJwtVc,
+        },
+      ],
     },
   ])
 

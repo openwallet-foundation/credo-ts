@@ -71,7 +71,7 @@ export async function getCredentialsForRequest(
         }
         if (credentialRecord instanceof W3cCredentialRecord) {
           return {
-            claimFormat: credentialRecord.credential.claimFormat,
+            claimFormat: credentialRecord.firstCredential.claimFormat,
             credentialRecord,
           }
         }
@@ -119,7 +119,7 @@ export async function getCredentialsForRequest(
       inputDescriptorIds.has(id)
     )
 
-    const mdoc = verifiableCredential.credentialRecord.firstMdoc
+    const mdoc = verifiableCredential.credentialRecord.firstCredential
     verifiableCredential.disclosedPayload = MdocDeviceResponse.limitDisclosureToInputDescriptor({
       inputDescriptor: {
         id: mdoc.docType,

@@ -245,7 +245,7 @@ describe('data integrity format service (w3c)', () => {
       credentialRecordId
     )
 
-    expect(credentialExchangeRecord.credential).toEqual({
+    expect(credentialExchangeRecord.firstCredential).toEqual({
       ...{
         ...credential,
         credentialSubject: new W3cCredentialSubject({
